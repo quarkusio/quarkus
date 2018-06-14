@@ -8,7 +8,7 @@
     <name>Hibernate ORM 5 as Java 9 automatic modules</name>
 
     <properties>
-        <version.com.h2database>1.4.196</version.com.h2database>
+        <version.org.postgresql.jdbc>42.2.2</version.org.postgresql.jdbc>
         <version.junit>4.12</version.junit>
         <version.org.hibernate>5.3.2-SNAPSHOT</version.org.hibernate>
         <modules.dir>${project.build.directory}/modules</modules.dir>
@@ -38,9 +38,9 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <version>${version.com.h2database}</version>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${version.org.postgresql.jdbc}</version>
         </dependency>
     </dependencies>
 

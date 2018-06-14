@@ -7,33 +7,29 @@
     <persistence-unit name="templatePU" transaction-type="RESOURCE_LOCAL">
 
         <description>Hibernate test case template Persistence Unit</description>
-        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
-
-        <exclude-unlisted-classes>false</exclude-unlisted-classes>
 
         <properties>
+            <!-- intentionally using worse case so that we can optimise for this -->
             <property name="hibernate.archive.autodetection" value="class, hbm"/>
 
-            <!--org.hibernate.dialect.PostgreSQL95Dialect-->
-            <property name="hibernate.dialect" value="org.hibernate.dialect.H2Dialect"/>
-            <property name="hibernate.connection.driver_class" value="org.h2.Driver"/>
-            <property name="hibernate.connection.url" value="jdbc:h2:mem:db1;DB_CLOSE_DELAY=-1"/>
-            <property name="hibernate.connection.username" value="sa"/>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQL95Dialect"/>
+            <property name="hibernate.connection.driver_class" value="org.postgresql.Driver"/>
+            <property name="hibernate.connection.url" value="jdbc:postgresql:hibernate_orm_test"/>
+            <property name="hibernate.connection.username" value="hibernate_orm_test"/>
+            <property name="hibernate.connection.password" value="hibernate_orm_test"/>
 
-            <property name="hibernate.connection.pool_size" value="5"/>
+            <property name="hibernate.connection.pool_size" value="2"/>
 
             <property name="hibernate.show_sql" value="false"/>
             <property name="hibernate.format_sql" value="false"/>
-            <property name="hibernate.hbm2ddl.auto" value="create-drop"/>
 
-            <property name="hibernate.max_fetch_depth" value="5"/>
+            <!-- First run only -->
+            <!--<property name="hibernate.hbm2ddl.auto" value="create"/>-->
 
-            <!--NOTE: hibernate.jdbc.batch_versioned_data should be set to false when testing with Oracle-->
-            <property name="hibernate.jdbc.batch_versioned_data" value="true"/>
+            <property name="hibernate.hbm2ddl.auto" value="validate"/>
 
             <property name="javax.persistence.validation.mode" value="NONE"/>
             <property name="hibernate.service.allow_crawling" value="false"/>
-            <property name="hibernate.session.events.log" value="false"/>
         </properties>
 
     </persistence-unit>

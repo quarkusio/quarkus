@@ -7,7 +7,7 @@
 mvn clean install
 
 ## Update the classpath definition used by this script:
-#mvn dependency:build-classpath -Dmdep.outputFile=cp.txt > /dev/null
+mvn dependency:build-classpath -Dmdep.outputFile=cp.txt > /dev/null
 CLASSPATH=`cat cp.txt`
 
 RUNTIME_OPTS="-Djava.util.logging.config.file=logging.properties"
@@ -28,7 +28,8 @@ java $RUNTIME_OPTS -Xshare:off -XX:+UseAppCDS -XX:DumpLoadedClassList=classdef.l
 #generating binaries from the definition list (N.B. omitting the Main and entities code)
 java $RUNTIME_OPTS -Xshare:dump -XX:+UseAppCDS -XX:SharedClassListFile=classdef.lst -XX:SharedArchiveFile=classdef.jsa --add-modules java.xml.bind -cp "$CLASSPATH"
 
-time java $RUNTIME_OPTS -Xshare:on -XX:+UseAppCDS -XX:SharedArchiveFile=classdef.jsa --add-modules java.xml.bind -cp "$CLASSPATH":./target/classes com.example.Main
+#try it once:
+java $RUNTIME_OPTS -Xshare:on -XX:+UseAppCDS -XX:SharedArchiveFile=classdef.jsa --add-modules java.xml.bind -cp "$CLASSPATH":./target/classes com.example.Main
 echo "That was a run with shared class definitions"
 echo ""
 

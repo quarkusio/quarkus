@@ -28,6 +28,16 @@
                 <artifactId>antlr</artifactId>
                 <version>2.7.7.redhat-7</version>
             </dependency>
+            <dependency>
+                <groupId>dom4j</groupId>
+                <artifactId>dom4j</artifactId>
+                <version>1.6.1.redhat-7</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate.common</groupId>
+                <artifactId>hibernate-commons-annotations</artifactId>
+                <version>5.0.4.Final</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

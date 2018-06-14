@@ -11,7 +11,6 @@
         <version.com.h2database>1.4.196</version.com.h2database>
         <version.junit>4.12</version.junit>
         <version.org.hibernate>5.3.2-SNAPSHOT</version.org.hibernate>
-        <version.org.log4j>1.2.17</version.org.log4j>
         <modules.dir>${project.build.directory}/modules</modules.dir>
     </properties>
 
@@ -31,16 +30,17 @@
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-core</artifactId>
             <version>${version.org.hibernate}</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>org.javassist</artifactId>
+                    <groupId>javassist</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
             <version>${version.com.h2database}</version>
-        </dependency>
-        <dependency>
-            <groupId>log4j</groupId>
-            <artifactId>log4j</artifactId>
-            <version>${version.org.log4j}</version>
         </dependency>
     </dependencies>
 
@@ -169,6 +169,7 @@
                         <configuration>
                             <executable>java</executable>
                             <arguments>
+                                <argument>-Djava.util.logging.config.file=logging.properties</argument>
                                 <argument>--module-path=${modules.dir}</argument>
                                 <argument>--upgrade-module-path=${project.build.directory}/upgrade-modules</argument>
                                 <argument>--add-modules=java.transaction,java.xml.bind</argument>

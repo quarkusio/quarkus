@@ -22,6 +22,12 @@
                 <artifactId>jboss-transaction-api_1.2_spec</artifactId>
                 <version>2.0.0.Alpha1</version>
             </dependency>
+            <!-- Override ANTLR with the Red Hat build as the Maven Central version is compiled with a too old JDK to allow CDS -->
+            <dependency>
+                <groupId>antlr</groupId>
+                <artifactId>antlr</artifactId>
+                <version>2.7.7.redhat-7</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -126,65 +132,22 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.moditect</groupId>
-                <artifactId>moditect-maven-plugin</artifactId>
-                <version>1.0.0-SNAPSHOT</version>
-                <executions>
-                    <execution>
-                        <id>add-module-info-to-dependencies</id>
-                        <phase>generate-resources</phase>
-                        <configuration>
-                            <outputDirectory>${modules.dir}</outputDirectory>
-                            <overwriteExistingFiles>true</overwriteExistingFiles>
-                            <modules>
-                                <module>
-                                    <artifact>
-                                        <groupId>javax.persistence</groupId>
-                                        <artifactId>javax.persistence-api</artifactId>
-                                        <version>2.2</version>
-                                    </artifact>
-                                    <moduleInfo>
-                                        <name>java.persistence</name>
-                                        <exports>*;</exports>
-                                        <uses>javax.persistence.spi.PersistenceProvider</uses>
-                                    </moduleInfo>
-                                </module>
-                            </modules>
-                        </configuration>
-                        <goals>
-                            <goal>add-module-info</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>1.6.0</version>
-                <executions>
-                    <execution>
-                        <id>integration-test</id>
-                        <phase>integration-test</phase>
-                        <configuration>
-                            <executable>java</executable>
-                            <arguments>
-                                <argument>-Djava.util.logging.config.file=logging.properties</argument>
-                                <argument>--module-path=${modules.dir}</argument>
-                                <argument>--upgrade-module-path=${project.build.directory}/upgrade-modules</argument>
-                                <argument>--add-modules=java.transaction,java.xml.bind</argument>
-                                <argument>-Xdebug</argument>
-                                <argument>-Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=8000</argument>
-                                <argument>-ea</argument>
-                                <argument>--module=com.example/com.example.Main</argument>
-                            </arguments>
-                        </configuration>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
+    <repositories>
+        <repository>
+            <id>redhat-ga-repository</id>
+            <name>Red Hat GA repository</name>
+            <url>http://maven.repository.redhat.com/ga/</url>
+            <layout>default</layout>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+                <updatePolicy>daily</updatePolicy>
+            </snapshots>
+        </repository>
+    </repositories>
 </project>

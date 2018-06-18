@@ -64,6 +64,10 @@ P ""
 # > java.base,java.desktop,java.naming,java.security.jgss,java.security.sasl,java.sql
 # [Fail: ClassNotFoundException: com.sun.jna.win32.StdCallLibrary]
 
+#jdeps --print-module-deps /home/sanne/.m2/repository/com/impossibl/pgjdbc-ng/pgjdbc-ng/0.7.1/pgjdbc-ng-0.7.1.jar
+> java.base,java.desktop,java.naming,java.sql,java.xml.bind
+
+
 # classmate -> java.base
 # [ OK!! AOT compatible?! ]
 

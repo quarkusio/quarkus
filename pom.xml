@@ -68,13 +68,22 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.7.0</version>
                     <configuration>
-                        <release>9</release>
+                        <release>10</release>
+                        <source>10</source>
+                        <target>10</target>
                         <compilerArgs>
                             <arg>-classpath</arg>
                             <arg>${project.build.directory}/target/classes</arg>
                             <arg>--module-path=${modules.dir}</arg>
                         </compilerArgs>
                     </configuration>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.ow2.asm</groupId>
+                            <artifactId>asm</artifactId>
+                            <version>6.1.1</version> <!-- Use newer version of ASM -->
+                        </dependency>
+                    </dependencies>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

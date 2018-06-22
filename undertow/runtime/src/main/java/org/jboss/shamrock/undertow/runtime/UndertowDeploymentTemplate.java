@@ -29,6 +29,11 @@ public class UndertowDeploymentTemplate {
         info.addServlet(servletInfo);
     }
 
+    public void addServletMapping(@ContextObject("deploymentInfo") DeploymentInfo info, String name, String mapping) throws Exception {
+        ServletInfo sv = info.getServlets().get(name);
+        sv.addMapping(mapping);
+    }
+
     public void deploy(StartupContext startupContext, @ContextObject("deploymentInfo") DeploymentInfo info) throws ServletException {
         ServletContainer servletContainer = Servlets.defaultContainer();
         DeploymentManager manager = servletContainer.addDeployment(info);

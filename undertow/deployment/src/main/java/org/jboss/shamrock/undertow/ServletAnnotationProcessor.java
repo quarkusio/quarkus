@@ -34,7 +34,12 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
                 template.createDeployment("test");
 
                 for (AnnotationInstance annotation : annotations) {
-                    template.registerServlet(null, annotation.value("name").asString(), annotation.target().asClass().toString());
+                    String name = annotation.value("name").asString();
+                    template.registerServlet(null, name, annotation.target().asClass().toString());
+                    String[] mappings = annotation.value("urlPatterns").asStringArray();
+                    for(String m : mappings) {
+                        template.addServletMapping(null, name, m);
+                    }
                 }
                 template.deploy(null, null);
             }

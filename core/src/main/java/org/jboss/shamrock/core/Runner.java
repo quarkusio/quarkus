@@ -55,7 +55,7 @@ public class Runner {
 
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                if (file.endsWith(".class")) {
+                if (file.toString().endsWith(".class")) {
                     try (InputStream stream = Files.newInputStream(file)) {
                         indexer.index(stream);
                     }

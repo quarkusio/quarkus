@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.classfilewriter.AccessFlag;
@@ -123,9 +124,87 @@ public class BytecodeRecorder implements AutoCloseable {
             CodeAttribute ca = method.getCodeAttribute();
 
             //first we need to create the context map
-            //ca.newInstruction(HashMap.class);
-            //ca.dup();
-            //ca.invokespecial(HashMap.class.getName(), "<init>", "()V");
+            ca.newInstruction(HashMap.class);
+            ca.dup();
+            ca.invokespecial(HashMap.class.getName(), "<init>", "()V");
+            //figure out where we can start using local variables
+            int localVarCounter = 1;
+            for(Class<?> t : entry.getKey().getParameterTypes()) {
+                if(t == double.class || t == long.class) {
+                    localVarCounter+=2;
+                } else {
+                    localVarCounter++;
+                }
+            }
+            final int contextPos = localVarCounter++;
+            //store the context map in a variable
+            ca.astore(contextPos);
+
+            //now create instances of all the classes we invoke on and store them in variables as well
+            Map<Class, Integer> classInstanceVariables = new HashMap<>();
+            for(StoredMethodCall call : entry.getValue().storedMethodCalls) {
+                if(classInstanceVariables.containsKey(call.theClass)) {
+                    continue;
+                }
+                ca.newInstruction(call.theClass);
+                ca.dup();
+                ca.invokespecial(call.theClass.getName(), "<init>", "()V");
+                ca.astore(localVarCounter);
+                classInstanceVariables.put(call.theClass, localVarCounter++);
+            }
+            //now we invoke the actual method call
+            for(StoredMethodCall call : entry.getValue().storedMethodCalls) {
+                ca.aload(classInstanceVariables.get(call.theClass));
+                ca.checkcast(call.theClass);
+                for(int i = 0; i < call.parameters.length; ++ i) {
+                    Class<?> targetType = call.method.getParameterTypes()[i];
+                    Annotation[] annotations = call.method.getParameterAnnotations()[i];
+                    String contextName = null;
+                    if(annotations != null) {
+                        for(Annotation a : annotations) {
+                            if(a.annotationType() == ContextObject.class) {
+                                ContextObject obj = (ContextObject) a;
+                                contextName = obj.value();
+                                break;
+                            }
+                        }
+                    }
+                    if(call.parameters[i] != null) {
+                        Object param = call.parameters[i];
+                        if(param instanceof String) {
+                            ca.ldc((String) param);
+                        } else {
+                            //TODO: rest of primities
+                            ca.ldc((int)param);
+                        }
+                    } else if(targetType == StartupContext.class) { //hack, as this is tied to StartupTask
+                        ca.aload(1);
+                    } else if(contextName != null) {
+                        ca.aload(contextPos);
+                        ca.ldc(contextName);
+                        ca.invokeinterface(Map.class.getName(), "get", "(Ljava/lang/Object;)Ljava/lang/Object;");
+                        ca.checkcast(targetType);
+                    } else {
+                        ca.aconstNull();
+                    }
+                }
+                ca.invokevirtual(call.method);
+                if(call.method.getReturnType() != void.class) {
+                    ContextObject annotation = call.method.getAnnotation(ContextObject.class);
+                    if(annotation != null) {
+                        ca.aload(contextPos);
+                        ca.swap();
+                        ca.ldc(annotation.value());
+                        ca.swap();
+                        ca.invokeinterface(Map.class.getName(), "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
+                    } else if(call.method.getReturnType() == long.class || call.method.getReturnType() == double.class){
+                        ca.pop2();
+                    } else {
+                        ca.pop();
+                    }
+                }
+            }
+
             ca.returnInstruction();
 
 

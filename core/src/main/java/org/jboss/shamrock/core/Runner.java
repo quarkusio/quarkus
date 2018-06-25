@@ -148,7 +148,6 @@ public class Runner {
             ca.newInstruction(StartupContext.class);
             ca.dup();
             ca.invokespecial(StartupContext.class.getName(), "<init>", "()V");
-            Collections.sort(tasks);
             for (DeploymentTaskHolder holder : tasks) {
                 ca.dup();
                 ca.newInstruction(holder.className);

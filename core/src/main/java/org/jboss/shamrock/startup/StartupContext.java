@@ -7,7 +7,7 @@ public class StartupContext {
 
     private final Map<String, Object> values = new HashMap<>();
 
-    public void registerValue(String name, Object value) {
+    public void putValue(String name, Object value) {
         values.put(name, value);
     }
 

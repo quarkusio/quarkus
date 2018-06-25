@@ -43,7 +43,7 @@ public class UndertowDeploymentTemplate {
                 .setHandler(manager.start())
                 .build();
         val.start();
-        startupContext.registerValue("undertow", val);
+        startupContext.putValue("undertow", val);
     }
 
 }

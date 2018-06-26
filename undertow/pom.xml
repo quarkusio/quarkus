@@ -20,13 +20,11 @@
         <dependency>
             <groupId>io.undertow</groupId>
             <artifactId>undertow-servlet</artifactId>
-            <version>2.0.7.Final</version>
         </dependency>
 
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-core</artifactId>
-            <version>${project.version}</version>
         </dependency>
     </dependencies>
 

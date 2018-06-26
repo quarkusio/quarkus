@@ -3,29 +3,22 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>shamrock-undertow</artifactId>
+        <artifactId>shamrock-parent</artifactId>
         <groupId>org.jboss.shamrock</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
-        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-undertow-deployment</artifactId>
+    <artifactId>shamrock-jaxrs</artifactId>
+    <packaging>pom</packaging>
+    <modules>
+        <module>deployment</module>
+    </modules>
 
     <dependencies>
         <dependency>
-            <groupId>io.undertow</groupId>
-            <artifactId>undertow-servlet</artifactId>
-        </dependency>
-
-        <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-undertow-runtime</artifactId>
-            <version>${project.version}</version>
         </dependency>
     </dependencies>
 

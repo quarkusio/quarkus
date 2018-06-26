@@ -7,6 +7,7 @@ import java.util.Set;
 import javax.servlet.annotation.WebServlet;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.shamrock.codegen.BytecodeRecorder;
@@ -39,7 +40,8 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
                 UndertowDeploymentTemplate template = context.getMethodRecorder().getRecordingProxy(UndertowDeploymentTemplate.class);
                 for (AnnotationInstance annotation : annotations) {
                     String name = annotation.value("name").asString();
-                    template.registerServlet(null, name, annotation.target().asClass().toString());
+                    AnnotationValue asyncSupported = annotation.value("asyncSupported");
+                    template.registerServlet(null, name, annotation.target().asClass().toString(), asyncSupported != null && asyncSupported.asBoolean());
                     String[] mappings = annotation.value("urlPatterns").asStringArray();
                     for(String m : mappings) {
                         template.addServletMapping(null, name, m);

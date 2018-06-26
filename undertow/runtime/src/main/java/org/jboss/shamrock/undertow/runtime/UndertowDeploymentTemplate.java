@@ -24,14 +24,19 @@ public class UndertowDeploymentTemplate {
         return d;
     }
 
-    public void registerServlet(@ContextObject("deploymentInfo") DeploymentInfo info, String name, String servletClass) throws Exception {
+    public void registerServlet(@ContextObject("deploymentInfo") DeploymentInfo info, String name, String servletClass, boolean asyncSupported) throws Exception {
         ServletInfo servletInfo = new ServletInfo(name, (Class<? extends Servlet>) Class.forName(servletClass));
         info.addServlet(servletInfo);
+        servletInfo.setAsyncSupported(asyncSupported);
     }
 
     public void addServletMapping(@ContextObject("deploymentInfo") DeploymentInfo info, String name, String mapping) throws Exception {
         ServletInfo sv = info.getServlets().get(name);
         sv.addMapping(mapping);
+    }
+
+    public void addServletContextParameter(@ContextObject("deploymentInfo") DeploymentInfo info, String name, String value) {
+        info.addInitParameter(name, value);
     }
 
     public void deploy(StartupContext startupContext, @ContextObject("deploymentInfo") DeploymentInfo info) throws ServletException {

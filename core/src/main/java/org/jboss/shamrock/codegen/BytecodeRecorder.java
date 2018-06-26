@@ -165,7 +165,9 @@ public class BytecodeRecorder implements AutoCloseable {
                         Object param = call.parameters[i];
                         if (param instanceof String) {
                             ca.ldc((String) param);
-                        } else {
+                        } else if (param instanceof Boolean) {
+                            ca.ldc((boolean)param ? 1 : 0);
+                        }else {
                             //TODO: rest of primities
                             ca.ldc((int) param);
                         }

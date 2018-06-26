@@ -23,6 +23,7 @@
         <module>undertow</module>
         <module>maven</module>
         <module>example</module>
+        <module>jaxrs</module>
     </modules>
 
     <dependencyManagement>
@@ -31,6 +32,16 @@
                 <groupId>org.jboss</groupId>
                 <artifactId>jandex</artifactId>
                 <version>${version.org.jandex}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.undertow</groupId>
+                <artifactId>undertow-servlet</artifactId>
+                <version>2.0.7.Final</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-core</artifactId>
+                <version>1.0.0.Alpha1-SNAPSHOT</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

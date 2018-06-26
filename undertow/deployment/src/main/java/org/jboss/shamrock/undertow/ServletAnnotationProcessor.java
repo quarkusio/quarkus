@@ -32,7 +32,8 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception{
 
         processorContext.addReflectiveClass(DefaultServlet.class.getName());
-        
+        processorContext.addReflectiveClass("io.undertow.server.protocol.http.HttpRequestParser$$generated");
+
         try (BytecodeRecorder context = processorContext.addDeploymentTask(RuntimePriority.UNDERTOW_CREATE_DEPLOYMENT)) {
             UndertowDeploymentTemplate template = context.getMethodRecorder().getRecordingProxy(UndertowDeploymentTemplate.class);
             template.createDeployment("test");

@@ -17,6 +17,8 @@ import org.jboss.shamrock.core.ResourceProcessor;
 import org.jboss.shamrock.core.RuntimePriority;
 import org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate;
 
+import io.undertow.servlet.handlers.DefaultServlet;
+
 public class ServletAnnotationProcessor implements ResourceProcessor {
 
     private static final DotName WEB_SERVLET = DotName.createSimple(WebServlet.class.getName());
@@ -29,6 +31,8 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
     @Override
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception{
 
+        processorContext.addReflectiveClass(DefaultServlet.class.getName());
+        
         try (BytecodeRecorder context = processorContext.addDeploymentTask(RuntimePriority.UNDERTOW_CREATE_DEPLOYMENT)) {
             UndertowDeploymentTemplate template = context.getMethodRecorder().getRecordingProxy(UndertowDeploymentTemplate.class);
             template.createDeployment("test");
@@ -41,7 +45,9 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
                 for (AnnotationInstance annotation : annotations) {
                     String name = annotation.value("name").asString();
                     AnnotationValue asyncSupported = annotation.value("asyncSupported");
-                    template.registerServlet(null, name, annotation.target().asClass().toString(), asyncSupported != null && asyncSupported.asBoolean());
+                    String servletClass = annotation.target().asClass().toString();
+                    template.registerServlet(null, name, servletClass, asyncSupported != null && asyncSupported.asBoolean());
+                    processorContext.addReflectiveClass(servletClass);
                     String[] mappings = annotation.value("urlPatterns").asStringArray();
                     for(String m : mappings) {
                         template.addServletMapping(null, name, m);

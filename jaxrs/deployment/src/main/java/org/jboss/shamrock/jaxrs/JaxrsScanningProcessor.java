@@ -95,6 +95,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
 
                 undertow.addServletContextParameter(null, ResteasyContextParameters.RESTEASY_SCANNED_RESOURCES, sb.toString());
                 undertow.addServletContextParameter(null, "resteasy.servlet.mapping.prefix", path);
+                processorContext.addReflectiveClass(HttpServlet30Dispatcher.class.getName());
             }
 
         }

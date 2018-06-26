@@ -21,6 +21,8 @@ public class UndertowDeploymentTemplate {
         d.setClassLoader(getClass().getClassLoader());
         d.setDeploymentName(name);
         d.setContextPath("/");
+        d.setClassLoader(new ClassLoader() {
+        });
         return d;
     }
 

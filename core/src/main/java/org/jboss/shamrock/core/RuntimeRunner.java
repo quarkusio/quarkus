@@ -2,6 +2,10 @@ package org.jboss.shamrock.core;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URL;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
@@ -10,10 +14,10 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ServiceLoader;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.classfilewriter.AccessFlag;
 import org.jboss.classfilewriter.ClassFile;
@@ -27,14 +31,23 @@ import org.jboss.shamrock.startup.DeploymentTask;
 import org.jboss.shamrock.startup.StartupContext;
 
 
-public class Runner {
-
-    private static final AtomicInteger COUNT = new AtomicInteger();
+public class RuntimeRunner {
 
     private final List<ResourceProcessor> processors;
-    private final ClassOutput output;
+    private final List<RuntimeTaskHolder> runtimeTasks = new ArrayList<>();
 
-    public Runner(ClassOutput classOutput) {
+    public static void main(String ... args) throws Exception {
+        URL uri = RuntimeRunner.class.getResource("RuntimeRunner.class");
+        String val = uri.toExternalForm();
+        if(val.contains("!")) {
+            val = val.substring(0, val.lastIndexOf('!'));
+        }
+        FileSystem fs = FileSystems.newFileSystem(new URI(val), new HashMap<>());
+
+        new RuntimeRunner().run(fs.getRootDirectories().iterator().next());
+    }
+
+    public RuntimeRunner() {
         Iterator<ResourceProcessor> loader = ServiceLoader.load(ResourceProcessor.class).iterator();
         List<ResourceProcessor> processors = new ArrayList<>();
         while (loader.hasNext()) {
@@ -42,7 +55,6 @@ public class Runner {
         }
         Collections.sort(processors, Comparator.comparingInt(ResourceProcessor::getPriority));
         this.processors = Collections.unmodifiableList(processors);
-        this.output = classOutput;
     }
 
 
@@ -84,8 +96,11 @@ public class Runner {
                 throw new RuntimeException(e);
             }
         }
-        processorContext.writeMainClass();
-        processorContext.writeAutoFeature();
+        Collections.sort(runtimeTasks);
+        StartupContext sc = new StartupContext();
+        for(RuntimeTaskHolder task : runtimeTasks) {
+            task.recorder.executeRuntime(sc);
+        }
     }
 
 
@@ -134,96 +149,36 @@ public class Runner {
     private final class ProcessorContextImpl implements ProcessorContext {
 
 
-        private final List<DeploymentTaskHolder> tasks = new ArrayList<>();
-        private final List<String> reflectiveClasses = new ArrayList<>();
-
         @Override
         public BytecodeRecorder addDeploymentTask(int priority) {
-            String className = getClass().getName() + "$$Proxy" + COUNT.incrementAndGet();
-            tasks.add(new DeploymentTaskHolder(className, priority));
-            return new BytecodeRecorder(className, DeploymentTask.class, output, false);
+            BytecodeRecorder recorder = new BytecodeRecorder(null, DeploymentTask.class, null, true);
+            runtimeTasks.add(new RuntimeTaskHolder(recorder, priority));
+            return recorder;
         }
 
         @Override
         public void addReflectiveClass(String className) {
-            reflectiveClasses.add(className);
         }
 
-        void writeMainClass() throws IOException {
-            ClassFile file = new ClassFile("org.jboss.shamrock.runner.Main", "java.lang.Object");
-            ClassMethod mainMethod = file.addMethod(AccessFlag.PUBLIC | AccessFlag.STATIC, "main", "V", "[Ljava/lang/String;");
-            CodeAttribute ca = mainMethod.getCodeAttribute();
-            ca.newInstruction(StartupContext.class);
-            ca.dup();
-            ca.invokespecial(StartupContext.class.getName(), "<init>", "()V");
-            Collections.sort(tasks);
-            for (DeploymentTaskHolder holder : tasks) {
-                ca.dup();
-                ca.newInstruction(holder.className);
-                ca.dup();
-                ca.invokespecial(holder.className, "<init>", "()V");
-                ca.swap();
-                ca.invokeinterface(DeploymentTask.class.getName(), "deploy", "(Lorg/jboss/shamrock/startup/StartupContext;)V");
-            }
-            ca.returnInstruction();
-            output.writeClass(file.getName(), file.toBytecode());
-        }
-
-        void writeAutoFeature() throws IOException {
-
-            ClassFile file = new ClassFile("org.jboss.shamrock.runner.AutoFeature", "java.lang.Object", "org.graalvm.nativeimage.Feature");
-            ClassMethod mainMethod = file.addMethod(AccessFlag.PUBLIC , "beforeAnalysis", "V", "Lorg/graalvm/nativeimage/Feature$BeforeAnalysisAccess;");
-            file.getRuntimeVisibleAnnotationsAttribute().addAnnotation(new ClassAnnotation(file.getConstPool(), "com.oracle.svm.core.annotate.AutomaticFeature", Collections.emptyList()));
-
-            CodeAttribute ca = mainMethod.getCodeAttribute();
-
-            for (String holder : reflectiveClasses) {
-                ca.ldc(1);
-                ca.anewarray("java/lang/Class");
-                ca.dup();
-                ca.ldc(0);
-                ca.loadClass(holder);
-                ca.aastore();
-                ca.invokestatic("org.graalvm.nativeimage.RuntimeReflection", "register", "([Ljava/lang/Class;)V");
-
-                //now load everything else
-                ca.loadClass(holder);
-                ca.invokevirtual("java.lang.Class", "getDeclaredConstructors", "()[Ljava/lang/reflect/Constructor;");
-                ca.invokestatic("org.graalvm.nativeimage.RuntimeReflection", "register", "([Ljava/lang/reflect/Executable;)V");
-                //now load everything else
-                ca.loadClass(holder);
-                ca.invokevirtual("java.lang.Class", "getMethods", "()[Ljava/lang/reflect/Method;");
-                ca.invokestatic("org.graalvm.nativeimage.RuntimeReflection", "register", "([Ljava/lang/reflect/Executable;)V");
-
-            }
-            ca.returnInstruction();
-
-            ClassMethod ctor = file.addMethod(AccessFlag.PUBLIC, "<init>", "V");
-            ca = ctor.getCodeAttribute();
-            ca.aload(0);
-            ca.invokespecial(Object.class.getName(), "<init>", "()V");
-            ca.returnInstruction();
-            output.writeClass(file.getName(), file.toBytecode());
-        }
 
     }
 
-    private static final class DeploymentTaskHolder implements Comparable<DeploymentTaskHolder> {
-        private final String className;
+    private static final class RuntimeTaskHolder implements Comparable<RuntimeTaskHolder> {
+        private final BytecodeRecorder recorder;
         private final int priority;
 
-        private DeploymentTaskHolder(String className, int priority) {
-            this.className = className;
+        private RuntimeTaskHolder(BytecodeRecorder recorder, int priority) {
+            this.recorder = recorder;
             this.priority = priority;
         }
 
         @Override
-        public int compareTo(DeploymentTaskHolder o) {
+        public int compareTo(RuntimeTaskHolder o) {
             int val = Integer.compare(priority, o.priority);
             if (val != 0) {
                 return val;
             }
-            return className.compareTo(o.className);
+            return recorder.getServiceType().getName().compareTo(o.recorder.getServiceType().getName());
         }
     }
 }

@@ -26,31 +26,72 @@ public class BytecodeRecorder implements AutoCloseable {
     private final String className;
     private final Class<?> serviceType;
     private final ClassOutput classOutput;
-    private final Map<Method, MethodRecorder> methods = new HashMap<>();
+    private final MethodRecorder methodRecorder;
+    private final Method method;
+    private final boolean runtime;
 
-    public BytecodeRecorder(String className, Class<?> serviceType, ClassOutput classOutput) {
+    public BytecodeRecorder(String className, Class<?> serviceType, ClassOutput classOutput, boolean runtime) {
         this.className = className;
         this.serviceType = serviceType;
         this.classOutput = classOutput;
+        this.runtime = runtime;
+        MethodRecorder mr = null;
+        Method m = null;
         for (Method method : serviceType.getMethods()) {
             if (method.getDeclaringClass() != Object.class) {
-                methods.put(method, new MethodRecorder(method));
+                if (mr != null) {
+                    throw new RuntimeException("Invalid type, must have a single method");
+                }
+                mr = new MethodRecorder(method);
+                m = method;
+            }
+        }
+        methodRecorder = mr;
+        method = m;
+    }
+
+    public Class<?> getServiceType() {
+        return serviceType;
+    }
+
+    public MethodRecorder getMethodRecorder() {
+        return methodRecorder;
+    }
+
+    public void executeRuntime(StartupContext startupContext) {
+        for (StoredMethodCall m : methodRecorder.storedMethodCalls) {
+            Object[] params = new Object[m.method.getParameterTypes().length];
+            for (int i = 0; i < params.length; ++i) {
+                Class<?> type = m.method.getParameterTypes()[i];
+                String contextName = findContextName(m.method.getParameterAnnotations()[i]);
+                if (type == StartupContext.class) {
+                    params[i] = startupContext;
+                } else if (contextName != null) {
+                    params[i] = startupContext.getValue(contextName);
+                } else {
+                    params[i] = m.parameters[i];
+                }
+            }
+            try {
+                Object instance = m.method.getDeclaringClass().newInstance();
+                Object result = m.method.invoke(instance, params);
+                ContextObject co = m.method.getAnnotation(ContextObject.class);
+                if(co != null) {
+                    startupContext.putValue(co.value(), result);
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
     }
 
-    public MethodRecorder getMethodRecorder(Method method) {
-        if (!methods.containsKey(method)) {
-            throw new RuntimeException("Method not found");
+    private String findContextName(Annotation[] annotations) {
+        for (Annotation a : annotations) {
+            if (a.annotationType() == ContextObject.class) {
+                return ((ContextObject) a).value();
+            }
         }
-        return methods.get(method);
-    }
-
-    public MethodRecorder getMethodRecorder() {
-        if (methods.size() != 1) {
-            throw new RuntimeException("More than one method present, the method must be specified explicitly");
-        }
-        return methods.values().iterator().next();
+        return null;
     }
 
     public class MethodRecorder {
@@ -117,94 +158,95 @@ public class BytecodeRecorder implements AutoCloseable {
 
     @Override
     public void close() throws IOException {
-        ClassFile file = new ClassFile(className, AccessFlag.PUBLIC, Object.class.getName(), getClass().getClassLoader(), serviceType.getName());
-        for (Map.Entry<Method, MethodRecorder> entry : methods.entrySet()) {
-            ClassMethod method = file.addMethod(entry.getKey());
-            CodeAttribute ca = method.getCodeAttribute();
-
-            //figure out where we can start using local variables
-            int localVarCounter = 1;
-            for (Class<?> t : entry.getKey().getParameterTypes()) {
-                if (t == double.class || t == long.class) {
-                    localVarCounter += 2;
-                } else {
-                    localVarCounter++;
-                }
-            }
-
-            //now create instances of all the classes we invoke on and store them in variables as well
-            Map<Class, Integer> classInstanceVariables = new HashMap<>();
-            for (StoredMethodCall call : entry.getValue().storedMethodCalls) {
-                if (classInstanceVariables.containsKey(call.theClass)) {
-                    continue;
-                }
-                ca.newInstruction(call.theClass);
-                ca.dup();
-                ca.invokespecial(call.theClass.getName(), "<init>", "()V");
-                ca.astore(localVarCounter);
-                classInstanceVariables.put(call.theClass, localVarCounter++);
-            }
-            //now we invoke the actual method call
-            for (StoredMethodCall call : entry.getValue().storedMethodCalls) {
-                ca.aload(classInstanceVariables.get(call.theClass));
-                ca.checkcast(call.theClass);
-                for (int i = 0; i < call.parameters.length; ++i) {
-                    Class<?> targetType = call.method.getParameterTypes()[i];
-                    Annotation[] annotations = call.method.getParameterAnnotations()[i];
-                    String contextName = null;
-                    if (annotations != null) {
-                        for (Annotation a : annotations) {
-                            if (a.annotationType() == ContextObject.class) {
-                                ContextObject obj = (ContextObject) a;
-                                contextName = obj.value();
-                                break;
-                            }
-                        }
-                    }
-                    if (call.parameters[i] != null) {
-                        Object param = call.parameters[i];
-                        if (param instanceof String) {
-                            ca.ldc((String) param);
-                        } else if (param instanceof Boolean) {
-                            ca.ldc((boolean)param ? 1 : 0);
-                        }else {
-                            //TODO: rest of primities
-                            ca.ldc((int) param);
-                        }
-                    } else if (targetType == StartupContext.class) { //hack, as this is tied to StartupTask
-                        ca.aload(1);
-                    } else if (contextName != null) {
-                        ca.aload(1);
-                        ca.ldc(contextName);
-                        ca.invokevirtual(StartupContext.class.getName(), "getValue", "(Ljava/lang/String;)Ljava/lang/Object;");
-                        ca.checkcast(targetType);
-                    } else {
-                        ca.aconstNull();
-                    }
-                }
-                ca.invokevirtual(call.method);
-                if (call.method.getReturnType() != void.class) {
-                    ContextObject annotation = call.method.getAnnotation(ContextObject.class);
-                    if (annotation != null) {
-                        ca.aload(1);
-                        ca.swap();
-                        ca.ldc(annotation.value());
-                        ca.swap();
-                        ca.invokevirtual(StartupContext.class.getName(), "putValue", "(Ljava/lang/String;Ljava/lang/Object;)V");
-                    } else if (call.method.getReturnType() == long.class || call.method.getReturnType() == double.class) {
-                        ca.pop2();
-                    } else {
-                        ca.pop();
-                    }
-                }
-            }
-
-            ca.returnInstruction();
-
-
+        if (runtime) {
+            //runtime we don't do this stuff
+            return;
         }
+        ClassFile file = new ClassFile(className, AccessFlag.PUBLIC, Object.class.getName(), getClass().getClassLoader(), serviceType.getName());
+        ClassMethod method = file.addMethod(this.method);
+        CodeAttribute ca = method.getCodeAttribute();
+
+        //figure out where we can start using local variables
+        int localVarCounter = 1;
+        for (Class<?> t : this.method.getParameterTypes()) {
+            if (t == double.class || t == long.class) {
+                localVarCounter += 2;
+            } else {
+                localVarCounter++;
+            }
+        }
+
+        //now create instances of all the classes we invoke on and store them in variables as well
+        Map<Class, Integer> classInstanceVariables = new HashMap<>();
+        for (StoredMethodCall call : this.methodRecorder.storedMethodCalls) {
+            if (classInstanceVariables.containsKey(call.theClass)) {
+                continue;
+            }
+            ca.newInstruction(call.theClass);
+            ca.dup();
+            ca.invokespecial(call.theClass.getName(), "<init>", "()V");
+            ca.astore(localVarCounter);
+            classInstanceVariables.put(call.theClass, localVarCounter++);
+        }
+        //now we invoke the actual method call
+        for (StoredMethodCall call : methodRecorder.storedMethodCalls) {
+            ca.aload(classInstanceVariables.get(call.theClass));
+            ca.checkcast(call.theClass);
+            for (int i = 0; i < call.parameters.length; ++i) {
+                Class<?> targetType = call.method.getParameterTypes()[i];
+                Annotation[] annotations = call.method.getParameterAnnotations()[i];
+                String contextName = null;
+                if (annotations != null) {
+                    for (Annotation a : annotations) {
+                        if (a.annotationType() == ContextObject.class) {
+                            ContextObject obj = (ContextObject) a;
+                            contextName = obj.value();
+                            break;
+                        }
+                    }
+                }
+                if (call.parameters[i] != null) {
+                    Object param = call.parameters[i];
+                    if (param instanceof String) {
+                        ca.ldc((String) param);
+                    } else if (param instanceof Boolean) {
+                        ca.ldc((boolean) param ? 1 : 0);
+                    } else {
+                        //TODO: rest of primities
+                        ca.ldc((int) param);
+                    }
+                } else if (targetType == StartupContext.class) { //hack, as this is tied to StartupTask
+                    ca.aload(1);
+                } else if (contextName != null) {
+                    ca.aload(1);
+                    ca.ldc(contextName);
+                    ca.invokevirtual(StartupContext.class.getName(), "getValue", "(Ljava/lang/String;)Ljava/lang/Object;");
+                    ca.checkcast(targetType);
+                } else {
+                    ca.aconstNull();
+                }
+            }
+            ca.invokevirtual(call.method);
+            if (call.method.getReturnType() != void.class) {
+                ContextObject annotation = call.method.getAnnotation(ContextObject.class);
+                if (annotation != null) {
+                    ca.aload(1);
+                    ca.swap();
+                    ca.ldc(annotation.value());
+                    ca.swap();
+                    ca.invokevirtual(StartupContext.class.getName(), "putValue", "(Ljava/lang/String;Ljava/lang/Object;)V");
+                } else if (call.method.getReturnType() == long.class || call.method.getReturnType() == double.class) {
+                    ca.pop2();
+                } else {
+                    ca.pop();
+                }
+            }
+        }
+
+        ca.returnInstruction();
+
         ClassMethod ctor = file.addMethod(AccessFlag.PUBLIC, "<init>", "V");
-        CodeAttribute ca = ctor.getCodeAttribute();
+        ca = ctor.getCodeAttribute();
         ca.aload(0);
         ca.invokespecial(Object.class.getName(), "<init>", "()V");
         ca.returnInstruction();

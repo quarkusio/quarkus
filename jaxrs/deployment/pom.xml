@@ -20,7 +20,7 @@
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-jaxrs</artifactId>
-            <version>3.5.0.Final</version>
+            <version>3.5.2-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>

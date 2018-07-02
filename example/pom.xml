@@ -30,6 +30,7 @@
 
     <build>
         <plugins>
+            <!--
             <plugin>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>shamrock-maven-plugin</artifactId>
@@ -50,6 +51,7 @@
                     </dependency>
                 </dependencies>
             </plugin>
+            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -63,9 +65,27 @@
                         <configuration>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>org.jboss.shamrock.runner.Main</mainClass>
+                                    <mainClass>org.jboss.shamrock.core.RuntimeRunner</mainClass>
                                 </transformer>
                             </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.6.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <phase>integration-test</phase>
+                        <configuration>
+                            <!--<mainClass>org.jboss.shamrock.runner.Main</mainClass>-->
+                            <mainClass>org.jboss.shamrock.core.RuntimeRunner</mainClass>
                         </configuration>
                     </execution>
                 </executions>

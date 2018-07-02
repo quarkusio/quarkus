@@ -21,12 +21,23 @@
  */
 package org.jboss.shamrock.jaxrs;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.security.AccessController;
+import java.security.PrivilegedExceptionAction;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.core.Application;
+import javax.ws.rs.ext.Providers;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -59,9 +70,56 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
 
 
     public static final Set<String> BOOT_CLASSES = new HashSet<String>();
+    public static final Set<String> BUILTIN_PROVIDERS;
 
     static {
         Collections.addAll(BOOT_CLASSES, ResteasyBootstrapClasses.BOOTSTRAP_CLASSES);
+
+        final Set<String> providers = new HashSet<>();
+        try {
+            Enumeration<URL> en;
+            if (System.getSecurityManager() == null) {
+                en = Thread.currentThread().getContextClassLoader().getResources("META-INF/services/" + Providers.class.getName());
+            } else {
+                en = AccessController.doPrivileged(new PrivilegedExceptionAction<Enumeration<URL>>() {
+                    @Override
+                    public Enumeration<URL> run() throws IOException {
+                        return Thread.currentThread().getContextClassLoader().getResources("META-INF/services/" + Providers.class.getName());
+                    }
+                });
+            }
+
+            while (en.hasMoreElements()) {
+                final URL url = en.nextElement();
+                InputStream is;
+                if (System.getSecurityManager() == null) {
+                    is = url.openStream();
+                } else {
+                    is = AccessController.doPrivileged(new PrivilegedExceptionAction<InputStream>() {
+                        @Override
+                        public InputStream run() throws IOException {
+                            return url.openStream();
+                        }
+                    });
+                }
+
+                try {
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        line = line.trim();
+                        if (line.equals("")) continue;
+                        providers.add(line);
+                    }
+                } finally {
+                    is.close();
+                }
+            }
+            BUILTIN_PROVIDERS = Collections.unmodifiableSet(providers);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     @Override
@@ -89,13 +147,19 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
                         } else {
                             sb.append(",");
                         }
-                        sb.append(annotation.target().asClass().name());
+                        processorContext.addReflectiveClass(HttpServlet30Dispatcher.class.getName());
+                        String className = annotation.target().asClass().name().toString();
+                        sb.append(className);
+                        processorContext.addReflectiveClass(className);
                     }
                 }
 
                 undertow.addServletContextParameter(null, ResteasyContextParameters.RESTEASY_SCANNED_RESOURCES, sb.toString());
                 undertow.addServletContextParameter(null, "resteasy.servlet.mapping.prefix", path);
                 processorContext.addReflectiveClass(HttpServlet30Dispatcher.class.getName());
+                for(String i : BUILTIN_PROVIDERS) {
+                    processorContext.addReflectiveClass(i);
+                }
             }
 
         }

@@ -30,7 +30,6 @@
 
     <build>
         <plugins>
-            <!--
             <plugin>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>shamrock-maven-plugin</artifactId>
@@ -51,7 +50,6 @@
                     </dependency>
                 </dependencies>
             </plugin>
-            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -84,8 +82,8 @@
                         </goals>
                         <phase>integration-test</phase>
                         <configuration>
-                            <!--<mainClass>org.jboss.shamrock.runner.Main</mainClass>-->
-                            <mainClass>org.jboss.shamrock.core.RuntimeRunner</mainClass>
+                            <mainClass>org.jboss.shamrock.runner.Main</mainClass>
+                            <!--<mainClass>org.jboss.shamrock.core.RuntimeRunner</mainClass>-->
                         </configuration>
                     </execution>
                 </executions>

@@ -7,6 +7,7 @@
 
 OUT_REPORT="report.out"
 TIME_FORMAT="Seconds: %e \tMax memory (KB): %M"
+MVN_REPO_PATH=`mvn help:evaluate -Dexpression=settings.localRepository | grep -v '\[INFO\]'`
 
 
 shopt -s expand_aliases
@@ -92,10 +93,10 @@ P ""
 
 # [java.xml.bind -> fails as well!]
 
-jaotc -J-XX:+UseCompressedOops -J-XX:+UseG1GC -J-Xmx16g --compile-for-tiered --info --compile-commands java.base-list.txt --output libjava.hib-custom.so --module java.base --module java.logging --module java.naming --module java.sql --module java.security.jgss --module java.security.sasl --module java.instrument --module java.management /home/sanne/.m2/repository/org/jboss/spec/javax/transaction/jboss-transaction-api_1.2_spec/2.0.0.Alpha1/jboss-transaction-api_1.2_spec-2.0.0.Alpha1.jar /home/sanne/.m2/repository/javax/persistence/javax.persistence-api/2.2/javax.persistence-api-2.2.jar /home/sanne/.m2/repository/com/fasterxml/classmate/1.3.4/classmate-1.3.4.jar
+jaotc -J-XX:+UseCompressedOops -J-XX:+UseG1GC -J-Xmx16g -J-XX:+UseCompressedOops -J-XX:+UseG1GC --compile-for-tiered --info --compile-commands java.base-list.txt --output libjava.hib-custom.so --module java.base --module java.logging --module java.naming --module java.sql --module java.security.jgss --module java.security.sasl --module java.instrument --module java.management $MVN_REPO_PATH/org/jboss/spec/javax/transaction/jboss-transaction-api_1.2_spec/2.0.0.Alpha1/jboss-transaction-api_1.2_spec-2.0.0.Alpha1.jar $MVN_REPO_PATH/javax/persistence/javax.persistence-api/2.2/javax.persistence-api-2.2.jar $MVN_REPO_PATH/com/fasterxml/classmate/1.3.4/classmate-1.3.4.jar
 
 strip libjava.hib-custom.so
-# oops: 317M	libjava.hib-custom.so
+# Still 317M for libjava.hib-custom.so ! 476M before stripping.
 
 P "Running with Graal precompiled AOT libraries, No AppCDS:"
 timer java $RUNTIME_OPTS -Xshare:off -XX:AOTLibrary=./libjava.hib-custom.so --add-modules java.xml.bind -cp "$CLASSPATH":./target/classes com.example.Main

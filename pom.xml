@@ -10,6 +10,7 @@
     <properties>
         <version.org.postgresql.jdbc>42.2.2</version.org.postgresql.jdbc>
         <version.org.mariadb.jdbc>1.5.7</version.org.mariadb.jdbc>
+        <version.com.impossibl.pgng>0.6</version.com.impossibl.pgng>
         <version.junit>4.12</version.junit>
         <version.org.hibernate>5.3.2-SNAPSHOT</version.org.hibernate>
         <modules.dir>${project.build.directory}/modules</modules.dir>
@@ -57,6 +58,18 @@
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
             <version>${version.org.mariadb.jdbc}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.impossibl.pgjdbc-ng</groupId>
+            <artifactId>pgjdbc-ng</artifactId>
+            <version>${version.com.impossibl.pgng}</version>
+            <classifier>complete</classifier>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-all</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 

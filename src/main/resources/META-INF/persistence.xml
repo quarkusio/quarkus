@@ -13,8 +13,8 @@
             <property name="hibernate.archive.autodetection" value="class, hbm"/>
 
             <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQL95Dialect"/>
-            <property name="hibernate.connection.driver_class" value="org.postgresql.Driver"/>
-            <property name="hibernate.connection.url" value="jdbc:postgresql:hibernate_orm_test"/>
+            <!--<property name="hibernate.connection.driver_class" value="org.postgresql.Driver"/>-->
+            <property name="hibernate.connection.url" value="jdbc:pgsql://localhost:5432/hibernate_orm_test"/>
             <property name="hibernate.connection.username" value="hibernate_orm_test"/>
             <property name="hibernate.connection.password" value="hibernate_orm_test"/>
 

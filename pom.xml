@@ -9,6 +9,7 @@
 
     <properties>
         <version.org.postgresql.jdbc>42.2.2</version.org.postgresql.jdbc>
+        <version.org.mariadb.jdbc>1.5.7</version.org.mariadb.jdbc>
         <version.junit>4.12</version.junit>
         <version.org.hibernate>5.3.2-SNAPSHOT</version.org.hibernate>
         <modules.dir>${project.build.directory}/modules</modules.dir>
@@ -51,6 +52,11 @@
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <version>${version.org.postgresql.jdbc}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mariadb.jdbc</groupId>
+            <artifactId>mariadb-java-client</artifactId>
+            <version>${version.org.mariadb.jdbc}</version>
         </dependency>
     </dependencies>
 

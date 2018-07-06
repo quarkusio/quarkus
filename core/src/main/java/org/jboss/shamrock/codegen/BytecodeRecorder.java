@@ -54,9 +54,6 @@ public class BytecodeRecorder implements AutoCloseable {
         return serviceType;
     }
 
-    public MethodRecorder getMethodRecorder() {
-        return methodRecorder;
-    }
 
     public void executeRuntime(StartupContext startupContext) {
         for (StoredMethodCall m : methodRecorder.storedMethodCalls) {
@@ -76,7 +73,7 @@ public class BytecodeRecorder implements AutoCloseable {
                 Object instance = m.method.getDeclaringClass().newInstance();
                 Object result = m.method.invoke(instance, params);
                 ContextObject co = m.method.getAnnotation(ContextObject.class);
-                if(co != null) {
+                if (co != null) {
                     startupContext.putValue(co.value(), result);
                 }
             } catch (Exception e) {
@@ -94,7 +91,12 @@ public class BytecodeRecorder implements AutoCloseable {
         return null;
     }
 
-    public class MethodRecorder {
+
+    public <T> T getRecordingProxy(Class<T> theClass) {
+        return methodRecorder.getRecordingProxy(theClass);
+    }
+
+    private class MethodRecorder {
 
         private final Map<Class<?>, Object> existingProxyClasses = new HashMap<>();
         private final List<StoredMethodCall> storedMethodCalls = new ArrayList<>();

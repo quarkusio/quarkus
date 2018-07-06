@@ -23,10 +23,12 @@ import org.jboss.classfilewriter.code.CodeAttribute;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
 import org.jboss.shamrock.codegen.BytecodeRecorder;
-import org.jboss.shamrock.startup.DeploymentTask;
+import org.jboss.shamrock.startup.StartupTast;
 import org.jboss.shamrock.startup.StartupContext;
 
-
+/**
+ * Class that does the build time processing
+ */
 public class Runner {
 
     private static final AtomicInteger COUNT = new AtomicInteger();
@@ -40,7 +42,7 @@ public class Runner {
         while (loader.hasNext()) {
             processors.add(loader.next());
         }
-        Collections.sort(processors, Comparator.comparingInt(ResourceProcessor::getPriority));
+        processors.sort(Comparator.comparingInt(ResourceProcessor::getPriority));
         this.processors = Collections.unmodifiableList(processors);
         this.output = classOutput;
     }
@@ -108,26 +110,6 @@ public class Runner {
         public Path getArchiveRoot() {
             return root;
         }
-
-        @Override
-        public <T> T getAttachment(AttachmentKey<T> key) {
-            return null;
-        }
-
-        @Override
-        public <T> void setAttachment(AttachmentKey<T> key, T value) {
-
-        }
-
-        @Override
-        public <T> void addToList(ListAttachmentKey<T> key, T value) {
-
-        }
-
-        @Override
-        public <T> List<T> getList(ListAttachmentKey<T> key) {
-            return null;
-        }
     }
 
 
@@ -141,7 +123,7 @@ public class Runner {
         public BytecodeRecorder addDeploymentTask(int priority) {
             String className = getClass().getName() + "$$Proxy" + COUNT.incrementAndGet();
             tasks.add(new DeploymentTaskHolder(className, priority));
-            return new BytecodeRecorder(className, DeploymentTask.class, output, false);
+            return new BytecodeRecorder(className, StartupTast.class, output, false);
         }
 
         @Override
@@ -163,7 +145,7 @@ public class Runner {
                 ca.dup();
                 ca.invokespecial(holder.className, "<init>", "()V");
                 ca.swap();
-                ca.invokeinterface(DeploymentTask.class.getName(), "deploy", "(Lorg/jboss/shamrock/startup/StartupContext;)V");
+                ca.invokeinterface(StartupTast.class.getName(), "deploy", "(Lorg/jboss/shamrock/startup/StartupContext;)V");
             }
             ca.returnInstruction();
             output.writeClass(file.getName(), file.toBytecode());
@@ -172,7 +154,7 @@ public class Runner {
         void writeAutoFeature() throws IOException {
 
             ClassFile file = new ClassFile("org.jboss.shamrock.runner.AutoFeature", "java.lang.Object", "org.graalvm.nativeimage.Feature");
-            ClassMethod mainMethod = file.addMethod(AccessFlag.PUBLIC , "beforeAnalysis", "V", "Lorg/graalvm/nativeimage/Feature$BeforeAnalysisAccess;");
+            ClassMethod mainMethod = file.addMethod(AccessFlag.PUBLIC, "beforeAnalysis", "V", "Lorg/graalvm/nativeimage/Feature$BeforeAnalysisAccess;");
             file.getRuntimeVisibleAnnotationsAttribute().addAnnotation(new ClassAnnotation(file.getConstPool(), "com.oracle.svm.core.annotate.AutomaticFeature", Collections.emptyList()));
 
             CodeAttribute ca = mainMethod.getCodeAttribute();

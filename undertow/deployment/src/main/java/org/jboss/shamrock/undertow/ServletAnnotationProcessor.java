@@ -1,8 +1,6 @@
 package org.jboss.shamrock.undertow;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import javax.servlet.annotation.WebServlet;
 
@@ -24,25 +22,20 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
     private static final DotName WEB_SERVLET = DotName.createSimple(WebServlet.class.getName());
 
     @Override
-    public Set<DotName> getProcessedAnnotations() {
-        return Collections.singleton(WEB_SERVLET);
-    }
-
-    @Override
-    public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception{
+    public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
 
         processorContext.addReflectiveClass(DefaultServlet.class.getName());
         processorContext.addReflectiveClass("io.undertow.server.protocol.http.HttpRequestParser$$generated");
 
         try (BytecodeRecorder context = processorContext.addDeploymentTask(RuntimePriority.UNDERTOW_CREATE_DEPLOYMENT)) {
-            UndertowDeploymentTemplate template = context.getMethodRecorder().getRecordingProxy(UndertowDeploymentTemplate.class);
+            UndertowDeploymentTemplate template = context.getRecordingProxy(UndertowDeploymentTemplate.class);
             template.createDeployment("test");
         }
         final Index index = archiveContext.getIndex();
         List<AnnotationInstance> annotations = index.getAnnotations(WEB_SERVLET);
         if (annotations != null) {
             try (BytecodeRecorder context = processorContext.addDeploymentTask(RuntimePriority.UNDERTOW_REGISTER_SERVLET)) {
-                UndertowDeploymentTemplate template = context.getMethodRecorder().getRecordingProxy(UndertowDeploymentTemplate.class);
+                UndertowDeploymentTemplate template = context.getRecordingProxy(UndertowDeploymentTemplate.class);
                 for (AnnotationInstance annotation : annotations) {
                     String name = annotation.value("name").asString();
                     AnnotationValue asyncSupported = annotation.value("asyncSupported");
@@ -50,7 +43,7 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
                     template.registerServlet(null, name, servletClass, asyncSupported != null && asyncSupported.asBoolean());
                     processorContext.addReflectiveClass(servletClass);
                     String[] mappings = annotation.value("urlPatterns").asStringArray();
-                    for(String m : mappings) {
+                    for (String m : mappings) {
                         template.addServletMapping(null, name, m);
                     }
                 }
@@ -58,7 +51,7 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
         }
 
         try (BytecodeRecorder context = processorContext.addDeploymentTask(RuntimePriority.UNDERTOW_START)) {
-            UndertowDeploymentTemplate template = context.getMethodRecorder().getRecordingProxy(UndertowDeploymentTemplate.class);
+            UndertowDeploymentTemplate template = context.getRecordingProxy(UndertowDeploymentTemplate.class);
             template.deploy(null, null);
         }
     }

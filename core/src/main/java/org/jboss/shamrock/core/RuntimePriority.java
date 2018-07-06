@@ -1,6 +1,8 @@
 package org.jboss.shamrock.core;
 
 /**
+ * Static list of priorities
+ *
  * TODO: delete this class, we don't want to replicate the Phase.java mess that is in WF
  */
 public class RuntimePriority {

@@ -11,12 +11,4 @@ public interface ArchiveContext {
 
     Path getArchiveRoot();
 
-    <T> T getAttachment(AttachmentKey<T> key);
-
-    <T> void setAttachment(AttachmentKey<T> key, T value);
-
-    <T> void addToList(ListAttachmentKey<T> key, T value);
-
-    <T> List<T> getList(ListAttachmentKey<T> key);
-
 }

@@ -35,8 +35,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.core.Application;
 import javax.ws.rs.ext.Providers;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -63,11 +61,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
     private static final String JAX_RS_SERVLET_NAME = "javax.ws.rs.core.Application";
 
     private static final DotName APPLICATION_PATH = DotName.createSimple("javax.ws.rs.ApplicationPath");
-    private static final DotName DECORATOR = DotName.createSimple("javax.decorator.Decorator");
-
-    public static final DotName APPLICATION = DotName.createSimple(Application.class.getName());
-    private static final String ORG_APACHE_CXF = "org.apache.cxf";
-
+    private static final DotName PATH = DotName.createSimple("javax.ws.rs.Path");
 
     public static final Set<String> BOOT_CLASSES = new HashSet<String>();
     public static final Set<String> BUILTIN_PROVIDERS;
@@ -133,10 +127,10 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
         AnnotationInstance appPath = app.get(0);
         String path = appPath.value().asString();
         try (BytecodeRecorder recorder = processorContext.addDeploymentTask(RuntimePriority.JAXRS_DEPLOYMENT)) {
-            UndertowDeploymentTemplate undertow = recorder.getMethodRecorder().getRecordingProxy(UndertowDeploymentTemplate.class);
+            UndertowDeploymentTemplate undertow = recorder.getRecordingProxy(UndertowDeploymentTemplate.class);
             undertow.registerServlet(null, JAX_RS_SERVLET_NAME, HttpServlet30Dispatcher.class.getName(), true);
             undertow.addServletMapping(null, JAX_RS_SERVLET_NAME, path + "/*");
-            List<AnnotationInstance> paths = index.getAnnotations(JaxrsAnnotations.PATH.getDotName());
+            List<AnnotationInstance> paths = index.getAnnotations(PATH);
             if (paths != null) {
                 StringBuilder sb = new StringBuilder();
                 boolean first = true;
@@ -157,7 +151,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
                 undertow.addServletContextParameter(null, ResteasyContextParameters.RESTEASY_SCANNED_RESOURCES, sb.toString());
                 undertow.addServletContextParameter(null, "resteasy.servlet.mapping.prefix", path);
                 processorContext.addReflectiveClass(HttpServlet30Dispatcher.class.getName());
-                for(String i : BUILTIN_PROVIDERS) {
+                for (String i : BUILTIN_PROVIDERS) {
                     processorContext.addReflectiveClass(i);
                 }
             }

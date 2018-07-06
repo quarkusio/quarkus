@@ -19,27 +19,24 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ServiceLoader;
 
-import org.jboss.classfilewriter.AccessFlag;
-import org.jboss.classfilewriter.ClassFile;
-import org.jboss.classfilewriter.ClassMethod;
-import org.jboss.classfilewriter.annotations.ClassAnnotation;
-import org.jboss.classfilewriter.code.CodeAttribute;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
 import org.jboss.shamrock.codegen.BytecodeRecorder;
-import org.jboss.shamrock.startup.DeploymentTask;
+import org.jboss.shamrock.startup.StartupTast;
 import org.jboss.shamrock.startup.StartupContext;
 
-
+/**
+ * An entry point that can both process the metadata and then run the resulting output, without generating any bytecode
+ */
 public class RuntimeRunner {
 
     private final List<ResourceProcessor> processors;
     private final List<RuntimeTaskHolder> runtimeTasks = new ArrayList<>();
 
-    public static void main(String ... args) throws Exception {
+    public static void main(String... args) throws Exception {
         URL uri = RuntimeRunner.class.getResource("RuntimeRunner.class");
         String val = uri.toExternalForm();
-        if(val.contains("!")) {
+        if (val.contains("!")) {
             val = val.substring(0, val.lastIndexOf('!'));
         }
         FileSystem fs = FileSystems.newFileSystem(new URI(val), new HashMap<>());
@@ -98,7 +95,7 @@ public class RuntimeRunner {
         }
         Collections.sort(runtimeTasks);
         StartupContext sc = new StartupContext();
-        for(RuntimeTaskHolder task : runtimeTasks) {
+        for (RuntimeTaskHolder task : runtimeTasks) {
             task.recorder.executeRuntime(sc);
         }
     }
@@ -123,26 +120,6 @@ public class RuntimeRunner {
         public Path getArchiveRoot() {
             return root;
         }
-
-        @Override
-        public <T> T getAttachment(AttachmentKey<T> key) {
-            return null;
-        }
-
-        @Override
-        public <T> void setAttachment(AttachmentKey<T> key, T value) {
-
-        }
-
-        @Override
-        public <T> void addToList(ListAttachmentKey<T> key, T value) {
-
-        }
-
-        @Override
-        public <T> List<T> getList(ListAttachmentKey<T> key) {
-            return null;
-        }
     }
 
 
@@ -151,7 +128,7 @@ public class RuntimeRunner {
 
         @Override
         public BytecodeRecorder addDeploymentTask(int priority) {
-            BytecodeRecorder recorder = new BytecodeRecorder(null, DeploymentTask.class, null, true);
+            BytecodeRecorder recorder = new BytecodeRecorder(null, StartupTast.class, null, true);
             runtimeTasks.add(new RuntimeTaskHolder(recorder, priority));
             return recorder;
         }

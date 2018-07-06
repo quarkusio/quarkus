@@ -1,26 +1,24 @@
 package org.jboss.shamrock.core;
 
-import java.util.Collections;
-import java.util.Set;
-
-import org.jboss.jandex.DotName;
-
+/**
+ * A build time processor that processes a deployments metadata and uses it to generate wiring bytecode
+ */
 public interface ResourceProcessor {
 
+    /**
+     * Processes the current deployment
+     *
+     * @param archiveContext The archive context
+     * @param processorContext The processor context
+     * @throws Exception If a problem occurs
+     */
     void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception;
 
-    default Set<DotName> getProcessedAnnotations() {
-        return Collections.emptySet();
-    }
-
-    default Set<String> getProcessedResources() {
-        return Collections.emptySet();
-    }
-
-    default boolean shouldRunIfNoResources() {
-        return false;
-    }
-
-    //TODO: remove this
+    /**
+     *
+     * TODO: do we want this? We have had many discussions about better ways to do this in EAP F2F's
+     *
+     * @return The priority that is used to determine the order
+     */
     int getPriority();
 }

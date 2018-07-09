@@ -80,17 +80,10 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.7.0</version>
                     <configuration>
-                        <release>10</release>
-                        <source>10</source>
-                        <target>10</target>
+                        <!-- Use 8 to be GraalVM compatible -->
+                        <source>8</source>
+                        <target>8</target>
                     </configuration>
-                    <dependencies>
-                        <dependency>
-                            <groupId>org.ow2.asm</groupId>
-                            <artifactId>asm</artifactId>
-                            <version>6.1.1</version> <!-- Use newer version of ASM -->
-                        </dependency>
-                    </dependencies>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

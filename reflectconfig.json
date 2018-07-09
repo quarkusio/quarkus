@@ -1,0 +1,6 @@
+[
+   {
+      "name" : "org.hibernate.jpa.HibernatePersistenceProvider",
+      "allPublicConstructors" : true
+   }
+]

@@ -11,7 +11,13 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 
+import org.hibernate.protean.Hibernate;
+
 public class Main {
+
+	static {
+		Hibernate.featureInit();
+	}
 
 	public static void main(String[] args) {
 		EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory( "templatePU" );

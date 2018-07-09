@@ -93,7 +93,10 @@ P ""
 
 # [java.xml.bind -> fails as well!]
 
-jaotc -J-XX:+UseCompressedOops -J-XX:+UseG1GC -J-Xmx16g -J-XX:+UseCompressedOops -J-XX:+UseG1GC --compile-for-tiered --info --compile-commands java.base-list.txt --output libjava.hib-custom.so --module java.base --module java.logging --module java.naming --module java.sql --module java.security.jgss --module java.security.sasl --module java.instrument --module java.management $MVN_REPO_PATH/org/jboss/spec/javax/transaction/jboss-transaction-api_1.2_spec/2.0.0.Alpha1/jboss-transaction-api_1.2_spec-2.0.0.Alpha1.jar $MVN_REPO_PATH/javax/persistence/javax.persistence-api/2.2/javax.persistence-api-2.2.jar $MVN_REPO_PATH/com/fasterxml/classmate/1.3.4/classmate-1.3.4.jar
+jaotc --ignore-errors -J-XX:+UseCompressedOops -J-XX:+UseG1GC -J-Xmx16g -J-XX:+UseCompressedOops -J-XX:+UseG1GC --compile-for-tiered --info --compile-commands java.base-list.txt --output libjava.hib-custom.so --module java.base --module java.logging --module java.naming --module java.sql --module java.security.jgss --module java.security.sasl --module java.instrument --module java.management $CLASSPATH
+
+
+# $MVN_REPO_PATH/org/jboss/spec/javax/transaction/jboss-transaction-api_1.2_spec/2.0.0.Alpha1/jboss-transaction-api_1.2_spec-2.0.0.Alpha1.jar $MVN_REPO_PATH/javax/persistence/javax.persistence-api/2.2/javax.persistence-api-2.2.jar $MVN_REPO_PATH/com/fasterxml/classmate/1.3.4/classmate-1.3.4.jar $MVN_REPO_PATH/dom4j/dom4j/1.6.1.redhat-7/dom4j-1.6.1.redhat-7.jar $MVN_REPO_PATH/org/postgresql/postgresql/42.2.2/postgresql-42.2.2.jar $MVN_REPO_PATH
 
 strip libjava.hib-custom.so
 # Still 317M for libjava.hib-custom.so ! 476M before stripping.

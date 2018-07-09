@@ -131,6 +131,11 @@ public class Runner {
             reflectiveClasses.add(className);
         }
 
+        @Override
+        public void addGeneratedClass(String name, byte[] classData) throws IOException {
+            output.writeClass(name, classData);
+        }
+
         void writeMainClass() throws IOException {
             ClassFile file = new ClassFile("org.jboss.shamrock.runner.Main", "java.lang.Object");
             ClassMethod mainMethod = file.addMethod(AccessFlag.PUBLIC | AccessFlag.STATIC, "main", "V", "[Ljava/lang/String;");

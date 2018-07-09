@@ -1,5 +1,7 @@
 package org.jboss.shamrock.core;
 
+import java.io.IOException;
+
 import org.jboss.shamrock.codegen.BytecodeRecorder;
 
 /**
@@ -24,5 +26,7 @@ public interface ProcessorContext {
      * @param className The class name
      */
     void addReflectiveClass(String className);
+
+    void addGeneratedClass(String name, byte[] classData) throws IOException;
 
 }

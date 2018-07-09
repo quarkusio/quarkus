@@ -40,8 +40,10 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
                     String name = annotation.value("name").asString();
                     AnnotationValue asyncSupported = annotation.value("asyncSupported");
                     String servletClass = annotation.target().asClass().toString();
-                    template.registerServlet(null, name, servletClass, asyncSupported != null && asyncSupported.asBoolean());
-                    processorContext.addReflectiveClass(servletClass);
+
+                    context.newInstanceFactory(servletClass, "injector");
+                    template.createInstanceFactory(null);
+                    template.registerServlet(null, name, servletClass, asyncSupported != null && asyncSupported.asBoolean(), null);
                     String[] mappings = annotation.value("urlPatterns").asStringArray();
                     for (String m : mappings) {
                         template.addServletMapping(null, name, m);

@@ -137,6 +137,11 @@ public class RuntimeRunner {
         public void addReflectiveClass(String className) {
         }
 
+        @Override
+        public void addGeneratedClass(String name, byte[] classData) throws IOException {
+            //TODO
+        }
+
 
     }
 

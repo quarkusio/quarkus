@@ -16,8 +16,16 @@ import org.jboss.classfilewriter.ClassMethod;
 import org.jboss.classfilewriter.code.CodeAttribute;
 import org.jboss.invocation.proxy.ProxyConfiguration;
 import org.jboss.invocation.proxy.ProxyFactory;
+import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.shamrock.core.ClassOutput;
 import org.jboss.shamrock.injection.Injection;
+import org.jboss.shamrock.injection.InjectionInstance;
+import org.jboss.shamrock.reflection.ConstructorHandle;
+import org.jboss.shamrock.reflection.FieldHandle;
+import org.jboss.shamrock.reflection.MethodHandle;
+import org.jboss.shamrock.reflection.ReflectionContext;
+import org.jboss.shamrock.reflection.RuntimeReflection;
 import org.jboss.shamrock.startup.StartupContext;
 
 public class BytecodeRecorder implements AutoCloseable {
@@ -57,7 +65,7 @@ public class BytecodeRecorder implements AutoCloseable {
 
 
     public void executeRuntime(StartupContext startupContext) {
-        for (InstructionSet instructionSet : methodRecorder.storedMethodCalls) {
+        for (BytecodeInstruction instructionSet : methodRecorder.storedMethodCalls) {
             if(instructionSet instanceof StoredMethodCall) {
                 StoredMethodCall m = (StoredMethodCall) instructionSet;
                 Object[] params = new Object[m.method.getParameterTypes().length];
@@ -99,10 +107,11 @@ public class BytecodeRecorder implements AutoCloseable {
         return null;
     }
 
-    public void newInstanceFactory(String className, String contextName) {
+    public InjectionInstance<?> newInstanceFactory(String className) {
         String injectionFactory = Injection.getInstanceFactoryName(className, classOutput);
-        methodRecorder.storedMethodCalls.add(new NewInstance(injectionFactory, contextName));
-
+        NewInstance instance = new NewInstance(injectionFactory);
+        methodRecorder.storedMethodCalls.add(instance);
+        return instance;
     }
 
     public <T> T getRecordingProxy(Class<T> theClass) {
@@ -112,7 +121,7 @@ public class BytecodeRecorder implements AutoCloseable {
     private class MethodRecorder {
 
         private final Map<Class<?>, Object> existingProxyClasses = new HashMap<>();
-        private final List<InstructionSet> storedMethodCalls = new ArrayList<>();
+        private final List<BytecodeInstruction> storedMethodCalls = new ArrayList<>();
 
         public <T> T getRecordingProxy(Class<T> theClass) {
             if (existingProxyClasses.containsKey(theClass)) {
@@ -148,6 +157,9 @@ public class BytecodeRecorder implements AutoCloseable {
         for (int i = 0; i < method.getParameterCount(); ++i) {
             Class<?> type = method.getParameterTypes()[i];
             if (type.isPrimitive() || type.equals(String.class) || type.equals(Class.class) || type.equals(StartupContext.class)) {
+                continue;
+            }
+            if(type.isAssignableFrom(NewInstance.class)) {
                 continue;
             }
             Annotation[] annotations = method.getParameterAnnotations()[i];
@@ -188,7 +200,7 @@ public class BytecodeRecorder implements AutoCloseable {
 
         //now create instances of all the classes we invoke on and store them in variables as well
         Map<Class, Integer> classInstanceVariables = new HashMap<>();
-        for (InstructionSet set : this.methodRecorder.storedMethodCalls) {
+        for (BytecodeInstruction set : this.methodRecorder.storedMethodCalls) {
             if(set instanceof StoredMethodCall) {
                 StoredMethodCall call = (StoredMethodCall) set;
                 if (classInstanceVariables.containsKey(call.theClass)) {
@@ -199,10 +211,12 @@ public class BytecodeRecorder implements AutoCloseable {
                 ca.invokespecial(call.theClass.getName(), "<init>", "()V");
                 ca.astore(localVarCounter);
                 classInstanceVariables.put(call.theClass, localVarCounter++);
+            } else if(set instanceof NewInstance) {
+                ((NewInstance) set).varPos = localVarCounter++;
             }
         }
         //now we invoke the actual method call
-        for (InstructionSet set : methodRecorder.storedMethodCalls) {
+        for (BytecodeInstruction set : methodRecorder.storedMethodCalls) {
             if(set instanceof StoredMethodCall) {
                 StoredMethodCall call = (StoredMethodCall) set;
                 ca.aload(classInstanceVariables.get(call.theClass));
@@ -226,6 +240,8 @@ public class BytecodeRecorder implements AutoCloseable {
                             ca.ldc((String) param);
                         } else if (param instanceof Boolean) {
                             ca.ldc((boolean) param ? 1 : 0);
+                        } else if(param instanceof NewInstance) {
+                            ca.aload(((NewInstance) param).varPos);
                         } else {
                             //TODO: rest of primities
                             ca.ldc((int) param);
@@ -261,11 +277,7 @@ public class BytecodeRecorder implements AutoCloseable {
                 ca.newInstruction(ni.className);
                 ca.dup();
                 ca.invokespecial(ni.className, "<init>", "()V");
-                ca.aload(1);
-                ca.swap();
-                ca.ldc(ni.contextName);
-                ca.swap();
-                ca.invokevirtual(StartupContext.class.getName(), "putValue", "(Ljava/lang/String;Ljava/lang/Object;)V");
+                ca.astore(ni.varPos);
             } else {
                 throw new RuntimeException("unkown type " + set);
             }
@@ -281,11 +293,11 @@ public class BytecodeRecorder implements AutoCloseable {
         classOutput.writeClass(file.getName(), file.toBytecode());
     }
 
-    interface InstructionSet {
+    interface BytecodeInstruction {
 
     }
 
-    static final class StoredMethodCall implements InstructionSet {
+    static final class StoredMethodCall implements BytecodeInstruction {
         final Class<?> theClass;
         final Method method;
         final Object[] parameters;
@@ -297,13 +309,17 @@ public class BytecodeRecorder implements AutoCloseable {
         }
     }
 
-    static final class NewInstance implements InstructionSet {
+    static final class NewInstance implements BytecodeInstruction, InjectionInstance {
         final String className;
-        final String contextName;
+        int varPos = -1;
 
-        NewInstance(String className, String contextName) {
+        NewInstance(String className) {
             this.className = className;
-            this.contextName = contextName;
+        }
+
+        @Override
+        public Object newInstance() {
+            throw new RuntimeException();
         }
     }
 

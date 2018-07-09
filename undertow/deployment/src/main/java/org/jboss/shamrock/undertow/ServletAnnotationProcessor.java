@@ -13,6 +13,7 @@ import org.jboss.shamrock.core.ArchiveContext;
 import org.jboss.shamrock.core.ProcessorContext;
 import org.jboss.shamrock.core.ResourceProcessor;
 import org.jboss.shamrock.core.RuntimePriority;
+import org.jboss.shamrock.injection.InjectionInstance;
 import org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate;
 
 import io.undertow.servlet.handlers.DefaultServlet;
@@ -41,8 +42,8 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
                     AnnotationValue asyncSupported = annotation.value("asyncSupported");
                     String servletClass = annotation.target().asClass().toString();
 
-                    context.newInstanceFactory(servletClass, "injector");
-                    template.createInstanceFactory(null);
+                    InjectionInstance<?> injection = context.newInstanceFactory(servletClass);
+                    template.createInstanceFactory(injection);
                     template.registerServlet(null, name, servletClass, asyncSupported != null && asyncSupported.asBoolean(), null);
                     String[] mappings = annotation.value("urlPatterns").asStringArray();
                     for (String m : mappings) {

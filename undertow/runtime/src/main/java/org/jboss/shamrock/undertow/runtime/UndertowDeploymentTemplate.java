@@ -33,8 +33,8 @@ public class UndertowDeploymentTemplate {
     }
 
     @ContextObject("instanceFactory")
-    public <T> InstanceFactory<T> createInstanceFactory(@ContextObject("injector") InjectionInstance<T> injectionInstance) throws ClassNotFoundException {
-        return new ShamrockInstanceFactory<>(injectionInstance);
+    public <T> InstanceFactory<T> createInstanceFactory(InjectionInstance<T> injectionInstance) throws ClassNotFoundException {
+        return new ShamrockInstanceFactory<T>(injectionInstance);
     }
 
     public void registerServlet(@ContextObject("deploymentInfo") DeploymentInfo info, String name, String servletClass, boolean asyncSupported, @ContextObject("instanceFactory") InstanceFactory<? extends Servlet> instanceFactory) throws Exception {

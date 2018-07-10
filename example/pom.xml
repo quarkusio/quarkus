@@ -94,8 +94,10 @@
                         <goals>
                             <goal>java</goal>
                         </goals>
+
                         <phase>integration-test</phase>
                         <configuration>
+                            <skip>true</skip>
                             <mainClass>org.jboss.shamrock.runner.Main</mainClass>
                             <!--<mainClass>org.jboss.shamrock.core.RuntimeRunner</mainClass>-->
                         </configuration>

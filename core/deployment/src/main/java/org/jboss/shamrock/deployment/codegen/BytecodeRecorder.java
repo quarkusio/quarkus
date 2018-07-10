@@ -35,6 +35,7 @@ public class BytecodeRecorder implements AutoCloseable {
     private final Method method;
 
     private final Map<Class, ProxyFactory<?>> returnValueProxy = new HashMap<>();
+    private final IdentityHashMap<Class<?>, String> classProxies = new IdentityHashMap<>();
 
     public BytecodeRecorder(String className, Class<?> serviceType, ClassOutput classOutput) {
         this.className = className;
@@ -73,6 +74,16 @@ public class BytecodeRecorder implements AutoCloseable {
 
     public <T> T getRecordingProxy(Class<T> theClass) {
         return methodRecorder.getRecordingProxy(theClass);
+    }
+
+    public Class<?> classProxy(String name) {
+        ProxyFactory<Object> factory = new ProxyFactory<>(new ProxyConfiguration<Object>()
+                .setSuperClass(Object.class)
+                .setClassLoader(getClass().getClassLoader())
+                .setProxyName(getClass().getName() + "$$ClassProxy" + COUNT.incrementAndGet()));
+        Class theClass =  factory.defineClass();
+        classProxies.put(theClass, name);
+        return theClass;
     }
 
     private class MethodRecorder {
@@ -153,6 +164,9 @@ public class BytecodeRecorder implements AutoCloseable {
                 continue;
             }
             if (params[i] instanceof ReturnedProxy) {
+                continue;
+            }
+            if(classProxies.containsKey(params[i])) {
                 continue;
             }
             Annotation[] annotations = method.getParameterAnnotations()[i];
@@ -238,6 +252,9 @@ public class BytecodeRecorder implements AutoCloseable {
                                 throw new RuntimeException("invalid proxy passed into recorded method " + call.method);
                             }
                             ca.aload(pos);
+                        } else if (param instanceof Class<?>) {
+                            String name = classProxies.get(param);
+                            ca.loadClass(name);
                         } else {
                             //TODO: rest of primitives
                             ca.ldc((int) param);

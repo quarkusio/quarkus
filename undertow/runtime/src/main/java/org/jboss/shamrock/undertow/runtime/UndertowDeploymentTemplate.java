@@ -42,8 +42,8 @@ public class UndertowDeploymentTemplate {
         return new ShamrockInstanceFactory<T>(injectionInstance);
     }
 
-    public void registerServlet(@ContextObject("deploymentInfo") DeploymentInfo info, String name, String servletClass, boolean asyncSupported, InstanceFactory<? extends Servlet> instanceFactory) throws Exception {
-        ServletInfo servletInfo = new ServletInfo(name, (Class<? extends Servlet>) Class.forName(servletClass), instanceFactory);
+    public void registerServlet(@ContextObject("deploymentInfo") DeploymentInfo info, String name, Class<?> servletClass, boolean asyncSupported, InstanceFactory<? extends Servlet> instanceFactory) throws Exception {
+        ServletInfo servletInfo = new ServletInfo(name, (Class<? extends Servlet>)servletClass, instanceFactory);
         info.addServlet(servletInfo);
         servletInfo.setAsyncSupported(asyncSupported);
     }

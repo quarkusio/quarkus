@@ -1,5 +1,19 @@
 package org.jboss.shamrock.deployment;
 
+import static org.objectweb.asm.Opcodes.AASTORE;
+import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
+import static org.objectweb.asm.Opcodes.ACC_STATIC;
+import static org.objectweb.asm.Opcodes.ALOAD;
+import static org.objectweb.asm.Opcodes.ANEWARRAY;
+import static org.objectweb.asm.Opcodes.DUP;
+import static org.objectweb.asm.Opcodes.INVOKEINTERFACE;
+import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
+import static org.objectweb.asm.Opcodes.INVOKESTATIC;
+import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
+import static org.objectweb.asm.Opcodes.NEW;
+import static org.objectweb.asm.Opcodes.RETURN;
+import static org.objectweb.asm.Opcodes.SWAP;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.FileVisitResult;
@@ -25,6 +39,11 @@ import org.jboss.jandex.Indexer;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
 import org.jboss.shamrock.runtime.StartupContext;
 import org.jboss.shamrock.runtime.StartupTask;
+import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 
 /**
  * Class that does the build time processing
@@ -32,6 +51,8 @@ import org.jboss.shamrock.runtime.StartupTask;
 public class Runner {
 
     private static final AtomicInteger COUNT = new AtomicInteger();
+    private static final String MAIN_CLASS = "org/jboss/shamrock/runner/Main";
+    private static final String GRAAL_AUTOFEATURE = "org/jboss/shamrock/runner/AutoFeature";
 
     private final List<ResourceProcessor> processors;
     private final ClassOutput output;
@@ -123,7 +144,7 @@ public class Runner {
         public BytecodeRecorder addDeploymentTask(int priority) {
             String className = getClass().getName() + "$$Proxy" + COUNT.incrementAndGet();
             tasks.add(new DeploymentTaskHolder(className, priority));
-            return new BytecodeRecorder(className, StartupTask.class, output, false);
+            return new BytecodeRecorder(className, StartupTask.class, output);
         }
 
         @Override
@@ -137,60 +158,87 @@ public class Runner {
         }
 
         void writeMainClass() throws IOException {
-            ClassFile file = new ClassFile("org.jboss.shamrock.runner.Main", "java.lang.Object");
-            ClassMethod mainMethod = file.addMethod(AccessFlag.PUBLIC | AccessFlag.STATIC, "main", "V", "[Ljava/lang/String;");
-            CodeAttribute ca = mainMethod.getCodeAttribute();
-            ca.newInstruction(StartupContext.class);
-            ca.dup();
-            ca.invokespecial(StartupContext.class.getName(), "<init>", "()V");
+
             Collections.sort(tasks);
+
+            ClassWriter file = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+            file.visit(Opcodes.V1_8, ACC_PUBLIC, MAIN_CLASS, null, Type.getInternalName(Object.class), null);
+
+            // constructor
+            MethodVisitor mv = file.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
+            mv.visitVarInsn(ALOAD, 0); // push `this` to the operand stack
+            mv.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(Object.class), "<init>", "()V", false); // call the constructor of super class
+            mv.visitInsn(RETURN);
+            mv.visitMaxs(0, 1);
+            mv.visitEnd();
+
+
+            mv = file.visitMethod(ACC_PUBLIC | ACC_STATIC, "main", "([Ljava/lang/String;)V", null, null);
+            mv.visitTypeInsn(NEW, Type.getInternalName(StartupContext.class));
+            mv.visitInsn(DUP);
+            mv.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(StartupContext.class), "<init>", "()V", false);
             for (DeploymentTaskHolder holder : tasks) {
-                ca.dup();
-                ca.newInstruction(holder.className);
-                ca.dup();
-                ca.invokespecial(holder.className, "<init>", "()V");
-                ca.swap();
-                ca.invokeinterface(StartupTask.class.getName(), "deploy", "(L" + StartupContext.class.getName().replace(".", "/") + ";)V");
+                mv.visitInsn(DUP);
+                String className = holder.className.replace(".", "/");
+                mv.visitTypeInsn(NEW, className);
+                mv.visitInsn(DUP);
+                mv.visitMethodInsn(INVOKESPECIAL, className, "<init>", "()V", false);
+                mv.visitInsn(SWAP);
+                mv.visitMethodInsn(INVOKEINTERFACE, Type.getInternalName(StartupTask.class), "deploy", "(L" + StartupContext.class.getName().replace(".", "/") + ";)V", true);
             }
-            ca.returnInstruction();
-            output.writeClass(file.getName(), file.toBytecode());
+
+            mv.visitInsn(RETURN);
+            mv.visitMaxs(0, 2);
+            mv.visitEnd();
+            file.visitEnd();
+
+            output.writeClass(MAIN_CLASS, file.toByteArray());
         }
 
         void writeAutoFeature() throws IOException {
 
-            ClassFile file = new ClassFile("org.jboss.shamrock.runner.AutoFeature", "java.lang.Object", "org.graalvm.nativeimage.Feature");
-            ClassMethod mainMethod = file.addMethod(AccessFlag.PUBLIC, "beforeAnalysis", "V", "Lorg/graalvm/nativeimage/Feature$BeforeAnalysisAccess;");
-            file.getRuntimeVisibleAnnotationsAttribute().addAnnotation(new ClassAnnotation(file.getConstPool(), "com.oracle.svm.core.annotate.AutomaticFeature", Collections.emptyList()));
+            ClassWriter file = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+            file.visit(Opcodes.V1_8, ACC_PUBLIC, GRAAL_AUTOFEATURE, null, Type.getInternalName(Object.class), new String[]{"org/graalvm/nativeimage/Feature"});
 
-            CodeAttribute ca = mainMethod.getCodeAttribute();
+            // constructor
+            MethodVisitor mv = file.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
+            mv.visitVarInsn(ALOAD, 0); // push `this` to the operand stack
+            mv.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(Object.class), "<init>", "()V", false); // call the constructor of super class
+            mv.visitInsn(RETURN);
+            mv.visitMaxs(0, 1);
+            mv.visitEnd();
+
+
+            mv = file.visitMethod(ACC_PUBLIC, "beforeAnalysis", "(Lorg/graalvm/nativeimage/Feature$BeforeAnalysisAccess;)V", null, null);
+            AnnotationVisitor annotation = mv.visitAnnotation("com/oracle/svm/core/annotate/AutomaticFeature", true);
+            annotation.visitEnd();
 
             for (String holder : reflectiveClasses) {
-                ca.ldc(1);
-                ca.anewarray("java/lang/Class");
-                ca.dup();
-                ca.ldc(0);
-                ca.loadClass(holder);
-                ca.aastore();
-                ca.invokestatic("org.graalvm.nativeimage.RuntimeReflection", "register", "([Ljava/lang/Class;)V");
+                mv.visitLdcInsn(1);
+                mv.visitTypeInsn(ANEWARRAY, "java/lang/Class");
+                mv.visitInsn(DUP);
+                mv.visitLdcInsn(0);
+                String internalName = holder.replace(".", "/");
+                mv.visitLdcInsn(Type.getObjectType(internalName));
+                mv.visitInsn(AASTORE);
+                mv.visitMethodInsn(INVOKESTATIC, "org/graalvm/nativeimage/RuntimeReflection", "register", "([Ljava/lang/Class;)V", false);
 
                 //now load everything else
-                ca.loadClass(holder);
-                ca.invokevirtual("java.lang.Class", "getDeclaredConstructors", "()[Ljava/lang/reflect/Constructor;");
-                ca.invokestatic("org.graalvm.nativeimage.RuntimeReflection", "register", "([Ljava/lang/reflect/Executable;)V");
+                mv.visitLdcInsn(Type.getObjectType(internalName));
+                mv.visitInsn(DUP);
+                mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getDeclaredConstructors", "()[Ljava/lang/reflect/Constructor;", false);
+                mv.visitMethodInsn(INVOKESTATIC, "org/graalvm/nativeimage/RuntimeReflection", "register", "([Ljava/lang/reflect/Executable;)V", false);
                 //now load everything else
-                ca.loadClass(holder);
-                ca.invokevirtual("java.lang.Class", "getMethods", "()[Ljava/lang/reflect/Method;");
-                ca.invokestatic("org.graalvm.nativeimage.RuntimeReflection", "register", "([Ljava/lang/reflect/Executable;)V");
+                mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class",  "getMethods", "()[Ljava/lang/reflect/Method;");
+                mv.visitMethodInsn(INVOKESTATIC, "org/graalvm/nativeimage/RuntimeReflection", "register", "([Ljava/lang/reflect/Executable;)V", false);
 
             }
-            ca.returnInstruction();
+            mv.visitInsn(RETURN);
+            mv.visitMaxs(0, 2);
+            mv.visitEnd();
+            file.visitEnd();
 
-            ClassMethod ctor = file.addMethod(AccessFlag.PUBLIC, "<init>", "V");
-            ca = ctor.getCodeAttribute();
-            ca.aload(0);
-            ca.invokespecial(Object.class.getName(), "<init>", "()V");
-            ca.returnInstruction();
-            output.writeClass(file.getName(), file.toBytecode());
+            output.writeClass(GRAAL_AUTOFEATURE, file.toByteArray());
         }
 
     }

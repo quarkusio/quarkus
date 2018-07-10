@@ -33,15 +33,13 @@ public class BytecodeRecorder implements AutoCloseable {
     private final ClassOutput classOutput;
     private final MethodRecorder methodRecorder;
     private final Method method;
-    private final boolean runtime;
 
     private final Map<Class, ProxyFactory<?>> returnValueProxy = new HashMap<>();
 
-    public BytecodeRecorder(String className, Class<?> serviceType, ClassOutput classOutput, boolean runtime) {
+    public BytecodeRecorder(String className, Class<?> serviceType, ClassOutput classOutput) {
         this.className = className;
         this.serviceType = serviceType;
         this.classOutput = classOutput;
-        this.runtime = runtime;
         MethodRecorder mr = null;
         Method m = null;
         for (Method method : serviceType.getMethods()) {
@@ -55,45 +53,6 @@ public class BytecodeRecorder implements AutoCloseable {
         }
         methodRecorder = mr;
         method = m;
-    }
-
-    public Class<?> getServiceType() {
-        return serviceType;
-    }
-
-
-    public void executeRuntime(StartupContext startupContext) {
-        for (BytecodeInstruction instructionSet : methodRecorder.storedMethodCalls) {
-            if (instructionSet instanceof StoredMethodCall) {
-                StoredMethodCall m = (StoredMethodCall) instructionSet;
-                Object[] params = new Object[m.method.getParameterTypes().length];
-                for (int i = 0; i < params.length; ++i) {
-                    Class<?> type = m.method.getParameterTypes()[i];
-                    String contextName = findContextName(m.method.getParameterAnnotations()[i]);
-                    if (type == StartupContext.class) {
-                        params[i] = startupContext;
-                    } else if (contextName != null) {
-                        params[i] = startupContext.getValue(contextName);
-                    } else {
-                        params[i] = m.parameters[i];
-                    }
-                }
-                try {
-                    Object instance = m.method.getDeclaringClass().newInstance();
-                    Object result = m.method.invoke(instance, params);
-                    ContextObject co = m.method.getAnnotation(ContextObject.class);
-                    if (co != null) {
-                        startupContext.putValue(co.value(), result);
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            } else if (instructionSet instanceof NewInstance) {
-                throw new RuntimeException("NYI");
-            } else {
-                throw new RuntimeException("unknown instruction " + instructionSet);
-            }
-        }
     }
 
     private String findContextName(Annotation[] annotations) {
@@ -143,7 +102,7 @@ public class BytecodeRecorder implements AutoCloseable {
                             return null;
                         }
                         boolean returnInterface = method.getReturnType().isInterface();
-                        if(!returnInterface) {
+                        if (!returnInterface) {
                             try {
                                 method.getReturnType().getConstructor();
                             } catch (NoSuchMethodException e) {
@@ -151,14 +110,14 @@ public class BytecodeRecorder implements AutoCloseable {
                             }
                         }
                         ProxyFactory<?> proxyFactory = returnValueProxy.get(method.getReturnType());
-                        if(proxyFactory == null) {
+                        if (proxyFactory == null) {
                             ProxyConfiguration<Object> proxyConfiguration = new ProxyConfiguration<Object>()
                                     .setSuperClass(returnInterface ? Object.class : (Class) method.getReturnType())
                                     .setClassLoader(getClass().getClassLoader())
                                     .addAdditionalInterface(ReturnedProxy.class)
                                     .setProxyName(getClass().getName() + "$$ReturnValueProxy" + COUNT.incrementAndGet());
 
-                            if(returnInterface) {
+                            if (returnInterface) {
                                 proxyConfiguration.addAdditionalInterface(method.getReturnType());
                             }
                             returnValueProxy.put(method.getReturnType(), proxyFactory = new ProxyFactory<>(proxyConfiguration));
@@ -193,7 +152,7 @@ public class BytecodeRecorder implements AutoCloseable {
             if (type.isAssignableFrom(NewInstance.class)) {
                 continue;
             }
-            if(params[i] instanceof ReturnedProxy) {
+            if (params[i] instanceof ReturnedProxy) {
                 continue;
             }
             Annotation[] annotations = method.getParameterAnnotations()[i];
@@ -214,10 +173,6 @@ public class BytecodeRecorder implements AutoCloseable {
 
     @Override
     public void close() throws IOException {
-        if (runtime) {
-            //runtime we don't do this stuff
-            return;
-        }
         ClassFile file = new ClassFile(className, AccessFlag.PUBLIC, Object.class.getName(), getClass().getClassLoader(), serviceType.getName());
         ClassMethod method = file.addMethod(this.method);
         CodeAttribute ca = method.getCodeAttribute();
@@ -279,7 +234,7 @@ public class BytecodeRecorder implements AutoCloseable {
                             ca.aload(((NewInstance) param).varPos);
                         } else if (param instanceof ReturnedProxy) {
                             Integer pos = returnValuePositions.get(param);
-                            if(pos == null) {
+                            if (pos == null) {
                                 throw new RuntimeException("invalid proxy passed into recorded method " + call.method);
                             }
                             ca.aload(pos);
@@ -307,15 +262,15 @@ public class BytecodeRecorder implements AutoCloseable {
                         ca.ldc(annotation.value());
                         ca.swap();
                         ca.invokevirtual(StartupContext.class.getName(), "putValue", "(Ljava/lang/String;Ljava/lang/Object;)V");
-                    } else if(call.returnedProxy != null) {
+                    } else if (call.returnedProxy != null) {
                         Integer pos = returnValuePositions.get(call.returnedProxy);
-                        if(pos == null) {
+                        if (pos == null) {
                             returnValuePositions.put(call.returnedProxy, pos = localVarCounter++);
                         }
                         ca.astore(pos);
                     } else if (call.method.getReturnType() == long.class || call.method.getReturnType() == double.class) {
                         ca.pop2();
-                    }  else {
+                    } else {
                         ca.pop();
                     }
                 }

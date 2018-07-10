@@ -77,7 +77,7 @@
                         <configuration>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>org.jboss.shamrock.deployment.RuntimeRunner</mainClass>
+                                    <mainClass>org.jboss.shamrock.runner.Main</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>

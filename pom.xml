@@ -55,6 +55,16 @@
                 <artifactId>shamrock-junit</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-graal</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
 
             <dependency>
@@ -66,11 +76,6 @@
                 <groupId>io.undertow</groupId>
                 <artifactId>undertow-servlet</artifactId>
                 <version>2.0.10.Final-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jboss.shamrock</groupId>
-                <artifactId>shamrock-core</artifactId>
-                <version>1.0.0.Alpha1-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.xnio</groupId>

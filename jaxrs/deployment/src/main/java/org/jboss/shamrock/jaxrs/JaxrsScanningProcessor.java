@@ -35,6 +35,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.servlet.Servlet;
 import javax.ws.rs.ext.Providers;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -44,13 +45,15 @@ import org.jboss.jandex.Index;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrapClasses;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
-import org.jboss.shamrock.codegen.BytecodeRecorder;
-import org.jboss.shamrock.core.ArchiveContext;
-import org.jboss.shamrock.core.ProcessorContext;
-import org.jboss.shamrock.core.ResourceProcessor;
-import org.jboss.shamrock.core.RuntimePriority;
-import org.jboss.shamrock.injection.InjectionInstance;
+import org.jboss.shamrock.deployment.ArchiveContext;
+import org.jboss.shamrock.deployment.ProcessorContext;
+import org.jboss.shamrock.deployment.ResourceProcessor;
+import org.jboss.shamrock.deployment.RuntimePriority;
+import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
+import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate;
+
+import io.undertow.servlet.api.InstanceFactory;
 
 /**
  * Processor that finds jax-rs classes in the deployment
@@ -129,9 +132,9 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
         String path = appPath.value().asString();
         try (BytecodeRecorder recorder = processorContext.addDeploymentTask(RuntimePriority.JAXRS_DEPLOYMENT)) {
             UndertowDeploymentTemplate undertow = recorder.getRecordingProxy(UndertowDeploymentTemplate.class);
-            InjectionInstance<?> instanceFactory = recorder.newInstanceFactory(HttpServlet30Dispatcher.class.getName());
-            undertow.createInstanceFactory(instanceFactory);
-            undertow.registerServlet(null, JAX_RS_SERVLET_NAME, HttpServlet30Dispatcher.class.getName(), true, null);
+            InjectionInstance<? extends Servlet> instanceFactory = (InjectionInstance<? extends Servlet>) recorder.newInstanceFactory(HttpServlet30Dispatcher.class.getName());
+            InstanceFactory<? extends Servlet> factory = undertow.createInstanceFactory(instanceFactory);
+            undertow.registerServlet(null, JAX_RS_SERVLET_NAME, HttpServlet30Dispatcher.class.getName(), true, factory);
             undertow.addServletMapping(null, JAX_RS_SERVLET_NAME, path + "/*");
             List<AnnotationInstance> paths = index.getAnnotations(PATH);
             if (paths != null) {

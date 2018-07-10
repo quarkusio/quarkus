@@ -1,4 +1,4 @@
-package org.jboss.shamrock.core;
+package org.jboss.shamrock.deployment;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,9 +21,9 @@ import java.util.ServiceLoader;
 
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
-import org.jboss.shamrock.codegen.BytecodeRecorder;
-import org.jboss.shamrock.startup.StartupTast;
-import org.jboss.shamrock.startup.StartupContext;
+import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
+import org.jboss.shamrock.runtime.StartupTask;
+import org.jboss.shamrock.runtime.StartupContext;
 
 /**
  * An entry point that can both process the metadata and then run the resulting output, without generating any bytecode
@@ -128,7 +128,7 @@ public class RuntimeRunner {
 
         @Override
         public BytecodeRecorder addDeploymentTask(int priority) {
-            BytecodeRecorder recorder = new BytecodeRecorder(null, StartupTast.class, null, true);
+            BytecodeRecorder recorder = new BytecodeRecorder(null, StartupTask.class, null, true);
             runtimeTasks.add(new RuntimeTaskHolder(recorder, priority));
             return recorder;
         }

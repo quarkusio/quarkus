@@ -3,9 +3,9 @@ package org.jboss.shamrock.undertow.runtime;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 
-import org.jboss.shamrock.codegen.ContextObject;
-import org.jboss.shamrock.injection.InjectionInstance;
-import org.jboss.shamrock.startup.StartupContext;
+import org.jboss.shamrock.runtime.ContextObject;
+import org.jboss.shamrock.runtime.InjectionInstance;
+import org.jboss.shamrock.runtime.StartupContext;
 
 import io.undertow.Undertow;
 import io.undertow.servlet.Servlets;
@@ -32,12 +32,11 @@ public class UndertowDeploymentTemplate {
         return d;
     }
 
-    @ContextObject("instanceFactory")
-    public <T> InstanceFactory<T> createInstanceFactory(InjectionInstance<T> injectionInstance) throws ClassNotFoundException {
+    public <T> InstanceFactory<T> createInstanceFactory(InjectionInstance<T> injectionInstance) {
         return new ShamrockInstanceFactory<T>(injectionInstance);
     }
 
-    public void registerServlet(@ContextObject("deploymentInfo") DeploymentInfo info, String name, String servletClass, boolean asyncSupported, @ContextObject("instanceFactory") InstanceFactory<? extends Servlet> instanceFactory) throws Exception {
+    public void registerServlet(@ContextObject("deploymentInfo") DeploymentInfo info, String name, String servletClass, boolean asyncSupported, InstanceFactory<? extends Servlet> instanceFactory) throws Exception {
         ServletInfo servletInfo = new ServletInfo(name, (Class<? extends Servlet>) Class.forName(servletClass), instanceFactory);
         info.addServlet(servletInfo);
         servletInfo.setAsyncSupported(asyncSupported);

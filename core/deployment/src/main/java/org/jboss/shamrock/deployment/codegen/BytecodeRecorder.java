@@ -1,11 +1,13 @@
-package org.jboss.shamrock.codegen;
+package org.jboss.shamrock.deployment.codegen;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -16,17 +18,11 @@ import org.jboss.classfilewriter.ClassMethod;
 import org.jboss.classfilewriter.code.CodeAttribute;
 import org.jboss.invocation.proxy.ProxyConfiguration;
 import org.jboss.invocation.proxy.ProxyFactory;
-import org.jboss.jandex.FieldInfo;
-import org.jboss.jandex.MethodInfo;
-import org.jboss.shamrock.core.ClassOutput;
-import org.jboss.shamrock.injection.Injection;
-import org.jboss.shamrock.injection.InjectionInstance;
-import org.jboss.shamrock.reflection.ConstructorHandle;
-import org.jboss.shamrock.reflection.FieldHandle;
-import org.jboss.shamrock.reflection.MethodHandle;
-import org.jboss.shamrock.reflection.ReflectionContext;
-import org.jboss.shamrock.reflection.RuntimeReflection;
-import org.jboss.shamrock.startup.StartupContext;
+import org.jboss.shamrock.deployment.ClassOutput;
+import org.jboss.shamrock.deployment.injection.Injection;
+import org.jboss.shamrock.runtime.ContextObject;
+import org.jboss.shamrock.runtime.InjectionInstance;
+import org.jboss.shamrock.runtime.StartupContext;
 
 public class BytecodeRecorder implements AutoCloseable {
 
@@ -38,6 +34,8 @@ public class BytecodeRecorder implements AutoCloseable {
     private final MethodRecorder methodRecorder;
     private final Method method;
     private final boolean runtime;
+
+    private final Map<Class, ProxyFactory<?>> returnValueProxy = new HashMap<>();
 
     public BytecodeRecorder(String className, Class<?> serviceType, ClassOutput classOutput, boolean runtime) {
         this.className = className;
@@ -66,7 +64,7 @@ public class BytecodeRecorder implements AutoCloseable {
 
     public void executeRuntime(StartupContext startupContext) {
         for (BytecodeInstruction instructionSet : methodRecorder.storedMethodCalls) {
-            if(instructionSet instanceof StoredMethodCall) {
+            if (instructionSet instanceof StoredMethodCall) {
                 StoredMethodCall m = (StoredMethodCall) instructionSet;
                 Object[] params = new Object[m.method.getParameterTypes().length];
                 for (int i = 0; i < params.length; ++i) {
@@ -90,7 +88,7 @@ public class BytecodeRecorder implements AutoCloseable {
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
-            } else if(instructionSet instanceof NewInstance) {
+            } else if (instructionSet instanceof NewInstance) {
                 throw new RuntimeException("NYI");
             } else {
                 throw new RuntimeException("unknown instruction " + instructionSet);
@@ -135,12 +133,45 @@ public class BytecodeRecorder implements AutoCloseable {
                 T recordingProxy = factory.newInstance(new InvocationHandler() {
                     @Override
                     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                        validateMethod(method);
-                        storedMethodCalls.add(new StoredMethodCall(theClass, method, args));
+                        validateMethod(method, args);
+                        StoredMethodCall storedMethodCall = new StoredMethodCall(theClass, method, args);
+                        storedMethodCalls.add(storedMethodCall);
                         if (method.getReturnType().isPrimitive()) {
                             return 0;
                         }
-                        return null;
+                        if (Modifier.isFinal(method.getReturnType().getModifiers())) {
+                            return null;
+                        }
+                        boolean returnInterface = method.getReturnType().isInterface();
+                        if(!returnInterface) {
+                            try {
+                                method.getReturnType().getConstructor();
+                            } catch (NoSuchMethodException e) {
+                                return null;
+                            }
+                        }
+                        ProxyFactory<?> proxyFactory = returnValueProxy.get(method.getReturnType());
+                        if(proxyFactory == null) {
+                            ProxyConfiguration<Object> proxyConfiguration = new ProxyConfiguration<Object>()
+                                    .setSuperClass(returnInterface ? Object.class : (Class) method.getReturnType())
+                                    .setClassLoader(getClass().getClassLoader())
+                                    .addAdditionalInterface(ReturnedProxy.class)
+                                    .setProxyName(getClass().getName() + "$$ReturnValueProxy" + COUNT.incrementAndGet());
+
+                            if(returnInterface) {
+                                proxyConfiguration.addAdditionalInterface(method.getReturnType());
+                            }
+                            returnValueProxy.put(method.getReturnType(), proxyFactory = new ProxyFactory<>(proxyConfiguration));
+                        }
+
+                        Object proxyInstance = proxyFactory.newInstance(new InvocationHandler() {
+                            @Override
+                            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                                throw new RuntimeException("You cannot invoke directly on an object returned from the bytecode recorded, you can only pass is back into the recorder as a parameter");
+                            }
+                        });
+                        storedMethodCall.returnedProxy = proxyInstance;
+                        return proxyInstance;
                     }
                 });
                 existingProxyClasses.put(theClass, recordingProxy);
@@ -153,13 +184,16 @@ public class BytecodeRecorder implements AutoCloseable {
     }
 
 
-    private void validateMethod(Method method) {
+    private void validateMethod(Method method, Object[] params) {
         for (int i = 0; i < method.getParameterCount(); ++i) {
             Class<?> type = method.getParameterTypes()[i];
             if (type.isPrimitive() || type.equals(String.class) || type.equals(Class.class) || type.equals(StartupContext.class)) {
                 continue;
             }
-            if(type.isAssignableFrom(NewInstance.class)) {
+            if (type.isAssignableFrom(NewInstance.class)) {
+                continue;
+            }
+            if(params[i] instanceof ReturnedProxy) {
                 continue;
             }
             Annotation[] annotations = method.getParameterAnnotations()[i];
@@ -200,8 +234,9 @@ public class BytecodeRecorder implements AutoCloseable {
 
         //now create instances of all the classes we invoke on and store them in variables as well
         Map<Class, Integer> classInstanceVariables = new HashMap<>();
+        Map<Object, Integer> returnValuePositions = new IdentityHashMap<>();
         for (BytecodeInstruction set : this.methodRecorder.storedMethodCalls) {
-            if(set instanceof StoredMethodCall) {
+            if (set instanceof StoredMethodCall) {
                 StoredMethodCall call = (StoredMethodCall) set;
                 if (classInstanceVariables.containsKey(call.theClass)) {
                     continue;
@@ -211,13 +246,13 @@ public class BytecodeRecorder implements AutoCloseable {
                 ca.invokespecial(call.theClass.getName(), "<init>", "()V");
                 ca.astore(localVarCounter);
                 classInstanceVariables.put(call.theClass, localVarCounter++);
-            } else if(set instanceof NewInstance) {
+            } else if (set instanceof NewInstance) {
                 ((NewInstance) set).varPos = localVarCounter++;
             }
         }
         //now we invoke the actual method call
         for (BytecodeInstruction set : methodRecorder.storedMethodCalls) {
-            if(set instanceof StoredMethodCall) {
+            if (set instanceof StoredMethodCall) {
                 StoredMethodCall call = (StoredMethodCall) set;
                 ca.aload(classInstanceVariables.get(call.theClass));
                 ca.checkcast(call.theClass);
@@ -240,10 +275,16 @@ public class BytecodeRecorder implements AutoCloseable {
                             ca.ldc((String) param);
                         } else if (param instanceof Boolean) {
                             ca.ldc((boolean) param ? 1 : 0);
-                        } else if(param instanceof NewInstance) {
+                        } else if (param instanceof NewInstance) {
                             ca.aload(((NewInstance) param).varPos);
+                        } else if (param instanceof ReturnedProxy) {
+                            Integer pos = returnValuePositions.get(param);
+                            if(pos == null) {
+                                throw new RuntimeException("invalid proxy passed into recorded method " + call.method);
+                            }
+                            ca.aload(pos);
                         } else {
-                            //TODO: rest of primities
+                            //TODO: rest of primitives
                             ca.ldc((int) param);
                         }
                     } else if (targetType == StartupContext.class) { //hack, as this is tied to StartupTask
@@ -266,13 +307,19 @@ public class BytecodeRecorder implements AutoCloseable {
                         ca.ldc(annotation.value());
                         ca.swap();
                         ca.invokevirtual(StartupContext.class.getName(), "putValue", "(Ljava/lang/String;Ljava/lang/Object;)V");
+                    } else if(call.returnedProxy != null) {
+                        Integer pos = returnValuePositions.get(call.returnedProxy);
+                        if(pos == null) {
+                            returnValuePositions.put(call.returnedProxy, pos = localVarCounter++);
+                        }
+                        ca.astore(pos);
                     } else if (call.method.getReturnType() == long.class || call.method.getReturnType() == double.class) {
                         ca.pop2();
-                    } else {
+                    }  else {
                         ca.pop();
                     }
                 }
-            } else if(set instanceof NewInstance) {
+            } else if (set instanceof NewInstance) {
                 NewInstance ni = (NewInstance) set;
                 ca.newInstruction(ni.className);
                 ca.dup();
@@ -297,10 +344,16 @@ public class BytecodeRecorder implements AutoCloseable {
 
     }
 
+
+    interface ReturnedProxy {
+
+    }
+
     static final class StoredMethodCall implements BytecodeInstruction {
         final Class<?> theClass;
         final Method method;
         final Object[] parameters;
+        Object returnedProxy;
 
         StoredMethodCall(Class<?> theClass, Method method, Object[] parameters) {
             this.theClass = theClass;

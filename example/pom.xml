@@ -11,19 +11,29 @@
 
     <artifactId>shamrock-test-deployment</artifactId>
     <dependencies>
+
+        <dependency>
+            <groupId>org.jboss.spec.javax.servlet</groupId>
+            <artifactId>jboss-servlet-api_4.0_spec</artifactId>
+            <version>1.0.0.Final</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.spec.javax.ws.rs</groupId>
+            <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
+            <version>1.0.0.Final</version>
+        </dependency>
+
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-core</artifactId>
+            <artifactId>shamrock-core-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-undertow-deployment</artifactId>
-            <version>${project.version}</version>
+            <artifactId>shamrock-undertow-runtime</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jaxrs-deployment</artifactId>
-            <version>${project.version}</version>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-jaxrs</artifactId>
         </dependency>
 
     </dependencies>
@@ -42,10 +52,14 @@
                     </execution>
                 </executions>
                 <dependencies>
-
                     <dependency>
                         <groupId>org.jboss.shamrock</groupId>
                         <artifactId>shamrock-jaxrs-deployment</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.jboss.shamrock</groupId>
+                        <artifactId>shamrock-undertow-deployment</artifactId>
                         <version>${project.version}</version>
                     </dependency>
                 </dependencies>
@@ -63,7 +77,7 @@
                         <configuration>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>org.jboss.shamrock.core.RuntimeRunner</mainClass>
+                                    <mainClass>org.jboss.shamrock.deployment.RuntimeRunner</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>

@@ -1,7 +1,10 @@
-package org.jboss.shamrock.core;
+package org.jboss.shamrock.deployment;
 
 /**
  * A build time processor that processes a deployments metadata and uses it to generate wiring bytecode
+ *
+ * These classes are discovered via {@link java.util.ServiceLoader}
+ *
  */
 public interface ResourceProcessor {
 

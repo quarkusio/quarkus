@@ -1,4 +1,4 @@
-package org.jboss.shamrock.core;
+package org.jboss.shamrock.deployment;
 
 /**
  * Static list of priorities

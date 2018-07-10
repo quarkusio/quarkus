@@ -11,8 +11,8 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
-import org.jboss.shamrock.core.ClassOutput;
-import org.jboss.shamrock.core.Runner;
+import org.jboss.shamrock.deployment.ClassOutput;
+import org.jboss.shamrock.deployment.Runner;
 
 @Mojo(name = "run", defaultPhase = LifecyclePhase.PROCESS_CLASSES)
 public class ShamrockMojo extends AbstractMojo {

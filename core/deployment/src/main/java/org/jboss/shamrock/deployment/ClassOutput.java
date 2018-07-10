@@ -1,4 +1,4 @@
-package org.jboss.shamrock.core;
+package org.jboss.shamrock.deployment;
 
 import java.io.IOException;
 

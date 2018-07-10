@@ -1,6 +1,6 @@
 package org.jboss.shamrock.undertow.runtime;
 
-import org.jboss.shamrock.injection.InjectionInstance;
+import org.jboss.shamrock.runtime.InjectionInstance;
 
 import io.undertow.servlet.api.InstanceFactory;
 import io.undertow.servlet.api.InstanceHandle;

@@ -1,8 +1,8 @@
-package org.jboss.shamrock.core;
+package org.jboss.shamrock.deployment;
 
 import java.io.IOException;
 
-import org.jboss.shamrock.codegen.BytecodeRecorder;
+import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
 
 /**
  * Interface that represents the current processor state. This is basically the output context, processors can use it

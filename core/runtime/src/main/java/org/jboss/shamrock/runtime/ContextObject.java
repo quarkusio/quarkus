@@ -1,4 +1,4 @@
-package org.jboss.shamrock.codegen;
+package org.jboss.shamrock.runtime;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

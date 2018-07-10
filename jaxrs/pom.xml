@@ -16,10 +16,6 @@
     </modules>
 
     <dependencies>
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-core</artifactId>
-        </dependency>
     </dependencies>
 
 

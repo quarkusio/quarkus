@@ -1,4 +1,4 @@
-package org.jboss.shamrock.injection;
+package org.jboss.shamrock.runtime;
 
 public interface InjectionInstance<T> {
 

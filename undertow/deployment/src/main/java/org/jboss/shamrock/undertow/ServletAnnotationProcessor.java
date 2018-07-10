@@ -2,20 +2,22 @@ package org.jboss.shamrock.undertow;
 
 import java.util.List;
 
+import javax.servlet.Servlet;
 import javax.servlet.annotation.WebServlet;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
-import org.jboss.shamrock.codegen.BytecodeRecorder;
-import org.jboss.shamrock.core.ArchiveContext;
-import org.jboss.shamrock.core.ProcessorContext;
-import org.jboss.shamrock.core.ResourceProcessor;
-import org.jboss.shamrock.core.RuntimePriority;
-import org.jboss.shamrock.injection.InjectionInstance;
+import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
+import org.jboss.shamrock.deployment.ArchiveContext;
+import org.jboss.shamrock.deployment.ProcessorContext;
+import org.jboss.shamrock.deployment.ResourceProcessor;
+import org.jboss.shamrock.deployment.RuntimePriority;
+import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate;
 
+import io.undertow.servlet.api.InstanceFactory;
 import io.undertow.servlet.handlers.DefaultServlet;
 
 public class ServletAnnotationProcessor implements ResourceProcessor {
@@ -42,9 +44,9 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
                     AnnotationValue asyncSupported = annotation.value("asyncSupported");
                     String servletClass = annotation.target().asClass().toString();
 
-                    InjectionInstance<?> injection = context.newInstanceFactory(servletClass);
-                    template.createInstanceFactory(injection);
-                    template.registerServlet(null, name, servletClass, asyncSupported != null && asyncSupported.asBoolean(), null);
+                    InjectionInstance<? extends Servlet> injection = (InjectionInstance<? extends Servlet>) context.newInstanceFactory(servletClass);
+                    InstanceFactory<? extends Servlet> factory = template.createInstanceFactory(injection);
+                    template.registerServlet(null, name, servletClass, asyncSupported != null && asyncSupported.asBoolean(), factory);
                     String[] mappings = annotation.value("urlPatterns").asStringArray();
                     for (String m : mappings) {
                         template.addServletMapping(null, name, m);

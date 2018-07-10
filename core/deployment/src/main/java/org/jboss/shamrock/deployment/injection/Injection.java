@@ -1,4 +1,4 @@
-package org.jboss.shamrock.injection;
+package org.jboss.shamrock.deployment.injection;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -9,7 +9,8 @@ import org.jboss.classfilewriter.AccessFlag;
 import org.jboss.classfilewriter.ClassFile;
 import org.jboss.classfilewriter.ClassMethod;
 import org.jboss.classfilewriter.code.CodeAttribute;
-import org.jboss.shamrock.core.ClassOutput;
+import org.jboss.shamrock.deployment.ClassOutput;
+import org.jboss.shamrock.runtime.InjectionInstance;
 
 
 public class Injection {

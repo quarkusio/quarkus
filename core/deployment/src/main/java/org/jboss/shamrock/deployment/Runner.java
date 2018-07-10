@@ -1,4 +1,4 @@
-package org.jboss.shamrock.core;
+package org.jboss.shamrock.deployment;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,9 +22,9 @@ import org.jboss.classfilewriter.annotations.ClassAnnotation;
 import org.jboss.classfilewriter.code.CodeAttribute;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
-import org.jboss.shamrock.codegen.BytecodeRecorder;
-import org.jboss.shamrock.startup.StartupTast;
-import org.jboss.shamrock.startup.StartupContext;
+import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
+import org.jboss.shamrock.runtime.StartupContext;
+import org.jboss.shamrock.runtime.StartupTask;
 
 /**
  * Class that does the build time processing
@@ -123,7 +123,7 @@ public class Runner {
         public BytecodeRecorder addDeploymentTask(int priority) {
             String className = getClass().getName() + "$$Proxy" + COUNT.incrementAndGet();
             tasks.add(new DeploymentTaskHolder(className, priority));
-            return new BytecodeRecorder(className, StartupTast.class, output, false);
+            return new BytecodeRecorder(className, StartupTask.class, output, false);
         }
 
         @Override
@@ -150,7 +150,7 @@ public class Runner {
                 ca.dup();
                 ca.invokespecial(holder.className, "<init>", "()V");
                 ca.swap();
-                ca.invokeinterface(StartupTast.class.getName(), "deploy", "(Lorg/jboss/shamrock/startup/StartupContext;)V");
+                ca.invokeinterface(StartupTask.class.getName(), "deploy", "(L" + StartupContext.class.getName().replace(".", "/") + ";)V");
             }
             ca.returnInstruction();
             output.writeClass(file.getName(), file.toBytecode());

@@ -24,6 +24,7 @@
         <module>maven</module>
         <module>example</module>
         <module>jaxrs</module>
+        <module>test-framework</module>
     </modules>
 
     <dependencyManagement>
@@ -47,6 +48,11 @@
             <dependency>
                 <groupId>org.jboss.shamrock</groupId>
                 <artifactId>shamrock-undertow-runtime</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-junit</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

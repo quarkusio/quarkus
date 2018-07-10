@@ -28,6 +28,11 @@
             <artifactId>jboss-classfilewriter</artifactId>
             <version>1.2.1.Final</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-junit</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

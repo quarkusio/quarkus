@@ -3,6 +3,7 @@ package org.jboss.shamrock.deployment;
 import static org.objectweb.asm.Opcodes.AASTORE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
+import static org.objectweb.asm.Opcodes.ACC_SUPER;
 import static org.objectweb.asm.Opcodes.ALOAD;
 import static org.objectweb.asm.Opcodes.ANEWARRAY;
 import static org.objectweb.asm.Opcodes.DUP;
@@ -162,7 +163,7 @@ public class Runner {
             Collections.sort(tasks);
 
             ClassWriter file = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-            file.visit(Opcodes.V1_8, ACC_PUBLIC, MAIN_CLASS, null, Type.getInternalName(Object.class), null);
+            file.visit(Opcodes.V1_8, ACC_PUBLIC | ACC_SUPER, MAIN_CLASS, null, Type.getInternalName(Object.class), null);
 
             // constructor
             MethodVisitor mv = file.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
@@ -198,8 +199,9 @@ public class Runner {
         void writeAutoFeature() throws IOException {
 
             ClassWriter file = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-            file.visit(Opcodes.V1_8, ACC_PUBLIC, GRAAL_AUTOFEATURE, null, Type.getInternalName(Object.class), new String[]{"org/graalvm/nativeimage/Feature"});
-
+            file.visit(Opcodes.V1_8, ACC_PUBLIC | ACC_SUPER, GRAAL_AUTOFEATURE, null, Type.getInternalName(Object.class), new String[]{"org/graalvm/nativeimage/Feature"});
+            AnnotationVisitor annotation = file.visitAnnotation("Lcom/oracle/svm/core/annotate/AutomaticFeature;", true);
+            annotation.visitEnd();
             // constructor
             MethodVisitor mv = file.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
             mv.visitVarInsn(ALOAD, 0); // push `this` to the operand stack
@@ -210,8 +212,7 @@ public class Runner {
 
 
             mv = file.visitMethod(ACC_PUBLIC, "beforeAnalysis", "(Lorg/graalvm/nativeimage/Feature$BeforeAnalysisAccess;)V", null, null);
-            AnnotationVisitor annotation = mv.visitAnnotation("com/oracle/svm/core/annotate/AutomaticFeature", true);
-            annotation.visitEnd();
+
 
             for (String holder : reflectiveClasses) {
                 mv.visitLdcInsn(1);

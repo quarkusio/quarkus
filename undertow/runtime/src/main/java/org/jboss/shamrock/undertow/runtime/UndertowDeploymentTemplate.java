@@ -27,8 +27,14 @@ public class UndertowDeploymentTemplate {
         d.setClassLoader(getClass().getClassLoader());
         d.setDeploymentName(name);
         d.setContextPath("/");
-        d.setClassLoader(new ClassLoader() {
-        });
+        ClassLoader cl = UndertowDeploymentTemplate.class.getClassLoader();
+        if(cl != null) {
+            d.setClassLoader(cl);
+        } else {
+            //remove once graal release with CL support is availible
+            d.setClassLoader(new ClassLoader() {
+            });
+        }
         return d;
     }
 

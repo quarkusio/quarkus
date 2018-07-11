@@ -6,17 +6,25 @@ import static org.objectweb.asm.Opcodes.ACC_STATIC;
 import static org.objectweb.asm.Opcodes.ACC_SUPER;
 import static org.objectweb.asm.Opcodes.ALOAD;
 import static org.objectweb.asm.Opcodes.ANEWARRAY;
+import static org.objectweb.asm.Opcodes.ASTORE;
+import static org.objectweb.asm.Opcodes.DSUB;
 import static org.objectweb.asm.Opcodes.DUP;
+import static org.objectweb.asm.Opcodes.GETFIELD;
+import static org.objectweb.asm.Opcodes.GETSTATIC;
 import static org.objectweb.asm.Opcodes.INVOKEINTERFACE;
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
+import static org.objectweb.asm.Opcodes.LLOAD;
+import static org.objectweb.asm.Opcodes.LSTORE;
+import static org.objectweb.asm.Opcodes.LSUB;
 import static org.objectweb.asm.Opcodes.NEW;
 import static org.objectweb.asm.Opcodes.RETURN;
 import static org.objectweb.asm.Opcodes.SWAP;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
@@ -171,6 +179,8 @@ public class Runner {
 
 
             mv = file.visitMethod(ACC_PUBLIC | ACC_STATIC, "main", "([Ljava/lang/String;)V", null, null);
+            mv.visitMethodInsn(INVOKESTATIC, Type.getInternalName(System.class), "currentTimeMillis", "()J", false);
+            mv.visitVarInsn(LSTORE, 2);
             mv.visitTypeInsn(NEW, Type.getInternalName(StartupContext.class));
             mv.visitInsn(DUP);
             mv.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(StartupContext.class), "<init>", "()V", false);
@@ -184,8 +194,21 @@ public class Runner {
                 mv.visitMethodInsn(INVOKEINTERFACE, Type.getInternalName(StartupTask.class), "deploy", "(L" + StartupContext.class.getName().replace(".", "/") + ";)V", true);
             }
 
+            mv.visitFieldInsn(GETSTATIC, Type.getInternalName(System.class), "out", "L" + Type.getInternalName(PrintStream.class) + ";");
+            mv.visitMethodInsn(INVOKESTATIC, Type.getInternalName(System.class), "currentTimeMillis", "()J", false);
+            mv.visitVarInsn(LLOAD, 2);
+            mv.visitInsn(LSUB);
+            mv.visitFieldInsn(GETSTATIC, Type.getInternalName(System.class), "out", "L" + Type.getInternalName(PrintStream.class) + ";");
+            mv.visitLdcInsn("Shamrock started in ");
+            mv.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(PrintStream.class), "print", "(Ljava/lang/String;)V", false);
+            mv.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(PrintStream.class), "print", "(J)V", false);
+            mv.visitFieldInsn(GETSTATIC, Type.getInternalName(System.class), "out", "L" + Type.getInternalName(PrintStream.class) + ";");
+            mv.visitLdcInsn("ms");
+            mv.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(PrintStream.class), "println", "(Ljava/lang/String;)V", false);
+
+
             mv.visitInsn(RETURN);
-            mv.visitMaxs(0, 2);
+            mv.visitMaxs(0, 4);
             mv.visitEnd();
             file.visitEnd();
 

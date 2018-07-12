@@ -16,6 +16,7 @@
 
     <properties>
         <version.org.jandex>2.0.5.Final</version.org.jandex>
+        <resteasy.version>3.5.2-SNAPSHOT</resteasy.version>
     </properties>
 
     <modules>
@@ -95,7 +96,12 @@
             <dependency>
                 <groupId>org.jboss.resteasy</groupId>
                 <artifactId>resteasy-jaxrs</artifactId>
-                <version>3.5.2-SNAPSHOT</version>
+                <version>${resteasy.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.resteasy</groupId>
+                <artifactId>resteasy-json-binding-provider</artifactId>
+                <version>${resteasy.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

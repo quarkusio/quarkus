@@ -42,6 +42,8 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyBootstrapClasses;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
@@ -69,6 +71,15 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
 
     public static final Set<String> BOOT_CLASSES = new HashSet<String>();
     public static final Set<String> BUILTIN_PROVIDERS;
+
+    private static final DotName[] METHOD_ANNOTATIONS = {DotName.createSimple("javax.ws.rs.GET"),
+            DotName.createSimple("javax.ws.rs.HEAD"),
+            DotName.createSimple("javax.ws.rs.DELETE"),
+            DotName.createSimple("javax.ws.rs.OPTIONS"),
+            DotName.createSimple("javax.ws.rs.PATCH"),
+            DotName.createSimple("javax.ws.rs.POST"),
+            DotName.createSimple("javax.ws.rs.PUT"),
+    };
 
     static {
         Collections.addAll(BOOT_CLASSES, ResteasyBootstrapClasses.BOOTSTRAP_CLASSES);
@@ -125,7 +136,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
 
         Index index = archiveContext.getIndex();
         List<AnnotationInstance> app = index.getAnnotations(APPLICATION_PATH);
-        if (app == null || app.isEmpty()) {
+        if (app.isEmpty()) {
             return;
         }
         AnnotationInstance appPath = app.get(0);
@@ -161,8 +172,17 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
                     processorContext.addReflectiveClass(i);
                 }
             }
-
         }
+        for (DotName annotationType : METHOD_ANNOTATIONS) {
+            List<AnnotationInstance> instances = index.getAnnotations(annotationType);
+            for (AnnotationInstance instance : instances) {
+                MethodInfo method = instance.target().asMethod();
+                if (method.returnType().kind() == Type.Kind.CLASS) {
+                    processorContext.addReflectiveClass(method.returnType().asClassType().name().toString());
+                }
+            }
+        }
+
     }
 
     @Override

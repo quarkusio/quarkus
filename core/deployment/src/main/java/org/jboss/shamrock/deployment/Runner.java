@@ -6,10 +6,7 @@ import static org.objectweb.asm.Opcodes.ACC_STATIC;
 import static org.objectweb.asm.Opcodes.ACC_SUPER;
 import static org.objectweb.asm.Opcodes.ALOAD;
 import static org.objectweb.asm.Opcodes.ANEWARRAY;
-import static org.objectweb.asm.Opcodes.ASTORE;
-import static org.objectweb.asm.Opcodes.DSUB;
 import static org.objectweb.asm.Opcodes.DUP;
-import static org.objectweb.asm.Opcodes.GETFIELD;
 import static org.objectweb.asm.Opcodes.GETSTATIC;
 import static org.objectweb.asm.Opcodes.INVOKEINTERFACE;
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
@@ -34,8 +31,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.jandex.Index;
@@ -143,7 +142,7 @@ public class Runner {
 
 
         private final List<DeploymentTaskHolder> tasks = new ArrayList<>();
-        private final List<String> reflectiveClasses = new ArrayList<>();
+        private final Set<String> reflectiveClasses = new LinkedHashSet<>();
 
         @Override
         public BytecodeRecorder addDeploymentTask(int priority) {
@@ -249,9 +248,8 @@ public class Runner {
                 mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getDeclaredConstructors", "()[Ljava/lang/reflect/Constructor;", false);
                 mv.visitMethodInsn(INVOKESTATIC, "org/graalvm/nativeimage/RuntimeReflection", "register", "([Ljava/lang/reflect/Executable;)V", false);
                 //now load everything else
-                mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class",  "getMethods", "()[Ljava/lang/reflect/Method;", false);
+                mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getMethods", "()[Ljava/lang/reflect/Method;", false);
                 mv.visitMethodInsn(INVOKESTATIC, "org/graalvm/nativeimage/RuntimeReflection", "register", "([Ljava/lang/reflect/Executable;)V", false);
-
             }
             mv.visitInsn(RETURN);
             mv.visitMaxs(0, 2);

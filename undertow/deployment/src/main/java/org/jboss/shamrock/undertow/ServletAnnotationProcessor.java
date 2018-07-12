@@ -36,7 +36,7 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
         }
         final Index index = archiveContext.getIndex();
         List<AnnotationInstance> annotations = index.getAnnotations(WEB_SERVLET);
-        if (annotations != null) {
+        if (annotations != null && annotations.size() > 0) {
             try (BytecodeRecorder context = processorContext.addDeploymentTask(RuntimePriority.UNDERTOW_REGISTER_SERVLET)) {
                 UndertowDeploymentTemplate template = context.getRecordingProxy(UndertowDeploymentTemplate.class);
                 for (AnnotationInstance annotation : annotations) {

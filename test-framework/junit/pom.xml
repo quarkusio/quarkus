@@ -19,6 +19,10 @@
             <artifactId>junit</artifactId>
             <version>4.12</version>
         </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-core-deployment</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

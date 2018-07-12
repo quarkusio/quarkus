@@ -14,7 +14,7 @@ import org.junit.runner.RunWith;
 public class JaxRSTestCase {
 
     @Test
-    public void testServlet() throws Exception {
+    public void testJAXRS() throws Exception {
         URL uri = new URL("http://localhost:8080/rest/test");
         URLConnection connection = uri.openConnection();
         InputStream in = connection.getInputStream();

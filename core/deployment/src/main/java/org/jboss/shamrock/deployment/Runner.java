@@ -56,7 +56,7 @@ import org.objectweb.asm.Type;
 public class Runner {
 
     private static final AtomicInteger COUNT = new AtomicInteger();
-    private static final String MAIN_CLASS = "org/jboss/shamrock/runner/Main";
+    public static final String MAIN_CLASS = "org/jboss/shamrock/runner/Main";
     private static final String GRAAL_AUTOFEATURE = "org/jboss/shamrock/runner/AutoFeature";
 
     private final List<ResourceProcessor> processors;
@@ -249,7 +249,7 @@ public class Runner {
                 mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getDeclaredConstructors", "()[Ljava/lang/reflect/Constructor;", false);
                 mv.visitMethodInsn(INVOKESTATIC, "org/graalvm/nativeimage/RuntimeReflection", "register", "([Ljava/lang/reflect/Executable;)V", false);
                 //now load everything else
-                mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class",  "getMethods", "()[Ljava/lang/reflect/Method;");
+                mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class",  "getMethods", "()[Ljava/lang/reflect/Method;", false);
                 mv.visitMethodInsn(INVOKESTATIC, "org/graalvm/nativeimage/RuntimeReflection", "register", "([Ljava/lang/reflect/Executable;)V", false);
 
             }

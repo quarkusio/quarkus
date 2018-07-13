@@ -54,6 +54,10 @@ final class FastbootHibernateProvider extends HibernatePersistenceProvider imple
 
 	/**
 	 * Copied and modified from super{@link #getEntityManagerFactoryBuilderOrNull(String, Map, ClassLoader, ClassLoaderService)}
+	 * Notable changes:
+	 *  - ignore the ClassLoaderService and inject our own
+	 *  - verify the Map properties are not set (or fail)
+	 *  - don't try looking for ParsedPersistenceXmlDescriptor resources to parse, just take the pre-parsed ones in the static final field
 	 */
 	private EntityManagerFactoryBuilder getEntityManagerFactoryBuilderOrNull(String persistenceUnitName, Map properties,
 																			 ClassLoader providedClassLoader, ClassLoaderService providedClassLoaderService) {
@@ -92,12 +96,8 @@ final class FastbootHibernateProvider extends HibernatePersistenceProvider imple
 				continue;
 			}
 
-			if (providedClassLoaderService != null) {
-				return getEntityManagerFactoryBuilder( persistenceUnit, integration, providedClassLoaderService );
-			}
-			else {
-				return getEntityManagerFactoryBuilder( persistenceUnit, integration, providedClassLoader );
-			}
+			ClassLoaderService overrideClassLoaderService = new FlatClassLoaderService();
+			return getEntityManagerFactoryBuilder( persistenceUnit, integration, overrideClassLoaderService );
 		}
 
 		log.debug( "Found no matching persistence units" );

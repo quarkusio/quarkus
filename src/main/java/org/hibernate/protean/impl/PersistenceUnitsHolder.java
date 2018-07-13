@@ -7,6 +7,7 @@ import java.util.Map;
 import javax.persistence.PersistenceException;
 
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
+import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
 
 final class PersistenceUnitsHolder {
 

@@ -11,7 +11,7 @@ mvn dependency:build-classpath -DexcludeArtifactIds=svm-core -Dmdep.outputFile=c
 CLASSPATH=`cat cp.txt`
 
 echo "Starting native-image :"
-#--verbose --shared -ea -H:+ReportUnsupportedElementsAtRuntime -H:+PrintAnalysisCallTree -H:IncludeResources=logging.properties
+#--verbose --shared -ea -H:+ReportUnsupportedElementsAtRuntime -H:+PrintAnalysisCallTree
 native-image --no-server -O0 --verbose -H:IncludeResources=META-INF/persistence.xml -H:+ReportUnsupportedElementsAtRuntime -H:ReflectionConfigurationFiles=reflectconfig.json -cp "$CLASSPATH":./target/classes com.example.Main com.example.Main
 
 echo ""

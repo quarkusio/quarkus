@@ -26,7 +26,8 @@ mvn clean install
 mvn dependency:build-classpath -Dmdep.outputFile=cp.txt > /dev/null
 CLASSPATH=`cat cp.txt`
 
-RUNTIME_OPTS="-Djava.util.logging.config.file=logging.properties"
+#RUNTIME_OPTS="-Djava.util.logging.config.file=logging.properties"
+RUNTIME_OPTS=""
 
 echo "Using generated classpath: $CLASSPATH"
 

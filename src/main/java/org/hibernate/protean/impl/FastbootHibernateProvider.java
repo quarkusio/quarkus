@@ -1,5 +1,6 @@
 package org.hibernate.protean.impl;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import javax.persistence.EntityManagerFactory;
@@ -14,7 +15,11 @@ import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.jpa.boot.spi.ProviderChecker;
 
+import org.jboss.logging.Logger;
+
 final class FastbootHibernateProvider extends HibernatePersistenceProvider implements PersistenceProvider  {
+
+	private static final Logger log = Logger.getLogger( HibernatePersistenceProvider.class );
 
 	@Override
 	public EntityManagerFactory createEntityManagerFactory(String emName, Map map) {
@@ -47,21 +52,20 @@ final class FastbootHibernateProvider extends HibernatePersistenceProvider imple
 	}
 
 
+	/**
+	 * Copied and modified from super{@link #getEntityManagerFactoryBuilderOrNull(String, Map, ClassLoader, ClassLoaderService)}
+	 */
 	private EntityManagerFactoryBuilder getEntityManagerFactoryBuilderOrNull(String persistenceUnitName, Map properties,
 																			 ClassLoader providedClassLoader, ClassLoaderService providedClassLoaderService) {
-		System.out.println( "Attempting to obtain EntityManagerFactoryBuilder for persistenceUnitName : "+ persistenceUnitName );
+		log.tracef( "Attempting to obtain correct EntityManagerFactoryBuilder for persistenceUnitName : %s", persistenceUnitName );
 
-		final Map integration = wrap( properties );
-		final List<ParsedPersistenceXmlDescriptor> units;
-		try {
-			units = PersistenceXmlParser.locatePersistenceUnits( integration );
-		}
-		catch (Exception e) {
-			System.out.println( "Unable to locate persistence units" );
-			throw new PersistenceException( "Unable to locate persistence units", e );
-		}
+		verifyProperties( properties );
+		Map integration = Collections.emptyMap();
 
-		System.out.println( "Located and parsed "+units.size()+" persistence units; checking each" );
+		//These are pre-parsed during image generation:
+		final List<ParsedPersistenceXmlDescriptor> units = PersistenceUnitsHolder.units;
+
+		log.debugf( "Located and parsed %s persistence units; checking each", units.size() );
 
 		if ( persistenceUnitName == null && units.size() > 1 ) {
 			// no persistence-unit name to look for was given and we found multiple persistence-units
@@ -69,24 +73,22 @@ final class FastbootHibernateProvider extends HibernatePersistenceProvider imple
 		}
 
 		for ( ParsedPersistenceXmlDescriptor persistenceUnit : units ) {
-			System.out.println(
-					String.format(
+			log.debugf(
 					"Checking persistence-unit [name=%s, explicit-provider=%s] against incoming persistence unit name [%s]",
 					persistenceUnit.getName(),
 					persistenceUnit.getProviderClassName(),
 					persistenceUnitName
-					)
 			);
 
 			final boolean matches = persistenceUnitName == null || persistenceUnit.getName().equals( persistenceUnitName );
 			if ( !matches ) {
-				System.out.println( "Excluding from consideration due to name mis-match" );
+				log.debug( "Excluding from consideration due to name mis-match" );
 				continue;
 			}
 
 			// See if we (Hibernate) are the persistence provider
 			if ( ! ProviderChecker.isProvider( persistenceUnit, properties ) ) {
-				System.out.println( "Excluding from consideration due to provider mis-match" );
+				log.debug( "Excluding from consideration due to provider mis-match" );
 				continue;
 			}
 
@@ -98,7 +100,14 @@ final class FastbootHibernateProvider extends HibernatePersistenceProvider imple
 			}
 		}
 
-		System.out.println( "Found no matching persistence units" );
+		log.debug( "Found no matching persistence units" );
 		return null;
+	}
+
+	private void verifyProperties(Map properties) {
+		if ( properties != null && properties.size() != 0 ) {
+			throw new PersistenceException( "The FastbootHibernateProvider PersistenceProvider can not support runtime provided properties. " +
+													"Make sure you set all properties you need in the configuration resources before building the application." );
+		}
 	}
 }

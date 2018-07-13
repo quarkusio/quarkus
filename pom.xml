@@ -26,6 +26,7 @@
         <module>example</module>
         <module>jaxrs</module>
         <module>test-framework</module>
+        <module>weld</module>
     </modules>
 
     <dependencyManagement>
@@ -49,6 +50,16 @@
             <dependency>
                 <groupId>org.jboss.shamrock</groupId>
                 <artifactId>shamrock-undertow-runtime</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-weld-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-weld-runtime</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -102,6 +113,11 @@
                 <groupId>org.jboss.resteasy</groupId>
                 <artifactId>resteasy-json-binding-provider</artifactId>
                 <version>${resteasy.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.weld.se</groupId>
+                <artifactId>weld-se-core</artifactId>
+                <version>3.0.3.Final</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

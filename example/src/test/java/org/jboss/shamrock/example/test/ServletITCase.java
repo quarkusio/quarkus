@@ -24,7 +24,7 @@ public class ServletITCase {
         while ((r = in.read(buf)) > 0) {
             out.write(buf, 0, r);
         }
-        Assert.assertEquals("Hello", new String(out.toByteArray()));
+        Assert.assertEquals("A message", new String(out.toByteArray()));
     }
 
 }

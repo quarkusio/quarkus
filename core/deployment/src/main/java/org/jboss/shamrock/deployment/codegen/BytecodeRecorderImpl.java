@@ -19,9 +19,9 @@ import org.jboss.classfilewriter.code.CodeAttribute;
 import org.jboss.invocation.proxy.ProxyConfiguration;
 import org.jboss.invocation.proxy.ProxyFactory;
 import org.jboss.shamrock.deployment.ClassOutput;
-import org.jboss.shamrock.deployment.injection.Injection;
 import org.jboss.shamrock.runtime.ContextObject;
 import org.jboss.shamrock.runtime.InjectionInstance;
+import org.jboss.shamrock.runtime.RuntimeInjector;
 import org.jboss.shamrock.runtime.StartupContext;
 
 public class BytecodeRecorderImpl implements BytecodeRecorder {
@@ -67,8 +67,7 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
 
     @Override
     public InjectionInstance<?> newInstanceFactory(String className) {
-        String injectionFactory = Injection.getInstanceFactoryName(className, classOutput);
-        NewInstance instance = new NewInstance(injectionFactory);
+        NewInstance instance = new NewInstance(className);
         methodRecorder.storedMethodCalls.add(instance);
         return instance;
     }
@@ -84,7 +83,7 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
                 .setSuperClass(Object.class)
                 .setClassLoader(getClass().getClassLoader())
                 .setProxyName(getClass().getName() + "$$ClassProxy" + COUNT.incrementAndGet()));
-        Class theClass =  factory.defineClass();
+        Class theClass = factory.defineClass();
         classProxies.put(theClass, name);
         return theClass;
     }
@@ -169,7 +168,7 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
             if (params[i] instanceof ReturnedProxy) {
                 continue;
             }
-            if(classProxies.containsKey(params[i])) {
+            if (classProxies.containsKey(params[i])) {
                 continue;
             }
             Annotation[] annotations = method.getParameterAnnotations()[i];
@@ -296,9 +295,8 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
                 }
             } else if (set instanceof NewInstance) {
                 NewInstance ni = (NewInstance) set;
-                ca.newInstruction(ni.className);
-                ca.dup();
-                ca.invokespecial(ni.className, "<init>", "()V");
+                ca.loadClass(ni.className);
+                ca.invokestatic(RuntimeInjector.class.getName(), "newFactory", "(Ljava/lang/Class;)Lorg/jboss/shamrock/runtime/InjectionInstance;");
                 ca.astore(ni.varPos);
             } else {
                 throw new RuntimeException("unkown type " + set);

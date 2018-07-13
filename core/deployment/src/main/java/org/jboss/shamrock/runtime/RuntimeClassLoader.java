@@ -29,6 +29,9 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
     @Override
     protected Class<?> findClass(String name) throws ClassNotFoundException {
         byte[] bytes = classes.get(name);
+        if(bytes == null) {
+            throw new ClassNotFoundException();
+        }
         return defineClass(name, bytes, 0, bytes.length);
     }
 

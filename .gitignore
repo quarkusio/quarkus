@@ -8,3 +8,8 @@ target
 .project
 
 .DS_Store
+
+#Custom:
+com.example.Main
+cp.txt
+*.log

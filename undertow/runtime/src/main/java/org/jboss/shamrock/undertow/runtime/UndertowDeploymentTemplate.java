@@ -1,5 +1,8 @@
 package org.jboss.shamrock.undertow.runtime;
 
+import java.io.Closeable;
+import java.io.IOException;
+
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 
@@ -8,6 +11,7 @@ import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.runtime.StartupContext;
 
 import io.undertow.Undertow;
+import io.undertow.server.HttpHandler;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
@@ -28,7 +32,7 @@ public class UndertowDeploymentTemplate {
         d.setDeploymentName(name);
         d.setContextPath("/");
         ClassLoader cl = UndertowDeploymentTemplate.class.getClassLoader();
-        if(cl != null) {
+        if (cl != null) {
             d.setClassLoader(cl);
         } else {
             //remove once graal release with CL support is availible
@@ -43,7 +47,8 @@ public class UndertowDeploymentTemplate {
     }
 
     public void registerServlet(@ContextObject("deploymentInfo") DeploymentInfo info, String name, Class<?> servletClass, boolean asyncSupported, InstanceFactory<? extends Servlet> instanceFactory) throws Exception {
-        ServletInfo servletInfo = new ServletInfo(name, (Class<? extends Servlet>)servletClass, instanceFactory);
+        ServletInfo servletInfo = new ServletInfo(name, (Class<? extends Servlet>) servletClass, instanceFactory);
+        servletInfo.setLoadOnStartup(1);
         info.addServlet(servletInfo);
         servletInfo.setAsyncSupported(asyncSupported);
     }
@@ -57,16 +62,29 @@ public class UndertowDeploymentTemplate {
         info.addInitParameter(name, value);
     }
 
-    public void deploy(StartupContext startupContext, @ContextObject("deploymentInfo") DeploymentInfo info) throws ServletException {
-        ServletContainer servletContainer = Servlets.defaultContainer();
-        DeploymentManager manager = servletContainer.addDeployment(info);
-        manager.deploy();
+    public void deploy(StartupContext startupContext, @ContextObject("servletHandler") HttpHandler handler) throws ServletException {
         Undertow val = Undertow.builder()
                 .addHttpListener(8080, "localhost")
-                .setHandler(manager.start())
+                .setHandler(handler)
                 .build();
         val.start();
-        startupContext.putValue("undertow", val);
+        startupContext.addCloseable(new Closeable() {
+            @Override
+            public void close() throws IOException {
+                val.stop();
+            }
+        });
     }
 
+    @ContextObject("servletHandler")
+    public HttpHandler bootServletContainer(@ContextObject("deploymentInfo") DeploymentInfo info) {
+        try {
+            ServletContainer servletContainer = Servlets.defaultContainer();
+            DeploymentManager manager = servletContainer.addDeployment(info);
+            manager.deploy();
+            return manager.start();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

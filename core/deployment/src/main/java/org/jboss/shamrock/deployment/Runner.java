@@ -16,6 +16,7 @@ import static org.objectweb.asm.Opcodes.LLOAD;
 import static org.objectweb.asm.Opcodes.LSTORE;
 import static org.objectweb.asm.Opcodes.LSUB;
 import static org.objectweb.asm.Opcodes.NEW;
+import static org.objectweb.asm.Opcodes.PUTSTATIC;
 import static org.objectweb.asm.Opcodes.RETURN;
 import static org.objectweb.asm.Opcodes.SWAP;
 
@@ -57,6 +58,8 @@ public class Runner {
     private static final AtomicInteger COUNT = new AtomicInteger();
     public static final String MAIN_CLASS = "org/jboss/shamrock/runner/Main";
     private static final String GRAAL_AUTOFEATURE = "org/jboss/shamrock/runner/AutoFeature";
+    private static final String STATIC_INIT_TIME = "STATIC_INIT_TIME";
+    private static final String STARTUP_CONTEXT = "STARTUP_CONTEXT";
 
     private final List<ResourceProcessor> processors;
     private final ClassOutput output;
@@ -142,7 +145,15 @@ public class Runner {
 
 
         private final List<DeploymentTaskHolder> tasks = new ArrayList<>();
+        private final List<DeploymentTaskHolder> staticInitTasks = new ArrayList<>();
         private final Set<String> reflectiveClasses = new LinkedHashSet<>();
+
+        @Override
+        public BytecodeRecorder addStaticInitTask(int priority) {
+            String className = getClass().getName() + "$$Proxy" + COUNT.incrementAndGet();
+            staticInitTasks.add(new DeploymentTaskHolder(className, priority));
+            return new BytecodeRecorderImpl(className, StartupTask.class, output);
+        }
 
         @Override
         public BytecodeRecorder addDeploymentTask(int priority) {
@@ -164,6 +175,7 @@ public class Runner {
         void writeMainClass() throws IOException {
 
             Collections.sort(tasks);
+            Collections.sort(staticInitTasks);
 
             ClassWriter file = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
             file.visit(Opcodes.V1_8, ACC_PUBLIC | ACC_SUPER, MAIN_CLASS, null, Type.getInternalName(Object.class), null);
@@ -176,13 +188,35 @@ public class Runner {
             mv.visitMaxs(0, 1);
             mv.visitEnd();
 
+            file.visitField(ACC_PUBLIC | ACC_STATIC, STATIC_INIT_TIME, "J", null, null);
+            file.visitField(ACC_PUBLIC | ACC_STATIC, STARTUP_CONTEXT, "L" + Type.getInternalName(StartupContext.class) + ";", null, null);
+
+            mv = file.visitMethod(ACC_PUBLIC | ACC_STATIC, "<clinit>", "()V", null, null);
+            mv.visitMethodInsn(INVOKESTATIC, Type.getInternalName(System.class), "currentTimeMillis", "()J", false);
+            mv.visitFieldInsn(PUTSTATIC, MAIN_CLASS, STATIC_INIT_TIME, "J");
+            mv.visitTypeInsn(NEW, Type.getInternalName(StartupContext.class));
+            mv.visitInsn(DUP);
+            mv.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(StartupContext.class), "<init>", "()V", false);
+            mv.visitInsn(DUP);
+            mv.visitFieldInsn(PUTSTATIC, MAIN_CLASS, STARTUP_CONTEXT, "L" + Type.getInternalName(StartupContext.class) + ";");
+            for (DeploymentTaskHolder holder : staticInitTasks) {
+                mv.visitInsn(DUP);
+                String className = holder.className.replace(".", "/");
+                mv.visitTypeInsn(NEW, className);
+                mv.visitInsn(DUP);
+                mv.visitMethodInsn(INVOKESPECIAL, className, "<init>", "()V", false);
+                mv.visitInsn(SWAP);
+                mv.visitMethodInsn(INVOKEINTERFACE, Type.getInternalName(StartupTask.class), "deploy", "(L" + StartupContext.class.getName().replace(".", "/") + ";)V", true);
+            }
+
+            mv.visitInsn(RETURN);
+            mv.visitMaxs(0, 4);
+            mv.visitEnd();
 
             mv = file.visitMethod(ACC_PUBLIC | ACC_STATIC, "main", "([Ljava/lang/String;)V", null, null);
             mv.visitMethodInsn(INVOKESTATIC, Type.getInternalName(System.class), "currentTimeMillis", "()J", false);
             mv.visitVarInsn(LSTORE, 2);
-            mv.visitTypeInsn(NEW, Type.getInternalName(StartupContext.class));
-            mv.visitInsn(DUP);
-            mv.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(StartupContext.class), "<init>", "()V", false);
+            mv.visitFieldInsn(GETSTATIC, MAIN_CLASS, STARTUP_CONTEXT, "L" + Type.getInternalName(StartupContext.class) + ";");
             for (DeploymentTaskHolder holder : tasks) {
                 mv.visitInsn(DUP);
                 String className = holder.className.replace(".", "/");
@@ -193,6 +227,7 @@ public class Runner {
                 mv.visitMethodInsn(INVOKEINTERFACE, Type.getInternalName(StartupTask.class), "deploy", "(L" + StartupContext.class.getName().replace(".", "/") + ";)V", true);
             }
 
+            //time since main start
             mv.visitFieldInsn(GETSTATIC, Type.getInternalName(System.class), "out", "L" + Type.getInternalName(PrintStream.class) + ";");
             mv.visitMethodInsn(INVOKESTATIC, Type.getInternalName(System.class), "currentTimeMillis", "()J", false);
             mv.visitVarInsn(LLOAD, 2);
@@ -205,6 +240,18 @@ public class Runner {
             mv.visitLdcInsn("ms");
             mv.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(PrintStream.class), "println", "(Ljava/lang/String;)V", false);
 
+            //time since static init started
+            mv.visitFieldInsn(GETSTATIC, Type.getInternalName(System.class), "out", "L" + Type.getInternalName(PrintStream.class) + ";");
+            mv.visitMethodInsn(INVOKESTATIC, Type.getInternalName(System.class), "currentTimeMillis", "()J", false);
+            mv.visitFieldInsn(GETSTATIC, MAIN_CLASS, STATIC_INIT_TIME, "J");
+            mv.visitInsn(LSUB);
+            mv.visitFieldInsn(GETSTATIC, Type.getInternalName(System.class), "out", "L" + Type.getInternalName(PrintStream.class) + ";");
+            mv.visitLdcInsn("Time since static init started ");
+            mv.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(PrintStream.class), "print", "(Ljava/lang/String;)V", false);
+            mv.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(PrintStream.class), "print", "(J)V", false);
+            mv.visitFieldInsn(GETSTATIC, Type.getInternalName(System.class), "out", "L" + Type.getInternalName(PrintStream.class) + ";");
+            mv.visitLdcInsn("ms");
+            mv.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(PrintStream.class), "println", "(Ljava/lang/String;)V", false);
 
             mv.visitInsn(RETURN);
             mv.visitMaxs(0, 4);

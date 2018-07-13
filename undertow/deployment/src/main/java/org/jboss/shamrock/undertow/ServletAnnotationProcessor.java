@@ -30,14 +30,14 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
         processorContext.addReflectiveClass(DefaultServlet.class.getName());
         processorContext.addReflectiveClass("io.undertow.server.protocol.http.HttpRequestParser$$generated");
 
-        try (BytecodeRecorder context = processorContext.addDeploymentTask(RuntimePriority.UNDERTOW_CREATE_DEPLOYMENT)) {
+        try (BytecodeRecorder context = processorContext.addStaticInitTask(RuntimePriority.UNDERTOW_CREATE_DEPLOYMENT)) {
             UndertowDeploymentTemplate template = context.getRecordingProxy(UndertowDeploymentTemplate.class);
             template.createDeployment("test");
         }
         final Index index = archiveContext.getIndex();
         List<AnnotationInstance> annotations = index.getAnnotations(WEB_SERVLET);
         if (annotations != null && annotations.size() > 0) {
-            try (BytecodeRecorder context = processorContext.addDeploymentTask(RuntimePriority.UNDERTOW_REGISTER_SERVLET)) {
+            try (BytecodeRecorder context = processorContext.addStaticInitTask(RuntimePriority.UNDERTOW_REGISTER_SERVLET)) {
                 UndertowDeploymentTemplate template = context.getRecordingProxy(UndertowDeploymentTemplate.class);
                 for (AnnotationInstance annotation : annotations) {
                     String name = annotation.value("name").asString();
@@ -52,6 +52,12 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
                     }
                 }
             }
+        }
+
+
+        try (BytecodeRecorder context = processorContext.addStaticInitTask(RuntimePriority.UNDERTOW_START)) {
+            UndertowDeploymentTemplate template = context.getRecordingProxy(UndertowDeploymentTemplate.class);
+            template.bootServletContainer(null);
         }
 
         try (BytecodeRecorder context = processorContext.addDeploymentTask(RuntimePriority.UNDERTOW_START)) {

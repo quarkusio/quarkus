@@ -10,6 +10,18 @@ import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
  */
 public interface ProcessorContext {
 
+
+    /**
+     * Adds a new static init task with the given priority. This task will be from a static init
+     * block in priority order
+     *
+     * These tasks are always run before deployment tasks
+     *
+     * @param priority The priority
+     * @return A recorder than can be used to generate bytecode
+     */
+    BytecodeRecorder addStaticInitTask(int priority);
+
     /**
      * Adds a new deployment task with the given priority. This task will be run on startup in priority order.
      *

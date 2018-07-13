@@ -141,7 +141,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
         }
         AnnotationInstance appPath = app.get(0);
         String path = appPath.value().asString();
-        try (BytecodeRecorder recorder = processorContext.addDeploymentTask(RuntimePriority.JAXRS_DEPLOYMENT)) {
+        try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.JAXRS_DEPLOYMENT)) {
             UndertowDeploymentTemplate undertow = recorder.getRecordingProxy(UndertowDeploymentTemplate.class);
             InjectionInstance<? extends Servlet> instanceFactory = (InjectionInstance<? extends Servlet>) recorder.newInstanceFactory(HttpServlet30Dispatcher.class.getName());
             InstanceFactory<? extends Servlet> factory = undertow.createInstanceFactory(instanceFactory);

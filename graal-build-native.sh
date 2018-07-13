@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+TIME_FORMAT="Seconds: %e \tMax memory (KB): %M"
+
+shopt -s expand_aliases
+alias timer="/usr/bin/time -a -f \"$TIME_FORMAT\""
+
 echo "Expects GraalVM on classpath"
 echo ""
 
@@ -18,4 +23,14 @@ echo ""
 echo ""
 echo "Starting the native app:"
 
-./com.example.Main
+timer ./com.example.Main
+
+echo ""
+echo "Disk size, before strip:"
+du -h com.example.Main
+echo "Disk size, after strip:"
+strip com.example.Main
+du -h com.example.Main
+
+# TODO check benefits of fully static binaries? Could seriously trim the base image?
+#ldd com.example.Main

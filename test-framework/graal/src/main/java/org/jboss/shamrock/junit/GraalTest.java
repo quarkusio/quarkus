@@ -89,6 +89,7 @@ public class GraalTest extends BlockJUnit4ClassRunner {
                     }
                 });
                 new Thread(new ProcessReader(testProcess.getInputStream(), output)).start();
+                new Thread(new ProcessReader(testProcess.getErrorStream(), output)).start();
                 output.whenComplete(new BiConsumer<String, Throwable>() {
                     @Override
                     public void accept(String s, Throwable throwable) {

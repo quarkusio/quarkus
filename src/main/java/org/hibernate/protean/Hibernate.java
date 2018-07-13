@@ -1,13 +1,11 @@
 package org.hibernate.protean;
 
-import javax.persistence.spi.PersistenceProviderResolverHolder;
-
-import org.hibernate.protean.impl.PPResolver;
+import org.hibernate.protean.impl.PersistenceProviderSetup;
 
 public class Hibernate {
 
 	static {
-		PersistenceProviderResolverHolder.setPersistenceProviderResolver( PPResolver.INSTANCE );
+		PersistenceProviderSetup.registerPersistenceProvider();
 	}
 
 	public static void featureInit(){

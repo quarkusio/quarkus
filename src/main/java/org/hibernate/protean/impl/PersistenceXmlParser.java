@@ -207,7 +207,10 @@ public class PersistenceXmlParser {
 	}
 
 	private void parsePersistenceXml(URL xmlUrl, Map integration) {
-		LOG.tracef( "Attempting to parse persistence.xml file : %s", xmlUrl.toExternalForm() );
+		if ( xmlUrl == null ) {
+			LOG.tracef( "XML URL is null!" );
+		}
+		else LOG.tracef( "Attempting to parse persistence.xml file : %s", xmlUrl.toExternalForm() );
 
 		final Document doc = loadUrl( xmlUrl );
 		final Element top = doc.getDocumentElement();

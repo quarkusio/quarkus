@@ -14,29 +14,25 @@ import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.jpa.boot.spi.ProviderChecker;
 
-public class FastbootHibernateProvider extends HibernatePersistenceProvider implements PersistenceProvider  {
+final class FastbootHibernateProvider extends HibernatePersistenceProvider implements PersistenceProvider  {
 
 	@Override
 	public EntityManagerFactory createEntityManagerFactory(String emName, Map map) {
-		System.out.println("FastbootHibernateProvider : createEntityManagerFactory(String emName, Map map)");
 		return super.createEntityManagerFactory( emName, map );
 	}
 
 	@Override
 	public EntityManagerFactory createContainerEntityManagerFactory(PersistenceUnitInfo info, Map map) {
-		System.out.println("Fast boot version: FastbootHibernateProvider");
 		return super.createContainerEntityManagerFactory( info, map );
 	}
 
 	@Override
 	public void generateSchema(PersistenceUnitInfo info, Map map) {
-		System.out.println("Fast boot version: FastbootHibernateProvider");
 		super.generateSchema( info, map );
 	}
 
 	@Override
 	public boolean generateSchema(String persistenceUnitName, Map map) {
-		System.out.println("Fast boot version: FastbootHibernateProvider");
 		return super.generateSchema( persistenceUnitName, map );
 	}
 

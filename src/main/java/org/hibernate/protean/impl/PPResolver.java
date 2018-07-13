@@ -5,14 +5,14 @@ import java.util.List;
 import javax.persistence.spi.PersistenceProvider;
 import javax.persistence.spi.PersistenceProviderResolver;
 
-public final class PPResolver implements PersistenceProviderResolver {
+final class PPResolver implements PersistenceProviderResolver {
 
-	public static PPResolver INSTANCE = new PPResolver();
-	private PPResolver() {}
+	private static List<PersistenceProvider> hardcodedProvidersList =
+			Collections.<PersistenceProvider>singletonList( new FastbootHibernateProvider() );
 
 	@Override
 	public List<PersistenceProvider> getPersistenceProviders() {
-		return Collections.<PersistenceProvider>singletonList( new FastbootHibernateProvider() );
+		return hardcodedProvidersList;
 	}
 
 	@Override

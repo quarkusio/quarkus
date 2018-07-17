@@ -2,5 +2,27 @@
    {
       "name" : "org.hibernate.jpa.HibernatePersistenceProvider",
       "allPublicConstructors" : true
+   },
+   {
+      "name" : "com.sun.xml.internal.stream.events.XMLEventFactoryImpl",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.boot.model.naming.ImplicitNamingStrategyJpaCompliantImpl",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.dialect.PostgreSQL95Dialect",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.postgresql.Driver",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "com.example.Person",
+      "allPublicConstructors" : true,
+      "allDeclaredMethods" : true,
+      "allPublicMethods" : true
    }
 ]

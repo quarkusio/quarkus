@@ -8,7 +8,8 @@
     <name>Hibernate ORM 5 as Java 9 automatic modules</name>
 
     <properties>
-        <version.org.postgresql.jdbc>42.2.2</version.org.postgresql.jdbc>
+        <!-- Requires postgresql v. 42.2.5-SNAPSHOT so to include 7a0b7d65582a21376fc114eb197b5bae1fe1ea00 -->
+        <version.org.postgresql.jdbc>42.2.5-SNAPSHOT</version.org.postgresql.jdbc>
         <version.org.mariadb.jdbc>1.5.7</version.org.mariadb.jdbc>
         <version.com.impossibl.pgng>0.6</version.com.impossibl.pgng>
         <version.junit>4.12</version.junit>

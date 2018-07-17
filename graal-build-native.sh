@@ -15,6 +15,9 @@ mvn clean package > maven-build.log
 mvn dependency:build-classpath -DexcludeArtifactIds=svm-core -Dmdep.outputFile=cp.txt >> maven-build.log
 CLASSPATH=`cat cp.txt`
 
+echo "Removing previous binary, to avoid misleading in case native-image fails:"
+rm com.example.Main
+
 echo "Starting native-image :"
 #--verbose --shared -ea -H:+ReportUnsupportedElementsAtRuntime -H:+PrintAnalysisCallTree
 native-image --no-server -O0 --verbose -H:IncludeResources=META-INF/persistence.xml -H:+ReportUnsupportedElementsAtRuntime -H:ReflectionConfigurationFiles=reflectconfig.json -cp "$CLASSPATH":./target/classes com.example.Main com.example.Main

@@ -1,4 +1,4 @@
-package com.example;
+package org.hibernate.protean.substitutions;
 
 
 import java.util.List;

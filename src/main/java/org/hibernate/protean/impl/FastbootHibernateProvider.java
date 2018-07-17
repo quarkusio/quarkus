@@ -17,6 +17,8 @@ import org.hibernate.jpa.boot.spi.ProviderChecker;
 
 import org.jboss.logging.Logger;
 
+import static org.hibernate.jpa.boot.spi.ProviderChecker.extractRequestedProviderName;
+
 final class FastbootHibernateProvider extends HibernatePersistenceProvider implements PersistenceProvider  {
 
 	private static final Logger log = Logger.getLogger( HibernatePersistenceProvider.class );
@@ -55,9 +57,9 @@ final class FastbootHibernateProvider extends HibernatePersistenceProvider imple
 	/**
 	 * Copied and modified from super{@link #getEntityManagerFactoryBuilderOrNull(String, Map, ClassLoader, ClassLoaderService)}
 	 * Notable changes:
-	 *  - ignore the ClassLoaderService and inject our own
-	 *  - verify the Map properties are not set (or fail)
-	 *  - don't try looking for ParsedPersistenceXmlDescriptor resources to parse, just take the pre-parsed ones in the static final field
+	 *  - ignore the ClassLoaderService parameter to inject our own custom implementation instead
+	 *  - verify the Map properties are not set (or fail as we can't support runtime overrides)
+	 *  - don't try looking for ParsedPersistenceXmlDescriptor resources to parse, just take the pre-parsed ones from the static final field
 	 */
 	private EntityManagerFactoryBuilder getEntityManagerFactoryBuilderOrNull(String persistenceUnitName, Map properties,
 																			 ClassLoader providedClassLoader, ClassLoaderService providedClassLoaderService) {
@@ -69,7 +71,7 @@ final class FastbootHibernateProvider extends HibernatePersistenceProvider imple
 		//These are pre-parsed during image generation:
 		final List<ParsedPersistenceXmlDescriptor> units = PersistenceUnitsHolder.units;
 
-		log.debugf( "Located and parsed %s persistence units; checking each", units.size() );
+		log.debugf( "Located %s persistence units; checking each", units.size() );
 
 		if ( persistenceUnitName == null && units.size() > 1 ) {
 			// no persistence-unit name to look for was given and we found multiple persistence-units
@@ -86,12 +88,12 @@ final class FastbootHibernateProvider extends HibernatePersistenceProvider imple
 
 			final boolean matches = persistenceUnitName == null || persistenceUnit.getName().equals( persistenceUnitName );
 			if ( !matches ) {
-				log.debug( "Excluding from consideration due to name mis-match" );
+				log.debugf( "Excluding from consideration '%s' due to name mis-match", persistenceUnit.getName() );
 				continue;
 			}
 
 			// See if we (Hibernate) are the persistence provider
-			if ( ! ProviderChecker.isProvider( persistenceUnit, properties ) ) {
+			if ( ! isProvider( persistenceUnit ) ) {
 				log.debug( "Excluding from consideration due to provider mis-match" );
 				continue;
 			}
@@ -102,6 +104,16 @@ final class FastbootHibernateProvider extends HibernatePersistenceProvider imple
 
 		log.debug( "Found no matching persistence units" );
 		return null;
+	}
+
+	private boolean isProvider(ParsedPersistenceXmlDescriptor persistenceUnit) {
+		Map<Object, Object> props = Collections.emptyMap();
+		String requestedProviderName = extractRequestedProviderName( persistenceUnit, props );
+		if ( requestedProviderName == null ) {
+			//We'll always assume we are the best possible provider match unless the user explicitly asks for a different one.
+			return true;
+		}
+		return ProviderChecker.hibernateProviderNamesContain( requestedProviderName ) || FastbootHibernateProvider.class.getName().equals( requestedProviderName );
 	}
 
 	private void verifyProperties(Map properties) {

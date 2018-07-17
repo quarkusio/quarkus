@@ -1,9 +1,14 @@
 package org.jboss.shamrock.weld.runtime;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
+import java.util.jar.JarFile;
 
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.se.SeContainer;
@@ -26,6 +31,24 @@ public class WeldDeploymentTemplate {
 
             }
         }.setDefaultUseCaches(false);
+        //this is crap
+        Class<?> clazz = Class.forName("sun.net.www.protocol.jar.JarFileFactory");
+        Field field = clazz.getDeclaredField("fileCache");
+        field.setAccessible(true);
+        Map<String, JarFile > fileCache = (Map<String, JarFile>) field.get(null);
+        for(Map.Entry<String, JarFile> e : new HashSet<>(fileCache.entrySet())) {
+            e.getValue().close();
+        }
+        fileCache.clear();
+
+        field = clazz.getDeclaredField("urlCache");
+        field.setAccessible(true);
+        Map<JarFile, URL> urlCache = (Map<JarFile, URL>) field.get(null);
+        for(Map.Entry<JarFile, URL> e : new HashSet<>(urlCache.entrySet())) {
+            e.getKey().close();
+        }
+        urlCache.clear();
+
         return new Weld();
     }
 
@@ -42,6 +65,7 @@ public class WeldDeploymentTemplate {
                 initialize.getBeanManager().getReference(bean, Object.class, initialize.getBeanManager().createCreationalContext(bean));
             }
         }
+
 
 
         return initialize;

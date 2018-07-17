@@ -13,3 +13,9 @@ target
 com.example.Main
 cp.txt
 *.log
+reports
+
+#jdeps:
+classdef.jsa
+classdef.lst
+report.out

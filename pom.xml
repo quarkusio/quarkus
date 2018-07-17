@@ -17,6 +17,7 @@
     <properties>
         <version.org.jandex>2.0.5.Final</version.org.jandex>
         <resteasy.version>3.5.2-SNAPSHOT</resteasy.version>
+        <weld-se-core.version>3.0.3.final</weld-se-core.version>
     </properties>
 
     <modules>
@@ -117,7 +118,7 @@
             <dependency>
                 <groupId>org.jboss.weld.se</groupId>
                 <artifactId>weld-se-core</artifactId>
-                <version>3.0.3.Final</version>
+                <version>${weld-se-core.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

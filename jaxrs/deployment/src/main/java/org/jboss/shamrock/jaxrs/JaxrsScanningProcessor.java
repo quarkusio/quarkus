@@ -72,7 +72,8 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
     public static final Set<String> BOOT_CLASSES = new HashSet<String>();
     public static final Set<String> BUILTIN_PROVIDERS;
 
-    private static final DotName[] METHOD_ANNOTATIONS = {DotName.createSimple("javax.ws.rs.GET"),
+    private static final DotName[] METHOD_ANNOTATIONS = {
+            DotName.createSimple("javax.ws.rs.GET"),
             DotName.createSimple("javax.ws.rs.HEAD"),
             DotName.createSimple("javax.ws.rs.DELETE"),
             DotName.createSimple("javax.ws.rs.OPTIONS"),

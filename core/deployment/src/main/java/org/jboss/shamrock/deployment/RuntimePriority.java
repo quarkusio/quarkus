@@ -11,6 +11,7 @@ public class RuntimePriority {
     public static final int UNDERTOW_REGISTER_SERVLET = 200;
     public static final int JAXRS_DEPLOYMENT = 250;
     public static final int WELD_DEPLOYMENT = 300;
-    public static final int UNDERTOW_START = 400;
+    public static final int UNDERTOW_DEPLOY = 400;
+    public static final int UNDERTOW_START = 500;
 
 }

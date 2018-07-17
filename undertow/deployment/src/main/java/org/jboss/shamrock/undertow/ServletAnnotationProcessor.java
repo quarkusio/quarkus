@@ -55,7 +55,7 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
         }
 
 
-        try (BytecodeRecorder context = processorContext.addStaticInitTask(RuntimePriority.UNDERTOW_START)) {
+        try (BytecodeRecorder context = processorContext.addStaticInitTask(RuntimePriority.UNDERTOW_DEPLOY)) {
             UndertowDeploymentTemplate template = context.getRecordingProxy(UndertowDeploymentTemplate.class);
             template.bootServletContainer(null);
         }

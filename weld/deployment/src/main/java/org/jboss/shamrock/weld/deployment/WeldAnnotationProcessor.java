@@ -29,7 +29,7 @@ public class WeldAnnotationProcessor implements ResourceProcessor {
                 }
             }
             SeContainer weld = template.doBoot(init);
-            //template.setupInjection(weld);
+            template.setupInjection(weld);
         }
 
     }

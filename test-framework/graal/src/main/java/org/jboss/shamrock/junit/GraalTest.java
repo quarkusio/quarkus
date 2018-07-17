@@ -70,7 +70,7 @@ public class GraalTest extends BlockJUnit4ClassRunner {
                 temp.mkdir();
 
 
-                Process process = Runtime.getRuntime().exec(new String[]{nativeImage, "-jar", path}, new String[]{}, temp);
+                Process process = Runtime.getRuntime().exec(new String[]{nativeImage, "-jar", path, "-H:+ReportUnsupportedElementsAtRuntime"}, new String[]{}, temp);
                 CompletableFuture<String> output = new CompletableFuture<>();
                 new Thread(new ProcessReader(process.getInputStream(), output)).start();
                 if (process.waitFor() != 0) {
@@ -128,7 +128,6 @@ public class GraalTest extends BlockJUnit4ClassRunner {
             try {
                 while ((i = inputStream.read(b)) > 0) {
                     out.write(b, 0, i);
-                    System.out.print(new String(b, 0 , i));
                 }
                 result.complete(new String(out.toByteArray()));
             } catch (IOException e) {

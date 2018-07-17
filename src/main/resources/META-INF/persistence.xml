@@ -1,0 +1,39 @@
+<persistence xmlns="http://xmlns.jcp.org/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence
+             http://xmlns.jcp.org/xml/ns/persistence/persistence_2_1.xsd"
+             version="2.1">
+
+    <persistence-unit name="templatePU" transaction-type="RESOURCE_LOCAL">
+
+        <description>Hibernate test case template Persistence Unit</description>
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+
+        <exclude-unlisted-classes>false</exclude-unlisted-classes>
+
+        <properties>
+            <property name="hibernate.archive.autodetection" value="class, hbm"/>
+
+            <property name="hibernate.dialect" value="org.hibernate.dialect.H2Dialect"/>
+            <property name="hibernate.connection.driver_class" value="org.h2.Driver"/>
+            <property name="hibernate.connection.url" value="jdbc:h2:mem:db1;DB_CLOSE_DELAY=-1"/>
+            <property name="hibernate.connection.username" value="sa"/>
+
+            <property name="hibernate.connection.pool_size" value="5"/>
+
+            <property name="hibernate.show_sql" value="true"/>
+            <property name="hibernate.format_sql" value="true"/>
+            <property name="hibernate.hbm2ddl.auto" value="create-drop"/>
+
+            <property name="hibernate.max_fetch_depth" value="5"/>
+
+            <!--NOTE: hibernate.jdbc.batch_versioned_data should be set to false when testing with Oracle-->
+            <property name="hibernate.jdbc.batch_versioned_data" value="true"/>
+
+            <property name="javax.persistence.validation.mode" value="NONE"/>
+            <property name="hibernate.service.allow_crawling" value="false"/>
+            <property name="hibernate.session.events.log" value="true"/>
+        </properties>
+
+    </persistence-unit>
+</persistence>

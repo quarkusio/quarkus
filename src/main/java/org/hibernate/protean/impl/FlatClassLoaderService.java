@@ -20,6 +20,11 @@ import org.hibernate.internal.CoreMessageLogger;
 public class FlatClassLoaderService implements ClassLoaderService {
 
 	private static final CoreMessageLogger log = CoreLogging.messageLogger( ClassLoaderServiceImpl.class );
+	public static final ClassLoaderService INSTANCE = new FlatClassLoaderService();
+
+	private FlatClassLoaderService() {
+		//use #INSTANCE when you need one
+	}
 
 	@Override
 	public <T> Class<T> classForName(String className) {

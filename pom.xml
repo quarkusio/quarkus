@@ -17,7 +17,7 @@
     <properties>
         <version.org.jandex>2.0.5.Final</version.org.jandex>
         <resteasy.version>3.5.2-SNAPSHOT</resteasy.version>
-        <weld-se-core.version>3.0.3.final</weld-se-core.version>
+        <weld-se-core.version>3.0.3.Final</weld-se-core.version>
     </properties>
 
     <modules>

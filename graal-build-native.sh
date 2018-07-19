@@ -20,7 +20,7 @@ rm com.example.Main
 
 echo "Starting native-image :"
 #--verbose --shared -ea -H:+ReportUnsupportedElementsAtRuntime -H:+PrintAnalysisCallTree
-timer native-image --no-server -O0 --verbose -H:IncludeResources=META-INF/services/.* -H:+ReportUnsupportedElementsAtRuntime -H:ReflectionConfigurationFiles=reflectconfig.json -cp "$CLASSPATH":./target/classes com.example.Main com.example.Main
+timer native-image --no-server -O0 --verbose -H:IncludeResources=META-INF/services/.* -H:-RuntimeAssertions -H:Kind=EXECUTABLE -H:+ReportUnsupportedElementsAtRuntime -H:ReflectionConfigurationFiles=reflectconfig.json -cp "$CLASSPATH":./target/classes com.example.Main com.example.Main
 
 echo ""
 echo ""

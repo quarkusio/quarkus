@@ -62,6 +62,7 @@ final class FastbootHibernateProvider extends HibernatePersistenceProvider imple
 	 *  - ignore the ClassLoaderService parameter to inject our own custom implementation instead
 	 *  - verify the Map properties are not set (or fail as we can't support runtime overrides)
 	 *  - don't try looking for ParsedPersistenceXmlDescriptor resources to parse, just take the pre-parsed ones from the static final field
+	 *  - class annotations metadata is also injected
 	 */
 	private EntityManagerFactoryBuilder getEntityManagerFactoryBuilderOrNull(String persistenceUnitName, Map properties,
 																			 ClassLoader providedClassLoader, ClassLoaderService providedClassLoaderService) {

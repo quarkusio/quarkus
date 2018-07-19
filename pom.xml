@@ -3,9 +3,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.hibernate.demos</groupId>
-    <artifactId>hibernate-orm-on-java9-modules</artifactId>
+    <artifactId>hibernate-orm-protean</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <name>Hibernate ORM 5 as Java 9 automatic modules</name>
+    <name>Hibernate ORM Example running on SubstrateVM</name>
 
     <properties>
         <!-- Requires postgresql v. 42.2.5-SNAPSHOT so to include 7a0b7d65582a21376fc114eb197b5bae1fe1ea00 -->

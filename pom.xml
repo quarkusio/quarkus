@@ -28,6 +28,7 @@
         <module>jaxrs</module>
         <module>test-framework</module>
         <module>weld</module>
+        <module>health</module>
     </modules>
 
     <dependencyManagement>
@@ -56,6 +57,11 @@
             <dependency>
                 <groupId>org.jboss.shamrock</groupId>
                 <artifactId>shamrock-weld-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-health-runtime</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -119,6 +125,11 @@
                 <groupId>org.jboss.weld.se</groupId>
                 <artifactId>weld-se-core</artifactId>
                 <version>${weld-se-core.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.spec.javax.servlet</groupId>
+                <artifactId>jboss-servlet-api_4.0_spec</artifactId>
+                <version>1.0.0.Final</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

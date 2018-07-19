@@ -1,8 +1,8 @@
 package org.jboss.shamrock.example;
 
-import javax.enterprise.context.ApplicationScoped;
+//import javax.enterprise.context.ApplicationScoped;
 
-@ApplicationScoped
+//@ApplicationScoped
 public class MessageBean {
 
     public String getMessage() {

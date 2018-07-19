@@ -147,6 +147,7 @@ public class Runner {
         private final List<DeploymentTaskHolder> tasks = new ArrayList<>();
         private final List<DeploymentTaskHolder> staticInitTasks = new ArrayList<>();
         private final Set<String> reflectiveClasses = new LinkedHashSet<>();
+        private final List<Class<?>> additionalBeans = new ArrayList<>();
 
         @Override
         public BytecodeRecorder addStaticInitTask(int priority) {
@@ -170,6 +171,17 @@ public class Runner {
         @Override
         public void addGeneratedClass(String name, byte[] classData) throws IOException {
             output.writeClass(name, classData);
+        }
+
+        @Override
+        public void addAdditionalBean(Class<?> beanClass) {
+            addReflectiveClass(beanClass.getName());
+            additionalBeans.add(beanClass);
+        }
+
+        @Override
+        public List<Class<?>> getAdditionalBeans() {
+            return additionalBeans;
         }
 
         void writeMainClass() throws IOException {
@@ -285,12 +297,14 @@ public class Runner {
                 mv.visitInsn(DUP);
                 mv.visitLdcInsn(0);
                 String internalName = holder.replace(".", "/");
-                mv.visitLdcInsn(Type.getObjectType(internalName));
+                mv.visitLdcInsn(holder);
+                mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName", "(Ljava/lang/String;)Ljava/lang/Class;", false);
                 mv.visitInsn(AASTORE);
                 mv.visitMethodInsn(INVOKESTATIC, "org/graalvm/nativeimage/RuntimeReflection", "register", "([Ljava/lang/Class;)V", false);
 
                 //now load everything else
-                mv.visitLdcInsn(Type.getObjectType(internalName));
+                mv.visitLdcInsn(holder);
+                mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName", "(Ljava/lang/String;)Ljava/lang/Class;", false);
                 mv.visitInsn(DUP);
                 mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getDeclaredConstructors", "()[Ljava/lang/reflect/Constructor;", false);
                 mv.visitMethodInsn(INVOKESTATIC, "org/graalvm/nativeimage/RuntimeReflection", "register", "([Ljava/lang/reflect/Executable;)V", false);

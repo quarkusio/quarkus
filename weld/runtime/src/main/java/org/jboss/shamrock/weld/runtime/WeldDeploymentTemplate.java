@@ -50,8 +50,9 @@ public class WeldDeploymentTemplate {
         urlCache.clear();
 
         Weld weld = new Weld();
+        weld.disableDiscovery();
         // Remove unused beans after bootstrap
-        weld.property(ConfigurationKey.UNUSED_BEANS_EXCLUDE_TYPE.get(), UnusedBeans.NONE);
+        weld.property(ConfigurationKey.UNUSED_BEANS_EXCLUDE_TYPE.get(), UnusedBeans.ALL);
         weld.property(ConfigurationKey.UNUSED_BEANS_EXCLUDE_ANNOTATION.get(), "javax\\.ws\\.rs.*|javax\\.servlet\\.annotation.*");
         return weld;
     }

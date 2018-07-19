@@ -168,7 +168,7 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
             if (params[i] instanceof ReturnedProxy) {
                 continue;
             }
-            if (classProxies.containsKey(params[i])) {
+            if (params[i] instanceof Class) {
                 continue;
             }
             Annotation[] annotations = method.getParameterAnnotations()[i];
@@ -256,7 +256,12 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
                             ca.aload(pos);
                         } else if (param instanceof Class<?>) {
                             String name = classProxies.get(param);
-                            ca.loadClass(name);
+                            if(name == null) {
+                                name = ((Class) param).getName();
+                            }
+                            ca.ldc(name);
+                            ca.invokestatic("java/lang/Class","forName", "(Ljava/lang/String;)Ljava/lang/Class;");
+                            //ca.loadClass(name);
                         } else {
                             //TODO: rest of primitives
                             ca.ldc((int) param);

@@ -11,7 +11,6 @@ import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
 import org.hibernate.jpa.boot.spi.Bootstrap;
-import org.hibernate.protean.nativeprocessing.NoConnectionProvider;
 
 final class PersistenceUnitsHolder {
 
@@ -73,7 +72,7 @@ final class PersistenceUnitsHolder {
 
 	private static Map createNativeImageProcessingConfiguration() {
 		HashMap props = new HashMap();
-		NoConnectionProvider.registerToProperties( props );
+		props.put( "hibernate.temp.use_jdbc_metadata_defaults", "false" );
 		return props;
 	}
 

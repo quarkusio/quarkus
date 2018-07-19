@@ -16,6 +16,46 @@
       "allPublicConstructors" : true
    },
    {
+      "name" : "org.hibernate.hql.internal.ast.HqlToken",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.hql.internal.ast.tree.Node",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.hql.internal.ast.tree.QueryNode",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.hql.internal.ast.tree.SqlNode",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.hql.internal.ast.tree.FromClause",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.hql.internal.ast.tree.DotNode",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.hql.internal.ast.tree.IdentNode",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.hql.internal.ast.tree.FromElement",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.hql.internal.ast.tree.SelectClause",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.hql.internal.ast.tree.SqlFragment",
+      "allPublicConstructors" : true
+   },
+   {
       "name" : "org.postgresql.Driver",
       "allPublicConstructors" : true
    },

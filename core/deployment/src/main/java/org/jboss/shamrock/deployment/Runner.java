@@ -46,6 +46,7 @@ import org.jboss.shamrock.runtime.StartupContext;
 import org.jboss.shamrock.runtime.StartupTask;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -292,6 +293,17 @@ public class Runner {
 
 
             for (String holder : reflectiveClasses) {
+                Label lTryBlockStart = new Label();
+                Label lTryBlockEnd = new Label();
+                Label lCatchBlockStart = new Label();
+                Label lCatchBlockEnd = new Label();
+
+                // set up try-catch block for RuntimeException
+                mv.visitTryCatchBlock(lTryBlockStart, lTryBlockEnd,
+                        lCatchBlockStart, "java/lang/Exception");
+
+                // started the try block
+                mv.visitLabel(lTryBlockStart);
                 mv.visitLdcInsn(1);
                 mv.visitTypeInsn(ANEWARRAY, "java/lang/Class");
                 mv.visitInsn(DUP);
@@ -311,6 +323,9 @@ public class Runner {
                 //now load everything else
                 mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getMethods", "()[Ljava/lang/reflect/Method;", false);
                 mv.visitMethodInsn(INVOKESTATIC, "org/graalvm/nativeimage/RuntimeReflection", "register", "([Ljava/lang/reflect/Executable;)V", false);
+                mv.visitLabel(lTryBlockEnd);
+                mv.visitLabel(lCatchBlockStart);
+                mv.visitLabel(lCatchBlockEnd);
             }
             mv.visitInsn(RETURN);
             mv.visitMaxs(0, 2);

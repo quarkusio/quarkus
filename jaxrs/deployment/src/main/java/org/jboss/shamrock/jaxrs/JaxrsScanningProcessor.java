@@ -134,14 +134,10 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
 
     @Override
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
-        try {
-            //this is pretty yuck, and does not really belong here, but it is needed to get the json-p
-            //provider to work
-            Class.forName("org.glassfish.json.JsonProviderImpl");
-            processorContext.addReflectiveClass("org.glassfish.json.JsonProviderImpl");
-        } catch (ClassNotFoundException e) {
-
-        }
+        //this is pretty yuck, and does not really belong here, but it is needed to get the json-p
+        //provider to work
+        processorContext.addReflectiveClass("org.glassfish.json.JsonProviderImpl");
+        processorContext.addReflectiveClass("com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector");
         Index index = archiveContext.getIndex();
         List<AnnotationInstance> app = index.getAnnotations(APPLICATION_PATH);
         if (app.isEmpty()) {

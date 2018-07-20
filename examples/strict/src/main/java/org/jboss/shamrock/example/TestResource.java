@@ -15,17 +15,18 @@ public class TestResource {
     }
 
     @GET
-    @Path("/json")
+    @Path("/jackson")
     @Produces("application/json")
     public MyData get() {
         MyData m = new MyData();
-        m.setName("Stuart Douglas");
-        m.setValue("A value");
+        m.setName("Stuart");
+        m.setValue("A Value");
         return m;
     }
 
     @GET
     @Path("/jsonp")
+    @Produces("application/json")
     public JsonObject jsonp() {
         return Json.createObjectBuilder()
                 .add("name", "Stuart")

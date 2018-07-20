@@ -9,13 +9,14 @@ import java.net.URLConnection;
 import javax.json.Json;
 import javax.json.JsonObject;
 
+import org.jboss.shamrock.junit.GraalTest;
 import org.jboss.shamrock.junit.ShamrockTest;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-@RunWith(ShamrockTest.class)
-public class JaxRSTestCase {
+@RunWith(GraalTest.class)
+public class JaxRSITCase {
 
     @Test
     public void testJAXRS() throws Exception {

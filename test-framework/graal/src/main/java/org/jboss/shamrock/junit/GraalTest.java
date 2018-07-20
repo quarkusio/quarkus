@@ -78,6 +78,7 @@ public class GraalTest extends BlockJUnit4ClassRunner {
                 }
                 Process process = Runtime.getRuntime().exec(command, new String[]{}, temp);
                 CompletableFuture<String> output = new CompletableFuture<>();
+                CompletableFuture<String> errorOutput = new CompletableFuture<>();
                 new Thread(new ProcessReader(process.getInputStream(), output)).start();
                 if (process.waitFor() != 0) {
                     notifier.fireTestFailure(new Failure(Description.createSuiteDescription(GraalTest.class), new RuntimeException("Image generation failed: " + output.get())));
@@ -95,7 +96,7 @@ public class GraalTest extends BlockJUnit4ClassRunner {
                     }
                 });
                 new Thread(new ProcessReader(testProcess.getInputStream(), output)).start();
-                new Thread(new ProcessReader(testProcess.getErrorStream(), output)).start();
+                new Thread(new ProcessReader(testProcess.getErrorStream(), errorOutput)).start();
                 output.whenComplete(new BiConsumer<String, Throwable>() {
                     @Override
                     public void accept(String s, Throwable throwable) {
@@ -103,6 +104,16 @@ public class GraalTest extends BlockJUnit4ClassRunner {
                             throwable.printStackTrace();
                         } else {
                             System.out.println(s);
+                        }
+                    }
+                });
+                errorOutput.whenComplete(new BiConsumer<String, Throwable>() {
+                    @Override
+                    public void accept(String s, Throwable throwable) {
+                        if (throwable != null) {
+                            throwable.printStackTrace();
+                        } else {
+                            System.err.println(s);
                         }
                     }
                 });

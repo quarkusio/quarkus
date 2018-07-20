@@ -1,5 +1,7 @@
 package org.jboss.shamrock.example;
 
+import javax.json.Json;
+import javax.json.JsonObject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -20,6 +22,15 @@ public class TestResource {
         m.setName("Stuart Douglas");
         m.setValue("A value");
         return m;
+    }
+
+    @GET
+    @Path("/jsonp")
+    public JsonObject jsonp() {
+        return Json.createObjectBuilder()
+                .add("name", "Stuart")
+                .add("value", "A Value")
+                .build();
     }
 
 

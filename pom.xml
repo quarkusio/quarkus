@@ -19,6 +19,7 @@
         <resteasy.version>3.5.1.Final</resteasy.version>
         <weld-se-core.version>3.0.4.Final</weld-se-core.version>
         <undertow.version>2.0.11.Final</undertow.version>
+        <xnio.version>3.3.8.Final</xnio.version>
     </properties>
 
     <modules>
@@ -118,12 +119,12 @@
             <dependency>
                 <groupId>org.jboss.xnio</groupId>
                 <artifactId>xnio-api</artifactId>
-                <version>3.3.9.Final-SNAPSHOT</version>
+                <version>${xnio.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.xnio</groupId>
                 <artifactId>xnio-nio</artifactId>
-                <version>3.3.9.Final-SNAPSHOT</version>
+                <version>${xnio.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.resteasy</groupId>

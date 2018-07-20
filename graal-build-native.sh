@@ -16,7 +16,7 @@ echo "Starting mvn build..."
 mvn clean package > maven-build.log
 
 ## Update the classpath definition used by this script:
-mvn dependency:build-classpath -DexcludeArtifactIds=svm-core -Dmdep.outputFile=cp.txt >> maven-build.log
+mvn dependency:build-classpath -DexcludeArtifactIds=svm-core,dom4j -Dmdep.outputFile=cp.txt >> maven-build.log
 CLASSPATH=`cat cp.txt`
 
 echo "Removing previous binary, to avoid misleading in case native-image fails:"

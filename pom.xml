@@ -16,7 +16,7 @@
 
     <properties>
         <version.org.jandex>2.0.5.Final</version.org.jandex>
-        <resteasy.version>3.5.2-SNAPSHOT</resteasy.version>
+        <resteasy.version>3.5.1.Final</resteasy.version>
         <weld-se-core.version>3.0.4.Final</weld-se-core.version>
     </properties>
 
@@ -80,6 +80,11 @@
             <dependency>
                 <groupId>org.jboss.shamrock</groupId>
                 <artifactId>shamrock-jaxrs-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-jaxrs-runtime</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

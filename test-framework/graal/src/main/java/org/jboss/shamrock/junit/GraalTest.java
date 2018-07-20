@@ -42,6 +42,7 @@ public class GraalTest extends BlockJUnit4ClassRunner {
     }
 
     private void runInternal(RunNotifier notifier) {
+        boolean reportAtRuntime = Boolean.getBoolean("graal.reportAtRuntime");
         if (first) {
             first = false;
             String graal = System.getenv("GRAALVM_HOME");
@@ -69,8 +70,13 @@ public class GraalTest extends BlockJUnit4ClassRunner {
                 temp.delete();
                 temp.mkdir();
 
-
-                Process process = Runtime.getRuntime().exec(new String[]{nativeImage, "-jar", path, "-H:+ReportUnsupportedElementsAtRuntime", "-H:IncludeResources=META-INF/.*"}, new String[]{}, temp);
+                String[] command;
+                if (reportAtRuntime) {
+                    command = new String[]{nativeImage, "-jar", path, "-H:+ReportUnsupportedElementsAtRuntime", "-H:IncludeResources=META-INF/.*"};
+                } else {
+                    command = new String[]{nativeImage, "-jar", path, "-H:IncludeResources=META-INF/.*"};
+                }
+                Process process = Runtime.getRuntime().exec(command, new String[]{}, temp);
                 CompletableFuture<String> output = new CompletableFuture<>();
                 new Thread(new ProcessReader(process.getInputStream(), output)).start();
                 if (process.waitFor() != 0) {
@@ -81,7 +87,7 @@ public class GraalTest extends BlockJUnit4ClassRunner {
                 String absolutePath = temp.listFiles()[0].getAbsolutePath();
                 System.out.println("Executing " + absolutePath);
                 final Process testProcess = Runtime.getRuntime().exec(absolutePath);
-                notifier.addListener(new RunListener(){
+                notifier.addListener(new RunListener() {
                     @Override
                     public void testRunFinished(Result result) throws Exception {
                         super.testRunFinished(result);
@@ -93,7 +99,7 @@ public class GraalTest extends BlockJUnit4ClassRunner {
                 output.whenComplete(new BiConsumer<String, Throwable>() {
                     @Override
                     public void accept(String s, Throwable throwable) {
-                        if(throwable != null) {
+                        if (throwable != null) {
                             throwable.printStackTrace();
                         } else {
                             System.out.println(s);

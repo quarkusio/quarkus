@@ -24,7 +24,8 @@
         <module>core</module>
         <module>undertow</module>
         <module>maven</module>
-        <module>example</module>
+        <module>examples/everything</module>
+        <module>examples/strict</module>
         <module>jaxrs</module>
         <module>test-framework</module>
         <module>weld</module>
@@ -34,6 +35,13 @@
     <dependencyManagement>
         <dependencies>
 
+            <dependency>
+                <groupId>oracle</groupId>
+                <artifactId>graal-svm</artifactId>
+                <scope>system</scope>
+                <version>1</version>
+                <systemPath>${env.GRAALVM_HOME}/jre/lib/svm/builder/svm.jar</systemPath>
+            </dependency>
             <dependency>
                 <groupId>org.jboss.shamrock</groupId>
                 <artifactId>shamrock-core-deployment</artifactId>
@@ -130,6 +138,12 @@
                 <groupId>org.jboss.spec.javax.servlet</groupId>
                 <artifactId>jboss-servlet-api_4.0_spec</artifactId>
                 <version>1.0.0.Final</version>
+            </dependency>
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.12</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

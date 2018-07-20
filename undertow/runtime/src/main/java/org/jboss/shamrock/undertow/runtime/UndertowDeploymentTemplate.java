@@ -34,7 +34,8 @@ public class UndertowDeploymentTemplate {
         d.setContextPath("/");
         ClassLoader cl = UndertowDeploymentTemplate.class.getClassLoader();
         d.setClassLoader(cl);
-        d.setResourceManager(new ClassPathResourceManager(d.getClassLoader(), "META-INF/resources"));
+        //should be fixed in Graal RC5
+        //d.setResourceManager(new ClassPathResourceManager(d.getClassLoader(), "META-INF/resources"));
         return d;
     }
 

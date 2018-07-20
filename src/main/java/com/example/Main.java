@@ -1,6 +1,5 @@
 package com.example;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import javax.persistence.EntityManager;
@@ -60,17 +59,22 @@ public class Main {
 		List<Person> allpersons = q.getResultList();
 		StringBuilder sb = new StringBuilder( "list of stored Person names:\n\t" );
 		for ( Person p : allpersons ) {
-			sb.append( p.id ).append( ":\t" ).append( p.name ).append( "\n\t" );
+			p.describeFully( sb );
+			sb.append( "\n\t" );
 		}
 		sb.append( "\nList complete.\n" );
 		System.out.print( sb );
 	}
 
 	private static void persistNewPerson(EntityManager entityManager) {
-		UUID uuid = UUID.randomUUID();
 		Person person = new Person();
-		person.name = uuid.toString();
+		person.setName( randomName() );
+		person.setAddress( new Address( "Street " + randomName() ) );
 		entityManager.persist( person );
+	}
+
+	private static String randomName() {
+		return UUID.randomUUID().toString();
 	}
 
 }

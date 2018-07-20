@@ -75,10 +75,12 @@
       "name" : "com.example.Person",
       "allPublicConstructors" : true,
       "allDeclaredMethods" : true,
-      "allPublicMethods" : true,
-      "fields" : [
-         { "name" : "id" },
-         { "name" : "name" }
-      ]
+      "allPublicMethods" : true
+   },
+   {
+      "name" : "com.example.Address",
+      "allPublicConstructors" : true,
+      "allDeclaredMethods" : true,
+      "allPublicMethods" : true
    }
 ]

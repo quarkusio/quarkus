@@ -30,6 +30,11 @@ public final class Environment implements AvailableSettings {
 		return new Properties();
 	}
 
+	@Substitute
+	public static boolean useReflectionOptimizer() {
+		return false;
+	}
+
 	//Required even if deprecated in the original class: Works around a bug in Substrate now complaining about the right method name.
 	@Substitute
 	public static BytecodeProvider getBytecodeProvider() {
@@ -39,11 +44,6 @@ public final class Environment implements AvailableSettings {
 	@Substitute
 	public static BytecodeProvider buildBytecodeProvider(Properties properties) {
 		return BYTECODE_PROVIDER_INSTANCE;
-	}
-
-	@Substitute
-	public static boolean useReflectionOptimizer() {
-		return false;
 	}
 
 }

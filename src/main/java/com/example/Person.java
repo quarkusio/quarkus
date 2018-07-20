@@ -1,13 +1,58 @@
 package com.example;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.ManyToOne;
 
 @Entity
 public class Person {
 
-    @GeneratedValue @Id long id;
-    String name;
+    private long id;
+    private String name;
+    private Address address;
 
+    public Person() {
+    }
+
+    public Person(long id, String name, Address address) {
+        this.id = id;
+        this.name = name;
+        this.address = address;
+    }
+
+    @Id @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="personSeq")
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    public Address getAddress() {
+        return address;
+    }
+
+    public void setAddress(Address address) {
+        this.address = address;
+    }
+
+    public void describeFully(StringBuilder sb) {
+        sb.append( "Person with id=" ).append( id ).append( ", name='" ).append( name ).append( "', address { " );
+        getAddress().describeFully( sb );
+        sb.append( " }" );
+    }
 }

@@ -1,5 +1,6 @@
 package org.jboss.shamrock.undertow;
 
+import javax.inject.Inject;
 import javax.servlet.Servlet;
 
 import org.jboss.shamrock.deployment.ArchiveContext;
@@ -9,11 +10,16 @@ import org.jboss.shamrock.deployment.RuntimePriority;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
 import org.jboss.shamrock.health.runtime.HealthServlet;
 import org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate;
+import org.jboss.shamrock.weld.deployment.WeldDeployment;
 
 import io.smallrye.health.SmallRyeHealthReporter;
 import io.undertow.servlet.api.InstanceFactory;
 
 public class HealthProcessor implements ResourceProcessor {
+
+
+    @Inject
+    private WeldDeployment weldDeployment;
 
     @Override
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
@@ -23,8 +29,8 @@ public class HealthProcessor implements ResourceProcessor {
             template.registerServlet(null, "health", HealthServlet.class, true, (InstanceFactory<? extends Servlet>) factory);
             template.addServletMapping(null, "health", "/health");
         }
-        processorContext.addAdditionalBean(SmallRyeHealthReporter.class);
-        processorContext.addAdditionalBean(HealthServlet.class);
+        weldDeployment.addAdditionalBean(SmallRyeHealthReporter.class);
+        weldDeployment.addAdditionalBean(HealthServlet.class);
     }
 
     @Override

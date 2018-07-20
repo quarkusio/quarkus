@@ -64,6 +64,7 @@ public class Runner {
 
     private final List<ResourceProcessor> processors;
     private final ClassOutput output;
+    private final DeploymentProcessorInjection injection = new DeploymentProcessorInjection();
 
     public Runner(ClassOutput classOutput) {
         Iterator<ResourceProcessor> loader = ServiceLoader.load(ResourceProcessor.class).iterator();
@@ -110,6 +111,7 @@ public class Runner {
         ProcessorContextImpl processorContext = new ProcessorContextImpl();
         for (ResourceProcessor processor : processors) {
             try {
+                injection.injectClass(processor);
                 processor.process(context, processorContext);
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -148,7 +150,6 @@ public class Runner {
         private final List<DeploymentTaskHolder> tasks = new ArrayList<>();
         private final List<DeploymentTaskHolder> staticInitTasks = new ArrayList<>();
         private final Set<String> reflectiveClasses = new LinkedHashSet<>();
-        private final List<Class<?>> additionalBeans = new ArrayList<>();
 
         @Override
         public BytecodeRecorder addStaticInitTask(int priority) {
@@ -172,17 +173,6 @@ public class Runner {
         @Override
         public void addGeneratedClass(String name, byte[] classData) throws IOException {
             output.writeClass(name, classData);
-        }
-
-        @Override
-        public void addAdditionalBean(Class<?> beanClass) {
-            addReflectiveClass(beanClass.getName());
-            additionalBeans.add(beanClass);
-        }
-
-        @Override
-        public List<Class<?>> getAdditionalBeans() {
-            return additionalBeans;
         }
 
         void writeMainClass() throws IOException {

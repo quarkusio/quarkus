@@ -41,8 +41,4 @@ public interface ProcessorContext {
     void addReflectiveClass(String className);
 
     void addGeneratedClass(String name, byte[] classData) throws IOException;
-
-    void addAdditionalBean(Class<?> beanClass);
-
-    List<Class<?>> getAdditionalBeans();
 }

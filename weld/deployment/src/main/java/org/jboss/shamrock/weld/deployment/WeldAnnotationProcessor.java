@@ -2,6 +2,7 @@ package org.jboss.shamrock.weld.deployment;
 
 import javax.enterprise.inject.se.SeContainer;
 import javax.enterprise.inject.se.SeContainerInitializer;
+import javax.inject.Inject;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.Index;
@@ -13,6 +14,10 @@ import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
 import org.jboss.shamrock.weld.runtime.WeldDeploymentTemplate;
 
 public class WeldAnnotationProcessor implements ResourceProcessor {
+
+    @Inject
+    private WeldDeployment weldDeployment;
+
     @Override
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
         Index index = archiveContext.getIndex();
@@ -28,7 +33,7 @@ public class WeldAnnotationProcessor implements ResourceProcessor {
                     processorContext.addReflectiveClass(name);
                 }
             }
-            for(Class<?> clazz : processorContext.getAdditionalBeans()) {
+            for(Class<?> clazz : weldDeployment.getAdditionalBeans()) {
                 template.addClass(init, clazz);
             }
             SeContainer weld = template.doBoot(init);

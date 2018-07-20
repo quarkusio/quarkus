@@ -18,6 +18,7 @@
         <version.org.jandex>2.0.5.Final</version.org.jandex>
         <resteasy.version>3.5.1.Final</resteasy.version>
         <weld-se-core.version>3.0.4.Final</weld-se-core.version>
+        <undertow.version>2.0.11.Final</undertow.version>
     </properties>
 
     <modules>
@@ -112,7 +113,7 @@
             <dependency>
                 <groupId>io.undertow</groupId>
                 <artifactId>undertow-servlet</artifactId>
-                <version>2.0.11.Final-SNAPSHOT</version>
+                <version>${undertow.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.xnio</groupId>

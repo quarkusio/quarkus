@@ -14,8 +14,17 @@
 
     <dependencies>
         <dependency>
+            <groupId>oracle</groupId>
+            <artifactId>graal-svm</artifactId>
+            <scope>system</scope>
+        </dependency>
+        <dependency>
             <groupId>io.undertow</groupId>
             <artifactId>undertow-servlet</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.xnio</groupId>
+            <artifactId>xnio-nio</artifactId>
         </dependency>
 
         <dependency>

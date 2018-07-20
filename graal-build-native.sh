@@ -3,7 +3,11 @@
 TIME_FORMAT="Seconds: %e \tMax memory (KB): %M"
 
 shopt -s expand_aliases
-alias timer="/usr/bin/time -a -f \"$TIME_FORMAT\""
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    alias timer="/usr/bin/time -lp "
+else
+    alias timer="/usr/bin/time -a -f \"$TIME_FORMAT\""
+fi
 
 echo "Expects GraalVM on classpath"
 echo ""

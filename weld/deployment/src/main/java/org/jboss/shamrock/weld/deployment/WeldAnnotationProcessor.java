@@ -13,6 +13,8 @@ import org.jboss.shamrock.deployment.RuntimePriority;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
 import org.jboss.shamrock.weld.runtime.WeldDeploymentTemplate;
 
+import io.smallrye.config.inject.ConfigProducer;
+
 public class WeldAnnotationProcessor implements ResourceProcessor {
 
     @Inject
@@ -20,6 +22,8 @@ public class WeldAnnotationProcessor implements ResourceProcessor {
 
     @Override
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
+        //make config injectable
+        weldDeployment.addAdditionalBean(ConfigProducer.class);
         Index index = archiveContext.getIndex();
         try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.WELD_DEPLOYMENT)) {
             WeldDeploymentTemplate template = recorder.getRecordingProxy(WeldDeploymentTemplate.class);
@@ -33,7 +37,7 @@ public class WeldAnnotationProcessor implements ResourceProcessor {
                     processorContext.addReflectiveClass(name);
                 }
             }
-            for(Class<?> clazz : weldDeployment.getAdditionalBeans()) {
+            for (Class<?> clazz : weldDeployment.getAdditionalBeans()) {
                 template.addClass(init, clazz);
             }
             SeContainer weld = template.doBoot(init);

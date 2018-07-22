@@ -20,7 +20,6 @@
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-weld-runtime</artifactId>
-            <version>${project.version}</version>
         </dependency>
     </dependencies>
 

@@ -29,7 +29,6 @@
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-undertow-runtime</artifactId>
-            <version>${project.version}</version>
         </dependency>
     </dependencies>
 

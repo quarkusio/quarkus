@@ -15,19 +15,4 @@
         <module>deployment</module>
         <module>runtime</module>
     </modules>
-
-    <dependencies>
-        <dependency>
-            <groupId>io.smallrye</groupId>
-            <artifactId>smallrye-health</artifactId>
-            <version>1.0.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-core-runtime</artifactId>
-        </dependency>
-    </dependencies>
-
-
 </project>

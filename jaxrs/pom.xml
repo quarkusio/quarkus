@@ -16,8 +16,4 @@
         <module>runtime</module>
     </modules>
 
-    <dependencies>
-    </dependencies>
-
-
 </project>

@@ -15,10 +15,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jboss.classfilewriter.AccessFlag;
 import org.jboss.classfilewriter.ClassFile;
 import org.jboss.classfilewriter.ClassMethod;
+import org.jboss.classfilewriter.code.BranchEnd;
 import org.jboss.classfilewriter.code.CodeAttribute;
 import org.jboss.invocation.proxy.ProxyConfiguration;
 import org.jboss.invocation.proxy.ProxyFactory;
 import org.jboss.shamrock.deployment.ClassOutput;
+import org.jboss.shamrock.deployment.ShamrockConfig;
 import org.jboss.shamrock.runtime.ContextObject;
 import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.runtime.RuntimeInjector;
@@ -243,7 +245,29 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
                     if (call.parameters[i] != null) {
                         Object param = call.parameters[i];
                         if (param instanceof String) {
-                            ca.ldc((String) param);
+                            String configParam = ShamrockConfig.getConfigKey((String) param);
+                            if (configParam != null) {
+                                ca.invokestatic("org.eclipse.microprofile.config.ConfigProvider", "getConfig", "()Lorg/eclipse/microprofile/config/Config;");
+                                ca.ldc(configParam);
+                                ca.loadClass("java/lang/String");
+                                ca.invokeinterface("org/eclipse/microprofile/config/Config", "getOptionalValue", "(Ljava/lang/String;Ljava/lang/Class;)Ljava/util/Optional;");
+                                ca.dup();
+                                ca.invokevirtual("java/util/Optional", "isPresent", "()Z");
+                                BranchEnd end = ca.ifeq();
+
+                                ca.invokevirtual("java/util/Optional", "get", "()Ljava/lang/Object;");
+                                ca.invokevirtual("java/lang/Object", "toString", "()Ljava/lang/String;"); //checkcast is buggy in classfilewriter
+
+                                BranchEnd jmp = ca.gotoInstruction();
+                                ca.branchEnd(end);
+                                ca.pop();
+                                ca.ldc((String) param);
+
+
+                                ca.branchEnd(jmp);
+                            } else {
+                                ca.ldc((String) param);
+                            }
                         } else if (param instanceof Boolean) {
                             ca.ldc((boolean) param ? 1 : 0);
                         } else if (param instanceof NewInstance) {
@@ -256,11 +280,11 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
                             ca.aload(pos);
                         } else if (param instanceof Class<?>) {
                             String name = classProxies.get(param);
-                            if(name == null) {
+                            if (name == null) {
                                 name = ((Class) param).getName();
                             }
                             ca.ldc(name);
-                            ca.invokestatic("java/lang/Class","forName", "(Ljava/lang/String;)Ljava/lang/Class;");
+                            ca.invokestatic("java/lang/Class", "forName", "(Ljava/lang/String;)Ljava/lang/Class;");
                             //ca.loadClass(name);
                         } else {
                             //TODO: rest of primitives

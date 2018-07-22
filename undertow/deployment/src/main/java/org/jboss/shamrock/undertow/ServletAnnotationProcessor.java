@@ -2,6 +2,7 @@ package org.jboss.shamrock.undertow;
 
 import java.util.List;
 
+import javax.inject.Inject;
 import javax.servlet.Servlet;
 import javax.servlet.annotation.WebServlet;
 
@@ -9,11 +10,12 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
-import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
 import org.jboss.shamrock.deployment.ArchiveContext;
 import org.jboss.shamrock.deployment.ProcessorContext;
 import org.jboss.shamrock.deployment.ResourceProcessor;
 import org.jboss.shamrock.deployment.RuntimePriority;
+import org.jboss.shamrock.deployment.ShamrockConfig;
+import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
 import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate;
 
@@ -23,6 +25,9 @@ import io.undertow.servlet.handlers.DefaultServlet;
 public class ServletAnnotationProcessor implements ResourceProcessor {
 
     private static final DotName WEB_SERVLET = DotName.createSimple(WebServlet.class.getName());
+
+    @Inject
+    private ShamrockConfig config;
 
     @Override
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
@@ -62,7 +67,7 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
 
         try (BytecodeRecorder context = processorContext.addDeploymentTask(RuntimePriority.UNDERTOW_START)) {
             UndertowDeploymentTemplate template = context.getRecordingProxy(UndertowDeploymentTemplate.class);
-            template.deploy(null, null);
+            template.startUndertow(null, null, config.getConfig("http.port", "8080"));
         }
     }
 

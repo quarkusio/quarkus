@@ -59,9 +59,9 @@ public class UndertowDeploymentTemplate {
         info.addInitParameter(name, value);
     }
 
-    public void deploy(StartupContext startupContext, @ContextObject("servletHandler") HttpHandler handler) throws ServletException {
+    public void startUndertow(StartupContext startupContext, @ContextObject("servletHandler") HttpHandler handler, String port) throws ServletException {
         Undertow val = Undertow.builder()
-                .addHttpListener(8080, "localhost")
+                .addHttpListener(Integer.parseInt(port), "localhost")
                 .setHandler(handler)
                 .build();
         val.start();

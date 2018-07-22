@@ -59,20 +59,10 @@
             <artifactId>postgresql</artifactId>
             <version>${version.org.postgresql.jdbc}</version>
         </dependency>
-        <!--Built locally by mx : /home/sanne/sources/graal/substratevm/mxbuild/dists/svm-core.jar -->
-        <!-- mvn install:install-file -Dfile=/home/sanne/sources/graal/substratevm/mxbuild/dists/svm-core.jar -DgroupId=graal-local-builds     -DartifactId=svm-core -Dversion=1.0.0-SNAPSHOT -Dpackaging=jar -->
         <dependency>
-            <groupId>graal-local-builds</groupId>
-            <artifactId>svm-core</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
-            <!-- Exclude it from normal CP! -->
-            <scope>provided</scope>
-            <exclusions>
-                <exclusion>
-                    <artifactId>*</artifactId>
-                    <groupId>*</groupId>
-                </exclusion>
-            </exclusions>
+            <groupId>org.jboss.graalvm</groupId>
+            <artifactId>graal-annotations</artifactId>
+            <version>1.0.0-rc4</version>
         </dependency>
         <!--<dependency>
             <groupId>org.mariadb.jdbc</groupId>

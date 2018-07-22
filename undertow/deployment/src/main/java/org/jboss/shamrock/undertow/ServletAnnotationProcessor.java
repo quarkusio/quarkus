@@ -29,6 +29,9 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
     @Inject
     private ShamrockConfig config;
 
+    @Inject
+    private ServletDeployment deployment;
+
     @Override
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
 
@@ -56,6 +59,18 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
                         template.addServletMapping(null, name, m);
                     }
                 }
+
+                for (ServletData servlet : deployment.getServlets()) {
+
+                    String servletClass = servlet.getServletClass();
+                    InjectionInstance<? extends Servlet> injection = (InjectionInstance<? extends Servlet>) context.newInstanceFactory(servletClass);
+                    InstanceFactory<? extends Servlet> factory = template.createInstanceFactory(injection);
+                    template.registerServlet(null, servlet.getName(), context.classProxy(servletClass), true, factory);
+
+                    for (String m : servlet.getMapings()) {
+                        template.addServletMapping(null, servlet.getName(), m);
+                    }
+                }
             }
         }
 
@@ -73,6 +88,6 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
 
     @Override
     public int getPriority() {
-        return 1;
+        return 100;
     }
 }

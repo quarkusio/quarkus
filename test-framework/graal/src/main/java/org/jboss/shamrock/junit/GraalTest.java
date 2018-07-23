@@ -66,9 +66,6 @@ public class GraalTest extends BlockJUnit4ClassRunner {
             String path = externalForm.substring(5, jar);
 
             try {
-                File temp = File.createTempFile("graal", "testImage");
-                temp.delete();
-                temp.mkdir();
 
                 String[] command;
                 if (reportAtRuntime) {
@@ -76,7 +73,8 @@ public class GraalTest extends BlockJUnit4ClassRunner {
                 } else {
                     command = new String[]{nativeImage, "-jar", path, "-H:IncludeResources=META-INF/.*"};
                 }
-                Process process = Runtime.getRuntime().exec(command, new String[]{}, temp);
+
+                Process process = Runtime.getRuntime().exec(command, new String[]{}, new File(path.substring(0, path.lastIndexOf(File.separator))));
                 CompletableFuture<String> output = new CompletableFuture<>();
                 CompletableFuture<String> errorOutput = new CompletableFuture<>();
                 new Thread(new ProcessReader(process.getInputStream(), output)).start();
@@ -85,9 +83,9 @@ public class GraalTest extends BlockJUnit4ClassRunner {
                     return;
                 }
 
-                String absolutePath = temp.listFiles()[0].getAbsolutePath();
-                System.out.println("Executing " + absolutePath);
-                final Process testProcess = Runtime.getRuntime().exec(absolutePath);
+                String outputFile = path.substring(0, path.lastIndexOf('.'));
+                System.out.println("Executing " + outputFile);
+                final Process testProcess = Runtime.getRuntime().exec(outputFile);
                 notifier.addListener(new RunListener() {
                     @Override
                     public void testRunFinished(Result result) throws Exception {

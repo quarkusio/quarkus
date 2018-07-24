@@ -8,11 +8,16 @@ import java.net.URLConnection;
 
 import javax.json.Json;
 import javax.json.JsonObject;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.jboss.shamrock.junit.ShamrockTest;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 @RunWith(ShamrockTest.class)
 public class JaxRSTestCase {
@@ -63,5 +68,28 @@ public class JaxRSTestCase {
         JsonObject obj = Json.createReader(new ByteArrayInputStream(out.toByteArray())).readObject();
         Assert.assertEquals("Stuart", obj.getString("name"));
         Assert.assertEquals("A Value", obj.getString("value"));
+    }
+
+    @Test
+    public void testJaxb() throws Exception {
+
+        URL uri = new URL("http://localhost:8080/rest/test/xml");
+        URLConnection connection = uri.openConnection();
+        InputStream in = connection.getInputStream();
+        byte[] buf = new byte[100];
+        int r;
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        while ((r = in.read(buf)) > 0) {
+            out.write(buf, 0, r);
+        }
+        DocumentBuilderFactory factory =
+                DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document dom = builder.parse(new ByteArrayInputStream(out.toByteArray()));
+        Element root = dom.getDocumentElement();
+        Assert.assertEquals("xmlObject", root.getTagName());
+        NodeList value = root.getElementsByTagName("value");
+        Assert.assertEquals(1, value.getLength());
+        Assert.assertEquals("A Value", value.item(0).getTextContent());
     }
 }

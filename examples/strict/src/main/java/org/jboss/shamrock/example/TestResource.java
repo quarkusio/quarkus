@@ -5,6 +5,7 @@ import javax.json.JsonObject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.xml.bind.annotation.XmlRootElement;
 
 @Path("/test")
 public class TestResource {
@@ -34,6 +35,29 @@ public class TestResource {
                 .build();
     }
 
+    @GET
+    @Produces("application/xml")
+    @Path("/xml")
+    public XmlObject xml() {
+        XmlObject xmlObject = new XmlObject();
+        xmlObject.setValue("A Value");
+        return xmlObject;
+    }
+
+
+    @XmlRootElement
+    public static class XmlObject {
+
+        String value;
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
+        }
+    }
 
     public static class MyData {
         private String name;

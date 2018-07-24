@@ -6,10 +6,12 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 
+import javax.json.Json;
+import javax.json.JsonObject;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.jboss.shamrock.junit.ShamrockTest;
+import org.jboss.shamrock.junit.GraalTest;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -17,8 +19,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
-@RunWith(ShamrockTest.class)
-public class JaxRSTestCase {
+@RunWith(GraalTest.class)
+public class JaxRSITCase {
 
     @Test
     public void testJAXRS() throws Exception {
@@ -56,4 +58,5 @@ public class JaxRSTestCase {
         Assert.assertEquals(1, value.getLength());
         Assert.assertEquals("A Value", value.item(0).getTextContent());
     }
+
 }

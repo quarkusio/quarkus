@@ -68,6 +68,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
 
     private static final DotName APPLICATION_PATH = DotName.createSimple("javax.ws.rs.ApplicationPath");
     private static final DotName PATH = DotName.createSimple("javax.ws.rs.Path");
+    private static final DotName XML_ROOT = DotName.createSimple("javax.xml.bind.annotation.XmlRootElement");
 
     public static final Set<String> BOOT_CLASSES = new HashSet<String>();
     public static final Set<String> BUILTIN_PROVIDERS;
@@ -138,10 +139,17 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
         //provider to work
         processorContext.addReflectiveClass("org.glassfish.json.JsonProviderImpl");
         processorContext.addReflectiveClass("com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector");
+
+
         Index index = archiveContext.getIndex();
         List<AnnotationInstance> app = index.getAnnotations(APPLICATION_PATH);
         if (app.isEmpty()) {
             return;
+        }
+        List<AnnotationInstance> xmlRoot = index.getAnnotations(XML_ROOT);
+        if(!xmlRoot.isEmpty()) {
+            processorContext.addReflectiveClass("com.sun.xml.bind.v2.ContextFactory");
+            processorContext.addReflectiveClass("com.sun.xml.internal.bind.v2.ContextFactory");
         }
         AnnotationInstance appPath = app.get(0);
         String path = appPath.value().asString();

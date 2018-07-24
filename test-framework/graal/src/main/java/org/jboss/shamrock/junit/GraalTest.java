@@ -111,7 +111,7 @@ public class GraalTest extends BlockJUnit4ClassRunner {
                         if (throwable != null) {
                             throwable.printStackTrace();
                         } else {
-                            System.err.println(s);
+                            System.out.println(s);
                         }
                     }
                 });

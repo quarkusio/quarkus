@@ -17,7 +17,7 @@ import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
 @TargetClass(className = "org.jboss.resteasy.plugins.providers.IIOImageProvider")
-public final class DeleteIIOImageProvider {
+final class DeleteIIOImageProvider {
 
     @Substitute
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {

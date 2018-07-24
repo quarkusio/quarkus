@@ -29,6 +29,7 @@
         <javax.json.version>1.1.2</javax.json.version>
         <jboss-jaxrs-api_2.1_spec.version>1.0.0.Final</jboss-jaxrs-api_2.1_spec.version>
         <asm.version>6.0</asm.version>
+        <logback.version>1.1.7</logback.version>
     </properties>
 
     <modules>
@@ -217,6 +218,11 @@
                 <groupId>org.ow2.asm</groupId>
                 <artifactId>asm</artifactId>
                 <version>${asm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logback.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

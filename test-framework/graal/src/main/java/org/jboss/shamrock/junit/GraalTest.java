@@ -75,11 +75,10 @@ public class GraalTest extends BlockJUnit4ClassRunner {
                 }
 
                 Process process = Runtime.getRuntime().exec(command, new String[]{}, new File(path.substring(0, path.lastIndexOf(File.separator))));
-                CompletableFuture<String> output = new CompletableFuture<>();
-                CompletableFuture<String> errorOutput = new CompletableFuture<>();
-                new Thread(new ProcessReader(process.getInputStream(), output)).start();
+                new Thread(new ProcessReader(process.getInputStream())).start();
+                new Thread(new ProcessReader(process.getErrorStream())).start();
                 if (process.waitFor() != 0) {
-                    notifier.fireTestFailure(new Failure(Description.createSuiteDescription(GraalTest.class), new RuntimeException("Image generation failed: " + output.get())));
+                    notifier.fireTestFailure(new Failure(Description.createSuiteDescription(GraalTest.class), new RuntimeException("Image generation failed")));
                     return;
                 }
 
@@ -93,28 +92,9 @@ public class GraalTest extends BlockJUnit4ClassRunner {
                         testProcess.destroy();
                     }
                 });
-                new Thread(new ProcessReader(testProcess.getInputStream(), output)).start();
-                new Thread(new ProcessReader(testProcess.getErrorStream(), errorOutput)).start();
-                output.whenComplete(new BiConsumer<String, Throwable>() {
-                    @Override
-                    public void accept(String s, Throwable throwable) {
-                        if (throwable != null) {
-                            throwable.printStackTrace();
-                        } else {
-                            System.out.println(s);
-                        }
-                    }
-                });
-                errorOutput.whenComplete(new BiConsumer<String, Throwable>() {
-                    @Override
-                    public void accept(String s, Throwable throwable) {
-                        if (throwable != null) {
-                            throwable.printStackTrace();
-                        } else {
-                            System.out.println(s);
-                        }
-                    }
-                });
+                new Thread(new ProcessReader(testProcess.getInputStream())).start();
+                new Thread(new ProcessReader(testProcess.getErrorStream())).start();
+
                 Thread.sleep(1000); //wait for the image to be up, should check the port
 
             } catch (Exception e) {
@@ -127,26 +107,21 @@ public class GraalTest extends BlockJUnit4ClassRunner {
     private static final class ProcessReader implements Runnable {
 
         private final InputStream inputStream;
-        private final CompletableFuture<String> result;
 
-        private ProcessReader(InputStream inputStream, CompletableFuture<String> result) {
+        private ProcessReader(InputStream inputStream) {
             this.inputStream = inputStream;
-            this.result = result;
         }
 
         @Override
         public void run() {
-
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
             byte[] b = new byte[100];
             int i;
             try {
                 while ((i = inputStream.read(b)) > 0) {
-                    out.write(b, 0, i);
+                    System.out.print(new String(b, 0, i));
                 }
-                result.complete(new String(out.toByteArray()));
             } catch (IOException e) {
-                result.completeExceptionally(e);
+                e.printStackTrace();
             }
         }
     }

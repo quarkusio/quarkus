@@ -13,8 +13,8 @@ import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.jpa.HibernatePersistenceProvider;
 import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
-import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
+import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.hibernate.jpa.boot.spi.ProviderChecker;
 
 import org.jboss.logging.Logger;
@@ -72,7 +72,7 @@ final class FastbootHibernateProvider extends HibernatePersistenceProvider imple
 		Map integration = Collections.emptyMap();
 
 		//These are pre-parsed during image generation:
-		final List<ParsedPersistenceXmlDescriptor> units = PersistenceUnitsHolder.units;
+		final List<PersistenceUnitDescriptor> units = PersistenceUnitsHolder.units;
 
 		log.debugf( "Located %s persistence units; checking each", units.size() );
 
@@ -81,7 +81,7 @@ final class FastbootHibernateProvider extends HibernatePersistenceProvider imple
 			throw new PersistenceException( "No name provided and multiple persistence units found" );
 		}
 
-		for ( ParsedPersistenceXmlDescriptor persistenceUnit : units ) {
+		for ( PersistenceUnitDescriptor persistenceUnit : units ) {
 			log.debugf(
 					"Checking persistence-unit [name=%s, explicit-provider=%s] against incoming persistence unit name [%s]",
 					persistenceUnit.getName(),
@@ -116,7 +116,7 @@ final class FastbootHibernateProvider extends HibernatePersistenceProvider imple
 		return null;
 	}
 
-	private boolean isProvider(ParsedPersistenceXmlDescriptor persistenceUnit) {
+	private boolean isProvider(PersistenceUnitDescriptor persistenceUnit) {
 		Map<Object, Object> props = Collections.emptyMap();
 		String requestedProviderName = extractRequestedProviderName( persistenceUnit, props );
 		if ( requestedProviderName == null ) {

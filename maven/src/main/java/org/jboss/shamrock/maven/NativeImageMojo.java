@@ -25,7 +25,7 @@ public class NativeImageMojo extends AbstractMojo {
     /**
      * The directory for compiled classes.
      */
-    @Parameter(readonly = true, required = true, defaultValue = "${project.build.outputDirectory}")
+    @Parameter(readonly = true, required = true, defaultValue = "${project.build.directory}")
     private File outputDirectory;
 
     @Parameter(defaultValue = "${project.build.directory}/wiring-classes")
@@ -49,41 +49,27 @@ public class NativeImageMojo extends AbstractMojo {
         }
         String nativeImage = graal + File.separator + "bin" + File.separator + "native-image";
 
-        StringBuilder cp = new StringBuilder();
-        cp.append(outputDirectory);
-        cp.append(File.pathSeparator);
-        cp.append(wiringClassesDirectory);
-        for (Artifact dep : project.getArtifacts()) {
-            if (!dep.getScope().equals("test")) {
-                cp.append(File.pathSeparator);
-                cp.append(dep.getFile().getAbsolutePath());
-            }
-        }
-
         try {
             List<String> command = new ArrayList<>();
             command.add(nativeImage);
             command.add("--no-server");
-            command.add("-cp");
-            command.add(cp.toString());
+            command.add("-jar");
+            command.add(finalName + "-runner.jar");
             command.add("-H:IncludeResources=META-INF/.*");
-            command.add("org.jboss.shamrock.runner.Main");
             if (reportErrorsAtRuntime) {
                 command.add("-H:+ReportUnsupportedElementsAtRuntime");
             }
             if (debugSymbols) {
                 command.add("-g");
             }
-            command.add(finalName);
-
             System.out.println(command);
-            Process process = Runtime.getRuntime().exec(command.toArray(new String[0]), new String[]{}, new File(outputDirectory.getParent()));
+            Process process = Runtime.getRuntime().exec(command.toArray(new String[0]), new String[]{}, outputDirectory);
             new Thread(new ProcessReader(process.getInputStream())).start();
             new Thread(new ProcessReader(process.getErrorStream())).start();
             if (process.waitFor() != 0) {
                 throw new RuntimeException("Image generation failed");
             }
-            System.setProperty("native.image.path", finalName);
+            System.setProperty("native.image.path", finalName + "-runner");
 
         } catch (Exception e) {
             throw new MojoFailureException("Failed to build native image", e);

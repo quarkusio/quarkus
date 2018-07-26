@@ -27,7 +27,7 @@ public class RuntimeRunner implements Runnable, Closeable {
         try {
             Runner runner = new Runner(loader);
             runner.run(target);
-            Class<?> mainClass = loader.findClass(Runner.MAIN_CLASS.replace("/", "."));
+            Class<?> mainClass = loader.findClass(Runner.MAIN_CLASS);
             Method run = mainClass.getDeclaredMethod("main", String[].class);
             run.invoke(null, (Object) null);
 

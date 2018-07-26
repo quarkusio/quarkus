@@ -59,6 +59,9 @@ public class ShamrockMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project.build.finalName}")
     private String finalName;
 
+    @Parameter(defaultValue = "org.jboss.shamrock.runner.GeneratedMain")
+    private String mainClass;
+
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -117,7 +120,9 @@ public class ShamrockMojo extends AbstractMojo {
                         try {
                             String pathName = wiringJar.relativize(path).toString();
                             if (Files.isDirectory(path)) {
-                                out.putNextEntry(new ZipEntry(pathName + "/"));
+                                if(!pathName.isEmpty()) {
+                                    out.putNextEntry(new ZipEntry(pathName + "/"));
+                                }
                             } else {
                                 out.putNextEntry(new ZipEntry(pathName));
                                 try (FileInputStream in = new FileInputStream(path.toFile())) {
@@ -132,10 +137,11 @@ public class ShamrockMojo extends AbstractMojo {
                         }
                     }
                 });
+                out.putNextEntry(new ZipEntry("META-INF/"));
                 Manifest manifest = new Manifest();
                 manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
                 manifest.getMainAttributes().put(Attributes.Name.CLASS_PATH, classPath.toString());
-                manifest.getMainAttributes().put(Attributes.Name.MAIN_CLASS, "org.jboss.shamrock.runner.Main");
+                manifest.getMainAttributes().put(Attributes.Name.MAIN_CLASS, mainClass);
                 out.putNextEntry(new ZipEntry("META-INF/MANIFEST.MF"));
                 manifest.write(out);
             }

@@ -1,6 +1,6 @@
 package org.jboss.shamrock.example;
 
-//import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.ApplicationScoped;
 
 import java.util.Optional;
 
@@ -8,7 +8,7 @@ import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.Config;
 
-//@ApplicationScoped
+@ApplicationScoped
 public class MessageBean {
 
     @Inject

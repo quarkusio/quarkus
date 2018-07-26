@@ -80,7 +80,7 @@ public class WeldDeploymentTemplate {
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
             public void run() {
-                container.close();
+                //container.close();
             }
         }, "Weld Shutdown Hook Thread"));
     }

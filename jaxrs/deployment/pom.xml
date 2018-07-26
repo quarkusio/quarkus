@@ -13,15 +13,6 @@
     <artifactId>shamrock-jaxrs-deployment</artifactId>
 
     <dependencies>
-
-        <dependency>
-            <groupId>io.undertow</groupId>
-            <artifactId>undertow-servlet</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-jaxrs</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-core-deployment</artifactId>

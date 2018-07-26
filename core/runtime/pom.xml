@@ -15,16 +15,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.jboss</groupId>
-            <artifactId>jandex</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.invocation</groupId>
-            <artifactId>jboss-invocation</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.classfilewriter</groupId>
-            <artifactId>jboss-classfilewriter</artifactId>
+            <groupId>javax.inject</groupId>
+            <artifactId>javax.inject</artifactId>
         </dependency>
         <dependency>
             <groupId>io.smallrye</groupId>
@@ -39,5 +31,13 @@
             <artifactId>graal-annotations</artifactId>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

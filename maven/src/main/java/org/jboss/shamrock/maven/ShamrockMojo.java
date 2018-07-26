@@ -1,16 +1,21 @@
 package org.jboss.shamrock.maven;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
@@ -72,25 +77,68 @@ public class ShamrockMojo extends AbstractMojo {
             StringBuilder classPath = new StringBuilder();
             classPath.append(finalName + ".jar");
 
+            List<String> problems = new ArrayList<>();
+
+            Set<String> whitelist = new HashSet<>();
+
+
             for (Artifact a : project.getArtifacts()) {
                 try (ZipFile zip = new ZipFile(a.getFile())) {
-                    if (zip.getEntry("META-INF/services/org.jboss.shamrock.deployment.ResourceProcessor") == null) {
-                        try (FileInputStream in = new FileInputStream(a.getFile())) {
-                            File file = new File(libDir, a.getFile().getName());
-                            try (FileOutputStream out = new FileOutputStream(file)) {
-                                int r;
-                                while ((r = in.read(buffer)) > 0) {
-                                    out.write(buffer, 0, r);
-                                }
-                            }
-                            classPath.append(" lib/" + file.getName());
+                    if (zip.getEntry("META-INF/services/org.jboss.shamrock.deployment.ResourceProcessor") != null) {
+                        if (!a.getScope().equals("provided")) {
+                            problems.add("Artifact " + a + " is a deployment artifact, however it does not have scope required. This will result in unnecessary jars being included in the final image");
                         }
                     }
+                    ZipEntry deps = zip.getEntry("dependencies.runtime");
+                    if (deps != null) {
+                        whitelist.add(a.getDependencyConflictId());
+                        try (InputStream in = zip.getInputStream(deps)) {
+                            BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                            String line;
+                            while ((line = reader.readLine()) != null) {
+                                String[] parts = line.trim().split(":");
+                                if(parts.length < 5) {
+                                    continue;
+                                }
+                                StringBuilder sb = new StringBuilder();
+                                //the last two bits are version and scope
+                                //which we don't want
+                                for (int i = 0; i < parts.length - 2; ++i) {
+                                    if (i > 0) {
+                                        sb.append(':');
+                                    }
+                                    sb.append(parts[i]);
+                                }
+                                whitelist.add(sb.toString());
+                            }
+                        }
+                    }
+
+                }
+            }
+            if(!problems.isEmpty()) {
+                //TODO: add a config option to just log an error instead
+                throw new MojoFailureException(problems.toString());
+            }
+
+            for (Artifact a : project.getArtifacts()) {
+                if (a.getScope().equals("provided") && !whitelist.contains(a.getDependencyConflictId())) {
+                    continue;
+                }
+                try (FileInputStream in = new FileInputStream(a.getFile())) {
+                    File file = new File(libDir, a.getFile().getName());
+                    try (FileOutputStream out = new FileOutputStream(file)) {
+                        int r;
+                        while ((r = in.read(buffer)) > 0) {
+                            out.write(buffer, 0, r);
+                        }
+                    }
+                    classPath.append(" lib/" + file.getName());
                 }
             }
 
             List<URL> classPathUrls = new ArrayList<>();
-            for(Artifact artifact : project.getArtifacts()) {
+            for (Artifact artifact : project.getArtifacts()) {
                 classPathUrls.add(artifact.getFile().toURL());
             }
 
@@ -120,7 +168,7 @@ public class ShamrockMojo extends AbstractMojo {
                         try {
                             String pathName = wiringJar.relativize(path).toString();
                             if (Files.isDirectory(path)) {
-                                if(!pathName.isEmpty()) {
+                                if (!pathName.isEmpty()) {
                                     out.putNextEntry(new ZipEntry(pathName + "/"));
                                 }
                             } else {

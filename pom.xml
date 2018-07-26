@@ -30,6 +30,7 @@
         <jboss-jaxrs-api_2.1_spec.version>1.0.0.Final</jboss-jaxrs-api_2.1_spec.version>
         <asm.version>6.0</asm.version>
         <logback.version>1.1.7</logback.version>
+        <cdi-api.version>2.0</cdi-api.version>
     </properties>
 
     <modules>
@@ -43,6 +44,27 @@
         <module>weld</module>
         <module>health</module>
     </modules>
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>resolve</goal>
+                            </goals>
+                            <phase>compile</phase>
+                            <configuration>
+                                <silent>true</silent>
+                                <outputFile>${project.build.outputDirectory}/dependencies.runtime</outputFile>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 
     <dependencyManagement>
         <dependencies>
@@ -140,6 +162,7 @@
                 <groupId>org.jboss.graalvm</groupId>
                 <artifactId>graal-annotations</artifactId>
                 <version>1.0.0-rc4</version>
+                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>org.glassfish</groupId>
@@ -222,9 +245,13 @@
                 <artifactId>logback-classic</artifactId>
                 <version>${logback.version}</version>
             </dependency>
+            <dependency>
+                <groupId>javax.enterprise</groupId>
+                <artifactId>cdi-api</artifactId>
+                <version>${cdi-api.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
-
 
     <repositories>
         <repository>

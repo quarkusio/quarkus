@@ -35,9 +35,8 @@
             <artifactId>logback-classic</artifactId>
         </dependency>
         <dependency>
-            <groupId>oracle</groupId>
-            <artifactId>graal-svm</artifactId>
-            <scope>system</scope>
+            <groupId>org.jboss.graalvm</groupId>
+            <artifactId>graal-annotations</artifactId>
         </dependency>
     </dependencies>
 

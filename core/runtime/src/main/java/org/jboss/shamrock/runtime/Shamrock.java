@@ -9,7 +9,15 @@ import java.util.Enumeration;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-
+/**
+ * The main entry point class, calling main allows you to bootstrap shamrock
+ *
+ * Note that at native image generation time this is replaced by {@link org.jboss.shamrock.runtime.graal.ShamrockReplacement}
+ * which will avoid the need for reflection.
+ *
+ * TODO: how do we deal with static init
+ *
+ */
 public class Shamrock {
 
     private static final Logger logger = Logger.getLogger("shamrock");

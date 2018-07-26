@@ -13,6 +13,7 @@
 
     <artifactId>shamrock-core-deployment</artifactId>
 
+
     <dependencies>
         <dependency>
             <groupId>javax.inject</groupId>

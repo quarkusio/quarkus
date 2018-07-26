@@ -28,6 +28,9 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter(readonly = true, required = true, defaultValue = "${project.build.outputDirectory}")
     private File outputDirectory;
 
+    @Parameter(defaultValue = "${project.build.directory}/wiring-classes")
+    private File wiringClassesDirectory;
+
     @Parameter(defaultValue = "false")
     private boolean reportErrorsAtRuntime;
 
@@ -48,6 +51,8 @@ public class NativeImageMojo extends AbstractMojo {
 
         StringBuilder cp = new StringBuilder();
         cp.append(outputDirectory);
+        cp.append(File.pathSeparator);
+        cp.append(wiringClassesDirectory);
         for (Artifact dep : project.getArtifacts()) {
             if (!dep.getScope().equals("test")) {
                 cp.append(File.pathSeparator);
@@ -78,6 +83,7 @@ public class NativeImageMojo extends AbstractMojo {
             if (process.waitFor() != 0) {
                 throw new RuntimeException("Image generation failed");
             }
+            System.setProperty("native.image.path", finalName);
 
         } catch (Exception e) {
             throw new MojoFailureException("Failed to build native image", e);

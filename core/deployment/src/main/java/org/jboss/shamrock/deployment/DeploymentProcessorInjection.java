@@ -17,8 +17,8 @@ public class DeploymentProcessorInjection {
 
     private Map<Class<?>, InjectionProvider> providedTypes = new HashMap<>();
 
-    DeploymentProcessorInjection() {
-        Iterator<InjectionProvider> ip = ServiceLoader.load(InjectionProvider.class).iterator();
+    DeploymentProcessorInjection(ClassLoader loader) {
+        Iterator<InjectionProvider> ip = ServiceLoader.load(InjectionProvider.class, loader).iterator();
         while (ip.hasNext()) {
             InjectionProvider next = ip.next();
             Set<Class<?>> pro = next.getProvidedTypes();

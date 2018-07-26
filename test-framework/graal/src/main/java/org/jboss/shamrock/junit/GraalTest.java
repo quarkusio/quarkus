@@ -40,23 +40,14 @@ public class GraalTest extends BlockJUnit4ClassRunner {
     private void runInternal(RunNotifier notifier) {
         if (first) {
             first = false;
-            URL mainClassUri = getClass().getClassLoader().getResource("org/jboss/shamrock/runner/Main.class");
-            if (mainClassUri == null) {
-                notifier.fireTestFailure(new Failure(Description.createSuiteDescription(GraalTest.class), new RuntimeException("Unable to find shamrock main class")));
+            String path = System.getProperty("native.image.path");
+            if (path == null) {
+                notifier.fireTestFailure(new Failure(Description.createSuiteDescription(GraalTest.class), new RuntimeException("Unable to find native image, make sure native.image.path is set")));
                 return;
             }
-            String externalForm = mainClassUri.getPath();
-            int jar = externalForm.lastIndexOf('!');
-            if (jar == -1) {
-                notifier.fireTestFailure(new Failure(Description.createSuiteDescription(GraalTest.class), new RuntimeException("Cannot find jar to image " + mainClassUri + " is not in a jar archive")));
-                return;
-            }
-            String path = externalForm.substring(5, jar);
-
             try {
-                String outputFile = path.substring(0, path.lastIndexOf('.'));
-                System.out.println("Executing " + outputFile);
-                final Process testProcess = Runtime.getRuntime().exec(outputFile);
+                System.out.println("Executing " + path);
+                final Process testProcess = Runtime.getRuntime().exec(path);
                 notifier.addListener(new RunListener() {
                     @Override
                     public void testRunFinished(Result result) throws Exception {

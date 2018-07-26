@@ -64,10 +64,15 @@ public class Runner {
 
     private final List<ResourceProcessor> processors;
     private final ClassOutput output;
-    private final DeploymentProcessorInjection injection = new DeploymentProcessorInjection();
+    private final DeploymentProcessorInjection injection;
+    private final ClassLoader classLoader;
 
     public Runner(ClassOutput classOutput) {
-        Iterator<ResourceProcessor> loader = ServiceLoader.load(ResourceProcessor.class).iterator();
+        this(classOutput, Runner.class.getClassLoader());
+    }
+
+    public Runner(ClassOutput classOutput, ClassLoader cl) {
+        Iterator<ResourceProcessor> loader = ServiceLoader.load(ResourceProcessor.class, cl).iterator();
         List<ResourceProcessor> processors = new ArrayList<>();
         while (loader.hasNext()) {
             processors.add(loader.next());
@@ -75,50 +80,58 @@ public class Runner {
         processors.sort(Comparator.comparingInt(ResourceProcessor::getPriority));
         this.processors = Collections.unmodifiableList(processors);
         this.output = classOutput;
+        this.injection = new DeploymentProcessorInjection(cl);
+        this.classLoader = cl;
     }
 
 
     public void run(Path root) throws IOException {
-        Indexer indexer = new Indexer();
-        Files.walkFileTree(root, new FileVisitor<Path>() {
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                if (file.toString().endsWith(".class")) {
-                    try (InputStream stream = Files.newInputStream(file)) {
-                        indexer.index(stream);
-                    }
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(classLoader);
+        try {
+            Indexer indexer = new Indexer();
+            Files.walkFileTree(root, new FileVisitor<Path>() {
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                    return FileVisitResult.CONTINUE;
                 }
-                return FileVisitResult.CONTINUE;
-            }
 
-            @Override
-            public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-                return FileVisitResult.CONTINUE;
-            }
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    if (file.toString().endsWith(".class")) {
+                        try (InputStream stream = Files.newInputStream(file)) {
+                            indexer.index(stream);
+                        }
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
 
-            @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                return FileVisitResult.CONTINUE;
+                @Override
+                public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+            Index index = indexer.complete();
+            ArchiveContext context = new ArchiveContextImpl(index, root);
+            ProcessorContextImpl processorContext = new ProcessorContextImpl();
+            for (ResourceProcessor processor : processors) {
+                try {
+                    injection.injectClass(processor);
+                    processor.process(context, processorContext);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             }
-        });
-        Index index = indexer.complete();
-        ArchiveContext context = new ArchiveContextImpl(index, root);
-        ProcessorContextImpl processorContext = new ProcessorContextImpl();
-        for (ResourceProcessor processor : processors) {
-            try {
-                injection.injectClass(processor);
-                processor.process(context, processorContext);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            processorContext.writeMainClass();
+            processorContext.writeAutoFeature();
+        } finally {
+            Thread.currentThread().setContextClassLoader(old);
         }
-        processorContext.writeMainClass();
-        processorContext.writeAutoFeature();
     }
 
 
@@ -155,14 +168,14 @@ public class Runner {
         public BytecodeRecorder addStaticInitTask(int priority) {
             String className = getClass().getName() + "$$Proxy" + COUNT.incrementAndGet();
             staticInitTasks.add(new DeploymentTaskHolder(className, priority));
-            return new BytecodeRecorderImpl(className, StartupTask.class, output);
+            return new BytecodeRecorderImpl(classLoader, className, StartupTask.class, output);
         }
 
         @Override
         public BytecodeRecorder addDeploymentTask(int priority) {
             String className = getClass().getName() + "$$Proxy" + COUNT.incrementAndGet();
             tasks.add(new DeploymentTaskHolder(className, priority));
-            return new BytecodeRecorderImpl(className, StartupTask.class, output);
+            return new BytecodeRecorderImpl(classLoader, className, StartupTask.class, output);
         }
 
         @Override

@@ -7,7 +7,6 @@ import java.nio.file.Path;
 
 import org.jboss.shamrock.deployment.Runner;
 
-//TODO: this shares a lot of code with the normal runner
 public class RuntimeRunner implements Runnable, Closeable {
 
     private final Path target;

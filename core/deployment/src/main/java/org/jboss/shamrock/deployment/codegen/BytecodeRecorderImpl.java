@@ -30,6 +30,7 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
 
     private static final AtomicInteger COUNT = new AtomicInteger();
 
+    private final ClassLoader classLoader;
     private final String className;
     private final Class<?> serviceType;
     private final ClassOutput classOutput;
@@ -39,7 +40,8 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
     private final Map<Class, ProxyFactory<?>> returnValueProxy = new HashMap<>();
     private final IdentityHashMap<Class<?>, String> classProxies = new IdentityHashMap<>();
 
-    public BytecodeRecorderImpl(String className, Class<?> serviceType, ClassOutput classOutput) {
+    public BytecodeRecorderImpl(ClassLoader classLoader, String className, Class<?> serviceType, ClassOutput classOutput) {
+        this.classLoader = classLoader;
         this.className = className;
         this.serviceType = serviceType;
         this.classOutput = classOutput;
@@ -83,7 +85,7 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
     public Class<?> classProxy(String name) {
         ProxyFactory<Object> factory = new ProxyFactory<>(new ProxyConfiguration<Object>()
                 .setSuperClass(Object.class)
-                .setClassLoader(getClass().getClassLoader())
+                .setClassLoader(classLoader)
                 .setProxyName(getClass().getName() + "$$ClassProxy" + COUNT.incrementAndGet()));
         Class theClass = factory.defineClass();
         classProxies.put(theClass, name);
@@ -101,7 +103,7 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
             }
             ProxyFactory<T> factory = new ProxyFactory<>(new ProxyConfiguration<T>()
                     .setSuperClass((Class) theClass)
-                    .setClassLoader(getClass().getClassLoader())
+                    .setClassLoader(classLoader)
                     .setProxyName(getClass().getName() + "$$RecordingProxyProxy" + COUNT.incrementAndGet()));
             try {
                 T recordingProxy = factory.newInstance(new InvocationHandler() {
@@ -128,7 +130,7 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
                         if (proxyFactory == null) {
                             ProxyConfiguration<Object> proxyConfiguration = new ProxyConfiguration<Object>()
                                     .setSuperClass(returnInterface ? Object.class : (Class) method.getReturnType())
-                                    .setClassLoader(getClass().getClassLoader())
+                                    .setClassLoader(classLoader)
                                     .addAdditionalInterface(ReturnedProxy.class)
                                     .setProxyName(getClass().getName() + "$$ReturnValueProxy" + COUNT.incrementAndGet());
 
@@ -191,7 +193,7 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
 
     @Override
     public void close() throws IOException {
-        ClassFile file = new ClassFile(className, AccessFlag.PUBLIC, Object.class.getName(), getClass().getClassLoader(), serviceType.getName());
+        ClassFile file = new ClassFile(className, AccessFlag.PUBLIC, Object.class.getName(), classLoader, serviceType.getName());
         ClassMethod method = file.addMethod(this.method);
         CodeAttribute ca = method.getCodeAttribute();
 
@@ -342,12 +344,12 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
         classOutput.writeClass(file.getName(), file.toBytecode());
     }
 
-    interface BytecodeInstruction {
+    public interface BytecodeInstruction {
 
     }
 
 
-    interface ReturnedProxy {
+    public interface ReturnedProxy {
 
     }
 

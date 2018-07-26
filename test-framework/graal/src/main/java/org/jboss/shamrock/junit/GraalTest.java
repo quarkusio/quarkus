@@ -1,14 +1,8 @@
 package org.jboss.shamrock.junit;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.BiConsumer;
 
 import org.junit.runner.Description;
 import org.junit.runner.Result;
@@ -44,17 +38,8 @@ public class GraalTest extends BlockJUnit4ClassRunner {
     }
 
     private void runInternal(RunNotifier notifier) {
-        boolean reportAtRuntime = Boolean.getBoolean("graal.reportAtRuntime");
-        boolean debugSymbols = Boolean.getBoolean("graal.debugSymbols");
         if (first) {
             first = false;
-            String graal = System.getenv("GRAALVM_HOME");
-            if (graal == null) {
-                notifier.fireTestFailure(new Failure(Description.createSuiteDescription(GraalTest.class), new RuntimeException("GRAALVM_HOME was not set")));
-                return;
-            }
-            String nativeImage = graal + File.separator + "bin" + File.separator + "native-image";
-
             URL mainClassUri = getClass().getClassLoader().getResource("org/jboss/shamrock/runner/Main.class");
             if (mainClassUri == null) {
                 notifier.fireTestFailure(new Failure(Description.createSuiteDescription(GraalTest.class), new RuntimeException("Unable to find shamrock main class")));
@@ -69,27 +54,6 @@ public class GraalTest extends BlockJUnit4ClassRunner {
             String path = externalForm.substring(5, jar);
 
             try {
-
-                List<String> command = new ArrayList<>();
-                command.add(nativeImage);
-                command.add("-jar");
-                command.add(path);
-                command.add("-H:IncludeResources=META-INF/.*");
-                if(reportAtRuntime) {
-                    command.add("-H:+ReportUnsupportedElementsAtRuntime");
-                }
-                if(debugSymbols) {
-                    command.add("-g");
-                }
-                command.add("--no-server");
-                Process process = Runtime.getRuntime().exec(command.toArray(new String[0]), new String[]{}, new File(path.substring(0, path.lastIndexOf(File.separator))));
-                new Thread(new ProcessReader(process.getInputStream())).start();
-                new Thread(new ProcessReader(process.getErrorStream())).start();
-                if (process.waitFor() != 0) {
-                    notifier.fireTestFailure(new Failure(Description.createSuiteDescription(GraalTest.class), new RuntimeException("Image generation failed")));
-                    return;
-                }
-
                 String outputFile = path.substring(0, path.lastIndexOf('.'));
                 System.out.println("Executing " + outputFile);
                 final Process testProcess = Runtime.getRuntime().exec(outputFile);

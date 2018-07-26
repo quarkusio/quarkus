@@ -190,7 +190,10 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
             for (AnnotationInstance instance : instances) {
                 MethodInfo method = instance.target().asMethod();
                 if (method.returnType().kind() == Type.Kind.CLASS) {
-                    processorContext.addReflectiveClass(method.returnType().asClassType().name().toString());
+                    String className = method.returnType().asClassType().name().toString();
+                    if(!className.equals(String.class.getName())) {
+                        processorContext.addReflectiveClass(className);
+                    }
                 }
             }
         }

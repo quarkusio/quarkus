@@ -137,11 +137,9 @@
                 <scope>test</scope>
             </dependency>
             <dependency>
-                <groupId>oracle</groupId>
-                <artifactId>graal-svm</artifactId>
-                <scope>system</scope>
-                <version>1</version>
-                <systemPath>${env.GRAALVM_HOME}/jre/lib/svm/builder/svm.jar</systemPath>
+                <groupId>org.jboss.graalvm</groupId>
+                <artifactId>graal-annotations</artifactId>
+                <version>1.0.0-rc4</version>
             </dependency>
             <dependency>
                 <groupId>org.glassfish</groupId>

@@ -14,9 +14,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>oracle</groupId>
-            <artifactId>graal-svm</artifactId>
-            <scope>system</scope>
+            <groupId>org.jboss.graalvm</groupId>
+            <artifactId>graal-annotations</artifactId>
         </dependency>
         <dependency>
             <groupId>io.undertow</groupId>

@@ -14,6 +14,7 @@ import javax.enterprise.inject.se.SeContainer;
 import javax.enterprise.inject.se.SeContainerInitializer;
 import javax.enterprise.inject.spi.Bean;
 
+import org.jboss.shamrock.runtime.ContextObject;
 import org.jboss.shamrock.runtime.InjectionFactory;
 import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.runtime.RuntimeInjector;
@@ -35,8 +36,8 @@ public class WeldDeploymentTemplate {
         Class<?> clazz = Class.forName("sun.net.www.protocol.jar.JarFileFactory");
         Field field = clazz.getDeclaredField("fileCache");
         field.setAccessible(true);
-        Map<String, JarFile > fileCache = (Map<String, JarFile>) field.get(null);
-        for(Map.Entry<String, JarFile> e : new HashSet<>(fileCache.entrySet())) {
+        Map<String, JarFile> fileCache = (Map<String, JarFile>) field.get(null);
+        for (Map.Entry<String, JarFile> e : new HashSet<>(fileCache.entrySet())) {
             e.getValue().close();
         }
         fileCache.clear();
@@ -44,7 +45,7 @@ public class WeldDeploymentTemplate {
         field = clazz.getDeclaredField("urlCache");
         field.setAccessible(true);
         Map<JarFile, URL> urlCache = (Map<JarFile, URL>) field.get(null);
-        for(Map.Entry<JarFile, URL> e : new HashSet<>(urlCache.entrySet())) {
+        for (Map.Entry<JarFile, URL> e : new HashSet<>(urlCache.entrySet())) {
             e.getKey().close();
         }
         urlCache.clear();
@@ -62,7 +63,8 @@ public class WeldDeploymentTemplate {
         initializer.addBeanClasses(clazz);
     }
 
-    public SeContainer doBoot(SeContainerInitializer initializer) throws Exception {
+    @ContextObject("weld.container")
+    public SeContainer doBoot( SeContainerInitializer initializer) throws Exception {
         SeContainer container = initializer.initialize();
         // Force client proxy init to run
         Set<Bean<?>> instance = container.getBeanManager().getBeans(Object.class);
@@ -72,6 +74,15 @@ public class WeldDeploymentTemplate {
             }
         }
         return container;
+    }
+
+    public void registerShutdownHook(@ContextObject("weld.container") SeContainer container) {
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+            @Override
+            public void run() {
+                container.close();
+            }
+        }, "Weld Shutdown Hook Thread"));
     }
 
     public void setupInjection(SeContainer container) {

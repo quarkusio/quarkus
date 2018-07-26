@@ -43,6 +43,10 @@ public class WeldAnnotationProcessor implements ResourceProcessor {
             SeContainer weld = template.doBoot(init);
             template.setupInjection(weld);
         }
+        try(BytecodeRecorder recorder = processorContext.addDeploymentTask(RuntimePriority.WELD_DEPLOYMENT)) {
+            WeldDeploymentTemplate template = recorder.getRecordingProxy(WeldDeploymentTemplate.class);
+            template.registerShutdownHook(null);
+        }
 
     }
 

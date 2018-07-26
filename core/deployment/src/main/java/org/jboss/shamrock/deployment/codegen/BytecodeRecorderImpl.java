@@ -307,11 +307,19 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
                 if (call.method.getReturnType() != void.class) {
                     ContextObject annotation = call.method.getAnnotation(ContextObject.class);
                     if (annotation != null) {
+                        ca.dup();
                         ca.aload(1);
                         ca.swap();
                         ca.ldc(annotation.value());
                         ca.swap();
                         ca.invokevirtual(StartupContext.class.getName(), "putValue", "(Ljava/lang/String;Ljava/lang/Object;)V");
+                        if(call.returnedProxy != null) {
+                            Integer pos = returnValuePositions.get(call.returnedProxy);
+                            if (pos == null) {
+                                returnValuePositions.put(call.returnedProxy, pos = localVarCounter++);
+                            }
+                            ca.astore(pos);
+                        }
                     } else if (call.returnedProxy != null) {
                         Integer pos = returnValuePositions.get(call.returnedProxy);
                         if (pos == null) {

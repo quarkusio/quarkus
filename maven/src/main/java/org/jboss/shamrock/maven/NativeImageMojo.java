@@ -4,9 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -43,15 +43,23 @@ public class NativeImageMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
 
-        String graal = System.getenv("GRAALVM_HOME");
-        if (graal == null) {
-            throw new MojoFailureException("GRAALVM_HOME was not set");
+        List<String> nativeImage;
+        String graalvmCmd = System.getenv("GRAALVM_NATIVE_IMAGE_CMD");
+        if (graalvmCmd != null) {
+            // E.g. "/usr/bin/docker run -v {{PROJECT_DIR}}:/project --rm protean/graalvm-native-image"
+            nativeImage = new ArrayList<>();
+            Collections.addAll(nativeImage, graalvmCmd.replace("{{PROJECT_DIR}}", outputDirectory.getAbsolutePath()).split(" "));
+        } else {
+            String graalvmHome = System.getenv("GRAALVM_HOME");
+            if (graalvmHome == null) {
+                throw new MojoFailureException("GRAALVM_HOME was not set");
+            }
+            nativeImage = Collections.singletonList(graalvmHome + File.separator + "bin" + File.separator + "native-image");
         }
-        String nativeImage = graal + File.separator + "bin" + File.separator + "native-image";
 
         try {
             List<String> command = new ArrayList<>();
-            command.add(nativeImage);
+            command.addAll(nativeImage);
             command.add("--no-server");
             command.add("-jar");
             command.add(finalName + "-runner.jar");

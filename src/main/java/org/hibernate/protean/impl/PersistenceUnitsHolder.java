@@ -16,15 +16,20 @@ import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 
 final class PersistenceUnitsHolder {
 
-	static final List<PersistenceUnitDescriptor> units = loadPersistenceUnits();
-
-	private static final Map<String,MetadataImplementor> metadata = constructMetadataAdvance();
+	private static final PUStatus COMPACT_UNITS = builderPuStatus();
 
 	private static final Object NO_NAME_TOKEN = new Object();
 
-	private static List<PersistenceUnitDescriptor> loadPersistenceUnits() {
+	private static PUStatus builderPuStatus() {
+		final List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors = loadOriginalXMLParsedDescriptors();
+		final List<PersistenceUnitDescriptor> units = convertPersistenceUnits( parsedPersistenceXmlDescriptors );
+		final Map<String,MetadataImplementor> metadata = constructMetadataAdvance( parsedPersistenceXmlDescriptors );
+		return new PUStatus(units, metadata);
+	}
+
+	private static List<PersistenceUnitDescriptor> convertPersistenceUnits(final List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors) {
 		try {
-			return loadOriginalXMLParsedDescriptors()
+			return parsedPersistenceXmlDescriptors
 					.stream()
 					.map( LightPersistenceXmlDescriptor::new )
 					.collect( Collectors.toList() );
@@ -41,9 +46,9 @@ final class PersistenceUnitsHolder {
 		return PersistenceXmlParser.locatePersistenceUnits( configurationOverrides );
 	}
 
-	private static Map<String,MetadataImplementor> constructMetadataAdvance() {
+	private static Map<String,MetadataImplementor> constructMetadataAdvance(final List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors) {
 		Map all = new HashMap(  );
-		for ( PersistenceUnitDescriptor unit : loadOriginalXMLParsedDescriptors() ) {
+		for ( PersistenceUnitDescriptor unit : parsedPersistenceXmlDescriptors ) {
 			MetadataImplementor m = createMetadata( unit );
 			Object previous = all.put( unitName( unit ), m );
 			if ( previous != null ) {
@@ -53,12 +58,12 @@ final class PersistenceUnitsHolder {
 		return all;
 	}
 
-	public static MetadataImplementor getMetadata(String persistenceUnitName) {
+	static MetadataImplementor getMetadata(String persistenceUnitName) {
 		Object key = persistenceUnitName;
 		if ( persistenceUnitName == null ) {
 			key = NO_NAME_TOKEN;
 		}
-		return metadata.get( key );
+		return COMPACT_UNITS.metadata.get( key );
 	}
 
 	private static Object unitName(PersistenceUnitDescriptor unit) {
@@ -83,6 +88,22 @@ final class PersistenceUnitsHolder {
 		HashMap props = new HashMap();
 		props.put( "hibernate.temp.use_jdbc_metadata_defaults", "false" );
 		return props;
+	}
+
+	static List<PersistenceUnitDescriptor> getPersistenceUnitDescriptors() {
+		return COMPACT_UNITS.units;
+	}
+
+	private static class PUStatus {
+
+		private final List<PersistenceUnitDescriptor> units;
+		private final Map<String, MetadataImplementor> metadata;
+
+		public PUStatus(final List<PersistenceUnitDescriptor> units, final Map<String, MetadataImplementor> metadata) {
+			this.units = units;
+			this.metadata = metadata;
+		}
+
 	}
 
 }

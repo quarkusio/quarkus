@@ -71,7 +71,7 @@ public class NativeImageMojo extends AbstractMojo {
                 command.add("-g");
             }
             System.out.println(command);
-            Process process = Runtime.getRuntime().exec(command.toArray(new String[0]), new String[]{}, outputDirectory);
+            Process process = Runtime.getRuntime().exec(command.toArray(new String[0]), null, outputDirectory);
             new Thread(new ProcessReader(process.getInputStream())).start();
             new Thread(new ProcessReader(process.getErrorStream())).start();
             if (process.waitFor() != 0) {

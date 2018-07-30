@@ -10,19 +10,19 @@ import org.jboss.shamrock.example.MessageBean;
 @Path("/test")
 public class InjectionResource {
 
-    @Inject
-    private MessageBean messageBean;
+	@Inject
+	MessageBean messageBean;
 
-    @GET
-    @Counted(monotonic = true)
-    public String getTest() {
-        return "TEST";
-    }
+	@GET
+	@Counted(monotonic = true)
+	public String getTest() {
+		return "TEST";
+	}
 
-    @GET
-    @Path("/injection")
-    public String get() {
-        return messageBean.getMessage();
-    }
+	@GET
+	@Path("/injection")
+	public String get() {
+		return messageBean.getMessage();
+	}
 
 }

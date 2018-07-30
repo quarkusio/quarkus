@@ -1,7 +1,6 @@
 package org.jboss.shamrock.jaxrs.runtime.graal;
 
-import javax.enterprise.inject.se.SeContainer;
-
+import org.jboss.shamrock.runtime.BeanContainer;
 import org.jboss.shamrock.runtime.ContextObject;
 
 /**
@@ -9,7 +8,7 @@ import org.jboss.shamrock.runtime.ContextObject;
  */
 public class JaxrsTemplate {
 
-    public void setupIntegration(@ContextObject("weld.container")SeContainer container) {
+    public void setupIntegration(@ContextObject("bean.container") BeanContainer container) {
         ShamrockInjectorFactory.CONTAINER = container;
     }
 

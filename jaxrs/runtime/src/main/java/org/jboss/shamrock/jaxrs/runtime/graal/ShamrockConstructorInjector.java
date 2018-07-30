@@ -2,7 +2,6 @@ package org.jboss.shamrock.jaxrs.runtime.graal;
 
 import java.lang.reflect.Constructor;
 
-import javax.enterprise.inject.Instance;
 import javax.ws.rs.WebApplicationException;
 
 import org.jboss.resteasy.spi.ApplicationException;
@@ -33,8 +32,7 @@ public class ShamrockConstructorInjector implements ConstructorInjector {
         if (ShamrockInjectorFactory.CONTAINER == null) {
             return delegate.construct(request, response);
         }
-        Instance object = ShamrockInjectorFactory.CONTAINER.select(this.ctor.getDeclaringClass());
-        return object.get();
+        return ShamrockInjectorFactory.CONTAINER.instance(this.ctor.getDeclaringClass());
     }
 
     @Override

@@ -115,5 +115,10 @@ public class BytecodeRecorderTestCase {
         public void writeClass(boolean applicationClass, String className, byte[] data) throws IOException {
             tcl.write(className, data);
         }
+
+        @Override
+        public void writeResource(String name, byte[] data) throws IOException {
+            throw new UnsupportedOperationException();
+        }
     }
 }

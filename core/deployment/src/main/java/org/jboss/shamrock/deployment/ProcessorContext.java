@@ -51,6 +51,14 @@ public interface ProcessorContext {
     void addGeneratedClass(boolean applicationClass, String name, byte[] classData) throws IOException;
 
     /**
+     * Creates a resources with the provided contents
+     * @param name
+     * @param data
+     * @throws IOException
+     */
+    void createResource(String name, byte[] data) throws IOException;
+
+    /**
      * Adds a bytecode transformer that can transform application classes.
      * <p>
      * This takes the form of a function that takes a string, and returns an ASM visitor, or null if transformation

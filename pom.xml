@@ -15,7 +15,7 @@
     <packaging>pom</packaging>
 
     <properties>
-        <version.org.jandex>2.0.5.Final</version.org.jandex>
+        <version.org.jandex>2.0.6.Final-SNAPSHOT</version.org.jandex>
         <resteasy.version>3.5.1.Final</resteasy.version>
         <weld-se-core.version>3.0.4.Final</weld-se-core.version>
         <undertow.version>2.0.12.Final</undertow.version>
@@ -46,6 +46,7 @@
         <jackson.version>2.9.5</jackson.version>
         <commons-beanutils-core.version>1.8.3</commons-beanutils-core.version>
         <commons-logging.version>1.2</commons-logging.version>
+        <arc.version>1.0.0-SNAPSHOT</arc.version>
     </properties>
 
     <modules>
@@ -61,6 +62,7 @@
         <module>examples</module>
         <module>jpa</module>
         <module>gizmo</module>
+        <module>arc</module>
     </modules>
     <build>
         <pluginManagement>
@@ -209,6 +211,16 @@
             <dependency>
                 <groupId>org.jboss.shamrock</groupId>
                 <artifactId>shamrock-jpa-runtime</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-arc-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-arc-runtime</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -432,6 +444,16 @@
                 <groupId>org.jboss.weld.se</groupId>
                 <artifactId>weld-se-core</artifactId>
                 <version>${weld-se-core.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.protean.arc</groupId>
+                <artifactId>arc-processor</artifactId>
+                <version>${arc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.protean.arc</groupId>
+                <artifactId>arc-runtime</artifactId>
+                <version>${arc.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.xnio</groupId>

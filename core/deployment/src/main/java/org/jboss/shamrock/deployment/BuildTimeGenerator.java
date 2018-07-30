@@ -193,6 +193,11 @@ public class BuildTimeGenerator {
         }
 
         @Override
+        public void createResource(String name, byte[] data) throws IOException {
+            output.writeResource(name, data);
+        }
+
+        @Override
         public void addByteCodeTransformer(Function<String, Function<ClassVisitor, ClassVisitor>> visitorFunction) {
             bytecodeTransformers.add(visitorFunction);
         }

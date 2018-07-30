@@ -3,15 +3,19 @@ package org.jboss.shamrock.metrics;
 import java.util.Collection;
 
 import javax.inject.Inject;
+import javax.interceptor.Interceptor;
 
 import org.eclipse.microprofile.metrics.annotation.Counted;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.shamrock.deployment.ArchiveContext;
+import org.jboss.shamrock.deployment.BeanArchiveIndex;
+import org.jboss.shamrock.deployment.BeanDeployment;
 import org.jboss.shamrock.deployment.ProcessorContext;
 import org.jboss.shamrock.deployment.ResourceProcessor;
 import org.jboss.shamrock.deployment.RuntimePriority;
@@ -21,8 +25,6 @@ import org.jboss.shamrock.metrics.runtime.MetricsDeploymentTemplate;
 import org.jboss.shamrock.metrics.runtime.MetricsServlet;
 import org.jboss.shamrock.undertow.ServletData;
 import org.jboss.shamrock.undertow.ServletDeployment;
-import org.jboss.shamrock.weld.deployment.BeanArchiveIndex;
-import org.jboss.shamrock.weld.deployment.WeldDeployment;
 
 import io.smallrye.metrics.MetricProducer;
 import io.smallrye.metrics.MetricRegistries;
@@ -40,7 +42,7 @@ public class MetricsProcessor implements ResourceProcessor {
 
 
     @Inject
-    private WeldDeployment weldDeployment;
+    private BeanDeployment beanDeployment;
 
     @Inject
     private ShamrockConfig config;
@@ -57,16 +59,16 @@ public class MetricsProcessor implements ResourceProcessor {
         servletData.getMapings().add(config.getConfig("metrics.path", "/metrics"));
         servletDeployment.addServlet(servletData);
 
-        weldDeployment.addAdditionalBean(MetricProducer.class,
+        beanDeployment.addAdditionalBean(MetricProducer.class,
                 MetricNameFactory.class,
                 MetricRegistries.class);
 
-        weldDeployment.addAdditionalBean(MetricsInterceptor.class,
+        beanDeployment.addAdditionalBean(MetricsInterceptor.class,
                 MeteredInterceptor.class,
                 CountedInterceptor.class,
                 TimedInterceptor.class);
 
-        weldDeployment.addAdditionalBean(MetricsRequestHandler.class, MetricsServlet.class);
+        beanDeployment.addAdditionalBean(MetricsRequestHandler.class, MetricsServlet.class);
         //weldDeployment.addInterceptor(MetricsInterceptor.class);
         //weldDeployment.addInterceptor(MeteredInterceptor.class);
         //weldDeployment.addInterceptor(CountedInterceptor.class);
@@ -85,6 +87,12 @@ public class MetricsProcessor implements ResourceProcessor {
 
             for (AnnotationInstance anno : annos) {
                 AnnotationTarget target = anno.target();
+
+                // TODO ugly hack to exclude metrics interceptors
+                if (Kind.CLASS.equals(target.kind())
+                        && target.asClass().classAnnotations().stream().anyMatch(a -> a.name().equals(DotName.createSimple(Interceptor.class.getName())))) {
+                    continue;
+                }
 
                 MethodInfo methodInfo = target.asMethod();
                 ClassInfo classInfo = methodInfo.declaringClass();

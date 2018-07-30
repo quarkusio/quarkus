@@ -36,7 +36,6 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.jboss.shamrock.deployment.BuildTimeGenerator;
 import org.jboss.shamrock.deployment.ClassOutput;
-import org.jboss.shamrock.deployment.index.MapArtifactResolver;
 import org.jboss.shamrock.deployment.index.ResolvedArtifact;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -169,6 +168,16 @@ public class BuildMojo extends AbstractMojo {
                         out.write(data);
                     }
                 }
+
+                @Override
+                public void writeResource(String name, byte[] data) throws IOException {
+                    File file = new File(wiringClassesDirectory, name);
+                    file.getParentFile().mkdirs();
+                    try (FileOutputStream out = new FileOutputStream(file)) {
+                        out.write(data);
+                    }
+                }
+
             }, runnerClassLoader, useStaticInit);
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             try {

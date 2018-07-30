@@ -2,6 +2,7 @@ package org.jboss.shamrock.weld.runtime;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.net.URLConnection;
@@ -15,6 +16,7 @@ import javax.enterprise.inject.se.SeContainer;
 import javax.enterprise.inject.se.SeContainerInitializer;
 import javax.enterprise.inject.spi.Bean;
 
+import org.jboss.shamrock.runtime.BeanContainer;
 import org.jboss.shamrock.runtime.ContextObject;
 import org.jboss.shamrock.runtime.InjectionFactory;
 import org.jboss.shamrock.runtime.InjectionInstance;
@@ -120,6 +122,17 @@ public class WeldDeploymentTemplate {
                 RuntimeInjector.setFactory(old);
             }
         });
+    }
+
+    @ContextObject("bean.container")
+    public BeanContainer initBeanContainer(SeContainer container) throws Exception {
+        return new BeanContainer() {
+
+            @Override
+            public <T> T instance(Class<T> type, Annotation... qualifiers) {
+                return container.select(type, qualifiers).get();
+            }
+        };
     }
 
 }

@@ -16,4 +16,6 @@ public interface ClassOutput {
      */
     void writeClass(boolean applicationClass, String className, byte[] data) throws IOException;
 
+    void writeResource(String name, byte[] data) throws IOException;
+
 }

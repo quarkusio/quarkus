@@ -19,11 +19,6 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-weld-deployment</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-jaxrs-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
@@ -125,6 +120,45 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <profile>
+          <id>weld</id>
+          <activation>
+            <property>
+              <name>!arc</name>
+            </property>
+          </activation>
+          <dependencies>
+            <dependency>
+              <groupId>org.jboss.shamrock</groupId>
+              <artifactId>shamrock-weld-deployment</artifactId>
+              <scope>provided</scope>
+            </dependency>
+          </dependencies>
+        </profile>
+
+        <profile>
+          <id>arc</id>
+          <activation>
+            <property>
+              <name>arc</name>
+              <value>true</value>
+            </property>
+          </activation>
+          <properties>
+            <!-- https://github.com/mkouba/smallrye-health/tree/no-private-injection -->
+            <smallrye-health.version>1.0.2-SNAPSHOT</smallrye-health.version>
+            <!-- https://github.com/mkouba/smallrye-metrics/tree/no-private-injection -->
+            <smallrye-metrics.version>1.1-SNAPSHOT</smallrye-metrics.version>
+          </properties>
+          <dependencies>
+            <dependency>
+              <groupId>org.jboss.shamrock</groupId>
+              <artifactId>shamrock-arc-deployment</artifactId>
+              <scope>provided</scope>
+            </dependency>
+          </dependencies>
         </profile>
     </profiles>
 

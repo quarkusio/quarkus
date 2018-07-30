@@ -1,4 +1,4 @@
-package org.jboss.shamrock.weld.deployment;
+package org.jboss.shamrock.deployment;
 
 import org.jboss.jandex.IndexView;
 

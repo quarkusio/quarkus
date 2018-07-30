@@ -18,7 +18,7 @@ import io.smallrye.health.SmallRyeHealthReporter;
 public class HealthServlet extends HttpServlet {
 
     @Inject
-    private SmallRyeHealthReporter reporter;
+    SmallRyeHealthReporter reporter;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {

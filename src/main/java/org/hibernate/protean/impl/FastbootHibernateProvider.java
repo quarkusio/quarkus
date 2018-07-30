@@ -9,6 +9,7 @@ import javax.persistence.spi.PersistenceProvider;
 import javax.persistence.spi.PersistenceUnitInfo;
 import javax.persistence.spi.ProviderUtil;
 
+import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.jpa.HibernatePersistenceProvider;
@@ -101,19 +102,33 @@ final class FastbootHibernateProvider extends HibernatePersistenceProvider imple
 				continue;
 			}
 
-			ClassLoaderService overrideClassLoaderService = FlatClassLoaderService.INSTANCE;
-			EntityManagerFactoryBuilderImpl entityManagerFactoryBuilder = (EntityManagerFactoryBuilderImpl) getEntityManagerFactoryBuilder(
-					persistenceUnit,
-					integration,
-					overrideClassLoaderService
-			);
 			MetadataImplementor metadata = PersistenceUnitsHolder.getMetadata( persistenceUnitName );
-			entityManagerFactoryBuilder.setMetadata( metadata );
-			return entityManagerFactoryBuilder;
+			//TODO:
+			final Map configurationValues = Collections.emptyMap();
+			//TODO:
+			final Object validatorFactory = null;
+			//TODO:
+			final Object cdiBeanManager = null;
+
+
+			StandardServiceRegistry standardServiceRegistry = buildStandardServiceRegistry( persistenceUnit, configurationValues );
+
+			return new FastBootEntityManagerFactoryBuilder( metadata, persistenceUnitName, standardServiceRegistry,
+															configurationValues,
+															validatorFactory,
+															cdiBeanManager
+			);
 		}
 
 		log.debug( "Found no matching persistence units" );
 		return null;
+	}
+
+	private StandardServiceRegistry buildStandardServiceRegistry(
+			PersistenceUnitDescriptor persistenceUnit,
+			Map configurationValues) {
+		ServiceRegistryBuilder serviceRegistryBuilder = new ServiceRegistryBuilder( persistenceUnit, configurationValues );
+		return serviceRegistryBuilder.buildNewServiceRegistry();
 	}
 
 	private boolean isProvider(PersistenceUnitDescriptor persistenceUnit) {

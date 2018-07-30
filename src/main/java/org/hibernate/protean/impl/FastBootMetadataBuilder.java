@@ -89,7 +89,7 @@ class FastBootMetadataBuilder {
 
 		// merge configuration sources and build the "standard" service registry
 		final StandardServiceRegistryBuilder ssrBuilder = new StandardServiceRegistryBuilder( bsr );
-		final MergedSettings mergedSettings = mergeSettings( persistenceUnit, ssrBuilder );
+		final MergedSettings mergedSettings = mergeSettings( persistenceUnit );
 		this.configurationValues = mergedSettings.getConfigurationValues();
 
 		// Build the "standard" service registry
@@ -137,7 +137,7 @@ class FastBootMetadataBuilder {
 	/**
 	 * Simplified copy of org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl#mergeSettings(org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor, java.util.Map, org.hibernate.boot.registry.StandardServiceRegistryBuilder)
 	 */
-	private MergedSettings mergeSettings(PersistenceUnitDescriptor persistenceUnit, StandardServiceRegistryBuilder ssrBuilder) {
+	private MergedSettings mergeSettings(PersistenceUnitDescriptor persistenceUnit) {
 		final MergedSettings mergedSettings = new MergedSettings();
 
 		// Protean specific!

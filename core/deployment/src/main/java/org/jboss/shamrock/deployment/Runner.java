@@ -67,12 +67,14 @@ public class Runner {
     private final ClassOutput output;
     private final DeploymentProcessorInjection injection;
     private final ClassLoader classLoader;
+    private final boolean useStaticInit;
 
-    public Runner(ClassOutput classOutput) {
-        this(classOutput, Runner.class.getClassLoader());
+    public Runner(ClassOutput classOutput, boolean useStaticInit) {
+        this(classOutput, Runner.class.getClassLoader(), useStaticInit);
     }
 
-    public Runner(ClassOutput classOutput, ClassLoader cl) {
+    public Runner(ClassOutput classOutput, ClassLoader cl, boolean useStaticInit) {
+        this.useStaticInit = useStaticInit;
         Iterator<ResourceProcessor> loader = ServiceLoader.load(ResourceProcessor.class, cl).iterator();
         List<ResourceProcessor> processors = new ArrayList<>();
         while (loader.hasNext()) {
@@ -192,7 +194,13 @@ public class Runner {
         void writeMainClass() throws IOException {
 
             Collections.sort(tasks);
-            Collections.sort(staticInitTasks);
+            if(!useStaticInit) {
+                staticInitTasks.sort(Comparator.reverseOrder());
+                tasks.addAll(0, staticInitTasks);
+                staticInitTasks.clear();
+            } else {
+                Collections.sort(staticInitTasks);
+            }
 
             ClassWriter file = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
             file.visit(Opcodes.V1_8, ACC_PUBLIC | ACC_SUPER, MAIN_CLASS_INTERNAL, null, Type.getInternalName(Object.class), null);

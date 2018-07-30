@@ -25,7 +25,7 @@ public class RuntimeRunner implements Runnable, Closeable {
     @Override
     public void run() {
         try {
-            Runner runner = new Runner(loader);
+            Runner runner = new Runner(loader, false);
             runner.run(target);
             Class<?> mainClass = loader.findClass(Runner.MAIN_CLASS);
             Method run = mainClass.getDeclaredMethod("main", String[].class);

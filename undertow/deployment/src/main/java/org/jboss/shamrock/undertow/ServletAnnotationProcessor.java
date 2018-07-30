@@ -51,6 +51,7 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
                     String name = annotation.value("name").asString();
                     AnnotationValue asyncSupported = annotation.value("asyncSupported");
                     String servletClass = annotation.target().asClass().toString();
+                    processorContext.addReflectiveClass(servletClass);
                     InjectionInstance<? extends Servlet> injection = (InjectionInstance<? extends Servlet>) context.newInstanceFactory(servletClass);
                     InstanceFactory<? extends Servlet> factory = template.createInstanceFactory(injection);
                     template.registerServlet(null, name, context.classProxy(servletClass), asyncSupported != null && asyncSupported.asBoolean(), factory);

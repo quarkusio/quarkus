@@ -67,6 +67,9 @@ public class ShamrockMojo extends AbstractMojo {
     @Parameter(defaultValue = "org.jboss.shamrock.runner.GeneratedMain")
     private String mainClass;
 
+    @Parameter(defaultValue = "true")
+    private boolean useStaticInit;
+
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -145,20 +148,24 @@ public class ShamrockMojo extends AbstractMojo {
             //we need to make sure all the deployment artifacts are on the class path
             //to do this we need to create a new class loader to actually use for the runner
             URLClassLoader runnerClassLoader = new URLClassLoader(classPathUrls.toArray(new URL[0]), getClass().getClassLoader());
-            Runner runner = new Runner(new ClassOutput() {
-                @Override
-                public void writeClass(String className, byte[] data) throws IOException {
-                    String location = className.replace('.', '/');
-                    File file = new File(wiringClassesDirectory, location + ".class");
-                    file.getParentFile().mkdirs();
-                    try (FileOutputStream out = new FileOutputStream(file)) {
-                        out.write(data);
+            ClassLoader old = Thread.currentThread().getContextClassLoader();
+            try {
+                Thread.currentThread().setContextClassLoader(runnerClassLoader);
+                Runner runner = new Runner(new ClassOutput() {
+                    @Override
+                    public void writeClass(String className, byte[] data) throws IOException {
+                        String location = className.replace('.', '/');
+                        File file = new File(wiringClassesDirectory, location + ".class");
+                        file.getParentFile().mkdirs();
+                        try (FileOutputStream out = new FileOutputStream(file)) {
+                            out.write(data);
+                        }
                     }
-                }
-            }, runnerClassLoader);
-
-
-            runner.run(outputDirectory.toPath());
+                }, runnerClassLoader, useStaticInit);
+                runner.run(outputDirectory.toPath());
+            } finally {
+                Thread.currentThread().setContextClassLoader(old);
+            }
 
             try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(new File(buildDir, finalName + "-runner.jar")))) {
                 Path wiringJar = Paths.get(wiringClassesDirectory.getAbsolutePath());

@@ -63,6 +63,10 @@ public class WeldDeploymentTemplate {
         initializer.addBeanClasses(clazz);
     }
 
+    public void addInterceptor(SeContainerInitializer initialize, Class<?> interceptorClass) {
+        initialize.enableInterceptors(interceptorClass);
+    }
+
     @ContextObject("weld.container")
     public SeContainer doBoot( SeContainerInitializer initializer) throws Exception {
         SeContainer container = initializer.initialize();

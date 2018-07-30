@@ -195,7 +195,7 @@ public class Runner {
 
             Collections.sort(tasks);
             if(!useStaticInit) {
-                staticInitTasks.sort(Comparator.reverseOrder());
+                Collections.sort(staticInitTasks);
                 tasks.addAll(0, staticInitTasks);
                 staticInitTasks.clear();
             } else {

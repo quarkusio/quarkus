@@ -1,5 +1,6 @@
 package com.example;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import javax.persistence.EntityManager;
@@ -27,6 +28,13 @@ public class Main {
 
 		entityManagerFactory.close();
 		System.out.println( "Hibernate EntityManagerFactory: shut down" );
+
+		try {
+			int read = System.in.read();
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private static void doStuffWithHibernate(EntityManagerFactory entityManagerFactory) {

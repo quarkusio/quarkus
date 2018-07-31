@@ -5,10 +5,10 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+
+import org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -43,7 +43,11 @@ public class RuntimeUpdatesHandler implements HttpHandler {
         synchronized (this) {
             if (nextUpdate < System.currentTimeMillis()) {
                 try {
-                    doScan();
+                    if(doScan()) {
+                        //TODO: super hack alert
+                        UndertowDeploymentTemplate.ROOT_HANDLER.handleRequest(exchange);
+                        return;
+                    }
                     //we update at most once every 2s
                     nextUpdate = System.currentTimeMillis() + TWO_SECONDS;
 
@@ -56,7 +60,7 @@ public class RuntimeUpdatesHandler implements HttpHandler {
         next.handleRequest(exchange);
     }
 
-    private void doScan() throws IOException {
+    private boolean doScan() throws IOException {
         //TODO: this is super simple at the moment, if there are changes
         //we just restart the app which will drop the class loader
         //this will change considerably with Fakereplace
@@ -79,6 +83,7 @@ public class RuntimeUpdatesHandler implements HttpHandler {
                 }
             }
         });
+        return done.get();
     }
 
     public static void displayErrorPage(HttpServerExchange exchange, final Throwable exception) throws IOException {

@@ -1,9 +1,6 @@
 package org.jboss.shamrock.metrics;
 
-import java.lang.reflect.Method;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
@@ -78,14 +75,15 @@ public class MetricsProcessor implements ResourceProcessor {
 
         try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.WELD_DEPLOYMENT + 30)) {
             MetricsDeploymentTemplate metrics = recorder.getRecordingProxy(MetricsDeploymentTemplate.class);
+
             metrics.createRegistries();
+            metrics.registerBaseMetrics();
+            metrics.registerVendorMetrics();
 
             Index index = archiveContext.getIndex();
             List<AnnotationInstance> annos = index.getAnnotations(DotName.createSimple(Counted.class.getName()));
 
             for (AnnotationInstance anno : annos) {
-                System.err.println("anno: " + anno);
-
                 AnnotationTarget target = anno.target();
 
                 MethodInfo methodInfo = target.asMethod();

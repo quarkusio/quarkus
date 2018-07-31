@@ -14,8 +14,6 @@ public class TestResource {
     @GET
     @Counted(monotonic = true)
     public String getTest() {
-        System.err.println( "called");
-        new Exception().printStackTrace();;
         return "TEST";
     }
 

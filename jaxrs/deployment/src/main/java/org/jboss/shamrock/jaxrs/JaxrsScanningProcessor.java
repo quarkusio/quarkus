@@ -96,11 +96,11 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
         if (app.isEmpty()) {
             return;
         }
-        //List<AnnotationInstance> xmlRoot = index.getAnnotations(XML_ROOT);
-        //if(!xmlRoot.isEmpty()) {
-        processorContext.addReflectiveClass("com.sun.xml.bind.v2.ContextFactory");
-        processorContext.addReflectiveClass("com.sun.xml.internal.bind.v2.ContextFactory");
-        //}
+        List<AnnotationInstance> xmlRoot = index.getAnnotations(XML_ROOT);
+        if(!xmlRoot.isEmpty()) {
+            processorContext.addReflectiveClass("com.sun.xml.bind.v2.ContextFactory");
+            processorContext.addReflectiveClass("com.sun.xml.internal.bind.v2.ContextFactory");
+        }
         AnnotationInstance appPath = app.get(0);
         String path = appPath.value().asString();
         try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.JAXRS_DEPLOYMENT)) {

@@ -14,7 +14,7 @@ import org.jboss.resteasy.spi.metadata.ResourceConstructor;
  */
 public class ShamrockInjectorFactory extends InjectorFactoryImpl {
 
-    public static SeContainer CONTAINER = null;
+    public static volatile SeContainer CONTAINER = null;
 
     @Override
     public ConstructorInjector createConstructor(Constructor constructor, ResteasyProviderFactory providerFactory) {

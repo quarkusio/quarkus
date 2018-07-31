@@ -33,7 +33,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.jboss.shamrock.deployment.ClassOutput;
-import org.jboss.shamrock.deployment.Runner;
+import org.jboss.shamrock.deployment.BuildTimeGenerator;
 
 @Mojo(name = "build", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class BuildMojo extends AbstractMojo {
@@ -151,7 +151,7 @@ public class BuildMojo extends AbstractMojo {
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             try {
                 Thread.currentThread().setContextClassLoader(runnerClassLoader);
-                Runner runner = new Runner(new ClassOutput() {
+                BuildTimeGenerator buildTimeGenerator = new BuildTimeGenerator(new ClassOutput() {
                     @Override
                     public void writeClass(String className, byte[] data) throws IOException {
                         String location = className.replace('.', '/');
@@ -162,7 +162,7 @@ public class BuildMojo extends AbstractMojo {
                         }
                     }
                 }, runnerClassLoader, useStaticInit);
-                runner.run(outputDirectory.toPath());
+                buildTimeGenerator.run(outputDirectory.toPath());
             } finally {
                 Thread.currentThread().setContextClassLoader(old);
             }

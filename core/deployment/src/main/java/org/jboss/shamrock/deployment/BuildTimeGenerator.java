@@ -34,11 +34,13 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.jandex.Index;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorderImpl;
@@ -54,7 +56,7 @@ import org.objectweb.asm.Type;
 /**
  * Class that does the build time processing
  */
-public class Runner {
+public class BuildTimeGenerator {
 
     private static final AtomicInteger COUNT = new AtomicInteger();
     public static final String MAIN_CLASS_INTERNAL = "org/jboss/shamrock/runner/GeneratedMain";
@@ -69,11 +71,11 @@ public class Runner {
     private final ClassLoader classLoader;
     private final boolean useStaticInit;
 
-    public Runner(ClassOutput classOutput, boolean useStaticInit) {
-        this(classOutput, Runner.class.getClassLoader(), useStaticInit);
+    public BuildTimeGenerator(ClassOutput classOutput, boolean useStaticInit) {
+        this(classOutput, BuildTimeGenerator.class.getClassLoader(), useStaticInit);
     }
 
-    public Runner(ClassOutput classOutput, ClassLoader cl, boolean useStaticInit) {
+    public BuildTimeGenerator(ClassOutput classOutput, ClassLoader cl, boolean useStaticInit) {
         this.useStaticInit = useStaticInit;
         Iterator<ResourceProcessor> loader = ServiceLoader.load(ResourceProcessor.class, cl).iterator();
         List<ResourceProcessor> processors = new ArrayList<>();
@@ -277,10 +279,18 @@ public class Runner {
             mv.visitFieldInsn(GETSTATIC, Type.getInternalName(System.class), "out", "L" + Type.getInternalName(PrintStream.class) + ";");
             mv.visitLdcInsn("ms");
             mv.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(PrintStream.class), "println", "(Ljava/lang/String;)V", false);
-
             mv.visitInsn(RETURN);
             mv.visitMaxs(0, 4);
             mv.visitEnd();
+
+
+            mv = file.visitMethod(ACC_PUBLIC | ACC_STATIC, "close", "()V", null, null);
+            mv.visitFieldInsn(GETSTATIC, MAIN_CLASS_INTERNAL, STARTUP_CONTEXT, "L" + Type.getInternalName(StartupContext.class) + ";");
+            mv.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(StartupContext.class), "close", "()V");
+            mv.visitInsn(RETURN);
+            mv.visitMaxs(0, 4);
+            mv.visitEnd();
+
             file.visitEnd();
 
             output.writeClass(MAIN_CLASS_INTERNAL, file.toByteArray());

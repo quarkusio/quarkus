@@ -71,8 +71,8 @@ public class NativeImageMojo extends AbstractMojo {
             command.add("-H:+AllowVMInspection");
             System.out.println(command);
             Process process = Runtime.getRuntime().exec(command.toArray(new String[0]), null, outputDirectory);
-            new Thread(new ProcessReader(process.getInputStream())).start();
-            new Thread(new ProcessReader(process.getErrorStream())).start();
+            new Thread(new ProcessReader(process.getInputStream(), false)).start();
+            new Thread(new ProcessReader(process.getErrorStream(), true)).start();
             if (process.waitFor() != 0) {
                 throw new RuntimeException("Image generation failed");
             }

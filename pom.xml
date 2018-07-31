@@ -32,6 +32,7 @@
         <asm.version>6.0</asm.version>
         <logback.version>1.1.7</logback.version>
         <cdi-api.version>2.0</cdi-api.version>
+        <fakereplace.version>1.0.0.Alpha7</fakereplace.version>
     </properties>
 
     <modules>
@@ -271,6 +272,11 @@
                 <groupId>javax.enterprise</groupId>
                 <artifactId>cdi-api</artifactId>
                 <version>${cdi-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.fakereplace</groupId>
+                <artifactId>fakereplace</artifactId>
+                <version>${fakereplace.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

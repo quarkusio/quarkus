@@ -16,6 +16,19 @@ At the moment is has the following features:
 - A JUnit runner that can run tests, and supports IDE usage
 - A JUnit runner that can test a native image produced by the maven plugin
 
+
+## How to build Shamrock
+
+* Install GraalVM (tested on RC4)
+* set `GRAALVM_HOME` to your GraalVM Home directory e.g. `/Users/emmanuel/JDK/GraalVM/Contents/Home`
+* `mvn install`
+
+The default build will create two different native images, which is quite time consuming. You can skip this
+by disabling the `native-image` profile: `mvn install -P\!native-image`.
+
+Wait. Success!
+
+
 ## Architecture Overview
 
 Shamrock runs in two distinct phases. The first phase is build time processing, which is done by instances of ResourceProcessor:
@@ -142,11 +155,17 @@ is:
 *   lib/*
     A directory that contains all runtime dependencies. These are referenced by the `class-path` manifest entry in the runner jar.
     
-    
-## How to build Shamrock
+## Shamrock Run Modes
 
-* Install GraalVM (tested on RC4)
-* set `GRAALVM_HOME` to your GraalVM Home directory e.g. `/Users/emmanuel/JDK/GraalVM/Contents/Home`
-* `mvn install`
+Shamrock supports a few different run modes, to meet the various use cases. The core of how it works is the same in each
+mode, however there are some differences. The two basic modes are:
 
-Wait. Success!
+*   Built Time Mode
+    This mode involves building the wiring jar at build/provisioning time, and then executing the resulting output as a
+    separate step. This mode is the basis for native image generation, as native images are generated from the output
+    of this command. This is the only mode that is supported for production use.
+
+*   Runtime Mode
+    Runtime mode involves generating the wiring bytecode at startup time. This is useful when developing apps with Shamrock,
+    as it allows you to test and run things without a full maven. This is currently used for the JUnit test runner, 
+    and for the `mvn shamrock:run` command.

@@ -40,6 +40,9 @@ public class WeldAnnotationProcessor implements ResourceProcessor {
             for (Class<?> clazz : weldDeployment.getAdditionalBeans()) {
                 template.addClass(init, clazz);
             }
+            for ( Class<?> clazz: weldDeployment.getInterceptors()) {
+                template.addInterceptor(init, clazz);
+            }
             SeContainer weld = template.doBoot(init);
             template.setupInjection(weld);
         }

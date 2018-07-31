@@ -5,10 +5,14 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import org.eclipse.microprofile.metrics.annotation.Counted;
+import org.eclipse.microprofile.metrics.annotation.Metric;
+
 @Path("/test")
 public class TestResource {
 
     @GET
+    @Counted(monotonic = true)
     public String getTest() {
         return "TEST";
     }

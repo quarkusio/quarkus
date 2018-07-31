@@ -51,6 +51,8 @@ import org.jboss.shamrock.deployment.ProcessorContext;
 import org.jboss.shamrock.deployment.ResourceProcessor;
 import org.jboss.shamrock.deployment.RuntimePriority;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
+import org.jboss.shamrock.jaxrs.runtime.graal.JaxrsTemplate;
+import org.jboss.shamrock.jaxrs.runtime.graal.ShamrockInjectorFactory;
 import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate;
 
@@ -66,7 +68,9 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
     private static final String JAX_RS_SERVLET_NAME = "javax.ws.rs.core.Application";
 
     private static final DotName APPLICATION_PATH = DotName.createSimple("javax.ws.rs.ApplicationPath");
+
     private static final DotName PATH = DotName.createSimple("javax.ws.rs.Path");
+
     private static final DotName XML_ROOT = DotName.createSimple("javax.xml.bind.annotation.XmlRootElement");
 
     private static final DotName[] METHOD_ANNOTATIONS = {
@@ -125,6 +129,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
 
                 undertow.addServletContextParameter(null, ResteasyContextParameters.RESTEASY_SCANNED_RESOURCES, sb.toString());
                 undertow.addServletContextParameter(null, "resteasy.servlet.mapping.prefix", path);
+                undertow.addServletContextParameter(null, "resteasy.injector.factory", ShamrockInjectorFactory.class.getName());
                 processorContext.addReflectiveClass(HttpServlet30Dispatcher.class.getName());
                 for (String i : loadProviders()) {
                     processorContext.addReflectiveClass(i);
@@ -144,6 +149,10 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
             }
         }
 
+        try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.JAXRS_DEPLOYMENT)) {
+            JaxrsTemplate jaxrs = recorder.getRecordingProxy(JaxrsTemplate.class);
+            jaxrs.setupIntegration(null);
+        }
     }
 
     @Override

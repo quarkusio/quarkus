@@ -9,12 +9,13 @@ import org.eclipse.microprofile.metrics.annotation.Counted;
 import org.eclipse.microprofile.metrics.annotation.Metric;
 
 @Path("/test")
-@Counted
 public class TestResource {
 
-    @Counted
     @GET
+    @Counted(monotonic = true)
     public String getTest() {
+        System.err.println( "called");
+        new Exception().printStackTrace();;
         return "TEST";
     }
 

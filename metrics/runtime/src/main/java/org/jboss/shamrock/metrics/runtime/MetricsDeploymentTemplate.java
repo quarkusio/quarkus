@@ -1,22 +1,44 @@
 package org.jboss.shamrock.metrics.runtime;
 
-import javax.enterprise.inject.spi.CDI;
+import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.Member;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.List;
 
 import io.smallrye.metrics.MetricRegistries;
 import io.smallrye.metrics.app.CounterImpl;
-import org.eclipse.microprofile.metrics.Metric;
+import io.smallrye.metrics.interceptors.MetricResolver;
+import org.eclipse.microprofile.metrics.Metadata;
 import org.eclipse.microprofile.metrics.MetricRegistry;
+import org.eclipse.microprofile.metrics.MetricType;
+import org.eclipse.microprofile.metrics.annotation.Counted;
 
 /**
  * Created by bob on 7/30/18.
  */
 public class MetricsDeploymentTemplate {
 
-    public void registerCounted(String name) {
-        System.err.println("register: " + name);
+    /*
+    public <E extends Member & AnnotatedElement> void registerCounted(Class<?> topClass, E element) {
         MetricRegistry registry = MetricRegistries.get(MetricRegistry.Type.APPLICATION);
-        registry.register(name, new CounterImpl());
+        //registry.register(name, new CounterImpl());
+        MetricResolver resolver = new MetricResolver();
+        MetricResolver.Of<Counted> of = resolver.counted(topClass, element);
+        Metadata meta = new Metadata(of.metricName(), MetricType.COUNTER);
+        //registry.register(meta, new CounterImpl());
     }
+    */
+    public void registerCounted(String topClassName, String elementName) {
+        MetricRegistry registry = MetricRegistries.get(MetricRegistry.Type.APPLICATION);
+        MetricResolver resolver = new MetricResolver();
+
+        String name = MetricRegistry.name(topClassName, elementName);
+        Metadata meta = new Metadata(name, MetricType.COUNTER);
+        System.err.println( "register: " + name);
+        registry.register(meta, new CounterImpl());
+    }
+
 
     public void createRegistries() {
         System.err.println("creating registries");

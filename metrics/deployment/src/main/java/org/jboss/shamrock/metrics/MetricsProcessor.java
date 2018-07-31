@@ -1,23 +1,28 @@
 package org.jboss.shamrock.metrics;
 
+import java.lang.reflect.Method;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
 import io.smallrye.metrics.MetricProducer;
 import io.smallrye.metrics.MetricRegistries;
 import io.smallrye.metrics.MetricsRequestHandler;
-import io.smallrye.metrics.app.CounterImpl;
 import io.smallrye.metrics.interceptors.CountedInterceptor;
 import io.smallrye.metrics.interceptors.MeteredInterceptor;
 import io.smallrye.metrics.interceptors.MetricNameFactory;
+import io.smallrye.metrics.interceptors.MetricsBinding;
 import io.smallrye.metrics.interceptors.MetricsInterceptor;
 import io.smallrye.metrics.interceptors.TimedInterceptor;
-import org.eclipse.microprofile.metrics.Metric;
 import org.eclipse.microprofile.metrics.annotation.Counted;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.shamrock.deployment.ArchiveContext;
 import org.jboss.shamrock.deployment.ProcessorContext;
 import org.jboss.shamrock.deployment.ResourceProcessor;
@@ -46,7 +51,7 @@ public class MetricsProcessor implements ResourceProcessor {
 
     @Override
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
-        System.err.println( "PROCESSING METRICS");
+        System.err.println("PROCESSING METRICS");
         ServletData servletData = new ServletData("metrics", MetricsServlet.class.getName());
         servletData.getMapings().add(config.getConfig("metrics.path", "/metrics"));
         servletDeployment.addServlet(servletData);
@@ -60,28 +65,38 @@ public class MetricsProcessor implements ResourceProcessor {
         weldDeployment.addAdditionalBean(CountedInterceptor.class);
         weldDeployment.addAdditionalBean(TimedInterceptor.class);
 
-        weldDeployment.addInterceptor(MetricsInterceptor.class);
-        weldDeployment.addInterceptor(MeteredInterceptor.class);
-        weldDeployment.addInterceptor(CountedInterceptor.class);
-        weldDeployment.addInterceptor(TimedInterceptor.class);
+        //weldDeployment.addInterceptor(MetricsInterceptor.class);
+        //weldDeployment.addInterceptor(MeteredInterceptor.class);
+        //weldDeployment.addInterceptor(CountedInterceptor.class);
+        //weldDeployment.addInterceptor(TimedInterceptor.class);
+
+        processorContext.addReflectiveClass(Counted.class.getName());
+        processorContext.addReflectiveClass(MetricsBinding.class.getName());
 
         weldDeployment.addAdditionalBean(MetricsRequestHandler.class);
         weldDeployment.addAdditionalBean(MetricsServlet.class);
 
-        try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.WELD_DEPLOYMENT + 30 ) ) {
+        try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.WELD_DEPLOYMENT + 30)) {
             MetricsDeploymentTemplate metrics = recorder.getRecordingProxy(MetricsDeploymentTemplate.class);
             metrics.createRegistries();
-        }
-
-        try (BytecodeRecorder recorder = processorContext.addDeploymentTask(RuntimePriority.WELD_DEPLOYMENT + 30 ) ) {
-            MetricsDeploymentTemplate metrics = recorder.getRecordingProxy(MetricsDeploymentTemplate.class);
 
             Index index = archiveContext.getIndex();
             List<AnnotationInstance> annos = index.getAnnotations(DotName.createSimple(Counted.class.getName()));
 
             for (AnnotationInstance anno : annos) {
-                metrics.registerCounted(anno.target().toString());
+                System.err.println("anno: " + anno);
+
+                AnnotationTarget target = anno.target();
+
+                MethodInfo methodInfo = target.asMethod();
+                ClassInfo classInfo = methodInfo.declaringClass();
+
+                metrics.registerCounted(classInfo.name().toString(),
+                                        methodInfo.name().toString());
+
+                processorContext.addReflectiveClass(classInfo.name().toString());
             }
+
         }
     }
 

@@ -142,4 +142,11 @@ is:
 *   lib/*
     A directory that contains all runtime dependencies. These are referenced by the `class-path` manifest entry in the runner jar.
     
-        
+    
+## How to build Shamrock
+
+* Install GraalVM (tested on RC4)
+* set `GRAALVM_HOME` to your GraalVM Home directory e.g. `/Users/emmanuel/JDK/GraalVM/Contents/Home`
+* `mvn install`
+
+Wait. Success!

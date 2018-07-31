@@ -77,8 +77,6 @@ public class MetricsProcessor implements ResourceProcessor {
             MetricsDeploymentTemplate metrics = recorder.getRecordingProxy(MetricsDeploymentTemplate.class);
 
             metrics.createRegistries();
-            metrics.registerBaseMetrics();
-            metrics.registerVendorMetrics();
 
             Index index = archiveContext.getIndex();
             List<AnnotationInstance> annos = index.getAnnotations(DotName.createSimple(Counted.class.getName()));
@@ -95,6 +93,11 @@ public class MetricsProcessor implements ResourceProcessor {
                 processorContext.addReflectiveClass(classInfo.name().toString());
             }
 
+        }
+        try (BytecodeRecorder recorder = processorContext.addDeploymentTask(RuntimePriority.WELD_DEPLOYMENT + 30)) {
+            MetricsDeploymentTemplate metrics = recorder.getRecordingProxy(MetricsDeploymentTemplate.class);
+            metrics.registerBaseMetrics();
+            metrics.registerVendorMetrics();
         }
     }
 

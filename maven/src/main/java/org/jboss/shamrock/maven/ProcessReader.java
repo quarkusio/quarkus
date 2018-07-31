@@ -24,7 +24,7 @@ public final class ProcessReader implements Runnable {
                 if (error) {
                     System.err.print(charSequence);
                 } else {
-                    System.out.println(charSequence);
+                    System.out.print(charSequence);
                 }
             }
         } catch (IOException e) {

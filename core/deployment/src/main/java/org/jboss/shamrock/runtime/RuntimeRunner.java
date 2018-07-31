@@ -17,6 +17,12 @@ public class RuntimeRunner implements Runnable, Closeable {
         this.loader = new RuntimeClassLoader(getClass().getClassLoader());
     }
 
+    public RuntimeRunner(Path target, ClassLoader cl) {
+        this.target = target;
+        this.loader = new RuntimeClassLoader(cl);
+    }
+
+
     @Override
     public void close() throws IOException {
 
@@ -25,7 +31,7 @@ public class RuntimeRunner implements Runnable, Closeable {
     @Override
     public void run() {
         try {
-            Runner runner = new Runner(loader, false);
+            Runner runner = new Runner(loader, loader,false);
             runner.run(target);
             Class<?> mainClass = loader.findClass(Runner.MAIN_CLASS);
             Method run = mainClass.getDeclaredMethod("main", String[].class);

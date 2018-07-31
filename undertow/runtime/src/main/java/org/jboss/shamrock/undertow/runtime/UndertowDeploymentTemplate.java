@@ -32,7 +32,7 @@ public class UndertowDeploymentTemplate {
         d.setClassLoader(getClass().getClassLoader());
         d.setDeploymentName(name);
         d.setContextPath("/");
-        ClassLoader cl = UndertowDeploymentTemplate.class.getClassLoader();
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
         if(cl == null) {
             cl = new ClassLoader() {};
         }

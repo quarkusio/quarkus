@@ -36,7 +36,7 @@ import org.jboss.shamrock.deployment.ClassOutput;
 import org.jboss.shamrock.deployment.Runner;
 
 @Mojo(name = "build", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
-public class ShamrockMojo extends AbstractMojo {
+public class BuildMojo extends AbstractMojo {
 
     /**
      * The directory for compiled classes.

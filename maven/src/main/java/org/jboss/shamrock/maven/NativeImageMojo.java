@@ -70,6 +70,7 @@ public class NativeImageMojo extends AbstractMojo {
             if (debugSymbols) {
                 command.add("-g");
             }
+            command.add("-H:+AllowVMInspection");
             System.out.println(command);
             Process process = Runtime.getRuntime().exec(command.toArray(new String[0]), null, outputDirectory);
             new Thread(new ProcessReader(process.getInputStream())).start();

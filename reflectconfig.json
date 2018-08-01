@@ -1,9 +1,5 @@
 [
    {
-      "name" : "org.hibernate.jpa.HibernatePersistenceProvider",
-      "allPublicConstructors" : true
-   },
-   {
       "name" : "com.sun.xml.internal.stream.events.XMLEventFactoryImpl",
       "allPublicConstructors" : true
    },

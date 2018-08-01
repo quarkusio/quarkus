@@ -41,4 +41,9 @@ public final class Environment implements AvailableSettings {
 		return BYTECODE_PROVIDER_INSTANCE;
 	}
 
+	@Substitute
+	public static boolean useReflectionOptimizer() {
+		return false;
+	}
+
 }

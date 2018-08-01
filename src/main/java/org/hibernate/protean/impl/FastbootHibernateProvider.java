@@ -5,68 +5,90 @@ import java.util.List;
 import java.util.Map;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceException;
+import javax.persistence.spi.LoadState;
 import javax.persistence.spi.PersistenceProvider;
 import javax.persistence.spi.PersistenceUnitInfo;
 import javax.persistence.spi.ProviderUtil;
 
 import org.hibernate.boot.registry.StandardServiceRegistry;
-import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.spi.MetadataImplementor;
-import org.hibernate.jpa.HibernatePersistenceProvider;
-import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
+import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
-import org.hibernate.jpa.boot.spi.ProviderChecker;
+import org.hibernate.jpa.internal.util.PersistenceUtilHelper;
 
 import org.jboss.logging.Logger;
 
-import static org.hibernate.jpa.boot.spi.ProviderChecker.extractRequestedProviderName;
+/**
+ * This can not inherit from HibernatePersistenceProvider as that would force the native-image tool
+ * to include all code which could be triggered from using that:
+ * we need to be able to fully exclude HibernatePersistenceProvider from the native image.
+ */
+final class FastbootHibernateProvider implements PersistenceProvider  {
 
-final class FastbootHibernateProvider extends HibernatePersistenceProvider implements PersistenceProvider  {
+	private static final Logger log = Logger.getLogger( FastbootHibernateProvider.class );
 
-	private static final Logger log = Logger.getLogger( HibernatePersistenceProvider.class );
+	private final PersistenceUtilHelper.MetadataCache cache = new PersistenceUtilHelper.MetadataCache();
 
 	@Override
-	public EntityManagerFactory createEntityManagerFactory(String emName, Map map) {
-		return super.createEntityManagerFactory( emName, map );
+	public EntityManagerFactory createEntityManagerFactory(String persistenceUnitName, Map properties) {
+		log.tracef( "Starting createEntityManagerFactory for persistenceUnitName %s", persistenceUnitName );
+		final EntityManagerFactoryBuilder builder = getEntityManagerFactoryBuilderOrNull( persistenceUnitName, properties );
+		if ( builder == null ) {
+			log.trace( "Could not obtain matching EntityManagerFactoryBuilder, returning null" );
+			return null;
+		}
+		else {
+			return builder.build();
+		}
 	}
 
 	@Override
-	public EntityManagerFactory createContainerEntityManagerFactory(PersistenceUnitInfo info, Map map) {
-		return super.createContainerEntityManagerFactory( info, map );
+	public EntityManagerFactory createContainerEntityManagerFactory(PersistenceUnitInfo info, Map properties) {
+		log.tracef( "Starting createContainerEntityManagerFactory : %s", info.getPersistenceUnitName() );
+
+		return getEntityManagerFactoryBuilder( info, properties ).build();
 	}
 
 	@Override
 	public void generateSchema(PersistenceUnitInfo info, Map map) {
-		super.generateSchema( info, map );
+		log.tracef( "Starting generateSchema : PUI.name=%s", info.getPersistenceUnitName() );
+
+		final EntityManagerFactoryBuilder builder = getEntityManagerFactoryBuilder( info, map );
+		builder.generateSchema();
 	}
 
 	@Override
 	public boolean generateSchema(String persistenceUnitName, Map map) {
-		return super.generateSchema( persistenceUnitName, map );
+		log.tracef( "Starting generateSchema for persistenceUnitName %s", persistenceUnitName );
+
+		final EntityManagerFactoryBuilder builder = getEntityManagerFactoryBuilderOrNull( persistenceUnitName, map );
+		if ( builder == null ) {
+			log.trace( "Could not obtain matching EntityManagerFactoryBuilder, returning false" );
+			return false;
+		}
+		builder.generateSchema();
+		return true;
 	}
 
 	@Override
 	public ProviderUtil getProviderUtil() {
-		return super.getProviderUtil();
+		return providerUtil;
 	}
 
-	@Override
-	protected EntityManagerFactoryBuilder getEntityManagerFactoryBuilderOrNull(String persistenceUnitName, Map properties) {
-		return getEntityManagerFactoryBuilderOrNull( persistenceUnitName, properties, null, null );
+	protected EntityManagerFactoryBuilder getEntityManagerFactoryBuilder(PersistenceUnitInfo info, Map integration) {
+		throw new UnsupportedOperationException( "Not implemented" );
 	}
-
 
 	/**
-	 * Copied and modified from super{@link #getEntityManagerFactoryBuilderOrNull(String, Map, ClassLoader, ClassLoaderService)}
+	 * Copied and modified from HibernatePersistenceProvider#getEntityManagerFactoryBuilderOrNull(String, Map, ClassLoader, ClassLoaderService)
 	 * Notable changes:
 	 *  - ignore the ClassLoaderService parameter to inject our own custom implementation instead
 	 *  - verify the Map properties are not set (or fail as we can't support runtime overrides)
 	 *  - don't try looking for ParsedPersistenceXmlDescriptor resources to parse, just take the pre-parsed ones from the static final field
 	 *  - class annotations metadata is also injected
 	 */
-	private EntityManagerFactoryBuilder getEntityManagerFactoryBuilderOrNull(String persistenceUnitName, Map properties,
-																			 ClassLoader providedClassLoader, ClassLoaderService providedClassLoaderService) {
+	private EntityManagerFactoryBuilder getEntityManagerFactoryBuilderOrNull(String persistenceUnitName, Map properties) {
 		log.tracef( "Attempting to obtain correct EntityManagerFactoryBuilder for persistenceUnitName : %s", persistenceUnitName );
 
 		verifyProperties( properties );
@@ -138,7 +160,43 @@ final class FastbootHibernateProvider extends HibernatePersistenceProvider imple
 			//We'll always assume we are the best possible provider match unless the user explicitly asks for a different one.
 			return true;
 		}
-		return ProviderChecker.hibernateProviderNamesContain( requestedProviderName ) || FastbootHibernateProvider.class.getName().equals( requestedProviderName );
+		return FastbootHibernateProvider.class.getName().equals( requestedProviderName ) || "org.hibernate.jpa.HibernatePersistenceProvider".equals( requestedProviderName );
+	}
+
+	public static String extractRequestedProviderName(PersistenceUnitDescriptor persistenceUnit, Map integration) {
+		final String integrationProviderName = extractProviderName( integration );
+		if ( integrationProviderName != null ) {
+			log.debugf( "Integration provided explicit PersistenceProvider [%s]", integrationProviderName );
+			return integrationProviderName;
+		}
+
+		final String persistenceUnitRequestedProvider = extractProviderName( persistenceUnit );
+		if ( persistenceUnitRequestedProvider != null ) {
+			log.debugf(
+					"Persistence-unit [%s] requested PersistenceProvider [%s]",
+					persistenceUnit.getName(),
+					persistenceUnitRequestedProvider
+			);
+			return persistenceUnitRequestedProvider;
+		}
+
+		// NOTE : if no provider requested we assume we are the provider (the calls got to us somehow...)
+		log.debug( "No PersistenceProvider explicitly requested, assuming Hibernate" );
+		return FastbootHibernateProvider.class.getName();
+	}
+
+
+	private static String extractProviderName(Map integration) {
+		if ( integration == null ) {
+			return null;
+		}
+		final String setting = (String) integration.get( AvailableSettings.JPA_PERSISTENCE_PROVIDER );
+		return setting == null ? null : setting.trim();
+	}
+
+	private static String extractProviderName(PersistenceUnitDescriptor persistenceUnit) {
+		final String persistenceUnitRequestedProvider = persistenceUnit.getProviderClassName();
+		return persistenceUnitRequestedProvider == null ? null : persistenceUnitRequestedProvider.trim();
 	}
 
 	private void verifyProperties(Map properties) {
@@ -147,4 +205,20 @@ final class FastbootHibernateProvider extends HibernatePersistenceProvider imple
 													"Make sure you set all properties you need in the configuration resources before building the application." );
 		}
 	}
+
+	private final ProviderUtil providerUtil = new ProviderUtil() {
+		@Override
+		public LoadState isLoadedWithoutReference(Object proxy, String property) {
+			return PersistenceUtilHelper.isLoadedWithoutReference( proxy, property, cache );
+		}
+		@Override
+		public LoadState isLoadedWithReference(Object proxy, String property) {
+			return PersistenceUtilHelper.isLoadedWithReference( proxy, property, cache );
+		}
+		@Override
+		public LoadState isLoaded(Object o) {
+			return PersistenceUtilHelper.isLoaded(o);
+		}
+	};
+
 }

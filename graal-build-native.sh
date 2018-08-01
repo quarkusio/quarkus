@@ -23,8 +23,8 @@ echo "Removing previous binary, to avoid misleading in case native-image fails:"
 rm com.example.Main
 
 echo "Starting native-image :"
-#--verbose --shared -ea -H:+ReportUnsupportedElementsAtRuntime -H:+PrintAnalysisCallTree -R:±LSRAOptimization -R:AnalysisSizeCutoff=8
-timer native-image --no-server -O1 --verbose -H:IncludeResources=META-INF/services/.* -H:-RuntimeAssertions -H:+PrintImageElementSizes -H:+PrintImageHeapPartitionSizes -H:+PrintImageObjectTree -H:+ReportUnsupportedElementsAtRuntime -H:Kind=EXECUTABLE -H:ReflectionConfigurationFiles=reflectconfig.json -cp "$CLASSPATH":./target/classes com.example.Main com.example.Main
+#--verbose --shared -ea -H:+ReportUnsupportedElementsAtRuntime -H:+PrintAnalysisCallTree -R:±LSRAOptimization -R:AnalysisSizeCutoff=8 -H:-RuntimeAssertions -H:+PrintImageElementSizes -H:+PrintImageHeapPartitionSizes -H:+PrintImageObjectTree -H:+PrintAnalysisCallTree -H:+ReportUnsupportedElementsAtRuntime
+timer native-image --no-server -O1 --verbose -H:IncludeResources=META-INF/services/.* -H:Kind=EXECUTABLE -H:ReflectionConfigurationFiles=reflectconfig.json -cp "$CLASSPATH":./target/classes com.example.Main com.example.Main
 
 echo ""
 echo ""

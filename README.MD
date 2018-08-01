@@ -26,13 +26,13 @@ A build of https://github.com/protean-project/hibernate-orm
  - N.B. the `ProteanHacking` branch.
  - Requires any JDK8+ to build it.
  
- ### Very latest PostgreSQL JDBC driver
+ ### Patched PostgreSQL JDBC driver
  
-     > git clone git://github.com/pgjdbc/pgjdbc.git
+     > git clone git@github.com:protean-project/pgjdbc.git
      > cd pgjdbc
      > mvn install -DskipTests
 
- - Tested at commit `178eecc90643b36c8c5cd423ff311b26733384f2`
+ - Tested at commit `d51c43888bf25a1f099f3a20fe98dad1d8926e0a`
  - Requires any JDK8+ to build it.
 
 ### Graal annotations

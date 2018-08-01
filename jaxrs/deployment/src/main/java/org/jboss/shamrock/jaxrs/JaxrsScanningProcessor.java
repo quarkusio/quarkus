@@ -88,8 +88,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
         //this is pretty yuck, and does not really belong here, but it is needed to get the json-p
         //provider to work
-        processorContext.addReflectiveClass("org.glassfish.json.JsonProviderImpl");
-        processorContext.addReflectiveClass("com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector");
+        processorContext.addReflectiveClass("org.glassfish.json.JsonProviderImpl","com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector");
 
         Index index = archiveContext.getIndex();
         List<AnnotationInstance> app = index.getAnnotations(APPLICATION_PATH);
@@ -98,8 +97,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
         }
         List<AnnotationInstance> xmlRoot = index.getAnnotations(XML_ROOT);
         if(!xmlRoot.isEmpty()) {
-            processorContext.addReflectiveClass("com.sun.xml.bind.v2.ContextFactory");
-            processorContext.addReflectiveClass("com.sun.xml.internal.bind.v2.ContextFactory");
+            processorContext.addReflectiveClass("com.sun.xml.bind.v2.ContextFactory","com.sun.xml.internal.bind.v2.ContextFactory");
         }
         AnnotationInstance appPath = app.get(0);
         String path = appPath.value().asString();

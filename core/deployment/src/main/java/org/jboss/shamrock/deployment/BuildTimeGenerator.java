@@ -29,18 +29,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.jandex.Index;
-import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorderImpl;
@@ -184,8 +183,8 @@ public class BuildTimeGenerator {
         }
 
         @Override
-        public void addReflectiveClass(String className) {
-            reflectiveClasses.add(className);
+        public void addReflectiveClass(String... className) {
+            reflectiveClasses.addAll(Arrays.asList(className));
         }
 
         @Override
@@ -196,7 +195,7 @@ public class BuildTimeGenerator {
         void writeMainClass() throws IOException {
 
             Collections.sort(tasks);
-            if(!useStaticInit) {
+            if (!useStaticInit) {
                 Collections.sort(staticInitTasks);
                 tasks.addAll(0, staticInitTasks);
                 staticInitTasks.clear();

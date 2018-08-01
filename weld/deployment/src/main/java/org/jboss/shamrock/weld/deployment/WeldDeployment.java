@@ -1,6 +1,7 @@
 package org.jboss.shamrock.weld.deployment;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class WeldDeployment {
@@ -8,8 +9,8 @@ public class WeldDeployment {
     private final List<Class<?>> additionalBeans = new ArrayList<>();
     private final List<Class<?>> interceptors = new ArrayList<>();
 
-    public void addAdditionalBean(Class<?> beanClass) {
-        additionalBeans.add(beanClass);
+    public void addAdditionalBean(Class<?> ... beanClass) {
+        additionalBeans.addAll(Arrays.asList(beanClass));
     }
 
     List<Class<?>> getAdditionalBeans() {

@@ -28,6 +28,10 @@ by disabling the `native-image` profile: `mvn install -P\!native-image`.
 
 Wait. Success!
 
+By default the build will use the native image server. This speeds up the build, but can cause problems due to the cache
+not being invalidated correctly in some cases. To run a build with a new instance of the server you can use
+`mvn install -Dnative-image.new-server=true`.
+
 
 ## Architecture Overview
 

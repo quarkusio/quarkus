@@ -38,6 +38,10 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter(readonly = true, required = true, defaultValue = "${project.build.finalName}")
     private String finalName;
 
+    @Parameter(defaultValue = "${native-image.new-server}")
+    private boolean cleanupServer;
+
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
 
@@ -58,7 +62,14 @@ public class NativeImageMojo extends AbstractMojo {
         try {
             List<String> command = new ArrayList<>();
             command.addAll(nativeImage);
-            command.add("--no-server");
+            if(cleanupServer) {
+                List<String> cleanup = new ArrayList<>(nativeImage);
+                cleanup.add("--server-shutdown");
+                Process process = Runtime.getRuntime().exec(cleanup.toArray(new String[0]), null, outputDirectory);
+                new Thread(new ProcessReader(process.getInputStream(), false)).start();
+                new Thread(new ProcessReader(process.getErrorStream(), true)).start();
+                process.waitFor();
+            }
             command.add("-jar");
             command.add(finalName + "-runner.jar");
             command.add("-H:IncludeResources=META-INF/.*");

@@ -52,6 +52,7 @@ public class ShamrockTest extends BlockJUnit4ClassRunner {
                             String testClassLocation = resource.getPath().substring(0, resource.getPath().length() - classFileName.length());
                             testClassLocation = testClassLocation.replace("test-classes", "classes");
                             Path appRoot = Paths.get(testClassLocation);
+
                             RuntimeRunner runtimeRunner = new RuntimeRunner(appRoot);
                             runtimeRunner.run();
                         }

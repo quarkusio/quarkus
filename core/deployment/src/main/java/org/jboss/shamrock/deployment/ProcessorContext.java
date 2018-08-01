@@ -1,9 +1,10 @@
 package org.jboss.shamrock.deployment;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.function.Function;
 
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
+import org.objectweb.asm.ClassVisitor;
 
 /**
  * Interface that represents the current processor state. This is basically the output context, processors can use it
@@ -38,7 +39,17 @@ public interface ProcessorContext {
      *
      * @param className The class name
      */
-    void addReflectiveClass(String ... className);
+    void addReflectiveClass(String... className);
 
     void addGeneratedClass(String name, byte[] classData) throws IOException;
+
+    /**
+     * Adds a bytecode transformer that can transform application classes.
+     * <p>
+     * This takes the form of a function that takes a string, and returns an ASM visitor, or null if transformation
+     * is not required.
+     *
+     * At present these transformations are only applied to application classes, not classes provided by dependencies
+     */
+    void addByteCodeTransformer(Function<String, Function<ClassVisitor, ClassVisitor>> visitorFunction);
 }

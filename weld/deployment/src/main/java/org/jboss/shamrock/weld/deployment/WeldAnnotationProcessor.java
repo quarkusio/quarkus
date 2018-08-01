@@ -5,7 +5,7 @@ import javax.enterprise.inject.se.SeContainerInitializer;
 import javax.inject.Inject;
 
 import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.Index;
+import org.jboss.jandex.IndexView;
 import org.jboss.shamrock.deployment.ArchiveContext;
 import org.jboss.shamrock.deployment.ProcessorContext;
 import org.jboss.shamrock.deployment.ResourceProcessor;
@@ -24,7 +24,7 @@ public class WeldAnnotationProcessor implements ResourceProcessor {
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
         //make config injectable
         weldDeployment.addAdditionalBean(ConfigProducer.class);
-        Index index = archiveContext.getIndex();
+        IndexView index = archiveContext.getIndex();
         try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.WELD_DEPLOYMENT)) {
             WeldDeploymentTemplate template = recorder.getRecordingProxy(WeldDeploymentTemplate.class);
             SeContainerInitializer init = template.createWeld();
@@ -40,13 +40,13 @@ public class WeldAnnotationProcessor implements ResourceProcessor {
             for (Class<?> clazz : weldDeployment.getAdditionalBeans()) {
                 template.addClass(init, clazz);
             }
-            for ( Class<?> clazz: weldDeployment.getInterceptors()) {
+            for (Class<?> clazz : weldDeployment.getInterceptors()) {
                 template.addInterceptor(init, clazz);
             }
             SeContainer weld = template.doBoot(init);
             template.setupInjection(weld);
         }
-        try(BytecodeRecorder recorder = processorContext.addDeploymentTask(RuntimePriority.WELD_DEPLOYMENT)) {
+        try (BytecodeRecorder recorder = processorContext.addDeploymentTask(RuntimePriority.WELD_DEPLOYMENT)) {
             WeldDeploymentTemplate template = recorder.getRecordingProxy(WeldDeploymentTemplate.class);
             template.registerShutdownHook(null);
         }

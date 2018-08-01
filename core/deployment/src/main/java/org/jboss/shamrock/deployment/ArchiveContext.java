@@ -4,10 +4,17 @@ import java.nio.file.Path;
 import java.util.List;
 
 import org.jboss.jandex.Index;
+import org.jboss.jandex.IndexView;
 
 public interface ArchiveContext {
 
-    Index getIndex();
+    /**
+     * The combined index, which includes the current application as well as
+     * any indexed jars on the build path.
+     *
+     * @return
+     */
+    IndexView getIndex();
 
     Path getArchiveRoot();
 

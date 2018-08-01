@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
@@ -46,6 +47,7 @@ import org.jboss.shamrock.deployment.codegen.BytecodeRecorderImpl;
 import org.jboss.shamrock.runtime.StartupContext;
 import org.jboss.shamrock.runtime.StartupTask;
 import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -69,6 +71,7 @@ public class BuildTimeGenerator {
     private final DeploymentProcessorInjection injection;
     private final ClassLoader classLoader;
     private final boolean useStaticInit;
+    private final List<Function<String, Function<ClassVisitor, ClassVisitor>>> bytecodeTransformers = new ArrayList<>();
 
     public BuildTimeGenerator(ClassOutput classOutput, boolean useStaticInit) {
         this(classOutput, BuildTimeGenerator.class.getClassLoader(), useStaticInit);
@@ -88,6 +91,9 @@ public class BuildTimeGenerator {
         this.classLoader = cl;
     }
 
+    public List<Function<String, Function<ClassVisitor, ClassVisitor>>> getBytecodeTransformers() {
+        return bytecodeTransformers;
+    }
 
     public void run(Path root) throws IOException {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
@@ -190,6 +196,11 @@ public class BuildTimeGenerator {
         @Override
         public void addGeneratedClass(String name, byte[] classData) throws IOException {
             output.writeClass(name, classData);
+        }
+
+        @Override
+        public void addByteCodeTransformer(Function<String, Function<ClassVisitor, ClassVisitor>> visitorFunction) {
+            bytecodeTransformers.add(visitorFunction);
         }
 
         void writeMainClass() throws IOException {

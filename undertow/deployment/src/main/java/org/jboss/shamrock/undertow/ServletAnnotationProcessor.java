@@ -1,6 +1,6 @@
 package org.jboss.shamrock.undertow;
 
-import java.util.List;
+import java.util.Collection;
 
 import javax.inject.Inject;
 import javax.servlet.Servlet;
@@ -9,7 +9,7 @@ import javax.servlet.annotation.WebServlet;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.Index;
+import org.jboss.jandex.IndexView;
 import org.jboss.shamrock.deployment.ArchiveContext;
 import org.jboss.shamrock.deployment.ProcessorContext;
 import org.jboss.shamrock.deployment.ResourceProcessor;
@@ -42,8 +42,8 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
             UndertowDeploymentTemplate template = context.getRecordingProxy(UndertowDeploymentTemplate.class);
             template.createDeployment("test");
         }
-        final Index index = archiveContext.getIndex();
-        List<AnnotationInstance> annotations = index.getAnnotations(WEB_SERVLET);
+        final IndexView index = archiveContext.getIndex();
+        Collection<AnnotationInstance> annotations = index.getAnnotations(WEB_SERVLET);
         if (annotations != null && annotations.size() > 0) {
             try (BytecodeRecorder context = processorContext.addStaticInitTask(RuntimePriority.UNDERTOW_REGISTER_SERVLET)) {
                 UndertowDeploymentTemplate template = context.getRecordingProxy(UndertowDeploymentTemplate.class);

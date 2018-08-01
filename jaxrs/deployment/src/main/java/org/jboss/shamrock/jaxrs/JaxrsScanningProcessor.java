@@ -29,10 +29,10 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.AccessController;
 import java.security.PrivilegedExceptionAction;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import javax.servlet.Servlet;
@@ -41,7 +41,7 @@ import javax.ws.rs.ext.Providers;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
-import org.jboss.jandex.Index;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
@@ -88,18 +88,18 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
         //this is pretty yuck, and does not really belong here, but it is needed to get the json-p
         //provider to work
-        processorContext.addReflectiveClass("org.glassfish.json.JsonProviderImpl","com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector");
+        processorContext.addReflectiveClass("org.glassfish.json.JsonProviderImpl", "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector");
 
-        Index index = archiveContext.getIndex();
-        List<AnnotationInstance> app = index.getAnnotations(APPLICATION_PATH);
+        IndexView index = archiveContext.getIndex();
+        Collection<AnnotationInstance> app = index.getAnnotations(APPLICATION_PATH);
         if (app.isEmpty()) {
             return;
         }
-        List<AnnotationInstance> xmlRoot = index.getAnnotations(XML_ROOT);
-        if(!xmlRoot.isEmpty()) {
-            processorContext.addReflectiveClass("com.sun.xml.bind.v2.ContextFactory","com.sun.xml.internal.bind.v2.ContextFactory");
+        Collection<AnnotationInstance> xmlRoot = index.getAnnotations(XML_ROOT);
+        if (!xmlRoot.isEmpty()) {
+            processorContext.addReflectiveClass("com.sun.xml.bind.v2.ContextFactory", "com.sun.xml.internal.bind.v2.ContextFactory");
         }
-        AnnotationInstance appPath = app.get(0);
+        AnnotationInstance appPath = app.iterator().next();
         String path = appPath.value().asString();
         try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.JAXRS_DEPLOYMENT)) {
             UndertowDeploymentTemplate undertow = recorder.getRecordingProxy(UndertowDeploymentTemplate.class);
@@ -107,7 +107,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
             InstanceFactory<? extends Servlet> factory = undertow.createInstanceFactory(instanceFactory);
             undertow.registerServlet(null, JAX_RS_SERVLET_NAME, recorder.classProxy(HttpServlet30Dispatcher.class.getName()), true, factory);
             undertow.addServletMapping(null, JAX_RS_SERVLET_NAME, path + "/*");
-            List<AnnotationInstance> paths = index.getAnnotations(PATH);
+            Collection<AnnotationInstance> paths = index.getAnnotations(PATH);
             if (paths != null) {
                 StringBuilder sb = new StringBuilder();
                 boolean first = true;
@@ -135,7 +135,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
             }
         }
         for (DotName annotationType : METHOD_ANNOTATIONS) {
-            List<AnnotationInstance> instances = index.getAnnotations(annotationType);
+            Collection<AnnotationInstance> instances = index.getAnnotations(annotationType);
             for (AnnotationInstance instance : instances) {
                 MethodInfo method = instance.target().asMethod();
                 if (method.returnType().kind() == Type.Kind.CLASS) {

@@ -7,9 +7,9 @@
         </encoder>
     </appender>
 
-    <logger name="org.hibernate" level="TRACE" />
+    <logger name="org.hibernate" level="WARN" />
 
-    <root level="TRACE">
+    <root level="WARN">
         <appender-ref ref="STDOUT" />
     </root>
 

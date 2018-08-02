@@ -185,13 +185,38 @@ This means configuration can be applied at both build and runtime.
 
 ## Testing
 
+### JVM Based Testing
+
 In order to support IDE usage Shamrock also has a 'runtime mode' that performs the build steps at runtime.
 This will also be needed for Fakereplace support, to allow the new metadata to be computed at runtime.
 This mode works by simply creating a special ClassLoader,
 and writing all bytecode into an in memory map that this class loader can use to load the generated classes.
 When running the tests this process is performed once, and then all tests are run against the resulting application.
 
-There is also a graal based runner that builds a native image and then runs tests against it, although this is quite primitive. 
+The runner for this test is `org.jboss.shamrock.junit.ShamrockTest`.
+
+These tests should be run by the Maven Surefire plugin, and as such should follow the standard surefire naming rules 
+(*TestCase). The application is started once at the beginning of the test suite run, and is shut down at the end. At
+present there is no support for Arquillian style 'micro deployments', the whole application is under test.
+
+Both the application and the test itself run in the same JVM, so in addition to integration testing over HTTP it is
+also possible to directly test application components. 
+
+### Native Image Based Testing
+
+To test the native image you can use the `org.jboss.shamrock.junit.GraalTest` runner.
+
+These tests must be integration tests, as the image is generally built during the packaging phase.
+As such they should follow the Maven Failsafe naming convention (*ITCase). 
+
+These tests work by simply booting the native image, and then allowing you to evecute remote requests against it.
+At present to unit testing type functionality is supported (i.e. you cannot run test logic directly in the native image), 
+although this will likely change. 
+
+To run the tests from an IDE you will need to make sure the image has been built, and you may need to set
+`-Dnative.image.path=full-path-to-image`. If this is not set Shamrock will try and guess the correct image location, by
+assuming that the image name is `*-runner` and is located in the parent directory of the `test-classes` classpath entry.
+
 
 ## Reflection
 

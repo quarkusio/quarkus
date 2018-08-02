@@ -16,7 +16,7 @@ import static org.junit.Assert.assertEquals;
  * @author Emmanuel Bernard emmanuel@hibernate.org
  */
 @RunWith(GraalTest.class)
-public class JPAReflectionInGraalTestCase {
+public class JPAReflectionInGraalITCase {
 
     @Test
     public void testFieldAndGetterReflectionOnEntity() throws Exception {

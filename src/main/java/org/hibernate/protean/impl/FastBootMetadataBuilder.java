@@ -26,6 +26,8 @@ import org.hibernate.boot.spi.MetadataBuilderImplementor;
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.cfg.Environment;
 import org.hibernate.cfg.beanvalidation.BeanValidationIntegrator;
+import org.hibernate.dialect.Dialect;
+import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
 import org.hibernate.id.factory.spi.MutableIdentifierGeneratorFactory;
 import org.hibernate.internal.EntityManagerMessageLogger;
 import org.hibernate.internal.util.StringHelper;
@@ -37,6 +39,7 @@ import org.hibernate.jpa.boot.spi.TypeContributorList;
 import org.hibernate.jpa.internal.util.LogHelper;
 import org.hibernate.jpa.internal.util.PersistenceUnitTransactionTypeHelper;
 import org.hibernate.jpa.spi.IdentifierGeneratorStrategyProvider;
+import org.hibernate.protean.recording.RecordingDialectFactory;
 import org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorBuilderImpl;
 import org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorBuilderImpl;
 
@@ -89,6 +92,9 @@ class FastBootMetadataBuilder {
 
 		// merge configuration sources and build the "standard" service registry
 		final StandardServiceRegistryBuilder ssrBuilder = new StandardServiceRegistryBuilder( bsr );
+
+		insertStateRecorders( ssrBuilder );
+
 		final MergedSettings mergedSettings = mergeSettings( persistenceUnit );
 		this.configurationValues = mergedSettings.getConfigurationValues();
 
@@ -117,6 +123,10 @@ class FastBootMetadataBuilder {
 
 		// for the time being we want to revoke access to the temp ClassLoader if one was passed
 		metamodelBuilder.applyTempClassLoader( null );
+	}
+
+	private void insertStateRecorders(StandardServiceRegistryBuilder ssrBuilder) {
+		ssrBuilder.addService( DialectFactory.class, new RecordingDialectFactory() );
 	}
 
 	private BootstrapServiceRegistry buildBootstrapServiceRegistry(ClassLoaderService providedClassLoaderService) {
@@ -195,11 +205,20 @@ class FastBootMetadataBuilder {
 	}
 
 	public MetadataImplementor build() {
-		return MetadataBuildingProcess.complete(
+		MetadataImplementor build = MetadataBuildingProcess.complete(
 				managedResources,
 				metamodelBuilder.getBootstrapContext(),
 				metamodelBuilder.getMetadataBuildingOptions()
 		);
+		extractRecordedState( managedResources );
+		return build;
+	}
+
+	private void extractRecordedState(ManagedResources build) {
+		DialectFactory service = standardServiceRegistry.getService( DialectFactory.class );
+		RecordingDialectFactory casted = (RecordingDialectFactory)service;
+		Dialect dialect = casted.getDialect();
+		System.out.println( "##CLASS" + dialect.getClass() );
 	}
 
 	private static class MergedSettings {

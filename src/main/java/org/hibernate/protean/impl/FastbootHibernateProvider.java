@@ -16,6 +16,7 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.hibernate.jpa.internal.util.PersistenceUtilHelper;
+import org.hibernate.protean.impl.serviceregistry.PreconfiguredServiceRegistryBuilder;
 
 import org.jboss.logging.Logger;
 
@@ -126,14 +127,14 @@ final class FastbootHibernateProvider implements PersistenceProvider  {
 
 			MetadataImplementor metadata = PersistenceUnitsHolder.getMetadata( persistenceUnitName );
 			//TODO:
-			final Map configurationValues = Collections.emptyMap();
+			final Map<String,Object> configurationValues = Collections.emptyMap();
 			//TODO:
 			final Object validatorFactory = null;
 			//TODO:
 			final Object cdiBeanManager = null;
 
 
-			StandardServiceRegistry standardServiceRegistry = buildStandardServiceRegistry( persistenceUnit, configurationValues );
+			StandardServiceRegistry standardServiceRegistry = buildPreconfiguredServiceRegistry( configurationValues );
 
 			return new FastBootEntityManagerFactoryBuilder( metadata, persistenceUnitName, standardServiceRegistry,
 															configurationValues,
@@ -146,10 +147,14 @@ final class FastbootHibernateProvider implements PersistenceProvider  {
 		return null;
 	}
 
-	private StandardServiceRegistry buildStandardServiceRegistry(
-			PersistenceUnitDescriptor persistenceUnit,
-			Map configurationValues) {
-		ServiceRegistryBuilder serviceRegistryBuilder = new ServiceRegistryBuilder( persistenceUnit, configurationValues );
+	private StandardServiceRegistry buildPreconfiguredServiceRegistry(Map<String,Object> configurationValues) {
+		PreconfiguredServiceRegistryBuilder serviceRegistryBuilder = new PreconfiguredServiceRegistryBuilder();
+		configurationValues.forEach( (key, value) -> {
+			serviceRegistryBuilder.applySetting( key, value );
+		} );
+		//TODO serviceRegistryBuilder.addInitiator(  )
+		//TODO serviceRegistryBuilder.applyIntegrator(  )
+		//TODO serviceregistryBuilder.addService(  )
 		return serviceRegistryBuilder.buildNewServiceRegistry();
 	}
 

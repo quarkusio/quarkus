@@ -44,9 +44,7 @@
         <module>weld</module>
         <module>health</module>
         <module>metrics</module>
-        <module>examples/class-transformer</module>
-        <module>examples/everything</module>
-        <module>examples/strict</module>
+        <module>examples</module>
     </modules>
     <build>
         <pluginManagement>
@@ -126,6 +124,11 @@
             <dependency>
                 <groupId>org.jboss.shamrock</groupId>
                 <artifactId>shamrock-junit</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-shared-library-example</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

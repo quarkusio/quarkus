@@ -10,20 +10,21 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-class-transformer-example</artifactId>
+    <artifactId>shamrock-shared-library-example</artifactId>
     <description>
 
-        An example deployment time processor that tests
-        out the class transformation ability by adding an additional
-        route to all JAX-RS endpoints.
-
-        This should probably be deleted once we have a proper test framework.
+        An example/test of a componentised application. This is indexed at build time by shamrock
+        and components it provides should be included as normal.
 
     </description>
     <dependencies>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-core-deployment</artifactId>
+            <groupId>org.jboss.spec.javax.servlet</groupId>
+            <artifactId>jboss-servlet-api_4.0_spec</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.spec.javax.ws.rs</groupId>
+            <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
         </dependency>
     </dependencies>
 

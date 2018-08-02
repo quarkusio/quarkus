@@ -1,4 +1,4 @@
-package org.jboss.shamrock.runtime;
+package org.jboss.shamrock.runner;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -12,10 +12,15 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.jboss.shamrock.deployment.BuildTimeGenerator;
+import org.jboss.shamrock.deployment.index.ClassPathArtifactResolver;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 
+/**
+ * Class that can be used to run shamrock directly, ececuting the build and runtime
+ * steps in the same JVM
+ */
 public class RuntimeRunner implements Runnable, Closeable {
 
     private final Path target;

@@ -4,7 +4,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.jboss.shamrock.runtime.RuntimeRunner;
+import org.jboss.shamrock.runner.RuntimeRunner;
 import org.junit.runner.Description;
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunListener;

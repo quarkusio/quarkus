@@ -29,7 +29,7 @@ public class RunMojoMain {
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             try {
                 Thread.currentThread().setContextClassLoader(runtimeCl);
-                Class<?> runnerClass = runtimeCl.loadClass("org.jboss.shamrock.runtime.RuntimeRunner");
+                Class<?> runnerClass = runtimeCl.loadClass("org.jboss.shamrock.runner.RuntimeRunner");
                 Constructor ctor = runnerClass.getDeclaredConstructor(Path.class, ClassLoader.class);
                 Object runner = ctor.newInstance(classesRoot.toPath(), runtimeCl);
                 ((Runnable) runner).run();

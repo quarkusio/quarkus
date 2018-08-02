@@ -1,4 +1,4 @@
-package org.jboss.shamrock.runtime;
+package org.jboss.shamrock.runner;
 
 import java.util.HashMap;
 import java.util.Map;

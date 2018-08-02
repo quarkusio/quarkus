@@ -213,3 +213,20 @@ mode, however there are some differences. The two basic modes are:
     Runtime mode involves generating the wiring bytecode at startup time. This is useful when developing apps with Shamrock,
     as it allows you to test and run things without a full maven. This is currently used for the JUnit test runner, 
     and for the `mvn shamrock:run` command.
+    
+## Indexing
+
+By default only the classes in the current application are indexed, however it is possible to include additional classes.
+
+Two different mechanisms are provided to do this. In both cases these files are loaded from the class path, so all files
+present on the class path will be honoured.
+
+*   `META-INF/shamrock-index-dependencies`
+    This file is a list of maven artifacts, in either group:artifact or group:artiface:classifer format. If an artifact
+    is listed in this file then it will be indexed. Note that this should not be used for artifacts that are part of the
+    current project. When running from an IDE it is not possible to reliably determine the artifactId. In this case you
+    should use the method below.
+
+*   `META-INF/shamrock-index.marker`
+    If this file is present in an archive then that archive will be indexed. This is mostly intended for use in 
+    multi-module projects. 

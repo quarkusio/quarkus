@@ -40,10 +40,12 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import org.jboss.jandex.Index;
+import org.jboss.jandex.CompositeIndex;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorderImpl;
+import org.jboss.shamrock.deployment.index.IndexLoader;
 import org.jboss.shamrock.runtime.StartupContext;
 import org.jboss.shamrock.runtime.StartupTask;
 import org.objectweb.asm.AnnotationVisitor;
@@ -72,10 +74,6 @@ public class BuildTimeGenerator {
     private final ClassLoader classLoader;
     private final boolean useStaticInit;
     private final List<Function<String, Function<ClassVisitor, ClassVisitor>>> bytecodeTransformers = new ArrayList<>();
-
-    public BuildTimeGenerator(ClassOutput classOutput, boolean useStaticInit) {
-        this(classOutput, BuildTimeGenerator.class.getClassLoader(), useStaticInit);
-    }
 
     public BuildTimeGenerator(ClassOutput classOutput, ClassLoader cl, boolean useStaticInit) {
         this.useStaticInit = useStaticInit;
@@ -126,8 +124,12 @@ public class BuildTimeGenerator {
                     return FileVisitResult.CONTINUE;
                 }
             });
-            Index index = indexer.complete();
-            ArchiveContext context = new ArchiveContextImpl(index, root);
+            List<IndexView> composite = new ArrayList<>();
+            composite.add(indexer.complete());
+            composite.addAll(IndexLoader.scanForOtherIndexes(classLoader));
+
+
+            ArchiveContext context = new ArchiveContextImpl(CompositeIndex.create(composite), root);
             ProcessorContextImpl processorContext = new ProcessorContextImpl();
             for (ResourceProcessor processor : processors) {
                 try {
@@ -147,16 +149,16 @@ public class BuildTimeGenerator {
 
     private static class ArchiveContextImpl implements ArchiveContext {
 
-        private final Index index;
+        private final IndexView index;
         private final Path root;
 
-        private ArchiveContextImpl(Index index, Path root) {
+        private ArchiveContextImpl(IndexView index, Path root) {
             this.index = index;
             this.root = root;
         }
 
         @Override
-        public Index getIndex() {
+        public IndexView getIndex() {
             return index;
         }
 

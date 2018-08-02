@@ -1,0 +1,5 @@
+This is a marker file that can be empty. Any jar with this marker file will automatically be indexed
+by shamrock.
+
+The main use case for this is IDE integration for multi-module projects. When running from the IDE it is
+not possible to determine the artifact ID of other artifacts in the project.

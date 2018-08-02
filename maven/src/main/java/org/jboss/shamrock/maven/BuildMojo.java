@@ -36,6 +36,8 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.jboss.shamrock.deployment.BuildTimeGenerator;
 import org.jboss.shamrock.deployment.ClassOutput;
+import org.jboss.shamrock.deployment.index.MapArtifactResolver;
+import org.jboss.shamrock.deployment.index.ResolvedArtifact;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -43,6 +45,8 @@ import org.objectweb.asm.ClassWriter;
 @Mojo(name = "build", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class BuildMojo extends AbstractMojo {
 
+    private static final String DEPENDENCIES_RUNTIME = "dependencies.runtime";
+    private static final String PROVIDED = "provided";
     /**
      * The directory for compiled classes.
      */
@@ -88,11 +92,11 @@ public class BuildMojo extends AbstractMojo {
             for (Artifact a : project.getArtifacts()) {
                 try (ZipFile zip = new ZipFile(a.getFile())) {
                     if (zip.getEntry("META-INF/services/org.jboss.shamrock.deployment.ResourceProcessor") != null) {
-                        if (!a.getScope().equals("provided")) {
+                        if (!a.getScope().equals(PROVIDED)) {
                             problems.add("Artifact " + a + " is a deployment artifact, however it does not have scope required. This will result in unnecessary jars being included in the final image");
                         }
                     }
-                    ZipEntry deps = zip.getEntry("dependencies.runtime");
+                    ZipEntry deps = zip.getEntry(DEPENDENCIES_RUNTIME);
                     if (deps != null) {
                         whitelist.add(a.getDependencyConflictId());
                         try (InputStream in = zip.getInputStream(deps)) {
@@ -125,7 +129,7 @@ public class BuildMojo extends AbstractMojo {
             }
 
             for (Artifact a : project.getArtifacts()) {
-                if (a.getScope().equals("provided") && !whitelist.contains(a.getDependencyConflictId())) {
+                if (a.getScope().equals(PROVIDED) && !whitelist.contains(a.getDependencyConflictId())) {
                     continue;
                 }
                 try (FileInputStream in = new FileInputStream(a.getFile())) {
@@ -140,14 +144,21 @@ public class BuildMojo extends AbstractMojo {
                 }
             }
 
+            List<ResolvedArtifact> artifactList = new ArrayList<>();
             List<URL> classPathUrls = new ArrayList<>();
             for (Artifact artifact : project.getArtifacts()) {
                 classPathUrls.add(artifact.getFile().toURL());
+                artifactList.add(new ResolvedArtifact(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(), artifact.getClassifier(), Paths.get(artifact.getFile().getAbsolutePath())));
             }
 
             //we need to make sure all the deployment artifacts are on the class path
             //to do this we need to create a new class loader to actually use for the runner
-            URLClassLoader runnerClassLoader = new URLClassLoader(classPathUrls.toArray(new URL[0]), getClass().getClassLoader());
+            List<URL> cpCopy = new ArrayList<>();
+
+            cpCopy.add(outputDirectory.toURL());
+            cpCopy.addAll(classPathUrls);
+
+            URLClassLoader runnerClassLoader = new URLClassLoader(cpCopy.toArray(new URL[0]), getClass().getClassLoader());
             BuildTimeGenerator buildTimeGenerator = new BuildTimeGenerator(new ClassOutput() {
                 @Override
                 public void writeClass(String className, byte[] data) throws IOException {

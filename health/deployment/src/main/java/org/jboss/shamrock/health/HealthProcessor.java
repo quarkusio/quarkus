@@ -11,8 +11,6 @@ import org.jboss.shamrock.undertow.ServletData;
 import org.jboss.shamrock.undertow.ServletDeployment;
 import org.jboss.shamrock.weld.deployment.WeldDeployment;
 
-import io.smallrye.health.SmallRyeHealthReporter;
-
 public class HealthProcessor implements ResourceProcessor {
 
 
@@ -30,7 +28,6 @@ public class HealthProcessor implements ResourceProcessor {
         ServletData servletData = new ServletData("health", HealthServlet.class.getName());
         servletData.getMapings().add(config.getConfig("health.path", "/health"));
         servletDeployment.addServlet(servletData);
-        weldDeployment.addAdditionalBean(SmallRyeHealthReporter.class);
         weldDeployment.addAdditionalBean(HealthServlet.class);
     }
 

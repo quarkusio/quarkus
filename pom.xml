@@ -33,6 +33,7 @@
         <logback.version>1.1.7</logback.version>
         <cdi-api.version>2.0</cdi-api.version>
         <fakereplace.version>1.0.0.Alpha7</fakereplace.version>
+        <hibernate.version>5.3.3.Final</hibernate.version>
     </properties>
 
     <modules>
@@ -45,6 +46,7 @@
         <module>health</module>
         <module>metrics</module>
         <module>examples</module>
+        <module>jpa</module>
     </modules>
     <build>
         <pluginManagement>
@@ -151,6 +153,16 @@
                 <artifactId>shamrock-weld-runtime</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-jpa-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-jpa-runtime</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- Additional dependencies, keep in alphabetical order-->
 
@@ -194,6 +206,11 @@
                 <groupId>org.glassfish</groupId>
                 <artifactId>javax.json</artifactId>
                 <version>${javax.json.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate</groupId>
+                <artifactId>hibernate-core</artifactId>
+                <version>${hibernate.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss</groupId>

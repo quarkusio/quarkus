@@ -33,6 +33,17 @@ By default the build will use the native image server. This speeds up the build,
 not being invalidated correctly in some cases. To run a build with a new instance of the server you can use
 `mvn install -Dnative-image.new-server=true`.
 
+## How to use Shamrock
+
+TODO: To be completed.
+
+To just build the native image of the examples, you can run
+
+    mvn package
+
+If you just want to run the native image task you can do:
+
+    mvn shamrock:native-image
 
 ## Architecture Overview
 

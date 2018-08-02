@@ -19,3 +19,11 @@ At the time of writing Weld needs it and thus is not in the strict category.
 ### Everything
 
 Everything exercise all frameworks including the ones needing `-H:+ReportUnsupportedElementsAtRuntime`
+
+### Class transformer
+
+Test class transformation
+
+### Shared library
+
+Test the ability to index shared library

@@ -16,6 +16,9 @@ If this is not specified the test runner will attempt to guess the image locatio
 Strict are exercising frameworks that do not require `-H:+ReportUnsupportedElementsAtRuntime`
 At the time of writing Weld needs it and thus is not in the strict category.
 
+Strict contains one JPA entity that is here for the JPA core work.
+Please ignore.
+
 ### Everything
 
 Everything exercise all frameworks including the ones needing `-H:+ReportUnsupportedElementsAtRuntime`

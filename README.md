@@ -45,6 +45,18 @@ If you just want to run the native image task you can do:
 
     mvn shamrock:native-image
 
+### How to use the deployment framework
+
+TODO: to be completed.
+
+To pass to the StartupTask a list of class without loading the classes themselves, you can do the following
+
+    org.jboss.shamrock.deployment.codegen.BytecodeRecorder#classProxy
+
+to pass in class objects. it is a work around for the classes you need not being loadable from the processor.
+you just pass in the class name, and it returns a Class object that is a proxy for the real Class.
+There are examples in the Undertow one.
+
 ## Architecture Overview
 
 Shamrock runs in two distinct phases. The first phase is build time processing, which is done by instances of ResourceProcessor:

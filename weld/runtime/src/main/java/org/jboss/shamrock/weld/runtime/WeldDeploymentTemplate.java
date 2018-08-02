@@ -1,5 +1,6 @@
 package org.jboss.shamrock.weld.runtime;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URL;
@@ -18,6 +19,7 @@ import org.jboss.shamrock.runtime.ContextObject;
 import org.jboss.shamrock.runtime.InjectionFactory;
 import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.runtime.RuntimeInjector;
+import org.jboss.shamrock.runtime.StartupContext;
 import org.jboss.weld.config.ConfigurationKey;
 import org.jboss.weld.config.ConfigurationKey.UnusedBeans;
 import org.jboss.weld.environment.se.Weld;
@@ -68,7 +70,7 @@ public class WeldDeploymentTemplate {
     }
 
     @ContextObject("weld.container")
-    public SeContainer doBoot( SeContainerInitializer initializer) throws Exception {
+    public SeContainer doBoot(StartupContext startupContext, SeContainerInitializer initializer) throws Exception {
         SeContainer container = initializer.initialize();
         // Force client proxy init to run
         Set<Bean<?>> instance = container.getBeanManager().getBeans(Object.class);
@@ -77,20 +79,17 @@ public class WeldDeploymentTemplate {
                 container.getBeanManager().getReference(bean, Object.class, container.getBeanManager().createCreationalContext(bean));
             }
         }
+        startupContext.addCloseable(new Closeable() {
+            @Override
+            public void close() throws IOException {
+                container.close();
+            }
+        });
         return container;
     }
 
-    public void registerShutdownHook(@ContextObject("weld.container") SeContainer container) {
-        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-            @Override
-            public void run() {
-                //container.close();
-            }
-        }, "Weld Shutdown Hook Thread"));
-    }
-
-    public void setupInjection(SeContainer container) {
-        RuntimeInjector.setFactory(new InjectionFactory() {
+    public void setupInjection(StartupContext context, SeContainer container) {
+        InjectionFactory old = RuntimeInjector.setFactory(new InjectionFactory() {
             @Override
             public <T> InjectionInstance<T> create(Class<T> type) {
                 Instance<T> instance = container.select(type);
@@ -113,6 +112,12 @@ public class WeldDeploymentTemplate {
                         }
                     };
                 }
+            }
+        });
+        context.addCloseable(new Closeable() {
+            @Override
+            public void close() throws IOException {
+                RuntimeInjector.setFactory(old);
             }
         });
     }

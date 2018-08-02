@@ -20,13 +20,13 @@ public class RunMojoMain {
         //the path that contains the generated classes
         File classesRoot = new File(args[0]);
 
+        URLClassLoader runtimeCl = new URLClassLoader(new URL[]{classesRoot.toURL()}, ClassLoader.getSystemClassLoader());
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
         do {
             //we can potentially throw away this class loader, and reload the app
             synchronized (RunMojoMain.class) {
                 awaitChangeLatch = new CountDownLatch(1);
             }
-            URLClassLoader runtimeCl = new URLClassLoader(new URL[]{classesRoot.toURL()}, ClassLoader.getSystemClassLoader());
-            ClassLoader old = Thread.currentThread().getContextClassLoader();
             try {
                 Thread.currentThread().setContextClassLoader(runtimeCl);
                 Class<?> runnerClass = runtimeCl.loadClass("org.jboss.shamrock.runner.RuntimeRunner");

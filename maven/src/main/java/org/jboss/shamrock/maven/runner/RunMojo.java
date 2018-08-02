@@ -1,6 +1,7 @@
 package org.jboss.shamrock.maven.runner;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.net.JarURLConnection;
 import java.net.URL;
@@ -38,16 +39,57 @@ public class RunMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     protected MavenProject project;
 
+    @Parameter(defaultValue = "${fakereplace}")
+    private boolean fakereplace = true;
+
+    @Parameter(defaultValue = "${debug}")
+    private boolean debug = false;
+
+    @Parameter(defaultValue = "${project.build.directory}")
+    private File buildDir;
+
     @Override
     public void execute() throws MojoFailureException {
         try {
+
+            List<String> args = new ArrayList<>();
+            args.add("java");
+            if (debug) {
+                args.add("-Xdebug");
+                args.add("-Xnoagent");
+                args.add("-Djava.compiler=NONE");
+                args.add("-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y");
+            }
             //build a class-path string for the base platform
             //this stuff does not change
             StringBuilder classPath = new StringBuilder();
-            List<URL> classPathUrls = new ArrayList<>();
             for (Artifact artifact : project.getArtifacts()) {
                 classPath.append(artifact.getFile().getAbsolutePath());
                 classPath.append(" ");
+            }
+
+            if (fakereplace) {
+                File target = new File(buildDir, "fakereplace.jar");
+                if (!target.exists()) {
+                    //this is super yuck, but there does not seen to be an easy way
+                    //to get dependency artifacts. Fakereplace must be called fakereplace.jar to work
+                    //so we copy it to the target directory
+                    URL resource = getClass().getClassLoader().getResource("org/fakereplace/core/Fakereplace.class");
+                    if (resource == null) {
+                        throw new RuntimeException("Could not determine Fakereplace location");
+                    }
+                    String filePath = resource.getPath();
+                    try (FileInputStream in = new FileInputStream(filePath.substring(5, filePath.lastIndexOf('!')))) {
+                        try (FileOutputStream out = new FileOutputStream(target)) {
+                            byte[] buffer = new byte[1024];
+                            int r;
+                            while ((r = in.read(buffer)) > 0) {
+                                out.write(buffer, 0, r);
+                            }
+                        }
+                    }
+                }
+                args.add("-javaagent:" + target.getAbsolutePath());
             }
 
             //we also want to add the maven plugin jar to the class path
@@ -70,11 +112,8 @@ public class RunMojo extends AbstractMojo {
                 manifest.write(out);
             }
 
-
-            List<String> args = new ArrayList<>();
-            args.add("java");
-            args.add("-jar");
             args.add("-Dshamrock.runner.classes=" + outputDirectory.getAbsolutePath());
+            args.add("-jar");
             args.add(tempFile.getAbsolutePath());
             args.add(outputDirectory.getAbsolutePath());
             Process p = Runtime.getRuntime().exec(args.toArray(new String[0]), null, outputDirectory);

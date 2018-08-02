@@ -11,6 +11,8 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.enterprise.inject.se.SeContainer;
+
 import io.smallrye.metrics.MetricRegistries;
 import io.smallrye.metrics.app.CounterImpl;
 import io.smallrye.metrics.interceptors.MetricResolver;
@@ -19,6 +21,7 @@ import org.eclipse.microprofile.metrics.MetricRegistry;
 import org.eclipse.microprofile.metrics.MetricType;
 import org.eclipse.microprofile.metrics.annotation.Counted;
 import org.eclipse.microprofile.metrics.annotation.Metric;
+import org.jboss.shamrock.runtime.ContextObject;
 
 /**
  * Created by bob on 7/30/18.
@@ -105,10 +108,15 @@ public class MetricsDeploymentTemplate {
 
     }
 
-    public void createRegistries() {
+    public void createRegistries(@ContextObject("weld.container") SeContainer container) {
         System.err.println("creating registries");
         MetricRegistries.get(MetricRegistry.Type.APPLICATION);
         MetricRegistries.get(MetricRegistry.Type.BASE);
         MetricRegistries.get(MetricRegistry.Type.VENDOR);
+
+        //HACK: registration is does via statics, but cleanup is done via pre destroy
+        //however if the bean is not used it will not be created, so no cleanup will be done
+        //we force bean creation here to make sure the container can restart correctly
+        container.select(MetricRegistries.class).iterator().next().getApplicationRegistry();
     }
 }

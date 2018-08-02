@@ -74,7 +74,7 @@ public class MetricsProcessor implements ResourceProcessor {
         try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.WELD_DEPLOYMENT + 30)) {
             MetricsDeploymentTemplate metrics = recorder.getRecordingProxy(MetricsDeploymentTemplate.class);
 
-            metrics.createRegistries();
+            metrics.createRegistries(null);
 
             IndexView index = archiveContext.getIndex();
             Collection<AnnotationInstance> annos = index.getAnnotations(DotName.createSimple(Counted.class.getName()));

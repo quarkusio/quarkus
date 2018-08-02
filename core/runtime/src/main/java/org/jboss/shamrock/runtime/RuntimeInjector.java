@@ -8,8 +8,10 @@ public class RuntimeInjector {
         return factory.create(type);
     }
 
-    public static void setFactory(InjectionFactory f) {
+    public static InjectionFactory setFactory(InjectionFactory f) {
+        InjectionFactory old = factory;
         factory = f;
+        return old;
     }
 
     private static class DefaultInjectionFactory implements InjectionFactory {

@@ -351,7 +351,6 @@ public class BuildTimeGenerator {
                 mv.visitTypeInsn(ANEWARRAY, "java/lang/Class");
                 mv.visitInsn(DUP);
                 mv.visitLdcInsn(0);
-                String internalName = holder.replace(".", "/");
                 mv.visitLdcInsn(holder);
                 mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName", "(Ljava/lang/String;)Ljava/lang/Class;", false);
                 mv.visitInsn(AASTORE);
@@ -361,11 +360,14 @@ public class BuildTimeGenerator {
                 mv.visitLdcInsn(holder);
                 mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName", "(Ljava/lang/String;)Ljava/lang/Class;", false);
                 mv.visitInsn(DUP);
+                mv.visitInsn(DUP);
                 mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getDeclaredConstructors", "()[Ljava/lang/reflect/Constructor;", false);
                 mv.visitMethodInsn(INVOKESTATIC, "org/graalvm/nativeimage/RuntimeReflection", "register", "([Ljava/lang/reflect/Executable;)V", false);
                 //now load everything else
-                mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getMethods", "()[Ljava/lang/reflect/Method;", false);
+                mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getDeclaredMethods", "()[Ljava/lang/reflect/Method;", false);
                 mv.visitMethodInsn(INVOKESTATIC, "org/graalvm/nativeimage/RuntimeReflection", "register", "([Ljava/lang/reflect/Executable;)V", false);
+                mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getDeclaredFields", "()[Ljava/lang/reflect/Field;", false);
+                mv.visitMethodInsn(INVOKESTATIC, "org/graalvm/nativeimage/RuntimeReflection", "register", "([Ljava/lang/reflect/Field;)V", false);
                 mv.visitLabel(lTryBlockEnd);
                 mv.visitLabel(lCatchBlockStart);
                 mv.visitLabel(lCatchBlockEnd);

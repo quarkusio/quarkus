@@ -214,19 +214,32 @@ mode, however there are some differences. The two basic modes are:
     as it allows you to test and run things without a full maven. This is currently used for the JUnit test runner, 
     and for the `mvn shamrock:run` command.
     
-## Indexing
+## Build Time Config
+
+Build time configuration is provided by `shamrock-build.yaml`. At the moment the only options present relate to indexing,
+however this will probably be expanded over time.    
+    
+### Indexing
 
 By default only the classes in the current application are indexed, however it is possible to include additional classes.
 
-Two different mechanisms are provided to do this. In both cases these files are loaded from the class path, so all files
-present on the class path will be honoured.
+Note that at the moment loading pre-computed indexes is not supported, and likely is out of scope of the PoC.
 
-*   `META-INF/shamrock-index-dependencies`
-    This file is a list of maven artifacts, in either group:artifact or group:artiface:classifer format. If an artifact
-    is listed in this file then it will be indexed. Note that this should not be used for artifacts that are part of the
-    current project. When running from an IDE it is not possible to reliably determine the artifactId. In this case you
-    should use the method below.
+Two different mechanisms are provided to do this, both of them configured in `shamrock-build.yaml`. 
 
-*   `META-INF/shamrock-index.marker`
-    If this file is present in an archive then that archive will be indexed. This is mostly intended for use in 
-    multi-module projects. 
+*   `index-dependencies`
+    This key must contain a list of maven artifacts, in either group:artifact or group:artifact:classifier format. If an 
+    artifact is listed under this key it will be indexed. Note that this should not be used for artifacts that are part 
+    of the current project, as when running from an IDE it is not possible to reliably determine the artifactId. In this 
+    case you should use the `index-jar` method.
+    
+    An example of this index config is:
+    
+    ```
+    index-dependencies:
+         - "io.smallrye:smallrye-health"
+
+    ```
+
+*   `index-jar`
+    If this key is present and set to `true` then the contents of this jar will be indexed.

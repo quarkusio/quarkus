@@ -32,9 +32,6 @@ public class ArtifactIndex {
                         try (InputStream inputStream = file.getInputStream(entry)) {
                             indexer.index(inputStream);
                         }
-                    } else if (entry.getName().equals(IndexLoader.INDEX_MARKER)) {
-                        //TODO: we can probably handle this more gracefully
-                        throw new RuntimeException(artifact + " has a " + IndexLoader.INDEX_MARKER + " file, but was also listed in META-INF/shamrock-index-dependencies");
                     }
                 }
             }

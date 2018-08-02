@@ -186,10 +186,9 @@
                 <scope>test</scope>
             </dependency>
             <dependency>
-                <groupId>org.jboss.graalvm</groupId>
-                <artifactId>graal-annotations</artifactId>
-                <version>1.0.0-rc4</version>
-                <scope>provided</scope>
+                <groupId>org.fakereplace</groupId>
+                <artifactId>fakereplace</artifactId>
+                <version>${fakereplace.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.glassfish</groupId>
@@ -205,6 +204,12 @@
                 <groupId>org.jboss.classfilewriter</groupId>
                 <artifactId>jboss-classfilewriter</artifactId>
                 <version>${jboss-classfilewriter.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.graalvm</groupId>
+                <artifactId>graal-annotations</artifactId>
+                <version>1.0.0-rc4</version>
+                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>org.jboss.invocation</groupId>
@@ -273,6 +278,11 @@
                 <version>${asm.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.yaml</groupId>
+                <artifactId>snakeyaml</artifactId>
+                <version>1.21</version>
+            </dependency>
+            <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
                 <version>${logback.version}</version>
@@ -281,11 +291,6 @@
                 <groupId>javax.enterprise</groupId>
                 <artifactId>cdi-api</artifactId>
                 <version>${cdi-api.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.fakereplace</groupId>
-                <artifactId>fakereplace</artifactId>
-                <version>${fakereplace.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

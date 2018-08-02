@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexView;
+import org.jboss.shamrock.deployment.buildconfig.BuildConfig;
 
 public interface ArchiveContext {
 
@@ -17,5 +18,7 @@ public interface ArchiveContext {
     IndexView getIndex();
 
     Path getArchiveRoot();
+
+    BuildConfig getBuildConfig();
 
 }

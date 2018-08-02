@@ -1,79 +1,75 @@
 package org.jboss.shamrock.deployment.index;
 
-import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
+import org.jboss.shamrock.deployment.buildconfig.BuildConfig;
 
 /**
  * Class that is responsible for loading indexes from outside the deployment
  */
 public class IndexLoader {
 
+    private static final String INDEX_DEPENDENCIES = "index-dependencies";
+    private static final String INDEX_JAR = "index-jar";
 
-    private static final String META_INF_SHAMROCK_INDEX_DEPENDENCIES = "META-INF/shamrock-index-dependencies";
-    static final String INDEX_MARKER = "META-INF/shamrock-index.marker";
-
-    public static List<IndexView> scanForOtherIndexes(ClassLoader classLoader) throws IOException {
+    public static List<IndexView> scanForOtherIndexes(ClassLoader classLoader, BuildConfig config) throws IOException {
         ArtifactIndex artifactIndex = new ArtifactIndex(new ClassPathArtifactResolver(classLoader));
-        Enumeration<URL> resources = classLoader.getResources(META_INF_SHAMROCK_INDEX_DEPENDENCIES);
-        List<IndexView> ret = new ArrayList<>();
-        while (resources.hasMoreElements()) {
-            URL resource = resources.nextElement();
-            try (final BufferedReader in = new BufferedReader(new InputStreamReader(resource.openStream()))) {
-                String line = in.readLine();
-                if (line.startsWith("#")) {
-                    continue;
-                }
-                int commentPos = line.indexOf('#');
-                if (commentPos > 0) {
-                    line = line.substring(0, commentPos);
-                }
-                line = line.trim();
-                if (line.isEmpty()) {
-                    continue;
-                }
-                String[] parts = line.split(":");
 
-                if (parts.length == 2) {
-                    ret.add(artifactIndex.getIndex(parts[0], parts[1], null));
-                } else if (parts.length == 3) {
-                    ret.add(artifactIndex.getIndex(parts[0], parts[1], parts[2]));
-                } else {
-                    throw new RuntimeException("Invalid dependencies to index " + line);
-                }
-            } catch (Exception e) {
-                throw new RuntimeException("Exception resolving dependencies from " + resource, e);
+        List<BuildConfig.ConfigNode> depList = config.getAll(INDEX_DEPENDENCIES);
+        Set<String> depsToIndex = new HashSet<>();
+        for (BuildConfig.ConfigNode i : depList) {
+            depsToIndex.addAll(i.asStringList());
+        }
+        List<IndexView> ret = new ArrayList<>();
+        for (String line : depsToIndex) {
+            line = line.trim();
+            if (line.isEmpty()) {
+                continue;
+            }
+            String[] parts = line.split(":");
+
+            if (parts.length == 2) {
+                ret.add(artifactIndex.getIndex(parts[0], parts[1], null));
+            } else if (parts.length == 3) {
+                ret.add(artifactIndex.getIndex(parts[0], parts[1], parts[2]));
+            } else {
+                throw new RuntimeException("Invalid dependencies to index " + line);
             }
         }
-        ret.add(getMarkerIndexes(classLoader));
+        ret.add(getMarkerIndexes(config));
         return ret;
     }
 
-    public static IndexView getMarkerIndexes(ClassLoader classLoader) {
+    public static IndexView getMarkerIndexes(BuildConfig config) {
         try {
             Indexer indexer = new Indexer();
-            Enumeration<URL> urls = classLoader.getResources(INDEX_MARKER);
-            while (urls.hasMoreElements()) {
-                URL url = urls.nextElement();
-                if (url.getProtocol().equals("jar")) {
-                    handleJarPath(url.getPath().substring(5, url.getPath().length() - INDEX_MARKER.length() - 2), indexer);
-                } else if (url.getProtocol().equals("file")) {
-                    handleFilePath(url.getPath().substring(0, url.getPath().length() - INDEX_MARKER.length() - 1), indexer);
+            for (Map.Entry<URL, BuildConfig.ConfigNode> dep : config.getDependencyConfig().entrySet()) {
+                Boolean node = dep.getValue().get(INDEX_JAR).asBoolean();
+                if (node != null && node) {
+                    URL url = dep.getKey();
+                    if (url.getProtocol().equals("jar")) {
+                        handleJarPath(url.getPath().substring(5, url.getPath().lastIndexOf('!')), indexer);
+                    } else if (url.getProtocol().equals("file")) {
+                        int index = url.getPath().lastIndexOf("/META-INF");
+                        handleFilePath(url.getPath().substring(0, index), indexer);
+                    }
                 }
             }
             return indexer.complete();

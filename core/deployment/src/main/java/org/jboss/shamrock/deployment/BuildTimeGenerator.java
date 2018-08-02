@@ -43,6 +43,7 @@ import java.util.function.Function;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
+import org.jboss.shamrock.deployment.buildconfig.BuildConfig;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorderImpl;
 import org.jboss.shamrock.deployment.index.IndexLoader;
@@ -96,6 +97,7 @@ public class BuildTimeGenerator {
     public void run(Path root) throws IOException {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(classLoader);
+        BuildConfig config = BuildConfig.readConfig(classLoader, root.toFile());
         try {
             Indexer indexer = new Indexer();
             Files.walkFileTree(root, new FileVisitor<Path>() {
@@ -126,10 +128,10 @@ public class BuildTimeGenerator {
             });
             List<IndexView> composite = new ArrayList<>();
             composite.add(indexer.complete());
-            composite.addAll(IndexLoader.scanForOtherIndexes(classLoader));
+            composite.addAll(IndexLoader.scanForOtherIndexes(classLoader, config));
 
 
-            ArchiveContext context = new ArchiveContextImpl(CompositeIndex.create(composite), root);
+            ArchiveContext context = new ArchiveContextImpl(CompositeIndex.create(composite), root, config);
             ProcessorContextImpl processorContext = new ProcessorContextImpl();
             for (ResourceProcessor processor : processors) {
                 try {
@@ -151,10 +153,12 @@ public class BuildTimeGenerator {
 
         private final IndexView index;
         private final Path root;
+        private final BuildConfig buildConfig;
 
-        private ArchiveContextImpl(IndexView index, Path root) {
+        private ArchiveContextImpl(IndexView index, Path root, BuildConfig buildConfig) {
             this.index = index;
             this.root = root;
+            this.buildConfig = buildConfig;
         }
 
         @Override
@@ -165,6 +169,11 @@ public class BuildTimeGenerator {
         @Override
         public Path getArchiveRoot() {
             return root;
+        }
+
+        @Override
+        public BuildConfig getBuildConfig() {
+            return buildConfig;
         }
     }
 

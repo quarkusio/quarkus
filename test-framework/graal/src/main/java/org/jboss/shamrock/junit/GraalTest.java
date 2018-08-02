@@ -72,7 +72,7 @@ public class GraalTest extends BlockJUnit4ClassRunner {
                     notifier.fireTestFailure(new Failure(Description.createSuiteDescription(GraalTest.class), new RuntimeException("Unable to find native image, make sure native.image.path is set")));
                     return;
                 } else {
-                    String errorString = "=native.image.path was not set, making a guess that  " + guessedPath + " is the correct native image=";
+                    String errorString = "\n=native.image.path was not set, making a guess that  " + guessedPath + " is the correct native image=";
                     for(int i= 0; i < errorString.length(); ++i) {
                         System.err.print("=");
                     }
@@ -80,6 +80,7 @@ public class GraalTest extends BlockJUnit4ClassRunner {
                     for(int i= 0; i < errorString.length(); ++i) {
                         System.err.print("=");
                     }
+                    System.err.println();
                     path = guessedPath;
                 }
             }

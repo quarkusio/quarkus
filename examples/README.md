@@ -7,6 +7,8 @@ Examples exercising frameworks like Weld, Undertow etc using Shamrock as boot be
 To run from your IDE tests inheriting from `GraalTest` (e.g. `@RunWith(GraalTest.class)`), you must define the `native.image.path` to the native image build of that specific example.
 For example: `-Dnative.image.path=/full/qualified/path/to/examples/example1/shamrock-test-deployment-1.0.0.Alpha1-SNAPSHOT`
 
+If this is not specified the test runner will attempt to guess the image location, which may not be successful.
+
 ## List of examples
 
 ### Strict

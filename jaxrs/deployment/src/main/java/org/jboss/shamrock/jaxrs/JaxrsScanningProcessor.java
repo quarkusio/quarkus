@@ -130,9 +130,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
                 }
                 undertow.addServletContextParameter(null, "resteasy.servlet.mapping.prefix", path);
                 undertow.addServletContextParameter(null, "resteasy.injector.factory", ShamrockInjectorFactory.class.getName());
-                for (String i : loadProviders()) {
-                    processorContext.addReflectiveClass(true, true, i);
-                }
+                
             }
         }
         for (DotName annotationType : METHOD_ANNOTATIONS) {

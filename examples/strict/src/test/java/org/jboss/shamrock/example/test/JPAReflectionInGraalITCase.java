@@ -2,11 +2,16 @@ package org.jboss.shamrock.example.test;
 
 import org.jboss.shamrock.junit.GraalTest;
 import org.jboss.shamrock.junit.ShamrockTest;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.URL;
+import java.net.URLConnection;
 
 import static org.junit.Assert.assertEquals;
 
@@ -19,16 +24,16 @@ import static org.junit.Assert.assertEquals;
 public class JPAReflectionInGraalITCase {
 
     @Test
-    public void testFieldAndGetterReflectionOnEntity() throws Exception {
-        Class<?> custClass = Class.forName("org.jboss.shamrock.example.jpa.Customer");
-        Object instance = custClass.newInstance();
-        Field id = custClass.getDeclaredField("id");
-        id.setAccessible(true);
-        assertEquals("id should be reachable and null", null, id.get(instance));
-        Method setter = custClass.getDeclaredMethod("setName", String.class);
-        Method getter = custClass.getDeclaredMethod("getName");
-        setter.invoke(instance, "Emmanuel");
-        assertEquals("getter / setter should be reachable and usable", "Emmanuel", getter.invoke(instance));
+    public void testFieldAndGetterReflectionOnEntityFromServlet() throws Exception {
+        URL uri = new URL("http://localhost:8080/jpa/test");
+        URLConnection connection = uri.openConnection();
+        InputStream in = connection.getInputStream();
+        byte[] buf = new byte[100];
+        int r;
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        while ((r = in.read(buf)) > 0) {
+            out.write(buf, 0, r);
+        }
+        assertEquals("OK", new String(out.toByteArray()));
     }
-
 }

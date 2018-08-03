@@ -39,7 +39,7 @@ public interface ProcessorContext {
      *
      * @param className The class name
      */
-    void addReflectiveClass(String... className);
+    void addReflectiveClass(boolean methods, boolean fields, String... className);
 
     void addGeneratedClass(String name, byte[] classData) throws IOException;
 

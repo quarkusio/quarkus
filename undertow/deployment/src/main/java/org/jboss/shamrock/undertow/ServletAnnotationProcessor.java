@@ -35,8 +35,8 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
     @Override
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
 
-        processorContext.addReflectiveClass(DefaultServlet.class.getName());
-        processorContext.addReflectiveClass("io.undertow.server.protocol.http.HttpRequestParser$$generated");
+        processorContext.addReflectiveClass(false, false, DefaultServlet.class.getName());
+        processorContext.addReflectiveClass(false, false, "io.undertow.server.protocol.http.HttpRequestParser$$generated");
 
         try (BytecodeRecorder context = processorContext.addStaticInitTask(RuntimePriority.UNDERTOW_CREATE_DEPLOYMENT)) {
             UndertowDeploymentTemplate template = context.getRecordingProxy(UndertowDeploymentTemplate.class);
@@ -51,7 +51,7 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
                     String name = annotation.value("name").asString();
                     AnnotationValue asyncSupported = annotation.value("asyncSupported");
                     String servletClass = annotation.target().asClass().toString();
-                    processorContext.addReflectiveClass(servletClass);
+                    processorContext.addReflectiveClass(false, false, servletClass);
                     InjectionInstance<? extends Servlet> injection = (InjectionInstance<? extends Servlet>) context.newInstanceFactory(servletClass);
                     InstanceFactory<? extends Servlet> factory = template.createInstanceFactory(injection);
                     template.registerServlet(null, name, context.classProxy(servletClass), asyncSupported != null && asyncSupported.asBoolean(), factory);

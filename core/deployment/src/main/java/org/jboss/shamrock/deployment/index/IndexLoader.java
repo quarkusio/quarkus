@@ -17,6 +17,7 @@ import java.util.function.Consumer;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.shamrock.deployment.buildconfig.BuildConfig;
@@ -28,6 +29,7 @@ public class IndexLoader {
 
     private static final String INDEX_DEPENDENCIES = "index-dependencies";
     private static final String INDEX_JAR = "index-jar";
+    private static final String INDEX_PACKAGES = "index-packages";
 
     public static List<IndexView> scanForOtherIndexes(ClassLoader classLoader, BuildConfig config) throws IOException {
         ArtifactIndex artifactIndex = new ArtifactIndex(new ClassPathArtifactResolver(classLoader));
@@ -54,7 +56,26 @@ public class IndexLoader {
             }
         }
         ret.add(getMarkerIndexes(config));
+        ret.add(getPackageIndexes(classLoader, config, CompositeIndex.create(new ArrayList<>(ret))));
+
         return ret;
+    }
+
+    private static IndexView getPackageIndexes(ClassLoader classLoader, BuildConfig config, CompositeIndex compositeIndex) throws IOException {
+
+        List<BuildConfig.ConfigNode> packageList = config.getAll(INDEX_PACKAGES);
+        Set<String> packagesToIndex = new HashSet<>();
+        for (BuildConfig.ConfigNode i : packageList) {
+            packagesToIndex.addAll(i.asStringList());
+        }
+        Indexer indexer = new Indexer();
+        for(String pkg : packagesToIndex) {
+            Enumeration<URL> urls = classLoader.getResources(pkg.replace(".", "/"));
+            while (urls.hasMoreElements()) {
+                System.out.println(urls.nextElement());
+            }
+        }
+        return indexer.complete();
     }
 
     public static IndexView getMarkerIndexes(BuildConfig config) {

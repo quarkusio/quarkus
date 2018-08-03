@@ -20,7 +20,6 @@ public class RuntimeCompilationServletExtension implements ServletExtension {
             deploymentInfo.addInitialHandlerChainWrapper(new HandlerWrapper() {
                 @Override
                 public HttpHandler wrap(HttpHandler handler) {
-
                     return new RuntimeUpdatesHandler(handler, Paths.get(classesDir), null);
                 }
             });

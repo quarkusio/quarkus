@@ -34,7 +34,7 @@ public class WeldAnnotationProcessor implements ResourceProcessor {
                 //the runtime runner picks up the classes created by the maven plugin
                 if (!name.startsWith("org.jboss.shamrock.deployment") && !name.startsWith("org.jboss.shamrock.runner")) {
                     template.addClass(init, recorder.classProxy(name));
-                    processorContext.addReflectiveClass(name);
+                    processorContext.addReflectiveClass(true, true, name);
                 }
             }
             for (Class<?> clazz : weldDeployment.getAdditionalBeans()) {

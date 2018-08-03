@@ -68,7 +68,7 @@ public class MetricsProcessor implements ResourceProcessor {
         //weldDeployment.addInterceptor(CountedInterceptor.class);
         //weldDeployment.addInterceptor(TimedInterceptor.class);
 
-        processorContext.addReflectiveClass(Counted.class.getName(), MetricsBinding.class.getName());
+        processorContext.addReflectiveClass(false, false, Counted.class.getName(), MetricsBinding.class.getName());
 
 
         try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.WELD_DEPLOYMENT + 30)) {
@@ -88,7 +88,7 @@ public class MetricsProcessor implements ResourceProcessor {
                 metrics.registerCounted(classInfo.name().toString(),
                         methodInfo.name().toString());
 
-                processorContext.addReflectiveClass(classInfo.name().toString());
+                processorContext.addReflectiveClass(true, false, classInfo.name().toString());
             }
 
         }

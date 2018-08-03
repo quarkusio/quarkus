@@ -72,14 +72,14 @@ public class NativeImageMojo extends AbstractMojo {
             }
             command.add("-jar");
             command.add(finalName + "-runner.jar");
-            command.add("-H:IncludeResources=META-INF/.*");
+            command.add("-H:IncludeResources=META-INF/resources/.*");
             if (reportErrorsAtRuntime) {
                 command.add("-H:+ReportUnsupportedElementsAtRuntime");
             }
             if (debugSymbols) {
                 command.add("-g");
             }
-            command.add("-H:+AllowVMInspection");
+            //command.add("-H:+AllowVMInspection");
             System.out.println(command);
             Process process = Runtime.getRuntime().exec(command.toArray(new String[0]), null, outputDirectory);
             new Thread(new ProcessReader(process.getInputStream(), false)).start();

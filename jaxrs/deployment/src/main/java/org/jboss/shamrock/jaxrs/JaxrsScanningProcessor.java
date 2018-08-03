@@ -88,7 +88,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
         //this is pretty yuck, and does not really belong here, but it is needed to get the json-p
         //provider to work
-        processorContext.addReflectiveClass("org.glassfish.json.JsonProviderImpl", "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector");
+        processorContext.addReflectiveClass(true, false,"org.glassfish.json.JsonProviderImpl", "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector");
 
         IndexView index = archiveContext.getIndex();
         Collection<AnnotationInstance> app = index.getAnnotations(APPLICATION_PATH);
@@ -97,7 +97,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
         }
         Collection<AnnotationInstance> xmlRoot = index.getAnnotations(XML_ROOT);
         if (!xmlRoot.isEmpty()) {
-            processorContext.addReflectiveClass("com.sun.xml.bind.v2.ContextFactory", "com.sun.xml.internal.bind.v2.ContextFactory");
+            processorContext.addReflectiveClass(true, false,"com.sun.xml.bind.v2.ContextFactory", "com.sun.xml.internal.bind.v2.ContextFactory");
         }
         AnnotationInstance appPath = app.iterator().next();
         String path = appPath.value().asString();
@@ -109,6 +109,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
             undertow.addServletMapping(null, JAX_RS_SERVLET_NAME, path + "/*");
             Collection<AnnotationInstance> paths = index.getAnnotations(PATH);
             if (paths != null) {
+                processorContext.addReflectiveClass(false,  false, HttpServlet30Dispatcher.class.getName());
                 StringBuilder sb = new StringBuilder();
                 boolean first = true;
                 for (AnnotationInstance annotation : paths) {
@@ -118,10 +119,9 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
                         } else {
                             sb.append(",");
                         }
-                        processorContext.addReflectiveClass(HttpServlet30Dispatcher.class.getName());
                         String className = annotation.target().asClass().name().toString();
                         sb.append(className);
-                        processorContext.addReflectiveClass(className);
+                        processorContext.addReflectiveClass(true, true, className);
                     }
                 }
 
@@ -130,9 +130,8 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
                 }
                 undertow.addServletContextParameter(null, "resteasy.servlet.mapping.prefix", path);
                 undertow.addServletContextParameter(null, "resteasy.injector.factory", ShamrockInjectorFactory.class.getName());
-                processorContext.addReflectiveClass(HttpServlet30Dispatcher.class.getName());
                 for (String i : loadProviders()) {
-                    processorContext.addReflectiveClass(i);
+                    processorContext.addReflectiveClass(true, true, i);
                 }
             }
         }
@@ -143,7 +142,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
                 if (method.returnType().kind() == Type.Kind.CLASS) {
                     String className = method.returnType().asClassType().name().toString();
                     if (!className.equals(String.class.getName())) {
-                        processorContext.addReflectiveClass(className);
+                        processorContext.addReflectiveClass(true, true, className);
                     }
                 }
             }

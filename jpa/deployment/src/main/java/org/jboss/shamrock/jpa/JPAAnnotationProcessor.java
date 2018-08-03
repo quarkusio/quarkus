@@ -26,8 +26,8 @@ public class JPAAnnotationProcessor implements ResourceProcessor {
     @Override
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
         // Hibernate specific reflective classes
-        processorContext.addReflectiveClass(org.hibernate.jpa.HibernatePersistenceProvider.class.getName());
-        processorContext.addReflectiveClass(org.hibernate.persister.entity.SingleTableEntityPersister.class.getName());
+        processorContext.addReflectiveClass(false, false, org.hibernate.jpa.HibernatePersistenceProvider.class.getName());
+        processorContext.addReflectiveClass(false, false, org.hibernate.persister.entity.SingleTableEntityPersister.class.getName());
         // TODO add reflectconfig.json
 
 
@@ -42,7 +42,7 @@ public class JPAAnnotationProcessor implements ResourceProcessor {
                 for (AnnotationInstance annotation : jpaAnnotations) {
                     String entityClass = annotation.target().asClass().toString();
                     System.out.println(entityClass);
-                    processorContext.addReflectiveClass(entityClass);
+                    processorContext.addReflectiveClass(true, true, entityClass);
                     template.addEntity(annotation.target().asClass().toString());
                 }
                 template.enlistPersistenceUnit();

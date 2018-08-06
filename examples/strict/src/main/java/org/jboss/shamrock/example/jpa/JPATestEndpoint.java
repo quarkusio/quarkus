@@ -15,7 +15,23 @@ public class JPATestEndpoint extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         makeSureNonEntityAreDCE(resp);
         makeSureEntitiesAreAccessibleViaReflection(resp);
+        makeSureNonAnnotatedEmbeddableAreAccessibleViaReflection(resp);
+        makeSureAnnotatedEmbeddableAreAccessibleViaReflection(resp);
+        makeSureClassAreAccessibleViaReflection("org.jboss.shamrock.example.jpa.Human", "Unable to enlist @MappedSuperclass", resp);
+        makeSureClassAreAccessibleViaReflection("org.jboss.shamrock.example.jpa.Animal", "Unable to enlist entity superclass", resp);
         resp.getWriter().write("OK");
+    }
+
+    private void makeSureClassAreAccessibleViaReflection(String className, String error, HttpServletResponse resp) throws IOException {
+        try {
+            className = getTrickedClassName(className);
+
+            Class<?> custClass = Class.forName(className);
+            Object instance = custClass.newInstance();
+        }
+        catch (Exception e) {
+            resp.getWriter().write(error + " " + e.toString());
+        }
     }
 
     private void makeSureEntitiesAreAccessibleViaReflection(HttpServletResponse resp) throws IOException {
@@ -34,6 +50,41 @@ public class JPATestEndpoint extends HttpServlet {
             setter.invoke(instance, "Emmanuel");
             if (! "Emmanuel".equals(getter.invoke(instance))) {
                 resp.getWriter().write("getter / setter should be reachable and usable");
+            }
+        }
+        catch (Exception e) {
+            resp.getWriter().write(e.toString());
+        }
+    }
+
+    private void makeSureAnnotatedEmbeddableAreAccessibleViaReflection(HttpServletResponse resp) throws IOException {
+        try {
+            String className = getTrickedClassName("org.jboss.shamrock.example.jpa.WorkAddress");
+
+            Class<?> custClass = Class.forName(className);
+            Object instance = custClass.newInstance();
+            Method setter = custClass.getDeclaredMethod("setCompany", String.class);
+            Method getter = custClass.getDeclaredMethod("getCompany");
+            setter.invoke(instance, "Red Hat");
+            if (! "Red Hat".equals(getter.invoke(instance))) {
+                resp.getWriter().write("@Embeddable embeddable should be reachable and usable");
+            }
+        }
+        catch (Exception e) {
+            resp.getWriter().write(e.toString());
+        }
+    }
+    private void makeSureNonAnnotatedEmbeddableAreAccessibleViaReflection(HttpServletResponse resp) throws IOException {
+        try {
+            String className = getTrickedClassName("org.jboss.shamrock.example.jpa.Address");
+
+            Class<?> custClass = Class.forName(className);
+            Object instance = custClass.newInstance();
+            Method setter = custClass.getDeclaredMethod("setStreet1", String.class);
+            Method getter = custClass.getDeclaredMethod("getStreet1");
+            setter.invoke(instance, "1 rue du General Leclerc");
+            if (! "1 rue du General Leclerc".equals(getter.invoke(instance))) {
+                resp.getWriter().write("Non @Embeddable embeddable getter / setter should be reachable and usable");
             }
         }
         catch (Exception e) {

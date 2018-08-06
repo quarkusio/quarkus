@@ -17,7 +17,21 @@ public class JPATestEndpoint extends HttpServlet {
         makeSureEntitiesAreAccessibleViaReflection(resp);
         makeSureNonAnnotatedEmbeddableAreAccessibleViaReflection(resp);
         makeSureAnnotatedEmbeddableAreAccessibleViaReflection(resp);
+        makeSureClassAreAccessibleViaReflection("org.jboss.shamrock.example.jpa.Human", "Unable to enlist @MappedSuperclass", resp);
+        makeSureClassAreAccessibleViaReflection("org.jboss.shamrock.example.jpa.Animal", "Unable to enlist entity superclass", resp);
         resp.getWriter().write("OK");
+    }
+
+    private void makeSureClassAreAccessibleViaReflection(String className, String error, HttpServletResponse resp) throws IOException {
+        try {
+            className = getTrickedClassName(className);
+
+            Class<?> custClass = Class.forName(className);
+            Object instance = custClass.newInstance();
+        }
+        catch (Exception e) {
+            resp.getWriter().write(error + " " + e.toString());
+        }
     }
 
     private void makeSureEntitiesAreAccessibleViaReflection(HttpServletResponse resp) throws IOException {

@@ -10,7 +10,7 @@ import javax.persistence.Id;
  * @author Emmanuel Bernard emmanuel@hibernate.org
  */
 @Entity
-public class Customer {
+public class Customer extends Human {
     @Id
     // no getter explicitly to test field only reflective access
     private Long id;

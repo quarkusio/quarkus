@@ -1,9 +1,6 @@
 package org.jboss.shamrock.jpa;
 
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.IndexView;
+import org.jboss.jandex.*;
 import org.jboss.shamrock.deployment.ArchiveContext;
 import org.jboss.shamrock.deployment.ProcessorContext;
 import org.jboss.shamrock.deployment.ResourceProcessor;
@@ -55,20 +52,20 @@ public class JPAAnnotationProcessor implements ResourceProcessor {
         if (annotations != null && annotations.size() > 0) {
             for (AnnotationInstance annotation : annotations) {
                 AnnotationTarget target = annotation.target();
-                String jpaClassName = null;
+                DotName jpaClassName = null;
                 switch (target.kind()) {
                     case FIELD:
                         // TODO could fail if that's an array or a generic type
-                        jpaClassName = target.asField().type().toString();
+                        jpaClassName = target.asField().type().name();
                         break;
                     case METHOD:
                         // TODO could fail if that's an array or a generic type
-                        jpaClassName = target.asMethod().returnType().toString();
+                        jpaClassName = target.asMethod().returnType().name();
                         break;
                     default:
                         throw new IllegalStateException("[internal error] @Embedded placed on a unknown element: " + target);
                 }
-                processorContext.addReflectiveClass(true, true, jpaClassName);
+                addClassHierarchyToReflectiveList(processorContext, index, jpaClassName);
             }
         }
     }
@@ -77,10 +74,43 @@ public class JPAAnnotationProcessor implements ResourceProcessor {
         Collection<AnnotationInstance> jpaAnnotations = index.getAnnotations(dotName);
         if (jpaAnnotations != null && jpaAnnotations.size() > 0) {
             for (AnnotationInstance annotation : jpaAnnotations) {
-                String entityClass = annotation.target().asClass().toString();
-                processorContext.addReflectiveClass(true, true, entityClass);
-                template.addEntity(annotation.target().asClass().toString());
+                DotName targetDotName = annotation.target().asClass().name();
+                addClassHierarchyToReflectiveList(processorContext, index, targetDotName);
+                template.addEntity(targetDotName.toString());
             }
+        }
+    }
+
+    /**
+     * Add the class to the reflective list with full method and field access.
+     * Add the superclasses recursively as well as the interfaces.
+     *
+     * TODO this approach fails if the Jandex index is not complete (e.g. misses somes interface or super types)
+     * TODO should we also return the return types of all methods and fields? It could container Enums for example.
+     */
+    private void addClassHierarchyToReflectiveList(ProcessorContext processorContext, IndexView index, DotName className) {
+        // If type is not Object
+        // recursively add superclass and interfaces
+        if (className == null) {
+            // java.lang.Object
+            return;
+        }
+        ClassInfo classInfo = index.getClassByName(className);
+        if (classInfo == null) {
+            if (className == ClassType.OBJECT_TYPE.name()) {
+                return;
+            }
+            else {
+                throw new IllegalStateException("The Jandex index is not complete, missing: " + className.toString());
+            }
+        }
+        // add class for reflection
+        processorContext.addReflectiveClass(true, true, className.toString());
+        // add superclass recursively
+        addClassHierarchyToReflectiveList(processorContext, index, classInfo.superName());
+        // add interfaces recursively
+        for (DotName interfaceDotName : classInfo.interfaceNames()) {
+            addClassHierarchyToReflectiveList(processorContext, index, interfaceDotName);
         }
     }
 

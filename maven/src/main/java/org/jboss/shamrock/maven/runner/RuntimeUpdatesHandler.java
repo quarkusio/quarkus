@@ -1,13 +1,19 @@
 package org.jboss.shamrock.maven.runner;
 
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.lang.instrument.ClassDefinition;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 
+import org.fakereplace.core.Fakereplace;
+import org.fakereplace.replacement.AddedClass;
 import org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate;
 
 import io.undertow.server.HttpHandler;
@@ -23,6 +29,19 @@ public class RuntimeUpdatesHandler implements HttpHandler {
     private final Path sourcesDir;
     private volatile long nextUpdate;
     private volatile long lastChange = System.currentTimeMillis();
+
+    static final UpdateHandler FAKEREPLACE_HANDLER;
+
+    static {
+        UpdateHandler fr;
+        try {
+            Class.forName("org.fakereplace.core.Fakereplace");
+            fr = new FakereplaceHandler();
+        } catch (Exception e) {
+            fr = null;
+        }
+        FAKEREPLACE_HANDLER = fr;
+    }
 
     public RuntimeUpdatesHandler(HttpHandler next, Path classesDir, Path sourcesDir) {
         this.next = next;
@@ -43,8 +62,8 @@ public class RuntimeUpdatesHandler implements HttpHandler {
         synchronized (this) {
             if (nextUpdate < System.currentTimeMillis()) {
                 try {
-                    if(doScan()) {
-                        //TODO: super hack alert
+                    if (doScan()) {
+                        //TODO: this should be handled better
                         UndertowDeploymentTemplate.ROOT_HANDLER.handleRequest(exchange);
                         return;
                     }
@@ -64,26 +83,48 @@ public class RuntimeUpdatesHandler implements HttpHandler {
         //TODO: this is super simple at the moment, if there are changes
         //we just restart the app which will drop the class loader
         //this will change considerably with Fakereplace
-        final AtomicBoolean done = new AtomicBoolean();
+        Map<String, byte[]> changedClasses = new HashMap<>();
+
         Files.walk(classesDir).forEach(new Consumer<Path>() {
             @Override
             public void accept(Path path) {
-                if(done.get()) {
-                    return;
-                }
                 try {
+                    if(!path.toString().endsWith(".class")) {
+                        return;
+                    }
                     long lastModified = Files.getLastModifiedTime(path).toMillis();
-                    if(lastModified > lastChange) {
-                        done.set(true);
-                        lastChange = System.currentTimeMillis();
-                        RunMojoMain.restartApp();
+                    if (lastModified > lastChange) {
+                        String pathName = classesDir.relativize(path).toString();
+                        String className = pathName.substring(0, pathName.length() - 6).replace("/", ".");
+                        ByteArrayOutputStream out = new ByteArrayOutputStream();
+                        byte[] buf = new byte[1024];
+                        int r;
+                        try (FileInputStream in = new FileInputStream(path.toFile())) {
+                            while ((r = in.read(buf)) > 0) {
+                                out.write(buf, 0, r);
+                            }
+                            changedClasses.put(className, out.toByteArray());
+                        }
+
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         });
-        return done.get();
+        if (changedClasses.isEmpty()) {
+            return false;
+        }
+
+        lastChange = System.currentTimeMillis();
+        if (FAKEREPLACE_HANDLER == null) {
+            RunMojoMain.restartApp(false);
+        } else {
+            FAKEREPLACE_HANDLER.handle(changedClasses);
+            RunMojoMain.restartApp(true);
+        }
+
+        return true;
     }
 
     public static void displayErrorPage(HttpServerExchange exchange, final Throwable exception) throws IOException {
@@ -115,6 +156,33 @@ public class RuntimeUpdatesHandler implements HttpHandler {
             return "null";
         }
         return bodyText.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    interface UpdateHandler {
+
+        void handle(Map<String, byte[]> changed);
+
+    }
+
+    private static class FakereplaceHandler implements UpdateHandler {
+
+        @Override
+        public void handle(Map<String, byte[]> changed) {
+            ClassDefinition[] classes = new ClassDefinition[changed.size()];
+            int c = 0;
+            for (Map.Entry<String, byte[]> e : changed.entrySet()) {
+                ClassDefinition cd = null;
+                try {
+                    cd = new ClassDefinition(Class.forName(e.getKey(), false, RunMojoMain.getCurrentAppClassLoader()), e.getValue());
+                } catch (ClassNotFoundException e1) {
+                    //TODO: added classes
+                    throw new RuntimeException(e1);
+                }
+                classes[c++] = cd;
+
+            }
+            Fakereplace.redefine(classes, new AddedClass[0], true);
+        }
     }
 
 }

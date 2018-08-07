@@ -15,14 +15,19 @@ public class RunMojoMain {
 
     private static CountDownLatch awaitChangeLatch = null;
     private static CountDownLatch awaitRestartLatch = null;
+    private static volatile boolean keepCl = false;
+    private static volatile ClassLoader currentAppClassLoader;
 
     public static void main(String... args) throws Exception {
         //the path that contains the generated classes
         File classesRoot = new File(args[0]);
-
-        URLClassLoader runtimeCl = new URLClassLoader(new URL[]{classesRoot.toURL()}, ClassLoader.getSystemClassLoader());
-        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        URLClassLoader runtimeCl = null;
         do {
+            if (runtimeCl == null || !keepCl) {
+                runtimeCl = new URLClassLoader(new URL[]{classesRoot.toURL()}, ClassLoader.getSystemClassLoader());
+            }
+            currentAppClassLoader = runtimeCl;
+            ClassLoader old = Thread.currentThread().getContextClassLoader();
             //we can potentially throw away this class loader, and reload the app
             synchronized (RunMojoMain.class) {
                 awaitChangeLatch = new CountDownLatch(1);
@@ -48,7 +53,8 @@ public class RunMojoMain {
         } while (true);
     }
 
-    public static void restartApp() {
+    public static void restartApp(boolean keepClassloader) {
+        keepCl = keepClassloader;
         long time = System.currentTimeMillis();
         CountDownLatch restart = null;
         synchronized (RunMojoMain.class) {
@@ -68,4 +74,7 @@ public class RunMojoMain {
         }
     }
 
+    public static ClassLoader getCurrentAppClassLoader() {
+        return currentAppClassLoader;
+    }
 }

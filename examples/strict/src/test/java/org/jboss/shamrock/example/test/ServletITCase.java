@@ -29,7 +29,6 @@ public class ServletITCase {
     }
 
     @Test
-    @Ignore
     public void testStaticResource() throws Exception {
         URL uri = new URL("http://localhost:8080/index.html");
         URLConnection connection = uri.openConnection();

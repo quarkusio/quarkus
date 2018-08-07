@@ -1,4 +1,4 @@
-package org.jboss.shamrock.example;
+package org.jboss.shamrock.example.rest;
 
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.core.Application;

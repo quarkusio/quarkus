@@ -9,8 +9,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 
-@WebServlet(name = "MyServlet", urlPatterns = "/test")
-public class TestServlet extends HttpServlet {
+@WebServlet(name = "InjectionServlet", urlPatterns = "/injection")
+public class InjectionServlet extends HttpServlet {
 
     @Inject
     private MessageBean messageBean;

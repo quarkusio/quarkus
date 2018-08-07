@@ -11,11 +11,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(GraalTest.class)
-public class ServletITCase {
+public class ServletInjectionITCase {
 
     @Test
-    public void testServlet() throws Exception {
-        URL uri = new URL("http://localhost:8080/test");
+    public void testServletInjection() throws Exception {
+        URL uri = new URL("http://localhost:8080/injection");
         URLConnection connection = uri.openConnection();
         InputStream in = connection.getInputStream();
         byte[] buf = new byte[100];
@@ -25,19 +25,5 @@ public class ServletITCase {
             out.write(buf, 0, r);
         }
         Assert.assertEquals("A message", new String(out.toByteArray()));
-    }
-
-    @Test
-    public void testStaticResource() throws Exception {
-        URL uri = new URL("http://localhost:8080/index.html");
-        URLConnection connection = uri.openConnection();
-        InputStream in = connection.getInputStream();
-        byte[] buf = new byte[100];
-        int r;
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        while ((r = in.read(buf)) > 0) {
-            out.write(buf, 0, r);
-        }
-        Assert.assertTrue(new String(out.toByteArray()).contains("A HTML page"));
     }
 }

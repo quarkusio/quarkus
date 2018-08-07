@@ -19,6 +19,9 @@ At the time of writing Weld needs it and thus is not in the strict category.
 Strict contains one JPA entity that is here for the JPA core work.
 Please ignore.
 
+This deployment uses a 'war' packaging, but still results in the same output with a
+runnable jar and a native image.
+
 ### Permissive
 
 Permissive exercise all frameworks including the ones needing `-H:+ReportUnsupportedElementsAtRuntime`

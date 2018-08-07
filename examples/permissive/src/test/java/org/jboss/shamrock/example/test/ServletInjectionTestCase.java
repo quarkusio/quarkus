@@ -11,11 +11,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(ShamrockTest.class)
-public class ServletTestCase {
+public class ServletInjectionTestCase {
 
     @Test
-    public void testServlet() throws Exception {
-        URL uri = new URL("http://localhost:8080/test");
+    public void testInjectionIntoServlet() throws Exception {
+        URL uri = new URL("http://localhost:8080/injection");
         URLConnection connection = uri.openConnection();
         InputStream in = connection.getInputStream();
         byte[] buf = new byte[100];

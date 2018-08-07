@@ -5,13 +5,13 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 
-import org.jboss.shamrock.junit.GraalTest;
+import org.jboss.shamrock.junit.ShamrockTest;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-@RunWith(GraalTest.class)
-public class JaxRSITCase {
+@RunWith(ShamrockTest.class)
+public class JaxRSInjectionTestCase {
 
     @Test
     public void testJAXRS() throws Exception {
@@ -26,4 +26,5 @@ public class JaxRSITCase {
         }
         Assert.assertEquals("A message", new String(out.toByteArray()));
     }
+
 }

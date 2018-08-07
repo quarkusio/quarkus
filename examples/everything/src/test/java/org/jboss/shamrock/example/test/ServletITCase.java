@@ -7,7 +7,6 @@ import java.net.URLConnection;
 
 import org.jboss.shamrock.junit.GraalTest;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -29,7 +28,6 @@ public class ServletITCase {
     }
 
     @Test
-    @Ignore
     public void testStaticResource() throws Exception {
         URL uri = new URL("http://localhost:8080/index.html");
         URLConnection connection = uri.openConnection();

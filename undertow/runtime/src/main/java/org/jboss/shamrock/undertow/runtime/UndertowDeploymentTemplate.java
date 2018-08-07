@@ -10,6 +10,7 @@ import org.jboss.shamrock.runtime.StartupContext;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.resource.ClassPathResourceManager;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
@@ -45,8 +46,7 @@ public class UndertowDeploymentTemplate {
             };
         }
         d.setClassLoader(cl);
-        //should be fixed in Graal RC5
-        //d.setResourceManager(new ClassPathResourceManager(d.getClassLoader(), "META-INF/resources"));
+        d.setResourceManager(new ClassPathResourceManager(d.getClassLoader(), "META-INF/resources"));
         return d;
     }
 

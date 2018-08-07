@@ -23,7 +23,10 @@ import com.oracle.svm.core.annotate.TargetClass;
  * The class path is iterated at image build time, and any web resources have their content
  * length and last modified times stored in a Map.
  * <p>
- * This seems like a simple enough solution for
+ * This seems like a simple enough solution for now, but hopefully we can do something better in the future.
+ *
+ * Another possibility is just not supporting embedded resources, and requiring resources to be served from
+ * the file system (or extracted tmp dir)
  */
 @TargetClass(className = "io.undertow.server.handlers.resource.URLResource")
 final class URLResourceSubstitution {

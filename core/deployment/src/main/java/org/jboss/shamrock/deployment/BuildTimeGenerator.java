@@ -12,9 +12,6 @@ import static org.objectweb.asm.Opcodes.INVOKEINTERFACE;
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
-import static org.objectweb.asm.Opcodes.LLOAD;
-import static org.objectweb.asm.Opcodes.LSTORE;
-import static org.objectweb.asm.Opcodes.LSUB;
 import static org.objectweb.asm.Opcodes.NEW;
 import static org.objectweb.asm.Opcodes.PUTSTATIC;
 import static org.objectweb.asm.Opcodes.RETURN;
@@ -22,23 +19,19 @@ import static org.objectweb.asm.Opcodes.SWAP;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintStream;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -51,6 +44,7 @@ import org.jboss.shamrock.deployment.codegen.BytecodeRecorderImpl;
 import org.jboss.shamrock.deployment.index.IndexLoader;
 import org.jboss.shamrock.runtime.StartupContext;
 import org.jboss.shamrock.runtime.StartupTask;
+import org.jboss.shamrock.runtime.Timing;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -68,7 +62,6 @@ public class BuildTimeGenerator {
     public static final String MAIN_CLASS_INTERNAL = "org/jboss/shamrock/runner/GeneratedMain";
     public static final String MAIN_CLASS = MAIN_CLASS_INTERNAL.replace("/", ".");
     private static final String GRAAL_AUTOFEATURE = "org/jboss/shamrock/runner/AutoFeature";
-    private static final String STATIC_INIT_TIME = "STATIC_INIT_TIME";
     private static final String STARTUP_CONTEXT = "STARTUP_CONTEXT";
 
     private final List<ResourceProcessor> processors;
@@ -203,9 +196,9 @@ public class BuildTimeGenerator {
 
         @Override
         public void addReflectiveClass(boolean method, boolean fields, String... className) {
-            for(String cl : className) {
+            for (String cl : className) {
                 ReflectionInfo existing = reflectiveClasses.get(cl);
-                if(existing == null) {
+                if (existing == null) {
                     reflectiveClasses.put(cl, new ReflectionInfo(method, fields));
                 } else {
                     reflectiveClasses.put(cl, new ReflectionInfo(method || existing.methods, fields || existing.fields));
@@ -245,12 +238,10 @@ public class BuildTimeGenerator {
             mv.visitMaxs(0, 1);
             mv.visitEnd();
 
-            file.visitField(ACC_PUBLIC | ACC_STATIC, STATIC_INIT_TIME, "J", null, null);
             file.visitField(ACC_PUBLIC | ACC_STATIC, STARTUP_CONTEXT, "L" + Type.getInternalName(StartupContext.class) + ";", null, null);
 
             mv = file.visitMethod(ACC_PUBLIC | ACC_STATIC, "<clinit>", "()V", null, null);
-            mv.visitMethodInsn(INVOKESTATIC, Type.getInternalName(System.class), "currentTimeMillis", "()J", false);
-            mv.visitFieldInsn(PUTSTATIC, MAIN_CLASS_INTERNAL, STATIC_INIT_TIME, "J");
+            mv.visitMethodInsn(INVOKESTATIC, Type.getInternalName(Timing.class), "staticInitStarted", "()V", false);
             mv.visitTypeInsn(NEW, Type.getInternalName(StartupContext.class));
             mv.visitInsn(DUP);
             mv.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(StartupContext.class), "<init>", "()V", false);
@@ -271,8 +262,7 @@ public class BuildTimeGenerator {
             mv.visitEnd();
 
             mv = file.visitMethod(ACC_PUBLIC | ACC_STATIC, "main", "([Ljava/lang/String;)V", null, null);
-            mv.visitMethodInsn(INVOKESTATIC, Type.getInternalName(System.class), "currentTimeMillis", "()J", false);
-            mv.visitVarInsn(LSTORE, 2);
+            mv.visitMethodInsn(INVOKESTATIC, Type.getInternalName(Timing.class), "mainStarted", "()V", false);
             mv.visitFieldInsn(GETSTATIC, MAIN_CLASS_INTERNAL, STARTUP_CONTEXT, "L" + Type.getInternalName(StartupContext.class) + ";");
             for (DeploymentTaskHolder holder : tasks) {
                 mv.visitInsn(DUP);
@@ -285,30 +275,7 @@ public class BuildTimeGenerator {
             }
 
             //time since main start
-            mv.visitFieldInsn(GETSTATIC, Type.getInternalName(System.class), "out", "L" + Type.getInternalName(PrintStream.class) + ";");
-            mv.visitMethodInsn(INVOKESTATIC, Type.getInternalName(System.class), "currentTimeMillis", "()J", false);
-            mv.visitVarInsn(LLOAD, 2);
-            mv.visitInsn(LSUB);
-            mv.visitFieldInsn(GETSTATIC, Type.getInternalName(System.class), "out", "L" + Type.getInternalName(PrintStream.class) + ";");
-            mv.visitLdcInsn("Shamrock started in ");
-            mv.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(PrintStream.class), "print", "(Ljava/lang/String;)V", false);
-            mv.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(PrintStream.class), "print", "(J)V", false);
-            mv.visitFieldInsn(GETSTATIC, Type.getInternalName(System.class), "out", "L" + Type.getInternalName(PrintStream.class) + ";");
-            mv.visitLdcInsn("ms");
-            mv.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(PrintStream.class), "println", "(Ljava/lang/String;)V", false);
-
-            //time since static init started
-            mv.visitFieldInsn(GETSTATIC, Type.getInternalName(System.class), "out", "L" + Type.getInternalName(PrintStream.class) + ";");
-            mv.visitMethodInsn(INVOKESTATIC, Type.getInternalName(System.class), "currentTimeMillis", "()J", false);
-            mv.visitFieldInsn(GETSTATIC, MAIN_CLASS_INTERNAL, STATIC_INIT_TIME, "J");
-            mv.visitInsn(LSUB);
-            mv.visitFieldInsn(GETSTATIC, Type.getInternalName(System.class), "out", "L" + Type.getInternalName(PrintStream.class) + ";");
-            mv.visitLdcInsn("Time since static init started ");
-            mv.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(PrintStream.class), "print", "(Ljava/lang/String;)V", false);
-            mv.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(PrintStream.class), "print", "(J)V", false);
-            mv.visitFieldInsn(GETSTATIC, Type.getInternalName(System.class), "out", "L" + Type.getInternalName(PrintStream.class) + ";");
-            mv.visitLdcInsn("ms");
-            mv.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(PrintStream.class), "println", "(Ljava/lang/String;)V", false);
+            mv.visitMethodInsn(INVOKESTATIC, Type.getInternalName(Timing.class), "printStartupTime", "()V", false);
             mv.visitInsn(RETURN);
             mv.visitMaxs(0, 4);
             mv.visitEnd();
@@ -369,20 +336,20 @@ public class BuildTimeGenerator {
                 //now load everything else
                 mv.visitLdcInsn(entry.getKey());
                 mv.visitMethodInsn(INVOKESTATIC, "java/lang/Class", "forName", "(Ljava/lang/String;)Ljava/lang/Class;", false);
-                if(entry.getValue().methods) {
+                if (entry.getValue().methods) {
                     mv.visitInsn(DUP);
                 }
-                if(entry.getValue().fields) {
+                if (entry.getValue().fields) {
                     mv.visitInsn(DUP);
                 }
                 mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getDeclaredConstructors", "()[Ljava/lang/reflect/Constructor;", false);
                 mv.visitMethodInsn(INVOKESTATIC, "org/graalvm/nativeimage/RuntimeReflection", "register", "([Ljava/lang/reflect/Executable;)V", false);
                 //now load everything else
-                if(entry.getValue().methods) {
+                if (entry.getValue().methods) {
                     mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getDeclaredMethods", "()[Ljava/lang/reflect/Method;", false);
                     mv.visitMethodInsn(INVOKESTATIC, "org/graalvm/nativeimage/RuntimeReflection", "register", "([Ljava/lang/reflect/Executable;)V", false);
                 }
-                if(entry.getValue().fields) {
+                if (entry.getValue().fields) {
                     mv.visitMethodInsn(INVOKEVIRTUAL, "java/lang/Class", "getDeclaredFields", "()[Ljava/lang/reflect/Field;", false);
                     mv.visitMethodInsn(INVOKESTATIC, "org/graalvm/nativeimage/RuntimeReflection", "register", "([Ljava/lang/reflect/Field;)V", false);
                 }

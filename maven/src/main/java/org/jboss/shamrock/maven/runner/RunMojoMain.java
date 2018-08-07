@@ -8,6 +8,8 @@ import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 
+import org.jboss.shamrock.runtime.Timing;
+
 /**
  * The main entry point for the run mojo execution
  */
@@ -19,6 +21,7 @@ public class RunMojoMain {
     private static volatile ClassLoader currentAppClassLoader;
 
     public static void main(String... args) throws Exception {
+        Timing.staticInitStarted();
         //the path that contains the generated classes
         File classesRoot = new File(args[0]);
         URLClassLoader runtimeCl = null;
@@ -55,7 +58,7 @@ public class RunMojoMain {
 
     public static void restartApp(boolean keepClassloader) {
         keepCl = keepClassloader;
-        long time = System.currentTimeMillis();
+        Timing.restart();
         CountDownLatch restart = null;
         synchronized (RunMojoMain.class) {
             if (awaitChangeLatch != null) {
@@ -70,7 +73,6 @@ public class RunMojoMain {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            System.out.println("Shamrock restarted in " + (System.currentTimeMillis() - time) + "ms");
         }
     }
 

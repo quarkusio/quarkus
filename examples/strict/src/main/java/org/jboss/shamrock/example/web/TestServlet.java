@@ -1,4 +1,4 @@
-package org.jboss.shamrock.example;
+package org.jboss.shamrock.example.web;
 
 import java.io.IOException;
 

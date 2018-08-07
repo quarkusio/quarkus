@@ -1,4 +1,4 @@
-package org.jboss.shamrock.example;
+package org.jboss.shamrock.example.rest;
 
 import javax.json.Json;
 import javax.json.JsonObject;

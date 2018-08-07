@@ -27,6 +27,19 @@ public class ServletTestCase {
         Assert.assertEquals("A message", new String(out.toByteArray()));
     }
 
+    @Test
+    public void testFilter() throws Exception {
+        URL uri = new URL("http://localhost:8080/filter");
+        URLConnection connection = uri.openConnection();
+        InputStream in = connection.getInputStream();
+        byte[] buf = new byte[100];
+        int r;
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        while ((r = in.read(buf)) > 0) {
+            out.write(buf, 0, r);
+        }
+        Assert.assertEquals("A Filter", new String(out.toByteArray()));
+    }
 
     @Test
     public void testStaticResource() throws Exception {

@@ -1,5 +1,7 @@
 package org.jboss.shamrock.undertow;
 
+import static javax.servlet.DispatcherType.REQUEST;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -8,6 +10,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.security.DeclareRoles;
 import javax.annotation.security.RunAs;
 import javax.inject.Inject;
+import javax.servlet.Filter;
 import javax.servlet.Servlet;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.ServletSecurity;
@@ -60,6 +63,7 @@ import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
 import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate;
 
+import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.InstanceFactory;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.handlers.DefaultServlet;
@@ -98,7 +102,7 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
         try (BytecodeRecorder context = processorContext.addStaticInitTask(RuntimePriority.UNDERTOW_REGISTER_SERVLET)) {
             UndertowDeploymentTemplate template = context.getRecordingProxy(UndertowDeploymentTemplate.class);
 
-
+            //add servlets
             if (result.getServlets() != null) {
                 for (ServletMetaData servlet : result.getServlets()) {
                     processorContext.addReflectiveClass(false, false, servlet.getServletClass());
@@ -111,15 +115,48 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
                             factory);
                     if (servlet.getInitParam() != null) {
                         for (ParamValueMetaData init : servlet.getInitParam()) {
-                            template.addInitParam(sref, init.getParamName(), init.getParamValue());
+                            template.addServletInitParam(sref, init.getParamName(), init.getParamValue());
                         }
                     }
                 }
             }
+            //servlet mappings
             if (result.getServletMappings() != null) {
                 for (ServletMappingMetaData mapping : result.getServletMappings()) {
                     for (String m : mapping.getUrlPatterns()) {
                         template.addServletMapping(null, mapping.getServletName(), m);
+                    }
+                }
+            }
+            //filters
+            if (result.getFilters() != null) {
+                for (FilterMetaData filter : result.getFilters()) {
+                    processorContext.addReflectiveClass(false, false, filter.getFilterClass());
+                    InjectionInstance<? extends Filter> injection = (InjectionInstance<? extends Filter>) context.newInstanceFactory(filter.getFilterClass());
+                    InstanceFactory<? extends Filter> factory = template.createInstanceFactory(injection);
+                    AtomicReference<FilterInfo> sref = template.registerFilter(null,
+                            filter.getFilterName(),
+                            context.classProxy(filter.getFilterClass()),
+                            filter.isAsyncSupported(),
+                            factory);
+                    if (filter.getInitParam() != null) {
+                        for (ParamValueMetaData init : filter.getInitParam()) {
+                            template.addFilterInitParam(sref, init.getParamName(), init.getParamValue());
+                        }
+                    }
+                }
+            }
+            if (result.getFilterMappings() != null) {
+                for (FilterMappingMetaData mapping : result.getFilterMappings()) {
+                    for (String m : mapping.getUrlPatterns()) {
+                        if (mapping.getDispatchers() == null || mapping.getDispatchers().isEmpty()) {
+                            template.addFilterMapping(null, mapping.getFilterName(), m, REQUEST);
+                        } else {
+
+                            for (DispatcherType dispatcher : mapping.getDispatchers()) {
+                                template.addFilterMapping(null, mapping.getFilterName(), m, javax.servlet.DispatcherType.valueOf(dispatcher.name()));
+                            }
+                        }
                     }
                 }
             }

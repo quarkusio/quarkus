@@ -13,7 +13,7 @@
         <version.org.mariadb.jdbc>1.5.7</version.org.mariadb.jdbc>
         <version.com.impossibl.pgng>0.6</version.com.impossibl.pgng>
         <version.junit>4.12</version.junit>
-        <version.org.hibernate>5.4.0-SNAPSHOT</version.org.hibernate>
+        <version.org.hibernate>5.4.0-protean-SNAPSHOT</version.org.hibernate>
     </properties>
 
     <dependencyManagement>
@@ -45,7 +45,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.hibernate.protean</groupId>
+            <groupId>org.hibernate</groupId>
             <artifactId>hibernate-core</artifactId>
             <version>${version.org.hibernate}</version>
         </dependency>
@@ -147,7 +147,9 @@
                 <updatePolicy>never</updatePolicy>
             </releases>
             <snapshots>
-                <enabled>false</enabled>
+                <enabled>true</enabled>
+                <!-- 10 minutes. Or enforce refresh by using -U option to Maven -->
+                <updatePolicy>interval:10</updatePolicy>
             </snapshots>
         </repository>
     </repositories>

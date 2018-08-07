@@ -14,35 +14,7 @@ For Protean you can ignore the other scripts; focus on `graal-build-native.sh`.
 
 Some custom builds are needed as dependencies.
 
-### Patched Hibernate ORM
- 
-A build of https://github.com/protean-project/hibernate-orm
- 
-      > git clone git@github.com:protean-project/hibernate-orm.git
-      > cd hibernate-orm
-      > git checkout ProteanHacking
-      > ./gradlew clean publishToMavenLocal
-
- - N.B. the `ProteanHacking` branch.
- - Requires any JDK8+ to build it.
- 
- ### Patched PostgreSQL JDBC driver
- 
-     > git clone git@github.com:protean-project/pgjdbc.git
-     > cd pgjdbc
-     > mvn install -DskipTests
-
- - Tested at commit `d51c43888bf25a1f099f3a20fe98dad1d8926e0a`
- - Requires any JDK8+ to build it.
-
-### Graal annotations
-
-We need the Graal annotations `com.oracle.svm.core.annotate.Substitute`, `com.oracle.svm.core.annotate.TargetClass`, etc..
-
-These are found in the `svm-core.jar` from the substrate builds. Find the jar and install it in your local Maven repo with the following coordinates:
-
-    mvn install:install-file -Dfile=/wherever/graal/substratevm/mxbuild/dists/svm-core.jar -DgroupId=graal-local-builds -DartifactId=svm-core -Dversion=1.0.0-SNAPSHOT -Dpackaging=jar
-
+These will automatically be downloaded from the Protean Nexus, provided you have your credentials configured in your `~/.m2/settings.xml`: check your mail.
 
 # Test on SubstrateVM
 

@@ -56,7 +56,7 @@
         </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
+            <artifactId>postgresql-protean</artifactId>
             <version>${version.org.postgresql.jdbc}</version>
         </dependency>
         <dependency>

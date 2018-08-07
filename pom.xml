@@ -124,5 +124,45 @@
                 <updatePolicy>daily</updatePolicy>
             </snapshots>
         </repository>
+        <repository>
+            <id>protean-nexus-release</id>
+            <name>Temporary unreliable Nexus</name>
+            <url>http://sannelondon.noip.me/nexus/content/repositories/releases/</url>
+            <layout>default</layout>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>protean-nexus-snapshot</id>
+            <name>Temporary unreliable Nexus - Snapshots</name>
+            <url>http://sannelondon.noip.me/nexus/content/repositories/snapshots/</url>
+            <layout>default</layout>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
     </repositories>
+
+
+    <distributionManagement>
+        <repository>
+            <id>protean-nexus-release</id>
+            <name>Temporary unreliable Nexus - Releases</name>
+            <url>http://sannelondon.noip.me/nexus/content/repositories/releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>protean-nexus-snapshot</id>
+            <name>Temporary unreliable Nexus - Snapshots</name>
+            <url>http://sannelondon.noip.me/nexus/content/repositories/snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
 </project>

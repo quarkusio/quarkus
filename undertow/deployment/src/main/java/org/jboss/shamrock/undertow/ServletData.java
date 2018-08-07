@@ -7,6 +7,7 @@ public class ServletData {
 
     private final String name;
     private final String servletClass;
+    private int loadOnStartup;
     private final List<String> mapings = new ArrayList<>();
 
     public ServletData(String name, String servletClass) {
@@ -24,5 +25,14 @@ public class ServletData {
 
     public List<String> getMapings() {
         return mapings;
+    }
+
+    public int getLoadOnStartup() {
+        return loadOnStartup;
+    }
+
+    public ServletData setLoadOnStartup(int loadOnStartup) {
+        this.loadOnStartup = loadOnStartup;
+        return this;
     }
 }

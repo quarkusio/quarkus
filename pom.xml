@@ -34,6 +34,7 @@
         <cdi-api.version>2.0</cdi-api.version>
         <fakereplace.version>1.0.0.Alpha7</fakereplace.version>
         <hibernate.version>5.3.3.Final</hibernate.version>
+        <jboss-metadata-web.version>11.0.0.Final</jboss-metadata-web.version>
     </properties>
 
     <modules>
@@ -232,6 +233,11 @@
                 <groupId>org.jboss.invocation</groupId>
                 <artifactId>jboss-invocation</artifactId>
                 <version>${jboss-invocation.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.metadata</groupId>
+                <artifactId>jboss-metadata-web</artifactId>
+                <version>${jboss-metadata-web.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.resteasy</groupId>

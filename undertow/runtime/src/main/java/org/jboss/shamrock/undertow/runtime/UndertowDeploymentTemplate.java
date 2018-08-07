@@ -1,5 +1,7 @@
 package org.jboss.shamrock.undertow.runtime;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 
@@ -54,12 +56,24 @@ public class UndertowDeploymentTemplate {
         return new ShamrockInstanceFactory<T>(injectionInstance);
     }
 
-    public void registerServlet(@ContextObject("deploymentInfo") DeploymentInfo info, String name, Class<?> servletClass, boolean asyncSupported, InstanceFactory<? extends Servlet> instanceFactory) throws Exception {
+    public AtomicReference<ServletInfo> registerServlet(@ContextObject("deploymentInfo") DeploymentInfo info,
+                                                        String name, Class<?> servletClass,
+                                                        boolean asyncSupported,
+                                                        int loadOnStartup,
+                                                        InstanceFactory<? extends Servlet> instanceFactory) throws Exception {
         ServletInfo servletInfo = new ServletInfo(name, (Class<? extends Servlet>) servletClass, instanceFactory);
-        servletInfo.setLoadOnStartup(1);
         info.addServlet(servletInfo);
         servletInfo.setAsyncSupported(asyncSupported);
+        if(loadOnStartup > 0) {
+            servletInfo.setLoadOnStartup(loadOnStartup);
+        }
+        return new AtomicReference<>(servletInfo);
     }
+
+    public void addInitParam(AtomicReference<ServletInfo> info, String name, String value) {
+        info.get().addInitParam(name, value);
+    }
+
 
     public void addServletMapping(@ContextObject("deploymentInfo") DeploymentInfo info, String name, String mapping) throws Exception {
         ServletInfo sv = info.getServlets().get(name);

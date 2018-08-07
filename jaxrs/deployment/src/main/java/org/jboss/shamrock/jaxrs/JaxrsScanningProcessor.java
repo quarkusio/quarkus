@@ -105,7 +105,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
             UndertowDeploymentTemplate undertow = recorder.getRecordingProxy(UndertowDeploymentTemplate.class);
             InjectionInstance<? extends Servlet> instanceFactory = (InjectionInstance<? extends Servlet>) recorder.newInstanceFactory(HttpServlet30Dispatcher.class.getName());
             InstanceFactory<? extends Servlet> factory = undertow.createInstanceFactory(instanceFactory);
-            undertow.registerServlet(null, JAX_RS_SERVLET_NAME, recorder.classProxy(HttpServlet30Dispatcher.class.getName()), true, factory);
+            undertow.registerServlet(null, JAX_RS_SERVLET_NAME, recorder.classProxy(HttpServlet30Dispatcher.class.getName()), true, 1, factory);
             undertow.addServletMapping(null, JAX_RS_SERVLET_NAME, path + "/*");
             Collection<AnnotationInstance> paths = index.getAnnotations(PATH);
             if (paths != null) {

@@ -41,7 +41,14 @@ public interface ProcessorContext {
      */
     void addReflectiveClass(boolean methods, boolean fields, String... className);
 
-    void addGeneratedClass(String name, byte[] classData) throws IOException;
+    /**
+     *
+     * @param applicationClass If this class should be loaded by the application class loader when in runtime mode
+     * @param name The class name
+     * @param classData The class bytes
+     * @throws IOException
+     */
+    void addGeneratedClass(boolean applicationClass, String name, byte[] classData) throws IOException;
 
     /**
      * Adds a bytecode transformer that can transform application classes.

@@ -207,8 +207,8 @@ public class BuildTimeGenerator {
         }
 
         @Override
-        public void addGeneratedClass(String name, byte[] classData) throws IOException {
-            output.writeClass(name, classData);
+        public void addGeneratedClass(boolean applicationClass, String name, byte[] classData) throws IOException {
+            output.writeClass(applicationClass, name, classData);
         }
 
         @Override
@@ -290,7 +290,7 @@ public class BuildTimeGenerator {
 
             file.visitEnd();
 
-            output.writeClass(MAIN_CLASS_INTERNAL, file.toByteArray());
+            output.writeClass(true, MAIN_CLASS_INTERNAL, file.toByteArray());
         }
 
         void writeAutoFeature() throws IOException {
@@ -362,7 +362,7 @@ public class BuildTimeGenerator {
             mv.visitEnd();
             file.visitEnd();
 
-            output.writeClass(GRAAL_AUTOFEATURE, file.toByteArray());
+            output.writeClass(true, GRAAL_AUTOFEATURE, file.toByteArray());
         }
 
     }

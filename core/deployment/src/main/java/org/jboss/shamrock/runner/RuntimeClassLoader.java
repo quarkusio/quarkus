@@ -3,8 +3,15 @@ package org.jboss.shamrock.runner;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.AccessController;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
+import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,6 +24,8 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 
+import sun.misc.Unsafe;
+
 public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Consumer<List<Function<String, Function<ClassVisitor, ClassVisitor>>>> {
 
     private final Map<String, byte[]> classes = new HashMap<>();
@@ -24,6 +33,37 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Cons
     private volatile List<Function<String, Function<ClassVisitor, ClassVisitor>>> functions = null;
 
     private final Path applicationClasses;
+
+    private static java.lang.reflect.Method defineClass1, defineClass2;
+
+    static {
+        try {
+            AccessController.doPrivileged(new PrivilegedExceptionAction<Object>() {
+                public Object run() throws Exception {
+                    Class<?> cl = Class.forName("java.lang.ClassLoader");
+                    final String name = "defineClass";
+
+                    // get Unsafe singleton instance
+                    Field singleoneInstanceField = Unsafe.class.getDeclaredField("theUnsafe");
+                    singleoneInstanceField.setAccessible(true);
+                    Unsafe theUnsafe = (Unsafe) singleoneInstanceField.get(null);
+
+                    // get the offset of the override field in AccessibleObject
+                    long overrideOffset = theUnsafe.objectFieldOffset(AccessibleObject.class.getDeclaredField("override"));
+
+                    defineClass1 = cl.getDeclaredMethod(name, new Class[]{String.class, byte[].class, int.class, int.class});
+                    defineClass2 = cl.getDeclaredMethod(name, new Class[]{String.class, byte[].class, int.class, int.class, ProtectionDomain.class});
+
+                    // make both accessible
+                    theUnsafe.putBoolean(defineClass1, overrideOffset, true);
+                    theUnsafe.putBoolean(defineClass2, overrideOffset, true);
+                    return null;
+                }
+            });
+        } catch (PrivilegedActionException pae) {
+            throw new RuntimeException("cannot initialize ClassPool", pae.getException());
+        }
+    }
 
     public RuntimeClassLoader(ClassLoader parent, Path applicationClasses) {
         super(parent);
@@ -95,12 +135,40 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Cons
     }
 
     @Override
-    public void writeClass(String className, byte[] data) {
-        classes.put(className.replace('/', '.'), data);
+    public void writeClass(boolean applicationClass, String className, byte[] data) {
+        if (applicationClass) {
+            classes.put(className.replace('/', '.'), data);
+        } else {
+            toClass(className, data, getParent());
+        }
     }
 
     @Override
     public void accept(List<Function<String, Function<ClassVisitor, ClassVisitor>>> functions) {
         this.functions = functions;
     }
+
+
+    static Class<?> toClass(String name, byte[] data, ClassLoader loader) {
+        try {
+            java.lang.reflect.Method method;
+            Object[] args;
+            method = defineClass1;
+            args = new Object[]{name, data, 0, data.length};
+            return toClass2(method, loader, args);
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (java.lang.reflect.InvocationTargetException e) {
+            throw new RuntimeException(e.getTargetException());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    static synchronized Class<?> toClass2(Method method, ClassLoader loader, Object[] args) throws Exception {
+        Class<?> clazz = Class.class.cast(method.invoke(loader, args));
+        return clazz;
+    }
+
+
 }

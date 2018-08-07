@@ -14,6 +14,6 @@ public interface ClassOutput {
      * @param data      The bytecode bytes
      * @throws IOException If the class cannot be written
      */
-    void writeClass(String className, byte[] data) throws IOException;
+    void writeClass(boolean applicationClass, String className, byte[] data) throws IOException;
 
 }

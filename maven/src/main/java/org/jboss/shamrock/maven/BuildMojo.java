@@ -161,7 +161,7 @@ public class BuildMojo extends AbstractMojo {
             URLClassLoader runnerClassLoader = new URLClassLoader(cpCopy.toArray(new URL[0]), getClass().getClassLoader());
             BuildTimeGenerator buildTimeGenerator = new BuildTimeGenerator(new ClassOutput() {
                 @Override
-                public void writeClass(String className, byte[] data) throws IOException {
+                public void writeClass(boolean applicationClass, String className, byte[] data) throws IOException {
                     String location = className.replace('.', '/');
                     File file = new File(wiringClassesDirectory, location + ".class");
                     file.getParentFile().mkdirs();

@@ -358,7 +358,7 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
         ca.aload(0);
         ca.invokespecial(Object.class.getName(), "<init>", "()V");
         ca.returnInstruction();
-        classOutput.writeClass(file.getName(), file.toBytecode());
+        classOutput.writeClass(true, file.getName(), file.toBytecode());
     }
 
     public interface BytecodeInstruction {

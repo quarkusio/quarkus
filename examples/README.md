@@ -19,9 +19,9 @@ At the time of writing Weld needs it and thus is not in the strict category.
 Strict contains one JPA entity that is here for the JPA core work.
 Please ignore.
 
-### Everything
+### Permissive
 
-Everything exercise all frameworks including the ones needing `-H:+ReportUnsupportedElementsAtRuntime`
+Permissive exercise all frameworks including the ones needing `-H:+ReportUnsupportedElementsAtRuntime`
 
 ### Class transformer
 

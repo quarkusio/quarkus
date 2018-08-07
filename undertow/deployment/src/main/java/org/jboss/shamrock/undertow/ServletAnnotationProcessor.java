@@ -4,6 +4,7 @@ import static javax.servlet.DispatcherType.REQUEST;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EventListener;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -118,6 +119,9 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
                             template.addServletInitParam(sref, init.getParamName(), init.getParamValue());
                         }
                     }
+                    if(servlet.getMultipartConfig() != null) {
+                        template.setMultipartConfig(sref, servlet.getMultipartConfig().getLocation(), servlet.getMultipartConfig().getMaxFileSize(), servlet.getMultipartConfig().getMaxRequestSize(), servlet.getMultipartConfig().getFileSizeThreshold());
+                    }
                 }
             }
             //servlet mappings
@@ -158,6 +162,16 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
                             }
                         }
                     }
+                }
+            }
+
+            //listeners
+            if (result.getListeners() != null) {
+                for (ListenerMetaData listener : result.getListeners()) {
+                    processorContext.addReflectiveClass(false, false, listener.getListenerClass());
+                    InjectionInstance<? extends EventListener> injection = (InjectionInstance<? extends EventListener>) context.newInstanceFactory(listener.getListenerClass());
+                    InstanceFactory<? extends EventListener> factory = template.createInstanceFactory(injection);
+                    template.registerListener(null, context.classProxy(listener.getListenerClass()), factory);
                 }
             }
 

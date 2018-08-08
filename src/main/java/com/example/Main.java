@@ -29,12 +29,12 @@ public class Main {
 		entityManagerFactory.close();
 		System.out.println( "Hibernate EntityManagerFactory: shut down" );
 
-		try {
-			int read = System.in.read();
-		}
-		catch (IOException e) {
-			e.printStackTrace();
-		}
+//		try {
+//			int read = System.in.read();
+//		}
+//		catch (IOException e) {
+//			e.printStackTrace();
+//		}
 	}
 
 	private static void doStuffWithHibernate(EntityManagerFactory entityManagerFactory) {

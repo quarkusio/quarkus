@@ -29,7 +29,6 @@
             <property name="hibernate.hbm2ddl.auto" value="none"/>
 
             <property name="javax.persistence.validation.mode" value="NONE"/>
-            <property name="hibernate.service.allow_crawling" value="false"/>
         </properties>
 
     </persistence-unit>

@@ -8,6 +8,10 @@
       "allPublicConstructors" : true
    },
    {
+      "name" : "org.hibernate.id.enhanced.SequenceStyleGenerator",
+      "allPublicConstructors" : true
+   },
+   {
       "name" : "org.hibernate.dialect.PostgreSQL95Dialect",
       "allPublicConstructors" : true
    },

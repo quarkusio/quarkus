@@ -28,7 +28,8 @@ import sun.misc.Unsafe;
 
 public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Consumer<List<Function<String, Function<ClassVisitor, ClassVisitor>>>> {
 
-    private final Map<String, byte[]> classes = new HashMap<>();
+    private final Map<String, byte[]> appClasses = new HashMap<>();
+    private final Map<String, byte[]> frameworkClasses = new HashMap<>();
 
     private volatile List<Function<String, Function<ClassVisitor, ClassVisitor>>> functions = null;
 
@@ -76,9 +77,13 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Cons
         if (ex != null) {
             return ex;
         }
-        if (classes.containsKey(name)) {
+        if (appClasses.containsKey(name)) {
             return findClass(name);
         }
+        if(frameworkClasses.containsKey(name)) {
+            return toClass(name, frameworkClasses.get(name), getParent());
+        }
+
         String fileName = name.replace(".", "/") + ".class";
         Path classLoc = applicationClasses.resolve(fileName);
         if (Files.exists(classLoc)) {
@@ -127,7 +132,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Cons
 
     @Override
     protected Class<?> findClass(String name) throws ClassNotFoundException {
-        byte[] bytes = classes.get(name);
+        byte[] bytes = appClasses.get(name);
         if (bytes == null) {
             throw new ClassNotFoundException();
         }
@@ -137,9 +142,9 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Cons
     @Override
     public void writeClass(boolean applicationClass, String className, byte[] data) {
         if (applicationClass) {
-            classes.put(className.replace('/', '.'), data);
+            appClasses.put(className.replace('/', '.'), data);
         } else {
-            toClass(className, data, getParent());
+            appClasses.put(className.replace('/', '.'), data);
         }
     }
 
@@ -169,6 +174,5 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Cons
         Class<?> clazz = Class.class.cast(method.invoke(loader, args));
         return clazz;
     }
-
 
 }

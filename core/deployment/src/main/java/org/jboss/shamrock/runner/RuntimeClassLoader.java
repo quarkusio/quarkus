@@ -2,6 +2,7 @@ package org.jboss.shamrock.runner;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Field;
@@ -14,8 +15,10 @@ import java.security.PrivilegedExceptionAction;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -29,42 +32,11 @@ import sun.misc.Unsafe;
 public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Consumer<List<Function<String, Function<ClassVisitor, ClassVisitor>>>> {
 
     private final Map<String, byte[]> appClasses = new HashMap<>();
-    private final Map<String, byte[]> frameworkClasses = new HashMap<>();
+    private final Set<String> frameworkClasses = new HashSet<>();
 
     private volatile List<Function<String, Function<ClassVisitor, ClassVisitor>>> functions = null;
 
     private final Path applicationClasses;
-
-    private static java.lang.reflect.Method defineClass1, defineClass2;
-
-    static {
-        try {
-            AccessController.doPrivileged(new PrivilegedExceptionAction<Object>() {
-                public Object run() throws Exception {
-                    Class<?> cl = Class.forName("java.lang.ClassLoader");
-                    final String name = "defineClass";
-
-                    // get Unsafe singleton instance
-                    Field singleoneInstanceField = Unsafe.class.getDeclaredField("theUnsafe");
-                    singleoneInstanceField.setAccessible(true);
-                    Unsafe theUnsafe = (Unsafe) singleoneInstanceField.get(null);
-
-                    // get the offset of the override field in AccessibleObject
-                    long overrideOffset = theUnsafe.objectFieldOffset(AccessibleObject.class.getDeclaredField("override"));
-
-                    defineClass1 = cl.getDeclaredMethod(name, new Class[]{String.class, byte[].class, int.class, int.class});
-                    defineClass2 = cl.getDeclaredMethod(name, new Class[]{String.class, byte[].class, int.class, int.class, ProtectionDomain.class});
-
-                    // make both accessible
-                    theUnsafe.putBoolean(defineClass1, overrideOffset, true);
-                    theUnsafe.putBoolean(defineClass2, overrideOffset, true);
-                    return null;
-                }
-            });
-        } catch (PrivilegedActionException pae) {
-            throw new RuntimeException("cannot initialize ClassPool", pae.getException());
-        }
-    }
 
     public RuntimeClassLoader(ClassLoader parent, Path applicationClasses) {
         super(parent);
@@ -80,8 +52,8 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Cons
         if (appClasses.containsKey(name)) {
             return findClass(name);
         }
-        if(frameworkClasses.containsKey(name)) {
-            return toClass(name, frameworkClasses.get(name), getParent());
+        if(frameworkClasses.contains(name)) {
+            return super.loadClass(name, resolve);
         }
 
         String fileName = name.replace(".", "/") + ".class";
@@ -144,7 +116,21 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Cons
         if (applicationClass) {
             appClasses.put(className.replace('/', '.'), data);
         } else {
-            appClasses.put(className.replace('/', '.'), data);
+            //this is pretty horrible
+            //basically we add the framework level classes to the file system
+            //in the same dir as the actual app classes
+            //however as we add them to the frameworkClasses set we know to load them
+            //from the parent CL
+            frameworkClasses.add(className.replace('/', '.'));
+            Path fileName = applicationClasses.resolve(className.replace(".", "/") + ".class");
+            try {
+                Files.createDirectories(fileName.getParent());
+                try(FileOutputStream out = new FileOutputStream(fileName.toFile())) {
+                    out.write(data);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -152,27 +138,4 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Cons
     public void accept(List<Function<String, Function<ClassVisitor, ClassVisitor>>> functions) {
         this.functions = functions;
     }
-
-
-    static Class<?> toClass(String name, byte[] data, ClassLoader loader) {
-        try {
-            java.lang.reflect.Method method;
-            Object[] args;
-            method = defineClass1;
-            args = new Object[]{name, data, 0, data.length};
-            return toClass2(method, loader, args);
-        } catch (RuntimeException e) {
-            throw e;
-        } catch (java.lang.reflect.InvocationTargetException e) {
-            throw new RuntimeException(e.getTargetException());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    static synchronized Class<?> toClass2(Method method, ClassLoader loader, Object[] args) throws Exception {
-        Class<?> clazz = Class.class.cast(method.invoke(loader, args));
-        return clazz;
-    }
-
 }

@@ -27,11 +27,13 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -42,6 +44,7 @@ import org.jboss.shamrock.deployment.buildconfig.BuildConfig;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorderImpl;
 import org.jboss.shamrock.deployment.index.IndexLoader;
+import org.jboss.shamrock.runtime.ResourceHelper;
 import org.jboss.shamrock.runtime.StartupContext;
 import org.jboss.shamrock.runtime.StartupTask;
 import org.jboss.shamrock.runtime.Timing;
@@ -52,6 +55,13 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+
+import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.description.type.TypeDefinition;
+import net.bytebuddy.description.type.TypeDescription;
+import net.bytebuddy.dynamic.scaffold.InstrumentedType;
+import net.bytebuddy.implementation.Implementation;
+import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
 
 /**
  * Class that does the build time processing
@@ -137,7 +147,7 @@ public class BuildTimeGenerator {
                 }
             }
             processorContext.writeMainClass();
-            processorContext.writeAutoFeature();
+            processorContext.writeReflectionAutoFeature();
         } finally {
             Thread.currentThread().setContextClassLoader(old);
         }
@@ -179,6 +189,7 @@ public class BuildTimeGenerator {
         private final List<DeploymentTaskHolder> tasks = new ArrayList<>();
         private final List<DeploymentTaskHolder> staticInitTasks = new ArrayList<>();
         private final Map<String, ReflectionInfo> reflectiveClasses = new LinkedHashMap<>();
+        private final Set<String> resources = new HashSet<>();
 
         @Override
         public BytecodeRecorder addStaticInitTask(int priority) {
@@ -214,6 +225,11 @@ public class BuildTimeGenerator {
         @Override
         public void addByteCodeTransformer(Function<String, Function<ClassVisitor, ClassVisitor>> visitorFunction) {
             bytecodeTransformers.add(visitorFunction);
+        }
+
+        @Override
+        public void addResource(String name) {
+            resources.add(name);
         }
 
         void writeMainClass() throws IOException {
@@ -293,7 +309,7 @@ public class BuildTimeGenerator {
             output.writeClass(true, MAIN_CLASS_INTERNAL, file.toByteArray());
         }
 
-        void writeAutoFeature() throws IOException {
+        void writeReflectionAutoFeature() throws IOException {
 
             ClassWriter file = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
             file.visit(Opcodes.V1_8, ACC_PUBLIC | ACC_SUPER, GRAAL_AUTOFEATURE, null, Type.getInternalName(Object.class), new String[]{"org/graalvm/nativeimage/Feature"});
@@ -310,6 +326,12 @@ public class BuildTimeGenerator {
 
             mv = file.visitMethod(ACC_PUBLIC, "beforeAnalysis", "(Lorg/graalvm/nativeimage/Feature$BeforeAnalysisAccess;)V", null, null);
 
+            //TODO: at some point we are going to need to break this up, as if it get too big it will hit the method size limit
+
+            for(String i : resources) {
+                mv.visitLdcInsn(i);
+                mv.visitMethodInsn(INVOKESTATIC, Type.getInternalName(ResourceHelper.class), "registerResources", "(Ljava/lang/String;)V", false);
+            }
 
             for (Map.Entry<String, ReflectionInfo> entry : reflectiveClasses.entrySet()) {
                 Label lTryBlockStart = new Label();

@@ -72,7 +72,6 @@ public class NativeImageMojo extends AbstractMojo {
             }
             command.add("-jar");
             command.add(finalName + "-runner.jar");
-            command.add("-H:IncludeResources=META-INF/resources/.*");
             if (reportErrorsAtRuntime) {
                 command.add("-H:+ReportUnsupportedElementsAtRuntime");
             }

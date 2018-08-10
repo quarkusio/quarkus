@@ -2,11 +2,15 @@ package org.jboss.shamrock.undertow;
 
 import static javax.servlet.DispatcherType.REQUEST;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EventListener;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import javax.annotation.security.DeclareRoles;
 import javax.annotation.security.RunAs;
@@ -69,7 +73,7 @@ import io.undertow.servlet.api.InstanceFactory;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.handlers.DefaultServlet;
 
-public class ServletAnnotationProcessor implements ResourceProcessor {
+public class ServletResourceProcessor implements ResourceProcessor {
 
 
     private static final DotName webFilter = DotName.createSimple(WebFilter.class.getName());
@@ -79,7 +83,6 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
     private static final DotName declareRoles = DotName.createSimple(DeclareRoles.class.getName());
     private static final DotName multipartConfig = DotName.createSimple(MultipartConfig.class.getName());
     private static final DotName servletSecurity = DotName.createSimple(ServletSecurity.class.getName());
-
 
     @Inject
     private ShamrockConfig config;
@@ -92,6 +95,8 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
 
         processorContext.addReflectiveClass(false, false, DefaultServlet.class.getName());
         processorContext.addReflectiveClass(false, false, "io.undertow.server.protocol.http.HttpRequestParser$$generated");
+
+        handleResources(archiveContext, processorContext);
 
         try (BytecodeRecorder context = processorContext.addStaticInitTask(RuntimePriority.UNDERTOW_CREATE_DEPLOYMENT)) {
             UndertowDeploymentTemplate template = context.getRecordingProxy(UndertowDeploymentTemplate.class);
@@ -197,6 +202,20 @@ public class ServletAnnotationProcessor implements ResourceProcessor {
         try (BytecodeRecorder context = processorContext.addDeploymentTask(RuntimePriority.UNDERTOW_START)) {
             UndertowDeploymentTemplate template = context.getRecordingProxy(UndertowDeploymentTemplate.class);
             template.startUndertow(null, null, config.getConfig("http.port", "8080"));
+        }
+    }
+
+    private void handleResources(ArchiveContext archiveContext, ProcessorContext processorContext) throws IOException {
+        Path resources = archiveContext.getArchiveRoot().resolve("META-INF/resources");
+        if(Files.exists(resources)) {
+            Files.walk(resources).forEach(new Consumer<Path>() {
+                @Override
+                public void accept(Path path) {
+                    if(!Files.isDirectory(path)) {
+                        processorContext.addResource(archiveContext.getArchiveRoot().relativize(path).toString());
+                    }
+                }
+            });
         }
     }
 

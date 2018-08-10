@@ -59,4 +59,11 @@ public interface ProcessorContext {
      * At present these transformations are only applied to application classes, not classes provided by dependencies
      */
     void addByteCodeTransformer(Function<String, Function<ClassVisitor, ClassVisitor>> visitorFunction);
+
+    /**
+     * Adds a resource to the image that will be accessible when running under substrate.
+     *
+     * @param name The resource path
+     */
+    void addResource(String name);
 }

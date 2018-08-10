@@ -10,13 +10,17 @@ import javax.persistence.spi.PersistenceProvider;
 import javax.persistence.spi.PersistenceUnitInfo;
 import javax.persistence.spi.ProviderUtil;
 
+import org.hibernate.boot.registry.BootstrapServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistry;
+import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.dialect.Dialect;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.hibernate.jpa.internal.util.PersistenceUtilHelper;
 import org.hibernate.protean.impl.serviceregistry.PreconfiguredServiceRegistryBuilder;
+import org.hibernate.protean.recording.RecordedState;
 
 import org.jboss.logging.Logger;
 
@@ -125,18 +129,21 @@ final class FastbootHibernateProvider implements PersistenceProvider  {
 				continue;
 			}
 
-			MetadataImplementor metadata = PersistenceUnitsHolder.getMetadata( persistenceUnitName );
-			//TODO:
-			final Map<String,Object> configurationValues = Collections.emptyMap();
+			RecordedState rs = PersistenceUnitsHolder.getMetadata( persistenceUnitName );
+
+			final Dialect dialect = rs.getDialect();
+			final MetadataImplementor metadata = rs.getFullMeta();
+
+			final Map<String,Object> configurationValues = rs.getConfigurationProperties();
 			//TODO:
 			final Object validatorFactory = null;
 			//TODO:
 			final Object cdiBeanManager = null;
 
+			StandardServiceRegistry standardServiceRegistry = rewireMetadataAndExtractServiceRegistry( configurationValues, rs );
 
-			StandardServiceRegistry standardServiceRegistry = buildPreconfiguredServiceRegistry( configurationValues );
-
-			return new FastBootEntityManagerFactoryBuilder( metadata, persistenceUnitName, standardServiceRegistry,
+			return new FastBootEntityManagerFactoryBuilder( metadata /*Uses the StandardServiceRegistry references by this!*/,
+															persistenceUnitName, standardServiceRegistry /*Mostly ignored! (yet needs to match)*/,
 															configurationValues,
 															validatorFactory,
 															cdiBeanManager
@@ -147,15 +154,20 @@ final class FastbootHibernateProvider implements PersistenceProvider  {
 		return null;
 	}
 
-	private StandardServiceRegistry buildPreconfiguredServiceRegistry(Map<String,Object> configurationValues) {
-		PreconfiguredServiceRegistryBuilder serviceRegistryBuilder = new PreconfiguredServiceRegistryBuilder();
+	private StandardServiceRegistry rewireMetadataAndExtractServiceRegistry(
+			Map<String, Object> configurationValues,
+			RecordedState rs) {
+		PreconfiguredServiceRegistryBuilder serviceRegistryBuilder = new PreconfiguredServiceRegistryBuilder( rs );
 		configurationValues.forEach( (key, value) -> {
 			serviceRegistryBuilder.applySetting( key, value );
 		} );
 		//TODO serviceRegistryBuilder.addInitiator(  )
 		//TODO serviceRegistryBuilder.applyIntegrator(  )
 		//TODO serviceregistryBuilder.addService(  )
-		return serviceRegistryBuilder.buildNewServiceRegistry();
+
+
+		StandardServiceRegistryImpl standardServiceRegistry = serviceRegistryBuilder.buildNewServiceRegistry();
+		return standardServiceRegistry;
 	}
 
 	private boolean isProvider(PersistenceUnitDescriptor persistenceUnit) {

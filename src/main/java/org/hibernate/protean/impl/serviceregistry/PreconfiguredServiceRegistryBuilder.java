@@ -1,26 +1,22 @@
 package org.hibernate.protean.impl.serviceregistry;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.hibernate.boot.cfgxml.internal.CfgXmlAccessServiceInitiator;
 import org.hibernate.boot.registry.BootstrapServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.internal.BootstrapServiceRegistryImpl;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
+import org.hibernate.boot.registry.selector.internal.StrategySelectorImpl;
 import org.hibernate.cache.internal.RegionFactoryInitiator;
 import org.hibernate.engine.config.internal.ConfigurationServiceInitiator;
 import org.hibernate.engine.jdbc.batch.internal.BatchBuilderInitiator;
 import org.hibernate.engine.jdbc.connections.internal.ConnectionProviderInitiator;
 import org.hibernate.engine.jdbc.connections.internal.MultiTenantConnectionProviderInitiator;
 import org.hibernate.engine.jdbc.cursor.internal.RefCursorSupportInitiator;
-import org.hibernate.engine.jdbc.dialect.internal.DialectFactoryInitiator;
-import org.hibernate.engine.jdbc.dialect.internal.DialectResolverInitiator;
-import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator;
 import org.hibernate.engine.jdbc.internal.JdbcServicesInitiator;
 import org.hibernate.engine.jndi.internal.JndiServiceInitiator;
 import org.hibernate.engine.transaction.jta.platform.internal.JtaPlatformInitiator;
@@ -35,10 +31,11 @@ import org.hibernate.persister.internal.PersisterClassResolverInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
 import org.hibernate.protean.impl.FlatClassLoaderService;
+import org.hibernate.protean.recording.RecordedState;
+import org.hibernate.protean.recording.customservices.CfgXmlAccessServiceInitiatorProtean;
 import org.hibernate.resource.beans.spi.ManagedBeanRegistryInitiator;
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.Service;
-import org.hibernate.service.StandardServiceInitiators;
 import org.hibernate.service.internal.ProvidedService;
 import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitiator;
 import org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractorInitiator;
@@ -58,11 +55,16 @@ public class PreconfiguredServiceRegistryBuilder {
 	private static final EntityManagerMessageLogger LOG = messageLogger( PreconfiguredServiceRegistryBuilder.class );
 
 	private final Map configurationValues = new HashMap();
-	private final List<StandardServiceInitiator> initiators = standardInitiatorList();
+	private final List<StandardServiceInitiator> initiators;
 	private final List<ProvidedService> providedServices = new ArrayList<ProvidedService>();
 	private final MirroringIntegratorService integrators = new MirroringIntegratorService();
+	private final StandardServiceRegistryImpl destroyedRegistry;
 
-	public PreconfiguredServiceRegistryBuilder() {
+	public PreconfiguredServiceRegistryBuilder(RecordedState rs) {
+		this.initiators = buildProteanServiceInitiatorList( rs );
+		this.destroyedRegistry = (StandardServiceRegistryImpl) rs.getFullMeta()
+				.getMetadataBuildingOptions()
+				.getServiceRegistry();
 	}
 
 	public PreconfiguredServiceRegistryBuilder applySetting(String settingName, Object value) {
@@ -85,8 +87,8 @@ public class PreconfiguredServiceRegistryBuilder {
 		return this;
 	}
 
-	public StandardServiceRegistry buildNewServiceRegistry() {
-		final BootstrapServiceRegistry bootstrapServiceRegistry = buildBootstrapServiceRegistry();
+	public StandardServiceRegistryImpl buildNewServiceRegistry() {
+		final BootstrapServiceRegistry bootstrapServiceRegistry = buildEmptyBootstrapServiceRegistry();
 
 		//Can skip, it's only deprecated stuff:
 		//applyServiceContributingIntegrators( bootstrapServiceRegistry );
@@ -98,37 +100,33 @@ public class PreconfiguredServiceRegistryBuilder {
 		settingsCopy.putAll( configurationValues );
 		ConfigurationHelper.resolvePlaceHolders( settingsCopy );
 
-		return new StandardServiceRegistryImpl(
-				true,
-				bootstrapServiceRegistry,
-				initiators,
-				providedServices,
-				settingsCopy
-		);
+		destroyedRegistry.resetAndReactivate( bootstrapServiceRegistry, initiators, providedServices, settingsCopy );
+		return destroyedRegistry;
+
+//		return new StandardServiceRegistryImpl(
+//				true,
+//				bootstrapServiceRegistry,
+//				initiators,
+//				providedServices,
+//				settingsCopy
+//		);
 	}
 
-	private BootstrapServiceRegistry buildBootstrapServiceRegistry() {
+	private BootstrapServiceRegistry buildEmptyBootstrapServiceRegistry() {
 
 		//N.B. support for custom IntegratorProvider injected via Properties (as instance) removed
 
 		//N.B. support for custom StrategySelector is not implemented yet: see MirroringStrategySelector
 
+		final StrategySelectorImpl strategySelector = new StrategySelectorImpl( FlatClassLoaderService.INSTANCE );
+
 		return new BootstrapServiceRegistryImpl(
 				true,
 				FlatClassLoaderService.INSTANCE,
-				new MirroringStrategySelector(),
+				strategySelector, //new MirroringStrategySelector(),
 				integrators
 		);
 	}
-
-	private static List<StandardServiceInitiator> standardInitiatorList() {
-		//Override initiatior List? Some need to be replaced, e.g. ConnectionProviderInitiator, DialectResolverInitiator,
-		final List<StandardServiceInitiator> initiators = new ArrayList<StandardServiceInitiator>(
-				StandardServiceInitiators.LIST.size() );
-		initiators.addAll( StandardServiceInitiators.LIST );
-		return initiators;
-	}
-
 
 	/**
 	 * Modified copy from org.hibernate.service.StandardServiceInitiators#buildStandardServiceInitiatorList
@@ -136,18 +134,29 @@ public class PreconfiguredServiceRegistryBuilder {
 	 * N.B. not to be confused with org.hibernate.service.internal.StandardSessionFactoryServiceInitiators#buildStandardServiceInitiatorList()
 	 * @return
 	 */
-	private static List<StandardServiceInitiator> buildStandardServiceInitiatorList() {
+	private static List<StandardServiceInitiator> buildProteanServiceInitiatorList(RecordedState rs) {
 		final ArrayList<StandardServiceInitiator> serviceInitiators = new ArrayList<StandardServiceInitiator>();
 
-		//Harmless yet pointless
-		serviceInitiators.add( CfgXmlAccessServiceInitiator.INSTANCE );
+		//Replaces org.hibernate.boot.cfgxml.internal.CfgXmlAccessServiceInitiator : not used
+		//(Original disabled)
+		serviceInitiators.add( CfgXmlAccessServiceInitiatorProtean.INSTANCE );
+
+		//Useful as-is
 		serviceInitiators.add( ConfigurationServiceInitiator.INSTANCE );
+
+		// TODO (optional): assume entities are already enhanced?
 		serviceInitiators.add( PropertyAccessStrategyResolverInitiator.INSTANCE );
 
+		// TODO (optional): not a priority
 		serviceInitiators.add( ImportSqlCommandExtractorInitiator.INSTANCE );
+
+
+		// TODO disable?
 		serviceInitiators.add( SchemaManagementToolInitiator.INSTANCE );
 
-		serviceInitiators.add( JdbcEnvironmentInitiator.INSTANCE );
+		//Replaces JdbcEnvironmentInitiator.INSTANCE :
+		serviceInitiators.add( new ProteanJdbcEnvironmentInitiator( rs.getDialect() ) );
+
 		serviceInitiators.add( JndiServiceInitiator.INSTANCE );
 		serviceInitiators.add( JmxServiceInitiator.INSTANCE );
 
@@ -156,8 +165,13 @@ public class PreconfiguredServiceRegistryBuilder {
 
 		serviceInitiators.add( ConnectionProviderInitiator.INSTANCE );
 		serviceInitiators.add( MultiTenantConnectionProviderInitiator.INSTANCE );
-		serviceInitiators.add( DialectResolverInitiator.INSTANCE );
-		serviceInitiators.add( DialectFactoryInitiator.INSTANCE );
+
+		//Disabled: Dialect is injected explicitly
+		//serviceInitiators.add( DialectResolverInitiator.INSTANCE );
+
+		//Disabled: Dialect is injected explicitly
+		//serviceInitiators.add( DialectFactoryInitiator.INSTANCE );
+
 		serviceInitiators.add( BatchBuilderInitiator.INSTANCE );
 		serviceInitiators.add( JdbcServicesInitiator.INSTANCE );
 		serviceInitiators.add( RefCursorSupportInitiator.INSTANCE );
@@ -177,9 +191,7 @@ public class PreconfiguredServiceRegistryBuilder {
 		serviceInitiators.add( ManagedBeanRegistryInitiator.INSTANCE );
 
 		serviceInitiators.trimToSize();
-
-		return Collections.unmodifiableList( serviceInitiators );
+		return serviceInitiators;
 	}
-
 
 }

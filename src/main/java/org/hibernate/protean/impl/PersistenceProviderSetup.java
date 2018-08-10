@@ -1,7 +1,5 @@
 package org.hibernate.protean.impl;
 
-import javax.persistence.spi.PersistenceProviderResolverHolder;
-
 public final class PersistenceProviderSetup {
 
 	private PersistenceProviderSetup() {
@@ -9,6 +7,7 @@ public final class PersistenceProviderSetup {
 	}
 
 	public static void registerPersistenceProvider() {
-		PersistenceProviderResolverHolder.setPersistenceProviderResolver( new PPResolver() );
+		javax.persistence.spi.PersistenceProviderResolverHolder.setPersistenceProviderResolver( new PPResolver() );
 	}
+
 }

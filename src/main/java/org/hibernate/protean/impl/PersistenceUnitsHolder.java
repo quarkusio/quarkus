@@ -7,12 +7,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import javax.persistence.PersistenceException;
 
-import org.hibernate.boot.spi.MetadataImplementor;
-import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
-import org.hibernate.jpa.boot.spi.Bootstrap;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
+import org.hibernate.protean.recording.RecordedState;
 
 final class PersistenceUnitsHolder {
 
@@ -23,8 +21,8 @@ final class PersistenceUnitsHolder {
 	private static PUStatus builderPuStatus() {
 		final List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors = loadOriginalXMLParsedDescriptors();
 		final List<PersistenceUnitDescriptor> units = convertPersistenceUnits( parsedPersistenceXmlDescriptors );
-		final Map<String,MetadataImplementor> metadata = constructMetadataAdvance( parsedPersistenceXmlDescriptors );
-		return new PUStatus(units, metadata);
+		final Map<String,RecordedState> metadata = constructMetadataAdvance( parsedPersistenceXmlDescriptors );
+		return new PUStatus( units, metadata );
 	}
 
 	private static List<PersistenceUnitDescriptor> convertPersistenceUnits(final List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors) {
@@ -46,10 +44,10 @@ final class PersistenceUnitsHolder {
 		return PersistenceXmlParser.locatePersistenceUnits( configurationOverrides );
 	}
 
-	private static Map<String,MetadataImplementor> constructMetadataAdvance(final List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors) {
+	private static Map<String,RecordedState> constructMetadataAdvance(final List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors) {
 		Map all = new HashMap(  );
 		for ( PersistenceUnitDescriptor unit : parsedPersistenceXmlDescriptors ) {
-			MetadataImplementor m = createMetadata( unit );
+			RecordedState m = createMetadata( unit );
 			Object previous = all.put( unitName( unit ), m );
 			if ( previous != null ) {
 				throw new IllegalStateException( "Duplicate persistence unit name: " + unit.getName() );
@@ -58,7 +56,7 @@ final class PersistenceUnitsHolder {
 		return all;
 	}
 
-	static MetadataImplementor getMetadata(String persistenceUnitName) {
+	static RecordedState getMetadata(String persistenceUnitName) {
 		Object key = persistenceUnitName;
 		if ( persistenceUnitName == null ) {
 			key = NO_NAME_TOKEN;
@@ -74,10 +72,9 @@ final class PersistenceUnitsHolder {
 		return name;
 	}
 
-	private static MetadataImplementor createMetadata(PersistenceUnitDescriptor unit) {
+	private static RecordedState createMetadata(PersistenceUnitDescriptor unit) {
 		FastBootMetadataBuilder fastBootMetadataBuilder = new FastBootMetadataBuilder( unit );
-		MetadataImplementor mi = fastBootMetadataBuilder.build();
-		return mi;
+		return fastBootMetadataBuilder.build();
 	}
 
 	static List<PersistenceUnitDescriptor> getPersistenceUnitDescriptors() {
@@ -87,9 +84,9 @@ final class PersistenceUnitsHolder {
 	private static class PUStatus {
 
 		private final List<PersistenceUnitDescriptor> units;
-		private final Map<String, MetadataImplementor> metadata;
+		private final Map<String, RecordedState> metadata;
 
-		public PUStatus(final List<PersistenceUnitDescriptor> units, final Map<String, MetadataImplementor> metadata) {
+		public PUStatus(final List<PersistenceUnitDescriptor> units, final Map<String, RecordedState> metadata) {
 			this.units = units;
 			this.metadata = metadata;
 		}

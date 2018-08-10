@@ -1,6 +1,7 @@
 package org.hibernate.protean.impl.serviceregistry;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.Callable;
 
 import org.hibernate.boot.registry.selector.spi.StrategyCreator;
@@ -55,7 +56,7 @@ public class MirroringStrategySelector implements StrategySelector {
 
 	@Override
 	public <T> Collection<Class<? extends T>> getRegisteredStrategyImplementors(Class<T> aClass) {
-		return null;
+		return Collections.EMPTY_SET;
 	}
 
 }

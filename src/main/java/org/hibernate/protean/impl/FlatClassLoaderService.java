@@ -77,7 +77,7 @@ public class FlatClassLoaderService implements ClassLoaderService {
 		return services;
 	}
 
-	@Override
+	//@Override : not present on all tested branches!
 	public <T> T generateProxy(InvocationHandler handler, Class... interfaces) {
 		log.error( "Not implemented! generateProxy(InvocationHandler handler, Class... interfaces)" );
 		return null;

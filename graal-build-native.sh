@@ -24,7 +24,7 @@ rm com.example.Main
 
 echo "Starting native-image :"
 #--verbose --shared -ea -H:+ReportUnsupportedElementsAtRuntime -H:+PrintAnalysisCallTree -R:±LSRAOptimization -R:AnalysisSizeCutoff=8 -H:-RuntimeAssertions -H:+PrintImageElementSizes -H:+PrintImageHeapPartitionSizes -H:+PrintImageObjectTree -H:+PrintAnalysisCallTree -H:+ReportUnsupportedElementsAtRuntime
-timer native-image --no-server -O1 --verbose -H:IncludeResources=META-INF/services/.* -H:Kind=EXECUTABLE -H:ReflectionConfigurationFiles=reflectconfig.json -cp "$CLASSPATH":./target/classes com.example.Main com.example.Main
+timer native-image -g --no-server -O1 --verbose -H:IncludeResources=META-INF/services/.* -H:+PrintImageElementSizes -H:+PrintImageHeapPartitionSizes -H:+PrintImageObjectTree -H:+PrintAnalysisCallTree -H:ReflectionConfigurationFiles=reflectconfig.json -cp "$CLASSPATH":./target/classes com.example.Main com.example.Main
 
 echo ""
 echo "Disk size, before strip:"
@@ -42,3 +42,6 @@ timer ./com.example.Main -Xmx1M -Xmn1M
 
 # TODO check benefits of fully static binaries? Could seriously trim the base image?
 #ldd com.example.Main
+
+nm -t d -S --size-sort ./*.debug  | sort -k 4 | sed 's/\.[_a-zA-Z0-9<>$]*(.*//g' | sed 's/\.[a-zA-Z0-9$_]*$//g' | sed 's/\.[^\.]*\$.*$//g' | sort -k 4 | awk '{if (package != $4) {print subtotal/1024 "K " package; package=$4; subtotal=0} else {subtotal+=$2}}' | grep -v "0K " | sort -k1hr > reports/package-sizes.txt
+echo "Updated reports/package-sizes.txt"

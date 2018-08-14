@@ -11,9 +11,11 @@ target
 
 #Custom:
 com.example.Main
+com.example.Main.debug
 cp.txt
 *.log
 reports
+sources
 
 #jdeps:
 classdef.jsa

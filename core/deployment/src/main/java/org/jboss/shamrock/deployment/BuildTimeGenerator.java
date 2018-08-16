@@ -39,9 +39,7 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.Index;
-import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.shamrock.deployment.buildconfig.BuildConfig;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
@@ -81,15 +79,15 @@ public class BuildTimeGenerator {
 
     public BuildTimeGenerator(ClassOutput classOutput, ClassLoader cl, boolean useStaticInit) {
         this.useStaticInit = useStaticInit;
-        Iterator<ResourceProcessor> loader = ServiceLoader.load(ResourceProcessor.class, cl).iterator();
-        List<ResourceProcessor> processors = new ArrayList<>();
+        Iterator<ShamrockSetup> loader = ServiceLoader.load(ShamrockSetup.class, cl).iterator();
+        SetupContextImpl setupContext = new SetupContextImpl();
         while (loader.hasNext()) {
-            processors.add(loader.next());
+            loader.next().setup(setupContext);
         }
-        processors.sort(Comparator.comparingInt(ResourceProcessor::getPriority));
-        this.processors = Collections.unmodifiableList(processors);
+        setupContext.resourceProcessors.sort(Comparator.comparingInt(ResourceProcessor::getPriority));
+        this.processors = Collections.unmodifiableList(setupContext.resourceProcessors);
         this.output = classOutput;
-        this.injection = new DeploymentProcessorInjection(cl);
+        this.injection = new DeploymentProcessorInjection(setupContext.injectionProviders);
         this.classLoader = cl;
     }
 
@@ -147,7 +145,7 @@ public class BuildTimeGenerator {
                 processorContext.writeMainClass();
                 processorContext.writeReflectionAutoFeature();
             } finally {
-                for(ApplicationArchive archive : context.getAllApplicationArchives()) {
+                for (ApplicationArchive archive : context.getAllApplicationArchives()) {
                     try {
                         archive.close();
                     } catch (Exception e) {
@@ -307,7 +305,7 @@ public class BuildTimeGenerator {
 
             //TODO: at some point we are going to need to break this up, as if it get too big it will hit the method size limit
 
-            for(String i : resources) {
+            for (String i : resources) {
                 mv.visitLdcInsn(i);
                 mv.visitMethodInsn(INVOKESTATIC, Type.getInternalName(ResourceHelper.class), "registerResources", "(Ljava/lang/String;)V", false);
             }

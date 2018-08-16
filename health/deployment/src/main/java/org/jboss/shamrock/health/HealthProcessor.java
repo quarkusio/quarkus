@@ -11,8 +11,7 @@ import org.jboss.shamrock.undertow.ServletData;
 import org.jboss.shamrock.undertow.ServletDeployment;
 import org.jboss.shamrock.weld.deployment.WeldDeployment;
 
-public class HealthProcessor implements ResourceProcessor {
-
+class HealthProcessor implements ResourceProcessor {
 
     @Inject
     private WeldDeployment weldDeployment;

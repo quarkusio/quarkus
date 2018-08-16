@@ -1,24 +1,41 @@
 package org.jboss.shamrock.deployment;
 
 import java.nio.file.Path;
-import java.util.List;
+import java.util.Collection;
+import java.util.Set;
 
-import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexView;
 import org.jboss.shamrock.deployment.buildconfig.BuildConfig;
 
+/**
+ *
+ */
 public interface ArchiveContext {
 
+    ApplicationArchive getRootArchive();
+
     /**
-     * The combined index, which includes the current application as well as
-     * any indexed jars on the build path.
-     *
-     * @return
+     * @return A set of all application archives, excluding the root archive
      */
-    IndexView getIndex();
+    Collection<ApplicationArchive> getApplicationArchives();
 
-    Path getArchiveRoot();
+    /**
+     * @return A set of all application archives, including the root archive
+     */
+    Set<ApplicationArchive> getAllApplicationArchives();
 
+    /**
+     * @return An index of all the application archives
+     */
+    IndexView getCombinedIndex();
+
+    /**
+     * @return The configuration of the application
+     */
     BuildConfig getBuildConfig();
 
+    /**
+     * @return The complete set of deployment descriptors
+     */
+    Set<Path> getDescriptors(String descriptor);
 }

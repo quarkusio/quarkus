@@ -102,7 +102,7 @@ public class ServletResourceProcessor implements ResourceProcessor {
             UndertowDeploymentTemplate template = context.getRecordingProxy(UndertowDeploymentTemplate.class);
             template.createDeployment("test");
         }
-        final IndexView index = archiveContext.getIndex();
+        final IndexView index = archiveContext.getCombinedIndex();
         WebMetaData result = processAnnotations(index);
 
         try (BytecodeRecorder context = processorContext.addStaticInitTask(RuntimePriority.UNDERTOW_REGISTER_SERVLET)) {
@@ -206,13 +206,13 @@ public class ServletResourceProcessor implements ResourceProcessor {
     }
 
     private void handleResources(ArchiveContext archiveContext, ProcessorContext processorContext) throws IOException {
-        Path resources = archiveContext.getArchiveRoot().resolve("META-INF/resources");
-        if(Files.exists(resources)) {
+        Path resources = archiveContext.getRootArchive().getChildPath("META-INF/resources");
+        if(resources != null) {
             Files.walk(resources).forEach(new Consumer<Path>() {
                 @Override
                 public void accept(Path path) {
                     if(!Files.isDirectory(path)) {
-                        processorContext.addResource(archiveContext.getArchiveRoot().relativize(path).toString());
+                        processorContext.addResource(archiveContext.getRootArchive().getArchiveRoot().relativize(path).toString());
                     }
                 }
             });

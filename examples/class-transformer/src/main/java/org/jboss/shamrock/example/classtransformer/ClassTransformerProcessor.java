@@ -32,7 +32,7 @@ public class ClassTransformerProcessor implements ResourceProcessor {
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
         final Set<String> pathAnnotatedClasses = new HashSet<>();
 
-        Collection<AnnotationInstance> annotations = archiveContext.getIndex().getAnnotations(PATH);
+        Collection<AnnotationInstance> annotations = archiveContext.getCombinedIndex().getAnnotations(PATH);
         for (AnnotationInstance a : annotations) {
             if (a.target().kind() == AnnotationTarget.Kind.CLASS) {
                 pathAnnotatedClasses.add(a.target().asClass().toString());

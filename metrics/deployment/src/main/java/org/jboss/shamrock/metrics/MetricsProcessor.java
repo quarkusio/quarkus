@@ -76,7 +76,7 @@ public class MetricsProcessor implements ResourceProcessor {
 
             metrics.createRegistries(null);
 
-            IndexView index = archiveContext.getIndex();
+            IndexView index = archiveContext.getCombinedIndex();
             Collection<AnnotationInstance> annos = index.getAnnotations(DotName.createSimple(Counted.class.getName()));
 
             for (AnnotationInstance anno : annos) {

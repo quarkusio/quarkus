@@ -24,7 +24,7 @@ public class WeldAnnotationProcessor implements ResourceProcessor {
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
         //make config injectable
         weldDeployment.addAdditionalBean(ConfigProducer.class);
-        IndexView index = archiveContext.getIndex();
+        IndexView index = archiveContext.getCombinedIndex();
         try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.WELD_DEPLOYMENT)) {
             WeldDeploymentTemplate template = recorder.getRecordingProxy(WeldDeploymentTemplate.class);
             SeContainerInitializer init = template.createWeld();

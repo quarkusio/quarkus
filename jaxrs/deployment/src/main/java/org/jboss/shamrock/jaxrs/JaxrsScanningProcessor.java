@@ -90,7 +90,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
         //provider to work
         processorContext.addReflectiveClass(true, false,"org.glassfish.json.JsonProviderImpl", "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector");
 
-        IndexView index = archiveContext.getIndex();
+        IndexView index = archiveContext.getCombinedIndex();
         Collection<AnnotationInstance> app = index.getAnnotations(APPLICATION_PATH);
         if (app.isEmpty()) {
             return;

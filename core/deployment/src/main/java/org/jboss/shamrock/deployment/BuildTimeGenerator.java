@@ -36,14 +36,17 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.jboss.jandex.CompositeIndex;
+import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.shamrock.deployment.buildconfig.BuildConfig;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorderImpl;
-import org.jboss.shamrock.deployment.index.IndexLoader;
+import org.jboss.shamrock.deployment.index.ApplicationArchiveLoader;
 import org.jboss.shamrock.runtime.ResourceHelper;
 import org.jboss.shamrock.runtime.StartupContext;
 import org.jboss.shamrock.runtime.StartupTask;
@@ -56,17 +59,12 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
-import net.bytebuddy.ByteBuddy;
-import net.bytebuddy.description.type.TypeDefinition;
-import net.bytebuddy.description.type.TypeDescription;
-import net.bytebuddy.dynamic.scaffold.InstrumentedType;
-import net.bytebuddy.implementation.Implementation;
-import net.bytebuddy.implementation.bytecode.ByteCodeAppender;
-
 /**
  * Class that does the build time processing
  */
 public class BuildTimeGenerator {
+
+    private static final Logger log = Logger.getLogger(BuildTimeGenerator.class.getName());
 
     private static final AtomicInteger COUNT = new AtomicInteger();
     public static final String MAIN_CLASS_INTERNAL = "org/jboss/shamrock/runner/GeneratedMain";
@@ -131,54 +129,35 @@ public class BuildTimeGenerator {
                     return FileVisitResult.CONTINUE;
                 }
             });
-            List<IndexView> composite = new ArrayList<>();
-            composite.add(indexer.complete());
-            composite.addAll(IndexLoader.scanForOtherIndexes(classLoader, config));
+            Index appIndex = indexer.complete();
+            List<ApplicationArchive> applicationArchives = ApplicationArchiveLoader.scanForOtherIndexes(classLoader, config);
 
 
-            ArchiveContext context = new ArchiveContextImpl(CompositeIndex.create(composite), root, config);
+            ArchiveContext context = new ArchiveContextImpl(new ApplicationArchiveImpl(appIndex, root, null), applicationArchives, config);
             ProcessorContextImpl processorContext = new ProcessorContextImpl();
-            for (ResourceProcessor processor : processors) {
-                try {
-                    injection.injectClass(processor);
-                    processor.process(context, processorContext);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+            try {
+                for (ResourceProcessor processor : processors) {
+                    try {
+                        injection.injectClass(processor);
+                        processor.process(context, processorContext);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                processorContext.writeMainClass();
+                processorContext.writeReflectionAutoFeature();
+            } finally {
+                for(ApplicationArchive archive : context.getAllApplicationArchives()) {
+                    try {
+                        archive.close();
+                    } catch (Exception e) {
+                        log.log(Level.SEVERE, "Failed to close archive " + archive.getArchiveRoot(), e);
+                    }
                 }
             }
-            processorContext.writeMainClass();
-            processorContext.writeReflectionAutoFeature();
         } finally {
             Thread.currentThread().setContextClassLoader(old);
-        }
-    }
 
-
-    private static class ArchiveContextImpl implements ArchiveContext {
-
-        private final IndexView index;
-        private final Path root;
-        private final BuildConfig buildConfig;
-
-        private ArchiveContextImpl(IndexView index, Path root, BuildConfig buildConfig) {
-            this.index = index;
-            this.root = root;
-            this.buildConfig = buildConfig;
-        }
-
-        @Override
-        public IndexView getIndex() {
-            return index;
-        }
-
-        @Override
-        public Path getArchiveRoot() {
-            return root;
-        }
-
-        @Override
-        public BuildConfig getBuildConfig() {
-            return buildConfig;
         }
     }
 

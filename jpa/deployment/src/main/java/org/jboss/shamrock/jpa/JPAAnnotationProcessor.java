@@ -35,7 +35,7 @@ public class JPAAnnotationProcessor implements ResourceProcessor {
 
         // list all entities and create a JPADeploymentTemplate out of it
         // Not functional as we will need one deployment template per persistence unit
-        final IndexView index = archiveContext.getIndex();
+        final IndexView index = archiveContext.getCombinedIndex();
         // TODO what priority to give JPA?
         try (BytecodeRecorder context = processorContext.addStaticInitTask(100)) {
             JPADeploymentTemplate template = context.getRecordingProxy(JPADeploymentTemplate.class);

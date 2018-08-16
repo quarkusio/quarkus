@@ -33,6 +33,7 @@ import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInit
 import org.hibernate.protean.impl.FlatClassLoaderService;
 import org.hibernate.protean.recording.RecordedState;
 import org.hibernate.protean.recording.customservices.CfgXmlAccessServiceInitiatorProtean;
+import org.hibernate.protean.recording.customservices.ProteanJtaPlatformResolver;
 import org.hibernate.resource.beans.spi.ManagedBeanRegistryInitiator;
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.Service;
@@ -179,8 +180,10 @@ public class PreconfiguredServiceRegistryBuilder {
 		serviceInitiators.add( QueryTranslatorFactoryInitiator.INSTANCE );
 		serviceInitiators.add( MutableIdentifierGeneratorFactoryInitiator.INSTANCE);
 
-		serviceInitiators.add( JtaPlatformResolverInitiator.INSTANCE );
-		serviceInitiators.add( JtaPlatformInitiator.INSTANCE );
+		//Replaces JtaPlatformResolverInitiator.INSTANCE );
+		serviceInitiators.add( new ProteanJtaPlatformResolver( rs.getJtaPlatform() ) );
+		//Disabled:
+		//serviceInitiators.add( JtaPlatformInitiator.INSTANCE );
 
 		serviceInitiators.add( SessionFactoryServiceRegistryFactoryInitiator.INSTANCE );
 

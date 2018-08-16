@@ -4,15 +4,22 @@ import java.util.Map;
 
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.dialect.Dialect;
+import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform;
 
 public final class RecordedState {
 
 	private final Dialect dialect;
 	private final MetadataImplementor fullMeta;
-	private Map<String, Object> cfg;
+	private final JtaPlatform jtaPlatform;
+	private final Map<String, Object> cfg;
 
-	public RecordedState(Dialect dialect, MetadataImplementor fullMeta, Map<String, Object> cfg) {
+	public RecordedState(
+			Dialect dialect,
+			JtaPlatform jtaPlatform,
+			MetadataImplementor fullMeta,
+			Map<String, Object> cfg) {
 		this.dialect = dialect;
+		this.jtaPlatform = jtaPlatform;
 		this.fullMeta = fullMeta;
 		this.cfg = cfg;
 	}
@@ -29,4 +36,7 @@ public final class RecordedState {
 		return cfg;
 	}
 
+	public JtaPlatform getJtaPlatform() {
+		return jtaPlatform;
+	}
 }

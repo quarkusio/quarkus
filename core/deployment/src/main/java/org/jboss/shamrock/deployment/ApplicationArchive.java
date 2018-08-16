@@ -22,6 +22,9 @@ public interface ApplicationArchive extends Closeable {
 
     /**
      *
+     * Returns a path representing the archive root. Note that if this is a jar archive this is not the path to the
+     * jar, but rather a path to the root of the mounted {@link com.sun.nio.zipfs.ZipFileSystem}
+     *
      * @return The archive root.
      */
     Path getArchiveRoot();

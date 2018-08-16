@@ -20,22 +20,20 @@ public class WeldAnnotationProcessor implements ResourceProcessor {
     @Inject
     private WeldDeployment weldDeployment;
 
+    @Inject
+    private BeanArchiveIndex beanArchiveIndex;
+
     @Override
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
-        //make config injectable
         weldDeployment.addAdditionalBean(ConfigProducer.class);
-        IndexView index = archiveContext.getCombinedIndex();
+        IndexView index = beanArchiveIndex.getIndex();
         try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.WELD_DEPLOYMENT)) {
             WeldDeploymentTemplate template = recorder.getRecordingProxy(WeldDeploymentTemplate.class);
             SeContainerInitializer init = template.createWeld();
             for (ClassInfo cl : index.getKnownClasses()) {
                 String name = cl.name().toString();
-                //TODO: massive hack
-                //the runtime runner picks up the classes created by the maven plugin
-                if (!name.startsWith("org.jboss.shamrock.deployment") && !name.startsWith("org.jboss.shamrock.runner")) {
-                    template.addClass(init, recorder.classProxy(name));
-                    processorContext.addReflectiveClass(true, true, name);
-                }
+                template.addClass(init, recorder.classProxy(name));
+                processorContext.addReflectiveClass(true, true, name);
             }
             for (Class<?> clazz : weldDeployment.getAdditionalBeans()) {
                 template.addClass(init, clazz);

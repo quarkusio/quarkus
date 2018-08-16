@@ -267,13 +267,20 @@ mode, however there are some differences. The two basic modes are:
 Build time configuration is provided by `shamrock-build.yaml`. At the moment the only options present relate to indexing,
 however this will probably be expanded over time.    
     
-### Indexing
+### Indexing and Application Classes
+
+Shamrock has the concept of 'application classes'. These are classes that should be indexed via jandex, and acted on
+via deployment processors.
 
 By default only the classes in the current application are indexed, however it is possible to include additional classes.
 
 Note that at the moment loading pre-computed indexes is not supported, and likely is out of scope of the PoC.
 
-Two different mechanisms are provided to do this, both of them configured in `shamrock-build.yaml`. 
+Three different mechanisms are provided to do this. The most common one will be to define application marker files.
+If any of these files are discovered on the class path then the archive that contains these files will be considered
+an application class. The most common of these marker files will be `META-IND/beans.xml`. 
+ 
+There are two different configuration based approaches both of them configured in `shamrock-build.yaml`. 
 
 *   `index-dependencies`
     This key must contain a list of maven artifacts, in either group:artifact or group:artifact:classifier format. If an 

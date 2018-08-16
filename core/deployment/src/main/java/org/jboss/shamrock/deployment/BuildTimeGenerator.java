@@ -76,6 +76,7 @@ public class BuildTimeGenerator {
     private final ClassLoader classLoader;
     private final boolean useStaticInit;
     private final List<Function<String, Function<ClassVisitor, ClassVisitor>>> bytecodeTransformers = new ArrayList<>();
+    private final Set<String> applicationArchiveMarkers;
 
     public BuildTimeGenerator(ClassOutput classOutput, ClassLoader cl, boolean useStaticInit) {
         this.useStaticInit = useStaticInit;
@@ -89,6 +90,7 @@ public class BuildTimeGenerator {
         this.output = classOutput;
         this.injection = new DeploymentProcessorInjection(setupContext.injectionProviders);
         this.classLoader = cl;
+        this.applicationArchiveMarkers = new HashSet<>(setupContext.applicationArchiveMarkers);
     }
 
     public List<Function<String, Function<ClassVisitor, ClassVisitor>>> getBytecodeTransformers() {
@@ -128,7 +130,7 @@ public class BuildTimeGenerator {
                 }
             });
             Index appIndex = indexer.complete();
-            List<ApplicationArchive> applicationArchives = ApplicationArchiveLoader.scanForOtherIndexes(classLoader, config);
+            List<ApplicationArchive> applicationArchives = ApplicationArchiveLoader.scanForOtherIndexes(classLoader, config, applicationArchiveMarkers, root);
 
 
             ArchiveContext context = new ArchiveContextImpl(new ApplicationArchiveImpl(appIndex, root, null), applicationArchives, config);

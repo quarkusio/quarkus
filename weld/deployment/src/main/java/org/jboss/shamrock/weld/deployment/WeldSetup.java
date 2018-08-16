@@ -8,6 +8,7 @@ public class WeldSetup implements ShamrockSetup {
     public void setup(SetupContext context) {
         context.addInjectionProvider(new WeldInjectionProvider());
         context.addResourceProcessor(new WeldAnnotationProcessor());
+        context.addResourceProcessor(new BeanArchiveProcessor());
         context.addApplicationArchiveMarker("META-INF/beans.xml");
         context.addApplicationArchiveMarker("META-INF/services/javax.enterprise.inject.spi.Extension");
     }

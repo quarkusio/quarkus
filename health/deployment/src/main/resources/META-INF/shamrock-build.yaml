@@ -1,4 +1,0 @@
-index-dependencies:
-  - "io.smallrye:smallrye-health"
-
-index-jar: false

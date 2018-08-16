@@ -1,6 +1,5 @@
 package org.jboss.shamrock.deployment;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -56,10 +55,5 @@ class ArchiveContextImpl implements ArchiveContext {
     @Override
     public BuildConfig getBuildConfig() {
         return buildConfig;
-    }
-
-    @Override
-    public Set<Path> getDescriptors(String descriptor) {
-        throw new RuntimeException("NYI: todo");
     }
 }

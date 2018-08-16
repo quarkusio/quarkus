@@ -8,13 +8,20 @@ import org.jboss.jandex.IndexView;
 import org.jboss.shamrock.deployment.buildconfig.BuildConfig;
 
 /**
- *
+ * Represents the input to the shamrock build process.
  */
 public interface ArchiveContext {
 
+    /**
+     * Returns an {@link ApplicationArchive} that represents the classes and resources that are part of the current
+     * project
+     *
+     * @return The root archive
+     */
     ApplicationArchive getRootArchive();
 
     /**
+     *
      * @return A set of all application archives, excluding the root archive
      */
     Collection<ApplicationArchive> getApplicationArchives();
@@ -34,8 +41,4 @@ public interface ArchiveContext {
      */
     BuildConfig getBuildConfig();
 
-    /**
-     * @return The complete set of deployment descriptors
-     */
-    Set<Path> getDescriptors(String descriptor);
 }

@@ -21,6 +21,7 @@ import org.jboss.shamrock.metrics.runtime.MetricsDeploymentTemplate;
 import org.jboss.shamrock.metrics.runtime.MetricsServlet;
 import org.jboss.shamrock.undertow.ServletData;
 import org.jboss.shamrock.undertow.ServletDeployment;
+import org.jboss.shamrock.weld.deployment.BeanArchiveIndex;
 import org.jboss.shamrock.weld.deployment.WeldDeployment;
 
 import io.smallrye.metrics.MetricProducer;
@@ -46,6 +47,9 @@ public class MetricsProcessor implements ResourceProcessor {
 
     @Inject
     private ServletDeployment servletDeployment;
+
+    @Inject
+    private BeanArchiveIndex beanArchiveIndex;
 
     @Override
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
@@ -76,7 +80,7 @@ public class MetricsProcessor implements ResourceProcessor {
 
             metrics.createRegistries(null);
 
-            IndexView index = archiveContext.getCombinedIndex();
+            IndexView index = beanArchiveIndex.getIndex();
             Collection<AnnotationInstance> annos = index.getAnnotations(DotName.createSimple(Counted.class.getName()));
 
             for (AnnotationInstance anno : annos) {

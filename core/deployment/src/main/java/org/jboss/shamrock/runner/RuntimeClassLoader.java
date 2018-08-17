@@ -37,6 +37,9 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Cons
     private volatile List<Function<String, Function<ClassVisitor, ClassVisitor>>> functions = null;
 
     private final Path applicationClasses;
+    static {
+        registerAsParallelCapable();
+    }
 
     public RuntimeClassLoader(ClassLoader parent, Path applicationClasses) {
         super(parent);

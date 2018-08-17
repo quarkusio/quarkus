@@ -60,6 +60,7 @@ public class RunMojo extends AbstractMojo {
                 args.add("-Djava.compiler=NONE");
                 args.add("-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y");
             }
+            args.add("-XX:TieredStopAtLevel=1");
             //build a class-path string for the base platform
             //this stuff does not change
             StringBuilder classPath = new StringBuilder();

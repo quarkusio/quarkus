@@ -31,15 +31,17 @@ import org.hibernate.type.Type;
 import org.hibernate.type.TypeResolver;
 import org.hibernate.type.spi.TypeConfiguration;
 
-public class SubstitutingMetadataImplementor implements MetadataImplementor {
+final class SubstitutingMetadataImplementor implements MetadataImplementor {
+
+	private final MetadataBuildingOptions metadataBuildingOptions;
 
 	public SubstitutingMetadataImplementor(MetadataImplementor fullMeta) {
-		fullMeta.validate();
+		metadataBuildingOptions = fullMeta.getMetadataBuildingOptions();
 	}
 
 	@Override
 	public MetadataBuildingOptions getMetadataBuildingOptions() {
-		return null;
+		return metadataBuildingOptions;
 	}
 
 	@Override

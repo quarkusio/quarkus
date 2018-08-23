@@ -12,3 +12,4 @@ bin
 dependency-reduced-pom.xml
 hotspot.log
 .directory
+.java-version

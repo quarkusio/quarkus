@@ -24,6 +24,10 @@
             <artifactId>jboss-classfilewriter</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.jboss.protean.gizmo</groupId>
+            <artifactId>gizmo</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.jboss</groupId>
             <artifactId>jandex</artifactId>
         </dependency>

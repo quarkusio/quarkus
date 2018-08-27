@@ -56,6 +56,7 @@
         <module>metrics</module>
         <module>examples</module>
         <module>jpa</module>
+        <module>gizmo</module>
     </modules>
     <build>
         <pluginManagement>
@@ -194,6 +195,12 @@
             <dependency>
                 <groupId>org.jboss.shamrock</groupId>
                 <artifactId>shamrock-jpa-runtime</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.jboss.protean.gizmo</groupId>
+                <artifactId>gizmo</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

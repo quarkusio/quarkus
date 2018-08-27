@@ -68,22 +68,6 @@ public class ResultHandle {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ResultHandle that = (ResultHandle) o;
-        return no == that.no &&
-                Objects.equals(type, that.type) &&
-                Objects.equals(owner, that.owner);
-    }
-
-    @Override
-    public int hashCode() {
-
-        return Objects.hash(no, type, owner);
-    }
-
-    @Override
     public String toString() {
         return "ResultHandle{" +
                 "no=" + no +

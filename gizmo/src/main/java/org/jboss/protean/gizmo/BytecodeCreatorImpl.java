@@ -405,6 +405,13 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
         }
         if (handle.getResultType() == ResultHandle.ResultType.SINGLE_USE) {
             //already on the stack
+            if (expectedType.length() > 1 && !handle.getType().equals(expectedType)) {
+                if (!dontCast) {
+                    if (!expectedType.equals("Ljava/lang/Object;")) {
+                        methodVisitor.visitTypeInsn(Opcodes.CHECKCAST, DescriptorUtils.getTypeStringFromDescriptorFormat(expectedType));
+                    }
+                }
+            }
             return;
         }
         if (handle.getType().equals("S") || handle.getType().equals("Z") || handle.getType().equals("I") || handle.getType().equals("B") || handle.getType().equals("B")) {
@@ -809,24 +816,21 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
     }
 
     void findActiveResultHandles(Set<ResultHandle> handlesToAllocate) {
+        Operation prev = null;
         for (int i = 0; i < operations.size(); ++i) {
             Operation op = operations.get(i);
-            Operation next = null;
-
-            if (i + 1 < operations.size()) {
-                next = operations.get(i + 1);
-            }
             Set<ResultHandle> toAdd = new HashSet<>(op.getInputResultHandles());
-            if (next != null &&
-                    next.getTopResultHandle() != null &&
-                    next.getTopResultHandle() == op.getOutgoingResultHandle()) {
-                toAdd.remove(op.getOutgoingResultHandle());
-                if(op.getOutgoingResultHandle().getResultType() == ResultHandle.ResultType.UNUSED) {
-                    op.getOutgoingResultHandle().markSingleUse();
+            if (prev != null &&
+                    prev.getOutgoingResultHandle() != null &&
+                    prev.getOutgoingResultHandle() == op.getTopResultHandle()) {
+                toAdd.remove(op.getTopResultHandle());
+                if(op.getTopResultHandle().getResultType() == ResultHandle.ResultType.UNUSED) {
+                    op.getTopResultHandle().markSingleUse();
                 }
             }
             handlesToAllocate.addAll(toAdd);
             op.findResultHandles(handlesToAllocate);
+            prev = op;
         }
     }
 

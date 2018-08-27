@@ -687,7 +687,7 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
 
         final String functionName = declaringClassName + FUNCTION + functionCount.incrementAndGet();
         ResultHandle ret = new ResultHandle(type, this);
-        ClassCreator cc = new ClassCreator(classOutput, functionName, Object.class, functionalInterface);
+        ClassCreator cc = ClassCreator.builder().classOutput(classOutput).className(functionName).interfaces(functionalInterface).build();
         MethodCreatorImpl mc = (MethodCreatorImpl) cc.getMethodCreator(functionMethod.getName(), functionMethod.getReturnType(), functionMethod.getParameterTypes());
         FunctionCreatorImpl fc = new FunctionCreatorImpl(ret, functionName, cc, mc, this);
         operations.add(new Operation() {

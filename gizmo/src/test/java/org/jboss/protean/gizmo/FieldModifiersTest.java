@@ -15,7 +15,7 @@ public class FieldModifiersTest {
     @Test
     public void testFieldModifiers() throws Exception {
         TestClassLoader cl = new TestClassLoader(getClass().getClassLoader());
-        try (ClassCreator creator = new ClassCreator(cl, "com/MyTest", Object.class)) {
+        try (ClassCreator creator = ClassCreator.builder().classOutput(cl).className("com.MyTest").build()) {
             creator.getFieldCreator("foo", DescriptorUtils.classToStringRepresentation(String.class));
             creator.getFieldCreator("list", DescriptorUtils.classToStringRepresentation(List.class)).setModifiers(ACC_FINAL | ACC_PROTECTED);
         }

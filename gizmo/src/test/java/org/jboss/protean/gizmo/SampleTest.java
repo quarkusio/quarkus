@@ -8,7 +8,7 @@ public class SampleTest {
     @Test
     public void testSimpleGetMessage() throws Exception {
         TestClassLoader cl = new TestClassLoader(getClass().getClassLoader());
-        try (ClassCreator creator = new ClassCreator(cl, "com/MyTest", Object.class, MyInterface.class)) {
+        try (ClassCreator creator = ClassCreator.builder().classOutput(cl).className("com.MyTest").interfaces(MyInterface.class).build()) {
             MethodCreator method = creator.getMethodCreator("transform", String.class, String.class);
             ResultHandle message = method.invokeStaticMethod(MethodDescriptor.ofMethod(MessageClass.class.getName(), "getMessage", "Ljava/lang/String;"));
             method.returnValue(message);
@@ -22,7 +22,7 @@ public class SampleTest {
     @Test
     public void testStringTransform() throws Exception {
         TestClassLoader cl = new TestClassLoader(getClass().getClassLoader());
-        try (ClassCreator creator = new ClassCreator(cl, "com/MyTest", Object.class, MyInterface.class)) {
+        try (ClassCreator creator = ClassCreator.builder().classOutput(cl).className("com.MyTest").interfaces(MyInterface.class).build()) {
             MethodCreator method = creator.getMethodCreator("transform", String.class, String.class);
             ResultHandle message = method.invokeStaticMethod(MethodDescriptor.ofMethod(MessageClass.class.getName(), "getMessage", "Ljava/lang/String;"));
             ResultHandle constant = method.load(":CONST:");
@@ -40,7 +40,7 @@ public class SampleTest {
     @Test
     public void testIfStatement() throws Exception {
         TestClassLoader cl = new TestClassLoader(getClass().getClassLoader());
-        try (ClassCreator creator = new ClassCreator(cl, "com/MyTest", Object.class, MyInterface.class)) {
+        try (ClassCreator creator = ClassCreator.builder().classOutput(cl).className("com.MyTest").interfaces(MyInterface.class).build()) {
             MethodCreator method = creator.getMethodCreator("transform", String.class, String.class);
             ResultHandle equalsResult = method.invokeVirtualMethod(MethodDescriptor.ofMethod(Object.class, "equals", boolean.class, Object.class), method.getMethodParam(0), method.load("TEST"));
             BranchResult branch = method.ifNonZero(equalsResult);

@@ -7,8 +7,11 @@ import static org.objectweb.asm.Opcodes.ALOAD;
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
 import static org.objectweb.asm.Opcodes.RETURN;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
@@ -16,24 +19,19 @@ import org.objectweb.asm.Opcodes;
 
 public class ClassCreator implements AutoCloseable {
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     private final ClassOutput classOutput;
     private final String superClass;
     private final String[] interfaces;
     private final Map<MethodDescriptor, MethodCreatorImpl> methods = new HashMap<>();
     private final Map<FieldDescriptor, FieldCreatorImpl> fields = new HashMap<>();
     private final String className;
+    private final String signature;
 
-    public ClassCreator(ClassOutput classOutput, String name, Class<?> superClass, Class<?>... interfaces) {
-        this.classOutput = classOutput;
-        this.superClass = superClass.getName().replace(".", "/");
-        this.interfaces = new String[interfaces.length];
-        for (int i = 0; i < interfaces.length; ++i) {
-            this.interfaces[i] = interfaces[i].getName().replace(".", "/");
-        }
-        this.className = name.replace(".", "/");
-    }
-
-    public ClassCreator(ClassOutput classOutput, String name, String superClass, String... interfaces) {
+    public ClassCreator(ClassOutput classOutput, String name, String signature, String superClass, String... interfaces) {
         this.classOutput = classOutput;
         this.superClass = superClass.replace(".", "/");
         this.interfaces = new String[interfaces.length];
@@ -41,6 +39,7 @@ public class ClassCreator implements AutoCloseable {
             this.interfaces[i] = interfaces[i].replace(".", "/");
         }
         this.className = name.replace(".", "/");
+        this.signature = signature;
     }
 
     public MethodCreator getMethodCreator(MethodDescriptor methodDescriptor) {
@@ -99,7 +98,7 @@ public class ClassCreator implements AutoCloseable {
         for (int i = 0; i < interfaces.length; ++i) {
             interfaces[i] = this.interfaces[i];
         }
-        file.visit(Opcodes.V1_8, ACC_PUBLIC | ACC_SUPER | ACC_SYNTHETIC, className, null, superClass, interfaces);
+        file.visit(Opcodes.V1_8, ACC_PUBLIC | ACC_SUPER | ACC_SYNTHETIC, className, signature, superClass, interfaces);
 
         boolean requiresCtor = true;
         for (MethodDescriptor m : methods.keySet()) {
@@ -132,4 +131,69 @@ public class ClassCreator implements AutoCloseable {
 
         classOutput.write(className, file.toByteArray());
     }
+
+    public static class Builder {
+
+        private ClassOutput classOutput;
+
+        private String className;
+
+        private String signature;
+
+        private String superClass;
+
+        private final List<String> interfaces;
+
+        Builder() {
+            superClass(Object.class);
+            this.interfaces = new ArrayList<>();
+        }
+
+        public Builder classOutput(ClassOutput classOutput) {
+            this.classOutput = classOutput;
+            return this;
+        }
+
+        public Builder className(String className) {
+            this.className = className;
+            return this;
+        }
+
+        public Builder signature(String signature) {
+            this.signature = signature;
+            return this;
+        }
+
+        public Builder superClass(String superClass) {
+            this.superClass = superClass;
+            return this;
+        }
+
+        public Builder superClass(Class<?> superClass) {
+            return superClass(superClass.getName());
+        }
+
+        public Builder interfaces(String... interfaces) {
+            for (String val : interfaces) {
+                this.interfaces.add(val);
+            }
+            return this;
+        }
+
+        public Builder interfaces(Class<?>... interfaces) {
+            for (Class<?> val : interfaces) {
+                this.interfaces.add(val.getName());
+            }
+            return this;
+        }
+
+        public ClassCreator build() {
+            Objects.requireNonNull(className);
+            Objects.requireNonNull(classOutput);
+            Objects.requireNonNull(superClass);
+            return new ClassCreator(classOutput, className, signature, superClass, interfaces.toArray(new String[0]));
+        }
+
+    }
+
 }

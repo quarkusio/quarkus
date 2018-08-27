@@ -9,7 +9,7 @@ public class ExceptionThrowingTestCase {
     @Test
     public void testThrowException() throws Exception {
         TestClassLoader cl = new TestClassLoader(getClass().getClassLoader());
-        try (ClassCreator creator = new ClassCreator(cl, "com.MyTest", Object.class, MyInterface.class)) {
+        try (ClassCreator creator = ClassCreator.builder().classOutput(cl).className("com.MyTest").interfaces(MyInterface.class).build()) {
             MethodCreator method = creator.getMethodCreator("transform", String.class, "java.lang.String");
             method.throwException(IllegalStateException.class, "ERROR");
         }

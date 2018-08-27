@@ -1,6 +1,5 @@
 package org.jboss.shamrock.deployment;
 
-import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Set;
 
@@ -21,7 +20,6 @@ public interface ArchiveContext {
     ApplicationArchive getRootArchive();
 
     /**
-     *
      * @return A set of all application archives, excluding the root archive
      */
     Collection<ApplicationArchive> getApplicationArchives();

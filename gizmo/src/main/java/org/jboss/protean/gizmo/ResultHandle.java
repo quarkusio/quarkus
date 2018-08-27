@@ -11,19 +11,20 @@ import java.util.Objects;
  */
 public class ResultHandle {
 
-    // Represents ACONST_NULL
-    static final ResultHandle NULL = new ResultHandle(null, null, null);
+    static final ResultHandle NULL = new ResultHandle("Ljava/lang/Object;", null, null);
 
-    private final int no;
+    private int no;
     private final String type;
     private final BytecodeCreatorImpl owner;
     private final Object constant;
+    private ResultType resultType;
 
-    ResultHandle(int no, String type, BytecodeCreatorImpl owner) {
+    ResultHandle(String type, BytecodeCreatorImpl owner) {
         this.no = no;
         this.type = type;
         this.owner = owner;
         this.constant = null;
+        this.resultType = ResultType.UNUSED;
     }
 
     //params need to be in a different order to avoid ambiguality
@@ -35,13 +36,27 @@ public class ResultHandle {
         this.no = -1;
         this.owner = owner;
         this.constant = constant;
+        this.resultType = ResultType.CONSTANT;
+    }
+
+    public void setNo(int no) {
+        this.no = no;
+        this.resultType = ResultType.LOCAL_VARIABLE;
+    }
+
+    public ResultType getResultType() {
+        return resultType;
     }
 
     int getNo() {
-        if(constant != null) {
-            throw new IllegalStateException("Cannot call getNo on a constant ResultHandle");
+        if(resultType != ResultType.LOCAL_VARIABLE) {
+            throw new IllegalStateException("Cannot call getNo on a non-var ResultHandle");
         }
         return no;
+    }
+
+    void markSingleUse() {
+        resultType = ResultType.SINGLE_USE;
     }
 
     String getType() {
@@ -50,14 +65,6 @@ public class ResultHandle {
 
     BytecodeCreatorImpl getOwner() {
         return owner;
-    }
-
-    boolean isConstant() {
-        return constant != null;
-    }
-
-    boolean isNull() {
-        return this.equals(NULL);
     }
 
     @Override
@@ -87,5 +94,24 @@ public class ResultHandle {
 
     public Object getConstant() {
         return constant;
+    }
+
+    enum ResultType {
+        /**
+         * A local variable
+         */
+        LOCAL_VARIABLE,
+        /**
+         * A constant loaded via ldc or ACONST_NULL
+         */
+        CONSTANT,
+        /**
+         * A result handle that is only used a single time, directly after it is created
+         */
+        SINGLE_USE,
+        /**
+         * A result handle that was never used
+         */
+        UNUSED;
     }
 }

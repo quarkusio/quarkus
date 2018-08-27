@@ -45,11 +45,11 @@ public class SampleTest {
             ResultHandle equalsResult = method.invokeVirtualMethod(MethodDescriptor.ofMethod(Object.class, "equals", boolean.class, Object.class), method.getMethodParam(0), method.load("TEST"));
             BranchResult branch = method.ifNonZero(equalsResult);
             branch.trueBranch().returnValue(branch.trueBranch().load("TRUE BRANCH"));
-            branch.falseBranch().returnValue(branch.falseBranch().load("FALSE BRANCH"));
+            branch.falseBranch().returnValue(method.getMethodParam(0));
 
         }
         MyInterface myInterface = (MyInterface) cl.loadClass("com.MyTest").newInstance();
-        Assert.assertEquals("FALSE BRANCH", myInterface.transform("PARAM"));
+        Assert.assertEquals("PARAM", myInterface.transform("PARAM"));
         Assert.assertEquals("TRUE BRANCH", myInterface.transform("TEST"));
     }
 }

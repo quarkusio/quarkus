@@ -61,4 +61,10 @@ class MethodCreatorImpl extends BytecodeCreatorImpl implements MethodCreator {
         visitor.visitMaxs(0, localVarCount.get());
         visitor.visitEnd();
     }
+
+    @Override
+    public String toString() {
+        return "MethodCreatorImpl [declaringClassName=" + declaringClassName + ", methodDescriptor=" + methodDescriptor + "]";
+    }
+
 }

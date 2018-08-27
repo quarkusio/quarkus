@@ -226,6 +226,13 @@ public interface BytecodeCreator {
     ResultHandle loadClass(String className);
 
     /**
+     * Returns a {@link ResultHandle} representing {@code null}}
+     *
+     * @return A {@link ResultHandle} representing {@code null}}
+     */
+    ResultHandle loadNull();
+
+    /**
      * Writes the specified value to an instance field
      *
      * @param fieldDescriptor The field to write to

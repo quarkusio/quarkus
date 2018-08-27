@@ -24,8 +24,7 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
     private static final String FUNCTION = "$$function$$";
 
     protected final MethodDescriptor methodDescriptor;
-    private final String declaringClassName;
-    private static final String STRING_DESCRIPTOR = "Ljava/lang/String;";
+    protected final String declaringClassName;
     protected final Deque<Operation> operations = new LinkedBlockingDeque<>();
 
     protected final AtomicInteger localVarCount;
@@ -33,12 +32,19 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
     private final ClassCreator classCreator;
     private final Map<MethodDescriptor, MethodDescriptor> superclassAccessors = new HashMap<>();
 
+    private final BytecodeCreatorImpl owner;
+
     public BytecodeCreatorImpl(MethodDescriptor methodDescriptor, String declaringClassName, AtomicInteger localVarCount, ClassOutput classOutput, ClassCreator classCreator) {
+        this(methodDescriptor, declaringClassName, localVarCount, classOutput, classCreator, null);
+    }
+
+    public BytecodeCreatorImpl(MethodDescriptor methodDescriptor, String declaringClassName, AtomicInteger localVarCount, ClassOutput classOutput, ClassCreator classCreator, BytecodeCreatorImpl owner) {
         this.methodDescriptor = methodDescriptor;
         this.declaringClassName = declaringClassName;
         this.localVarCount = localVarCount;
         this.classOutput = classOutput;
         this.classCreator = classCreator;
+        this.owner = owner;
     }
 
     @Override
@@ -168,6 +174,11 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
     }
 
     @Override
+    public ResultHandle loadNull() {
+        return ResultHandle.NULL;
+    }
+
+    @Override
     public void writeInstanceField(FieldDescriptor fieldDescriptor, ResultHandle instance, ResultHandle value) {
         operations.add(new Operation() {
             @Override
@@ -265,7 +276,11 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
     }
 
     void loadResultHandle(MethodVisitor methodVisitor, ResultHandle handle, BytecodeCreatorImpl bc, String expectedType, boolean dontCast) {
-        if (handle.getOwner() != bc) {
+        if (handle.isNull()) {
+            methodVisitor.visitInsn(Opcodes.ACONST_NULL);
+            return;
+        }
+        if (handle.getOwner() != bc && (bc.owner == null || handle.getOwner() != bc.owner)) {
             throw new IllegalArgumentException("Wrong owner for ResultHandle " + handle);
         }
         if (handle.isConstant()) {
@@ -358,8 +373,8 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
 
     @Override
     public BranchResult ifNonZero(ResultHandle resultHandle) {
-        BytecodeCreatorImpl trueBranch = new BytecodeCreatorImpl(methodDescriptor, declaringClassName, localVarCount, classOutput, classCreator);
-        BytecodeCreatorImpl falseBranch = new BytecodeCreatorImpl(methodDescriptor, declaringClassName, localVarCount, classOutput, classCreator);
+        BytecodeCreatorImpl trueBranch = new BytecodeCreatorImpl(methodDescriptor, declaringClassName, localVarCount, classOutput, classCreator, this);
+        BytecodeCreatorImpl falseBranch = new BytecodeCreatorImpl(methodDescriptor, declaringClassName, localVarCount, classOutput, classCreator, this);
         operations.add(new Operation() {
             @Override
             public void process(MethodVisitor methodVisitor) {
@@ -379,8 +394,8 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
 
     @Override
     public BranchResult ifNull(ResultHandle resultHandle) {
-        BytecodeCreatorImpl trueBranch = new BytecodeCreatorImpl(methodDescriptor, declaringClassName, localVarCount, classOutput, classCreator);
-        BytecodeCreatorImpl falseBranch = new BytecodeCreatorImpl(methodDescriptor, declaringClassName, localVarCount, classOutput, classCreator);
+        BytecodeCreatorImpl trueBranch = new BytecodeCreatorImpl(methodDescriptor, declaringClassName, localVarCount, classOutput, classCreator, this);
+        BytecodeCreatorImpl falseBranch = new BytecodeCreatorImpl(methodDescriptor, declaringClassName, localVarCount, classOutput, classCreator, this);
         operations.add(new Operation() {
             @Override
             public void process(MethodVisitor methodVisitor) {
@@ -460,7 +475,9 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
                     methodVisitor.visitInsn(Opcodes.RETURN);
                 } else {
                     loadResultHandle(methodVisitor, returnValue, BytecodeCreatorImpl.this, methodDescriptor.getReturnType());
-                    if (returnValue.getType().equals("S") || returnValue.getType().equals("Z") || returnValue.getType().equals("I") || returnValue.getType().equals("B")) {
+                    if (returnValue.isNull()) {
+                        methodVisitor.visitInsn(Opcodes.ARETURN);
+                    } else if (returnValue.getType().equals("S") || returnValue.getType().equals("Z") || returnValue.getType().equals("I") || returnValue.getType().equals("B")) {
                         methodVisitor.visitInsn(Opcodes.IRETURN);
                     } else if (returnValue.getType().equals("J")) {
                         methodVisitor.visitInsn(Opcodes.LRETURN);

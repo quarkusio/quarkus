@@ -11,6 +11,9 @@ import java.util.Objects;
  */
 public class ResultHandle {
 
+    // Represents ACONST_NULL
+    static final ResultHandle NULL = new ResultHandle(null, null, null);
+
     private final int no;
     private final String type;
     private final BytecodeCreatorImpl owner;
@@ -25,7 +28,9 @@ public class ResultHandle {
 
     //params need to be in a different order to avoid ambiguality
     ResultHandle(String type, BytecodeCreatorImpl owner, Object constant) {
-        assert constant != null;
+        if (owner != null) {
+            Objects.requireNonNull(constant);
+        }
         this.type = type;
         this.no = -1;
         this.owner = owner;
@@ -49,6 +54,10 @@ public class ResultHandle {
 
     boolean isConstant() {
         return constant != null;
+    }
+
+    boolean isNull() {
+        return this.equals(NULL);
     }
 
     @Override

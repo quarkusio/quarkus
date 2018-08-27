@@ -21,7 +21,7 @@ public class FieldDescriptor {
     }
 
     public static FieldDescriptor of(String declaringClass, String name, String type) {
-        return new FieldDescriptor(declaringClass, name, type);
+        return new FieldDescriptor(DescriptorUtils.objectToInternalClassName(declaringClass), name, DescriptorUtils.objectToDescriptor(type));
     }
 
     public static FieldDescriptor of(FieldInfo fieldInfo) {

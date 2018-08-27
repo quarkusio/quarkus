@@ -206,6 +206,11 @@ public class FunctionCreatorImpl implements FunctionCreator {
             return delegate.loadClass(className);
         }
 
+        @Override
+        public ResultHandle loadNull() {
+            return delegate.loadNull();
+        }
+
         public void writeInstanceField(FieldDescriptor fieldDescriptor, ResultHandle instance, ResultHandle value) {
             instance = apply(instance);
             value = apply(value);

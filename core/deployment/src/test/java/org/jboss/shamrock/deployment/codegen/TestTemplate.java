@@ -1,6 +1,9 @@
 package org.jboss.shamrock.deployment.codegen;
 
 import java.util.ArrayDeque;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class TestTemplate {
 
@@ -37,5 +40,19 @@ public class TestTemplate {
         RESULT.add(args);
     }
 
+    public void list(List<?> args) {
+        RESULT.add(args);
+    }
 
+    public void set(Set<?> args) {
+        RESULT.add(args);
+    }
+
+    public void map(Map<?, ?> args) {
+        RESULT.add(args);
+    }
+
+    public void bean(TestJavaBean bean) {
+        RESULT.add(bean);
+    }
 }

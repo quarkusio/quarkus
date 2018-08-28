@@ -43,6 +43,7 @@
         <jboss-logging.version>3.3.1.Final</jboss-logging.version>
         <graal-annotations.version>1.0.0-rc4</graal-annotations.version>
         <jackson.version>2.9.5</jackson.version>
+        <commons-beanutils-core.version>1.8.3</commons-beanutils-core.version>
     </properties>
 
     <modules>
@@ -213,6 +214,11 @@
 
             <!-- Additional dependencies, keep in alphabetical order-->
 
+            <dependency>
+                <groupId>commons-beanutils</groupId>
+                <artifactId>commons-beanutils-core</artifactId>
+                <version>${commons-beanutils-core.version}</version>
+            </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>

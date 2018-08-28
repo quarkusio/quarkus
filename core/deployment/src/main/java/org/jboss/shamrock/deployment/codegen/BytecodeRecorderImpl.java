@@ -3,10 +3,13 @@ package org.jboss.shamrock.deployment.codegen;
 import static org.jboss.protean.gizmo.MethodDescriptor.ofConstructor;
 import static org.jboss.protean.gizmo.MethodDescriptor.ofMethod;
 
+import java.beans.PropertyDescriptor;
+import java.beans.PropertyEditor;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -19,6 +22,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.beanutils.PropertyUtils;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.invocation.proxy.ProxyConfiguration;
@@ -349,7 +353,7 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
             if(param instanceof Collection) {
                 for(Object i : (Collection)param) {
                     ResultHandle val = loadObjectInstance(method, i, returnValueResults, i.getClass());
-                    method.invokeInterfaceMethod(ofMethod(List.class, "add", boolean.class, Object.class), out, val);
+                    method.invokeInterfaceMethod(ofMethod(Collection.class, "add", boolean.class, Object.class), out, val);
                 }
             }
             if(param instanceof Map) {
@@ -357,6 +361,17 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
                     ResultHandle key = loadObjectInstance(method, i.getKey(), returnValueResults, i.getKey().getClass());
                     ResultHandle val = loadObjectInstance(method, i.getValue(), returnValueResults, i.getValue().getClass());
                     method.invokeInterfaceMethod(ofMethod(Map.class, "put", Object.class, Object.class, Object.class), out, key, val);
+                }
+            }
+            PropertyDescriptor[] desc = PropertyUtils.getPropertyDescriptors(param);
+            for(PropertyDescriptor i : desc) {
+                if(i.getReadMethod() != null && i.getWriteMethod() != null) {
+                    try {
+                        ResultHandle val = loadObjectInstance(method, PropertyUtils.getProperty(param, i.getName()), returnValueResults, i.getPropertyType());
+                        method.invokeVirtualMethod(ofMethod(param.getClass(), i.getWriteMethod().getName(), void.class, i.getPropertyType()), out, val);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
                 }
             }
         }

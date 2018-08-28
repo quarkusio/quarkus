@@ -1,6 +1,11 @@
 package org.jboss.shamrock.deployment.codegen;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.function.Consumer;
 
 import org.jboss.protean.gizmo.TestClassLoader;
@@ -30,7 +35,6 @@ public class BytecodeRecorderTestCase {
         }, true, (byte) 1, 'a', (short) 2, 3, (long) 4, (float) 5, (double) 6);
     }
 
-
     @Test
     public void testPrimitiveArrayTypes() throws Exception {
         runTest(recorder -> {
@@ -41,6 +45,30 @@ public class BytecodeRecorderTestCase {
             TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
             template.doubleArray(4, 5, 6);
         }, (Object) new double[]{4, 5, 6});
+    }
+
+    @Test
+    public void testCollections() throws Exception {
+        runTest(recorder -> {
+            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            template.list(new ArrayList<>(Arrays.asList(4, 5, 6)));
+        }, Arrays.asList(4, 5, 6));
+        runTest(recorder -> {
+            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            template.set(new HashSet<>(Arrays.asList(4, 5, 6)));
+        }, new HashSet<>(Arrays.asList(4, 5, 6)));
+        runTest(recorder -> {
+            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            template.map(new HashMap<>(Collections.singletonMap("a", "b")));
+        }, Collections.singletonMap("a", "b"));
+    }
+
+    @Test
+    public void testJavaBean() throws Exception {
+        runTest(recorder -> {
+            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            template.bean(new TestJavaBean("A string", 99));
+        }, new TestJavaBean("A string", 99));
     }
 
     void runTest(Consumer<BytecodeRecorder> generator, Object... expected) throws Exception {

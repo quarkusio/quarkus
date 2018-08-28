@@ -12,6 +12,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.jboss.jandex.IndexView;
 import org.jboss.shamrock.deployment.ArchiveContext;
+import org.jboss.shamrock.deployment.BeanDeployment;
 import org.jboss.shamrock.deployment.ProcessorContext;
 import org.jboss.shamrock.deployment.ResourceProcessor;
 import org.jboss.shamrock.deployment.RuntimePriority;
@@ -22,7 +23,6 @@ import org.jboss.shamrock.openapi.runtime.OpenApiDocumentProducer;
 import org.jboss.shamrock.openapi.runtime.OpenApiServlet;
 import org.jboss.shamrock.undertow.ServletData;
 import org.jboss.shamrock.undertow.ServletDeployment;
-import org.jboss.shamrock.weld.deployment.WeldDeployment;
 
 import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.OpenApiConfigImpl;
@@ -36,7 +36,7 @@ import io.smallrye.openapi.runtime.scanner.OpenApiAnnotationScanner;
 public class OpenApiProcessor implements ResourceProcessor {
 
     @Inject
-    private WeldDeployment weldDeployment;
+    private BeanDeployment beanDeployment;
 
     @Inject
     private ShamrockConfig config;
@@ -51,8 +51,8 @@ public class OpenApiProcessor implements ResourceProcessor {
         ServletData servletData = new ServletData("openapi", OpenApiServlet.class.getName());
         servletData.getMapings().add(config.getConfig("openapi.path", "/openapi"));
         servletDeployment.addServlet(servletData);
-        weldDeployment.addAdditionalBean(OpenApiServlet.class);
-        weldDeployment.addAdditionalBean(OpenApiDocumentProducer.class);
+        beanDeployment.addAdditionalBean(OpenApiServlet.class);
+        beanDeployment.addAdditionalBean(OpenApiDocumentProducer.class);
 
         String resourcePath = findStaticModel(archiveContext);
 

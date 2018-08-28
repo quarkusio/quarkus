@@ -83,7 +83,7 @@ public class ArcAnnotationProcessor implements ResourceProcessor {
                             processorContext.addGeneratedClass(isAppClass, resource.getName(), resource.getData());
                             break;
                         case SERVICE_PROVIDER:
-                            processorContext.addResource("META-INF/services/" + resource.getName(), resource.getData());
+                            processorContext.createResource("META-INF/services/" + resource.getName(), resource.getData());
                         default:
                             break;
                     }

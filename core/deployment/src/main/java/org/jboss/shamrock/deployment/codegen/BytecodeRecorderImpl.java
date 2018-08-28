@@ -1,5 +1,7 @@
 package org.jboss.shamrock.deployment.codegen;
 
+import static org.jboss.protean.gizmo.MethodDescriptor.ofMethod;
+
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
@@ -10,8 +12,11 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.classfilewriter.AccessFlag;
 import org.jboss.classfilewriter.ClassFile;
 import org.jboss.classfilewriter.ClassMethod;
@@ -20,12 +25,18 @@ import org.jboss.classfilewriter.code.CodeAttribute;
 import org.jboss.classfilewriter.util.DescriptorUtils;
 import org.jboss.invocation.proxy.ProxyConfiguration;
 import org.jboss.invocation.proxy.ProxyFactory;
+import org.jboss.protean.gizmo.BranchResult;
+import org.jboss.protean.gizmo.ClassCreator;
+import org.jboss.protean.gizmo.MethodCreator;
+import org.jboss.protean.gizmo.MethodDescriptor;
+import org.jboss.protean.gizmo.ResultHandle;
 import org.jboss.shamrock.deployment.ClassOutput;
 import org.jboss.shamrock.deployment.ShamrockConfig;
 import org.jboss.shamrock.runtime.ContextObject;
 import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.runtime.RuntimeInjector;
 import org.jboss.shamrock.runtime.StartupContext;
+import org.jboss.shamrock.runtime.StartupTask;
 
 public class BytecodeRecorderImpl implements BytecodeRecorder {
 
@@ -197,9 +208,17 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
 
     @Override
     public void close() throws IOException {
-        ClassFile file = new ClassFile(className, AccessFlag.PUBLIC, Object.class.getName(), classLoader, serviceType.getName());
-        ClassMethod method = file.addMethod(this.method);
-        CodeAttribute ca = method.getCodeAttribute();
+        ClassCreator file = ClassCreator.builder().classOutput(new org.jboss.protean.gizmo.ClassOutput() {
+            @Override
+            public void write(String name, byte[] data) {
+                try {
+                    classOutput.writeClass(true, name, data);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }).className(className).superClass(Object.class).interfaces(StartupTask.class).build();
+        MethodCreator method = file.getMethodCreator(this.method.getName(), this.method.getReturnType(), this.method.getParameterTypes());
 
         //figure out where we can start using local variables
         int localVarCounter = 1;
@@ -212,29 +231,24 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
         }
 
         //now create instances of all the classes we invoke on and store them in variables as well
-        Map<Class, Integer> classInstanceVariables = new HashMap<>();
-        Map<Object, Integer> returnValuePositions = new IdentityHashMap<>();
+        Map<Class, ResultHandle> classInstanceVariables = new HashMap<>();
+        Map<Object, ResultHandle> returnValueResults = new IdentityHashMap<>();
         for (BytecodeInstruction set : this.methodRecorder.storedMethodCalls) {
             if (set instanceof StoredMethodCall) {
                 StoredMethodCall call = (StoredMethodCall) set;
                 if (classInstanceVariables.containsKey(call.theClass)) {
                     continue;
                 }
-                ca.newInstruction(call.theClass);
-                ca.dup();
-                ca.invokespecial(call.theClass.getName(), "<init>", "()V");
-                ca.astore(localVarCounter);
-                classInstanceVariables.put(call.theClass, localVarCounter++);
-            } else if (set instanceof NewInstance) {
-                ((NewInstance) set).varPos = localVarCounter++;
+                ResultHandle instance = method.newInstance(MethodDescriptor.ofConstructor(call.theClass));
+                classInstanceVariables.put(call.theClass, instance);
             }
         }
         //now we invoke the actual method call
         for (BytecodeInstruction set : methodRecorder.storedMethodCalls) {
             if (set instanceof StoredMethodCall) {
                 StoredMethodCall call = (StoredMethodCall) set;
-                ca.aload(classInstanceVariables.get(call.theClass));
-                ca.checkcast(call.theClass);
+                ResultHandle[] params = new ResultHandle[call.parameters.length];
+
                 for (int i = 0; i < call.parameters.length; ++i) {
                     Class<?> targetType = call.method.getParameterTypes()[i];
                     Annotation[] annotations = call.method.getParameterAnnotations()[i];
@@ -252,113 +266,76 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
                         Object param = call.parameters[i];
                         if (param instanceof String) {
                             String configParam = ShamrockConfig.getConfigKey((String) param);
+                            params[i] = method.load((String)param);
                             if (configParam != null) {
-                                ca.invokestatic("org.eclipse.microprofile.config.ConfigProvider", "getConfig", "()Lorg/eclipse/microprofile/config/Config;");
-                                ca.ldc(configParam);
-                                ca.loadClass("java/lang/String");
-                                ca.invokeinterface("org/eclipse/microprofile/config/Config", "getOptionalValue", "(Ljava/lang/String;Ljava/lang/Class;)Ljava/util/Optional;");
-                                ca.dup();
-                                ca.invokevirtual("java/util/Optional", "isPresent", "()Z");
-                                BranchEnd end = ca.ifeq();
+                                ResultHandle config = method.invokeStaticMethod(ofMethod(ConfigProvider.class, "getConfig", Config.class));
+                                ResultHandle propName = method.load(configParam);
+                                ResultHandle configOptional = method.invokeInterfaceMethod(ofMethod(Config.class, "getOptionalValue", Optional.class, String.class, Class.class), config, propName, method.loadClass(String.class));
+                                ResultHandle result = method.invokeVirtualMethod(ofMethod(Optional.class, "isPresent", boolean.class), configOptional);
 
-                                ca.invokevirtual("java/util/Optional", "get", "()Ljava/lang/Object;");
-                                ca.invokevirtual("java/lang/Object", "toString", "()Ljava/lang/String;"); //checkcast is buggy in classfilewriter
-
-                                BranchEnd jmp = ca.gotoInstruction();
-                                ca.branchEnd(end);
-                                ca.pop();
-                                ca.ldc((String) param);
-
-
-                                ca.branchEnd(jmp);
+                                BranchResult ifResult = method.ifNonZero(result);
+                                ResultHandle tr =  ifResult.trueBranch().invokeVirtualMethod(ofMethod(Optional.class, "get", Object.class), configOptional);
+                                ResultHandle trs =  ifResult.trueBranch().invokeVirtualMethod(ofMethod(Object.class, "toString", String.class), tr);
+                                ResultHandle fr = ifResult.falseBranch().load((String) param);
+                                params[i] = ifResult.mergeBranches(trs, fr);
                             } else {
-                                ca.ldc((String) param);
+                                params[i] = method.load((String)param);
                             }
                         }  else if (param instanceof Enum) {
                             Enum e = (Enum) param;
-                            ca.ldc(e.name());
-                            ca.invokestatic(e.getDeclaringClass().getName(), "valueOf", "(Ljava/lang/String;)" + DescriptorUtils.makeDescriptor(e.getDeclaringClass()));
-
+                            ResultHandle nm = method.load(e.name());
+                            params[i] = method.invokeStaticMethod(ofMethod(e.getDeclaringClass(), "valueOf", e.getDeclaringClass(), String.class), nm);
                         } else if (param instanceof Boolean) {
-                            ca.ldc((boolean) param ? 1 : 0);
+                            params[i] = method.load((boolean)param);
                         } else if (param instanceof NewInstance) {
-                            ca.aload(((NewInstance) param).varPos);
+                            params[i] = ((NewInstance) param).resultHandle;
                         } else if (param instanceof ReturnedProxy) {
-                            Integer pos = returnValuePositions.get(param);
+                            ResultHandle pos = returnValueResults.get(param);
                             if (pos == null) {
                                 throw new RuntimeException("invalid proxy passed into recorded method " + call.method);
                             }
-                            ca.aload(pos);
+                            params[i] = pos;
                         } else if (param instanceof Class<?>) {
                             String name = classProxies.get(param);
                             if (name == null) {
                                 name = ((Class) param).getName();
                             }
-                            ca.ldc(name);
-                            ca.invokestatic("java/lang/Class", "forName", "(Ljava/lang/String;)Ljava/lang/Class;");
-                            //ca.loadClass(name);
+                            params[i] = method.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class), method.load(name));
                         } else {
                             //TODO: rest of primitives
-                            ca.ldc((int) param);
+                            params[i] = method.load((int) param);
                         }
                     } else if (targetType == StartupContext.class) { //hack, as this is tied to StartupTask
-                        ca.aload(1);
+                        params[i] = method.getMethodParam(0);
                     } else if (contextName != null) {
-                        ca.aload(1);
-                        ca.ldc(contextName);
-                        ca.invokevirtual(StartupContext.class.getName(), "getValue", "(Ljava/lang/String;)Ljava/lang/Object;");
-                        ca.checkcast(targetType);
+                        params[i] = method.invokeVirtualMethod(ofMethod(StartupContext.class, "getValue", Object.class, String.class), method.getMethodParam(0), method.load(contextName));
                     } else {
-                        ca.aconstNull();
+                        params[i] = method.loadNull();
                     }
                 }
-                ca.invokevirtual(call.method);
+                ResultHandle callResult = method.invokeVirtualMethod(ofMethod(call.method.getDeclaringClass(), call.method.getName(), call.method.getReturnType(), call.method.getParameterTypes()), classInstanceVariables.get(call.theClass), params);
+
                 if (call.method.getReturnType() != void.class) {
                     ContextObject annotation = call.method.getAnnotation(ContextObject.class);
                     if (annotation != null) {
-                        ca.dup();
-                        ca.aload(1);
-                        ca.swap();
-                        ca.ldc(annotation.value());
-                        ca.swap();
-                        ca.invokevirtual(StartupContext.class.getName(), "putValue", "(Ljava/lang/String;Ljava/lang/Object;)V");
+                        method.invokeVirtualMethod(ofMethod(StartupContext.class, "putValue", void.class, String.class, Object.class), method.getMethodParam(0), method.load(annotation.value()), callResult);
                         if(call.returnedProxy != null) {
-                            Integer pos = returnValuePositions.get(call.returnedProxy);
-                            if (pos == null) {
-                                returnValuePositions.put(call.returnedProxy, pos = localVarCounter++);
-                            }
-                            ca.astore(pos);
+                            returnValueResults.put(call.returnedProxy, callResult);
                         }
                     } else if (call.returnedProxy != null) {
-                        Integer pos = returnValuePositions.get(call.returnedProxy);
-                        if (pos == null) {
-                            returnValuePositions.put(call.returnedProxy, pos = localVarCounter++);
-                        }
-                        ca.astore(pos);
-                    } else if (call.method.getReturnType() == long.class || call.method.getReturnType() == double.class) {
-                        ca.pop2();
-                    } else {
-                        ca.pop();
+                        returnValueResults.put(call.returnedProxy, callResult);
                     }
                 }
             } else if (set instanceof NewInstance) {
                 NewInstance ni = (NewInstance) set;
-                ca.loadClass(ni.className);
-                ca.invokestatic(RuntimeInjector.class.getName(), "newFactory", "(Ljava/lang/Class;)Lorg/jboss/shamrock/runtime/InjectionInstance;");
-                ca.astore(ni.varPos);
+                ni.resultHandle = method.invokeStaticMethod(ofMethod(RuntimeInjector.class, "newFactory", InjectionInstance.class, Class.class), method.loadClass(ni.className));
             } else {
                 throw new RuntimeException("unkown type " + set);
             }
         }
 
-        ca.returnInstruction();
-
-        ClassMethod ctor = file.addMethod(AccessFlag.PUBLIC, "<init>", "V");
-        ca = ctor.getCodeAttribute();
-        ca.aload(0);
-        ca.invokespecial(Object.class.getName(), "<init>", "()V");
-        ca.returnInstruction();
-        classOutput.writeClass(true, file.getName(), file.toBytecode());
+        method.returnValue(null);
+        file.close();
     }
 
     public interface BytecodeInstruction {
@@ -385,7 +362,7 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
 
     static final class NewInstance implements BytecodeInstruction, InjectionInstance {
         final String className;
-        int varPos = -1;
+        ResultHandle resultHandle;
 
         NewInstance(String className) {
             this.className = className;

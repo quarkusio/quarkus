@@ -17,4 +17,6 @@ public interface BranchResult {
      */
     BytecodeCreator falseBranch();
 
+    ResultHandle mergeBranches(ResultHandle trueResult, ResultHandle falseResult);
+
 }

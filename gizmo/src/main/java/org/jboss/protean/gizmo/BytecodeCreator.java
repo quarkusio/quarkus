@@ -10,6 +10,7 @@ import org.jboss.jandex.MethodInfo;
  * classes are likely to use.
  */
 public interface BytecodeCreator {
+
     <T> T createRecordingProxy(Class<T> proxyType);
 
     /**

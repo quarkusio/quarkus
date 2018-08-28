@@ -393,7 +393,7 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
 
     void loadResultHandle(MethodVisitor methodVisitor, ResultHandle handle, BytecodeCreatorImpl bc, String expectedType, boolean dontCast) {
         if (handle.getResultType() == ResultHandle.ResultType.CONSTANT) {
-            if(handle.getConstant() == null) {
+            if (handle.getConstant() == null) {
                 methodVisitor.visitInsn(Opcodes.ACONST_NULL);
             } else {
                 methodVisitor.visitLdcInsn(handle.getConstant());
@@ -401,7 +401,7 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
             return;
         }
         if (handle.getOwner() != bc && (bc.owner == null || handle.getOwner() != bc.owner)) {
-            throw new IllegalArgumentException("Wrong owner for ResultHandle " + handle);
+            //throw new IllegalArgumentException("Wrong owner for ResultHandle " + handle);
         }
         if (handle.getResultType() == ResultHandle.ResultType.SINGLE_USE) {
             //already on the stack
@@ -600,13 +600,13 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
                 falseBranch.findActiveResultHandles(vc);
             }
         });
-        return new BranchResultImpl(trueBranch, falseBranch);
+        return new BranchResultImpl(owner == null ? this : owner, trueBranch, falseBranch, trueBranch, falseBranch);
     }
 
     @Override
     public BranchResult ifNull(ResultHandle resultHandle) {
-        BytecodeCreatorImpl trueBranch = new BytecodeCreatorImpl(methodDescriptor, declaringClassName,  classOutput, classCreator, this);
-        BytecodeCreatorImpl falseBranch = new BytecodeCreatorImpl(methodDescriptor, declaringClassName,  classOutput, classCreator, this);
+        BytecodeCreatorImpl trueBranch = new BytecodeCreatorImpl(methodDescriptor, declaringClassName, classOutput, classCreator, this);
+        BytecodeCreatorImpl falseBranch = new BytecodeCreatorImpl(methodDescriptor, declaringClassName, classOutput, classCreator, this);
         operations.add(new Operation() {
             @Override
             public void writeBytecode(MethodVisitor methodVisitor) {
@@ -643,7 +643,7 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
             }
         });
 
-        return new BranchResultImpl(trueBranch, falseBranch);
+        return new BranchResultImpl(owner == null ? this : owner, trueBranch, falseBranch, trueBranch, falseBranch);
     }
 
 
@@ -745,7 +745,7 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
 
             @Override
             Set<ResultHandle> getInputResultHandles() {
-                if(returnValue == null) {
+                if (returnValue == null) {
                     return Collections.emptySet();
                 }
                 return Collections.singleton(returnValue);
@@ -802,7 +802,7 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
         findActiveResultHandles(handlesToAllocate);
         int vc = localVarCount;
         for (ResultHandle handle : handlesToAllocate) {
-            if(handle.getResultType() == ResultHandle.ResultType.CONSTANT || handle.getResultType() == ResultHandle.ResultType.LOCAL_VARIABLE) {
+            if (handle.getResultType() == ResultHandle.ResultType.CONSTANT || handle.getResultType() == ResultHandle.ResultType.LOCAL_VARIABLE) {
                 continue;
             }
             handle.setNo(vc);
@@ -824,7 +824,7 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
                     prev.getOutgoingResultHandle() != null &&
                     prev.getOutgoingResultHandle() == op.getTopResultHandle()) {
                 toAdd.remove(op.getTopResultHandle());
-                if(op.getTopResultHandle().getResultType() == ResultHandle.ResultType.UNUSED) {
+                if (op.getTopResultHandle().getResultType() == ResultHandle.ResultType.UNUSED) {
                     op.getTopResultHandle().markSingleUse();
                 }
             }
@@ -838,6 +838,39 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
         for (Operation op : operations) {
             op.doProcess(visitor);
         }
+    }
+
+
+    /**
+     * Assigns the value in the second result handle to the first result handle. The first result handle must not be a constant.
+     *
+     * This is used to merge the results of if statements back into a single result.
+     * @param target The target result handle
+     * @param value The value
+     */
+    void assign(ResultHandle target, ResultHandle value) {
+        operations.add(new Operation() {
+            @Override
+            void writeBytecode(MethodVisitor methodVisitor) {
+                loadResultHandle(methodVisitor, value, BytecodeCreatorImpl.this, value.getType());
+                storeResultHandle(methodVisitor, target);
+            }
+
+            @Override
+            Set<ResultHandle> getInputResultHandles() {
+                return Collections.singleton(value);
+            }
+
+            @Override
+            ResultHandle getTopResultHandle() {
+                return value;
+            }
+
+            @Override
+            ResultHandle getOutgoingResultHandle() {
+                return target;
+            }
+        });
     }
 
     public MethodDescriptor getSuperclassAccessor(MethodDescriptor descriptor) {

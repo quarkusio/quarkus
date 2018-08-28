@@ -110,36 +110,93 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
         if (resultType.startsWith("[[")) {
             throw new RuntimeException("Multidimensional arrays not supported yet");
         }
-        if (resultType.charAt(1) != 'L') {
-            throw new RuntimeException("Primitive arrays not supported yet");
+        char typeChar = resultType.charAt(1);
+        if (typeChar != 'L') {
+            //primitive arrays
+            int opcode;
+            switch (typeChar) {
+                case 'Z':
+                    opcode = Opcodes.T_BOOLEAN;
+                    break;
+                case 'B':
+                    opcode = Opcodes.T_BYTE;
+                    break;
+                case 'C':
+                    opcode = Opcodes.T_CHAR;
+                    break;
+                case 'S':
+                    opcode = Opcodes.T_SHORT;
+                    break;
+                case 'I':
+                    opcode = Opcodes.T_INT;
+                    break;
+                case 'J':
+                    opcode = Opcodes.T_LONG;
+                    break;
+                case 'F':
+                    opcode = Opcodes.T_FLOAT;
+                    break;
+                case 'D':
+                    opcode = Opcodes.T_DOUBLE;
+                    break;
+                default:
+                    throw new RuntimeException("Unknown type " + type);
+            }
+            ResultHandle ret = allocateResult(resultType);
+            operations.add(new Operation() {
+                @Override
+                public void writeBytecode(MethodVisitor methodVisitor) {
+                    loadResultHandle(methodVisitor, length, BytecodeCreatorImpl.this, "I");
+                    methodVisitor.visitIntInsn(Opcodes.NEWARRAY, opcode);
+                    storeResultHandle(methodVisitor, ret);
+                }
+
+                @Override
+                Set<ResultHandle> getInputResultHandles() {
+                    return Collections.singleton(length);
+                }
+
+                @Override
+                ResultHandle getTopResultHandle() {
+                    return length;
+                }
+
+                @Override
+                ResultHandle getOutgoingResultHandle() {
+                    return ret;
+                }
+            });
+            return ret;
+        } else {
+            //object arrays
+            String arrayType = resultType.substring(2, resultType.length() - 1);
+            ResultHandle ret = allocateResult(resultType);
+            operations.add(new Operation() {
+                @Override
+                public void writeBytecode(MethodVisitor methodVisitor) {
+                    loadResultHandle(methodVisitor, length, BytecodeCreatorImpl.this, "I");
+                    methodVisitor.visitTypeInsn(Opcodes.ANEWARRAY, arrayType);
+                    storeResultHandle(methodVisitor, ret);
+                }
+
+                @Override
+                Set<ResultHandle> getInputResultHandles() {
+                    return Collections.singleton(length);
+                }
+
+                @Override
+                ResultHandle getTopResultHandle() {
+                    return length;
+                }
+
+                @Override
+                ResultHandle getOutgoingResultHandle() {
+                    return ret;
+                }
+            });
+            return ret;
         }
-        String arrayType = resultType.substring(2, resultType.length() - 1);
-        ResultHandle ret = allocateResult(resultType);
-        operations.add(new Operation() {
-            @Override
-            public void writeBytecode(MethodVisitor methodVisitor) {
-                loadResultHandle(methodVisitor, length, BytecodeCreatorImpl.this, "I");
-                methodVisitor.visitTypeInsn(Opcodes.ANEWARRAY, arrayType);
-                storeResultHandle(methodVisitor, ret);
-            }
 
-            @Override
-            Set<ResultHandle> getInputResultHandles() {
-                return Collections.singleton(length);
-            }
-
-            @Override
-            ResultHandle getTopResultHandle() {
-                return length;
-            }
-
-            @Override
-            ResultHandle getOutgoingResultHandle() {
-                return ret;
-            }
-        });
-
-        return ret;
     }
 
     @Override
@@ -344,8 +401,25 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
             public void writeBytecode(MethodVisitor methodVisitor) {
                 loadResultHandle(methodVisitor, array, BytecodeCreatorImpl.this, array.getType());
                 loadResultHandle(methodVisitor, index, BytecodeCreatorImpl.this, "I");
-                loadResultHandle(methodVisitor, value, BytecodeCreatorImpl.this, array.getType().substring(1));
-                methodVisitor.visitInsn(Opcodes.AASTORE);
+                String arrayType = array.getType().substring(1);
+                loadResultHandle(methodVisitor, value, BytecodeCreatorImpl.this, arrayType);
+                if (arrayType.equals("Z") || arrayType.equals("B")) {
+                    methodVisitor.visitInsn(Opcodes.BASTORE);
+                } else if (arrayType.equals("S")) {
+                    methodVisitor.visitInsn(Opcodes.SASTORE);
+                } else if (arrayType.equals("I")) {
+                    methodVisitor.visitInsn(Opcodes.IASTORE);
+                } else if (arrayType.equals("C")) {
+                    methodVisitor.visitInsn(Opcodes.CASTORE);
+                } else if (arrayType.equals("L")) {
+                    methodVisitor.visitInsn(Opcodes.LASTORE);
+                } else if (arrayType.equals("F")) {
+                    methodVisitor.visitInsn(Opcodes.FASTORE);
+                } else if (arrayType.equals("D")) {
+                    methodVisitor.visitInsn(Opcodes.DASTORE);
+                } else {
+                    methodVisitor.visitInsn(Opcodes.AASTORE);
+                }
             }
 
             @Override
@@ -843,10 +917,11 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
 
     /**
      * Assigns the value in the second result handle to the first result handle. The first result handle must not be a constant.
-     *
+     * <p>
      * This is used to merge the results of if statements back into a single result.
+     *
      * @param target The target result handle
-     * @param value The value
+     * @param value  The value
      */
     void assign(ResultHandle target, ResultHandle value) {
         operations.add(new Operation() {

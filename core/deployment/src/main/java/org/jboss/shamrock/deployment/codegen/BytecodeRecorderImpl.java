@@ -1,18 +1,22 @@
 package org.jboss.shamrock.deployment.codegen;
 
+import static org.jboss.protean.gizmo.MethodDescriptor.ofConstructor;
 import static org.jboss.protean.gizmo.MethodDescriptor.ofMethod;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Array;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.microprofile.config.Config;
@@ -282,8 +286,6 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
             Enum e = (Enum) param;
             ResultHandle nm = method.load(e.name());
             out = method.invokeStaticMethod(ofMethod(e.getDeclaringClass(), "valueOf", e.getDeclaringClass(), String.class), nm);
-        } else if (param instanceof Boolean) {
-            out = method.load((boolean) param);
         } else if (param instanceof NewInstance) {
             out = ((NewInstance) param).resultHandle;
         } else if (param instanceof ReturnedProxy) {
@@ -298,6 +300,10 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
                 name = ((Class) param).getName();
             }
             out = method.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class), method.load(name));
+        } else if (expectedType == boolean.class) {
+            out = method.load((boolean) param);
+        } else if (expectedType == Boolean.class) {
+            out = method.invokeStaticMethod(ofMethod(Boolean.class, "valueOf", Boolean.class, boolean.class), method.load((boolean) param));
         } else if (expectedType == int.class) {
             out = method.load((int) param);
         } else if (expectedType == Integer.class) {
@@ -326,8 +332,33 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
             out = method.load((double) param);
         } else if (expectedType == Double.class) {
             out = method.invokeStaticMethod(ofMethod(Double.class, "valueOf", Double.class, double.class), method.load((double) param));
+        } else if (expectedType.isArray()) {
+            int length = Array.getLength(param);
+            out = method.newArray(expectedType.getComponentType(), method.load(length));
+            for (int i = 0; i < length; ++i) {
+                ResultHandle component = loadObjectInstance(method, Array.get(param, i), returnValueResults, expectedType.getComponentType());
+                method.writeArrayValue(out, method.load(i), component);
+            }
         } else {
-            throw new RuntimeException("Unable to serialize object of type " + param);
+            try {
+                param.getClass().getDeclaredConstructor();
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException("Unable to serialize objects of type " + param.getClass() + " to bytecode as it has no default constructor");
+            }
+            out = method.newInstance(ofConstructor(param.getClass()));
+            if(param instanceof Collection) {
+                for(Object i : (Collection)param) {
+                    ResultHandle val = loadObjectInstance(method, i, returnValueResults, i.getClass());
+                    method.invokeInterfaceMethod(ofMethod(List.class, "add", boolean.class, Object.class), out, val);
+                }
+            }
+            if(param instanceof Map) {
+                for(Map.Entry<?,?> i : ((Map<?,?>)param).entrySet()) {
+                    ResultHandle key = loadObjectInstance(method, i.getKey(), returnValueResults, i.getKey().getClass());
+                    ResultHandle val = loadObjectInstance(method, i.getValue(), returnValueResults, i.getValue().getClass());
+                    method.invokeInterfaceMethod(ofMethod(Map.class, "put", Object.class, Object.class, Object.class), out, key, val);
+                }
+            }
         }
         return out;
     }

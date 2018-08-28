@@ -22,7 +22,7 @@ public class MethodDescriptor {
         this.descriptor = DescriptorUtils.methodSignitureToDescriptor(returnType, parameterTypes);
         for (String p : parameterTypes) {
             if (p.length() != 1) {
-                if (!(p.startsWith("L") || p.startsWith("[")) || !p.endsWith(";")) {
+                if (!(p.startsWith("L") && p.endsWith(";") || p.startsWith("["))) {
                     throw new IllegalArgumentException("Invalid parameter type " + p + " it must be in the JVM descriptor format");
                 }
             }

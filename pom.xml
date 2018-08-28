@@ -203,6 +203,13 @@
                 <artifactId>gizmo</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.jboss.protean.gizmo</groupId>
+                <artifactId>gizmo</artifactId>
+                <type>test-jar</type>
+                <scope>test</scope>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- Additional dependencies, keep in alphabetical order-->
 

@@ -1,17 +1,16 @@
 package org.jboss.shamrock.openapi;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.Files;
+import java.io.InputStream;
+import java.net.URL;
 import java.nio.file.Path;
 
 import javax.inject.Inject;
 
-import io.smallrye.openapi.runtime.io.OpenApiSerializer;
-import org.jboss.jandex.Index;
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.jboss.jandex.IndexView;
-import org.jboss.jandex.IndexWriter;
 import org.jboss.shamrock.deployment.ArchiveContext;
 import org.jboss.shamrock.deployment.ProcessorContext;
 import org.jboss.shamrock.deployment.ResourceProcessor;
@@ -24,6 +23,12 @@ import org.jboss.shamrock.openapi.runtime.OpenApiServlet;
 import org.jboss.shamrock.undertow.ServletData;
 import org.jboss.shamrock.undertow.ServletDeployment;
 import org.jboss.shamrock.weld.deployment.WeldDeployment;
+
+import io.smallrye.openapi.api.OpenApiConfig;
+import io.smallrye.openapi.api.OpenApiConfigImpl;
+import io.smallrye.openapi.runtime.OpenApiStaticFile;
+import io.smallrye.openapi.runtime.io.OpenApiSerializer;
+import io.smallrye.openapi.runtime.scanner.OpenApiAnnotationScanner;
 
 /**
  * @author Ken Finnigan
@@ -50,38 +55,40 @@ public class OpenApiProcessor implements ResourceProcessor {
         weldDeployment.addAdditionalBean(OpenApiDocumentProducer.class);
 
         String resourcePath = findStaticModel(archiveContext);
-        String indexPath = writeIndex(archiveContext.getRootArchive().getIndex());
 
         try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.WELD_DEPLOYMENT + 30)) {
             OpenApiDeploymentTemplate template = recorder.getRecordingProxy(OpenApiDeploymentTemplate.class);
+            OpenAPI sm = generateStaticModel(resourcePath, format);
+            OpenAPI am = generateAnnotationModel(archiveContext.getCombinedIndex());
+            template.setupModel(null, sm, am);
+        }
+    }
 
-            template.generateStaticModel(resourcePath, format);
-            template.generateAnnotationModel(indexPath);
+
+    public OpenAPI generateStaticModel(String resourcePath, OpenApiSerializer.Format format) {
+        if (resourcePath != null) {
+            try (InputStream is = new URL(resourcePath).openStream()) {
+                try (OpenApiStaticFile staticFile = new OpenApiStaticFile(is, format)) {
+                    return io.smallrye.openapi.runtime.OpenApiProcessor.modelFromStaticFile(staticFile);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            // Ignore
         }
 
-        try (BytecodeRecorder recorder = processorContext.addDeploymentTask(RuntimePriority.WELD_DEPLOYMENT + 30)) {
-            OpenApiDeploymentTemplate template = recorder.getRecordingProxy(OpenApiDeploymentTemplate.class);
-            template.setupModel(null, null, null);
-        }
+        return null;
+    }
+
+    public OpenAPI generateAnnotationModel(IndexView indexView) {
+        Config config = ConfigProvider.getConfig();
+        OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
+        return new OpenApiAnnotationScanner(openApiConfig, indexView).scan();
     }
 
     @Override
     public int getPriority() {
         return 1;
-    }
-
-    private String writeIndex(IndexView index) {
-        try {
-            Path path = Files.createTempFile("shamrock-index", ".jandex");
-            OutputStream os = new FileOutputStream(path.toString());
-            IndexWriter writer = new IndexWriter(os);
-            writer.write((Index) index);
-            return path.toString();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return null;
     }
 
     private String findStaticModel(ArchiveContext archiveContext) {

@@ -4,12 +4,10 @@ import static org.jboss.protean.gizmo.MethodDescriptor.ofConstructor;
 import static org.jboss.protean.gizmo.MethodDescriptor.ofMethod;
 
 import java.beans.PropertyDescriptor;
-import java.beans.PropertyEditor;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -19,7 +17,6 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.beanutils.PropertyUtils;
@@ -268,8 +265,15 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
     }
 
     private ResultHandle loadObjectInstance(MethodCreator method, Object param, Map<Object, ResultHandle> returnValueResults, Class<?> expectedType) {
+
+        ResultHandle existing = returnValueResults.get(param);
+        if (existing != null) {
+            return existing;
+        }
         ResultHandle out;
-        if (param instanceof String) {
+        if (param == null) {
+            out = method.loadNull();
+        } else if (param instanceof String) {
             String configParam = ShamrockConfig.getConfigKey((String) param);
             out = method.load((String) param);
             if (configParam != null) {
@@ -293,11 +297,7 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
         } else if (param instanceof NewInstance) {
             out = ((NewInstance) param).resultHandle;
         } else if (param instanceof ReturnedProxy) {
-            ResultHandle pos = returnValueResults.get(param);
-            if (pos == null) {
-                throw new RuntimeException("invalid proxy passed into recorded method " + method);
-            }
-            out = pos;
+            throw new RuntimeException("invalid proxy passed into recorded method " + method);
         } else if (param instanceof Class<?>) {
             String name = classProxies.get(param);
             if (name == null) {
@@ -350,31 +350,53 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
                 throw new RuntimeException("Unable to serialize objects of type " + param.getClass() + " to bytecode as it has no default constructor");
             }
             out = method.newInstance(ofConstructor(param.getClass()));
-            if(param instanceof Collection) {
-                for(Object i : (Collection)param) {
+            if (param instanceof Collection) {
+                for (Object i : (Collection) param) {
                     ResultHandle val = loadObjectInstance(method, i, returnValueResults, i.getClass());
                     method.invokeInterfaceMethod(ofMethod(Collection.class, "add", boolean.class, Object.class), out, val);
                 }
             }
-            if(param instanceof Map) {
-                for(Map.Entry<?,?> i : ((Map<?,?>)param).entrySet()) {
+            if (param instanceof Map) {
+                for (Map.Entry<?, ?> i : ((Map<?, ?>) param).entrySet()) {
                     ResultHandle key = loadObjectInstance(method, i.getKey(), returnValueResults, i.getKey().getClass());
                     ResultHandle val = loadObjectInstance(method, i.getValue(), returnValueResults, i.getValue().getClass());
                     method.invokeInterfaceMethod(ofMethod(Map.class, "put", Object.class, Object.class, Object.class), out, key, val);
                 }
             }
             PropertyDescriptor[] desc = PropertyUtils.getPropertyDescriptors(param);
-            for(PropertyDescriptor i : desc) {
-                if(i.getReadMethod() != null && i.getWriteMethod() != null) {
+            for (PropertyDescriptor i : desc) {
+                if (i.getReadMethod() != null && i.getWriteMethod() != null) {
                     try {
-                        ResultHandle val = loadObjectInstance(method, PropertyUtils.getProperty(param, i.getName()), returnValueResults, i.getPropertyType());
-                        method.invokeVirtualMethod(ofMethod(param.getClass(), i.getWriteMethod().getName(), void.class, i.getPropertyType()), out, val);
+                        Object propertyValue = PropertyUtils.getProperty(param, i.getName());
+                        if(propertyValue == null) {
+                            //we just assume properties are null by default
+                            //TODO: is this a valid assumption? Should we check this by creating an instance?
+                            continue;
+                        }
+                        Class propertyType = i.getPropertyType();
+                        if (i.getReadMethod().getReturnType() != i.getWriteMethod().getParameterTypes()[0]) {
+                            //this is a weird situation where the reader and writer are different types
+                            //we iterate and try and find a valid setter method for the type we have
+                            //OpenAPI does some weird stuff like this
+
+                            for (Method m : param.getClass().getMethods()) {
+                                if (m.getName().equals(i.getWriteMethod().getName())) {
+                                    if (m.getParameterTypes().length > 0 && m.getParameterTypes()[0].isAssignableFrom(param.getClass())) {
+                                        propertyType = m.getParameterTypes()[0];
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        ResultHandle val = loadObjectInstance(method, propertyValue, returnValueResults, i.getPropertyType());
+                        method.invokeVirtualMethod(ofMethod(param.getClass(), i.getWriteMethod().getName(), void.class, propertyType), out, val);
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
                 }
             }
         }
+        returnValueResults.put(param, out);
         return out;
     }
 

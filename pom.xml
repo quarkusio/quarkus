@@ -44,6 +44,7 @@
         <graal-annotations.version>1.0.0-rc4</graal-annotations.version>
         <jackson.version>2.9.5</jackson.version>
         <commons-beanutils-core.version>1.8.3</commons-beanutils-core.version>
+        <commons-logging.version>1.2</commons-logging.version>
     </properties>
 
     <modules>
@@ -218,6 +219,11 @@
                 <groupId>commons-beanutils</groupId>
                 <artifactId>commons-beanutils-core</artifactId>
                 <version>${commons-beanutils-core.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-logging</groupId>
+                <artifactId>commons-logging</artifactId>
+                <version>${commons-logging.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>

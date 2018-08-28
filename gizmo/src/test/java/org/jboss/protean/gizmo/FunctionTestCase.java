@@ -11,7 +11,7 @@ public class FunctionTestCase {
     @Test
     public void testSimpleFunction() throws Exception {
         TestClassLoader cl = new TestClassLoader(getClass().getClassLoader());
-        try (ClassCreator creator = new ClassCreator(cl, "com/MyTest", Object.class, MyInterface.class)) {
+        try (ClassCreator creator = ClassCreator.builder().classOutput(cl).className("com.MyTest").interfaces(MyInterface.class).build()) {
             MethodCreator method = creator.getMethodCreator("transform", String.class, String.class);
 
             //create a function that appends '-func' to its input
@@ -33,7 +33,7 @@ public class FunctionTestCase {
     @Test
     public void testSimpleFunctionWithCapture() throws Exception {
         TestClassLoader cl = new TestClassLoader(getClass().getClassLoader());
-        try (ClassCreator creator = new ClassCreator(cl, "com/MyTest", Object.class, MyInterface.class)) {
+        try (ClassCreator creator = ClassCreator.builder().classOutput(cl).className("com.MyTest").interfaces(MyInterface.class).build()) {
             MethodCreator method = creator.getMethodCreator("transform", String.class, String.class);
 
             //create a function that appends '-func' to its input
@@ -55,7 +55,7 @@ public class FunctionTestCase {
     @Test
     public void testInvokeSuperMethodFromFunction() throws Exception {
         TestClassLoader cl = new TestClassLoader(getClass().getClassLoader());
-        try (ClassCreator creator = new ClassCreator(cl, "com/MyTest", Superclass.class)) {
+        try (ClassCreator creator = ClassCreator.builder().classOutput(cl).className("com.MyTest").superClass(Superclass.class).build()) {
             MethodCreator method = creator.getMethodCreator("getMessage", String.class);
 
             //create a function that calls super appends '-func' to its input

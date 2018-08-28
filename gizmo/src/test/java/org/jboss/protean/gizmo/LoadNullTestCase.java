@@ -11,7 +11,7 @@ public class LoadNullTestCase {
     @Test
     public void testLoadNull() throws Exception {
         TestClassLoader cl = new TestClassLoader(getClass().getClassLoader());
-        try (ClassCreator creator = new ClassCreator(cl, "com.MyTest", Object.class, Supplier.class)) {
+        try (ClassCreator creator = ClassCreator.builder().classOutput(cl).className("com.MyTest").interfaces(Supplier.class).build()) {
             MethodCreator method = creator.getMethodCreator("get", Object.class);
             method.returnValue(method.loadNull());
         }

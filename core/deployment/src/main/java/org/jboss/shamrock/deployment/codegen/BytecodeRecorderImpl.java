@@ -17,12 +17,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.jboss.classfilewriter.AccessFlag;
-import org.jboss.classfilewriter.ClassFile;
-import org.jboss.classfilewriter.ClassMethod;
-import org.jboss.classfilewriter.code.BranchEnd;
-import org.jboss.classfilewriter.code.CodeAttribute;
-import org.jboss.classfilewriter.util.DescriptorUtils;
 import org.jboss.invocation.proxy.ProxyConfiguration;
 import org.jboss.invocation.proxy.ProxyFactory;
 import org.jboss.protean.gizmo.BranchResult;
@@ -121,7 +115,6 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
                 T recordingProxy = factory.newInstance(new InvocationHandler() {
                     @Override
                     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                        validateMethod(method, args);
                         StoredMethodCall storedMethodCall = new StoredMethodCall(theClass, method, args);
                         storedMethodCalls.add(storedMethodCall);
                         if (method.getReturnType().isPrimitive()) {
@@ -172,42 +165,8 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
     }
 
 
-    private void validateMethod(Method method, Object[] params) {
-        for (int i = 0; i < method.getParameterCount(); ++i) {
-            Class<?> type = method.getParameterTypes()[i];
-            if (type.isPrimitive() || type.equals(String.class) || type.equals(Class.class) || type.equals(StartupContext.class)) {
-                continue;
-            }
-            if (type.isAssignableFrom(NewInstance.class)) {
-                continue;
-            }
-            if (params[i] instanceof ReturnedProxy) {
-                continue;
-            }
-            if (params[i] instanceof Class) {
-                continue;
-            }
-            if(params[i] instanceof Enum) {
-                continue;
-            }
-            Annotation[] annotations = method.getParameterAnnotations()[i];
-            boolean found = false;
-            for (Annotation j : annotations) {
-                if (j.annotationType() == ContextObject.class) {
-                    found = true;
-                    break;
-                }
-            }
-            if (found) {
-                continue;
-            }
-            throw new RuntimeException("Cannot invoke method " + method + " as parameter " + i + " cannot be recorded");
-        }
-
-    }
-
     @Override
-    public void close() throws IOException {
+    public void close() {
         ClassCreator file = ClassCreator.builder().classOutput(new org.jboss.protean.gizmo.ClassOutput() {
             @Override
             public void write(String name, byte[] data) {
@@ -264,47 +223,9 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
                     }
                     if (call.parameters[i] != null) {
                         Object param = call.parameters[i];
-                        if (param instanceof String) {
-                            String configParam = ShamrockConfig.getConfigKey((String) param);
-                            params[i] = method.load((String)param);
-                            if (configParam != null) {
-                                ResultHandle config = method.invokeStaticMethod(ofMethod(ConfigProvider.class, "getConfig", Config.class));
-                                ResultHandle propName = method.load(configParam);
-                                ResultHandle configOptional = method.invokeInterfaceMethod(ofMethod(Config.class, "getOptionalValue", Optional.class, String.class, Class.class), config, propName, method.loadClass(String.class));
-                                ResultHandle result = method.invokeVirtualMethod(ofMethod(Optional.class, "isPresent", boolean.class), configOptional);
-
-                                BranchResult ifResult = method.ifNonZero(result);
-                                ResultHandle tr =  ifResult.trueBranch().invokeVirtualMethod(ofMethod(Optional.class, "get", Object.class), configOptional);
-                                ResultHandle trs =  ifResult.trueBranch().invokeVirtualMethod(ofMethod(Object.class, "toString", String.class), tr);
-                                ResultHandle fr = ifResult.falseBranch().load((String) param);
-                                params[i] = ifResult.mergeBranches(trs, fr);
-                            } else {
-                                params[i] = method.load((String)param);
-                            }
-                        }  else if (param instanceof Enum) {
-                            Enum e = (Enum) param;
-                            ResultHandle nm = method.load(e.name());
-                            params[i] = method.invokeStaticMethod(ofMethod(e.getDeclaringClass(), "valueOf", e.getDeclaringClass(), String.class), nm);
-                        } else if (param instanceof Boolean) {
-                            params[i] = method.load((boolean)param);
-                        } else if (param instanceof NewInstance) {
-                            params[i] = ((NewInstance) param).resultHandle;
-                        } else if (param instanceof ReturnedProxy) {
-                            ResultHandle pos = returnValueResults.get(param);
-                            if (pos == null) {
-                                throw new RuntimeException("invalid proxy passed into recorded method " + call.method);
-                            }
-                            params[i] = pos;
-                        } else if (param instanceof Class<?>) {
-                            String name = classProxies.get(param);
-                            if (name == null) {
-                                name = ((Class) param).getName();
-                            }
-                            params[i] = method.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class), method.load(name));
-                        } else {
-                            //TODO: rest of primitives
-                            params[i] = method.load((int) param);
-                        }
+                        ResultHandle out;
+                        out = loadObjectInstance(method, param, returnValueResults, targetType);
+                        params[i] = out;
                     } else if (targetType == StartupContext.class) { //hack, as this is tied to StartupTask
                         params[i] = method.getMethodParam(0);
                     } else if (contextName != null) {
@@ -319,7 +240,7 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
                     ContextObject annotation = call.method.getAnnotation(ContextObject.class);
                     if (annotation != null) {
                         method.invokeVirtualMethod(ofMethod(StartupContext.class, "putValue", void.class, String.class, Object.class), method.getMethodParam(0), method.load(annotation.value()), callResult);
-                        if(call.returnedProxy != null) {
+                        if (call.returnedProxy != null) {
                             returnValueResults.put(call.returnedProxy, callResult);
                         }
                     } else if (call.returnedProxy != null) {
@@ -336,6 +257,79 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
 
         method.returnValue(null);
         file.close();
+    }
+
+    private ResultHandle loadObjectInstance(MethodCreator method, Object param, Map<Object, ResultHandle> returnValueResults, Class<?> expectedType) {
+        ResultHandle out;
+        if (param instanceof String) {
+            String configParam = ShamrockConfig.getConfigKey((String) param);
+            out = method.load((String) param);
+            if (configParam != null) {
+                ResultHandle config = method.invokeStaticMethod(ofMethod(ConfigProvider.class, "getConfig", Config.class));
+                ResultHandle propName = method.load(configParam);
+                ResultHandle configOptional = method.invokeInterfaceMethod(ofMethod(Config.class, "getOptionalValue", Optional.class, String.class, Class.class), config, propName, method.loadClass(String.class));
+                ResultHandle result = method.invokeVirtualMethod(ofMethod(Optional.class, "isPresent", boolean.class), configOptional);
+
+                BranchResult ifResult = method.ifNonZero(result);
+                ResultHandle tr = ifResult.trueBranch().invokeVirtualMethod(ofMethod(Optional.class, "get", Object.class), configOptional);
+                ResultHandle trs = ifResult.trueBranch().invokeVirtualMethod(ofMethod(Object.class, "toString", String.class), tr);
+                ResultHandle fr = ifResult.falseBranch().load((String) param);
+                out = ifResult.mergeBranches(trs, fr);
+            } else {
+                out = method.load((String) param);
+            }
+        } else if (param instanceof Enum) {
+            Enum e = (Enum) param;
+            ResultHandle nm = method.load(e.name());
+            out = method.invokeStaticMethod(ofMethod(e.getDeclaringClass(), "valueOf", e.getDeclaringClass(), String.class), nm);
+        } else if (param instanceof Boolean) {
+            out = method.load((boolean) param);
+        } else if (param instanceof NewInstance) {
+            out = ((NewInstance) param).resultHandle;
+        } else if (param instanceof ReturnedProxy) {
+            ResultHandle pos = returnValueResults.get(param);
+            if (pos == null) {
+                throw new RuntimeException("invalid proxy passed into recorded method " + method);
+            }
+            out = pos;
+        } else if (param instanceof Class<?>) {
+            String name = classProxies.get(param);
+            if (name == null) {
+                name = ((Class) param).getName();
+            }
+            out = method.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class), method.load(name));
+        } else if (expectedType == int.class) {
+            out = method.load((int) param);
+        } else if (expectedType == Integer.class) {
+            out = method.invokeStaticMethod(ofMethod(Integer.class, "valueOf", Integer.class, int.class), method.load((int) param));
+        } else if (expectedType == short.class) {
+            out = method.load((short) param);
+        } else if (expectedType == Short.class) {
+            out = method.invokeStaticMethod(ofMethod(Short.class, "valueOf", Short.class, short.class), method.load((short) param));
+        } else if (expectedType == byte.class) {
+            out = method.load((byte) param);
+        } else if (expectedType == Byte.class) {
+            out = method.invokeStaticMethod(ofMethod(Byte.class, "valueOf", Byte.class, byte.class), method.load((byte) param));
+        } else if (expectedType == char.class) {
+            out = method.load((char) param);
+        } else if (expectedType == Character.class) {
+            out = method.invokeStaticMethod(ofMethod(Character.class, "valueOf", Character.class, char.class), method.load((char) param));
+        } else if (expectedType == long.class) {
+            out = method.load((long) param);
+        } else if (expectedType == Long.class) {
+            out = method.invokeStaticMethod(ofMethod(Long.class, "valueOf", Long.class, long.class), method.load((long) param));
+        } else if (expectedType == float.class) {
+            out = method.load((float) param);
+        } else if (expectedType == Float.class) {
+            out = method.invokeStaticMethod(ofMethod(Float.class, "valueOf", Float.class, float.class), method.load((float) param));
+        } else if (expectedType == double.class) {
+            out = method.load((double) param);
+        } else if (expectedType == Double.class) {
+            out = method.invokeStaticMethod(ofMethod(Double.class, "valueOf", Double.class, double.class), method.load((double) param));
+        } else {
+            throw new RuntimeException("Unable to serialize object of type " + param);
+        }
+        return out;
     }
 
     public interface BytecodeInstruction {

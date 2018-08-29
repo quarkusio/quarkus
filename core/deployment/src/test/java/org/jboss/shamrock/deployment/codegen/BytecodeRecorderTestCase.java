@@ -71,6 +71,15 @@ public class BytecodeRecorderTestCase {
         }, new TestJavaBean("A string", 99));
     }
 
+    @Test
+    public void testSubstitution() throws Exception {
+        runTest(recorder -> {
+            recorder.registerSubstitution(NonSerializable.class, NonSerializable.Serialized.class, NonSerializable.Substitution.class);
+            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            template.bean(new NonSerializable("A string", 99));
+        }, new NonSerializable("A string", 99));
+    }
+
     void runTest(Consumer<BytecodeRecorder> generator, Object... expected) throws Exception {
         TestTemplate.RESULT.clear();
         TestClassLoader tcl = new TestClassLoader(getClass().getClassLoader());

@@ -50,6 +50,7 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
 
     private final Map<Class, ProxyFactory<?>> returnValueProxy = new HashMap<>();
     private final IdentityHashMap<Class<?>, String> classProxies = new IdentityHashMap<>();
+    private final Map<Class<?>, SubstitutionHolder> substitutions = new HashMap<>();
 
     public BytecodeRecorderImpl(ClassLoader classLoader, String className, Class<?> serviceType, ClassOutput classOutput) {
         this.classLoader = classLoader;
@@ -78,6 +79,11 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
             }
         }
         return null;
+    }
+
+    @Override
+    public <F, T> void registerSubstitution(Class<F> from, Class<T> to, Class<? extends ObjectSubstitution<F, T>> substitution) {
+        substitutions.put(from, new SubstitutionHolder(from, to, substitution));
     }
 
     @Override
@@ -273,6 +279,18 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
         ResultHandle out;
         if (param == null) {
             out = method.loadNull();
+        } else if (substitutions.containsKey(param.getClass())) {
+            SubstitutionHolder holder = substitutions.get(param.getClass());
+            try {
+                ObjectSubstitution substitution = holder.sub.newInstance();
+                Object res = substitution.serialize(param);
+                ResultHandle serialized = loadObjectInstance(method, res, returnValueResults, holder.to);
+                ResultHandle subInstane = method.newInstance(MethodDescriptor.ofConstructor(holder.sub));
+                out = method.invokeInterfaceMethod(ofMethod(ObjectSubstitution.class, "deserialize", Object.class, Object.class), subInstane, serialized);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to substitute " + param, e);
+            }
+
         } else if (param instanceof String) {
             String configParam = ShamrockConfig.getConfigKey((String) param);
             out = method.load((String) param);
@@ -368,7 +386,7 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
                 if (i.getReadMethod() != null && i.getWriteMethod() != null) {
                     try {
                         Object propertyValue = PropertyUtils.getProperty(param, i.getName());
-                        if(propertyValue == null) {
+                        if (propertyValue == null) {
                             //we just assume properties are null by default
                             //TODO: is this a valid assumption? Should we check this by creating an instance?
                             continue;
@@ -433,6 +451,18 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
         @Override
         public Object newInstance() {
             throw new RuntimeException();
+        }
+    }
+
+    static final class SubstitutionHolder {
+        final Class<?> from;
+        final Class<?> to;
+        final Class<? extends ObjectSubstitution<?, ?>> sub;
+
+        SubstitutionHolder(Class<?> from, Class<?> to, Class<? extends ObjectSubstitution<?, ?>> sub) {
+            this.from = from;
+            this.to = to;
+            this.sub = sub;
         }
     }
 

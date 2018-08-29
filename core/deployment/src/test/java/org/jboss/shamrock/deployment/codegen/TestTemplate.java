@@ -55,4 +55,7 @@ public class TestTemplate {
     public void bean(TestJavaBean bean) {
         RESULT.add(bean);
     }
+    public void bean(NonSerializable bean) {
+        RESULT.add(bean);
+    }
 }

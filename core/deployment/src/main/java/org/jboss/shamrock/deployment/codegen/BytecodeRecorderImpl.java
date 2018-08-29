@@ -203,6 +203,7 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
         //now create instances of all the classes we invoke on and store them in variables as well
         Map<Class, ResultHandle> classInstanceVariables = new HashMap<>();
         Map<Object, ResultHandle> returnValueResults = new IdentityHashMap<>();
+        Map<String, ResultHandle> contextResults = new HashMap<>();
         for (BytecodeInstruction set : this.methodRecorder.storedMethodCalls) {
             if (set instanceof StoredMethodCall) {
                 StoredMethodCall call = (StoredMethodCall) set;
@@ -240,7 +241,13 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
                     } else if (targetType == StartupContext.class) { //hack, as this is tied to StartupTask
                         params[i] = method.getMethodParam(0);
                     } else if (contextName != null) {
-                        params[i] = method.invokeVirtualMethod(ofMethod(StartupContext.class, "getValue", Object.class, String.class), method.getMethodParam(0), method.load(contextName));
+                        ResultHandle existing = contextResults.get(contextName);
+                        if(existing != null) {
+                            params[i] = existing;
+                        } else {
+                            params[i] = method.invokeVirtualMethod(ofMethod(StartupContext.class, "getValue", Object.class, String.class), method.getMethodParam(0), method.load(contextName));
+                            contextResults.put(contextName, params[i]);
+                        }
                     } else {
                         params[i] = method.loadNull();
                     }
@@ -254,6 +261,7 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
                         if (call.returnedProxy != null) {
                             returnValueResults.put(call.returnedProxy, callResult);
                         }
+                        contextResults.remove(annotation.value());
                     } else if (call.returnedProxy != null) {
                         returnValueResults.put(call.returnedProxy, callResult);
                     }

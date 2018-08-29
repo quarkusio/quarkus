@@ -88,7 +88,7 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
 
     @Override
     public ResultHandle newInstance(MethodDescriptor descriptor, ResultHandle... args) {
-        ResultHandle ret = allocateResult(descriptor.getDeclaringClass());
+        ResultHandle ret = allocateResult("L" + descriptor.getDeclaringClass() + ";");
         operations.add(new NewInstanceOperation(ret, descriptor, args));
         return ret;
     }

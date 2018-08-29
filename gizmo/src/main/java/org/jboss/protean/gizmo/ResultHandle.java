@@ -1,7 +1,5 @@
 package org.jboss.protean.gizmo;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -26,6 +24,7 @@ public class ResultHandle {
         this.owner = owner;
         this.constant = null;
         this.resultType = ResultType.UNUSED;
+        verifyType(type);
     }
 
     //params need to be in a different order to avoid ambiguality
@@ -38,6 +37,37 @@ public class ResultHandle {
         this.owner = owner;
         this.constant = constant;
         this.resultType = ResultType.CONSTANT;
+        verifyType(type);
+    }
+
+    private void verifyType(String current) {
+        if(current.length() == 0) {
+            throw new RuntimeException("Invalid type " + type);
+        }
+        if (current.length() == 1) {
+            switch (current.charAt(0)) {
+                case 'Z':
+                case 'B':
+                case 'S':
+                case 'I':
+                case 'J':
+                case 'F':
+                case 'D':
+                case 'C':
+                    return;
+                default:
+                    throw new RuntimeException("Invalid type " + type);
+            }
+        } else {
+            if(current.charAt(0) == '[') {
+                verifyType(current.substring(1));
+            } else {
+                if(!(current.startsWith("L") && current.endsWith(";"))) {
+                    throw new RuntimeException("Invalid type " + type);
+                }
+            }
+        }
+
     }
 
     public void setNo(int no) {
@@ -50,7 +80,7 @@ public class ResultHandle {
     }
 
     int getNo() {
-        if(resultType != ResultType.LOCAL_VARIABLE) {
+        if (resultType != ResultType.LOCAL_VARIABLE) {
             throw new IllegalStateException("Cannot call getNo on a non-var ResultHandle");
         }
         return no;

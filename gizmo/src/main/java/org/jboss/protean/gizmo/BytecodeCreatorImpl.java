@@ -50,11 +50,6 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
     }
 
     @Override
-    public <T> T createRecordingProxy(Class<T> proxyType) {
-        return null;
-    }
-
-    @Override
     public ResultHandle getThis() {
         ResultHandle resultHandle = new ResultHandle("L" + declaringClassName.replace(".", "/") + ";", this);
         resultHandle.setNo(0);

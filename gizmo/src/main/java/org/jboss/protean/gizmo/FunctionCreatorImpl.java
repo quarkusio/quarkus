@@ -82,11 +82,6 @@ public class FunctionCreatorImpl implements FunctionCreator {
             this.owner = owner;
         }
 
-        public <T> T createRecordingProxy(Class<T> proxyType) {
-            return delegate.createRecordingProxy(proxyType);
-        }
-
-
         /**
          * Turns a parent result handle into a local result handle.
          * <p>

@@ -151,10 +151,6 @@
               <value>true</value>
             </property>
           </activation>
-          <properties>
-            <!-- https://github.com/mkouba/smallrye-metrics/tree/no-private-injection -->
-            <smallrye-metrics.version>1.1-SNAPSHOT</smallrye-metrics.version>
-          </properties>
           <dependencies>
             <dependency>
               <groupId>org.jboss.shamrock</groupId>

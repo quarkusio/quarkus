@@ -19,7 +19,7 @@ import io.smallrye.metrics.MetricsRequestHandler;
 public class MetricsServlet extends HttpServlet {
 
     @Inject
-    private MetricsRequestHandler metricsHandler;
+    MetricsRequestHandler metricsHandler;
 
     @Override
     protected void doOptions(HttpServletRequest req, HttpServletResponse resp) throws IOException {

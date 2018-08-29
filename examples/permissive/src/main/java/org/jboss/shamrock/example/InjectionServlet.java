@@ -13,7 +13,7 @@ import javax.servlet.http.HttpServletResponse;
 public class InjectionServlet extends HttpServlet {
 
     @Inject
-    private MessageBean messageBean;
+    MessageBean messageBean;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {

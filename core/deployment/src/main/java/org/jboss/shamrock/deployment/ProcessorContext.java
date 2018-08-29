@@ -50,6 +50,8 @@ public interface ProcessorContext {
      */
     void addGeneratedClass(boolean applicationClass, String name, byte[] classData) throws IOException;
 
+    void addResource(String name, byte[] data) throws IOException;
+
     /**
      * Adds a bytecode transformer that can transform application classes.
      * <p>

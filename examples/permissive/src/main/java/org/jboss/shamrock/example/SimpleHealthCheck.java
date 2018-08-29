@@ -3,13 +3,17 @@ package org.jboss.shamrock.example;
 import java.util.Map;
 import java.util.Optional;
 
+import javax.enterprise.context.Dependent;
+
 import org.eclipse.microprofile.health.Health;
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 
+@Dependent
 @Health
 public class SimpleHealthCheck implements HealthCheck {
-    @Override
+
+	@Override
     public HealthCheckResponse call() {
         return new HealthCheckResponse() {
             @Override

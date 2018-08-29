@@ -1,4 +1,4 @@
-package org.jboss.shamrock.weld.deployment;
+package org.jboss.shamrock.deployment;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -7,10 +7,6 @@ import javax.inject.Inject;
 
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.IndexView;
-import org.jboss.shamrock.deployment.ApplicationArchive;
-import org.jboss.shamrock.deployment.ArchiveContext;
-import org.jboss.shamrock.deployment.ProcessorContext;
-import org.jboss.shamrock.deployment.ResourceProcessor;
 
 public class BeanArchiveProcessor implements ResourceProcessor {
 

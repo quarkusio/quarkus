@@ -7,6 +7,8 @@ import javax.inject.Inject;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.shamrock.deployment.ArchiveContext;
+import org.jboss.shamrock.deployment.BeanArchiveIndex;
+import org.jboss.shamrock.deployment.BeanDeployment;
 import org.jboss.shamrock.deployment.ProcessorContext;
 import org.jboss.shamrock.deployment.ResourceProcessor;
 import org.jboss.shamrock.deployment.RuntimePriority;
@@ -18,15 +20,16 @@ import io.smallrye.config.inject.ConfigProducer;
 public class WeldAnnotationProcessor implements ResourceProcessor {
 
     @Inject
-    private WeldDeployment weldDeployment;
+    private BeanDeployment beanDeployment;
 
     @Inject
     private BeanArchiveIndex beanArchiveIndex;
 
     @Override
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
-        weldDeployment.addAdditionalBean(ConfigProducer.class);
         IndexView index = beanArchiveIndex.getIndex();
+        //make config injectable
+    	beanDeployment.addAdditionalBean(ConfigProducer.class);
         try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.WELD_DEPLOYMENT)) {
             WeldDeploymentTemplate template = recorder.getRecordingProxy(WeldDeploymentTemplate.class);
             SeContainerInitializer init = template.createWeld();
@@ -35,13 +38,11 @@ public class WeldAnnotationProcessor implements ResourceProcessor {
                 template.addClass(init, recorder.classProxy(name));
                 processorContext.addReflectiveClass(true, true, name);
             }
-            for (Class<?> clazz : weldDeployment.getAdditionalBeans()) {
+            for (Class<?> clazz : beanDeployment.getAdditionalBeans()) {
                 template.addClass(init, clazz);
             }
-            for (Class<?> clazz : weldDeployment.getInterceptors()) {
-                template.addInterceptor(init, clazz);
-            }
             SeContainer weld = template.doBoot(null, init);
+            template.initBeanContainer(weld);
             template.setupInjection(null, weld);
         }
 

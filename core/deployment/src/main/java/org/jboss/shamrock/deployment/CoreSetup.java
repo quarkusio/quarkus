@@ -4,5 +4,7 @@ public class CoreSetup implements ShamrockSetup {
     @Override
     public void setup(SetupContext context) {
         context.addInjectionProvider(new ConfigInjectionProvider());
+        context.addInjectionProvider(new BeanDeploymentInjectionProvider());
+        context.addResourceProcessor(new BeanArchiveProcessor());
     }
 }

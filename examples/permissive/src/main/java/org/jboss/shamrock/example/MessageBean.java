@@ -1,9 +1,8 @@
 package org.jboss.shamrock.example;
 
-import javax.enterprise.context.ApplicationScoped;
-
 import java.util.Optional;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.Config;
@@ -12,7 +11,7 @@ import org.eclipse.microprofile.config.Config;
 public class MessageBean {
 
     @Inject
-    private Config config;
+    Config config;
 
     public String getMessage() {
         Optional<String> message = config.getOptionalValue("message", String.class);

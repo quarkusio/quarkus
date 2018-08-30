@@ -43,7 +43,7 @@ public class RunMojo extends AbstractMojo {
     private boolean fakereplace = true;
 
     @Parameter(defaultValue = "${debug}")
-    private boolean debug = false;
+    private String debug;
 
     @Parameter(defaultValue = "${project.build.directory}")
     private File buildDir;
@@ -57,11 +57,15 @@ public class RunMojo extends AbstractMojo {
 
             List<String> args = new ArrayList<>();
             args.add("java");
-            if (debug) {
+            if (debug != null) {
                 args.add("-Xdebug");
                 args.add("-Xnoagent");
                 args.add("-Djava.compiler=NONE");
-                args.add("-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y");
+                if(debug.equals("client")) {
+                    args.add("-Xrunjdwp:transport=dt_socket,address=localhost:5005,server=n,suspend=n");
+                } else {
+                    args.add("-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y");
+                }
             }
             args.add("-XX:TieredStopAtLevel=1");
             //build a class-path string for the base platform

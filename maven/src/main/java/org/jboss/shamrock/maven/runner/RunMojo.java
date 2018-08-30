@@ -48,6 +48,9 @@ public class RunMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project.build.directory}")
     private File buildDir;
 
+    @Parameter(defaultValue = "${project.build.sourceDirectory}")
+    private File sourceDir;
+
     @Override
     public void execute() throws MojoFailureException {
         try {
@@ -114,6 +117,7 @@ public class RunMojo extends AbstractMojo {
             }
 
             args.add("-Dshamrock.runner.classes=" + outputDirectory.getAbsolutePath());
+            args.add("-Dshamrock.runner.sources=" + sourceDir.getAbsolutePath());
             args.add("-jar");
             args.add(tempFile.getAbsolutePath());
             args.add(outputDirectory.getAbsolutePath());

@@ -1,5 +1,6 @@
 package org.jboss.shamrock.maven.runner;
 
+import java.io.File;
 import java.nio.file.Paths;
 
 import javax.servlet.ServletContext;
@@ -20,7 +21,14 @@ public class RuntimeCompilationServletExtension implements ServletExtension {
             deploymentInfo.addInitialHandlerChainWrapper(new HandlerWrapper() {
                 @Override
                 public HttpHandler wrap(HttpHandler handler) {
-                    return new RuntimeUpdatesHandler(handler, Paths.get(classesDir), null);
+                    ClassLoaderCompiler compiler = null;
+                    try {
+                        compiler = new ClassLoaderCompiler(deploymentInfo.getClassLoader(), new File(classesDir));
+                    } catch (Exception e) {
+                        servletContext.log("Failed to create compiler, runtime compilation will be unavailable", e);
+                    }
+
+                    return new RuntimeUpdatesHandler(handler, Paths.get(classesDir), Paths.get(sourcesDir), compiler);
                 }
             });
         }

@@ -2,6 +2,7 @@ package org.jboss.shamrock.arc.deployment;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -10,11 +11,16 @@ import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.protean.arc.ArcContainer;
 import org.jboss.protean.arc.processor.BeanProcessor;
 import org.jboss.protean.arc.processor.BeanProcessor.Builder;
@@ -32,6 +38,7 @@ import io.smallrye.config.inject.ConfigProducer;
 
 public class ArcAnnotationProcessor implements ResourceProcessor {
 
+    private static final DotName INJECT = DotName.createSimple("javax.inject.Inject");
     @Inject
     BeanDeployment beanDeployment;
 
@@ -72,7 +79,7 @@ public class ArcAnnotationProcessor implements ResourceProcessor {
                 public void writeResource(Resource resource) throws IOException {
                     switch (resource.getType()) {
                         case JAVA_CLASS:
-                         // TODO a better way to identify app classes
+                            // TODO a better way to identify app classes
                             boolean isAppClass = true;
                             for (String frameworkPackage : frameworkPackages) {
                                 if (resource.getFullyQualifiedName().startsWith(frameworkPackage)) {
@@ -95,6 +102,24 @@ public class ArcAnnotationProcessor implements ResourceProcessor {
             ArcContainer container = template.getContainer();
             template.initBeanContainer(container);
             template.setupInjection(container);
+            enableReflectionForPrivateFields(index, processorContext);
+        }
+    }
+
+    private void enableReflectionForPrivateFields(CompositeIndex index, ProcessorContext context) {
+        for (AnnotationInstance anno : index.getAnnotations(INJECT)) {
+            if (anno.target().kind() == AnnotationTarget.Kind.FIELD) {
+                FieldInfo info = anno.target().asField();
+                if (Modifier.isPrivate(info.flags())) {
+                    //TODO: this should be more fine grained
+                    context.addReflectiveClass(false, true, info.declaringClass().name().toString());
+                }
+            } else if (anno.target().kind() == AnnotationTarget.Kind.METHOD) {
+                MethodInfo methodInfo = anno.target().asMethod();
+                if (Modifier.isPrivate(methodInfo.flags())) {
+                    context.addReflectiveClass(true, false, methodInfo.declaringClass().name().toString());
+                }
+            }
         }
     }
 

@@ -61,8 +61,8 @@
         <module>openapi</module>
         <module>examples</module>
         <module>jpa</module>
-        <module>gizmo</module>
         <module>arc</module>
+        <module>ext/gizmo</module>
     </modules>
     <build>
         <pluginManagement>

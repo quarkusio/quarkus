@@ -276,6 +276,7 @@ public class BuildTimeGenerator {
                 ResultHandle dup = mv.newInstance(ofConstructor(holder.className));
                 mv.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup, startupContext);
             }
+            mv.invokeStaticMethod(ofMethod(Timing.class, "printStartupTime", void.class));
             mv.returnValue(null);
 
             mv = file.getMethodCreator("close", void.class);

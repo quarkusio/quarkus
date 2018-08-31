@@ -46,7 +46,6 @@
         <jackson.version>2.9.5</jackson.version>
         <commons-beanutils-core.version>1.8.3</commons-beanutils-core.version>
         <commons-logging.version>1.2</commons-logging.version>
-        <arc.version>1.0.0-SNAPSHOT</arc.version>
     </properties>
 
     <modules>
@@ -63,6 +62,7 @@
         <module>jpa</module>
         <module>arc</module>
         <module>ext/gizmo</module>
+        <module>ext/arc</module>
     </modules>
     <build>
         <pluginManagement>
@@ -448,12 +448,12 @@
             <dependency>
                 <groupId>org.jboss.protean.arc</groupId>
                 <artifactId>arc-processor</artifactId>
-                <version>${arc.version}</version>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.protean.arc</groupId>
                 <artifactId>arc-runtime</artifactId>
-                <version>${arc.version}</version>
+                <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.xnio</groupId>

@@ -95,7 +95,9 @@
         <profile>
             <id>native-image</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>!no-native</name>
+                </property>
             </activation>
             <build>
                 <plugins>

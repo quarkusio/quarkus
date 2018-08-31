@@ -18,14 +18,9 @@ public class RuntimeRunner implements Runnable, Closeable {
     private final RuntimeClassLoader loader;
     private Closeable closeTask;
 
-    public RuntimeRunner(Path target) {
+    public RuntimeRunner(ClassLoader classLoader, Path target, Path frameworkClassesPath) {
         this.target = target;
-        this.loader = new RuntimeClassLoader(getClass().getClassLoader(), target);
-    }
-
-    public RuntimeRunner(Path target, ClassLoader cl) {
-        this.target = target;
-        this.loader = new RuntimeClassLoader(cl, target);
+        this.loader = new RuntimeClassLoader(classLoader, target, frameworkClassesPath);
     }
 
     @Override

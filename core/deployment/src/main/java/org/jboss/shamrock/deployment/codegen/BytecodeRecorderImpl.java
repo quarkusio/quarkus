@@ -178,16 +178,7 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
 
     @Override
     public void close() {
-        ClassCreator file = ClassCreator.builder().classOutput(new org.jboss.protean.gizmo.ClassOutput() {
-            @Override
-            public void write(String name, byte[] data) {
-                try {
-                    classOutput.writeClass(true, name, data);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }).className(className).superClass(Object.class).interfaces(StartupTask.class).build();
+        ClassCreator file = ClassCreator.builder().classOutput(ClassOutput.gizmoAdaptor(classOutput,  true)).className(className).superClass(Object.class).interfaces(StartupTask.class).build();
         MethodCreator method = file.getMethodCreator(this.method.getName(), this.method.getReturnType(), this.method.getParameterTypes());
 
         //figure out where we can start using local variables

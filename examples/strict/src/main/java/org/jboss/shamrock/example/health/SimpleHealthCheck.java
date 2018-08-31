@@ -1,4 +1,4 @@
-package org.jboss.shamrock.example;
+package org.jboss.shamrock.example.health;
 
 import java.util.Map;
 import java.util.Optional;

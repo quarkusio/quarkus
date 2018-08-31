@@ -6,7 +6,9 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
 import java.nio.file.Files;
@@ -27,6 +29,8 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 
+import sun.misc.URLClassPath;
+
 public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Consumer<List<Function<String, Function<ClassVisitor, ClassVisitor>>>> {
 
     private final Map<String, byte[]> appClasses = new HashMap<>();
@@ -37,13 +41,15 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Cons
     private volatile List<Function<String, Function<ClassVisitor, ClassVisitor>>> functions = null;
 
     private final Path applicationClasses;
+    private final Path frameworkClassesPath;
     static {
         registerAsParallelCapable();
     }
 
-    public RuntimeClassLoader(ClassLoader parent, Path applicationClasses) {
+    public RuntimeClassLoader(ClassLoader parent, Path applicationClasses, Path frameworkClassesPath) {
         super(parent);
         this.applicationClasses = applicationClasses;
+        this.frameworkClassesPath = frameworkClassesPath;
     }
 
     @Override
@@ -150,7 +156,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Cons
             //however as we add them to the frameworkClasses set we know to load them
             //from the parent CL
             frameworkClasses.add(className.replace('/', '.'));
-            Path fileName = applicationClasses.resolve(className.replace(".", "/") + ".class");
+            Path fileName = frameworkClassesPath.resolve(className.replace(".", "/") + ".class");
             try {
                 Files.createDirectories(fileName.getParent());
                 try(FileOutputStream out = new FileOutputStream(fileName.toFile())) {

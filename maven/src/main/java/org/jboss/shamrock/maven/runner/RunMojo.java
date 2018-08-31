@@ -5,6 +5,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.net.JarURLConnection;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.jar.Attributes;
@@ -75,6 +77,11 @@ public class RunMojo extends AbstractMojo {
                 classPath.append(artifact.getFile().getAbsolutePath());
                 classPath.append(" ");
             }
+            File wiringClassesDirectory = Files.createTempDirectory("wiring-classes").toFile();
+            wiringClassesDirectory.deleteOnExit();
+
+            classPath.append(wiringClassesDirectory.getAbsolutePath() + "/");
+            classPath.append(' ');
 
             if (fakereplace) {
                 File target = new File(buildDir, "fakereplace.jar");
@@ -125,6 +132,7 @@ public class RunMojo extends AbstractMojo {
             args.add("-jar");
             args.add(tempFile.getAbsolutePath());
             args.add(outputDirectory.getAbsolutePath());
+            args.add(wiringClassesDirectory.getAbsolutePath());
             Process p = Runtime.getRuntime().exec(args.toArray(new String[0]), null, outputDirectory);
             new Thread(new ProcessReader(p.getErrorStream(), true)).start();
             new Thread(new ProcessReader(p.getInputStream(), false)).start();

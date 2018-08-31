@@ -5,6 +5,7 @@ import java.io.File;
 import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 
@@ -22,8 +23,9 @@ public class RunMojoMain {
 
     public static void main(String... args) throws Exception {
         Timing.staticInitStarted();
-        //the path that contains the generated classes
+        //the path that contains the compiled classes
         File classesRoot = new File(args[0]);
+        File wiringDir = new File(args[1]);
         URLClassLoader runtimeCl = null;
         do {
             if (runtimeCl == null || !keepCl) {
@@ -38,8 +40,8 @@ public class RunMojoMain {
             try {
                 Thread.currentThread().setContextClassLoader(runtimeCl);
                 Class<?> runnerClass = runtimeCl.loadClass("org.jboss.shamrock.runner.RuntimeRunner");
-                Constructor ctor = runnerClass.getDeclaredConstructor(Path.class, ClassLoader.class);
-                Object runner = ctor.newInstance(classesRoot.toPath(), runtimeCl);
+                Constructor ctor = runnerClass.getDeclaredConstructor( ClassLoader.class, Path.class, Path.class);
+                Object runner = ctor.newInstance( runtimeCl, classesRoot.toPath(), wiringDir.toPath());
                 ((Runnable) runner).run();
                 synchronized (RunMojoMain.class) {
                     if (awaitRestartLatch != null) {

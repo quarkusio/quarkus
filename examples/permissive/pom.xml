@@ -24,11 +24,6 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-health-deployment</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-metrics-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
@@ -152,11 +147,11 @@
             </property>
           </activation>
           <dependencies>
-            <dependency>
-              <groupId>org.jboss.shamrock</groupId>
-              <artifactId>shamrock-arc-deployment</artifactId>
-              <scope>provided</scope>
-            </dependency>
+              <dependency>
+                  <groupId>org.jboss.shamrock</groupId>
+                  <artifactId>shamrock-arc-deployment</artifactId>
+                  <scope>provided</scope>
+              </dependency>
           </dependencies>
         </profile>
     </profiles>

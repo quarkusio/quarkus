@@ -210,7 +210,6 @@ public class BuildMojo extends AbstractMojo {
                         }
                     }
                 });
-                out.putNextEntry(new ZipEntry("META-INF/"));
                 Manifest manifest = new Manifest();
                 manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
                 manifest.getMainAttributes().put(Attributes.Name.CLASS_PATH, classPath.toString());

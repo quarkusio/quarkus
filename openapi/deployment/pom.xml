@@ -19,10 +19,6 @@
     </dependency>
     <dependency>
       <groupId>org.jboss.shamrock</groupId>
-      <artifactId>shamrock-weld-deployment</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.shamrock</groupId>
       <artifactId>shamrock-undertow-deployment</artifactId>
     </dependency>
     <dependency>

@@ -3,6 +3,8 @@ package org.jboss.shamrock.deployment;
 import java.io.IOException;
 import java.util.function.Function;
 
+import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
 import org.objectweb.asm.ClassVisitor;
 
@@ -37,9 +39,17 @@ public interface ProcessorContext {
      * <p>
      * It is used in the graal output to allow the class to be reflected when running on substrate VM
      *
+     * This will add all constructors, as well as all methods and fields if the appropriate fields are set.
+     *
+     * Where possible consider using the more fine grained addReflective* variants
+     *
      * @param className The class name
      */
     void addReflectiveClass(boolean methods, boolean fields, String... className);
+
+    void addReflectiveField(FieldInfo fieldInfo);
+
+    void addReflectiveMethod(MethodInfo methodInfo);
 
     /**
      *

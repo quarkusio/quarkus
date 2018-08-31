@@ -37,6 +37,20 @@ public class JaxRSTestCase {
     }
 
     @Test
+    public void testInteger() throws Exception {
+        URL uri = new URL("http://localhost:8080/rest/test/int/10");
+        URLConnection connection = uri.openConnection();
+        InputStream in = connection.getInputStream();
+        byte[] buf = new byte[100];
+        int r;
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        while ((r = in.read(buf)) > 0) {
+            out.write(buf, 0, r);
+        }
+        Assert.assertEquals("11", new String(out.toByteArray()));
+    }
+
+    @Test
     public void testJsonp() throws Exception {
 
         URL uri = new URL("http://localhost:8080/rest/test/jsonp");

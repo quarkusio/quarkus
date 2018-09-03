@@ -1,0 +1,119 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.jboss.protean.arc</groupId>
+  <artifactId>arc-parent</artifactId>
+  <packaging>pom</packaging>
+  <version>1.0.0.Alpha1-SNAPSHOT</version>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <distribution>repo</distribution>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+    </license>
+  </licenses>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+    <!-- Versions -->
+    <version.cdi>2.0.SP1</version.cdi>
+    <version.jandex>2.0.6.Final-SNAPSHOT</version.jandex>
+    <version.junit4>4.12</version.junit4>
+    <version.maven>3.5.2</version.maven>
+    <version.jboss-logging>3.3.2.Final</version.jboss-logging>
+    <version.javax-annotation>1.2</version.javax-annotation>
+    <version.gizmo>1.0.0.Alpha1-SNAPSHOT</version.gizmo>
+  </properties>
+
+  <modules>
+    <module>runtime</module>
+    <module>processor</module>
+    <module>maven-plugin</module>
+    <module>tests</module>
+    <module>example</module>
+  </modules>
+
+  <dependencyManagement>
+
+    <dependencies>
+
+      <dependency>
+        <groupId>org.jboss.protean.arc</groupId>
+        <artifactId>arc-runtime</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.protean.arc</groupId>
+        <artifactId>arc-processor</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>javax.enterprise</groupId>
+        <artifactId>cdi-api</artifactId>
+        <version>${version.cdi}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss</groupId>
+        <artifactId>jandex</artifactId>
+        <version>${version.jandex}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.protean.gizmo</groupId>
+        <artifactId>gizmo</artifactId>
+        <version>${version.gizmo}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>${version.junit4}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.maven</groupId>
+        <artifactId>maven-plugin-api</artifactId>
+        <version>${version.maven}</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.maven.plugin-tools</groupId>
+        <artifactId>maven-plugin-annotations</artifactId>
+        <version>${version.maven}</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.maven</groupId>
+        <artifactId>maven-core</artifactId>
+        <version>${version.maven}</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.logging</groupId>
+        <artifactId>jboss-logging</artifactId>
+        <version>${version.jboss-logging}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>javax.annotation</groupId>
+        <artifactId>javax.annotation-api</artifactId>
+        <version>${version.javax-annotation}</version>
+        <!-- scope>provided</scope -->
+      </dependency>
+
+    </dependencies>
+
+  </dependencyManagement>
+
+</project>

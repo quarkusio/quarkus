@@ -1,0 +1,190 @@
+package org.jboss.protean.arc.processor;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.ParameterizedType;
+import org.jboss.jandex.Type;
+import org.jboss.jandex.Type.Kind;
+import org.jboss.jandex.TypeVariable;
+import org.jboss.protean.arc.GenericArrayTypeImpl;
+import org.jboss.protean.arc.ParameterizedTypeImpl;
+import org.jboss.protean.arc.TypeVariableImpl;
+import org.jboss.protean.gizmo.BytecodeCreator;
+import org.jboss.protean.gizmo.MethodDescriptor;
+import org.jboss.protean.gizmo.ResultHandle;
+
+/**
+ *
+ * @author Martin Kouba
+ */
+final class Types {
+
+    private Types() {
+    }
+
+    static ResultHandle getTypeHandle(BytecodeCreator creator, Type type) {
+        if (Kind.CLASS.equals(type.kind())) {
+            return creator.loadClass(type.asClassType().name().toString());
+        } else if (Kind.TYPE_VARIABLE.equals(type.kind())) {
+            // E.g. T -> new TypeVariableImpl("T")
+            TypeVariable typeVariable = type.asTypeVariable();
+            ResultHandle boundsHandle;
+            List<Type> bounds = typeVariable.bounds();
+            if (bounds.isEmpty()) {
+                boundsHandle = creator.newArray(java.lang.reflect.Type.class, creator.load(0));
+            } else {
+                boundsHandle = creator.newArray(java.lang.reflect.Type.class, creator.load(bounds.size()));
+                for (int i = 0; i < bounds.size(); i++) {
+                    creator.writeArrayValue(boundsHandle, creator.load(i), getTypeHandle(creator, bounds.get(i)));
+                }
+            }
+            return creator.newInstance(MethodDescriptor.ofConstructor(TypeVariableImpl.class, String.class, java.lang.reflect.Type[].class),
+                    creator.load(typeVariable.identifier()), boundsHandle);
+
+        } else if (Kind.PARAMETERIZED_TYPE.equals(type.kind())) {
+            // E.g. List<String> -> new ParameterizedTypeImpl(List.class, String.class)
+            ParameterizedType parameterizedType = type.asParameterizedType();
+
+            List<Type> arguments = parameterizedType.arguments();
+            ResultHandle typeArgsHandle = creator.newArray(java.lang.reflect.Type.class, creator.load(arguments.size()));
+            for (int i = 0; i < arguments.size(); i++) {
+                creator.writeArrayValue(typeArgsHandle, creator.load(i), getTypeHandle(creator, arguments.get(i)));
+            }
+            return creator.newInstance(
+                    MethodDescriptor.ofConstructor(ParameterizedTypeImpl.class, java.lang.reflect.Type.class, java.lang.reflect.Type[].class),
+                    creator.loadClass(parameterizedType.name().toString()), typeArgsHandle);
+
+        } else if (Kind.ARRAY.equals(type.kind())) {
+            Type componentType = type.asArrayType().component();
+            // E.g. String[] -> new GenericArrayTypeImpl(String.class)
+            return creator.newInstance(MethodDescriptor.ofConstructor(GenericArrayTypeImpl.class, java.lang.reflect.Type.class),
+                    getTypeHandle(creator, componentType));
+
+        } else {
+            throw new IllegalArgumentException("Unsupported bean type: " + type.kind() + ", " + type);
+        }
+    }
+
+
+    static Type getProviderType(ClassInfo classInfo) {
+        // TODO hack
+        List<TypeVariable> typeParameters = classInfo.typeParameters();
+        if (!typeParameters.isEmpty()) {
+            return ParameterizedType.create(classInfo.name(), typeParameters.toArray(new Type[] {}), null);
+        } else {
+            return Type.create(classInfo.name(), Kind.CLASS);
+        }
+    }
+
+    static Set<Type> getTypeClosure(MethodInfo producerMethod, BeanDeployment beanDeployment) {
+        ClassInfo returnTypeClassInfo = beanDeployment.getIndex().getClassByName(producerMethod.returnType().name());
+        if (returnTypeClassInfo == null) {
+            throw new IllegalArgumentException("Producer method return type not found in index: " + producerMethod.returnType().name());
+        }
+        Type returnType = producerMethod.returnType();
+        if (Kind.CLASS.equals(returnType.kind())) {
+            return getTypeClosure(returnTypeClassInfo, Collections.emptyMap(), beanDeployment);
+        } else if (Kind.PARAMETERIZED_TYPE.equals(returnType.kind())) {
+            return getTypeClosure(returnTypeClassInfo,
+                    buildResolvedMap(returnType.asParameterizedType().arguments(), returnTypeClassInfo.typeParameters(), Collections.emptyMap()),
+                    beanDeployment);
+        } else {
+            throw new IllegalArgumentException("Unsupported return type");
+        }
+    }
+
+    static Set<Type> getTypeClosure(FieldInfo producerField, BeanDeployment beanDeployment) {
+        ClassInfo fieldClassInfo = beanDeployment.getIndex().getClassByName(producerField.type().name());
+        if (fieldClassInfo == null) {
+            throw new IllegalArgumentException("Producer field type not found in index: " + producerField.type().name());
+        }
+        Type fieldType = producerField.type();
+        if (Kind.CLASS.equals(fieldType.kind())) {
+            return getTypeClosure(fieldClassInfo, Collections.emptyMap(), beanDeployment);
+        } else if (Kind.PARAMETERIZED_TYPE.equals(fieldType.kind())) {
+            return getTypeClosure(fieldClassInfo,
+                    buildResolvedMap(fieldType.asParameterizedType().arguments(), fieldClassInfo.typeParameters(), Collections.emptyMap()), beanDeployment);
+        } else {
+            throw new IllegalArgumentException("Unsupported return type");
+        }
+    }
+
+    static Set<Type> getTypeClosure(ClassInfo classInfo, Map<TypeVariable, Type> resolvedTypeParameters, BeanDeployment beanDeployment) {
+        Set<Type> types = new HashSet<>();
+        List<TypeVariable> typeParameters = classInfo.typeParameters();
+        if (!typeParameters.isEmpty()) {
+            // Canonical ParameterizedType with unresolved type variables
+            Type[] typeParams = new Type[typeParameters.size()];
+            for (int i = 0; i < typeParameters.size(); i++) {
+                typeParams[i] = resolvedTypeParameters.get(typeParameters.get(i));
+            }
+            types.add(ParameterizedType.create(classInfo.name(), typeParams, null));
+        } else {
+            types.add(Type.create(classInfo.name(), Kind.CLASS));
+        }
+        // Interfaces
+        for (Type interfaceType : classInfo.interfaceTypes()) {
+            ClassInfo interfaceClassInfo = beanDeployment.getIndex().getClassByName(interfaceType.name());
+            if (interfaceClassInfo != null) {
+                Map<TypeVariable, Type> resolved = Collections.emptyMap();
+                if (Kind.PARAMETERIZED_TYPE.equals(interfaceType.kind())) {
+                    resolved = buildResolvedMap(interfaceType.asParameterizedType().arguments(), interfaceClassInfo.typeParameters(), resolvedTypeParameters);
+                }
+                types.addAll(getTypeClosure(interfaceClassInfo, resolved, beanDeployment));
+            }
+        }
+        // Superclass
+        if (classInfo.superClassType() != null) {
+            ClassInfo superClassInfo = beanDeployment.getIndex().getClassByName(classInfo.superName());
+            if (superClassInfo != null) {
+                Map<TypeVariable, Type> resolved = Collections.emptyMap();
+                if (Kind.PARAMETERIZED_TYPE.equals(classInfo.superClassType().kind())) {
+                    resolved = buildResolvedMap(classInfo.superClassType().asParameterizedType().arguments(), superClassInfo.typeParameters(),
+                            resolvedTypeParameters);
+                }
+                types.addAll(getTypeClosure(superClassInfo, resolved, beanDeployment));
+            }
+        }
+        return types;
+    }
+
+    static Map<TypeVariable, Type> buildResolvedMap(List<Type> resolvedTypeVariables, List<TypeVariable> typeVariables,
+            Map<TypeVariable, Type> resolvedTypeParameters) {
+        Map<TypeVariable, Type> resolvedMap = new HashMap<>();
+        for (int i = 0; i < resolvedTypeVariables.size(); i++) {
+            Type resolvedTypeVariable = resolvedTypeVariables.get(i);
+            Type resolvedTypeParam = Kind.TYPE_VARIABLE.equals(resolvedTypeVariable.kind())
+                    ? resolvedTypeParameters.getOrDefault(resolvedTypeVariable, resolvedTypeVariable)
+                    : resolvedTypeVariable;
+            resolvedMap.put(typeVariables.get(i), resolvedTypeParam);
+        }
+        return resolvedMap;
+    }
+
+    static String convertNested(DotName name) {
+        return convertNested(name.toString());
+    }
+
+    static String convertNested(String name) {
+        return name.replace("$", ".");
+    }
+
+    static String getPackageName(String className) {
+        className = className.replace("/", ".");
+        return className.contains(".") ? className.substring(0, className.lastIndexOf(".")) : "";
+    }
+
+    static String getSimpleName(String className) {
+        return className.contains(".") ? className.substring(className.lastIndexOf(".") + 1, className.length()) : className;
+    }
+
+}

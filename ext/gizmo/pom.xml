@@ -18,7 +18,6 @@
     <artifactId>gizmo</artifactId>
     <version>1.0.0.Alpha1-SNAPSHOT</version>
 
-
     <dependencies>
         <dependency>
             <groupId>org.ow2.asm</groupId>

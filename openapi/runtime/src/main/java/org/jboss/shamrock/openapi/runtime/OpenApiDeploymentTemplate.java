@@ -1,11 +1,10 @@
 package org.jboss.shamrock.openapi.runtime;
 
-import javax.enterprise.inject.se.SeContainer;
-
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
+import org.jboss.shamrock.runtime.BeanContainer;
 import org.jboss.shamrock.runtime.ContextObject;
 import org.jboss.shamrock.runtime.Shamrock;
 
@@ -19,7 +18,7 @@ import io.smallrye.openapi.runtime.OpenApiProcessor;
  */
 public class OpenApiDeploymentTemplate {
 
-    public void setupModel(@ContextObject("weld.container") SeContainer container, OpenAPI staticModel, OpenAPI annotationModel) {
+    public void setupModel(@ContextObject("bean.container") BeanContainer container, OpenAPI staticModel, OpenAPI annotationModel) {
         Config config = ConfigProvider.getConfig();
         OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
 
@@ -32,7 +31,7 @@ public class OpenApiDeploymentTemplate {
         document.filter(filter(openApiConfig));
         document.initialize();
 
-        container.select(OpenApiDocumentProducer.class).get().setDocument(document);
+        container.instance(OpenApiDocumentProducer.class).setDocument(document);
     }
 
     private OpenApiDocument createDocument(OpenApiConfig openApiConfig) {

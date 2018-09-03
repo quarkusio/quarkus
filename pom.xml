@@ -15,7 +15,7 @@
     <packaging>pom</packaging>
 
     <properties>
-        <version.org.jandex>2.0.6.Final-SNAPSHOT</version.org.jandex>
+        <version.org.jandex>2.1.0.Beta1</version.org.jandex>
         <resteasy.version>3.5.1.Final</resteasy.version>
         <weld-se-core.version>3.0.4.Final</weld-se-core.version>
         <undertow.version>2.0.12.Final</undertow.version>

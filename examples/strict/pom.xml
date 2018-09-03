@@ -69,6 +69,17 @@
             <artifactId>shamrock-transactions-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
+        <!--
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-agroal-deployment</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        -->
+        <dependency>
+            <groupId>org.jboss.graalvm</groupId>
+            <artifactId>graal-annotations</artifactId>
+        </dependency>
 
 
         <!-- test dependencies -->
@@ -81,6 +92,11 @@
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-graal</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.hsqldb</groupId>
+            <artifactId>hsqldb</artifactId>
+            <version>2.4.0</version>
         </dependency>
     </dependencies>
 

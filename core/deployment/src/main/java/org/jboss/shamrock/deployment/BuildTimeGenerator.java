@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -164,6 +165,7 @@ public class BuildTimeGenerator {
         private final Map<String, ReflectionInfo> reflectiveClasses = new LinkedHashMap<>();
         private final Set<String> resources = new HashSet<>();
         private final Set<String> resourceBundles = new HashSet<>();
+        private final List<Consumer<MethodCreator>> beforeAnalysisCallback = new ArrayList<>();
 
         @Override
         public BytecodeRecorder addStaticInitTask(int priority) {
@@ -246,6 +248,11 @@ public class BuildTimeGenerator {
             resourceBundles.add(bundle);
         }
 
+        @Override
+        public void addBeforeAnalysis(Consumer<MethodCreator> callback) {
+            beforeAnalysisCallback.add(callback);
+        }
+
         void writeMainClass() throws IOException {
 
             Collections.sort(tasks);
@@ -298,10 +305,15 @@ public class BuildTimeGenerator {
             ClassCreator file = new ClassCreator(ClassOutput.gizmoAdaptor(output, true), GRAAL_AUTOFEATURE, null, Object.class.getName(), "org/graalvm/nativeimage/Feature");
             file.addAnnotation("com/oracle/svm/core/annotate/AutomaticFeature");
 
-
+            MethodCreator afterReg = file.getMethodCreator("afterRegistration", void.class, "org.graalvm.nativeimage.Feature$AfterRegistrationAccess");
             MethodCreator beforeAn = file.getMethodCreator("beforeAnalysis", "V", "org/graalvm/nativeimage/Feature$BeforeAnalysisAccess");
 
             //TODO: at some point we are going to need to break this up, as if it get too big it will hit the method size limit
+
+            for(Consumer<MethodCreator> i : beforeAnalysisCallback) {
+                i.accept(afterReg);
+            }
+            afterReg.returnValue(null);
 
             for (String i : resources) {
                 beforeAn.invokeStaticMethod(ofMethod(ResourceHelper.class, "registerResources", void.class, String.class), beforeAn.load(i));

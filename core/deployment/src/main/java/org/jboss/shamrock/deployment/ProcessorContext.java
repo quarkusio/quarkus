@@ -1,10 +1,12 @@
 package org.jboss.shamrock.deployment;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
 import org.objectweb.asm.ClassVisitor;
 
@@ -87,4 +89,6 @@ public interface ProcessorContext {
 
 
     void addResourceBundle(String bundle);
+
+    void addBeforeAnalysis(Consumer<MethodCreator> callback);
 }

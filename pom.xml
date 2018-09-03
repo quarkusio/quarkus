@@ -52,6 +52,8 @@
         <hibernate-validator.version>6.0.7.Final</hibernate-validator.version>
         <narayana.version>5.8.0.Final</narayana.version>
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
+        <agroal.version>1.1</agroal.version>
+        <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
     </properties>
 
     <modules>
@@ -71,6 +73,7 @@
         <module>ext/arc</module>
         <module>bean-validation</module>
         <module>transactions</module>
+        <module>agroal</module>
     </modules>
     <build>
         <pluginManagement>
@@ -121,6 +124,16 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-agroal-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-agroal-runtime</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.jboss.shamrock</groupId>
                 <artifactId>shamrock-bean-validation-deployment</artifactId>
@@ -296,6 +309,23 @@
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
                 <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.agroal</groupId>
+                <artifactId>agroal-api</artifactId>
+                <version>${agroal.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.agroal</groupId>
+                <artifactId>agroal-narayana</artifactId>
+                <version>${agroal.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.agroal</groupId>
+                <artifactId>agroal-pool</artifactId>
+                <version>${agroal.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.undertow</groupId>
@@ -493,6 +523,11 @@
                 <groupId>org.jboss.spec.javax.ws.rs</groupId>
                 <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
                 <version>${jboss-jaxrs-api_2.1_spec.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss</groupId>
+                <artifactId>jboss-transaction-spi</artifactId>
+                <version>${jboss-transaction-spi.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss.weld.se</groupId>

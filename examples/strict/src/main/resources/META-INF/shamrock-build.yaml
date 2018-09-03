@@ -1,0 +1,3 @@
+datasource:
+  url: "jdbc:hsqldb:http://localhost:7676/test"
+  driver: "org.hsqldb.jdbc.JDBCDriver"

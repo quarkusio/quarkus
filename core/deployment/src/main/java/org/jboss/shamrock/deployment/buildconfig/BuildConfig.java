@@ -154,5 +154,9 @@ public class BuildConfig {
         public Object getUnderlying() {
             return node;
         }
+
+        public boolean isNull() {
+            return node == null;
+        }
     }
 }

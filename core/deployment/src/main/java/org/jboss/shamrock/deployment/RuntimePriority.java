@@ -16,5 +16,5 @@ public class RuntimePriority {
     public static final int UNDERTOW_DEPLOY = 400;
     public static final int UNDERTOW_START = 500;
     public static final int BEAN_VALIDATION_DEPLOYMENT = 600;
-
+    public static final int TRANSACTIONS_DEPLOYMENT = 700;
 }

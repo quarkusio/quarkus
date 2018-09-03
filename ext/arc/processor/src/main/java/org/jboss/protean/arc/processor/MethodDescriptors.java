@@ -9,6 +9,7 @@ import javax.enterprise.context.spi.CreationalContext;
 
 import org.jboss.protean.arc.ClientProxy;
 import org.jboss.protean.arc.CreationalContextImpl;
+import org.jboss.protean.arc.InjectableBean;
 import org.jboss.protean.arc.InjectableInterceptor;
 import org.jboss.protean.arc.InjectableReferenceProvider;
 import org.jboss.protean.arc.InvocationContextImpl.InterceptorInvocation;
@@ -59,6 +60,9 @@ final class MethodDescriptors {
             Class[].class, Object[].class);
 
     static final MethodDescriptor CLIENT_PROXY_GET_CONTEXTUAL_INSTANCE = MethodDescriptor.ofMethod(ClientProxy.class, "getContextualInstance", Object.class);
+
+    static final MethodDescriptor INJECTABLE_BEAN_DESTROY = MethodDescriptor.ofMethod(InjectableBean.class, "destroy", void.class, Object.class,
+            CreationalContext.class);
 
     private MethodDescriptors() {
     }

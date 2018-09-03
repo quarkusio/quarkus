@@ -275,7 +275,7 @@ public class BeanGenerator extends AbstractGenerator {
             Map<InterceptorInfo, String> interceptorToProvider) {
         // Declaring bean provider
         if (bean.isProducerMethod() || bean.isProducerField()) {
-            beanCreator.getFieldCreator("declaringProvider", InjectableReferenceProvider.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
+            beanCreator.getFieldCreator("declaringProvider", InjectableBean.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
         }
         // Injection points
         for (String provider : injectionPointToProvider.values()) {
@@ -301,7 +301,7 @@ public class BeanGenerator extends AbstractGenerator {
         // First collect all param types
         List<String> parameterTypes = new ArrayList<>();
         if (bean.isProducerMethod() || bean.isProducerField()) {
-            parameterTypes.add(InjectableReferenceProvider.class.getName());
+            parameterTypes.add(InjectableBean.class.getName());
         }
         for (InjectionPointInfo injectionPoint : bean.getAllInjectionPoints()) {
             if (BuiltinBean.resolve(injectionPoint) == null) {
@@ -319,7 +319,7 @@ public class BeanGenerator extends AbstractGenerator {
         // Declaring bean provider
         int paramIdx = 0;
         if (bean.isProducerMethod() || bean.isProducerField()) {
-            constructor.writeInstanceField(FieldDescriptor.of(beanCreator.getClassName(), "declaringProvider", InjectableReferenceProvider.class.getName()),
+            constructor.writeInstanceField(FieldDescriptor.of(beanCreator.getClassName(), "declaringProvider", InjectableBean.class.getName()),
                     constructor.getThis(), constructor.getMethodParam(0));
             paramIdx++;
         }
@@ -631,10 +631,9 @@ public class BeanGenerator extends AbstractGenerator {
             }
 
         } else if (bean.isProducerMethod()) {
-            // TODO if the declaring bean is @Dependent we must destroy it afterwards
             // instance = declaringProvider.get(new CreationalContextImpl<>()).produce()
-            ResultHandle declaringProviderHandle = create.readInstanceField(
-                    FieldDescriptor.of(beanCreator.getClassName(), "declaringProvider", InjectableReferenceProvider.class.getName()), create.getThis());
+            ResultHandle declaringProviderHandle = create
+                    .readInstanceField(FieldDescriptor.of(beanCreator.getClassName(), "declaringProvider", InjectableBean.class.getName()), create.getThis());
             ResultHandle ctxHandle = create.newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class));
             ResultHandle declaringProviderInstanceHandle = create.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, declaringProviderHandle,
                     ctxHandle);
@@ -673,14 +672,18 @@ public class BeanGenerator extends AbstractGenerator {
                 instanceHandle = create.invokeVirtualMethod(MethodDescriptor.of(producerMethod), declaringProviderInstanceHandle, referenceHandles);
             }
 
+            // If the declaring bean is @Dependent we must destroy the instance afterwards
+            if (ScopeInfo.DEPENDENT.equals(bean.getDeclaringBean().getScope())) {
+                create.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_BEAN_DESTROY, declaringProviderHandle, declaringProviderInstanceHandle, ctxHandle);
+            }
+
         } else if (bean.isProducerField()) {
-            // TODO if the declaring bean is @Dependent we must destroy it afterwards
             // instance = declaringProvider.get(new CreationalContextImpl<>()).field
 
             FieldInfo producerField = bean.getTarget().asField();
 
-            ResultHandle declaringProviderHandle = create.readInstanceField(
-                    FieldDescriptor.of(beanCreator.getClassName(), "declaringProvider", InjectableReferenceProvider.class.getName()), create.getThis());
+            ResultHandle declaringProviderHandle = create
+                    .readInstanceField(FieldDescriptor.of(beanCreator.getClassName(), "declaringProvider", InjectableBean.class.getName()), create.getThis());
             ResultHandle ctxHandle = create.newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class));
             ResultHandle declaringProviderInstanceHandle = create.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, declaringProviderHandle,
                     ctxHandle);
@@ -698,6 +701,11 @@ public class BeanGenerator extends AbstractGenerator {
                         create.loadClass(producerField.declaringClass().name().toString()), create.load(producerField.name()), declaringProviderInstanceHandle);
             } else {
                 instanceHandle = create.readInstanceField(FieldDescriptor.of(bean.getTarget().asField()), declaringProviderInstanceHandle);
+            }
+
+            // If the declaring bean is @Dependent we must destroy the instance afterwards
+            if (ScopeInfo.DEPENDENT.equals(bean.getDeclaringBean().getScope())) {
+                create.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_BEAN_DESTROY, declaringProviderHandle, declaringProviderInstanceHandle, ctxHandle);
             }
         }
 

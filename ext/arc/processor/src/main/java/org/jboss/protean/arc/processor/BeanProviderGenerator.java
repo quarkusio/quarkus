@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 
 import org.jboss.protean.arc.Arc;
 import org.jboss.protean.arc.BeanProvider;
+import org.jboss.protean.arc.InjectableBean;
 import org.jboss.protean.arc.InjectableInterceptor;
 import org.jboss.protean.arc.InjectableReferenceProvider;
 import org.jboss.protean.arc.processor.ResourceOutput.Resource;
@@ -132,7 +133,7 @@ public class BeanProviderGenerator extends AbstractGenerator {
 
         if (bean.isProducerMethod() || bean.isProducerField()) {
             params.add(beanToResultHandle.get(bean.getDeclaringBean()));
-            paramTypes.add(Type.getDescriptor(InjectableReferenceProvider.class));
+            paramTypes.add(Type.getDescriptor(InjectableBean.class));
         }
         for (InjectionPointInfo injetionPoint : injectionPoints) {
             ResultHandle resultHandle = beanToResultHandle.get(injetionPoint.getResolvedBean());

@@ -84,4 +84,7 @@ public interface ProcessorContext {
      * @param name The resource path
      */
     void addResource(String name);
+
+
+    void addResourceBundle(String bundle);
 }

@@ -143,6 +143,14 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
                         processorContext.addReflectiveClass(true, true, className);
                     }
                 }
+                for(Type param : method.parameters()) {
+                    if(param.kind() != Type.Kind.PRIMITIVE) {
+                        String className = param.name().toString();
+                        if (!className.equals(String.class.getName())) {
+                            processorContext.addReflectiveClass(true, true, className);
+                        }
+                    }
+                }
             }
         }
 

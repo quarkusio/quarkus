@@ -163,6 +163,7 @@ public class BuildTimeGenerator {
         private final List<DeploymentTaskHolder> staticInitTasks = new ArrayList<>();
         private final Map<String, ReflectionInfo> reflectiveClasses = new LinkedHashMap<>();
         private final Set<String> resources = new HashSet<>();
+        private final Set<String> resourceBundles = new HashSet<>();
 
         @Override
         public BytecodeRecorder addStaticInitTask(int priority) {
@@ -240,6 +241,11 @@ public class BuildTimeGenerator {
             resources.add(name);
         }
 
+        @Override
+        public void addResourceBundle(String bundle) {
+            resourceBundles.add(bundle);
+        }
+
         void writeMainClass() throws IOException {
 
             Collections.sort(tasks);
@@ -300,6 +306,10 @@ public class BuildTimeGenerator {
             for (String i : resources) {
                 beforeAn.invokeStaticMethod(ofMethod(ResourceHelper.class, "registerResources", void.class, String.class), beforeAn.load(i));
             }
+            ResultHandle locSupport = beforeAn.invokeStaticMethod(MethodDescriptor.ofMethod("org.graalvm.nativeimage.ImageSingletons", "lookup", Object.class, Class.class), beforeAn.loadClass("com.oracle.svm.core.jdk.LocalizationSupport"));
+            for (String i : resourceBundles) {
+                beforeAn.invokeVirtualMethod(ofMethod("com.oracle.svm.core.jdk.LocalizationSupport", "addToCache", void.class, String.class), locSupport, beforeAn.load(i));
+            }
 
             int count = 0;
 
@@ -310,15 +320,22 @@ public class BuildTimeGenerator {
                 beforeAn.invokeStaticMethod(mv.getMethodDescriptor());
 
                 ExceptionTable exceptionTable = mv.addTryCatch();
-                ResultHandle carray = mv.newArray(Class.class, mv.load(1));
+
+
                 ResultHandle clazz = mv.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class), mv.load(entry.getKey()));
+                //we call these methods first, so if they are going to throw an exception it happens before anything has been registered
+                ResultHandle constructors = mv.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredConstructors", Constructor[].class), clazz);
+                ResultHandle methods = mv.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredMethods", Method[].class), clazz);
+                ResultHandle fields = mv.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredFields", Field[].class), clazz);
+
+
+                ResultHandle carray = mv.newArray(Class.class, mv.load(1));
                 mv.writeArrayValue(carray, mv.load(0), clazz);
                 mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Class[].class), carray);
 
 
                 if (entry.getValue().constructors) {
-                    ResultHandle res = mv.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredConstructors", Constructor[].class), clazz);
-                    mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Executable[].class), res);
+                    mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Executable[].class), constructors);
                 } else if (!entry.getValue().ctorSet.isEmpty()) {
                     ResultHandle farray = mv.newArray(Constructor.class, mv.load(1));
                     for (MethodInfo ctor : entry.getValue().ctorSet) {
@@ -333,8 +350,7 @@ public class BuildTimeGenerator {
                     }
                 }
                 if (entry.getValue().methods) {
-                    ResultHandle res = mv.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredMethods", Method[].class), clazz);
-                    mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Executable[].class), res);
+                    mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Executable[].class), methods);
                 } else if (!entry.getValue().methodSet.isEmpty()) {
                     ResultHandle farray = mv.newArray(Method.class, mv.load(1));
                     for (MethodInfo method : entry.getValue().methodSet) {
@@ -349,8 +365,7 @@ public class BuildTimeGenerator {
                     }
                 }
                 if (entry.getValue().fields) {
-                    ResultHandle res = mv.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredFields", Field[].class), clazz);
-                    mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Field[].class), res);
+                    mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Field[].class), fields);
                 } else if (!entry.getValue().fieldSet.isEmpty()) {
                     ResultHandle farray = mv.newArray(Field.class, mv.load(1));
                     for (FieldInfo field : entry.getValue().fieldSet) {

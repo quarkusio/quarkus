@@ -1,0 +1,3 @@
+index-dependencies:
+  - "javax.validation:validation-api"
+  - "org.hibernate.validator:hibernate-validator"

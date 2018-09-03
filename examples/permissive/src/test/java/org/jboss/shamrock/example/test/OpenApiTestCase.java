@@ -43,7 +43,6 @@ public class OpenApiTestCase {
         Assert.assertEquals("1.0", obj.getJsonObject("info").getString("version"));
 
         JsonObject paths = obj.getJsonObject("paths");
-        Assert.assertEquals(2, paths.size());
 
         JsonObject testObj = paths.getJsonObject("/rest/test");
         Assert.assertNotNull(testObj);

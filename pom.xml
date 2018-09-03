@@ -50,7 +50,6 @@
         <classmate.version>1.3.4</classmate.version>
         <javax.el-impl.version>3.0.1.b08-redhat-1</javax.el-impl.version>
         <hibernate-validator.version>6.0.7.Final</hibernate-validator.version>
-        <el-impl.version>2.2</el-impl.version>
     </properties>
 
     <modules>
@@ -372,17 +371,6 @@
                 <groupId>org.fakereplace</groupId>
                 <artifactId>fakereplace</artifactId>
                 <version>${fakereplace.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.glassfish</groupId>
-                <artifactId>javax.el-impl</artifactId>
-                <version>${javax.el-impl.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.glassfish</groupId>
-                        <artifactId>javax.el-api</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.glassfish</groupId>

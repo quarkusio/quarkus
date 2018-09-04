@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.enterprise.context.spi.CreationalContext;
+import javax.enterprise.inject.spi.EventContext;
+import javax.enterprise.inject.spi.EventMetadata;
 
 import org.jboss.protean.arc.ClientProxy;
 import org.jboss.protean.arc.CreationalContextImpl;
@@ -63,9 +65,12 @@ final class MethodDescriptors {
 
     static final MethodDescriptor INJECTABLE_BEAN_DESTROY = MethodDescriptor.ofMethod(InjectableBean.class, "destroy", void.class, Object.class,
             CreationalContext.class);
-    
+
     static final MethodDescriptor CREATIONAL_CTX_RELEASE = MethodDescriptor.ofMethod(CreationalContext.class, "release", void.class);
 
+    static final MethodDescriptor EVENT_CONTEXT_GET_EVENT = MethodDescriptor.ofMethod(EventContext.class, "getEvent", Object.class);
+
+    static final MethodDescriptor EVENT_CONTEXT_GET_METADATA = MethodDescriptor.ofMethod(EventContext.class, "getMetadata", EventMetadata.class);
 
     private MethodDescriptors() {
     }

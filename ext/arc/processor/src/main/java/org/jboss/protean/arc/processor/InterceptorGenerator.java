@@ -69,10 +69,9 @@ public class InterceptorGenerator extends BeanGenerator {
         FieldCreator beanTypes = interceptorCreator.getFieldCreator("beanTypes", Set.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
         FieldCreator bindings = interceptorCreator.getFieldCreator("bindings", Set.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
 
-        Map<String, InjectionPointInfo> providerToInjectionPoint = new HashMap<>();
         Map<InjectionPointInfo, String> injectionPointToProviderField = new HashMap<>();
         Map<InterceptorInfo, String> interceptorToProviderField = new HashMap<>();
-        initMaps(interceptor, providerToInjectionPoint, injectionPointToProviderField, interceptorToProviderField);
+        initMaps(interceptor, injectionPointToProviderField, interceptorToProviderField);
 
         createProviderFields(interceptorCreator, interceptor, injectionPointToProviderField, interceptorToProviderField);
         createConstructor(classOutput, interceptorCreator, interceptor, baseName, injectionPointToProviderField, interceptorToProviderField,

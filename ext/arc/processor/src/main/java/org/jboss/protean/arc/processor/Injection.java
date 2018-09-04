@@ -62,6 +62,11 @@ public class Injection {
                 annotations -> annotations.stream().anyMatch(a -> a.name().equals(DotNames.DISPOSES))));
     }
 
+    static Injection forObserver(MethodInfo observerMethod, BeanDeployment beanDeployment) {
+        return new Injection(observerMethod, InjectionPointInfo.fromMethod(observerMethod, beanDeployment,
+                annotations -> annotations.stream().anyMatch(a -> a.name().equals(DotNames.OBSERVES))));
+    }
+
     final AnnotationTarget target;
 
     final List<InjectionPointInfo> injectionPoints;

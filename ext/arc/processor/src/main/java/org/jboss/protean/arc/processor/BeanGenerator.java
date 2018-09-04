@@ -121,10 +121,9 @@ public class BeanGenerator extends AbstractGenerator {
             beanCreator.getFieldCreator("proxy", LazyValue.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
         }
 
-        Map<String, InjectionPointInfo> providerToInjectionPoint = new HashMap<>();
         Map<InjectionPointInfo, String> injectionPointToProviderField = new HashMap<>();
         Map<InterceptorInfo, String> interceptorToProviderField = new HashMap<>();
-        initMaps(bean, providerToInjectionPoint, injectionPointToProviderField, interceptorToProviderField);
+        initMaps(bean, injectionPointToProviderField, interceptorToProviderField);
 
         createProviderFields(beanCreator, bean, injectionPointToProviderField, interceptorToProviderField);
         createConstructor(classOutput, beanCreator, bean, baseName, injectionPointToProviderField, interceptorToProviderField, annotationLiterals);
@@ -179,10 +178,9 @@ public class BeanGenerator extends AbstractGenerator {
             beanCreator.getFieldCreator("proxy", LazyValue.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
         }
 
-        Map<String, InjectionPointInfo> providerToInjectionPoint = new HashMap<>();
         Map<InjectionPointInfo, String> injectionPointToProviderField = new HashMap<>();
         // Producer methods are not intercepted
-        initMaps(bean, providerToInjectionPoint, injectionPointToProviderField, null);
+        initMaps(bean, injectionPointToProviderField, null);
 
         createProviderFields(beanCreator, bean, injectionPointToProviderField, Collections.emptyMap());
         createConstructor(classOutput, beanCreator, bean, baseName, injectionPointToProviderField, Collections.emptyMap(), annotationLiterals);
@@ -259,18 +257,16 @@ public class BeanGenerator extends AbstractGenerator {
         return classOutput.getResources();
     }
 
-    protected void initMaps(BeanInfo bean, Map<String, InjectionPointInfo> providerToInjectionPoint, Map<InjectionPointInfo, String> injectionPointToProvider,
+    protected void initMaps(BeanInfo bean, Map<InjectionPointInfo, String> injectionPointToProvider,
             Map<InterceptorInfo, String> interceptorToProvider) {
         int providerIdx = 1;
         for (InjectionPointInfo injectionPoint : bean.getAllInjectionPoints()) {
             String name = providerName(DotNames.simpleName(injectionPoint.requiredType.name())) + "Provider" + providerIdx++;
-            providerToInjectionPoint.put(name, injectionPoint);
             injectionPointToProvider.put(injectionPoint, name);
         }
         if (bean.getDisposer() != null) {
             for (InjectionPointInfo injectionPoint : bean.getDisposer().getInjection().injectionPoints) {
                 String name = providerName(DotNames.simpleName(injectionPoint.requiredType.name())) + "Provider" + providerIdx++;
-                providerToInjectionPoint.put(name, injectionPoint);
                 injectionPointToProvider.put(injectionPoint, name);
             }
         }
@@ -352,7 +348,7 @@ public class BeanGenerator extends AbstractGenerator {
                 builtinBean = BuiltinBean.resolve(injectionPoint);
             }
             if (builtinBean != null) {
-                builtinBean.getGenerator().generate(classOutput, bean, injectionPoint, beanCreator, constructor,
+                builtinBean.getGenerator().generate(classOutput, bean.getDeployment(), injectionPoint, beanCreator, constructor,
                         injectionPointToProviderField.get(injectionPoint), annotationLiterals);
             } else {
                 if (injectionPoint.getResolvedBean().getAllInjectionPoints().stream()

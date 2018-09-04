@@ -180,7 +180,7 @@ final class BeanTypeAssignabilityRules {
      * Standard Java covariant assignability rules are applied to all other types of bounds.
      * This is not explicitly mentioned in the specification but is implied.
      */
-    private static Type[] getUppermostTypeVariableBounds(TypeVariable<?> bound) {
+    static Type[] getUppermostTypeVariableBounds(TypeVariable<?> bound) {
         if (bound.getBounds()[0] instanceof TypeVariable<?>) {
             return getUppermostTypeVariableBounds((TypeVariable<?>) bound.getBounds()[0]);
         }
@@ -215,11 +215,11 @@ final class BeanTypeAssignabilityRules {
         return true;
     }
 
-    private static boolean lowerBoundsOfWildcardMatch(Type parameter, WildcardType requiredParameter) {
+    static boolean lowerBoundsOfWildcardMatch(Type parameter, WildcardType requiredParameter) {
         return lowerBoundsOfWildcardMatch(new Type[] { parameter }, requiredParameter);
     }
 
-    private static boolean lowerBoundsOfWildcardMatch(Type[] beanParameterBounds, WildcardType requiredParameter) {
+    static boolean lowerBoundsOfWildcardMatch(Type[] beanParameterBounds, WildcardType requiredParameter) {
         if (requiredParameter.getLowerBounds().length > 0) {
             Type[] lowerBounds = requiredParameter.getLowerBounds();
             if (!boundsMatch(beanParameterBounds, lowerBounds)) {
@@ -229,7 +229,7 @@ final class BeanTypeAssignabilityRules {
         return true;
     }
 
-    private static boolean upperBoundsOfWildcardMatch(WildcardType requiredParameter, Type parameter) {
+    static boolean upperBoundsOfWildcardMatch(WildcardType requiredParameter, Type parameter) {
         return boundsMatch(requiredParameter.getUpperBounds(), new Type[] { parameter });
     }
 }

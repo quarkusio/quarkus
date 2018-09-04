@@ -48,6 +48,38 @@ public final class Qualifiers {
         }
         return false;
     }
+    
+    static boolean hasQualifier(Set<Annotation> qualifiers, Annotation requiredQualifier) {
+
+        Class<? extends Annotation> requiredQualifierClass = requiredQualifier.annotationType();
+        Method[] members = requiredQualifierClass.getDeclaredMethods();
+
+        for (Annotation qualifier : qualifiers) {
+            Class<? extends Annotation> qualifierClass = qualifier.annotationType();
+            if (qualifierClass.equals(requiredQualifier.annotationType())) {
+                boolean matches = true;
+                for (Method value : members) {
+                    if (!value.isAnnotationPresent(Nonbinding.class) && !invoke(value, requiredQualifier).equals(invoke(value, qualifier))) {
+                        matches = false;
+                        break;
+                    }
+                }
+                if (matches) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    static boolean isSubset(Set<Annotation> observedQualifiers, Set<Annotation> eventQualifiers) {
+        for (Annotation required : observedQualifiers) {
+            if (!hasQualifier(eventQualifiers, required)) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     private static Set<Annotation> initDefaultQualifiers() {
         Set<Annotation> qualifiers = new HashSet<>();

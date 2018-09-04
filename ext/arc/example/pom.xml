@@ -47,7 +47,7 @@
       <plugin>
         <groupId>org.jboss.protean.arc</groupId>
         <artifactId>arc-maven-plugin</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>1.0.0.Alpha1-SNAPSHOT</version>
         <executions>
           <execution>
             <goals>

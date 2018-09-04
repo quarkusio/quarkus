@@ -4,10 +4,12 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -26,14 +28,19 @@ class ArcContainerImpl implements ArcContainer {
 
     private final List<InjectableBean<?>> beans;
 
+    private final List<InjectableObserverMethod<?>> observers;
+
     private final Map<Class<? extends Annotation>, Context> contexts;
 
     private final ComputingCache<Resolvable, List<InjectableBean<?>>> resolved;
 
     public ArcContainerImpl() {
         beans = new CopyOnWriteArrayList<>();
-        for (BeanProvider beanProvider : ServiceLoader.load(BeanProvider.class)) {
-            beans.addAll(beanProvider.getBeans());
+        observers = new CopyOnWriteArrayList<>();
+        for (ComponentsProvider componentsProvider : ServiceLoader.load(ComponentsProvider.class)) {
+            Components components = componentsProvider.getComponents();
+            beans.addAll(components.getBeans());
+            observers.addAll(components.getObservers());
         }
         contexts = new HashMap<>();
         contexts.put(ApplicationScoped.class, new ApplicationContext());
@@ -121,6 +128,22 @@ class ArcContainerImpl implements ArcContainer {
             }
         }
         return resolvedBeans;
+    }
+
+    @SuppressWarnings("unchecked")
+    <T> List<InjectableObserverMethod<? super T>> resolveObservers(Type eventType, Set<Annotation> eventQualifiers) {
+        if (observers.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<InjectableObserverMethod<? super T>> resolvedObservers = new ArrayList<>();
+        for (InjectableObserverMethod<?> observer : observers) {
+            if (EventTypeAssignabilityRules.matches(observer.getObservedType(), eventType)) {
+                if (observer.getObservedQualifiers().isEmpty() || Qualifiers.isSubset(observer.getObservedQualifiers(), eventQualifiers)) {
+                    resolvedObservers.add((InjectableObserverMethod<? super T>) observer);
+                }
+            }
+        }
+        return resolvedObservers;
     }
 
     List<InjectableBean<?>> geBeans(Type requiredType, Annotation... qualifiers) {

@@ -138,6 +138,14 @@ final class Types {
         return clazz;
     }
 
+    public static Type getCanonicalType(Type type) {
+        if (type instanceof Class<?>) {
+            Class<?> clazz = (Class<?>) type;
+            return getCanonicalType(clazz);
+        }
+        return type;
+    }
+
     static boolean isRawGenericType(Type type) {
         if (!(type instanceof Class<?>)) {
             return false;
@@ -148,6 +156,26 @@ final class Types {
             return isRawGenericType(componentType);
         }
         return clazz.getTypeParameters().length > 0;
+    }
+
+    static boolean containsTypeVariable(Type type) {
+        type = getCanonicalType(type);
+        if (type instanceof TypeVariable<?>) {
+            return true;
+        }
+        if (type instanceof ParameterizedType) {
+            ParameterizedType parameterizedType = (ParameterizedType) type;
+            for (Type t : parameterizedType.getActualTypeArguments()) {
+                if (containsTypeVariable(t)) {
+                    return true;
+                }
+            }
+        }
+        if (type instanceof GenericArrayType) {
+            GenericArrayType genericArrayType = (GenericArrayType) type;
+            return containsTypeVariable(genericArrayType.getGenericComponentType());
+        }
+        return false;
     }
 
     @SuppressWarnings("unchecked")

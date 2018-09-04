@@ -69,9 +69,11 @@ public class BeanProcessor {
         ClientProxyGenerator clientProxyGenerator = new ClientProxyGenerator();
         InterceptorGenerator interceptorGenerator = new InterceptorGenerator();
         SubclassGenerator subclassGenerator = new SubclassGenerator();
+        ObserverGenerator observerGenerator = new ObserverGenerator();
         AnnotationLiteralGenerator annotationLiteralsGenerator = new AnnotationLiteralGenerator();
 
         Map<BeanInfo, String> beanToGeneratedName = new HashMap<>();
+        Map<ObserverInfo, String> observerToGeneratedName = new HashMap<>();
         Map<InterceptorInfo, String> interceptorToGeneratedName = new HashMap<>();
 
         AnnotationLiteralProcessor annotationLiterals = new AnnotationLiteralProcessor(name, sharedAnnotationLiterals);
@@ -107,8 +109,18 @@ public class BeanProcessor {
             }
         }
 
-        // Generate BeanProvider
-        resources.addAll(new BeanProviderGenerator().generate(name, beanDeployment, beanToGeneratedName));
+        // Generate observers
+        for (ObserverInfo observer : beanDeployment.getObservers()) {
+            for (Resource resource : observerGenerator.generate(observer, annotationLiterals)) {
+                resources.add(resource);
+                if (SpecialType.OBSERVER.equals(resource.getSpecialType())) {
+                    observerToGeneratedName.put(observer, resource.getName());
+                }
+            }
+        }
+
+        // Generate _ComponentsProvider
+        resources.addAll(new ComponentsProviderGenerator().generate(name, beanDeployment, beanToGeneratedName, observerToGeneratedName));
 
         // Generate AnnotationLiterals
         if (annotationLiterals.hasLiteralsToGenerate()) {

@@ -1,5 +1,7 @@
 package org.jboss.protean.arc.processor;
 
+import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
+
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -9,11 +11,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.jboss.protean.arc.Arc;
-import org.jboss.protean.arc.BeanProvider;
+import org.jboss.protean.arc.Components;
+import org.jboss.protean.arc.ComponentsProvider;
 import org.jboss.protean.arc.InjectableBean;
 import org.jboss.protean.arc.InjectableInterceptor;
 import org.jboss.protean.arc.InjectableReferenceProvider;
@@ -28,9 +30,9 @@ import org.objectweb.asm.Type;
  *
  * @author Martin Kouba
  */
-public class BeanProviderGenerator extends AbstractGenerator {
+public class ComponentsProviderGenerator extends AbstractGenerator {
 
-    static final String BEAN_PROVIDER_SUFFIX = "_BeanProvider";
+    static final String COMPONENTS_PROVIDER_SUFFIX = "_ComponentsProvider";
 
     static final String SETUP_PACKAGE = Arc.class.getPackage().getName() + ".setup";
 
@@ -39,19 +41,21 @@ public class BeanProviderGenerator extends AbstractGenerator {
      * @param name
      * @param beanDeployment
      * @param beanToGeneratedName
+     * @param observerToGeneratedName
      * @return a collection of resources
      */
-    Collection<Resource> generate(String name, BeanDeployment beanDeployment, Map<BeanInfo, String> beanToGeneratedName) {
+    Collection<Resource> generate(String name, BeanDeployment beanDeployment, Map<BeanInfo, String> beanToGeneratedName,
+            Map<ObserverInfo, String> observerToGeneratedName) {
 
         ResourceClassOutput classOutput = new ResourceClassOutput();
 
-        String generatedName = SETUP_PACKAGE + "." + name + BEAN_PROVIDER_SUFFIX;
-        ClassCreator beanProvider = ClassCreator.builder().classOutput(classOutput).className(generatedName).interfaces(BeanProvider.class).build();
+        String generatedName = SETUP_PACKAGE + "." + name + COMPONENTS_PROVIDER_SUFFIX;
+        ClassCreator componentsProvider = ClassCreator.builder().classOutput(classOutput).className(generatedName).interfaces(ComponentsProvider.class).build();
 
-        // BeanProvider#getBeans()
-        MethodCreator getBeans = beanProvider.getMethodCreator("getBeans", Collection.class);
+        MethodCreator getComponents = componentsProvider.getMethodCreator("getComponents", Components.class).setModifiers(ACC_PUBLIC);
+
         // List<InjectableBean<?>> beans = new ArrayList<>();
-        ResultHandle beansHandle = getBeans.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
+        ResultHandle beansHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
 
         // Bar -> Foo, Baz
         // Foo -> Baz
@@ -91,7 +95,6 @@ public class BeanProviderGenerator extends AbstractGenerator {
         }
 
         Map<BeanInfo, ResultHandle> beanToResultHandle = new HashMap<>();
-        AtomicInteger localNameIdx = new AtomicInteger();
         List<BeanInfo> processed = new ArrayList<>();
 
         // TODO handle circular dependencies
@@ -100,7 +103,7 @@ public class BeanProviderGenerator extends AbstractGenerator {
                 Entry<BeanInfo, List<BeanInfo>> entry = iterator.next();
                 BeanInfo bean = entry.getKey();
                 if (!isDependency(bean, beanToInjections)) {
-                    addBean(getBeans, beansHandle, bean, beanToGeneratedName, localNameIdx, beanToResultHandle);
+                    addBean(getComponents, beansHandle, bean, beanToGeneratedName, beanToResultHandle);
                     iterator.remove();
                     processed.add(bean);
                 }
@@ -109,27 +112,50 @@ public class BeanProviderGenerator extends AbstractGenerator {
         // Finally process beans that are not dependencies
         for (BeanInfo bean : beanDeployment.getBeans()) {
             if (!processed.contains(bean)) {
-                addBean(getBeans, beansHandle, bean, beanToGeneratedName, localNameIdx, beanToResultHandle);
+                addBean(getComponents, beansHandle, bean, beanToGeneratedName, beanToResultHandle);
             }
         }
-        // return beans
-        getBeans.returnValue(beansHandle);
+
+        // Observers
+        ResultHandle observersHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
+        for (ObserverInfo observer : beanDeployment.getObservers()) {
+            String observerType = observerToGeneratedName.get(observer);
+            List<InjectionPointInfo> injectionPoints = observer.getInjection().injectionPoints.stream().filter(ip -> !BuiltinBean.resolvesTo(ip))
+                    .collect(Collectors.toList());
+            List<ResultHandle> params = new ArrayList<>();
+            List<String> paramTypes = new ArrayList<>();
+
+            params.add(beanToResultHandle.get(observer.getDeclaringBean()));
+            paramTypes.add(Type.getDescriptor(InjectableBean.class));
+            for (InjectionPointInfo injetionPoint : injectionPoints) {
+                ResultHandle resultHandle = beanToResultHandle.get(injetionPoint.getResolvedBean());
+                params.add(resultHandle);
+                paramTypes.add(Type.getDescriptor(InjectableReferenceProvider.class));
+            }
+            ResultHandle observerInstance = getComponents.newInstance(MethodDescriptor.ofConstructor(observerType, paramTypes.toArray(new String[0])),
+                    params.toArray(new ResultHandle[0]));
+            getComponents.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, observersHandle, observerInstance);
+        }
+
+        ResultHandle componentsHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(Components.class, Collection.class, Collection.class),
+                beansHandle, observersHandle);
+        getComponents.returnValue(componentsHandle);
 
         // Finally write the bytecode
-        beanProvider.close();
+        componentsProvider.close();
 
         List<Resource> resources = new ArrayList<>();
         for (Resource resource : classOutput.getResources()) {
             resources.add(resource);
             // TODO proper name conversion
-            resources
-                    .add(ResourceImpl.serviceProvider(BeanProvider.class.getName(), (resource.getName().replace("/", ".")).getBytes(Charset.forName("UTF-8"))));
+            resources.add(ResourceImpl.serviceProvider(ComponentsProvider.class.getName(),
+                    (resource.getName().replace("/", ".")).getBytes(Charset.forName("UTF-8"))));
         }
         return resources;
     }
 
-    private void addBean(MethodCreator getBeans, ResultHandle beansResultHandle, BeanInfo bean, Map<BeanInfo, String> beanToGeneratedName,
-            AtomicInteger localNameIdx, Map<BeanInfo, ResultHandle> beanToResultHandle) {
+    private void addBean(MethodCreator getComponents, ResultHandle beansResultHandle, BeanInfo bean, Map<BeanInfo, String> beanToGeneratedName,
+            Map<BeanInfo, ResultHandle> beanToResultHandle) {
 
         String beanType = beanToGeneratedName.get(bean);
 
@@ -162,10 +188,10 @@ public class BeanProviderGenerator extends AbstractGenerator {
             }
         }
         // Foo_Bean bean2 = new Foo_Bean(bean2)
-        ResultHandle beanInstance = getBeans.newInstance(MethodDescriptor.ofConstructor(beanType, paramTypes.toArray(new String[0])),
+        ResultHandle beanInstance = getComponents.newInstance(MethodDescriptor.ofConstructor(beanType, paramTypes.toArray(new String[0])),
                 params.toArray(new ResultHandle[0]));
         // beans.add(bean2)
-        getBeans.invokeInterfaceMethod(MethodDescriptor.ofMethod(List.class, "add", boolean.class, Object.class), beansResultHandle, beanInstance);
+        getComponents.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, beansResultHandle, beanInstance);
         beanToResultHandle.put(bean, beanInstance);
     }
 

@@ -8,6 +8,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.protean.arc.BeanManagerProvider;
 import org.jboss.protean.arc.BeanMetadataProvider;
+import org.jboss.protean.arc.EventProvider;
 import org.jboss.protean.arc.InjectableReferenceProvider;
 import org.jboss.protean.arc.InjectionPointProvider;
 import org.jboss.protean.arc.InstanceProvider;
@@ -25,8 +26,8 @@ import org.jboss.protean.gizmo.ResultHandle;
 enum BuiltinBean {
 
     INSTANCE(DotNames.INSTANCE, new Generator() {
-        void generate(ClassOutput classOutput, BeanInfo bean, InjectionPointInfo injectionPoint, ClassCreator clazzCreator, MethodCreator constructor,
-                String providerName, AnnotationLiteralProcessor annotationLiterals) {
+        void generate(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint, ClassCreator clazzCreator,
+                MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals) {
 
             ResultHandle qualifiers = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
             if (!injectionPoint.requiredQualifiers.isEmpty()) {
@@ -36,14 +37,13 @@ enum BuiltinBean {
                 for (AnnotationInstance qualifierAnnotation : injectionPoint.requiredQualifiers) {
                     BuiltinQualifier qualifier = BuiltinQualifier.of(qualifierAnnotation);
                     if (qualifier != null) {
-                        constructor.invokeInterfaceMethod(MethodDescriptor.ofMethod(Set.class, "add", boolean.class, Object.class), qualifiers,
-                                qualifier.getLiteralInstance(constructor));
+                        constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiers, qualifier.getLiteralInstance(constructor));
                     } else {
                         // Create annotation literal first
-                        ClassInfo qualifierClass = bean.getDeployment().getQualifier(qualifierAnnotation.name());
+                        ClassInfo qualifierClass = beanDeployment.getQualifier(qualifierAnnotation.name());
                         String annotationLiteralName = annotationLiterals.process(classOutput, qualifierClass, qualifierAnnotation,
                                 Types.getPackageName(clazzCreator.getClassName()));
-                        constructor.invokeInterfaceMethod(MethodDescriptor.ofMethod(Set.class, "add", boolean.class, Object.class), qualifiers,
+                        constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiers,
                                 constructor.newInstance(MethodDescriptor.ofConstructor(annotationLiteralName)));
                     }
                 }
@@ -56,25 +56,55 @@ enum BuiltinBean {
 
         }
     }), INJECTION_POINT(DotNames.INJECTION_POINT, new Generator() {
-        void generate(ClassOutput classOutput, BeanInfo bean, InjectionPointInfo injectionPoint, ClassCreator clazzCreator, MethodCreator constructor,
-                String providerName, AnnotationLiteralProcessor annotationLiterals) {
+        void generate(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint, ClassCreator clazzCreator,
+                MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals) {
             // this.injectionPointProvider1 = new InjectionPointProvider();
             constructor.writeInstanceField(FieldDescriptor.of(clazzCreator.getClassName(), providerName, InjectableReferenceProvider.class.getName()),
                     constructor.getThis(), constructor.newInstance(MethodDescriptor.ofConstructor(InjectionPointProvider.class)));
         }
     }), BEAN(DotNames.BEAN, new Generator() {
-        void generate(ClassOutput classOutput, BeanInfo bean, InjectionPointInfo injectionPoint, ClassCreator clazzCreator, MethodCreator constructor,
-                String providerName, AnnotationLiteralProcessor annotationLiterals) {
+        void generate(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint, ClassCreator clazzCreator,
+                MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals) {
             // this.beanProvider1 = new BeanMetadataProvider<>();
             constructor.writeInstanceField(FieldDescriptor.of(clazzCreator.getClassName(), providerName, InjectableReferenceProvider.class.getName()),
                     constructor.getThis(), constructor.newInstance(MethodDescriptor.ofConstructor(BeanMetadataProvider.class)));
         }
     }), BEAN_MANAGER(DotNames.BEAN_MANAGER, new Generator() {
-        void generate(ClassOutput classOutput, BeanInfo bean, InjectionPointInfo injectionPoint, ClassCreator clazzCreator, MethodCreator constructor,
-                String providerName, AnnotationLiteralProcessor annotationLiterals) {
+        void generate(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint, ClassCreator clazzCreator,
+                MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals) {
             // TODO dummy provider
             constructor.writeInstanceField(FieldDescriptor.of(clazzCreator.getClassName(), providerName, InjectableReferenceProvider.class.getName()),
                     constructor.getThis(), constructor.newInstance(MethodDescriptor.ofConstructor(BeanManagerProvider.class)));
+        }
+    }), EVENT(DotNames.EVENT, new Generator() {
+        @Override
+        void generate(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint, ClassCreator clazzCreator,
+                MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals) {
+
+            ResultHandle qualifiers = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+            if (!injectionPoint.requiredQualifiers.isEmpty()) {
+                // Set<Annotation> instanceProvider1Qualifiers = new HashSet<>()
+                // instanceProvider1Qualifiers.add(javax.enterprise.inject.Default.Literal.INSTANCE)
+
+                for (AnnotationInstance qualifierAnnotation : injectionPoint.requiredQualifiers) {
+                    BuiltinQualifier qualifier = BuiltinQualifier.of(qualifierAnnotation);
+                    if (qualifier != null) {
+                        constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiers, qualifier.getLiteralInstance(constructor));
+                    } else {
+                        // Create annotation literal first
+                        ClassInfo qualifierClass = beanDeployment.getQualifier(qualifierAnnotation.name());
+                        String annotationLiteralName = annotationLiterals.process(classOutput, qualifierClass, qualifierAnnotation,
+                                Types.getPackageName(clazzCreator.getClassName()));
+                        constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiers,
+                                constructor.newInstance(MethodDescriptor.ofConstructor(annotationLiteralName)));
+                    }
+                }
+            }
+            ResultHandle parameterizedType = Types.getTypeHandle(constructor, injectionPoint.requiredType);
+            ResultHandle eventProvider = constructor.newInstance(
+                    MethodDescriptor.ofConstructor(EventProvider.class, java.lang.reflect.Type.class, Set.class), parameterizedType, qualifiers);
+            constructor.writeInstanceField(FieldDescriptor.of(clazzCreator.getClassName(), providerName, InjectableReferenceProvider.class.getName()),
+                    constructor.getThis(), eventProvider);
         }
     });
 
@@ -110,8 +140,8 @@ enum BuiltinBean {
 
     abstract static class Generator {
 
-        abstract void generate(ClassOutput classOutput, BeanInfo bean, InjectionPointInfo injectionPoint, ClassCreator clazzCreator, MethodCreator constructor,
-                String providerName, AnnotationLiteralProcessor annotationLiterals);
+        abstract void generate(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint, ClassCreator clazzCreator,
+                MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals);
 
     }
 

@@ -14,7 +14,7 @@ import java.util.List;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
 import org.jboss.protean.arc.Arc;
-import org.jboss.protean.arc.BeanProvider;
+import org.jboss.protean.arc.ComponentsProvider;
 import org.jboss.protean.arc.processor.BeanProcessor;
 import org.jboss.protean.arc.processor.ResourceOutput;
 import org.junit.rules.TestRule;
@@ -64,7 +64,8 @@ public class ArcTestContainer implements TestRule {
 
         File generatedSourcesDirectory = new File("target/generated-arc-sources");
         File testOutputDirectory = new File("target/test-classes");
-        File beanProviderFile = new File(generatedSourcesDirectory + "/" + nameToPath(testClass.getPackage().getName()), "BeanProvider");
+        File componentsProviderFile = new File(generatedSourcesDirectory + "/" + nameToPath(testClass.getPackage().getName()),
+                ComponentsProvider.class.getSimpleName());
 
         BeanProcessor beanProcessor = BeanProcessor.builder().setName(testClass.getSimpleName()).setIndex(index).setOutput(new ResourceOutput() {
 
@@ -75,9 +76,9 @@ public class ArcTestContainer implements TestRule {
                         resource.writeTo(testOutputDirectory);
                         break;
                     case SERVICE_PROVIDER:
-                        if (resource.getName().endsWith(BeanProvider.class.getName())) {
-                            beanProviderFile.getParentFile().mkdirs();
-                            try (FileOutputStream out = new FileOutputStream(beanProviderFile)) {
+                        if (resource.getName().endsWith(ComponentsProvider.class.getName())) {
+                            componentsProviderFile.getParentFile().mkdirs();
+                            try (FileOutputStream out = new FileOutputStream(componentsProviderFile)) {
                                 out.write(resource.getData());
                             }
                         }
@@ -97,9 +98,9 @@ public class ArcTestContainer implements TestRule {
         ClassLoader testClassLoader = new URLClassLoader(new URL[] {}, old) {
             @Override
             public Enumeration<URL> getResources(String name) throws IOException {
-                if (("META-INF/services/" + BeanProvider.class.getName()).equals(name)) {
+                if (("META-INF/services/" + ComponentsProvider.class.getName()).equals(name)) {
                     // return URL that points to the correct test bean provider
-                    return Collections.enumeration(Collections.singleton(beanProviderFile.toURI().toURL()));
+                    return Collections.enumeration(Collections.singleton(componentsProviderFile.toURI().toURL()));
                 }
                 return super.getResources(name);
             }

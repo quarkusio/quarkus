@@ -15,9 +15,11 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
+import org.jboss.jandex.WildcardType;
 import org.jboss.protean.arc.GenericArrayTypeImpl;
 import org.jboss.protean.arc.ParameterizedTypeImpl;
 import org.jboss.protean.arc.TypeVariableImpl;
+import org.jboss.protean.arc.WildcardTypeImpl;
 import org.jboss.protean.gizmo.BytecodeCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
@@ -69,11 +71,23 @@ final class Types {
             return creator.newInstance(MethodDescriptor.ofConstructor(GenericArrayTypeImpl.class, java.lang.reflect.Type.class),
                     getTypeHandle(creator, componentType));
 
+        } else if (Kind.WILDCARD_TYPE.equals(type.kind())) {
+            // E.g. ? extends Number -> WildcardTypeImpl.withUpperBound(Number.class)
+            WildcardType wildcardType = type.asWildcardType();
+
+            if (wildcardType.superBound() == null) {
+                return creator.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(WildcardTypeImpl.class, "withUpperBound", java.lang.reflect.WildcardType.class, java.lang.reflect.Type.class),
+                        getTypeHandle(creator, wildcardType.extendsBound()));
+            } else {
+                return creator.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(WildcardTypeImpl.class, "withLowerBound", java.lang.reflect.WildcardType.class, java.lang.reflect.Type.class),
+                        getTypeHandle(creator, wildcardType.superBound()));
+            }
         } else {
             throw new IllegalArgumentException("Unsupported bean type: " + type.kind() + ", " + type);
         }
     }
-
 
     static Type getProviderType(ClassInfo classInfo) {
         // TODO hack

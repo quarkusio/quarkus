@@ -132,7 +132,7 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
 
     static String generatedSharedName(String prefix, String simpleName, AtomicInteger index) {
         // com.foo.MyQualifier -> org.jboss.protean.arc.setup.Default_MyQualifier1_AnnotationLiteral
-        return BeanProviderGenerator.SETUP_PACKAGE + "." + prefix + "_" + simpleName + index.incrementAndGet()
+        return ComponentsProviderGenerator.SETUP_PACKAGE + "." + prefix + "_" + simpleName + index.incrementAndGet()
                 + AnnotationLiteralGenerator.ANNOTATION_LITERAL_SUFFIX;
     }
 

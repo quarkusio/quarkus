@@ -19,7 +19,7 @@ public interface ExceptionTable {
      * @param exception The type of exception to catch
      * @return A {@link BytecodeCreator} that can be used to construct the catch clause
      */
-    BytecodeCreator addCatchClause(String exception);
+    CatchBlockCreator addCatchClause(String exception);
 
     /**
      * Adds a catch clause to the exception table
@@ -27,7 +27,7 @@ public interface ExceptionTable {
      * @param exception The type of exception to catch
      * @return A {@link BytecodeCreator} that can be used to construct the catch clause
      */
-    default BytecodeCreator addCatchClause(Class<? extends Throwable> exception) {
+    default CatchBlockCreator addCatchClause(Class<? extends Throwable> exception) {
         return addCatchClause(exception.getName());
     }
 

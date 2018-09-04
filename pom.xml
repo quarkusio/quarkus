@@ -54,6 +54,8 @@
         <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
         <agroal.version>1.1</agroal.version>
         <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
+        <javax.persistence-api.version>2.2</javax.persistence-api.version>
+        <el-impl.version>2.2</el-impl.version>
     </properties>
 
     <modules>
@@ -364,6 +366,11 @@
                 <version>${javax.inject.version}</version>
             </dependency>
             <dependency>
+                <groupId>javax.persistence</groupId>
+                <artifactId>javax.persistence-api</artifactId>
+                <version>${javax.persistence-api.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>javax.validation</groupId>
                 <artifactId>validation-api</artifactId>
                 <version>${validation-api.version}</version>
@@ -414,6 +421,17 @@
                 <groupId>org.fakereplace</groupId>
                 <artifactId>fakereplace</artifactId>
                 <version>${fakereplace.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish</groupId>
+                <artifactId>javax.el-impl</artifactId>
+                <version>${javax.el-impl.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.glassfish</groupId>
+                        <artifactId>javax.el-api</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.glassfish</groupId>

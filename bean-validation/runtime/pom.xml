@@ -25,6 +25,17 @@
             <groupId>org.jboss.graalvm</groupId>
             <artifactId>graal-annotations</artifactId>
         </dependency>
+        <!-- This gets brought in by SafeHtmlValidator, this should be fixed -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.10.2</version>
+        </dependency>
+        <!-- This also should not be required, we need to figure out why substrate requires it-->
+        <dependency>
+            <groupId>org.glassfish.web</groupId>
+            <artifactId>el-impl</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

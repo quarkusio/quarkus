@@ -96,6 +96,9 @@ public class ServletResourceProcessor implements ResourceProcessor {
         processorContext.addReflectiveClass(false, false, DefaultServlet.class.getName());
         processorContext.addReflectiveClass(false, false, "io.undertow.server.protocol.http.HttpRequestParser$$generated");
 
+        processorContext.addRuntimeInitializedClasses("io.undertow.server.protocol.ajp.AjpServerResponseConduit");
+        processorContext.addRuntimeInitializedClasses("io.undertow.server.protocol.ajp.AjpServerRequestConduit");
+
         handleResources(archiveContext, processorContext);
 
         try (BytecodeRecorder context = processorContext.addStaticInitTask(RuntimePriority.UNDERTOW_CREATE_DEPLOYMENT)) {

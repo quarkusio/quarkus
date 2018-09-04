@@ -70,7 +70,7 @@ public class FunctionCreatorImpl implements FunctionCreator {
      * <p>
      * These get transformed into local result handles, that are a read from a field
      */
-    private static class FunctionBytecodeCreator implements BytecodeCreator {
+    private static class FunctionBytecodeCreator implements BytecodeCreator, CatchBlockCreator {
 
         private final BytecodeCreator delegate;
         private FunctionCreatorImpl functionCreator;
@@ -246,8 +246,8 @@ public class FunctionCreatorImpl implements FunctionCreator {
             ExceptionTable ex = delegate.addTryCatch();
             return new ExceptionTable() {
                 @Override
-                public BytecodeCreator addCatchClause(String exception) {
-                    BytecodeCreator del = ex.addCatchClause(exception);
+                public CatchBlockCreator addCatchClause(String exception) {
+                    CatchBlockCreator del = ex.addCatchClause(exception);
                     return new FunctionBytecodeCreator(functionCreator, del, owner);
                 }
 
@@ -304,6 +304,14 @@ public class FunctionCreatorImpl implements FunctionCreator {
         public void throwException(ResultHandle exception) {
             exception = apply(exception);
             delegate.throwException(exception);
+        }
+
+        @Override
+        public ResultHandle getCaughtException() {
+            if(delegate instanceof CatchBlockCreator) {
+                return ((CatchBlockCreator) delegate).getCaughtException();
+            }
+            throw new IllegalStateException("Not a catch block");
         }
     }
 

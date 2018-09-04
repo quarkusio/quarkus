@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -36,6 +37,8 @@ import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.protean.gizmo.BytecodeCreator;
+import org.jboss.protean.gizmo.CatchBlockCreator;
 import org.jboss.protean.gizmo.ClassCreator;
 import org.jboss.protean.gizmo.ExceptionTable;
 import org.jboss.protean.gizmo.FieldCreator;
@@ -166,6 +169,7 @@ public class BuildTimeGenerator {
         private final Set<String> resources = new HashSet<>();
         private final Set<String> resourceBundles = new HashSet<>();
         private final List<Consumer<MethodCreator>> beforeAnalysisCallback = new ArrayList<>();
+        private final Set<String> runtimeInitializedClasses = new HashSet<>();
 
         @Override
         public BytecodeRecorder addStaticInitTask(int priority) {
@@ -253,6 +257,11 @@ public class BuildTimeGenerator {
             beforeAnalysisCallback.add(callback);
         }
 
+        @Override
+        public void addRuntimeInitializedClasses(String... classes) {
+            runtimeInitializedClasses.addAll(Arrays.asList(classes));
+        }
+
         void writeMainClass() throws IOException {
 
             Collections.sort(tasks);
@@ -310,6 +319,22 @@ public class BuildTimeGenerator {
 
             //TODO: at some point we are going to need to break this up, as if it get too big it will hit the method size limit
 
+            if(!runtimeInitializedClasses.isEmpty()) {
+                ExceptionTable tc = afterReg.addTryCatch();
+                ResultHandle array = afterReg.newArray(Class.class, afterReg.load(runtimeInitializedClasses.size()));
+                int count = 0;
+                ResultHandle thisClass = afterReg.loadClass(GRAAL_AUTOFEATURE);
+                ResultHandle cl = afterReg.invokeVirtualMethod(ofMethod(Class.class, "getClassLoader", ClassLoader.class), thisClass);
+                for (String i : runtimeInitializedClasses) {
+                    ResultHandle clazz = afterReg.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class), afterReg.load(i), afterReg.load(false), cl);
+                    afterReg.writeArrayValue(array, afterReg.load(count++), clazz);
+                }
+                afterReg.invokeStaticMethod(MethodDescriptor.ofMethod("org.graalvm.nativeimage.RuntimeClassInitialization", "delayClassInitialization", void.class, Class[].class), array);
+
+                CatchBlockCreator cc = tc.addCatchClause(Throwable.class);
+                cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
+                tc.complete();
+            }
             for(Consumer<MethodCreator> i : beforeAnalysisCallback) {
                 i.accept(afterReg);
             }

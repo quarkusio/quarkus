@@ -548,7 +548,7 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
 
         return new ExceptionTable() {
             @Override
-            public BytecodeCreator addCatchClause(String exception) {
+            public CatchBlockCreator addCatchClause(String exception) {
                 String name = exception.replace(".", "/");
                 if (catchBlocks.containsKey(name)) {
                     throw new IllegalStateException("Catch block for " + exception + " already exists");

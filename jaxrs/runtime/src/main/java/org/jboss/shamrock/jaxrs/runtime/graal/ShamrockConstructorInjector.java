@@ -1,6 +1,8 @@
 package org.jboss.shamrock.jaxrs.runtime.graal;
 
 import java.lang.reflect.Constructor;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import javax.ws.rs.WebApplicationException;
 
@@ -20,29 +22,31 @@ public class ShamrockConstructorInjector implements ConstructorInjector {
     }
 
     @Override
-    public Object construct() {
+    public CompletionStage<Object> construct(boolean unwrapAsync) {
         System.err.println("construct() " + this.ctor);
-        return this.delegate.construct();
+        return this.delegate.construct(unwrapAsync);
     }
 
     @Override
-    public Object construct(HttpRequest request, HttpResponse response) throws Failure, WebApplicationException, ApplicationException {
+    public CompletionStage<Object> construct(HttpRequest request, HttpResponse response, boolean unwrapAsync)
+            throws Failure, WebApplicationException, ApplicationException {
         System.err.println("construct(req,resp) " + this.ctor);
         System.err.println("CAN WE CDI? " + ShamrockInjectorFactory.CONTAINER);
         if (ShamrockInjectorFactory.CONTAINER == null) {
-            return delegate.construct(request, response);
+            return delegate.construct(request, response, unwrapAsync);
         }
-        return ShamrockInjectorFactory.CONTAINER.instance(this.ctor.getDeclaringClass());
+        return CompletableFuture.completedFuture(ShamrockInjectorFactory.CONTAINER.instance(this.ctor.getDeclaringClass()));
     }
 
     @Override
-    public Object[] injectableArguments() {
-        return this.delegate.injectableArguments();
+    public CompletionStage<Object[]> injectableArguments(boolean unwrapAsync) {
+        return this.delegate.injectableArguments(unwrapAsync);
     }
 
     @Override
-    public Object[] injectableArguments(HttpRequest request, HttpResponse response) throws Failure {
-        return this.delegate.injectableArguments(request, response);
+    public CompletionStage<Object[]> injectableArguments(HttpRequest request, HttpResponse response, boolean unwrapAsync)
+            throws Failure {
+        return this.delegate.injectableArguments(request, response, unwrapAsync);
     }
 
     private final ConstructorInjector delegate;

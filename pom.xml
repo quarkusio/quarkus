@@ -16,7 +16,7 @@
 
     <properties>
         <version.org.jandex>2.1.0.Beta1</version.org.jandex>
-        <resteasy.version>3.5.1.Final</resteasy.version>
+        <resteasy.version>4.0.0.Beta5</resteasy.version>
         <weld-se-core.version>3.0.4.Final</weld-se-core.version>
         <undertow.version>2.0.12.Final</undertow.version>
         <xnio.version>3.3.8.Final</xnio.version>

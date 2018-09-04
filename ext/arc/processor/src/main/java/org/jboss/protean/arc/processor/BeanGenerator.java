@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -129,7 +130,7 @@ public class BeanGenerator extends AbstractGenerator {
         createConstructor(classOutput, beanCreator, bean, baseName, injectionPointToProviderField, interceptorToProviderField, annotationLiterals);
 
         if (!bean.hasDefaultDestroy()) {
-            createDestroy(bean, beanCreator, providerTypeName);
+            createDestroy(bean, beanCreator, providerTypeName, injectionPointToProviderField);
         }
         createCreate(beanCreator, bean, providerTypeName, baseName, injectionPointToProviderField, interceptorToProviderField);
         createGet(bean, beanCreator, providerTypeName);
@@ -187,7 +188,7 @@ public class BeanGenerator extends AbstractGenerator {
         createConstructor(classOutput, beanCreator, bean, baseName, injectionPointToProviderField, Collections.emptyMap(), annotationLiterals);
 
         if (!bean.hasDefaultDestroy()) {
-            createDestroy(bean, beanCreator, providerTypeName);
+            createDestroy(bean, beanCreator, providerTypeName, injectionPointToProviderField);
         }
         createCreate(beanCreator, bean, providerTypeName, baseName, injectionPointToProviderField, Collections.emptyMap());
         createGet(bean, beanCreator, providerTypeName);
@@ -215,7 +216,7 @@ public class BeanGenerator extends AbstractGenerator {
         }
 
         Type providerType = bean.getProviderType();
-        String baseName = declaringClassBase + PRODUCER_METHOD_SUFFIX + PRODUCER_INDEX.incrementAndGet();
+        String baseName = declaringClassBase + PRODUCER_FIELD_SUFFIX + PRODUCER_INDEX.incrementAndGet();
         ClassInfo providerClass = bean.getDeployment().getIndex().getClassByName(providerType.name());
         String providerTypeName = providerClass.name().toString();
         String generatedName = DotNames.packageName(declaringClass.name()).replace(".", "/") + "/" + baseName + BEAN_SUFFIX;
@@ -240,7 +241,8 @@ public class BeanGenerator extends AbstractGenerator {
         createConstructor(classOutput, beanCreator, bean, baseName, Collections.emptyMap(), Collections.emptyMap(), annotationLiterals);
 
         if (!bean.hasDefaultDestroy()) {
-            createDestroy(bean, beanCreator, providerTypeName);
+            // FIXME!!!
+            createDestroy(bean, beanCreator, providerTypeName, null);
         }
         createCreate(beanCreator, bean, providerTypeName, baseName, Collections.emptyMap(), Collections.emptyMap());
         createGet(bean, beanCreator, providerTypeName);
@@ -264,6 +266,13 @@ public class BeanGenerator extends AbstractGenerator {
             String name = providerName(DotNames.simpleName(injectionPoint.requiredType.name())) + "Provider" + providerIdx++;
             providerToInjectionPoint.put(name, injectionPoint);
             injectionPointToProvider.put(injectionPoint, name);
+        }
+        if (bean.getDisposer() != null) {
+            for (InjectionPointInfo injectionPoint : bean.getDisposer().getInjection().injectionPoints) {
+                String name = providerName(DotNames.simpleName(injectionPoint.requiredType.name())) + "Provider" + providerIdx++;
+                providerToInjectionPoint.put(name, injectionPoint);
+                injectionPointToProvider.put(injectionPoint, name);
+            }
         }
         for (InterceptorInfo interceptor : bean.getBoundInterceptors()) {
             String name = providerName(DotNames.simpleName(interceptor.getProviderType().name())) + "Provider" + providerIdx++;
@@ -308,6 +317,13 @@ public class BeanGenerator extends AbstractGenerator {
                 parameterTypes.add(InjectableReferenceProvider.class.getName());
             }
         }
+        if (bean.getDisposer() != null) {
+            for (InjectionPointInfo injectionPoint : bean.getDisposer().getInjection().injectionPoints) {
+                if (BuiltinBean.resolve(injectionPoint) == null) {
+                    parameterTypes.add(InjectableReferenceProvider.class.getName());
+                }
+            }
+        }
         for (int i = 0; i < interceptorToProviderField.size(); i++) {
             parameterTypes.add(InjectableInterceptor.class.getName());
         }
@@ -324,7 +340,12 @@ public class BeanGenerator extends AbstractGenerator {
             paramIdx++;
         }
 
-        for (InjectionPointInfo injectionPoint : bean.getAllInjectionPoints()) {
+        List<InjectionPointInfo> allInjectionPoints = new ArrayList<>();
+        allInjectionPoints.addAll(bean.getAllInjectionPoints());
+        if (bean.getDisposer() != null) {
+            allInjectionPoints.addAll(bean.getDisposer().getInjection().injectionPoints);
+        }
+        for (InjectionPointInfo injectionPoint : allInjectionPoints) {
             // Injection points
             BuiltinBean builtinBean = null;
             if (injectionPoint.getResolvedBean() == null) {
@@ -420,7 +441,8 @@ public class BeanGenerator extends AbstractGenerator {
         return constructor;
     }
 
-    protected void createDestroy(BeanInfo bean, ClassCreator beanCreator, String providerTypeName) {
+    protected void createDestroy(BeanInfo bean, ClassCreator beanCreator, String providerTypeName,
+            Map<InjectionPointInfo, String> injectionPointToProviderField) {
 
         MethodCreator destroy = beanCreator.getMethodCreator("destroy", void.class, providerTypeName, CreationalContext.class).setModifiers(ACC_PUBLIC);
 
@@ -436,9 +458,63 @@ public class BeanGenerator extends AbstractGenerator {
                 // instance.superCoolDestroyCallback()
                 destroy.invokeVirtualMethod(MethodDescriptor.of(preDestroy.get()), destroy.getMethodParam(0));
             }
+        } else if (bean.getDisposer() != null) {
+            // Invoke the disposer method
+            // declaringProvider.get(new CreationalContextImpl<>()).dispose()
+            MethodInfo disposerMethod = bean.getDisposer().getDisposerMethod();
+
+            ResultHandle declaringProviderHandle = destroy
+                    .readInstanceField(FieldDescriptor.of(beanCreator.getClassName(), "declaringProvider", InjectableBean.class.getName()), destroy.getThis());
+            ResultHandle ctxHandle = destroy.newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class));
+            ResultHandle declaringProviderInstanceHandle = destroy.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, declaringProviderHandle,
+                    ctxHandle);
+
+            if (bean.getDeclaringBean().getScope().isNormal()) {
+                // We need to unwrap the client proxy
+                declaringProviderInstanceHandle = destroy.invokeInterfaceMethod(MethodDescriptors.CLIENT_PROXY_GET_CONTEXTUAL_INSTANCE,
+                        declaringProviderInstanceHandle);
+            }
+
+            ResultHandle[] referenceHandles = new ResultHandle[disposerMethod.parameters().size()];
+            int disposedParamPosition = bean.getDisposer().getDisposedParameter().position();
+            Iterator<InjectionPointInfo> injectionPointsIterator = bean.getDisposer().getInjection().injectionPoints.iterator();
+            for (int i = 0; i < disposerMethod.parameters().size(); i++) {
+                if (i == disposedParamPosition) {
+                    referenceHandles[i] = destroy.getMethodParam(0);
+                } else {
+                    ResultHandle childCtxHandle = destroy.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD, ctxHandle);
+                    ResultHandle providerHandle = destroy.readInstanceField(FieldDescriptor.of(beanCreator.getClassName(),
+                            injectionPointToProviderField.get(injectionPointsIterator.next()), InjectableReferenceProvider.class.getName()), destroy.getThis());
+                    ResultHandle referenceHandle = destroy.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, providerHandle, childCtxHandle);
+                    referenceHandles[i] = referenceHandle;
+                }
+            }
+
+            if (Modifier.isPrivate(disposerMethod.flags())) {
+                LOGGER.infof("Disposer %s#%s is private - Arc users are encouraged to avoid using private disposers", disposerMethod.declaringClass().name(),
+                        disposerMethod.name());
+                ResultHandle paramTypesArray = destroy.newArray(Class.class, destroy.load(referenceHandles.length));
+                ResultHandle argsArray = destroy.newArray(Object.class, destroy.load(referenceHandles.length));
+                for (int i = 0; i < referenceHandles.length; i++) {
+                    destroy.writeArrayValue(paramTypesArray, destroy.load(i), destroy.loadClass(disposerMethod.parameters().get(i).name().toString()));
+                    destroy.writeArrayValue(argsArray, destroy.load(i), referenceHandles[i]);
+                }
+                destroy.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD, destroy.loadClass(disposerMethod.declaringClass().name().toString()),
+                        destroy.load(disposerMethod.name()), paramTypesArray, declaringProviderInstanceHandle, argsArray);
+            } else {
+                destroy.invokeVirtualMethod(MethodDescriptor.of(disposerMethod), declaringProviderInstanceHandle, referenceHandles);
+            }
+
+            // Destroy @Dependent instances injected into method parameters of a disposer method
+            destroy.invokeInterfaceMethod(MethodDescriptors.CREATIONAL_CTX_RELEASE, ctxHandle);
+
+            // If the declaring bean is @Dependent we must destroy the instance afterwards
+            if (ScopeInfo.DEPENDENT.equals(bean.getDisposer().getDeclaringBean().getScope())) {
+                destroy.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_BEAN_DESTROY, declaringProviderHandle, declaringProviderInstanceHandle, ctxHandle);
+            }
         }
         // ctx.release()
-        destroy.invokeInterfaceMethod(MethodDescriptor.ofMethod(CreationalContext.class, "release", void.class), destroy.getMethodParam(1));
+        destroy.invokeInterfaceMethod(MethodDescriptors.CREATIONAL_CTX_RELEASE, destroy.getMethodParam(1));
         destroy.returnValue(null);
 
         // TODO!

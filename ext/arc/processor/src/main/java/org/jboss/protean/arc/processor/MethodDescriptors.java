@@ -63,6 +63,9 @@ final class MethodDescriptors {
 
     static final MethodDescriptor INJECTABLE_BEAN_DESTROY = MethodDescriptor.ofMethod(InjectableBean.class, "destroy", void.class, Object.class,
             CreationalContext.class);
+    
+    static final MethodDescriptor CREATIONAL_CTX_RELEASE = MethodDescriptor.ofMethod(CreationalContext.class, "release", void.class);
+
 
     private MethodDescriptors() {
     }

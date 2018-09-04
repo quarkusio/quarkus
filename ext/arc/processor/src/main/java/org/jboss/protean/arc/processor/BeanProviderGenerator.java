@@ -68,6 +68,13 @@ public class BeanProviderGenerator extends AbstractGenerator {
                     }
                 }
             }
+            if (bean.getDisposer() != null) {
+                for (InjectionPointInfo injectionPoint : bean.getDisposer().getInjection().injectionPoints) {
+                    if (!BuiltinBean.resolvesTo(injectionPoint)) {
+                        beanToInjections.computeIfAbsent(injectionPoint.getResolvedBean(), d -> new ArrayList<>()).add(bean);
+                    }
+                }
+            }
             for (InterceptorInfo interceptor : bean.getBoundInterceptors()) {
                 beanToInjections.computeIfAbsent(interceptor, d -> new ArrayList<>()).add(bean);
             }
@@ -139,6 +146,13 @@ public class BeanProviderGenerator extends AbstractGenerator {
             ResultHandle resultHandle = beanToResultHandle.get(injetionPoint.getResolvedBean());
             params.add(resultHandle);
             paramTypes.add(Type.getDescriptor(InjectableReferenceProvider.class));
+        }
+        if (bean.getDisposer() != null) {
+            for (InjectionPointInfo injetionPoint : bean.getDisposer().getInjection().injectionPoints) {
+                ResultHandle resultHandle = beanToResultHandle.get(injetionPoint.getResolvedBean());
+                params.add(resultHandle);
+                paramTypes.add(Type.getDescriptor(InjectableReferenceProvider.class));
+            }
         }
         if (!bean.getInterceptedMethods().isEmpty()) {
             for (InterceptorInfo interceptor : bean.getBoundInterceptors()) {

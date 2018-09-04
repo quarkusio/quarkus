@@ -40,7 +40,7 @@ public class BeanInfoQualifiersTest {
 
         assertNotNull(requiredFooQualifier);
         // FooQualifier#alpha() is @Nonbinding
-        assertTrue(bean.hasQualifier(requiredFooQualifier));
+        assertTrue(Beans.hasQualifier(bean, requiredFooQualifier));
     }
 
 }

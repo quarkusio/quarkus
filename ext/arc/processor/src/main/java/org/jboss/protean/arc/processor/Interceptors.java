@@ -27,7 +27,7 @@ final class Interceptors {
                 priority = annotation.value().asInt();
             }
         }
-        return new InterceptorInfo(interceptorClass, beanDeployment, bindings, Injection.init(interceptorClass, beanDeployment), priority);
+        return new InterceptorInfo(interceptorClass, beanDeployment, bindings, Injection.forBean(interceptorClass, beanDeployment), priority);
     }
 
 }

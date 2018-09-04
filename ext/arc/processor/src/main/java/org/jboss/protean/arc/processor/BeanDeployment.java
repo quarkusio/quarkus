@@ -8,8 +8,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.enterprise.inject.spi.DefinitionException;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassInfo.NestingType;
@@ -17,6 +21,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.logging.Logger.Level;
 
@@ -42,15 +47,15 @@ public class BeanDeployment {
 
     private final InterceptorResolver interceptorResolver;
 
-    public BeanDeployment(IndexView index, Collection<DotName> additionalBeanDefiningAnnotations) {
+    BeanDeployment(IndexView index, Collection<DotName> additionalBeanDefiningAnnotations) {
         long start = System.currentTimeMillis();
         this.index = index;
         this.qualifiers = findQualifiers(index);
         // TODO interceptor bindings are transitive!!!
         this.interceptorBindings = findInterceptorBindings(index);
         this.interceptors = findInterceptors();
-        this.beans = findBeans(initBeanDefiningAnnotations(additionalBeanDefiningAnnotations));
         this.beanResolver = new BeanResolver(this);
+        this.beans = findBeans(initBeanDefiningAnnotations(additionalBeanDefiningAnnotations));
         this.interceptorResolver = new InterceptorResolver(this);
         // TODO observers
         LOGGER.infof("Build deployment created in %s ms", System.currentTimeMillis() - start);
@@ -115,6 +120,7 @@ public class BeanDeployment {
 
         Set<ClassInfo> beanClasses = new HashSet<>();
         Set<MethodInfo> producerMethods = new HashSet<>();
+        Set<MethodInfo> disposerMethods = new HashSet<>();
         Set<FieldInfo> producerFields = new HashSet<>();
 
         for (DotName beanDefiningAnnotation : beanDefiningAnnotations) {
@@ -137,6 +143,8 @@ public class BeanDeployment {
                     for (MethodInfo method : beanClass.methods()) {
                         if (method.hasAnnotation(DotNames.PRODUCES)) {
                             producerMethods.add(method);
+                        } else if (method.hasAnnotation(DotNames.DISPOSES)) {
+                            disposerMethods.add(method);
                         }
                     }
                     for (FieldInfo field : beanClass.fields()) {
@@ -156,16 +164,25 @@ public class BeanDeployment {
             beans.add(classBean);
             beanClassToBean.put(beanClass, classBean);
         }
+
+        List<DisposerInfo> disposers = new ArrayList<>();
+        for (MethodInfo disposerMethod : disposerMethods) {
+            BeanInfo declaringBean = beanClassToBean.get(disposerMethod.declaringClass());
+            if (declaringBean != null) {
+                disposers.add(new DisposerInfo(declaringBean, disposerMethod, Injection.forDisposer(disposerMethod, this)));
+            }
+        }
+
         for (MethodInfo producerMethod : producerMethods) {
             BeanInfo declaringBean = beanClassToBean.get(producerMethod.declaringClass());
             if (declaringBean != null) {
-                beans.add(Beans.createProducerMethod(producerMethod, declaringBean, this));
+                beans.add(Beans.createProducerMethod(producerMethod, declaringBean, this, findDisposer(declaringBean, producerMethod, disposers)));
             }
         }
         for (FieldInfo producerField : producerFields) {
             BeanInfo declaringBean = beanClassToBean.get(producerField.declaringClass());
             if (declaringBean != null) {
-                beans.add(Beans.createProducerField(producerField, declaringBean, this));
+                beans.add(Beans.createProducerField(producerField, declaringBean, this, findDisposer(declaringBean, producerField, disposers)));
             }
         }
         if (LOGGER.isDebugEnabled()) {
@@ -174,6 +191,40 @@ public class BeanDeployment {
             }
         }
         return beans;
+    }
+
+    private DisposerInfo findDisposer(BeanInfo declaringBean, AnnotationTarget annotationTarget, List<DisposerInfo> disposers) {
+        List<DisposerInfo> found = new ArrayList<>();
+        Type beanType;
+        Set<AnnotationInstance> qualifiers;
+        if (Kind.FIELD.equals(annotationTarget.kind())) {
+            beanType = annotationTarget.asField().type();
+            qualifiers = annotationTarget.asField().annotations().stream().filter(a -> getQualifier(a.name()) != null).collect(Collectors.toSet());
+        } else if (Kind.METHOD.equals(annotationTarget.kind())) {
+            beanType = annotationTarget.asMethod().returnType();
+            qualifiers = annotationTarget.asMethod().annotations().stream().filter(a -> Kind.METHOD.equals(a.target().kind()) && getQualifier(a.name()) != null)
+                    .collect(Collectors.toSet());
+        } else {
+            throw new RuntimeException("Unsupported annotation target: " + annotationTarget);
+        }
+        for (DisposerInfo disposer : disposers) {
+            if (disposer.getDeclaringBean().equals(declaringBean)) {
+                boolean hasQualifier = true;
+                for (AnnotationInstance qualifier : qualifiers) {
+                    if (!Beans.hasQualifier(getQualifier(qualifier.name()), qualifier, null)) {
+                        hasQualifier = false;
+                    }
+                }
+                if (hasQualifier && beanResolver.matches(beanType, disposer.getDisposerMethod().parameters().get(disposer.getDisposedParameter().position()))) {
+                    found.add(disposer);
+                }
+
+            }
+        }
+        if (found.size() > 1) {
+            throw new DefinitionException("Multiple disposer methods found for " + annotationTarget);
+        }
+        return found.isEmpty() ? null : found.get(0);
     }
 
     private List<InterceptorInfo> findInterceptors() {

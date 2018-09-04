@@ -27,16 +27,13 @@ import org.jboss.jandex.WildcardType;
  *
  * @author Martin Kouba
  */
-public class BeanResolver {
-
-    private final BeanDeployment beanDeployment;
+class BeanResolver {
 
     private final ConcurrentMap<DotName, Set<DotName>> assignableFromMap;
 
     private final Function<DotName, Set<DotName>> assignableFromMapFunction;
 
     public BeanResolver(BeanDeployment beanDeployment) {
-        this.beanDeployment = beanDeployment;
         this.assignableFromMap = new ConcurrentHashMap<>();
         this.assignableFromMapFunction = name -> {
             Set<DotName> assignables = new HashSet<>();
@@ -44,15 +41,6 @@ public class BeanResolver {
             assignables.addAll(beanDeployment.getIndex().getAllKnownImplementors(name).stream().map(c -> c.name()).collect(Collectors.toSet()));
             return assignables;
         };
-    }
-
-    BeanInfo findMatchingBean(InjectionPointInfo injectionPoint) {
-        for (BeanInfo bean : beanDeployment.getBeans()) {
-            if (bean.matches(injectionPoint)) {
-                return bean;
-            }
-        }
-        return null;
     }
 
     boolean matches(Type requiredType, Type beanType) {

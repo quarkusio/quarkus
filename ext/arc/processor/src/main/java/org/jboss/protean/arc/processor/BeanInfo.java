@@ -12,14 +12,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import javax.enterprise.inject.AmbiguousResolutionException;
-import javax.enterprise.inject.UnsatisfiedResolutionException;
 import javax.enterprise.inject.spi.InterceptionType;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
-import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -45,6 +42,8 @@ class BeanInfo {
 
     private final BeanInfo declaringBean;
 
+    private final DisposerInfo disposer;
+
     private Map<MethodInfo, List<InterceptorInfo>> interceptedMethods;
 
     private Map<InterceptionType, List<InterceptorInfo>> lifecycleInterceptors;
@@ -59,9 +58,10 @@ class BeanInfo {
      * @param alternativePriority
      * @param injections
      * @param declaringBean
+     * @param disposer
      */
     BeanInfo(AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope, Set<Type> types, Set<AnnotationInstance> qualifiers,
-            List<Injection> injections, BeanInfo declaringBean) {
+            List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer) {
         this.target = target;
         this.beanDeployment = beanDeployment;
         this.scope = scope != null ? scope : ScopeInfo.DEPENDENT;
@@ -73,6 +73,7 @@ class BeanInfo {
         this.qualifiers = qualifiers;
         this.injections = injections;
         this.declaringBean = declaringBean;
+        this.disposer = disposer;
     }
 
     AnnotationTarget getTarget() {
@@ -167,9 +168,15 @@ class BeanInfo {
     }
 
     boolean hasDefaultDestroy() {
-        // TODO disposer methods
-        return isInterceptor() || !isClassBean() || (getLifecycleInterceptors(InterceptionType.PRE_DESTROY).isEmpty()
-                && target.asClass().methods().stream().noneMatch(m -> m.hasAnnotation(DotNames.PRE_DESTROY)));
+        if (isInterceptor()) {
+            return true;
+        }
+        if (isClassBean()) {
+            return getLifecycleInterceptors(InterceptionType.PRE_DESTROY).isEmpty()
+                    && target.asClass().methods().stream().noneMatch(m -> m.hasAnnotation(DotNames.PRE_DESTROY));
+        } else {
+            return disposer == null;
+        }
     }
 
     /**
@@ -187,76 +194,21 @@ class BeanInfo {
         return bound.isEmpty() ? Collections.emptyList() : bound.stream().distinct().sorted().collect(Collectors.toList());
     }
 
-    boolean matches(InjectionPointInfo injectionPoint) {
-        // Bean has all the required qualifiers
-        for (AnnotationInstance requiredQualifier : injectionPoint.requiredQualifiers) {
-            if (!hasQualifier(requiredQualifier)) {
-                return false;
-            }
-        }
-        // Bean has a bean type that matches the required type
-        return matchesType(injectionPoint.requiredType);
-    }
-
-    boolean matchesType(Type requiredType) {
-        for (Type beanType : types) {
-            if (beanDeployment.getBeanResolver().matches(requiredType, beanType)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    boolean hasQualifier(AnnotationInstance required) {
-        ClassInfo requiredInfo = beanDeployment.getQualifier(required.name());
-        List<AnnotationValue> binding = required.values().stream().filter(v -> !requiredInfo.method(v.name()).hasAnnotation(DotNames.NONBINDING))
-                .collect(Collectors.toList());
-        for (AnnotationInstance qualifier : qualifiers) {
-            if (required.name().equals(qualifier.name())) {
-                // Must have the same annotation member value for each member which is not annotated @Nonbinding
-                boolean matches = true;
-                for (AnnotationValue value : binding) {
-                    if (!value.equals(qualifier.value(value.name()))) {
-                        matches = false;
-                        break;
-                    }
-                }
-                if (matches) {
-                    return true;
-                }
-            }
-        }
-        return false;
+    DisposerInfo getDisposer() {
+        return disposer;
     }
 
     void init() {
         for (Injection injection : injections) {
             for (InjectionPointInfo injectionPoint : injection.injectionPoints) {
-                resolveInjectionPoint(injectionPoint);
+                Beans.resolveInjectionPoint(beanDeployment, this, injectionPoint);
             }
+        }
+        if (disposer != null) {
+            disposer.init();
         }
         interceptedMethods = initInterceptedMethods();
         lifecycleInterceptors = initLifecycleInterceptors();
-    }
-
-    private void resolveInjectionPoint(InjectionPointInfo injectionPoint) {
-        if (BuiltinBean.resolvesTo(injectionPoint)) {
-            // Skip built-in beans
-            return;
-        }
-        List<BeanInfo> resolved = new ArrayList<>();
-        for (BeanInfo bean : beanDeployment.getBeans()) {
-            if (bean.matches(injectionPoint)) {
-                resolved.add(bean);
-            }
-        }
-        if (resolved.isEmpty()) {
-            throw new UnsatisfiedResolutionException(injectionPoint + " on " + this);
-        } else if (resolved.size() > 1) {
-            throw new AmbiguousResolutionException(
-                    injectionPoint + " on " + this + "\nBeans:\n" + resolved.stream().map(Object::toString).collect(Collectors.joining("\n")));
-        }
-        injectionPoint.resolve(resolved.get(0));
     }
 
     protected String getType() {

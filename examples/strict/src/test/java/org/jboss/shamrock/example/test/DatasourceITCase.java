@@ -5,6 +5,5 @@ import org.junit.Ignore;
 import org.junit.runner.RunWith;
 
 @RunWith(GraalTest.class)
-@Ignore
 public class DatasourceITCase extends DatasourceTestCase {
 }

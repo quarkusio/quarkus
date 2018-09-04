@@ -69,13 +69,11 @@
             <artifactId>shamrock-transactions-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
-        <!--
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-agroal-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
-        -->
         <dependency>
             <groupId>org.jboss.graalvm</groupId>
             <artifactId>graal-annotations</artifactId>
@@ -154,6 +152,9 @@
                                 <goals>
                                     <goal>native-image</goal>
                                 </goals>
+                                <configuration>
+                                    <cleanupServer>true</cleanupServer>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>

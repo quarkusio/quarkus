@@ -1,5 +1,7 @@
 package org.jboss.shamrock.agroal;
 
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.function.Function;
 
 import javax.inject.Inject;
@@ -16,6 +18,8 @@ import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+
+import io.agroal.pool.ConnectionHandler;
 
 class AgroalProcessor implements ResourceProcessor {
 

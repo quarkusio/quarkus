@@ -8,25 +8,24 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.hsqldb.Server;
 import org.hsqldb.server.WebServer;
 import org.jboss.shamrock.junit.ShamrockTest;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(ShamrockTest.class)
-@Ignore
 public class DatasourceTestCase {
 
-    static WebServer ws;
+    static Server ws;
 
     @BeforeClass
     public static void setup() throws Exception {
         Path dir = Files.createTempDirectory("shamrock-test");
-        ws = new WebServer();
+        ws = new Server();
         ws.setPort(7676);
         ws.setAddress("localhost");
         ws.setDatabaseName(0, "test");

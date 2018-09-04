@@ -89,7 +89,5 @@ public interface ProcessorContext {
 
     void addResourceBundle(String bundle);
 
-    void addBeforeAnalysis(Consumer<MethodCreator> callback);
-
     void addRuntimeInitializedClasses(String ... classes);
 }

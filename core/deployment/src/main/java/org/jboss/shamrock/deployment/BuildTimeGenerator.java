@@ -168,7 +168,6 @@ public class BuildTimeGenerator {
         private final Map<String, ReflectionInfo> reflectiveClasses = new LinkedHashMap<>();
         private final Set<String> resources = new HashSet<>();
         private final Set<String> resourceBundles = new HashSet<>();
-        private final List<Consumer<MethodCreator>> beforeAnalysisCallback = new ArrayList<>();
         private final Set<String> runtimeInitializedClasses = new HashSet<>();
 
         @Override
@@ -253,11 +252,6 @@ public class BuildTimeGenerator {
         }
 
         @Override
-        public void addBeforeAnalysis(Consumer<MethodCreator> callback) {
-            beforeAnalysisCallback.add(callback);
-        }
-
-        @Override
         public void addRuntimeInitializedClasses(String... classes) {
             runtimeInitializedClasses.addAll(Arrays.asList(classes));
         }
@@ -314,31 +308,27 @@ public class BuildTimeGenerator {
             ClassCreator file = new ClassCreator(ClassOutput.gizmoAdaptor(output, true), GRAAL_AUTOFEATURE, null, Object.class.getName(), "org/graalvm/nativeimage/Feature");
             file.addAnnotation("com/oracle/svm/core/annotate/AutomaticFeature");
 
-            MethodCreator afterReg = file.getMethodCreator("afterRegistration", void.class, "org.graalvm.nativeimage.Feature$AfterRegistrationAccess");
+            //MethodCreator afterReg = file.getMethodCreator("afterRegistration", void.class, "org.graalvm.nativeimage.Feature$AfterRegistrationAccess");
             MethodCreator beforeAn = file.getMethodCreator("beforeAnalysis", "V", "org/graalvm/nativeimage/Feature$BeforeAnalysisAccess");
 
             //TODO: at some point we are going to need to break this up, as if it get too big it will hit the method size limit
 
             if(!runtimeInitializedClasses.isEmpty()) {
-                ExceptionTable tc = afterReg.addTryCatch();
-                ResultHandle array = afterReg.newArray(Class.class, afterReg.load(runtimeInitializedClasses.size()));
+                ExceptionTable tc = beforeAn.addTryCatch();
+                ResultHandle array = beforeAn.newArray(Class.class, beforeAn.load(runtimeInitializedClasses.size()));
                 int count = 0;
-                ResultHandle thisClass = afterReg.loadClass(GRAAL_AUTOFEATURE);
-                ResultHandle cl = afterReg.invokeVirtualMethod(ofMethod(Class.class, "getClassLoader", ClassLoader.class), thisClass);
+                ResultHandle thisClass = beforeAn.loadClass(GRAAL_AUTOFEATURE);
+                ResultHandle cl = beforeAn.invokeVirtualMethod(ofMethod(Class.class, "getClassLoader", ClassLoader.class), thisClass);
                 for (String i : runtimeInitializedClasses) {
-                    ResultHandle clazz = afterReg.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class), afterReg.load(i), afterReg.load(false), cl);
-                    afterReg.writeArrayValue(array, afterReg.load(count++), clazz);
+                    ResultHandle clazz = beforeAn.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class), beforeAn.load(i), beforeAn.load(false), cl);
+                    beforeAn.writeArrayValue(array, beforeAn.load(count++), clazz);
                 }
-                afterReg.invokeStaticMethod(MethodDescriptor.ofMethod("org.graalvm.nativeimage.RuntimeClassInitialization", "delayClassInitialization", void.class, Class[].class), array);
+                beforeAn.invokeStaticMethod(MethodDescriptor.ofMethod("org.graalvm.nativeimage.RuntimeClassInitialization", "delayClassInitialization", void.class, Class[].class), array);
 
                 CatchBlockCreator cc = tc.addCatchClause(Throwable.class);
                 cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
                 tc.complete();
             }
-            for(Consumer<MethodCreator> i : beforeAnalysisCallback) {
-                i.accept(afterReg);
-            }
-            afterReg.returnValue(null);
 
             for (String i : resources) {
                 beforeAn.invokeStaticMethod(ofMethod(ResourceHelper.class, "registerResources", void.class, String.class), beforeAn.load(i));

@@ -1,6 +1,8 @@
 package org.jboss.shamrock.beanvalidation;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -44,19 +46,28 @@ class BeanValidationProcessor implements ResourceProcessor {
         }
         processorContext.addReflectiveClass(true, false, Constraint.class.getName());
         Set<DotName> constraintAnnotations = new HashSet<>();
+        Map<DotName, Set<DotName>> seenConstraints = new HashMap<>();
         for (AnnotationInstance annotation : archiveContext.getCombinedIndex().getAnnotations(DotName.createSimple(Constraint.class.getName()))) {
             constraintAnnotations.add(annotation.target().asClass().name());
             processorContext.addReflectiveClass(true, false, annotation.target().asClass().name().toString());
         }
         for (DotName constraint : constraintAnnotations) {
             for (AnnotationInstance annotation : archiveContext.getCombinedIndex().getAnnotations(constraint)) {
+                Set<DotName> seenTypes = seenConstraints.get(annotation.name());
+                if (seenTypes == null) {
+                    seenConstraints.put(annotation.name(), seenTypes = new HashSet<>());
+                }
                 if (annotation.target().kind() == AnnotationTarget.Kind.FIELD) {
                     processorContext.addReflectiveField(annotation.target().asField());
+                    seenTypes.add(annotation.target().asField().type().name());
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
                     processorContext.addReflectiveMethod(annotation.target().asMethod());
+                    seenTypes.add(annotation.target().asMethod().returnType().name());
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
                     processorContext.addReflectiveMethod(annotation.target().asMethodParameter().method());
+                    seenTypes.add(annotation.target().asMethodParameter().asType().asClass().name());
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
+                    seenTypes.add(annotation.target().asClass().name());
                     processorContext.addReflectiveClass(true, true, annotation.target().asClass().name().toString());
                 }
             }
@@ -68,10 +79,18 @@ class BeanValidationProcessor implements ResourceProcessor {
                     ParameterizedType pt = iface.asParameterizedType();
                     if (pt.name().equals(CONSTRAINT_VALIDATOR)) {
                         if (pt.arguments().size() == 2) {
-                            String type = pt.arguments().get(1).name().toString();
-                            if (type.startsWith("javax.money") ||
-                                    type.startsWith("org.joda")) {
+                            DotName type = pt.arguments().get(1).name();
+                            DotName annotation = pt.arguments().get(0).name();
+                            Set<DotName> seen = seenConstraints.get(annotation);
+                            if (type.toString().startsWith("javax.money") ||
+                                    type.toString().startsWith("org.joda")) {
                                 //TODO: what if joda is present?
+                                skip = true;
+                                break;
+                            } else if (seen == null) {
+                                skip = true;
+                                break;
+                            } else if (!seen.contains(type)) {
                                 skip = true;
                                 break;
                             }

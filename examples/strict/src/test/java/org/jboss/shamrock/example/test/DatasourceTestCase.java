@@ -52,4 +52,17 @@ public class DatasourceTestCase {
         Assert.assertEquals("10", new String(out.toByteArray()));
     }
 
+    @Test
+    public void testDataSourceTransactions() throws Exception {
+        URL uri = new URL("http://localhost:8080/rest/datasource/txn");
+        URLConnection connection = uri.openConnection();
+        InputStream in = connection.getInputStream();
+        byte[] buf = new byte[100];
+        int r;
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        while ((r = in.read(buf)) > 0) {
+            out.write(buf, 0, r);
+        }
+        Assert.assertEquals("PASSED", new String(out.toByteArray()));
+    }
 }

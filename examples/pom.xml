@@ -13,7 +13,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>class-transformer</module>
-        <!--<module>permissive</module>-->
+        <module>permissive</module>
         <module>shared-library</module>
         <module>strict</module>
     </modules>

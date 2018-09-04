@@ -53,7 +53,7 @@ public class DataSourceProducer {
     private String url;
     private String userName;
     private String password;
-    private boolean jta;
+    private boolean jta = true;
     private boolean connectable;
     private boolean xa;
 

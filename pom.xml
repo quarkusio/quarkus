@@ -55,7 +55,6 @@
         <agroal.version>1.1</agroal.version>
         <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
         <javax.persistence-api.version>2.2</javax.persistence-api.version>
-        <el-impl.version>2.2</el-impl.version>
     </properties>
 
     <modules>
@@ -421,17 +420,6 @@
                 <groupId>org.fakereplace</groupId>
                 <artifactId>fakereplace</artifactId>
                 <version>${fakereplace.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.glassfish</groupId>
-                <artifactId>javax.el-impl</artifactId>
-                <version>${javax.el-impl.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.glassfish</groupId>
-                        <artifactId>javax.el-api</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.glassfish</groupId>

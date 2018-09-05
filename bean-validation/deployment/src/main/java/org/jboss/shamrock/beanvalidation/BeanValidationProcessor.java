@@ -39,6 +39,7 @@ class BeanValidationProcessor implements ResourceProcessor {
     @Override
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
         beanDeployment.addAdditionalBean(ValidatorProvider.class);
+        processorContext.addRuntimeInitializedClasses("javax.el.ELUtil");
         processorContext.addResourceBundle("org.hibernate.validator.ValidationMessages");
         //TODO: this should not rely on the index and implementation being indexed, this stuff should just be hard coded
         try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.BEAN_VALIDATION_DEPLOYMENT)) {

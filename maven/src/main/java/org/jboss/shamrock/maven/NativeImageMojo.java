@@ -35,6 +35,9 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter(defaultValue = "false")
     private boolean debugSymbols;
 
+    @Parameter(defaultValue = "${native-image.debug-build-process}")
+    private boolean debugBuildProcess;
+
     @Parameter(readonly = true, required = true, defaultValue = "${project.build.finalName}")
     private String finalName;
 
@@ -62,7 +65,7 @@ public class NativeImageMojo extends AbstractMojo {
         try {
             List<String> command = new ArrayList<>();
             command.addAll(nativeImage);
-            if(cleanupServer) {
+            if (cleanupServer) {
                 List<String> cleanup = new ArrayList<>(nativeImage);
                 cleanup.add("--server-shutdown");
                 Process process = Runtime.getRuntime().exec(cleanup.toArray(new String[0]), null, outputDirectory);
@@ -77,6 +80,12 @@ public class NativeImageMojo extends AbstractMojo {
             }
             if (debugSymbols) {
                 command.add("-g");
+            }
+            if (debugBuildProcess) {
+                command.add("-J-Xdebug");
+                command.add("-J-Xnoagent");
+                command.add("-J-Djava.compiler=NONE");
+                command.add("-J-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y");
             }
             //command.add("-H:+AllowVMInspection");
             System.out.println(command);

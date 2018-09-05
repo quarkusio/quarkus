@@ -31,11 +31,6 @@
             <artifactId>jsoup</artifactId>
             <version>1.10.2</version>
         </dependency>
-        <!-- This also should not be required, we need to figure out why substrate requires it-->
-        <dependency>
-            <groupId>org.glassfish.web</groupId>
-            <artifactId>el-impl</artifactId>
-        </dependency>
     </dependencies>
 
     <build>

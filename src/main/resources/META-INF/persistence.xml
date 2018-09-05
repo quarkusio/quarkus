@@ -12,21 +12,22 @@
             <!-- intentionally using worse case so that we can optimise for this -->
             <property name="hibernate.archive.autodetection" value="class, hbm"/>
 
+            <!-- Connection specific -->
             <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQL95Dialect"/>
-            <!--<property name="hibernate.connection.driver_class" value="org.postgresql.Driver"/>-->
             <property name="hibernate.connection.url" value="jdbc:postgresql:hibernate_orm_test"/>
             <property name="hibernate.connection.username" value="hibernate_orm_test"/>
             <property name="hibernate.connection.password" value="hibernate_orm_test"/>
 
+            <!-- Tuning and debugging -->
             <property name="hibernate.connection.pool_size" value="2"/>
-
             <property name="hibernate.show_sql" value="false"/>
             <property name="hibernate.format_sql" value="false"/>
 
-            <!-- First run only -->
-            <!--<property name="hibernate.hbm2ddl.auto" value="create"/>-->
-
-            <property name="hibernate.hbm2ddl.auto" value="none"/>
+            <!--
+                Optimistically create the tables;
+                will cause background errors being logged if they already exist,
+                but is practical to retain existing data across runs (or create as needed) -->
+            <property name="javax.persistence.schema-generation.database.action" value="create-only"/>
 
             <property name="javax.persistence.validation.mode" value="NONE"/>
         </properties>

@@ -26,8 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -37,7 +37,6 @@ import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
-import org.jboss.protean.gizmo.BytecodeCreator;
 import org.jboss.protean.gizmo.CatchBlockCreator;
 import org.jboss.protean.gizmo.ClassCreator;
 import org.jboss.protean.gizmo.ExceptionTable;
@@ -133,6 +132,7 @@ public class BuildTimeGenerator {
 
             ArchiveContext context = new ArchiveContextImpl(new ApplicationArchiveImpl(appIndex, root, null), applicationArchives, config);
             ProcessorContextImpl processorContext = new ProcessorContextImpl();
+            processorContext.addResource("META-INF/microprofile-config.properties");
             try {
                 for (ResourceProcessor processor : processors) {
                     try {
@@ -169,6 +169,7 @@ public class BuildTimeGenerator {
         private final Set<String> resources = new HashSet<>();
         private final Set<String> resourceBundles = new HashSet<>();
         private final Set<String> runtimeInitializedClasses = new HashSet<>();
+        private final Set<List<String>> proxyClasses = new HashSet<>();
 
         @Override
         public BytecodeRecorder addStaticInitTask(int priority) {
@@ -256,6 +257,12 @@ public class BuildTimeGenerator {
             runtimeInitializedClasses.addAll(Arrays.asList(classes));
         }
 
+        @Override
+        public void addProxyDefinition(String... proxyClasses) {
+            this.proxyClasses.add(Arrays.asList(proxyClasses));
+        }
+
+
         void writeMainClass() throws IOException {
 
             Collections.sort(tasks);
@@ -313,7 +320,7 @@ public class BuildTimeGenerator {
 
             //TODO: at some point we are going to need to break this up, as if it get too big it will hit the method size limit
 
-            if(!runtimeInitializedClasses.isEmpty()) {
+            if (!runtimeInitializedClasses.isEmpty()) {
                 ExceptionTable tc = beforeAn.addTryCatch();
                 ResultHandle array = beforeAn.newArray(Class.class, beforeAn.load(runtimeInitializedClasses.size()));
                 int count = 0;
@@ -328,6 +335,21 @@ public class BuildTimeGenerator {
                 CatchBlockCreator cc = tc.addCatchClause(Throwable.class);
                 cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
                 tc.complete();
+            }
+
+            if (!proxyClasses.isEmpty()) {
+                ResultHandle proxySupportClass = beforeAn.loadClass("com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry");
+                ResultHandle proxySupport = beforeAn.invokeStaticMethod(ofMethod("org.graalvm.nativeimage.ImageSingletons", "lookup", Object.class, Class.class), proxySupportClass);
+                for (List<String> proxy : proxyClasses) {
+                    ResultHandle array = beforeAn.newArray(Class.class, beforeAn.load(proxy.size()));
+                    int i = 0;
+                    for (String p : proxy) {
+                        ResultHandle clazz = beforeAn.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class), beforeAn.load(p));
+                        beforeAn.writeArrayValue(array, beforeAn.load(i++), clazz);
+
+                    }
+                    beforeAn.invokeInterfaceMethod(ofMethod("com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry", "addProxyClass", void.class, Class[].class), proxySupport, array);
+                }
             }
 
             for (String i : resources) {

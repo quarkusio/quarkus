@@ -4,8 +4,10 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -14,6 +16,7 @@ class MethodCreatorImpl extends BytecodeCreatorImpl implements MethodCreator {
 
     private int modifiers = Opcodes.ACC_PUBLIC;
     private final List<String> exceptions = new ArrayList<>();
+    private final List<AnnotationCreatorImpl> annotations = new ArrayList<>();
 
     MethodCreatorImpl(MethodDescriptor methodDescriptor, String declaringClassName, ClassOutput classOutput, ClassCreator classCreator) {
         super(methodDescriptor, declaringClassName, classOutput, classCreator);
@@ -62,11 +65,31 @@ class MethodCreatorImpl extends BytecodeCreatorImpl implements MethodCreator {
         int varCount = allocateLocalVariables(localVarCount);
         writeOperations(visitor);
         visitor.visitMaxs(0, varCount);
+
+        for(AnnotationCreatorImpl annotation : annotations) {
+            AnnotationVisitor av = visitor.visitAnnotation(DescriptorUtils.extToInt(annotation.getAnnotationType()), true);
+            for(Map.Entry<String, Object> e : annotation.getValues().entrySet()) {
+                av.visit(e.getKey(), e.getValue());
+            }
+            av.visitEnd();
+        }
         visitor.visitEnd();
     }
 
     @Override
     public String toString() {
         return "MethodCreatorImpl [declaringClassName=" + declaringClassName + ", methodDescriptor=" + methodDescriptor + "]";
+    }
+
+    @Override
+    public AnnotationCreator addAnnotation(String annotationType) {
+        AnnotationCreatorImpl ac = new AnnotationCreatorImpl(annotationType);
+        annotations.add(ac);
+        return ac;
+    }
+
+    @Override
+    public AnnotationCreator addAnnotation(Class<?> annotationType) {
+        return addAnnotation(annotationType.getName());
     }
 }

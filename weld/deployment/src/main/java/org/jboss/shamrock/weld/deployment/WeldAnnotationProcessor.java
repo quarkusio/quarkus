@@ -38,8 +38,11 @@ public class WeldAnnotationProcessor implements ResourceProcessor {
                 template.addClass(init, recorder.classProxy(name));
                 processorContext.addReflectiveClass(true, true, name);
             }
-            for (Class<?> clazz : beanDeployment.getAdditionalBeans()) {
-                template.addClass(init, clazz);
+            for (String clazz : beanDeployment.getAdditionalBeans()) {
+                template.addClass(init, recorder.classProxy(clazz));
+            }
+            for (String clazz : beanDeployment.getGeneratedBeans().keySet()) {
+                template.addClass(init, recorder.classProxy(clazz));
             }
             SeContainer weld = template.doBoot(null, init);
             template.initBeanContainer(weld);

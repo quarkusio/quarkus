@@ -1,5 +1,7 @@
 package org.jboss.shamrock.example.rest;
 
+import java.net.URL;
+
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.ws.rs.GET;
@@ -7,6 +9,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.xml.bind.annotation.XmlRootElement;
+
+import org.eclipse.microprofile.rest.client.RestClientBuilder;
 
 import io.reactivex.Single;
 

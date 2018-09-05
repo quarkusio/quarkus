@@ -48,7 +48,7 @@ not being invalidated correctly in some cases. To run a build with a new instanc
 
 At the moment Shamrock requires the use of maven. To use Shamrock add the following to your `pom.xml`:
 
-`
+```
 <plugin>
     <groupId>${project.groupId}</groupId>
     <artifactId>shamrock-maven-plugin</artifactId>
@@ -61,37 +61,37 @@ At the moment Shamrock requires the use of maven. To use Shamrock add the follow
         </execution>
     </executions>
 </plugin>
-`
+```
 
 In addition to this you need to add some Shamrock `deployment` artifacts to your project. These must have `provided`
 scope, as this stops deployment time code ending up in the final image. For example for a REST app you might add:
 
-`
+```
 <dependency>
     <groupId>org.jboss.shamrock</groupId>
     <artifactId>shamrock-jaxrs-deployment</artifactId>
     <scope>provided</scope>
 </dependency>
-`
+```
 
 This will enable the Shamrock JVM build. The output of this will be the runner jar, and the support libraries:
 
-`
+```
 target/${build.finalName}-runner.jar
 target/lib/*.jar
-`
+```
 
 The runner jar has the appropriate `Class-Path` entries in `MANIFEST.MF` so all that is required to run the app
 is:
 
-`
+```
 java -jar target/${build.finalName}-runner.jar
-`
+```
 
 If you also want to generate a native image as part of the build process you need to add the native image plugin
 to your pom:
 
-`
+```
 <plugin>
     <groupId>${project.groupId}</groupId>
     <artifactId>shamrock-maven-plugin</artifactId>
@@ -105,7 +105,7 @@ to your pom:
         </execution>
     </executions>
 </plugin>
-`
+```
 
 To just build the native image you can then just run:
 

@@ -1,18 +1,29 @@
 # Shamrock
 
 Shamrock is framework that allows you process Java EE and Microprofile metadata at build time,
-and use it to create low overhead jar files, as well as native images using Graal.
+and use it to create low overhead jar files, as well as native images using Graal/Substrate VM.
 
 At the moment is has the following features:
 
 - Clean build/runtime separation of components
 - Bytecode recorders to allow for the generation of bytecode without knowledge of the class file format
-- An API to easily enable reflection support in Graal
+- An API to easily enable reflection, resources, resource bundles and lazy clazz init support in Substrate
 - Support for injection into build time processors
 - Support for build and runtime config through MP config
 - 'Instant Start' support on Graal through the use of static init to perform boot
-- Various levels of support for Resteasy, Undertow, Weld, MP Config and MH Health
-(e.g. Weld works, but only if you specify -H:+ReportUnsupportedElementsAtRuntime)
+- A light weight CDI implementation called Arc
+- A user friendly method for generating custom bytecode called Gizmo
+- Various levels of support for:
+    - JAX-RS (Resteasy)
+    - Servlet (Undertow) 
+    - CDI (Weld/Arc)
+    - Microprofile Config (SmallRye)
+    - Microprofile Health Check (SmallRye)
+    - Microprofile OpenAPI (SmallRye)
+    - Microprofile Metrics (SmallRye)
+    - Bean Validation (Hibernate Validator)
+    - Transactions (Narayana)
+    - Datasources (Agroal)
 - A maven plugin to run the build, and create native images
 - A JUnit runner that can run tests, and supports IDE usage
 - A JUnit runner that can test a native image produced by the maven plugin
@@ -20,12 +31,12 @@ At the moment is has the following features:
 
 ## How to build Shamrock
 
-* Install GraalVM (tested on RC4)
+* Install GraalVM (minimum RC6)
 * set `GRAALVM_HOME` to your GraalVM Home directory e.g. `/Users/emmanuel/JDK/GraalVM/Contents/Home`
 * `mvn install`
 
 The default build will create two different native images, which is quite time consuming. You can skip this
-by disabling the `native-image` profile: `mvn install -P\!native-image`.
+by disabling the `native-image` profile: `mvn install -Dno-native`.
 
 Wait. Success!
 
@@ -35,9 +46,68 @@ not being invalidated correctly in some cases. To run a build with a new instanc
 
 ## How to use Shamrock
 
-TODO: To be completed.
+At the moment Shamrock requires the use of maven. To use Shamrock add the following to your `pom.xml`:
 
-To just build the native image of the examples, you can run
+`
+<plugin>
+    <groupId>${project.groupId}</groupId>
+    <artifactId>shamrock-maven-plugin</artifactId>
+    <version>${project.version}</version>
+    <executions>
+        <execution>
+            <goals>
+                <goal>build</goal>
+            </goals>
+        </execution>
+    </executions>
+</plugin>
+`
+
+In addition to this you need to add some Shamrock `deployment` artifacts to your project. These must have `provided`
+scope, as this stops deployment time code ending up in the final image. For example for a REST app you might add:
+
+`
+<dependency>
+    <groupId>org.jboss.shamrock</groupId>
+    <artifactId>shamrock-jaxrs-deployment</artifactId>
+    <scope>provided</scope>
+</dependency>
+`
+
+This will enable the Shamrock JVM build. The output of this will be the runner jar, and the support libraries:
+
+`
+target/${build.finalName}-runner.jar
+target/lib/*.jar
+`
+
+The runner jar has the appropriate `Class-Path` entries in `MANIFEST.MF` so all that is required to run the app
+is:
+
+`
+java -jar target/${build.finalName}-runner.jar
+`
+
+If you also want to generate a native image as part of the build process you need to add the native image plugin
+to your pom:
+
+`
+<plugin>
+    <groupId>${project.groupId}</groupId>
+    <artifactId>shamrock-maven-plugin</artifactId>
+    <version>${project.version}</version>
+    <executions>
+        <execution>
+            <id>native-image</id>
+            <goals>
+                <goal>native-image</goal>
+            </goals>
+        </execution>
+    </executions>
+</plugin>
+`
+
+To just build the native image you can then just run:
 
     mvn package
 
@@ -45,17 +115,6 @@ If you just want to run the native image task you can do:
 
     mvn shamrock:native-image
 
-### How to use the deployment framework
-
-TODO: to be completed.
-
-To pass to the StartupTask a list of class without loading the classes themselves, you can do the following
-
-    org.jboss.shamrock.deployment.codegen.BytecodeRecorder#classProxy
-
-to pass in class objects. it is a work around for the classes you need not being loadable from the processor.
-you just pass in the class name, and it returns a Class object that is a proxy for the real Class.
-There are examples in the Undertow one.
 
 ## Architecture Overview
 
@@ -120,8 +179,28 @@ selected it will still be included).
 This mechanism means that you only need to declare a single dependency per feature, but shamrock still has enough information
 to only include necessary runtime components.
 
+## The Deployment Framework
 
-## Bytecode recording
+The deployment framework allows you to process metadata from the application, and output resources (usually generated
+bytecode) that will actually bootstrap the application at runtime. The idea of this is that all code related to
+annotation/configuration parsing can run in a separate JVM, so the app can start faster and use less memory. 
+
+To extend Shamrock you need to include a class that implements:
+
+    org.jboss.shamrock.deployment.ShamrockSetup
+    
+This class can then be used to all implementation of the following:    
+
+    org.jboss.shamrock.deployment.ResourceProcessor
+    org.jboss.shamrock.deployment.InjectionProvider
+    
+In addition to this it can be used to specify resources files that indicate that an archive should be processed
+through the use of the `addApplicationArchiveMarker` call. Marker files are files such as `META-INF/beans.xml`
+that indicate that a jar has application components and as such it should be indexed and handled by the processors.
+By default jar files on the class path are not indexed unless they contain such a marker, or indexing has been specifically
+configured.
+
+### ResourceProcessor and Bytecode recording
 
 These startup tasks are generated by the bytecode recorder.
 This recorder works by creating proxies of classes that contain deployment logic, and then recoding the invocations.
@@ -182,6 +261,14 @@ If you inject ShamrockConfig into your application the bytecode recorded will tr
 If the recorder detects that a String has come from config then instead of just writing the value it will write some bytecode
 that loads the value from MP config, and defaulting to the build time value if it is not present.
 This means configuration can be applied at both build and runtime.
+
+To pass to the StartupTask a list of class without loading the classes themselves, you can do the following
+
+    org.jboss.shamrock.deployment.codegen.BytecodeRecorder#classProxy
+
+to pass in class objects. it is a work around for the classes you need not being loadable from the processor.
+you just pass in the class name, and it returns a Class object that is a proxy for the real Class.
+There are examples in the Undertow one.
 
 ## Testing
 

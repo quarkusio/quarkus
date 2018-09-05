@@ -1,5 +1,6 @@
 package org.jboss.shamrock.beanvalidation;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -45,14 +46,13 @@ class BeanValidationProcessor implements ResourceProcessor {
             template.forceInit((InjectionInstance<ValidatorProvider>) recorder.newInstanceFactory(ValidatorProvider.class.getName()));
         }
         processorContext.addReflectiveClass(true, false, Constraint.class.getName());
-        Set<DotName> constraintAnnotations = new HashSet<>();
         Map<DotName, Set<DotName>> seenConstraints = new HashMap<>();
-        for (AnnotationInstance annotation : archiveContext.getCombinedIndex().getAnnotations(DotName.createSimple(Constraint.class.getName()))) {
-            constraintAnnotations.add(annotation.target().asClass().name());
-            processorContext.addReflectiveClass(true, false, annotation.target().asClass().name().toString());
-        }
-        for (DotName constraint : constraintAnnotations) {
-            for (AnnotationInstance annotation : archiveContext.getCombinedIndex().getAnnotations(constraint)) {
+        for (AnnotationInstance constraint : archiveContext.getCombinedIndex().getAnnotations(DotName.createSimple(Constraint.class.getName()))) {
+            Collection<AnnotationInstance> annotationInstances = archiveContext.getCombinedIndex().getAnnotations(constraint.target().asClass().name());
+            if(!annotationInstances.isEmpty()) {
+                processorContext.addReflectiveClass(true, false, constraint.target().asClass().name().toString());
+            }
+            for (AnnotationInstance annotation : annotationInstances) {
                 Set<DotName> seenTypes = seenConstraints.get(annotation.name());
                 if (seenTypes == null) {
                     seenConstraints.put(annotation.name(), seenTypes = new HashSet<>());

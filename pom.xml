@@ -127,7 +127,7 @@
         <repository>
             <id>protean-nexus-release</id>
             <name>Temporary unreliable Nexus</name>
-            <url>http://sannelondon.noip.me/nexus/content/repositories/releases/</url>
+            <url>http://ec2-18-234-117-118.compute-1.amazonaws.com:8081/nexus/content/repositories/releases/</url>
             <layout>default</layout>
             <releases>
                 <enabled>true</enabled>
@@ -140,7 +140,7 @@
         <repository>
             <id>protean-nexus-snapshot</id>
             <name>Temporary unreliable Nexus - Snapshots</name>
-            <url>http://sannelondon.noip.me/nexus/content/repositories/snapshots/</url>
+            <url>http://ec2-18-234-117-118.compute-1.amazonaws.com:8081/content/repositories/snapshots/</url>
             <layout>default</layout>
             <releases>
                 <enabled>true</enabled>

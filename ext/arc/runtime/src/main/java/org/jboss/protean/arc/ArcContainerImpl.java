@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
@@ -117,7 +118,7 @@ class ArcContainerImpl implements ArcContainer {
             qualifiers = new Annotation[] { Default.Literal.INSTANCE };
         }
         List<InjectableBean<?>> resolvedBeans = resolved.getValue(new Resolvable(requiredType, qualifiers));
-        return resolvedBeans.size() == 1 ? (InjectableBean<T>) resolvedBeans.get(0) : null;
+        return resolvedBeans.isEmpty() ? null : (InjectableBean<T>) resolvedBeans.get(0);
     }
 
     private List<InjectableBean<?>> resolve(Resolvable resolvable) {
@@ -127,7 +128,26 @@ class ArcContainerImpl implements ArcContainer {
                 resolvedBeans.add(bean);
             }
         }
+        if (resolvedBeans.size() > 1) {
+            // Try to resolve the ambiguity
+            for (Iterator<InjectableBean<?>> iterator = resolvedBeans.iterator(); iterator.hasNext();) {
+                InjectableBean<?> bean = iterator.next();
+                if (bean.getAlternativePriority() == null && (bean.getDeclaringBean() == null || bean.getDeclaringBean().getAlternativePriority() == null)) {
+                    iterator.remove();
+                }
+            }
+            if (resolvedBeans.size() > 1) {
+                resolvedBeans.sort(this::compareAlternativeBeans);
+            }
+        }
         return resolvedBeans;
+    }
+
+    private int compareAlternativeBeans(InjectableBean<?> bean1, InjectableBean<?> bean2) {
+        // The highest priority wins
+        Integer priority2 = bean2.getDeclaringBean() != null ? bean2.getDeclaringBean().getAlternativePriority() : bean2.getAlternativePriority();
+        Integer priority1 = bean1.getDeclaringBean() != null ? bean1.getDeclaringBean().getAlternativePriority() : bean1.getAlternativePriority();
+        return priority2.compareTo(priority1);
     }
 
     @SuppressWarnings("unchecked")

@@ -5,6 +5,7 @@ import javax.annotation.PreDestroy;
 import javax.annotation.Priority;
 import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
+import javax.enterprise.inject.Alternative;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Disposes;
@@ -48,6 +49,7 @@ final class DotNames {
     static final DotName BEAN_MANAGER = DotName.createSimple(BeanManager.class.getName());
     static final DotName EVENT = DotName.createSimple(Event.class.getName());
     static final DotName EVENT_METADATA = DotName.createSimple(EventMetadata.class.getName());
+    static final DotName ALTERNATIVE = DotName.createSimple(Alternative.class.getName());
 
     private DotNames() {
     }

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -33,14 +34,21 @@ final class Beans {
         Set<AnnotationInstance> qualifiers = new HashSet<>();
         ScopeInfo scope = null;
         Set<Type> types = Types.getTypeClosure(beanClass, Collections.emptyMap(), beanDeployment);
+        Integer alternativePriority = null;
+        boolean isAlternative = false;
         for (AnnotationInstance annotation : beanClass.classAnnotations()) {
             if (beanDeployment.getQualifier(annotation.name()) != null) {
                 qualifiers.add(annotation);
+            } else if (annotation.name().equals(DotNames.ALTERNATIVE)) {
+                isAlternative = true;
+            } else if (annotation.name().equals(DotNames.PRIORITY)) {
+                alternativePriority = annotation.value().asInt();
             } else if (scope == null) {
                 scope = ScopeInfo.from(annotation.name());
             }
         }
-        return new BeanInfo(beanClass, beanDeployment, scope, types, qualifiers, Injection.forBean(beanClass, beanDeployment), null, null);
+        return new BeanInfo(beanClass, beanDeployment, scope, types, qualifiers, Injection.forBean(beanClass, beanDeployment), null, null,
+                isAlternative ? alternativePriority : null);
     }
 
     /**
@@ -63,7 +71,7 @@ final class Beans {
             }
         }
         return new BeanInfo(producerMethod, beanDeployment, scope, types, qualifiers, Injection.forBean(producerMethod, beanDeployment), declaringBean,
-                disposer);
+                disposer, null);
     }
 
     /**
@@ -85,7 +93,7 @@ final class Beans {
                 scope = ScopeInfo.from(annotation.name());
             }
         }
-        return new BeanInfo(producerField, beanDeployment, scope, types, qualifiers, Collections.emptyList(), declaringBean, disposer);
+        return new BeanInfo(producerField, beanDeployment, scope, types, qualifiers, Collections.emptyList(), declaringBean, disposer, null);
     }
 
     static boolean matches(BeanInfo bean, InjectionPointInfo injectionPoint) {
@@ -119,13 +127,37 @@ final class Beans {
                 resolved.add(b);
             }
         }
+        BeanInfo selected;
         if (resolved.isEmpty()) {
             throw new UnsatisfiedResolutionException(injectionPoint + " on " + bean);
         } else if (resolved.size() > 1) {
-            throw new AmbiguousResolutionException(
-                    injectionPoint + " on " + bean + "\nBeans:\n" + resolved.stream().map(Object::toString).collect(Collectors.joining("\n")));
+            // Try to resolve the ambiguity
+            for (Iterator<BeanInfo> iterator = resolved.iterator(); iterator.hasNext();) {
+                BeanInfo beanInfo = iterator.next();
+                if (!beanInfo.isAlternative() && (beanInfo.getDeclaringBean() == null || !beanInfo.getDeclaringBean().isAlternative())) {
+                    iterator.remove();
+                }
+            }
+            if (resolved.size() == 1) {
+                selected = resolved.get(0);
+            } else if (resolved.size() > 1) {
+                resolved.sort(Beans::compareAlternativeBeans);
+                selected = resolved.get(0);
+            } else {
+                throw new AmbiguousResolutionException(
+                        injectionPoint + " on " + bean + "\nBeans:\n" + resolved.stream().map(Object::toString).collect(Collectors.joining("\n")));
+            }
+        } else {
+            selected = resolved.get(0);
         }
-        injectionPoint.resolve(resolved.get(0));
+        injectionPoint.resolve(selected);
+    }
+
+    private static int compareAlternativeBeans(BeanInfo bean1, BeanInfo bean2) {
+        // The highest priority wins
+        Integer priority2 = bean2.getDeclaringBean() != null ? bean2.getDeclaringBean().getAlternativePriority() : bean2.getAlternativePriority();
+        Integer priority1 = bean1.getDeclaringBean() != null ? bean1.getDeclaringBean().getAlternativePriority() : bean1.getAlternativePriority();
+        return priority2.compareTo(priority1);
     }
 
     static boolean hasQualifier(BeanInfo bean, AnnotationInstance required) {

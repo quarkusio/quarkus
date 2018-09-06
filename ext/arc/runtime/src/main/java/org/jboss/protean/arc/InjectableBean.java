@@ -43,4 +43,20 @@ public interface InjectableBean<T> extends Contextual<T>, InjectableReferencePro
         creationalContext.release();
     }
 
+    /**
+     * 
+     * @return the declaring bean if the bean is a producer method/field, or {@code null}
+     */
+    default InjectableBean<?> getDeclaringBean() {
+        return null;
+    }
+
+    /**
+     * 
+     * @return the priority if the bean is an alternative, or {@code null}
+     */
+    default Integer getAlternativePriority() {
+        return null;
+    }
+
 }

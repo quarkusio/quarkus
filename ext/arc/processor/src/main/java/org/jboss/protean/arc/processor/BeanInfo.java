@@ -47,6 +47,8 @@ class BeanInfo {
     private Map<MethodInfo, List<InterceptorInfo>> interceptedMethods;
 
     private Map<InterceptionType, List<InterceptorInfo>> lifecycleInterceptors;
+    
+    private final Integer alternativePriority;
 
     /**
      *
@@ -59,9 +61,10 @@ class BeanInfo {
      * @param injections
      * @param declaringBean
      * @param disposer
+     * @param alternativePriority
      */
     BeanInfo(AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope, Set<Type> types, Set<AnnotationInstance> qualifiers,
-            List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer) {
+            List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer, Integer alternativePriority) {
         this.target = target;
         this.beanDeployment = beanDeployment;
         this.scope = scope != null ? scope : ScopeInfo.DEPENDENT;
@@ -74,6 +77,7 @@ class BeanInfo {
         this.injections = injections;
         this.declaringBean = declaringBean;
         this.disposer = disposer;
+        this.alternativePriority = alternativePriority;
     }
 
     AnnotationTarget getTarget() {
@@ -196,6 +200,14 @@ class BeanInfo {
 
     DisposerInfo getDisposer() {
         return disposer;
+    }
+    
+    boolean isAlternative() {
+        return alternativePriority != null;
+    }
+    
+    Integer getAlternativePriority() {
+        return alternativePriority;
     }
 
     void init() {

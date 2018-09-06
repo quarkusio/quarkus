@@ -3,10 +3,10 @@ package org.jboss.shamrock.example.rest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
-@Path("/foo")
+@Path("/test")
 public interface RestInterface {
 
     @GET
-    void get();
+    String get();
 
 }

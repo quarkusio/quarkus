@@ -90,4 +90,6 @@ public interface ProcessorContext {
     void addResourceBundle(String bundle);
 
     void addRuntimeInitializedClasses(String ... classes);
+
+    void addProxyDefinition(String ... proxyClasses);
 }

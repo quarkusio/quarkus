@@ -1,5 +1,7 @@
 package org.jboss.shamrock.example.rest;
 
+import java.net.URL;
+
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.ws.rs.GET;
@@ -8,16 +10,26 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import io.reactivex.Single;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
+
+import io.reactivex.Single;
 
 @Path("/test")
 public class TestResource {
 
     @GET
     public String getTest() {
-        RestInterface iface = RestClientBuilder.newBuilder().build(RestInterface.class);
         return "TEST";
+    }
+
+    @GET
+    @Path("/client")
+    public String client() throws Exception {
+
+        RestInterface iface = RestClientBuilder.newBuilder()
+                .baseUrl(new URL("http", "localhost", 8080, "/rest"))
+                .build(RestInterface.class);
+        return iface.get();
     }
 
     @GET

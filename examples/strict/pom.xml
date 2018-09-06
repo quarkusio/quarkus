@@ -89,6 +89,7 @@
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-rest-client-deployment</artifactId>
+            <scope>provided</scope>
         </dependency>
 
 
@@ -166,6 +167,7 @@
                                 </goals>
                                 <configuration>
                                     <cleanupServer>true</cleanupServer>
+                                    <enableHttpUrlHandler>true</enableHttpUrlHandler>
                                 </configuration>
                             </execution>
                         </executions>

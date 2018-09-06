@@ -15,15 +15,22 @@
  */
 package org.jboss.shamrock.restclient.runtime;
 
+import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Proxy;
+import java.net.InetAddress;
+import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.UnknownHostException;
+import java.security.KeyManagementException;
+import java.security.Provider;
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,6 +39,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLContextSpi;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.SSLSessionContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -99,10 +114,13 @@ class RestClientBuilderImpl implements RestClientBuilder {
         verifyInterface(aClass);
 
         // Provider annotations
-        RegisterProvider[] providers = aClass.getAnnotationsByType(RegisterProvider.class);
+        Annotation[] providers = aClass.getAnnotations();
 
-        for (RegisterProvider provider : providers) {
-            register(provider.value(), provider.priority());
+        for (Annotation provider : providers) {
+            if(provider instanceof  RegisterProvider) {
+                RegisterProvider p = (RegisterProvider) provider;
+                register(p.value(), p.priority());
+            }
         }
 
         // Default exception mapper
@@ -120,7 +138,84 @@ class RestClientBuilderImpl implements RestClientBuilder {
 
         T actualClient;
         ResteasyClient client;
+        this.builderDelegate.sslContext(new SSLContext(new SSLContextSpi() {
+            @Override
+            protected void engineInit(KeyManager[] keyManagers, TrustManager[] trustManagers, SecureRandom secureRandom) throws KeyManagementException {
 
+            }
+
+            @Override
+            protected SSLSocketFactory engineGetSocketFactory() {
+                return new SSLSocketFactory() {
+                    @Override
+                    public String[] getDefaultCipherSuites() {
+                        return new String[0];
+                    }
+
+                    @Override
+                    public String[] getSupportedCipherSuites() {
+                        return new String[0];
+                    }
+
+                    @Override
+                    public Socket createSocket(Socket socket, String s, int i, boolean b) throws IOException {
+                        return null;
+                    }
+
+                    @Override
+                    public Socket createSocket(String s, int i) throws IOException, UnknownHostException {
+                        return null;
+                    }
+
+                    @Override
+                    public Socket createSocket(String s, int i, InetAddress inetAddress, int i1) throws IOException, UnknownHostException {
+                        return null;
+                    }
+
+                    @Override
+                    public Socket createSocket(InetAddress inetAddress, int i) throws IOException {
+                        return null;
+                    }
+
+                    @Override
+                    public Socket createSocket(InetAddress inetAddress, int i, InetAddress inetAddress1, int i1) throws IOException {
+                        return null;
+                    }
+                };
+            }
+
+            @Override
+            protected SSLServerSocketFactory engineGetServerSocketFactory() {
+                return null;
+            }
+
+            @Override
+            protected SSLEngine engineCreateSSLEngine() {
+                return null;
+            }
+
+            @Override
+            protected SSLEngine engineCreateSSLEngine(String s, int i) {
+                return null;
+            }
+
+            @Override
+            protected SSLSessionContext engineGetServerSessionContext() {
+                return null;
+            }
+
+            @Override
+            protected SSLSessionContext engineGetClientSessionContext() {
+                return null;
+            }
+        }, new Provider("Dummy", 1, "Dummy") {
+            @Override
+            public String getName() {
+                return super.getName();
+            }
+        }, "BOGUS") {
+
+        });
         if (proxyHost != null && !noProxyHosts.contains(this.baseURI.getHost())) {
             // Use proxy, if defined
             client = this.builderDelegate.defaultProxy(

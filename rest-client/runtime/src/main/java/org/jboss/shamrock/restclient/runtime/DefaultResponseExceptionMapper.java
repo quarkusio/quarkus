@@ -24,7 +24,7 @@ import org.eclipse.microprofile.rest.client.ext.ResponseExceptionMapper;
 /**
  * Created by hbraun on 17.01.18.
  */
-class DefaultResponseExceptionMapper implements ResponseExceptionMapper {
+public class DefaultResponseExceptionMapper implements ResponseExceptionMapper {
 
     @Override
     public Throwable toThrowable(Response response) {

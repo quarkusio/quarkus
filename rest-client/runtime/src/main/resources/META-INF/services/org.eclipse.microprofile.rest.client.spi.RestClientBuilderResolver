@@ -1,1 +1,1 @@
-io.smallrye.restclient.BuilderResolver
+org.jboss.shamrock.restclient.runtime.BuilderResolver

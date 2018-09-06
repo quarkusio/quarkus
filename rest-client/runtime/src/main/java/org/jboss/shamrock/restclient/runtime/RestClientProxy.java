@@ -24,10 +24,6 @@ import javax.ws.rs.client.Client;
  */
 public interface RestClientProxy {
 
-    /**
-     * Release/close all associated resources, including the underlying {@link Client} instance.
-     */
-    void close();
 
     /**
      *

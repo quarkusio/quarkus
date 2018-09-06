@@ -40,6 +40,12 @@
       <artifactId>junit</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.jboss.protean.arc</groupId>
+      <artifactId>arc-maven-plugin</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -47,7 +53,7 @@
       <plugin>
         <groupId>org.jboss.protean.arc</groupId>
         <artifactId>arc-maven-plugin</artifactId>
-        <version>1.0.0.Alpha1-SNAPSHOT</version>
+        <version>${project.version}</version>
         <executions>
           <execution>
             <goals>

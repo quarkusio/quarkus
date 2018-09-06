@@ -8,6 +8,8 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import io.reactivex.Single;
+
 @Path("/test")
 public class TestResource {
 
@@ -49,6 +51,12 @@ public class TestResource {
         XmlObject xmlObject = new XmlObject();
         xmlObject.setValue("A Value");
         return xmlObject;
+    }
+
+    @GET
+    @Path("/rx")
+    public Single<String> rx() {
+        return Single.just("Hello");
     }
 
 

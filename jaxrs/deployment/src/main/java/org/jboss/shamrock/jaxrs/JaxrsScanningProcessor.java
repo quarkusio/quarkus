@@ -22,18 +22,12 @@
 package org.jboss.shamrock.jaxrs;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.security.AccessController;
-import java.security.PrivilegedExceptionAction;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.Set;
 
 import javax.servlet.Servlet;
 import javax.ws.rs.ext.Providers;
@@ -88,7 +82,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
         //this is pretty yuck, and does not really belong here, but it is needed to get the json-p
         //provider to work
-        processorContext.addReflectiveClass(true, false,"org.glassfish.json.JsonProviderImpl", "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector");
+        processorContext.addReflectiveClass(true, false, "org.glassfish.json.JsonProviderImpl", "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector");
 
         IndexView index = archiveContext.getCombinedIndex();
         Collection<AnnotationInstance> app = index.getAnnotations(APPLICATION_PATH);
@@ -97,7 +91,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
         }
         Collection<AnnotationInstance> xmlRoot = index.getAnnotations(XML_ROOT);
         if (!xmlRoot.isEmpty()) {
-            processorContext.addReflectiveClass(true, false,"com.sun.xml.bind.v2.ContextFactory", "com.sun.xml.internal.bind.v2.ContextFactory");
+            processorContext.addReflectiveClass(true, false, "com.sun.xml.bind.v2.ContextFactory", "com.sun.xml.internal.bind.v2.ContextFactory");
         }
         AnnotationInstance appPath = app.iterator().next();
         String path = appPath.value().asString();
@@ -109,7 +103,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
             undertow.addServletMapping(null, JAX_RS_SERVLET_NAME, path + "/*");
             Collection<AnnotationInstance> paths = index.getAnnotations(PATH);
             if (paths != null) {
-                processorContext.addReflectiveClass(false,  false, HttpServlet30Dispatcher.class.getName());
+                processorContext.addReflectiveClass(false, false, HttpServlet30Dispatcher.class.getName());
                 StringBuilder sb = new StringBuilder();
                 boolean first = true;
                 for (AnnotationInstance annotation : paths) {
@@ -125,12 +119,12 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
                     }
                 }
 
-                if(sb.length() > 0) {
+                if (sb.length() > 0) {
                     undertow.addServletContextParameter(null, ResteasyContextParameters.RESTEASY_SCANNED_RESOURCES, sb.toString());
                 }
                 undertow.addServletContextParameter(null, "resteasy.servlet.mapping.prefix", path);
                 undertow.addServletContextParameter(null, "resteasy.injector.factory", ShamrockInjectorFactory.class.getName());
-                
+
             }
         }
         for (DotName annotationType : METHOD_ANNOTATIONS) {
@@ -143,8 +137,8 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
                         processorContext.addReflectiveClass(true, true, className);
                     }
                 }
-                for(Type param : method.parameters()) {
-                    if(param.kind() != Type.Kind.PRIMITIVE) {
+                for (Type param : method.parameters()) {
+                    if (param.kind() != Type.Kind.PRIMITIVE) {
                         String className = param.name().toString();
                         if (!className.equals(String.class.getName())) {
                             processorContext.addReflectiveClass(true, true, className);
@@ -158,6 +152,24 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
             JaxrsTemplate jaxrs = recorder.getRecordingProxy(JaxrsTemplate.class);
             jaxrs.setupIntegration(null);
         }
+
+        //register providers for reflection
+        Enumeration<URL> resources = getClass().getClassLoader().getResources("META-INF/services/" + Providers.class.getName());
+        while (resources.hasMoreElements()) {
+            URL url = resources.nextElement();
+            try (InputStream in = url.openStream()) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.contains("#")) {
+                        line = line.substring(line.indexOf("#"));
+                    }
+                    line = line.trim();
+                    if (line.equals("")) continue;
+                    processorContext.addReflectiveClass(false, false, line);
+                }
+            }
+        }
     }
 
     @Override
@@ -165,43 +177,4 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
         return RuntimePriority.JAXRS_DEPLOYMENT;
     }
 
-    private Set<String> loadProviders() {
-
-        final Set<String> providers = new HashSet<>();
-        try {
-            Enumeration<URL> en;
-            en = Thread.currentThread().getContextClassLoader().getResources("META-INF/services/" + Providers.class.getName());
-
-            while (en.hasMoreElements()) {
-                final URL url = en.nextElement();
-                InputStream is;
-                if (System.getSecurityManager() == null) {
-                    is = url.openStream();
-                } else {
-                    is = AccessController.doPrivileged(new PrivilegedExceptionAction<InputStream>() {
-                        @Override
-                        public InputStream run() throws IOException {
-                            return url.openStream();
-                        }
-                    });
-                }
-
-                try {
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        line = line.trim();
-                        if (line.equals("")) continue;
-                        providers.add(line);
-                    }
-                } finally {
-                    is.close();
-                }
-            }
-            return Collections.unmodifiableSet(providers);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-    }
 }

@@ -55,6 +55,7 @@
         <agroal.version>1.1</agroal.version>
         <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
         <javax.persistence-api.version>2.2</javax.persistence-api.version>
+        <rxjava.version>2.1.12</rxjava.version>
     </properties>
 
     <modules>
@@ -329,6 +330,11 @@
                 <version>${agroal.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.reactivex.rxjava2</groupId>
+                <artifactId>rxjava</artifactId>
+                <version>${rxjava.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.undertow</groupId>
                 <artifactId>undertow-servlet</artifactId>
                 <version>${undertow.version}</version>
@@ -513,6 +519,11 @@
             <dependency>
                 <groupId>org.jboss.resteasy</groupId>
                 <artifactId>resteasy-jaxb-provider</artifactId>
+                <version>${resteasy.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.resteasy</groupId>
+                <artifactId>resteasy-rxjava2</artifactId>
                 <version>${resteasy.version}</version>
             </dependency>
             <dependency>

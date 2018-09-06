@@ -78,6 +78,14 @@
             <groupId>org.jboss.graalvm</groupId>
             <artifactId>graal-annotations</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-rxjava2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.reactivex.rxjava2</groupId>
+            <artifactId>rxjava</artifactId>
+        </dependency>
 
 
         <!-- test dependencies -->

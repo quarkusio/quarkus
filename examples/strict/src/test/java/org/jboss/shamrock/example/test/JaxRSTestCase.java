@@ -121,4 +121,19 @@ public class JaxRSTestCase {
         }
         Assert.assertEquals("Transformed Endpoint", new String(out.toByteArray()));
     }
+
+    @Test
+    public void testRxJava() throws Exception {
+
+        URL uri = new URL("http://localhost:8080/rest/test/rx");
+        URLConnection connection = uri.openConnection();
+        InputStream in = connection.getInputStream();
+        byte[] buf = new byte[100];
+        int r;
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        while ((r = in.read(buf)) > 0) {
+            out.write(buf, 0, r);
+        }
+        Assert.assertEquals("Hello", new String(out.toByteArray()));
+    }
 }

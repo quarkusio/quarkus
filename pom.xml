@@ -14,6 +14,7 @@
         <version.com.impossibl.pgng>0.6</version.com.impossibl.pgng>
         <version.junit>4.12</version.junit>
         <version.org.hibernate>5.4.0-protean-SNAPSHOT</version.org.hibernate>
+        <version.org.hibernate.tooling>5.3.6.Final</version.org.hibernate.tooling>
     </properties>
 
     <dependencyManagement>
@@ -84,6 +85,26 @@
     </dependencies>
 
     <build>
+        <plugins>
+            <plugin>
+                <groupId>org.hibernate.orm.tooling</groupId>
+                <artifactId>hibernate-enhance-maven-plugin</artifactId>
+                <version>${version.org.hibernate.tooling}</version>
+                <executions>
+                    <execution>
+                        <configuration>
+                            <failOnError>true</failOnError>
+                            <enableLazyInitialization>true</enableLazyInitialization>
+                            <enableDirtyTracking>true</enableDirtyTracking>
+                            <enableAssociationManagement>true</enableAssociationManagement>
+                        </configuration>
+                        <goals>
+                            <goal>enhance</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
         <pluginManagement>
             <plugins>
                 <plugin>

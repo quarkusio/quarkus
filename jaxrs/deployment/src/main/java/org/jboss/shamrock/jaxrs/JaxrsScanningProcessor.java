@@ -24,6 +24,7 @@ package org.jboss.shamrock.jaxrs;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -34,6 +35,7 @@ import javax.ws.rs.ext.Providers;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
@@ -113,9 +115,12 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
                         } else {
                             sb.append(",");
                         }
-                        String className = annotation.target().asClass().name().toString();
-                        sb.append(className);
-                        processorContext.addReflectiveClass(true, true, className);
+                        ClassInfo clazz = annotation.target().asClass();
+                        if (!Modifier.isInterface(clazz.flags())) {
+                            String className = clazz.name().toString();
+                            sb.append(className);
+                            processorContext.addReflectiveClass(true, true, className);
+                        }
                     }
                 }
 

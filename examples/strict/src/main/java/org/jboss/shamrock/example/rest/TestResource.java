@@ -9,12 +9,14 @@ import javax.ws.rs.Produces;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import io.reactivex.Single;
+import org.eclipse.microprofile.rest.client.RestClientBuilder;
 
 @Path("/test")
 public class TestResource {
 
     @GET
     public String getTest() {
+        RestInterface iface = RestClientBuilder.newBuilder().build(RestInterface.class);
         return "TEST";
     }
 

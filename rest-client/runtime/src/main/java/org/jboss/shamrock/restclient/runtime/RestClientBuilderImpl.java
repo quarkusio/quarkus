@@ -16,6 +16,7 @@
 package org.jboss.shamrock.restclient.runtime;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -140,7 +141,12 @@ class RestClientBuilderImpl implements RestClientBuilder {
         interfaces[0] = aClass;
         interfaces[1] = RestClientProxy.class;
 
-        return (T) Proxy.newProxyInstance(classLoader, interfaces, new ProxyInvocationHandler(aClass, actualClient, getLocalProviderInstances(), client));
+        return (T) Proxy.newProxyInstance(classLoader, interfaces, new InvocationHandler() {
+            @Override
+            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                return method.invoke(actualClient, args);
+            }
+        });
     }
 
     private boolean isMapperDisabled() {

@@ -86,6 +86,10 @@
             <groupId>io.reactivex.rxjava2</groupId>
             <artifactId>rxjava</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-rest-client-deployment</artifactId>
+        </dependency>
 
 
         <!-- test dependencies -->

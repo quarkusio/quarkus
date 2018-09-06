@@ -140,7 +140,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Cons
     protected Class<?> findClass(String name) throws ClassNotFoundException {
         byte[] bytes = appClasses.get(name);
         if (bytes == null) {
-            throw new ClassNotFoundException();
+            throw new ClassNotFoundException(name);
         }
         return defineClass(name, bytes, 0, bytes.length);
     }

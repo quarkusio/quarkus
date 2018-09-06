@@ -110,13 +110,13 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
                 boolean first = true;
                 for (AnnotationInstance annotation : paths) {
                     if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
-                        if (first) {
-                            first = false;
-                        } else {
-                            sb.append(",");
-                        }
                         ClassInfo clazz = annotation.target().asClass();
                         if (!Modifier.isInterface(clazz.flags())) {
+                            if (first) {
+                                first = false;
+                            } else {
+                                sb.append(",");
+                            }
                             String className = clazz.name().toString();
                             sb.append(className);
                             processorContext.addReflectiveClass(true, true, className);

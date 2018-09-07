@@ -1,1 +1,11 @@
 language: java
+install:
+  - export GRAALVM_HOME=`pwd`/.graal-install/graalvm-ce-1.0.0-rc6
+  - ./get-graal.sh
+
+script:
+  - mvn clean install
+
+cache:
+  directories:
+  - .graal-install

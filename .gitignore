@@ -13,3 +13,4 @@ dependency-reduced-pom.xml
 hotspot.log
 .directory
 .java-version
+.graal-install

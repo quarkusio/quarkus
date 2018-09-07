@@ -19,7 +19,7 @@ public class ArcDeploymentTemplate {
 
     @ContextObject("arc.container")
     public ArcContainer getContainer() throws Exception {
-        ArcContainer container = Arc.container();
+        ArcContainer container = Arc.initialize();
         return container;
     }
 

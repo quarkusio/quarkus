@@ -12,14 +12,21 @@ import javax.enterprise.util.TypeLiteral;
 import org.jboss.protean.arc.Arc;
 import org.jboss.protean.arc.ArcContainer;
 import org.jboss.protean.arc.InstanceHandle;
-import org.jboss.protean.arc.example.Baz;
-import org.jboss.protean.arc.example.BazListProducerClient;
-import org.jboss.protean.arc.example.Foo;
-import org.jboss.protean.arc.example.FooRequest;
-import org.jboss.protean.arc.example.MyQualifier;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class InjectionTest {
+    
+    @BeforeClass
+    public static void init() {
+        Arc.initialize();
+    }
+    
+    @AfterClass
+    public static void shutdown() {
+        Arc.shutdown();
+    }
 
     @SuppressWarnings("serial")
     @Test

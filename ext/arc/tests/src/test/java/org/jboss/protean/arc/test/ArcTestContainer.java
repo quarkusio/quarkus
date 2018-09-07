@@ -106,6 +106,10 @@ public class ArcTestContainer implements TestRule {
             }
         };
         Thread.currentThread().setContextClassLoader(testClassLoader);
+        
+        // Now we are ready to initialize Arc
+        Arc.initialize();
+        
         return old;
     }
 

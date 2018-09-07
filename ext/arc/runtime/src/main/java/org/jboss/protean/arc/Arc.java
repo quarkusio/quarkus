@@ -1,26 +1,43 @@
 package org.jboss.protean.arc;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
 /**
  *
  * @author Martin Kouba
  */
 public final class Arc {
 
-    private static final LazyValue<ArcContainerImpl> INSTANCE = new LazyValue<>(() -> new ArcContainerImpl());
+    private static final AtomicReference<ArcContainerImpl> INSTANCE = new AtomicReference<>();
+
+    private static final AtomicBoolean INITIALIZED = new AtomicBoolean(false);
+
+    public static ArcContainer initialize() {
+        if (INITIALIZED.compareAndSet(false, true)) {
+            ArcContainerImpl container = new ArcContainerImpl();
+            INSTANCE.set(container);
+            container.init();
+        }
+        return container();
+    }
 
     /**
      *
-     * @return the container instance which loads beans using the service provider
+     * @return the container instance
      */
     public static ArcContainer container() {
         return INSTANCE.get();
     }
 
     public static void shutdown() {
-        if (INSTANCE.isSet()) {
+        if (INSTANCE.get() != null) {
             synchronized (INSTANCE) {
-                INSTANCE.get().shutdown();
-                INSTANCE.clear();
+                if (INSTANCE.get() != null) {
+                    INSTANCE.get().shutdown();
+                    INSTANCE.set(null);
+                    INITIALIZED.set(false);
+                }
             }
         }
     }

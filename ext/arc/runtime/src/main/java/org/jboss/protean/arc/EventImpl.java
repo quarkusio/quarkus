@@ -88,6 +88,17 @@ class EventImpl<T> implements Event<T> {
         }
         return new Notifier<>(notifierObserverMethods, metadata);
     }
+    
+    static <T> Notifier<T> createNotifier(Type eventType, Set<Annotation> qualifiers, ArcContainerImpl container) {
+        EventMetadata metadata = new EventMetadataImpl(qualifiers, eventType);
+        List<ObserverMethod<? super T>> notifierObserverMethods = new ArrayList<>();
+        for (ObserverMethod<? super T> observerMethod : container.resolveObservers(eventType, qualifiers)) {
+            if (EventTypeAssignabilityRules.matches(observerMethod.getObservedType(), eventType)) {
+                notifierObserverMethods.add(observerMethod);
+            }
+        }
+        return new Notifier<>(notifierObserverMethods, metadata);
+    }
 
     private Type getEventType(Class<?> runtimeType) {
         Type resolvedType = runtimeType;

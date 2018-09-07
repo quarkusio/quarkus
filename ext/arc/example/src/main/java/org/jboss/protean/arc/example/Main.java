@@ -11,7 +11,7 @@ public class Main {
     static {
         // This is needed for graal ahead-of-time compilation
         // ArcContainer collects all beans using a service provider
-        Arc.container();
+        Arc.initialize();
     }
 
     public static void main(String[] args) {

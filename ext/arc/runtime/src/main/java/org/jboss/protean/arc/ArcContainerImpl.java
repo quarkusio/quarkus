@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -14,8 +15,10 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.Initialized;
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.context.spi.Context;
+import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Default;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.util.TypeLiteral;
@@ -48,6 +51,14 @@ class ArcContainerImpl implements ArcContainer {
         contexts.put(Singleton.class, new SingletonContext());
         contexts.put(RequestScoped.class, new RequestContext());
         resolved = new ComputingCache<>(this::resolve);
+    }
+
+    void init() {
+        // Fire an event with qualifier @Initialized(ApplicationScoped.class)
+        Set<Annotation> qualifiers = new HashSet<>(4);
+        qualifiers.add(Initialized.Literal.APPLICATION);
+        qualifiers.add(Any.Literal.INSTANCE);
+        EventImpl.createNotifier(Object.class, qualifiers, this).notify(toString());
     }
 
     @Override

@@ -44,6 +44,8 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter(defaultValue = "${native-image.new-server}")
     private boolean cleanupServer;
 
+    @Parameter
+    private boolean enableHttpUrlHandler;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -75,6 +77,8 @@ public class NativeImageMojo extends AbstractMojo {
             }
             command.add("-jar");
             command.add(finalName + "-runner.jar");
+            //https://github.com/oracle/graal/issues/660
+            command.add("-J-Djava.util.concurrent.ForkJoinPool.common.parallelism=1");
             if (reportErrorsAtRuntime) {
                 command.add("-H:+ReportUnsupportedElementsAtRuntime");
             }
@@ -86,6 +90,9 @@ public class NativeImageMojo extends AbstractMojo {
                 command.add("-J-Xnoagent");
                 command.add("-J-Djava.compiler=NONE");
                 command.add("-J-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y");
+            }
+            if(enableHttpUrlHandler) {
+                command.add("-H:EnableURLProtocols=http");
             }
             //command.add("-H:+AllowVMInspection");
             System.out.println(command);

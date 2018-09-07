@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
@@ -118,10 +119,11 @@ class RestClientProcessor implements ResourceProcessor {
                 }
             }, className, null, RestClientBase.class.getName())) {
 
-                creator.addAnnotation(ApplicationScoped.class);
+                creator.addAnnotation(Dependent.class);
                 MethodCreator producer = creator.getMethodCreator("producerMethod", iName);
                 producer.addAnnotation(Produces.class);
                 producer.addAnnotation(RestClient.class);
+                producer.addAnnotation(ApplicationScoped.class);
 
                 ResultHandle ret = producer.invokeVirtualMethod(MethodDescriptor.ofMethod(RestClientBase.class, "create", Object.class), producer.getThis());
                 producer.returnValue(ret);

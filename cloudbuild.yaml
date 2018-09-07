@@ -1,5 +1,9 @@
 steps:
+- name: 'gcr.io/cloud-builders/wget'
+  args: ['-O', '/workspace/graal.tar.gz', 'https://github.com/oracle/graal/releases/download/vm-1.0.0-rc6/graalvm-ce-1.0.0-rc6-linux-amd64.tar.gz']
 - name: 'ubuntu'
-  args: ['bash', './get-graal.sh']
+  args: ['mkdir', '/workspace/graal']
+- name: 'ubuntu'
+  args: ['tar', 'tar -C /workspace/graal -xf /workspace/graal.tar.gz']
 - name: 'gcr.io/cloud-builders/mvn'
   args: ['install', '-Dno-native']

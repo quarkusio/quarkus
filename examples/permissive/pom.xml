@@ -120,6 +120,7 @@
                                 </goals>
                                 <configuration>
                                     <reportErrorsAtRuntime>true</reportErrorsAtRuntime>
+                                    <graalvmHome>${graalvmHome}</graalvmHome>
                                 </configuration>
                             </execution>
                         </executions>

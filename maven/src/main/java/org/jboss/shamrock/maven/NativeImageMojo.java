@@ -3,6 +3,7 @@ package org.jboss.shamrock.maven;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 import org.apache.maven.plugin.AbstractMojo;
@@ -47,9 +48,13 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter
     private boolean enableHttpUrlHandler;
 
+    @Parameter(defaultValue = "${env.GRAALVM_HOME}")
+    private String graalvmHome;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
 
+        HashMap<String, String> env = new HashMap<>(System.getenv());
         List<String> nativeImage;
         String graalvmCmd = System.getenv("GRAALVM_NATIVE_IMAGE_CMD");
         if (graalvmCmd != null) {
@@ -57,10 +62,10 @@ public class NativeImageMojo extends AbstractMojo {
             nativeImage = new ArrayList<>();
             Collections.addAll(nativeImage, graalvmCmd.replace("{{PROJECT_DIR}}", outputDirectory.getAbsolutePath()).split(" "));
         } else {
-            String graalvmHome = System.getenv("GRAALVM_HOME");
             if (graalvmHome == null) {
                 throw new MojoFailureException("GRAALVM_HOME was not set");
             }
+            env.put("GRAALVM_HOME", graalvmHome);
             nativeImage = Collections.singletonList(graalvmHome + File.separator + "bin" + File.separator + "native-image");
         }
 

@@ -57,6 +57,9 @@
         <javax.persistence-api.version>2.2</javax.persistence-api.version>
         <rxjava.version>2.1.12</rxjava.version>
         <microprofile-rest-client-api.version>1.0</microprofile-rest-client-api.version>
+
+
+        <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>
     </properties>
 
     <modules>

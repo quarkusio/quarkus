@@ -1,5 +1,6 @@
 #!/bin/sh
 cd /workspace
+apt-get install wget
 if [ -d .graal-install/graalvm-ce-1.0.0-rc6 ]; then
 echo "Graal already present, exiting"
 exit

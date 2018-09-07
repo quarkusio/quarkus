@@ -1,12 +1,11 @@
 package org.jboss.shamrock.jpa;
 
-import java.util.Set;
+import java.util.Objects;
 import java.util.function.Function;
 
 import org.hibernate.bytecode.enhance.spi.DefaultEnhancementContext;
 import org.hibernate.bytecode.enhance.spi.Enhancer;
 import org.hibernate.bytecode.spi.BytecodeProvider;
-
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -22,14 +21,10 @@ import org.objectweb.asm.Opcodes;
 public final class HibernateEntityEnhancer implements Function<String, Function<ClassVisitor, ClassVisitor>> {
 
     private final Enhancer enhancer;
-    private final Set<String> classnameWhitelist;
+    private final KnownDomainObjects classnameWhitelist;
 
-    @Deprecated //shouldn't use this version, but will do for a while
-    public HibernateEntityEnhancer() {
-        this(null);
-    }
-
-    public HibernateEntityEnhancer(Set<String> classnameWhitelist) {
+    public HibernateEntityEnhancer(KnownDomainObjects classnameWhitelist) {
+        Objects.requireNonNull(classnameWhitelist);
         this.classnameWhitelist = classnameWhitelist;
         BytecodeProvider provider = new org.hibernate.bytecode.internal.bytebuddy.BytecodeProviderImpl();
         this.enhancer = provider.getEnhancer(new DefaultEnhancementContext());
@@ -37,7 +32,7 @@ public final class HibernateEntityEnhancer implements Function<String, Function<
 
     @Override
     public Function<ClassVisitor, ClassVisitor> apply(String classname) {
-        if (classnameWhitelist == null || classnameWhitelist.contains(classname))
+        if (classnameWhitelist.contains(classname))
             return new HibernateTransformingVisitorFunction(classname);
         else
             return null;

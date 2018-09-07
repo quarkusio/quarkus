@@ -6,6 +6,6 @@ import org.jboss.shamrock.deployment.ShamrockSetup;
 public class JpaSetup implements ShamrockSetup {
     @Override
     public void setup(SetupContext context) {
-        context.addResourceProcessor(new JPAAnnotationProcessor());
+        context.addResourceProcessor(new HibernateResourceProcessor());
     }
 }

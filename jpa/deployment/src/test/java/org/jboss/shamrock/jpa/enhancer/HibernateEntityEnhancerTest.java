@@ -10,6 +10,7 @@ import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.SelfDirtinessTracker;
 import org.jboss.shamrock.jpa.HibernateEntityEnhancer;
 
+import org.jboss.shamrock.jpa.KnownDomainObjects;
 import org.junit.Assert;
 import org.junit.Test;
 import org.objectweb.asm.ClassReader;
@@ -25,24 +26,24 @@ import org.jboss.protean.gizmo.TestClassLoader;
  */
 public class HibernateEntityEnhancerTest {
 
+    private static final String TEST_CLASSNAME = Address.class.getName();
+
     @Test
     public void testBytecodeEnhancement() throws IOException, ClassNotFoundException {
 
         Assert.assertFalse(isEnhanced(Address.class));
 
-        final String className = Address.class.getName();
-
-        ClassReader classReader = new ClassReader(className);
+        ClassReader classReader = new ClassReader(TEST_CLASSNAME);
         ClassWriter writer = new ClassWriter(classReader, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
         ClassVisitor visitor = writer;
-        HibernateEntityEnhancer hibernateEntityEnhancer = new HibernateEntityEnhancer();
-        visitor = hibernateEntityEnhancer.apply(className).apply(visitor);
+        HibernateEntityEnhancer hibernateEntityEnhancer = new HibernateEntityEnhancer(new TestingKnownDomainObjects());
+        visitor = hibernateEntityEnhancer.apply(TEST_CLASSNAME).apply(visitor);
         classReader.accept(visitor, 0);
         final byte[] modifiedBytecode = writer.toByteArray();
 
         TestClassLoader cl = new TestClassLoader(getClass().getClassLoader());
-        cl.write(className, modifiedBytecode);
-        final Class<?> modifiedClass = cl.loadClass(className);
+        cl.write(TEST_CLASSNAME, modifiedBytecode);
+        final Class<?> modifiedClass = cl.loadClass(TEST_CLASSNAME);
         Assert.assertTrue(isEnhanced(modifiedClass));
     }
 
@@ -52,6 +53,14 @@ public class HibernateEntityEnhancerTest {
         return interfaces.contains(ManagedEntity.class) &&
               interfaces.contains(PersistentAttributeInterceptable.class) &&
               interfaces.contains(SelfDirtinessTracker.class);
+    }
+
+    private static class TestingKnownDomainObjects implements KnownDomainObjects {
+
+        @Override
+        public boolean contains(final String className) {
+            return TEST_CLASSNAME.equals(className);
+        }
     }
 
 }

@@ -1,58 +1,65 @@
 package org.jboss.shamrock.jpa;
 
-import org.jboss.jandex.*;
-import org.jboss.shamrock.deployment.ArchiveContext;
-import org.jboss.shamrock.deployment.ProcessorContext;
-import org.jboss.shamrock.deployment.ResourceProcessor;
-import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.persistence.Embeddable;
 import javax.persistence.Embedded;
 import javax.persistence.Entity;
-import java.util.Collection;
+
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassType;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
+import org.jboss.shamrock.deployment.ArchiveContext;
+import org.jboss.shamrock.deployment.ProcessorContext;
+import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
 
 /**
- * Simulacrum of JPA bootstrap.
- * <p>
- * This does not address the proper integration with Hibernate
- * Rather prepare the path to providing the right metadata
+ * Scan the Jandex index to find JPA entities (and embeddables supporting entity models).
+ *
+ * The output is then both consumed as plain list to use as a filter for which classes
+ * need to be enhanced, collect them for storage in the JPADeploymentTemplate and registered
+ * for reflective access.
+ * TODO some of these are going to be redundant?
  *
  * @author Emmanuel Bernard emmanuel@hibernate.org
+ * @author Sanne Grinovero  <sanne@hibernate.org>
  */
-public class JPAAnnotationProcessor implements ResourceProcessor {
+final class JpaJandexScavenger {
 
     private static final DotName JPA_ENTITY = DotName.createSimple(Entity.class.getName());
     private static final DotName EMBEDDABLE = DotName.createSimple(Embeddable.class.getName());
     private static final DotName EMBEDDED = DotName.createSimple(Embedded.class.getName());
 
-    @Override
-    public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
+    private final ArchiveContext archiveContext;
+    private final ProcessorContext processorContext;
 
-        enhanceEntities(archiveContext, processorContext);
+    JpaJandexScavenger(final ArchiveContext archiveContext, final ProcessorContext processorContext) {
+        this.archiveContext = archiveContext;
+        this.processorContext = processorContext;
+    }
 
-        // Hibernate specific reflective classes
-        processorContext.addReflectiveClass(false, false, org.hibernate.jpa.HibernatePersistenceProvider.class.getName());
-        processorContext.addReflectiveClass(false, false, org.hibernate.persister.entity.SingleTableEntityPersister.class.getName());
-        // TODO add reflectconfig.json
-
-
+    public KnownDomainObjects discoverModelAndRegisterForReflection() throws IOException {
         // list all entities and create a JPADeploymentTemplate out of it
         // Not functional as we will need one deployment template per persistence unit
         final IndexView index = archiveContext.getCombinedIndex();
+        final DomainObjectSet collector;
         // TODO what priority to give JPA?
         try (BytecodeRecorder context = processorContext.addStaticInitTask(100)) {
             JPADeploymentTemplate template = context.getRecordingProxy(JPADeploymentTemplate.class);
-            enlistJPAModelClasses(JPA_ENTITY, processorContext, template, index);
-            enlistJPAModelClasses(EMBEDDABLE, processorContext, template, index);
+            collector = new DomainObjectSet(template);
+            enlistJPAModelClasses(JPA_ENTITY, processorContext, collector, index);
+            enlistJPAModelClasses(EMBEDDABLE, processorContext, collector, index);
             enlistReturnType(processorContext, index);
-
             template.enlistPersistenceUnit();
         }
-    }
-
-    private void enhanceEntities(ArchiveContext archiveContext, ProcessorContext processorContext) {
-        //TODO make sure we pass the list of known entities as a white-list filter so to avoid processing all classes
-        processorContext.addByteCodeTransformer(new HibernateEntityEnhancer());
+        collector.clearLinkToTemplate();//no longer need the JPADeploymentTemplate
+        return collector;
     }
 
     private void enlistReturnType(ProcessorContext processorContext, IndexView index) {
@@ -78,13 +85,13 @@ public class JPAAnnotationProcessor implements ResourceProcessor {
         }
     }
 
-    private void enlistJPAModelClasses(DotName dotName, ProcessorContext processorContext, JPADeploymentTemplate template, IndexView index) {
+    private void enlistJPAModelClasses(DotName dotName, ProcessorContext processorContext, DomainObjectSet collector, IndexView index) {
         Collection<AnnotationInstance> jpaAnnotations = index.getAnnotations(dotName);
         if (jpaAnnotations != null && jpaAnnotations.size() > 0) {
             for (AnnotationInstance annotation : jpaAnnotations) {
                 DotName targetDotName = annotation.target().asClass().name();
                 addClassHierarchyToReflectiveList(processorContext, index, targetDotName);
-                template.addEntity(targetDotName.toString());
+                collector.addEntity(targetDotName.toString());
             }
         }
     }
@@ -122,9 +129,28 @@ public class JPAAnnotationProcessor implements ResourceProcessor {
         }
     }
 
-    @Override
-    public int getPriority() {
-        // Because we are the best
-        return 1;
+    private static class DomainObjectSet implements KnownDomainObjects {
+
+        private JPADeploymentTemplate template;
+        private final Set<String> classNames = new HashSet<String>();
+
+        public DomainObjectSet(final JPADeploymentTemplate template) {
+            this.template = template;
+        }
+
+        public void addEntity(final String name) {
+            classNames.add(name);
+            template.addEntity(name);
+        }
+
+        void clearLinkToTemplate(){
+            this.template = null;
+        }
+
+        @Override
+        public boolean contains(final String className) {
+            return classNames.contains(className);
+        }
     }
+
 }

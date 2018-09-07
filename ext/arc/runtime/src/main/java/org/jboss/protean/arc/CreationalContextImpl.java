@@ -30,6 +30,18 @@ public class CreationalContextImpl<T> implements CreationalContext<T> {
         dependentInstances.add(new InstanceHandleImpl<I>(bean, instance, ctx));
     }
 
+    void destroyDependentInstance(Object dependentInstance) {
+        synchronized (dependentInstances) {
+            for (InstanceHandle<?> instanceHandle : dependentInstances) {
+                if (instanceHandle.get() == dependentInstance) {
+                    instanceHandle.release();
+                    dependentInstances.remove(instanceHandle);
+                    break;
+                }
+            }
+        }
+    }
+
     @Override
     public void push(T incompleteInstance) {
         // No-op
@@ -56,11 +68,11 @@ public class CreationalContextImpl<T> implements CreationalContext<T> {
         if (ctx instanceof CreationalContextImpl) {
             return (CreationalContextImpl<T>) ctx;
         } else {
-            throw new IllegalArgumentException("Failed to unwrap CreationalContextImpl: "+ ctx);
+            throw new IllegalArgumentException("Failed to unwrap CreationalContextImpl: " + ctx);
         }
     }
 
-    public static <C> CreationalContextImpl<C> child(CreationalContext<?>  creationalContext) {
+    public static <C> CreationalContextImpl<C> child(CreationalContext<?> creationalContext) {
         return unwrap(creationalContext).child();
     }
 

@@ -90,7 +90,11 @@ class InstanceImpl<T> implements Instance<T> {
 
     @Override
     public void destroy(T instance) {
-        throw new UnsupportedOperationException();
+        if (instance instanceof ClientProxy) {
+            throw new UnsupportedOperationException();
+        }
+        // Try to destroy a dependent instance
+        creationalContext.destroyDependentInstance(instance);
     }
 
     private T getBeanInstance(InjectableBean<T> bean) {

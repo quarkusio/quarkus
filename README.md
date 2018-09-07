@@ -1,5 +1,7 @@
 # Shamrock
 
+[![Build Status](https://travis-ci.com/protean-project/shamrock.svg?token=8Ez7cLikuPCGAV4rpdMs&branch=master)](https://travis-ci.com/protean-project/shamrock)
+
 Shamrock is framework that allows you process Java EE and Microprofile metadata at build time,
 and use it to create low overhead jar files, as well as native images using Graal/Substrate VM.
 

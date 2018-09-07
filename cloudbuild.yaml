@@ -1,0 +1,5 @@
+steps:
+- name: 'ubuntu'
+  args: ['bash', './get-graal.sh']
+- name: 'gcr.io/cloud-builders/mvn'
+  args: ['install', '-Dno-native']

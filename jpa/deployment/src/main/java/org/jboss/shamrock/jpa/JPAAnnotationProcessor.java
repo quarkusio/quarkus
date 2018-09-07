@@ -27,6 +27,9 @@ public class JPAAnnotationProcessor implements ResourceProcessor {
 
     @Override
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
+
+        enhanceEntities(archiveContext, processorContext);
+
         // Hibernate specific reflective classes
         processorContext.addReflectiveClass(false, false, org.hibernate.jpa.HibernatePersistenceProvider.class.getName());
         processorContext.addReflectiveClass(false, false, org.hibernate.persister.entity.SingleTableEntityPersister.class.getName());
@@ -45,6 +48,11 @@ public class JPAAnnotationProcessor implements ResourceProcessor {
 
             template.enlistPersistenceUnit();
         }
+    }
+
+    private void enhanceEntities(ArchiveContext archiveContext, ProcessorContext processorContext) {
+        //TODO make sure we pass the list of known entities as a white-list filter so to avoid processing all classes
+        processorContext.addByteCodeTransformer(new HibernateEntityEnhancer());
     }
 
     private void enlistReturnType(ProcessorContext processorContext, IndexView index) {

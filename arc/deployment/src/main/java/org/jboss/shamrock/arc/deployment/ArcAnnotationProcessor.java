@@ -4,14 +4,18 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
@@ -86,6 +90,11 @@ public class ArcAnnotationProcessor implements ResourceProcessor {
                     processorContext.addReflectiveField(fieldInfo);
                 }
             });
+            for (BiFunction<AnnotationTarget, Collection<AnnotationInstance>, Collection<AnnotationInstance>> transformer : beanDeployment
+                    .getAnnotationTransformers()) {
+                builder.addAnnotationTransformer(transformer);
+            }
+
             builder.setOutput(new ResourceOutput() {
                 @Override
                 public void writeResource(Resource resource) throws IOException {

@@ -47,7 +47,7 @@ class BeanInfo {
     private Map<MethodInfo, List<InterceptorInfo>> interceptedMethods;
 
     private Map<InterceptionType, List<InterceptorInfo>> lifecycleInterceptors;
-    
+
     private final Integer alternativePriority;
 
     /**
@@ -201,11 +201,11 @@ class BeanInfo {
     DisposerInfo getDisposer() {
         return disposer;
     }
-    
+
     boolean isAlternative() {
         return alternativePriority != null;
     }
-    
+
     Integer getAlternativePriority() {
         return alternativePriority;
     }
@@ -278,7 +278,7 @@ class BeanInfo {
     }
 
     private void addClassLevelBindings(ClassInfo classInfo, Collection<AnnotationInstance> bindings) {
-        classInfo.classAnnotations().stream()
+        beanDeployment.getAnnotations(classInfo).stream()
                 .filter(a -> beanDeployment.getInterceptorBinding(a.name()) != null && bindings.stream().noneMatch(e -> e.name().equals(a.name())))
                 .forEach(a -> bindings.add(a));
         if (classInfo.superClassType() != null && !classInfo.superClassType().name().equals(DotNames.OBJECT)) {

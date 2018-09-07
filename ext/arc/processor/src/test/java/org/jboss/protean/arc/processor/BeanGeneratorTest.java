@@ -13,10 +13,6 @@ import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Produces;
 
 import org.jboss.jandex.Index;
-import org.jboss.protean.arc.processor.AnnotationLiteralProcessor;
-import org.jboss.protean.arc.processor.BeanDeployment;
-import org.jboss.protean.arc.processor.BeanGenerator;
-import org.jboss.protean.arc.processor.BeanProcessor;
 import org.jboss.protean.arc.processor.types.Foo;
 import org.jboss.protean.arc.processor.types.FooQualifier;
 import org.junit.Test;
@@ -27,7 +23,7 @@ public class BeanGeneratorTest {
     public void testGenerator() throws IOException {
 
         Index index = index(Foo.class, FooQualifier.class, AbstractList.class, AbstractCollection.class, Collection.class, List.class, Iterable.class);
-        BeanDeployment deployment = new BeanDeployment(index, null);
+        BeanDeployment deployment = new BeanDeployment(index, null, null);
         deployment.init();
 
         BeanGenerator generator = new BeanGenerator();
@@ -40,7 +36,7 @@ public class BeanGeneratorTest {
     public void testGeneratorForNormalScopedProducer() throws IOException {
 
         Index index = index(Producer.class, Collection.class, List.class, Iterable.class);
-        BeanDeployment deployment = new BeanDeployment(index, null);
+        BeanDeployment deployment = new BeanDeployment(index, null, null);
         deployment.init();
 
         BeanGenerator generator = new BeanGenerator();

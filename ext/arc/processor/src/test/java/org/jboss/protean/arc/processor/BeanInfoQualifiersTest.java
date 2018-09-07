@@ -9,15 +9,12 @@ import java.io.IOException;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
-import org.jboss.protean.arc.processor.BeanDeployment;
-import org.jboss.protean.arc.processor.BeanInfo;
-import org.jboss.protean.arc.processor.Beans;
-import org.jboss.protean.arc.processor.types.Bar;
-import org.jboss.protean.arc.processor.types.Foo;
-import org.jboss.protean.arc.processor.types.FooQualifier;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
+import org.jboss.protean.arc.processor.types.Bar;
+import org.jboss.protean.arc.processor.types.Foo;
+import org.jboss.protean.arc.processor.types.FooQualifier;
 import org.junit.Test;
 
 /**
@@ -33,7 +30,7 @@ public class BeanInfoQualifiersTest {
         DotName fooQualifierName = name(FooQualifier.class);
         ClassInfo fooClass = index.getClassByName(fooName);
 
-        BeanInfo bean = Beans.createClassBean(fooClass, new BeanDeployment(index, null));
+        BeanInfo bean = Beans.createClassBean(fooClass, new BeanDeployment(index, null, null));
 
         AnnotationInstance requiredFooQualifier = index.getAnnotations(fooQualifierName).stream()
                 .filter(a -> Kind.FIELD.equals(a.target().kind()) && a.target().asField().name().equals("foo")).findFirst().orElse(null);

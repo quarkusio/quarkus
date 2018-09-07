@@ -33,6 +33,11 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-fault-tolerance-deployment</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-jaxb-provider</artifactId>
         </dependency>

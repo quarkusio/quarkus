@@ -34,7 +34,7 @@
         <logback.version>1.1.7</logback.version>
         <cdi-api.version>2.0</cdi-api.version>
         <fakereplace.version>1.0.0.Alpha7</fakereplace.version>
-        <hibernate.version>5.3.3.Final</hibernate.version>
+        <hibernate-orm.version>5.4.0-protean-SNAPSHOT</hibernate-orm.version>
         <jboss-metadata-web.version>11.0.0.Final</jboss-metadata-web.version>
         <maven-core.version>3.5.0</maven-core.version>
         <guava.version>23.0</guava.version>
@@ -455,7 +455,7 @@
             <dependency>
                 <groupId>org.hibernate</groupId>
                 <artifactId>hibernate-core</artifactId>
-                <version>${hibernate.version}</version>
+                <version>${hibernate-orm.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.jboss</groupId>

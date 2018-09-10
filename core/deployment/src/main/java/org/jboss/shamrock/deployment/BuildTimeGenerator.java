@@ -424,7 +424,7 @@ public class BuildTimeGenerator {
                     }
                 }
                 CatchBlockCreator cc = exceptionTable.addCatchClause(Throwable.class);
-                cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
+                //cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
                 exceptionTable.complete();
                 mv.returnValue(null);
             }

@@ -3,8 +3,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.hibernate.demos</groupId>
-    <artifactId>hibernate-orm-protean</artifactId>
+    <artifactId>hibernate-orm-protean-parent</artifactId>
+    <packaging>pom</packaging><!--hibernate-orm-protean-->
     <version>1.0.0-SNAPSHOT</version>
+    <modules>
+        <module>hibernate-orm-protean</module>
+        <module>hibernate-orm-protean-example</module>
+    </modules>
     <name>Hibernate ORM Example running on SubstrateVM</name>
 
     <properties>

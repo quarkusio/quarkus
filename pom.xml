@@ -15,8 +15,6 @@
     <properties>
         <!-- Requires postgresql v. 42.2.5-SNAPSHOT so to include 7a0b7d65582a21376fc114eb197b5bae1fe1ea00 -->
         <version.org.postgresql.jdbc>42.2.5-SNAPSHOT</version.org.postgresql.jdbc>
-        <version.org.mariadb.jdbc>1.5.7</version.org.mariadb.jdbc>
-        <version.com.impossibl.pgng>0.6</version.com.impossibl.pgng>
         <version.junit>4.12</version.junit>
         <version.org.hibernate>5.4.0-protean-SNAPSHOT</version.org.hibernate>
         <version.org.hibernate.tooling>5.3.6.Final</version.org.hibernate.tooling>
@@ -24,8 +22,8 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- Enforce version 1.2 of JTA -->
             <dependency>
-                <!-- Module: java.transaction -->
                 <groupId>org.jboss.spec.javax.transaction</groupId>
                 <artifactId>jboss-transaction-api_1.2_spec</artifactId>
                 <version>1.1.1.Final</version>
@@ -49,69 +47,15 @@
         </dependencies>
     </dependencyManagement>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-core</artifactId>
-            <version>${version.org.hibernate}</version>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.1.7</version>
-        </dependency>
-        <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql-protean</artifactId>
-            <version>${version.org.postgresql.jdbc}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.graalvm</groupId>
-            <artifactId>graal-annotations</artifactId>
-            <version>1.0.0-rc4</version>
-        </dependency>
-        <!--<dependency>
-            <groupId>org.mariadb.jdbc</groupId>
-            <artifactId>mariadb-java-client</artifactId>
-            <version>${version.org.mariadb.jdbc}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.impossibl.pgjdbc-ng</groupId>
-            <artifactId>pgjdbc-ng</artifactId>
-            <version>${version.com.impossibl.pgng}</version>
-            <classifier>complete</classifier>
-            <exclusions>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty-all</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>-->
-    </dependencies>
 
     <build>
-        <plugins>
-            <plugin>
-                <groupId>org.hibernate.orm.tooling</groupId>
-                <artifactId>hibernate-enhance-maven-plugin</artifactId>
-                <version>${version.org.hibernate.tooling}</version>
-                <executions>
-                    <execution>
-                        <configuration>
-                            <failOnError>true</failOnError>
-                            <enableLazyInitialization>true</enableLazyInitialization>
-                            <enableDirtyTracking>true</enableDirtyTracking>
-                            <enableAssociationManagement>true</enableAssociationManagement>
-                        </configuration>
-                        <goals>
-                            <goal>enhance</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
         <pluginManagement>
             <plugins>
+                <plugin>
+                    <groupId>org.hibernate.orm.tooling</groupId>
+                    <artifactId>hibernate-enhance-maven-plugin</artifactId>
+                    <version>${version.org.hibernate.tooling}</version>
+                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
@@ -135,6 +79,7 @@
             </plugins>
         </pluginManagement>
     </build>
+
     <repositories>
         <repository>
             <id>redhat-ga-repository</id>
@@ -180,7 +125,6 @@
         </repository>
     </repositories>
 
-
     <distributionManagement>
         <repository>
             <id>protean-nexus-release</id>
@@ -193,4 +137,5 @@
             <url>http://ec2-18-234-117-118.compute-1.amazonaws.com:8081/nexus/content/repositories/snapshots/</url>
         </snapshotRepository>
     </distributionManagement>
+
 </project>

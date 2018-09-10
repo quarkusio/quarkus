@@ -11,5 +11,17 @@
 
     <artifactId>hibernate-orm-protean</artifactId>
 
+    <dependencies>
+        <dependency>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-core</artifactId>
+            <version>${version.org.hibernate}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.graalvm</groupId>
+            <artifactId>graal-annotations</artifactId>
+            <version>1.0.0-rc4</version>
+        </dependency>
+    </dependencies>
 
 </project>

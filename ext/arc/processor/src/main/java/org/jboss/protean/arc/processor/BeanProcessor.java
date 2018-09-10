@@ -50,8 +50,11 @@ public class BeanProcessor {
 
     private final boolean sharedAnnotationLiterals;
 
+    private final ReflectionRegistration reflectionRegistration;
+
     private BeanProcessor(String name, IndexView index, Collection<DotName> additionalBeanDefiningAnnotations, ResourceOutput output,
-            boolean sharedAnnotationLiterals) {
+                          boolean sharedAnnotationLiterals, ReflectionRegistration reflectionRegistration) {
+        this.reflectionRegistration = reflectionRegistration;
         Objects.requireNonNull(output);
         this.name = name;
         this.index = index;
@@ -83,7 +86,7 @@ public class BeanProcessor {
 
         // Generate interceptors
         for (InterceptorInfo interceptor : beanDeployment.getInterceptors()) {
-            for (Resource resource : interceptorGenerator.generate(interceptor, annotationLiterals)) {
+            for (Resource resource : interceptorGenerator.generate(interceptor, annotationLiterals, reflectionRegistration)) {
                 resources.add(resource);
                 if (SpecialType.INTERCEPTOR_BEAN.equals(resource.getSpecialType())) {
                     interceptorToGeneratedName.put(interceptor, resource.getName());
@@ -94,12 +97,12 @@ public class BeanProcessor {
 
         // Generate beans
         for (BeanInfo bean : beanDeployment.getBeans()) {
-            for (Resource resource : beanGenerator.generate(bean, annotationLiterals)) {
+            for (Resource resource : beanGenerator.generate(bean, annotationLiterals, reflectionRegistration)) {
                 resources.add(resource);
                 if (SpecialType.BEAN.equals(resource.getSpecialType())) {
                     if (bean.getScope().isNormal()) {
                         // Generate client proxy
-                        resources.addAll(clientProxyGenerator.generate(bean, resource.getFullyQualifiedName()));
+                        resources.addAll(clientProxyGenerator.generate(bean, resource.getFullyQualifiedName(), reflectionRegistration));
                     }
                     beanToGeneratedName.put(bean, resource.getName());
                     if (bean.isSubclassRequired()) {
@@ -111,7 +114,7 @@ public class BeanProcessor {
 
         // Generate observers
         for (ObserverInfo observer : beanDeployment.getObservers()) {
-            for (Resource resource : observerGenerator.generate(observer, annotationLiterals)) {
+            for (Resource resource : observerGenerator.generate(observer, annotationLiterals, reflectionRegistration)) {
                 resources.add(resource);
                 if (SpecialType.OBSERVER.equals(resource.getSpecialType())) {
                     observerToGeneratedName.put(observer, resource.getName());
@@ -165,6 +168,8 @@ public class BeanProcessor {
 
         private boolean sharedAnnotationLiterals = true;
 
+        private ReflectionRegistration reflectionRegistration = ReflectionRegistration.NOOP;
+
         public Builder setName(String name) {
             this.name = name;
             return this;
@@ -190,8 +195,13 @@ public class BeanProcessor {
             return this;
         }
 
+        public Builder setReflectionRegistration(ReflectionRegistration reflectionRegistration) {
+            this.reflectionRegistration = reflectionRegistration;
+            return this;
+        }
+
         public BeanProcessor build() {
-            return new BeanProcessor(name, addBuiltinQualifiersIfNeeded(index), additionalBeanDefiningAnnotations, output, sharedAnnotationLiterals);
+            return new BeanProcessor(name, addBuiltinQualifiersIfNeeded(index), additionalBeanDefiningAnnotations, output, sharedAnnotationLiterals, reflectionRegistration);
         }
 
     }

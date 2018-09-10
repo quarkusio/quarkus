@@ -3,7 +3,6 @@ package org.jboss.shamrock.arc.deployment;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -13,8 +12,6 @@ import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
@@ -25,6 +22,7 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.protean.arc.ArcContainer;
 import org.jboss.protean.arc.processor.BeanProcessor;
 import org.jboss.protean.arc.processor.BeanProcessor.Builder;
+import org.jboss.protean.arc.processor.ReflectionRegistration;
 import org.jboss.protean.arc.processor.ResourceOutput;
 import org.jboss.shamrock.arc.runtime.ArcDeploymentTemplate;
 import org.jboss.shamrock.deployment.ArchiveContext;
@@ -78,6 +76,17 @@ public class ArcAnnotationProcessor implements ResourceProcessor {
             builder.setIndex(index);
             builder.setAdditionalBeanDefiningAnnotations(additionalBeanDefiningAnnotations);
             builder.setSharedAnnotationLiterals(false);
+            builder.setReflectionRegistration(new ReflectionRegistration() {
+                @Override
+                public void registerMethod(MethodInfo methodInfo) {
+                    processorContext.addReflectiveMethod(methodInfo);
+                }
+
+                @Override
+                public void registerField(FieldInfo fieldInfo) {
+                    processorContext.addReflectiveField(fieldInfo);
+                }
+            });
             builder.setOutput(new ResourceOutput() {
                 @Override
                 public void writeResource(Resource resource) throws IOException {
@@ -106,23 +115,6 @@ public class ArcAnnotationProcessor implements ResourceProcessor {
             ArcContainer container = template.getContainer();
             template.initBeanContainer(container);
             template.setupInjection(container);
-            enableReflectionForPrivateFields(index, processorContext);
-        }
-    }
-
-    private void enableReflectionForPrivateFields(CompositeIndex index, ProcessorContext context) {
-        for (AnnotationInstance anno : index.getAnnotations(INJECT)) {
-            if (anno.target().kind() == AnnotationTarget.Kind.FIELD) {
-                FieldInfo info = anno.target().asField();
-                if (Modifier.isPrivate(info.flags())) {
-                    context.addReflectiveField(info);
-                }
-            } else if (anno.target().kind() == AnnotationTarget.Kind.METHOD) {
-                MethodInfo methodInfo = anno.target().asMethod();
-                if (Modifier.isPrivate(methodInfo.flags())) {
-                    context.addReflectiveMethod(methodInfo);
-                }
-            }
         }
     }
 

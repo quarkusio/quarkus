@@ -50,7 +50,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
      * @param beanClassName Fully qualified class name
      * @return a collection of resources
      */
-    Collection<Resource> generate(BeanInfo bean, String beanClassName) {
+    Collection<Resource> generate(BeanInfo bean, String beanClassName, ReflectionRegistration reflectionRegistration) {
 
         ResourceClassOutput classOutput = new ResourceClassOutput();
 
@@ -113,6 +113,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
                 for (ResultHandle argHandle : params) {
                     forward.writeArrayValue(argsArray, forward.load(idx++), argHandle);
                 }
+                reflectionRegistration.registerMethod(method);
                 ret = forward.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD, forward.loadClass(method.declaringClass().name().toString()),
                         forward.load(method.name()), paramTypesArray, delegate, argsArray);
             } else {

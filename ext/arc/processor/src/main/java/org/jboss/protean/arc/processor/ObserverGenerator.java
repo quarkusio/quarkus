@@ -56,7 +56,7 @@ public class ObserverGenerator extends AbstractGenerator {
      * @param annotationLiterals
      * @return a collection of resources
      */
-    Collection<Resource> generate(ObserverInfo observer, AnnotationLiteralProcessor annotationLiterals) {
+    Collection<Resource> generate(ObserverInfo observer, AnnotationLiteralProcessor annotationLiterals, ReflectionRegistration reflectionRegistration) {
 
         ClassInfo declaringClass = observer.getObserverMethod().declaringClass();
         String declaringClassBase;
@@ -93,7 +93,7 @@ public class ObserverGenerator extends AbstractGenerator {
             createGetObservedQualifiers(observerCreator, observedQualifiers.getFieldDescriptor());
         }
         createGetBeanClass(observerCreator, observer.getDeclaringBean().getTarget().asClass().name());
-        createNotify(observer, observerCreator, injectionPointToProviderField);
+        createNotify(observer, observerCreator, injectionPointToProviderField, reflectionRegistration);
 
         observerCreator.close();
         return classOutput.getResources();
@@ -122,7 +122,7 @@ public class ObserverGenerator extends AbstractGenerator {
         getBeanClass.returnValue(getBeanClass.loadClass(beanClass.toString()));
     }
 
-    protected void createNotify(ObserverInfo observer, ClassCreator observerCreator, Map<InjectionPointInfo, String> injectionPointToProviderField) {
+    protected void createNotify(ObserverInfo observer, ClassCreator observerCreator, Map<InjectionPointInfo, String> injectionPointToProviderField, ReflectionRegistration reflectionRegistration) {
         MethodCreator notify = observerCreator.getMethodCreator("notify", void.class, EventContext.class).setModifiers(ACC_PUBLIC);
 
         ResultHandle declaringProviderHandle = notify
@@ -163,6 +163,7 @@ public class ObserverGenerator extends AbstractGenerator {
                 notify.writeArrayValue(paramTypesArray, notify.load(i), notify.loadClass(observer.getObserverMethod().parameters().get(i).name().toString()));
                 notify.writeArrayValue(argsArray, notify.load(i), referenceHandles[i]);
             }
+            reflectionRegistration.registerMethod(observer.getObserverMethod());
             notify.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
                     notify.loadClass(observer.getObserverMethod().declaringClass().name().toString()), notify.load(observer.getObserverMethod().name()),
                     paramTypesArray, declaringProviderInstanceHandle, argsArray);

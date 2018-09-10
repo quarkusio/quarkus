@@ -395,7 +395,7 @@ public class BuildTimeGenerator {
                         }
                         ResultHandle fhandle = mv.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredConstructor", Constructor.class, Class[].class), clazz, paramArray);
                         mv.writeArrayValue(farray, mv.load(0), fhandle);
-                        mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Constructor[].class), farray);
+                        mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Executable[].class), farray);
                     }
                 }
                 if (entry.getValue().methods) {
@@ -410,7 +410,7 @@ public class BuildTimeGenerator {
                         }
                         ResultHandle fhandle = mv.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), clazz, mv.load(method.name()), paramArray);
                         mv.writeArrayValue(farray, mv.load(0), fhandle);
-                        mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Method[].class), farray);
+                        mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Executable[].class), farray);
                     }
                 }
                 if (entry.getValue().fields) {
@@ -423,7 +423,8 @@ public class BuildTimeGenerator {
                         mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Field[].class), farray);
                     }
                 }
-                exceptionTable.addCatchClause(Throwable.class);
+                CatchBlockCreator cc = exceptionTable.addCatchClause(Throwable.class);
+                cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
                 exceptionTable.complete();
                 mv.returnValue(null);
             }

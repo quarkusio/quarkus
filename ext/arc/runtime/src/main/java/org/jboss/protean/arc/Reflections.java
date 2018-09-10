@@ -31,9 +31,6 @@ public final class Reflections {
         try {
             return clazz.getDeclaredConstructor(parameterTypes);
         } catch (NoSuchMethodException e) {
-            if (clazz.getSuperclass() != null) {
-                return findConstructor(clazz.getSuperclass(), parameterTypes);
-            }
             throw new IllegalArgumentException(e);
         }
     }

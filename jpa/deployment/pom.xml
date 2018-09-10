@@ -19,11 +19,11 @@
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-jpa-runtime</artifactId>
         </dependency>
-
         <dependency>
-            <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-core</artifactId>
+            <groupId>org.hibernate.protean</groupId>
+            <artifactId>hibernate-orm-protean</artifactId>
         </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

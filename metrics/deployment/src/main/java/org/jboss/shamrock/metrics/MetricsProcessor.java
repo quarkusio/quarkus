@@ -95,10 +95,14 @@ public class MetricsProcessor implements ResourceProcessor {
                 }
 
                 MethodInfo methodInfo = target.asMethod();
+                String name = methodInfo.name();
+                if(anno.value("name") != null) {
+                    name = anno.value("name").asString();
+                }
                 ClassInfo classInfo = methodInfo.declaringClass();
 
                 metrics.registerCounted(classInfo.name().toString(),
-                        methodInfo.name().toString());
+                        name);
 
                 processorContext.addReflectiveClass(true, false, classInfo.name().toString());
             }

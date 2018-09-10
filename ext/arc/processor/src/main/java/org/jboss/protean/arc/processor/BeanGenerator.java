@@ -49,6 +49,7 @@ import org.jboss.protean.arc.Subclass;
 import org.jboss.protean.arc.processor.ResourceOutput.Resource;
 import org.jboss.protean.arc.processor.ResourceOutput.Resource.SpecialType;
 import org.jboss.protean.gizmo.BytecodeCreator;
+import org.jboss.protean.gizmo.CatchBlockCreator;
 import org.jboss.protean.gizmo.ClassCreator;
 import org.jboss.protean.gizmo.ClassOutput;
 import org.jboss.protean.gizmo.ExceptionTable;
@@ -638,10 +639,10 @@ public class BeanGenerator extends AbstractGenerator {
                         InvocationContextImpl.class, Constructor.class, List.class, Supplier.class), constructorHandle, aroundConstructsHandle,
                         func.getInstance());
                 ExceptionTable tryCatch = create.addTryCatch();
-                BytecodeCreator exceptionCatch = tryCatch.addCatchClause(Exception.class);
+                CatchBlockCreator exceptionCatch = tryCatch.addCatchClause(Exception.class);
                 // throw new RuntimeException(e)
                 // TODO existing exception param
-                exceptionCatch.throwException(RuntimeException.class, "Error invoking aroundConstructs", exceptionCatch.getMethodParam(0));
+                exceptionCatch.throwException(RuntimeException.class, "Error invoking aroundConstructs", exceptionCatch.getCaughtException());
                 instanceHandle = create.invokeInterfaceMethod(MethodDescriptor.ofMethod(InvocationContext.class, "proceed", Object.class),
                         invocationContextHandle);
                 tryCatch.complete();
@@ -691,10 +692,10 @@ public class BeanGenerator extends AbstractGenerator {
                         instanceHandle, postConstructsHandle);
 
                 ExceptionTable tryCatch = create.addTryCatch();
-                BytecodeCreator exceptionCatch = tryCatch.addCatchClause(Exception.class);
+                CatchBlockCreator exceptionCatch = tryCatch.addCatchClause(Exception.class);
                 // throw new RuntimeException(e)
                 // TODO existing exception param
-                exceptionCatch.throwException(RuntimeException.class, "Error invoking postConstructs", exceptionCatch.getMethodParam(0));
+                exceptionCatch.throwException(RuntimeException.class, "Error invoking postConstructs", exceptionCatch.getCaughtException());
                 create.invokeInterfaceMethod(MethodDescriptor.ofMethod(InvocationContext.class, "proceed", Object.class), invocationContextHandle);
                 tryCatch.complete();
             }

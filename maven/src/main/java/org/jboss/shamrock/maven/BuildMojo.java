@@ -238,7 +238,7 @@ public class BuildMojo extends AbstractMojo {
                                     if (visitor != null) {
                                         visitors.add(visitor);
                                     }
-                                }
+                                  }
                                 out.putNextEntry(new ZipEntry(pathName));
                                 if (visitors.isEmpty()) {
                                     try (FileInputStream in = new FileInputStream(path.toFile())) {

@@ -32,6 +32,7 @@ import org.jboss.protean.arc.Reflections;
 import org.jboss.protean.arc.Subclass;
 import org.jboss.protean.arc.processor.ResourceOutput.Resource;
 import org.jboss.protean.gizmo.BytecodeCreator;
+import org.jboss.protean.gizmo.CatchBlockCreator;
 import org.jboss.protean.gizmo.ClassCreator;
 import org.jboss.protean.gizmo.DescriptorUtils;
 import org.jboss.protean.gizmo.ExceptionTable;
@@ -245,9 +246,9 @@ public class SubclassGenerator extends AbstractGenerator {
         // (java.lang.String) InvocationContextImpl.aroundInvoke(this, methods.get("m1"), params, interceptorChains.get("m1"), forward).proceed()
         ExceptionTable tryCatch = forwardMethod.addTryCatch();
         // catch (Exception e)
-        BytecodeCreator exception = tryCatch.addCatchClause(Exception.class);
+        CatchBlockCreator exception = tryCatch.addCatchClause(Exception.class);
         // throw new RuntimeException(e)
-        exception.throwException(RuntimeException.class, "Error invoking subclass", exception.getThis());
+        exception.throwException(RuntimeException.class, "Error invoking subclass", exception.getCaughtException());
         // InvocationContextImpl.aroundInvoke(this, methods.get("m1"), params, interceptorChains.get("m1"), forward)
         ResultHandle methodIdHandle = forwardMethod.load(methodId);
         ResultHandle interceptedMethodHandle = forwardMethod.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
@@ -277,9 +278,9 @@ public class SubclassGenerator extends AbstractGenerator {
             // try
             ExceptionTable tryCatch = destroyMethod.addTryCatch();
             // catch (Exception e)
-            BytecodeCreator exception = tryCatch.addCatchClause(Exception.class);
+            CatchBlockCreator exception = tryCatch.addCatchClause(Exception.class);
             // throw new RuntimeException(e)
-            exception.throwException(RuntimeException.class, "Error destroying subclass", exception.getThis());
+            exception.throwException(RuntimeException.class, "Error destroying subclass", exception.getCaughtException());
             // InvocationContextImpl.preDestroy(this,predestroys)
             ResultHandle invocationContext = destroyMethod.invokeStaticMethod(
                     MethodDescriptor.ofMethod(InvocationContextImpl.class, "preDestroy", InvocationContextImpl.class, Object.class, List.class),

@@ -33,7 +33,6 @@ public class MetricsDeploymentTemplate {
     */
     public void registerCounted(String topClassName, String elementName) {
         MetricRegistry registry = MetricRegistries.get(MetricRegistry.Type.APPLICATION);
-        MetricResolver resolver = new MetricResolver();
 
         String name = MetricRegistry.name(topClassName, elementName);
         Metadata meta = new Metadata(name, MetricType.COUNTER);

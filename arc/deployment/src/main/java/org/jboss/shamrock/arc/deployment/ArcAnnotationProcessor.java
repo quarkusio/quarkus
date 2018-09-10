@@ -37,7 +37,6 @@ import io.smallrye.config.inject.ConfigProducer;
 
 public class ArcAnnotationProcessor implements ResourceProcessor {
 
-    private static final DotName INJECT = DotName.createSimple("javax.inject.Inject");
     @Inject
     BeanDeployment beanDeployment;
 

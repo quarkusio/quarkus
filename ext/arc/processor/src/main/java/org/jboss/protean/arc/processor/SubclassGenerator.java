@@ -61,7 +61,7 @@ public class SubclassGenerator extends AbstractGenerator {
      * @param beanClassName Fully qualified class name
      * @return a java file
      */
-    Collection<Resource> generate(BeanInfo bean, String beanClassName) {
+    Collection<Resource> generate(BeanInfo bean, String beanClassName, ReflectionRegistration reflectionRegistration) {
 
         ResourceClassOutput classOutput = new ResourceClassOutput();
 
@@ -75,14 +75,14 @@ public class SubclassGenerator extends AbstractGenerator {
         ClassCreator subclass = ClassCreator.builder().classOutput(classOutput).className(generatedName).superClass(providerTypeName).interfaces(Subclass.class)
                 .build();
 
-        FieldDescriptor preDestroyField = createConstructor(bean, subclass, providerTypeName);
+        FieldDescriptor preDestroyField = createConstructor(bean, subclass, providerTypeName, reflectionRegistration);
         createDestroy(subclass, preDestroyField);
 
         subclass.close();
         return classOutput.getResources();
     }
 
-    protected FieldDescriptor createConstructor(BeanInfo bean, ClassCreator subclass, String providerTypeName) {
+    protected FieldDescriptor createConstructor(BeanInfo bean, ClassCreator subclass, String providerTypeName, ReflectionRegistration reflectionRegistration) {
 
         List<String> parameterTypes = new ArrayList<>();
 
@@ -100,7 +100,7 @@ public class SubclassGenerator extends AbstractGenerator {
 
         // Interceptor providers
         List<InterceptorInfo> boundInterceptors = bean.getBoundInterceptors();
-        for (InterceptorInfo interceptor : boundInterceptors) {
+        for (int j = 0; j < boundInterceptors.size(); j++) {
             parameterTypes.add(InjectableInterceptor.class.getName());
         }
 
@@ -203,6 +203,9 @@ public class SubclassGenerator extends AbstractGenerator {
                     MethodDescriptor.ofMethod(Reflections.class, "findMethod", Method.class, Class.class, String.class, Class[].class), paramsHandles);
             constructor.invokeInterfaceMethod(MethodDescriptor.ofMethod(Map.class, "put", Object.class, Object.class, Object.class), methodsHandle,
                     methodIdHandle, methodHandle);
+            
+            // Needed when running on substrate VM
+            reflectionRegistration.registerMethod(method);
 
             // Finally create the forwarding method
             createForwardingMethod(method, methodId, subclass, providerTypeName, interceptorChainsField.getFieldDescriptor(),

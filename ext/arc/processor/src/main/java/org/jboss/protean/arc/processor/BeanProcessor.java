@@ -53,7 +53,7 @@ public class BeanProcessor {
     private final ReflectionRegistration reflectionRegistration;
 
     private BeanProcessor(String name, IndexView index, Collection<DotName> additionalBeanDefiningAnnotations, ResourceOutput output,
-                          boolean sharedAnnotationLiterals, ReflectionRegistration reflectionRegistration) {
+            boolean sharedAnnotationLiterals, ReflectionRegistration reflectionRegistration) {
         this.reflectionRegistration = reflectionRegistration;
         Objects.requireNonNull(output);
         this.name = name;
@@ -106,7 +106,7 @@ public class BeanProcessor {
                     }
                     beanToGeneratedName.put(bean, resource.getName());
                     if (bean.isSubclassRequired()) {
-                        resources.addAll(subclassGenerator.generate(bean, resource.getFullyQualifiedName()));
+                        resources.addAll(subclassGenerator.generate(bean, resource.getFullyQualifiedName(), reflectionRegistration));
                     }
                 }
             }
@@ -201,7 +201,8 @@ public class BeanProcessor {
         }
 
         public BeanProcessor build() {
-            return new BeanProcessor(name, addBuiltinQualifiersIfNeeded(index), additionalBeanDefiningAnnotations, output, sharedAnnotationLiterals, reflectionRegistration);
+            return new BeanProcessor(name, addBuiltinQualifiersIfNeeded(index), additionalBeanDefiningAnnotations, output, sharedAnnotationLiterals,
+                    reflectionRegistration);
         }
 
     }

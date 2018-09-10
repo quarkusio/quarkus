@@ -36,8 +36,6 @@ import io.smallrye.metrics.interceptors.MetricsBinding;
 import io.smallrye.metrics.interceptors.MetricsInterceptor;
 import io.smallrye.metrics.interceptors.TimedInterceptor;
 
-//import io.smallrye.health.SmallRyeHealthReporter;
-
 public class MetricsProcessor implements ResourceProcessor {
 
 
@@ -69,10 +67,6 @@ public class MetricsProcessor implements ResourceProcessor {
                 TimedInterceptor.class);
 
         beanDeployment.addAdditionalBean(MetricsRequestHandler.class, MetricsServlet.class);
-        //weldDeployment.addInterceptor(MetricsInterceptor.class);
-        //weldDeployment.addInterceptor(MeteredInterceptor.class);
-        //weldDeployment.addInterceptor(CountedInterceptor.class);
-        //weldDeployment.addInterceptor(TimedInterceptor.class);
 
         processorContext.addReflectiveClass(false, false, Counted.class.getName(), MetricsBinding.class.getName());
 
@@ -88,7 +82,7 @@ public class MetricsProcessor implements ResourceProcessor {
             for (AnnotationInstance anno : annos) {
                 AnnotationTarget target = anno.target();
 
-                // TODO ugly hack to exclude metrics interceptors
+                // We need to exclude metrics interceptors
                 if (Kind.CLASS.equals(target.kind())
                         && target.asClass().classAnnotations().stream().anyMatch(a -> a.name().equals(DotName.createSimple(Interceptor.class.getName())))) {
                     continue;
@@ -103,8 +97,6 @@ public class MetricsProcessor implements ResourceProcessor {
 
                 metrics.registerCounted(classInfo.name().toString(),
                         name);
-
-                processorContext.addReflectiveClass(true, false, classInfo.name().toString());
             }
 
         }

@@ -29,7 +29,6 @@ final class HibernateReflectiveNeeds {
     private void registerAll() {
         //Various well known needs:
         simpleConstructor(org.hibernate.tuple.entity.PojoEntityTuplizer.class);
-        simpleConstructor(org.hibernate.jpa.HibernatePersistenceProvider.class);
         simpleConstructor(org.hibernate.persister.entity.SingleTableEntityPersister.class);
         simpleConstructor(org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorBuilderImpl.class);
         simpleConstructor(org.hibernate.id.enhanced.SequenceStyleGenerator.class);

@@ -182,8 +182,10 @@
                                 <configuration>
                                     <cleanupServer>true</cleanupServer>
                                     <enableHttpUrlHandler>true</enableHttpUrlHandler>
-                                    <enableRetainedHeapReporting>true</enableRetainedHeapReporting>
-                                    <enableCodeSizeReporting>true</enableCodeSizeReporting>
+                                    <!-- Requires Protean Graal fork to work, will fail otherwise
+                                      <enableRetainedHeapReporting>true</enableRetainedHeapReporting>
+                                      <enableCodeSizeReporting>true</enableCodeSizeReporting>
+                                    -->
                                     <graalvmHome>${graalvmHome}</graalvmHome>
                                 </configuration>
                             </execution>

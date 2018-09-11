@@ -72,7 +72,6 @@
         <module>health</module>
         <module>metrics</module>
         <module>openapi</module>
-        <module>examples</module>
         <module>jpa</module>
         <module>arc</module>
         <module>ext/gizmo</module>
@@ -81,6 +80,7 @@
         <module>transactions</module>
         <module>agroal</module>
         <module>rest-client</module>
+        <module>examples</module>
     </modules>
     <build>
         <pluginManagement>

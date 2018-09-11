@@ -39,6 +39,9 @@ public class SimpleInterceptorTest {
         assertEquals("oof", simpleBean.bar());
         assertEquals(1, counter.get());
         assertEquals("foo", LoggingInterceptor.LOG.get());
+        
+        simpleBean.baz(42);
+        assertEquals(2, counter.get());
 
         handle.release();
         assertEquals(1, LifecycleInterceptor.PRE_DESTROYS.size());

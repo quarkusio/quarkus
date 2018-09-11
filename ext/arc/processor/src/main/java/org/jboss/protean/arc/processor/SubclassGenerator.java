@@ -203,7 +203,7 @@ public class SubclassGenerator extends AbstractGenerator {
                     MethodDescriptor.ofMethod(Reflections.class, "findMethod", Method.class, Class.class, String.class, Class[].class), paramsHandles);
             constructor.invokeInterfaceMethod(MethodDescriptor.ofMethod(Map.class, "put", Object.class, Object.class, Object.class), methodsHandle,
                     methodIdHandle, methodHandle);
-            
+
             // Needed when running on substrate VM
             reflectionRegistration.registerMethod(method);
 
@@ -236,6 +236,7 @@ public class SubclassGenerator extends AbstractGenerator {
         ResultHandle[] superParamHandles = new ResultHandle[method.parameters().size()];
         ResultHandle ctxParamsHandle = funcBytecode.invokeInterfaceMethod(MethodDescriptor.ofMethod(InvocationContext.class, "getParameters", Object[].class),
                 ctxHandle);
+        // TODO autoboxing?
         for (int i = 0; i < superParamHandles.length; i++) {
             superParamHandles[i] = funcBytecode.readArrayValue(ctxParamsHandle, funcBytecode.load(i));
         }
@@ -243,7 +244,7 @@ public class SubclassGenerator extends AbstractGenerator {
                 MethodDescriptor.ofMethod(providerTypeName, method.name(), method.returnType().name().toString(),
                         method.parameters().stream().map(p -> p.name().toString()).collect(Collectors.toList()).toArray(new String[0])),
                 forwardMethod.getThis(), superParamHandles);
-        funcBytecode.returnValue(superResult);
+        funcBytecode.returnValue(superResult != null ? superResult : funcBytecode.loadNull());
 
         // InvocationContext
         // (java.lang.String) InvocationContextImpl.aroundInvoke(this, methods.get("m1"), params, interceptorChains.get("m1"), forward).proceed()
@@ -263,8 +264,8 @@ public class SubclassGenerator extends AbstractGenerator {
                         List.class, Function.class),
                 forwardMethod.getThis(), interceptedMethodHandle, paramsHandle, interceptedChainHandle, func.getInstance());
         // InvocationContext.proceed()
-        forwardMethod.returnValue(
-                forwardMethod.invokeInterfaceMethod(MethodDescriptor.ofMethod(InvocationContext.class, "proceed", Object.class), invocationContext));
+        ResultHandle ret = forwardMethod.invokeInterfaceMethod(MethodDescriptor.ofMethod(InvocationContext.class, "proceed", Object.class), invocationContext);
+        forwardMethod.returnValue(superResult != null ? ret : null);
         tryCatch.complete();
     }
 

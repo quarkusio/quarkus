@@ -32,6 +32,10 @@ public class SimpleBean {
         return new StringBuilder(val).reverse().toString();
     }
 
+    @Simple
+    void baz(Integer dummy) {
+    }
+
     Counter getCounter() {
         return counter;
     }

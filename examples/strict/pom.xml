@@ -182,6 +182,8 @@
                                 <configuration>
                                     <cleanupServer>true</cleanupServer>
                                     <enableHttpUrlHandler>true</enableHttpUrlHandler>
+                                    <enableRetainedHeapReporting>true</enableRetainedHeapReporting>
+                                    <enableCodeSizeReporting>true</enableCodeSizeReporting>
                                     <graalvmHome>${graalvmHome}</graalvmHome>
                                 </configuration>
                             </execution>

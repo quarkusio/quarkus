@@ -48,6 +48,12 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter
     private boolean enableHttpUrlHandler;
 
+    @Parameter
+    private boolean enableRetainedHeapReporting;
+
+    @Parameter
+    private boolean enableCodeSizeReporting;
+
     @Parameter(defaultValue = "${env.GRAALVM_HOME}")
     private String graalvmHome;
 
@@ -99,6 +105,13 @@ public class NativeImageMojo extends AbstractMojo {
             if(enableHttpUrlHandler) {
                 command.add("-H:EnableURLProtocols=http");
             }
+            if (enableRetainedHeapReporting) {
+                command.add("-H:+PrintRetainedHeapHistogram");
+            }
+            if (enableCodeSizeReporting) {
+                command.add("-H:+PrintCodeSizeReport");
+            }
+            
             //command.add("-H:+AllowVMInspection");
             System.out.println(command);
             Process process = Runtime.getRuntime().exec(command.toArray(new String[0]), null, outputDirectory);

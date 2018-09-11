@@ -57,6 +57,9 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter(defaultValue = "${env.GRAALVM_HOME}")
     private String graalvmHome;
 
+    @Parameter(defaultValue = "false")
+    private boolean enableServer;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
 
@@ -111,7 +114,9 @@ public class NativeImageMojo extends AbstractMojo {
             if (enableCodeSizeReporting) {
                 command.add("-H:+PrintCodeSizeReport");
             }
-            
+            if(!enableServer) {
+                command.add("--no-server");
+            }
             //command.add("-H:+AllowVMInspection");
             System.out.println(command);
             Process process = Runtime.getRuntime().exec(command.toArray(new String[0]), null, outputDirectory);

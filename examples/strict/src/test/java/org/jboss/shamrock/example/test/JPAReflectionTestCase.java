@@ -1,13 +1,13 @@
 package org.jboss.shamrock.example.test;
 
+import static org.junit.Assert.assertEquals;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 import org.jboss.shamrock.junit.ShamrockTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import static org.junit.Assert.*;
 
 /**
  * Test reflection around JPA entities

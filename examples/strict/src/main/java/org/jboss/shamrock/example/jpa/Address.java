@@ -1,11 +1,16 @@
 package org.jboss.shamrock.example.jpa;
 
+import javax.persistence.Embeddable;
+
 /**
  * This is an enmarked @Embeddable class.
  * Let's see if just being referenced by the main entity is enough to be detected.
  *
  * @author Emmanuel Bernard emmanuel@hibernate.org
  */
+//FIXME : this used to be non-annotated explicitly for testing purposes
+// added the annotation as it's illegal according to the ORM metadata validation
+@Embeddable
 public class Address {
     private String street1;
     private String street2;

@@ -1,16 +1,12 @@
 package org.jboss.shamrock.example.test;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
 
-import javax.json.Json;
 import javax.json.JsonObject;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.jboss.shamrock.example.testutils.URLTester;
 import org.jboss.shamrock.junit.ShamrockTest;
 import org.junit.Assert;
 import org.junit.Test;
@@ -23,83 +19,36 @@ import org.w3c.dom.NodeList;
 public class JaxRSTestCase {
 
     @Test
-    public void testJAXRS() throws Exception {
-        URL uri = new URL("http://localhost:8080/rest/test");
-        URLConnection connection = uri.openConnection();
-        InputStream in = connection.getInputStream();
-        byte[] buf = new byte[100];
-        int r;
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        while ((r = in.read(buf)) > 0) {
-            out.write(buf, 0, r);
-        }
-        Assert.assertEquals("TEST", new String(out.toByteArray()));
+    public void testJAXRS() {
+        Assert.assertEquals("TEST", URLTester.relative("rest/test").invokeURL().asString());
     }
 
     @Test
-    public void testInteger() throws Exception {
-        URL uri = new URL("http://localhost:8080/rest/test/int/10");
-        URLConnection connection = uri.openConnection();
-        InputStream in = connection.getInputStream();
-        byte[] buf = new byte[100];
-        int r;
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        while ((r = in.read(buf)) > 0) {
-            out.write(buf, 0, r);
-        }
-        Assert.assertEquals("11", new String(out.toByteArray()));
+    public void testInteger() {
+        Assert.assertEquals("11", URLTester.relative("rest/test/int/10").invokeURL().asString());
     }
 
     @Test
-    public void testJsonp() throws Exception {
-
-        URL uri = new URL("http://localhost:8080/rest/test/jsonp");
-        URLConnection connection = uri.openConnection();
-        InputStream in = connection.getInputStream();
-        byte[] buf = new byte[100];
-        int r;
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        while ((r = in.read(buf)) > 0) {
-            out.write(buf, 0, r);
-        }
-        JsonObject obj = Json.createReader(new ByteArrayInputStream(out.toByteArray())).readObject();
+    public void testJsonp() {
+        JsonObject obj = URLTester.relative("rest/test/jsonp").invokeURL().asJsonReader().readObject();
         Assert.assertEquals("Stuart", obj.getString("name"));
         Assert.assertEquals("A Value", obj.getString("value"));
     }
 
     @Test
-    public void testJackson() throws Exception {
-
-        URL uri = new URL("http://localhost:8080/rest/test/jackson");
-        URLConnection connection = uri.openConnection();
-        InputStream in = connection.getInputStream();
-        byte[] buf = new byte[100];
-        int r;
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        while ((r = in.read(buf)) > 0) {
-            out.write(buf, 0, r);
-        }
-        JsonObject obj = Json.createReader(new ByteArrayInputStream(out.toByteArray())).readObject();
+    public void testJackson() {
+        JsonObject obj = URLTester.relative("rest/test/jackson").invokeURL().asJsonReader().readObject();
         Assert.assertEquals("Stuart", obj.getString("name"));
         Assert.assertEquals("A Value", obj.getString("value"));
     }
 
     @Test
     public void testJaxb() throws Exception {
-
-        URL uri = new URL("http://localhost:8080/rest/test/xml");
-        URLConnection connection = uri.openConnection();
-        InputStream in = connection.getInputStream();
-        byte[] buf = new byte[100];
-        int r;
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        while ((r = in.read(buf)) > 0) {
-            out.write(buf, 0, r);
-        }
+        final InputStream inputStream = URLTester.relative("rest/test/xml").invokeURL().asInputStream();
         DocumentBuilderFactory factory =
                 DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = factory.newDocumentBuilder();
-        Document dom = builder.parse(new ByteArrayInputStream(out.toByteArray()));
+        Document dom = builder.parse(inputStream);
         Element root = dom.getDocumentElement();
         Assert.assertEquals("xmlObject", root.getTagName());
         NodeList value = root.getElementsByTagName("value");
@@ -108,32 +57,13 @@ public class JaxRSTestCase {
     }
 
     @Test
-    public void testBytecodeTransformation() throws Exception {
-
-        URL uri = new URL("http://localhost:8080/rest/test/transformed");
-        URLConnection connection = uri.openConnection();
-        InputStream in = connection.getInputStream();
-        byte[] buf = new byte[100];
-        int r;
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        while ((r = in.read(buf)) > 0) {
-            out.write(buf, 0, r);
-        }
-        Assert.assertEquals("Transformed Endpoint", new String(out.toByteArray()));
+    public void testBytecodeTransformation() {
+        Assert.assertEquals("Transformed Endpoint", URLTester.relative("rest/test/transformed").invokeURL().asString());
     }
 
     @Test
-    public void testRxJava() throws Exception {
-
-        URL uri = new URL("http://localhost:8080/rest/test/rx");
-        URLConnection connection = uri.openConnection();
-        InputStream in = connection.getInputStream();
-        byte[] buf = new byte[100];
-        int r;
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        while ((r = in.read(buf)) > 0) {
-            out.write(buf, 0, r);
-        }
-        Assert.assertEquals("Hello", new String(out.toByteArray()));
+    public void testRxJava() {
+        Assert.assertEquals("Hello", URLTester.relative("rest/test/rx").invokeURL().asString());
     }
+
 }

@@ -1,17 +1,10 @@
 package org.jboss.shamrock.example.test;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
-
-import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
-import javax.json.stream.JsonParser;
 
+import org.jboss.shamrock.example.testutils.URLTester;
 import org.jboss.shamrock.junit.ShamrockTest;
 import org.junit.Assert;
 import org.junit.Test;
@@ -21,17 +14,8 @@ import org.junit.runner.RunWith;
 public class HealthTestCase {
 
     @Test
-    public void testHealthCheck() throws Exception {
-        URL uri = new URL("http://localhost:8080/health");
-        URLConnection connection = uri.openConnection();
-        InputStream in = connection.getInputStream();
-        byte[] buf = new byte[100];
-        int r;
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        while ((r = in.read(buf)) > 0) {
-            out.write(buf, 0, r);
-        }
-        JsonReader parser = Json.createReader(new ByteArrayInputStream(out.toByteArray()));
+    public void testHealthCheck() {
+        JsonReader parser = URLTester.relative("health").invokeURL().asJsonReader();
         JsonObject obj = parser.readObject();
         System.out.println(obj);
         Assert.assertEquals("UP", obj.getString("outcome"));

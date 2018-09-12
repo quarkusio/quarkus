@@ -1,15 +1,11 @@
 package org.jboss.shamrock.example.test;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.hsqldb.Server;
-import org.hsqldb.server.WebServer;
+import org.jboss.shamrock.example.testutils.URLTester;
 import org.jboss.shamrock.junit.ShamrockTest;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -39,30 +35,12 @@ public class DatasourceTestCase {
     }
 
     @Test
-    public void testDataSource() throws Exception {
-        URL uri = new URL("http://localhost:8080/rest/datasource");
-        URLConnection connection = uri.openConnection();
-        InputStream in = connection.getInputStream();
-        byte[] buf = new byte[100];
-        int r;
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        while ((r = in.read(buf)) > 0) {
-            out.write(buf, 0, r);
-        }
-        Assert.assertEquals("10", new String(out.toByteArray()));
+    public void testDataSource() {
+        Assert.assertEquals("10", URLTester.relative("rest/datasource").invokeURL().asString());
     }
 
     @Test
-    public void testDataSourceTransactions() throws Exception {
-        URL uri = new URL("http://localhost:8080/rest/datasource/txn");
-        URLConnection connection = uri.openConnection();
-        InputStream in = connection.getInputStream();
-        byte[] buf = new byte[100];
-        int r;
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        while ((r = in.read(buf)) > 0) {
-            out.write(buf, 0, r);
-        }
-        Assert.assertEquals("PASSED", new String(out.toByteArray()));
+    public void testDataSourceTransactions() {
+        Assert.assertEquals("PASSED", URLTester.relative("rest/datasource/txn").invokeURL().asString());
     }
 }

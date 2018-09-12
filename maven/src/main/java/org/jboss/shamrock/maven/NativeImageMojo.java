@@ -60,6 +60,9 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter(defaultValue = "false")
     private boolean enableServer;
 
+    @Parameter(defaultValue = "false")
+    private boolean enableJni;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
 
@@ -113,6 +116,9 @@ public class NativeImageMojo extends AbstractMojo {
             }
             if (enableCodeSizeReporting) {
                 command.add("-H:+PrintCodeSizeReport");
+            }
+            if (enableJni) {
+                command.add("-H:+JNI");
             }
             if(!enableServer) {
                 command.add("--no-server");

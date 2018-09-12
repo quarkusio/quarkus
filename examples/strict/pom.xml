@@ -187,6 +187,7 @@
                                       <enableCodeSizeReporting>true</enableCodeSizeReporting>
                                     -->
                                     <graalvmHome>${graalvmHome}</graalvmHome>
+                                    <enableJni>true</enableJni>
                                 </configuration>
                             </execution>
                         </executions>

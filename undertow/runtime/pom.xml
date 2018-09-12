@@ -25,6 +25,14 @@
             <groupId>org.jboss.xnio</groupId>
             <artifactId>xnio-nio</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.wildfly.openssl</groupId>
+            <artifactId>wildfly-openssl-java</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.wildfly.openssl</groupId>
+            <artifactId>wildfly-openssl-linux-x86_64</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.jboss.shamrock</groupId>

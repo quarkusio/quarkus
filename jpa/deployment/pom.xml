@@ -19,10 +19,6 @@
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-jpa-runtime</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.hibernate.protean</groupId>
-            <artifactId>hibernate-orm-protean</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>junit</groupId>

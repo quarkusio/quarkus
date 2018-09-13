@@ -52,8 +52,7 @@ public class JPATestEndpoint extends HttpServlet {
             }
             Method setter = custClass.getDeclaredMethod("setName", String.class);
             Method getter = custClass.getDeclaredMethod("getName");
-            //FIXME TODO invoker the following methods reflectively isn't working on SubstrateVM in combination with Hibernate entity enhancement ?!
-             setter.invoke(instance, "Emmanuel");
+            setter.invoke(instance, "Emmanuel");
             if (! "Emmanuel".equals(getter.invoke(instance))) {
                 resp.getWriter().write("getter / setter should be reachable and usable");
             }

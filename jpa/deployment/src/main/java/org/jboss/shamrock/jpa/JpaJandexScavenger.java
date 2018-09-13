@@ -50,22 +50,26 @@ final class JpaJandexScavenger {
         // list all entities and create a JPADeploymentTemplate out of it
         // Not functional as we will need one deployment template per persistence unit
         final IndexView index = archiveContext.getCombinedIndex();
-        final DomainObjectSet collector;
+        final DomainObjectSet collector = new DomainObjectSet();
+
+        enlistJPAModelClasses(JPA_ENTITY, collector, index);
+        enlistJPAModelClasses(EMBEDDABLE, collector, index);
+        enlistJPAModelClasses(MAPPED_SUPERCLASS, collector, index);
+        enlistReturnType(collector, index);
+
+        collector.registerAllForReflection(processorContext);
+
         // TODO what priority to give JPA?
         try (BytecodeRecorder context = processorContext.addStaticInitTask(100)) {
             JPADeploymentTemplate template = context.getRecordingProxy(JPADeploymentTemplate.class);
-            collector = new DomainObjectSet(template);
-            enlistJPAModelClasses(JPA_ENTITY, processorContext, collector, index);
-            enlistJPAModelClasses(EMBEDDABLE, processorContext, collector, index);
-            enlistJPAModelClasses(MAPPED_SUPERCLASS, processorContext, collector, index);
-            enlistReturnType(processorContext, index);
+            collector.dumpAllToJPATemplate(template);
             template.enlistPersistenceUnit();
         }
-        collector.clearLinkToTemplate();//no longer need the JPADeploymentTemplate
+
         return collector;
     }
 
-    private void enlistReturnType(ProcessorContext processorContext, IndexView index) {
+    private static void enlistReturnType(DomainObjectSet collector, IndexView index) {
         Collection<AnnotationInstance> annotations = index.getAnnotations(EMBEDDED);
         if (annotations != null && annotations.size() > 0) {
             for (AnnotationInstance annotation : annotations) {
@@ -83,17 +87,17 @@ final class JpaJandexScavenger {
                     default:
                         throw new IllegalStateException("[internal error] @Embedded placed on a unknown element: " + target);
                 }
-                addClassHierarchyToReflectiveList(processorContext, index, jpaClassName);
+                addClassHierarchyToReflectiveList(collector, index, jpaClassName);
             }
         }
     }
 
-    private void enlistJPAModelClasses(DotName dotName, ProcessorContext processorContext, DomainObjectSet collector, IndexView index) {
+    private static void enlistJPAModelClasses(DotName dotName, DomainObjectSet collector, IndexView index) {
         Collection<AnnotationInstance> jpaAnnotations = index.getAnnotations(dotName);
         if (jpaAnnotations != null && jpaAnnotations.size() > 0) {
             for (AnnotationInstance annotation : jpaAnnotations) {
                 DotName targetDotName = annotation.target().asClass().name();
-                addClassHierarchyToReflectiveList(processorContext, index, targetDotName);
+                addClassHierarchyToReflectiveList(collector, index, targetDotName);
                 collector.addEntity(targetDotName.toString());
             }
         }
@@ -106,7 +110,7 @@ final class JpaJandexScavenger {
      * TODO this approach fails if the Jandex index is not complete (e.g. misses somes interface or super types)
      * TODO should we also return the return types of all methods and fields? It could container Enums for example.
      */
-    private void addClassHierarchyToReflectiveList(ProcessorContext processorContext, IndexView index, DotName className) {
+    private static void addClassHierarchyToReflectiveList(DomainObjectSet collector, IndexView index, DotName className) {
         // If type is not Object
         // recursively add superclass and interfaces
         if (className == null) {
@@ -122,32 +126,34 @@ final class JpaJandexScavenger {
                 throw new IllegalStateException("The Jandex index is not complete, missing: " + className.toString());
             }
         }
-        // add class for reflection
-        processorContext.addReflectiveClass(true, true, className.toString());
+        //Capture this one (for various needs: Reflective access enablement, Hibernate enhancement, JPA Template)
+        collector.addEntity(className.toString());
         // add superclass recursively
-        addClassHierarchyToReflectiveList(processorContext, index, classInfo.superName());
+        addClassHierarchyToReflectiveList(collector, index, classInfo.superName());
         // add interfaces recursively
         for (DotName interfaceDotName : classInfo.interfaceNames()) {
-            addClassHierarchyToReflectiveList(processorContext, index, interfaceDotName);
+            addClassHierarchyToReflectiveList(collector, index, interfaceDotName);
         }
     }
 
     private static class DomainObjectSet implements KnownDomainObjects {
 
-        private JPADeploymentTemplate template;
         private final Set<String> classNames = new HashSet<String>();
 
-        public DomainObjectSet(final JPADeploymentTemplate template) {
-            this.template = template;
+        public void addEntity(final String className) {
+            classNames.add(className);
         }
 
-        public void addEntity(final String name) {
-            classNames.add(name);
-            template.addEntity(name);
+        void dumpAllToJPATemplate(final JPADeploymentTemplate template) {
+            for (String className : classNames) {
+                template.addEntity(className);
+            }
         }
 
-        void clearLinkToTemplate(){
-            this.template = null;
+        void registerAllForReflection(final ProcessorContext processorContext) {
+            for (String className : classNames) {
+                processorContext.addReflectiveClass(true, true, className);
+            }
         }
 
         @Override

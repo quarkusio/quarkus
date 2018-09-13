@@ -58,7 +58,7 @@
         <javax.persistence-api.version>2.2</javax.persistence-api.version>
         <rxjava.version>2.1.12</rxjava.version>
         <microprofile-rest-client-api.version>1.0</microprofile-rest-client-api.version>
-
+        <wildfly.openssl.version>1.0.6.Final</wildfly.openssl.version>
 
         <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>
     </properties>
@@ -612,6 +612,17 @@
                 <groupId>org.jboss.xnio</groupId>
                 <artifactId>xnio-nio</artifactId>
                 <version>${xnio.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.wildfly.openssl</groupId>
+                <artifactId>wildfly-openssl-java</artifactId>
+                <version>${wildfly.openssl.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly.openssl</groupId>
+                <artifactId>wildfly-openssl-linux-x86_64</artifactId>
+                <version>${wildfly.openssl.version}</version>
             </dependency>
 
             <dependency>

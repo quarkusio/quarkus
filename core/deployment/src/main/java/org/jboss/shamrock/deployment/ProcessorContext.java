@@ -89,7 +89,18 @@ public interface ProcessorContext {
 
     void addResourceBundle(String bundle);
 
+    /**
+     * Marks a class as being runtime initialized, which means that running the static
+     * initializer will happen at runtime
+     *
+     * @param classes The classes to lazily init
+     */
     void addRuntimeInitializedClasses(String ... classes);
 
+    /**
+     * Adds a proxy definition to allow proxies to be created using {@link java.lang.reflect.Proxy}
+     *
+     * @param proxyClasses The interface names that this proxy will implement
+     */
     void addProxyDefinition(String ... proxyClasses);
 }

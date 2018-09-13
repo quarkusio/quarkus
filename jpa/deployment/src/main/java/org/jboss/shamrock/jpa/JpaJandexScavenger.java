@@ -8,6 +8,7 @@ import java.util.Set;
 import javax.persistence.Embeddable;
 import javax.persistence.Embedded;
 import javax.persistence.Entity;
+import javax.persistence.MappedSuperclass;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -35,6 +36,7 @@ final class JpaJandexScavenger {
     private static final DotName JPA_ENTITY = DotName.createSimple(Entity.class.getName());
     private static final DotName EMBEDDABLE = DotName.createSimple(Embeddable.class.getName());
     private static final DotName EMBEDDED = DotName.createSimple(Embedded.class.getName());
+    private static final DotName MAPPED_SUPERCLASS = DotName.createSimple(MappedSuperclass.class.getName());
 
     private final ArchiveContext archiveContext;
     private final ProcessorContext processorContext;
@@ -55,6 +57,7 @@ final class JpaJandexScavenger {
             collector = new DomainObjectSet(template);
             enlistJPAModelClasses(JPA_ENTITY, processorContext, collector, index);
             enlistJPAModelClasses(EMBEDDABLE, processorContext, collector, index);
+            enlistJPAModelClasses(MAPPED_SUPERCLASS, processorContext, collector, index);
             enlistReturnType(processorContext, index);
             template.enlistPersistenceUnit();
         }

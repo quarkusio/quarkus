@@ -15,6 +15,7 @@ import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.se.SeContainer;
 import javax.enterprise.inject.se.SeContainerInitializer;
 import javax.enterprise.inject.spi.Bean;
+import javax.enterprise.inject.spi.Extension;
 
 import org.jboss.shamrock.runtime.BeanContainer;
 import org.jboss.shamrock.runtime.ContextObject;
@@ -69,6 +70,11 @@ public class WeldDeploymentTemplate {
 
     public void addInterceptor(SeContainerInitializer initialize, Class<?> interceptorClass) {
         initialize.enableInterceptors(interceptorClass);
+    }
+    
+	@SuppressWarnings("unchecked")
+	public void addExtension(SeContainerInitializer initializer, Class<?> extensionClazz) {
+        initializer.addExtensions((Class<? extends Extension>)extensionClazz);
     }
 
     @ContextObject("weld.container")

@@ -18,9 +18,6 @@ import org.jboss.jandex.Index;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
-import org.jboss.protean.arc.processor.BeanDeployment;
-import org.jboss.protean.arc.processor.BeanInfo;
-import org.jboss.protean.arc.processor.Beans;
 import org.jboss.protean.arc.processor.types.Bar;
 import org.jboss.protean.arc.processor.types.Foo;
 import org.jboss.protean.arc.processor.types.FooQualifier;
@@ -38,7 +35,7 @@ public class BeanInfoTypesTest {
         Index index = index(Foo.class, Bar.class, FooQualifier.class, AbstractList.class, AbstractCollection.class, Collection.class, List.class,
                 Iterable.class);
 
-        BeanDeployment deployment = new BeanDeployment(index, null);
+        BeanDeployment deployment = new BeanDeployment(index, null, null);
         DotName fooName = name(Foo.class);
 
         ClassInfo fooClass = index.getClassByName(fooName);

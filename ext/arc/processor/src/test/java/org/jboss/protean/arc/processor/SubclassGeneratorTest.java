@@ -20,12 +20,6 @@ import javax.interceptor.InvocationContext;
 
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
-import org.jboss.protean.arc.processor.AnnotationLiteralProcessor;
-import org.jboss.protean.arc.processor.BeanDeployment;
-import org.jboss.protean.arc.processor.BeanGenerator;
-import org.jboss.protean.arc.processor.BeanInfo;
-import org.jboss.protean.arc.processor.BeanProcessor;
-import org.jboss.protean.arc.processor.SubclassGenerator;
 import org.jboss.protean.arc.processor.ResourceOutput.Resource;
 import org.jboss.protean.arc.processor.types.Baz;
 import org.junit.Test;
@@ -36,7 +30,7 @@ public class SubclassGeneratorTest {
     public void testGenerator() throws IOException {
 
         Index index = index(SimpleBean.class, Simple.class, SimpleInterceptor.class, Baz.class);
-        BeanDeployment deployment = new BeanDeployment(index, null);
+        BeanDeployment deployment = new BeanDeployment(index, null, null);
         deployment.init();
 
         BeanGenerator beanGenerator = new BeanGenerator();

@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import javax.enterprise.inject.spi.DefinitionException;
@@ -49,7 +50,10 @@ public class BeanDeployment {
 
     private final InterceptorResolver interceptorResolver;
 
-    BeanDeployment(IndexView index, Collection<DotName> additionalBeanDefiningAnnotations) {
+    private final List<BiFunction<AnnotationTarget, Collection<AnnotationInstance>, Collection<AnnotationInstance>>> annotationTransformers;
+
+    BeanDeployment(IndexView index, Collection<DotName> additionalBeanDefiningAnnotations,
+            List<BiFunction<AnnotationTarget, Collection<AnnotationInstance>, Collection<AnnotationInstance>>> annotationTransformers) {
         long start = System.currentTimeMillis();
         this.index = index;
         this.qualifiers = findQualifiers(index);
@@ -61,6 +65,7 @@ public class BeanDeployment {
         this.beans = findBeans(initBeanDefiningAnnotations(additionalBeanDefiningAnnotations), observers);
         this.observers = observers;
         this.interceptorResolver = new InterceptorResolver(this);
+        this.annotationTransformers = annotationTransformers;
         LOGGER.infof("Build deployment created in %s ms", System.currentTimeMillis() - start);
     }
 
@@ -94,6 +99,28 @@ public class BeanDeployment {
 
     ClassInfo getInterceptorBinding(DotName name) {
         return interceptorBindings.get(name);
+    }
+
+    Collection<AnnotationInstance> getAnnotations(AnnotationTarget target) {
+        Collection<AnnotationInstance> annotations = null;
+        switch (target.kind()) {
+            case CLASS:
+                annotations = target.asClass().classAnnotations();
+                break;
+            case METHOD:
+                annotations = target.asMethod().annotations();
+            case FIELD:
+                annotations = target.asField().annotations();
+            default:
+                throw new UnsupportedOperationException();
+        }
+        if (annotationTransformers == null || annotationTransformers.isEmpty()) {
+            return annotations;
+        }
+        for (BiFunction<AnnotationTarget, Collection<AnnotationInstance>, Collection<AnnotationInstance>> transformer : annotationTransformers) {
+            annotations = transformer.apply(target, annotations);
+        }
+        return annotations;
     }
 
     void init() {
@@ -142,8 +169,8 @@ public class BeanDeployment {
                         continue;
                     }
                     if (beanClass.nestingType().equals(NestingType.ANONYMOUS) || beanClass.nestingType().equals(NestingType.LOCAL)
-                            || (beanClass.nestingType().equals(NestingType.INNER) && !Modifier.isStatic(beanClass.flags())) ||
-                            Modifier.isInterface(beanClass.flags())) {
+                            || (beanClass.nestingType().equals(NestingType.INNER) && !Modifier.isStatic(beanClass.flags()))
+                            || Modifier.isInterface(beanClass.flags())) {
                         // Skip interfaces, annonymous, local and inner classes
                         continue;
                     }
@@ -190,7 +217,7 @@ public class BeanDeployment {
                 beans.add(Beans.createProducerMethod(producerMethod, declaringBean, this, findDisposer(declaringBean, producerMethod, disposers)));
             }
         }
-        
+
         for (FieldInfo producerField : producerFields) {
             BeanInfo declaringBean = beanClassToBean.get(producerField.declaringClass());
             if (declaringBean != null) {

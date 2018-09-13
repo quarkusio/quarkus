@@ -17,11 +17,6 @@ import javax.interceptor.InvocationContext;
 
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
-import org.jboss.protean.arc.processor.AnnotationLiteralProcessor;
-import org.jboss.protean.arc.processor.BeanDeployment;
-import org.jboss.protean.arc.processor.BeanProcessor;
-import org.jboss.protean.arc.processor.InterceptorGenerator;
-import org.jboss.protean.arc.processor.InterceptorInfo;
 import org.jboss.protean.arc.processor.types.Baz;
 import org.junit.Test;
 
@@ -31,7 +26,7 @@ public class InterceptorGeneratorTest {
     public void testGenerator() throws IOException {
 
         Index index = index(MyInterceptor.class, MyBinding.class, Baz.class);
-        BeanDeployment deployment = new BeanDeployment(index, null);
+        BeanDeployment deployment = new BeanDeployment(index, null, null);
         deployment.init();
 
         InterceptorInfo myInterceptor = deployment.getInterceptors().stream()

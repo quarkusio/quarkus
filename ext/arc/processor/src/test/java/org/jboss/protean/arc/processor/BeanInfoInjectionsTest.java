@@ -16,9 +16,6 @@ import org.jboss.jandex.Index;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
-import org.jboss.protean.arc.processor.BeanDeployment;
-import org.jboss.protean.arc.processor.BeanInfo;
-import org.jboss.protean.arc.processor.Injection;
 import org.jboss.protean.arc.processor.types.Bar;
 import org.jboss.protean.arc.processor.types.Foo;
 import org.jboss.protean.arc.processor.types.FooQualifier;
@@ -41,7 +38,7 @@ public class BeanInfoInjectionsTest {
         Type fooType = Type.create(name(Foo.class), Kind.CLASS);
         Type listStringType = ParameterizedType.create(name(List.class), new Type[] { Type.create(name(String.class), Kind.CLASS) }, null);
 
-        BeanDeployment deployment = new BeanDeployment(index, null);
+        BeanDeployment deployment = new BeanDeployment(index, null, null);
         BeanInfo barBean = deployment.getBeans().stream().filter(b -> b.getTarget().equals(barClass)).findFirst().get();
         List<Injection> injections = barBean.getInjections();
         assertEquals(3, injections.size());

@@ -17,7 +17,11 @@ public class BeanArchiveProcessor implements ResourceProcessor {
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
         List<IndexView> indexes = new ArrayList<>();
         for(ApplicationArchive archive : archiveContext.getAllApplicationArchives()) {
+            //TODO: this should not really be in core
             if(archive.getChildPath("META-INF/beans.xml") != null) {
+                indexes.add(archive.getIndex());
+            } else if(archive.getChildPath("WEB-INF/beans.xml") != null) {
+                //TODO: how to handle WEB-INF?
                 indexes.add(archive.getIndex());
             }
         }

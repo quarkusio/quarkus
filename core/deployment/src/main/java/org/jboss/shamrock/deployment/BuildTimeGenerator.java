@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -74,8 +73,9 @@ public class BuildTimeGenerator {
     private final boolean useStaticInit;
     private final List<Function<String, Function<ClassVisitor, ClassVisitor>>> bytecodeTransformers = new ArrayList<>();
     private final Set<String> applicationArchiveMarkers;
+    private final ArchiveContextBuilder archiveContextBuilder;
 
-    public BuildTimeGenerator(ClassOutput classOutput, ClassLoader cl, boolean useStaticInit) {
+    public BuildTimeGenerator(ClassOutput classOutput, ClassLoader cl, boolean useStaticInit, ArchiveContextBuilder contextBuilder) {
         this.useStaticInit = useStaticInit;
         Iterator<ShamrockSetup> loader = ServiceLoader.load(ShamrockSetup.class, cl).iterator();
         SetupContextImpl setupContext = new SetupContextImpl();
@@ -90,6 +90,7 @@ public class BuildTimeGenerator {
         this.injection = new DeploymentProcessorInjection(setupContext.injectionProviders);
         this.classLoader = cl;
         this.applicationArchiveMarkers = new HashSet<>(setupContext.applicationArchiveMarkers);
+        this.archiveContextBuilder = contextBuilder;
     }
 
     public List<Function<String, Function<ClassVisitor, ClassVisitor>>> getBytecodeTransformers() {
@@ -129,10 +130,10 @@ public class BuildTimeGenerator {
                 }
             });
             Index appIndex = indexer.complete();
-            List<ApplicationArchive> applicationArchives = ApplicationArchiveLoader.scanForOtherIndexes(classLoader, config, applicationArchiveMarkers, root);
-
+            List<ApplicationArchive> applicationArchives = ApplicationArchiveLoader.scanForOtherIndexes(classLoader, config, applicationArchiveMarkers, root, archiveContextBuilder.getAdditionalApplicationArchives());
 
             ArchiveContext context = new ArchiveContextImpl(new ApplicationArchiveImpl(appIndex, root, null), applicationArchives, config);
+
             ProcessorContextImpl processorContext = new ProcessorContextImpl();
             processorContext.addResource("META-INF/microprofile-config.properties");
             try {

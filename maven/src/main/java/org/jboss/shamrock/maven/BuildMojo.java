@@ -34,6 +34,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.jboss.shamrock.deployment.ArchiveContextBuilder;
 import org.jboss.shamrock.deployment.BuildTimeGenerator;
 import org.jboss.shamrock.deployment.ClassOutput;
 import org.jboss.shamrock.deployment.index.ResolvedArtifact;
@@ -178,7 +179,7 @@ public class BuildMojo extends AbstractMojo {
                     }
                 }
 
-            }, runnerClassLoader, useStaticInit);
+            }, runnerClassLoader, useStaticInit, new ArchiveContextBuilder());
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             try {
                 Thread.currentThread().setContextClassLoader(runnerClassLoader);

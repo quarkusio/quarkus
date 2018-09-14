@@ -4,6 +4,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.jboss.shamrock.deployment.ArchiveContextBuilder;
 import org.jboss.shamrock.runner.RuntimeRunner;
 import org.junit.runner.Description;
 import org.junit.runner.notification.Failure;
@@ -52,7 +53,7 @@ public class ShamrockTest extends BlockJUnit4ClassRunner {
                             String testClassLocation = resource.getPath().substring(0, resource.getPath().length() - classFileName.length());
                             String appClassLocation = testClassLocation.replace("test-classes", "classes");
                             Path appRoot = Paths.get(appClassLocation);
-                            RuntimeRunner runtimeRunner = new RuntimeRunner(getClass().getClassLoader(), appRoot, Paths.get(testClassLocation));
+                            RuntimeRunner runtimeRunner = new RuntimeRunner(getClass().getClassLoader(), appRoot, Paths.get(testClassLocation), new ArchiveContextBuilder());
                             runtimeRunner.run();
                         }
                     }

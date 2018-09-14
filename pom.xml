@@ -83,6 +83,7 @@
         <module>rest-client</module>
         <module>fault-tolerance</module>
         <module>examples</module>
+        <module>legacy</module>
     </modules>
     <build>
         <pluginManagement>
@@ -216,6 +217,16 @@
             <dependency>
                 <groupId>org.jboss.shamrock</groupId>
                 <artifactId>shamrock-junit</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-legacy-runner</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-legacy-launcher</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -712,12 +723,13 @@
             <snapshots>
                 <enabled>true</enabled>
                 <!-- 10 minutes. Or enforce refresh by using -U option to Maven -->
-                <updatePolicy>interval:10</updatePolicy>
+                <updatePolicy>daily</updatePolicy>
             </snapshots>
         </repository>
     </repositories>
 
     <distributionManagement>
+
         <repository>
             <id>protean-nexus-release</id>
             <name>Protean AWS Nexus - Releases</name>

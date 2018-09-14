@@ -35,7 +35,7 @@ public class ApplicationArchiveLoader {
     private static final String INDEX_DEPENDENCIES = "index-dependencies";
     private static final String INDEX_JAR = "index-jar";
 
-    public static List<ApplicationArchive> scanForOtherIndexes(ClassLoader classLoader, BuildConfig config, Set<String> applicationArchiveFiles, Path appRoot) throws IOException {
+    public static List<ApplicationArchive> scanForOtherIndexes(ClassLoader classLoader, BuildConfig config, Set<String> applicationArchiveFiles, Path appRoot, List<Path> additionalApplicationArchives) throws IOException {
 
         Set<Path> dependenciesToIndex = new HashSet<>();
 
@@ -48,6 +48,8 @@ public class ApplicationArchiveLoader {
 
         //we don't index the application root, this is handled elsewhere
         dependenciesToIndex.remove(appRoot);
+
+        dependenciesToIndex.addAll(additionalApplicationArchives);
 
         return indexPaths(dependenciesToIndex, classLoader);
     }

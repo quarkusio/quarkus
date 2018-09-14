@@ -6,6 +6,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 
+import org.jboss.shamrock.deployment.ArchiveContextBuilder;
 import org.jboss.shamrock.deployment.BuildTimeGenerator;
 
 /**
@@ -17,9 +18,11 @@ public class RuntimeRunner implements Runnable, Closeable {
     private final Path target;
     private final RuntimeClassLoader loader;
     private Closeable closeTask;
+    private final ArchiveContextBuilder archiveContextBuilder;
 
-    public RuntimeRunner(ClassLoader classLoader, Path target, Path frameworkClassesPath) {
+    public RuntimeRunner(ClassLoader classLoader, Path target, Path frameworkClassesPath, ArchiveContextBuilder archiveContextBuilder) {
         this.target = target;
+        this.archiveContextBuilder = archiveContextBuilder;
         this.loader = new RuntimeClassLoader(classLoader, target, frameworkClassesPath);
     }
 
@@ -33,7 +36,7 @@ public class RuntimeRunner implements Runnable, Closeable {
     @Override
     public void run() {
         try {
-            BuildTimeGenerator buildTimeGenerator = new BuildTimeGenerator(loader, loader, false);
+            BuildTimeGenerator buildTimeGenerator = new BuildTimeGenerator(loader, loader, false, archiveContextBuilder);
             buildTimeGenerator.run(target);
             loader.accept(buildTimeGenerator.getBytecodeTransformers());
             Class<?> mainClass = loader.findClass(BuildTimeGenerator.MAIN_CLASS);

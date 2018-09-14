@@ -13,8 +13,8 @@ import java.lang.reflect.Method;
  * Various tests for the JPA integration.
  * WARNING: these tests will ONLY pass in Substrate, as it also verifies reflection non-functionality.
  */
-@WebServlet(name = "JPATestEndpoint", urlPatterns = "/jpa/test")
-public class JPATestEndpoint extends HttpServlet {
+@WebServlet(name = "JPATestReflectionEndpoint", urlPatterns = "/jpa/testreflection")
+public class JPATestReflectionEndpoint extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {

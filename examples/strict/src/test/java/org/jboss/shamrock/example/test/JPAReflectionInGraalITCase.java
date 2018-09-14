@@ -17,7 +17,7 @@ public class JPAReflectionInGraalITCase {
 
     @Test
     public void testFieldAndGetterReflectionOnEntityFromServlet() throws Exception {
-        assertEquals("OK", URLTester.relative("jpa/test").invokeURL().asString());
+        assertEquals("OK", URLTester.relative("jpa/testreflection").invokeURL().asString());
     }
 
 }

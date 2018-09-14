@@ -12,7 +12,7 @@ import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.hibernate.protean.recording.RecordedState;
 
-final class PersistenceUnitsHolder {
+public final class PersistenceUnitsHolder {
 
 	private static final PUStatus COMPACT_UNITS = builderPuStatus();
 
@@ -91,6 +91,10 @@ final class PersistenceUnitsHolder {
 			this.metadata = metadata;
 		}
 
+	}
+
+	public static void featureInit(){
+		System.out.println("Hibernate's PersistenceUnitsHolder was initialized");
 	}
 
 }

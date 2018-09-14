@@ -50,6 +50,8 @@ class BeanInfo {
 
     private final Integer alternativePriority;
 
+    private final List<StereotypeInfo> stereotypes;
+
     /**
      *
      * @param target
@@ -62,9 +64,10 @@ class BeanInfo {
      * @param declaringBean
      * @param disposer
      * @param alternativePriority
+     * @param stereotypes
      */
     BeanInfo(AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope, Set<Type> types, Set<AnnotationInstance> qualifiers,
-            List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer, Integer alternativePriority) {
+            List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer, Integer alternativePriority, List<StereotypeInfo> stereotypes) {
         this.target = target;
         this.beanDeployment = beanDeployment;
         this.scope = scope != null ? scope : ScopeInfo.DEPENDENT;
@@ -78,6 +81,7 @@ class BeanInfo {
         this.declaringBean = declaringBean;
         this.disposer = disposer;
         this.alternativePriority = alternativePriority;
+        this.stereotypes = stereotypes;
     }
 
     AnnotationTarget getTarget() {
@@ -177,7 +181,7 @@ class BeanInfo {
         }
         if (isClassBean()) {
             return getLifecycleInterceptors(InterceptionType.PRE_DESTROY).isEmpty()
-                    && target.asClass().methods().stream().noneMatch(m -> m.hasAnnotation(DotNames.PRE_DESTROY));
+                    && Beans.getCallbacks(target.asClass(), DotNames.PRE_DESTROY, beanDeployment.getIndex()).isEmpty();
         } else {
             return disposer == null;
         }
@@ -210,6 +214,10 @@ class BeanInfo {
         return alternativePriority;
     }
 
+    List<StereotypeInfo> getStereotypes() {
+        return stereotypes;
+    }
+
     void init() {
         for (Injection injection : injections) {
             for (InjectionPointInfo injectionPoint : injection.injectionPoints) {
@@ -236,11 +244,17 @@ class BeanInfo {
     private Map<MethodInfo, List<InterceptorInfo>> initInterceptedMethods() {
         if (!isInterceptor() && isClassBean()) {
             Map<MethodInfo, List<InterceptorInfo>> interceptedMethods = new HashMap<>();
-
             Map<MethodKey, Set<AnnotationInstance>> candidates = new HashMap<>();
             // TODO interceptor bindings are transitive!!!
+
             List<AnnotationInstance> classLevelBindings = new ArrayList<>();
             addClassLevelBindings(target.asClass(), classLevelBindings);
+            if (!stereotypes.isEmpty()) {
+                for (StereotypeInfo stereotype : stereotypes) {
+                    addClassLevelBindings(stereotype.getTarget(), classLevelBindings);
+                }
+            }
+
             Methods.addInterceptedMethodCandidates(beanDeployment, target.asClass(), candidates, classLevelBindings);
 
             for (Entry<MethodKey, Set<AnnotationInstance>> entry : candidates.entrySet()) {

@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+import javax.enterprise.inject.Model;
 import javax.enterprise.inject.spi.DefinitionException;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -40,6 +41,8 @@ public class BeanDeployment {
 
     private final Map<DotName, ClassInfo> interceptorBindings;
 
+    private final Map<DotName, StereotypeInfo> stereotypes;
+
     private final List<BeanInfo> beans;
 
     private final List<InterceptorInfo> interceptors;
@@ -59,10 +62,11 @@ public class BeanDeployment {
         this.qualifiers = findQualifiers(index);
         // TODO interceptor bindings are transitive!!!
         this.interceptorBindings = findInterceptorBindings(index);
+        this.stereotypes = findStereotypes(index, interceptorBindings);
         this.interceptors = findInterceptors();
         this.beanResolver = new BeanResolver(this);
         List<ObserverInfo> observers = new ArrayList<>();
-        this.beans = findBeans(initBeanDefiningAnnotations(additionalBeanDefiningAnnotations), observers);
+        this.beans = findBeans(initBeanDefiningAnnotations(additionalBeanDefiningAnnotations, stereotypes), observers);
         this.observers = observers;
         this.interceptorResolver = new InterceptorResolver(this);
         this.annotationTransformers = annotationTransformers;
@@ -99,6 +103,10 @@ public class BeanDeployment {
 
     ClassInfo getInterceptorBinding(DotName name) {
         return interceptorBindings.get(name);
+    }
+
+    StereotypeInfo getStereotype(DotName name) {
+        return stereotypes.get(name);
     }
 
     Collection<AnnotationInstance> getAnnotations(AnnotationTarget target) {
@@ -148,6 +156,31 @@ public class BeanDeployment {
             bindings.put(binding.target().asClass().name(), binding.target().asClass());
         }
         return bindings;
+    }
+
+    static Map<DotName, StereotypeInfo> findStereotypes(IndexView index, Map<DotName, ClassInfo> interceptorBindings) {
+        Map<DotName, StereotypeInfo> stereotypes = new HashMap<>();
+        for (AnnotationInstance stereotype : index.getAnnotations(DotNames.STEREOTYPE)) {
+            ClassInfo stereotypeClass = index.getClassByName(stereotype.target().asClass().name());
+            if (stereotypeClass != null) {
+
+                boolean isAlternative = false;
+                ScopeInfo scope = null;
+                List<AnnotationInstance> bindings = new ArrayList<>();
+
+                for (AnnotationInstance annotation : stereotypeClass.classAnnotations()) {
+                    if (annotation.name().equals(DotNames.ALTERNATIVE)) {
+                        isAlternative = true;
+                    } else if (interceptorBindings.containsKey(annotation.name())) {
+                        bindings.add(annotation);
+                    } else if (scope == null) {
+                        scope = ScopeInfo.from(annotation.name());
+                    }
+                }
+                stereotypes.put(stereotype.target().asClass().name(), new StereotypeInfo(scope, bindings, isAlternative, stereotypeClass));
+            }
+        }
+        return stereotypes;
     }
 
     private List<BeanInfo> findBeans(List<DotName> beanDefiningAnnotations, List<ObserverInfo> observers) {
@@ -293,7 +326,7 @@ public class BeanDeployment {
         return interceptors;
     }
 
-    private List<DotName> initBeanDefiningAnnotations(Collection<DotName> additionalBeanDefiningAnnotationss) {
+    private List<DotName> initBeanDefiningAnnotations(Collection<DotName> additionalBeanDefiningAnnotationss, Map<DotName, StereotypeInfo> stereotypes) {
         List<DotName> beanDefiningAnnotations = new ArrayList<>();
         for (ScopeInfo scope : ScopeInfo.values()) {
             beanDefiningAnnotations.add(scope.getDotName());
@@ -301,6 +334,8 @@ public class BeanDeployment {
         if (additionalBeanDefiningAnnotationss != null) {
             beanDefiningAnnotations.addAll(additionalBeanDefiningAnnotationss);
         }
+        beanDefiningAnnotations.addAll(stereotypes.keySet());
+        beanDefiningAnnotations.add(DotName.createSimple(Model.class.getName()));
         return beanDefiningAnnotations;
     }
 

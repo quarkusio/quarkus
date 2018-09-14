@@ -3,10 +3,12 @@ package org.jboss.protean.arc.processor;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
@@ -166,6 +168,20 @@ final class Types {
                             resolvedTypeParameters);
                 }
                 types.addAll(getTypeClosure(superClassInfo, resolved, beanDeployment));
+            }
+        }
+
+        // Bean types restriction
+        AnnotationInstance typed = classInfo.classAnnotations().stream().filter(a -> a.name().equals(DotNames.TYPED)).findFirst().orElse(null);
+        if (typed != null) {
+            Set<DotName> typedClasses = new HashSet<>();
+            for (Type type : typed.value().asClassArray()) {
+                typedClasses.add(type.name());
+            }
+            for (Iterator<Type> iterator = types.iterator(); iterator.hasNext();) {
+                if (!typedClasses.contains(iterator.next().name())) {
+                    iterator.remove();
+                }
             }
         }
         return types;

@@ -17,7 +17,6 @@ import javax.inject.Singleton;
 
 import org.jboss.protean.arc.Arc;
 import org.jboss.protean.arc.test.ArcTestContainer;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 

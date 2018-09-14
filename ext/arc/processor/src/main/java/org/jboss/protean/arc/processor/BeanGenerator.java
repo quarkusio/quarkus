@@ -95,7 +95,8 @@ public class BeanGenerator extends AbstractGenerator {
         throw new IllegalArgumentException("Unsupported bean type");
     }
 
-    Collection<Resource> generateClassBean(BeanInfo bean, ClassInfo beanClass, AnnotationLiteralProcessor annotationLiterals, ReflectionRegistration reflectionRegistration) {
+    Collection<Resource> generateClassBean(BeanInfo bean, ClassInfo beanClass, AnnotationLiteralProcessor annotationLiterals,
+            ReflectionRegistration reflectionRegistration) {
 
         String baseName;
         if (beanClass.enclosingClass() != null) {
@@ -152,7 +153,8 @@ public class BeanGenerator extends AbstractGenerator {
         return classOutput.getResources();
     }
 
-    Collection<Resource> generateProducerMethodBean(BeanInfo bean, MethodInfo producerMethod, AnnotationLiteralProcessor annotationLiterals, ReflectionRegistration reflectionRegistration) {
+    Collection<Resource> generateProducerMethodBean(BeanInfo bean, MethodInfo producerMethod, AnnotationLiteralProcessor annotationLiterals,
+            ReflectionRegistration reflectionRegistration) {
 
         ClassInfo declaringClass = producerMethod.declaringClass();
         String declaringClassBase;
@@ -210,7 +212,8 @@ public class BeanGenerator extends AbstractGenerator {
         return classOutput.getResources();
     }
 
-    Collection<Resource> generateProducerFieldBean(BeanInfo bean, FieldInfo producerField, AnnotationLiteralProcessor annotationLiterals, ReflectionRegistration reflectionRegistration) {
+    Collection<Resource> generateProducerFieldBean(BeanInfo bean, FieldInfo producerField, AnnotationLiteralProcessor annotationLiterals,
+            ReflectionRegistration reflectionRegistration) {
 
         ClassInfo declaringClass = producerField.declaringClass();
         String declaringClassBase;
@@ -246,7 +249,6 @@ public class BeanGenerator extends AbstractGenerator {
         createConstructor(classOutput, beanCreator, bean, baseName, Collections.emptyMap(), Collections.emptyMap(), annotationLiterals);
 
         if (!bean.hasDefaultDestroy()) {
-            // FIXME!!!
             createDestroy(bean, beanCreator, providerTypeName, null, reflectionRegistration);
         }
         createCreate(beanCreator, bean, providerTypeName, baseName, Collections.emptyMap(), Collections.emptyMap(), reflectionRegistration);
@@ -455,12 +457,22 @@ public class BeanGenerator extends AbstractGenerator {
                 destroy.invokeInterfaceMethod(MethodDescriptor.ofMethod(Subclass.class, "destroy", void.class), destroy.getMethodParam(0));
             }
 
-            // TODO callbacks may be defined on superclasses
-            Optional<MethodInfo> preDestroy = bean.getTarget().asClass().methods().stream().filter(m -> m.hasAnnotation(DotNames.PRE_DESTROY)).findFirst();
-            if (preDestroy.isPresent()) {
-                // instance.superCoolDestroyCallback()
-                destroy.invokeVirtualMethod(MethodDescriptor.of(preDestroy.get()), destroy.getMethodParam(0));
+            // PreDestroy callbacks
+            List<MethodInfo> preDestroyCallbacks = Beans.getCallbacks(bean.getTarget().asClass(), DotNames.PRE_DESTROY, bean.getDeployment().getIndex());
+            for (MethodInfo callback : preDestroyCallbacks) {
+                if (Modifier.isPrivate(callback.flags())) {
+                    LOGGER.infof("PreDestroy callback %s#%s is private - Arc users are encouraged to avoid using private callbacks",
+                            callback.declaringClass().name(), callback.name());
+                    reflectionRegistration.registerMethod(callback);
+                    destroy.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD, destroy.loadClass(callback.declaringClass().name().toString()),
+                            destroy.load(callback.name()), destroy.newArray(Class.class, destroy.load(0)), destroy.getMethodParam(0),
+                            destroy.newArray(Object.class, destroy.load(0)));
+                } else {
+                    // instance.superCoolDestroyCallback()
+                    destroy.invokeVirtualMethod(MethodDescriptor.of(callback), destroy.getMethodParam(0));
+                }
             }
+
         } else if (bean.getDisposer() != null) {
             // Invoke the disposer method
             // declaringProvider.get(new CreationalContextImpl<>()).dispose()
@@ -537,7 +549,8 @@ public class BeanGenerator extends AbstractGenerator {
      * @see Contextual#create(CreationalContext)
      */
     protected void createCreate(ClassCreator beanCreator, BeanInfo bean, String providerTypeName, String baseName,
-            Map<InjectionPointInfo, String> injectionPointToProviderField, Map<InterceptorInfo, String> interceptorToProviderField, ReflectionRegistration reflectionRegistration) {
+            Map<InjectionPointInfo, String> injectionPointToProviderField, Map<InterceptorInfo, String> interceptorToProviderField,
+            ReflectionRegistration reflectionRegistration) {
 
         MethodCreator create = beanCreator.getMethodCreator("create", providerTypeName, CreationalContext.class).setModifiers(ACC_PUBLIC);
         ResultHandle instanceHandle = null;
@@ -632,7 +645,8 @@ public class BeanGenerator extends AbstractGenerator {
                 // Supplier<Object> forward = () -> new SimpleBean_Subclass(ctx,lifecycleInterceptorProvider1)
                 FunctionCreator func = create.createFunction(Supplier.class);
                 BytecodeCreator funcBytecode = func.getBytecode();
-                ResultHandle retHandle = newInstanceHandle(bean, beanCreator, funcBytecode, create, providerTypeName, baseName, providerHandles, reflectionRegistration);
+                ResultHandle retHandle = newInstanceHandle(bean, beanCreator, funcBytecode, create, providerTypeName, baseName, providerHandles,
+                        reflectionRegistration);
                 funcBytecode.returnValue(retHandle);
 
                 // InvocationContextImpl.aroundConstruct(constructor,aroundConstructs,forward).proceed()
@@ -650,7 +664,8 @@ public class BeanGenerator extends AbstractGenerator {
 
             } else {
                 instanceHandle = newInstanceHandle(bean, beanCreator, create, create, providerTypeName, baseName,
-                        newProviderHandles(bean, beanCreator, create, injectionPointToProviderField, interceptorToProviderField, interceptorToWrap), reflectionRegistration);
+                        newProviderHandles(bean, beanCreator, create, injectionPointToProviderField, interceptorToProviderField, interceptorToWrap),
+                        reflectionRegistration);
             }
 
             // Perform field and initializer injections
@@ -702,12 +717,21 @@ public class BeanGenerator extends AbstractGenerator {
                 tryCatch.complete();
             }
 
-            // TODO callbacks may be defined on superclasses
+            // PostConstruct callbacks
             if (!bean.isInterceptor()) {
-                Optional<MethodInfo> postConstruct = bean.getTarget().asClass().methods().stream().filter(m -> m.hasAnnotation(DotNames.POST_CONSTRUCT))
-                        .findFirst();
-                if (postConstruct.isPresent()) {
-                    create.invokeVirtualMethod(MethodDescriptor.ofMethod(providerTypeName, postConstruct.get().name(), void.class), instanceHandle);
+                List<MethodInfo> postConstructCallbacks = Beans.getCallbacks(bean.getTarget().asClass(), DotNames.POST_CONSTRUCT,
+                        bean.getDeployment().getIndex());
+                for (MethodInfo callback : postConstructCallbacks) {
+                    if (Modifier.isPrivate(callback.flags())) {
+                        LOGGER.infof("PostConstruct callback %s#%s is private - Arc users are encouraged to avoid using private callbacks",
+                                callback.declaringClass().name(), callback.name());
+                        reflectionRegistration.registerMethod(callback);
+                        create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD, create.loadClass(callback.declaringClass().name().toString()),
+                                create.load(callback.name()), create.newArray(Class.class, create.load(0)), instanceHandle,
+                                create.newArray(Object.class, create.load(0)));
+                    } else {
+                        create.invokeVirtualMethod(MethodDescriptor.of(callback), instanceHandle);
+                    }
                 }
             }
 

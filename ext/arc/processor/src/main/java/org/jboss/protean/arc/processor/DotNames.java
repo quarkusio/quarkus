@@ -11,6 +11,8 @@ import javax.enterprise.inject.Default;
 import javax.enterprise.inject.Disposes;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.Produces;
+import javax.enterprise.inject.Stereotype;
+import javax.enterprise.inject.Typed;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.EventMetadata;
@@ -50,6 +52,8 @@ final class DotNames {
     static final DotName EVENT = DotName.createSimple(Event.class.getName());
     static final DotName EVENT_METADATA = DotName.createSimple(EventMetadata.class.getName());
     static final DotName ALTERNATIVE = DotName.createSimple(Alternative.class.getName());
+    static final DotName STEREOTYPE = DotName.createSimple(Stereotype.class.getName());
+    static final DotName TYPED = DotName.createSimple(Typed.class.getName());
 
     private DotNames() {
     }

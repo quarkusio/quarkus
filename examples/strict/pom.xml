@@ -144,6 +144,38 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <version></version>
+                <configuration>
+                    <images>
+                        <image>
+                            <name>postgres:10.5</name>
+                            <alias>postgresql</alias>
+                            <run>
+                                <env>
+                                    <POSTGRES_USER>hibernate_orm_test</POSTGRES_USER>
+                                    <POSTGRES_PASSWORD>hibernate_orm_test</POSTGRES_PASSWORD>
+                                    <POSTGRES_DB>hibernate_orm_test</POSTGRES_DB>
+                                </env>
+                                <ports>
+                                    <port>5432:5432</port>
+                                </ports>
+                                <wait>
+                                    <tcp>
+                                        <mode>mapped</mode>
+                                        <ports>
+                                            <port>5432</port>
+                                        </ports>
+                                    </tcp>
+                                    <time>10000</time>
+                                </wait>
+                            </run>
+                        </image>
+                    </images>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 

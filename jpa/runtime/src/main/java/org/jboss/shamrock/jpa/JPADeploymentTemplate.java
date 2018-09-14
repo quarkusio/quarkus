@@ -1,5 +1,7 @@
 package org.jboss.shamrock.jpa;
 
+import org.hibernate.protean.Hibernate;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,5 +17,9 @@ public class JPADeploymentTemplate {
 
     public void enlistPersistenceUnit() {
         System.out.println("List of entities \n" + entities.toString());
+    }
+
+    public void callHibernateFeatureInit() {
+        Hibernate.featureInit();
     }
 }

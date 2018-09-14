@@ -13,7 +13,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.hibernate.demos</groupId>
+            <groupId>org.hibernate.protean</groupId>
             <artifactId>hibernate-orm-protean</artifactId>
             <version>1.0.0-SNAPSHOT</version>
         </dependency>

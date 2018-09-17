@@ -4,10 +4,11 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
+import java.util.Set;
 
 /**
  * This code was mainly copied from Weld codebase.
- * 
+ *
  * This class implements Section 10.3.1 of the CDI specification.
  *
  * @author Jozef Hartinger
@@ -16,6 +17,15 @@ import java.lang.reflect.WildcardType;
 final class EventTypeAssignabilityRules {
 
     private EventTypeAssignabilityRules() {
+    }
+
+    static boolean matches(Type observedType, Set<? extends Type> eventTypes) {
+        for (Type eventType : eventTypes) {
+            if (matches(observedType, eventType)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     static boolean matches(Type observedType, Type eventType) {

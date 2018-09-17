@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -25,34 +26,53 @@ public class ParameterizedPayloadTest {
     public ArcTestContainer container = new ArcTestContainer(ListObserver.class, ListProducer.class);
 
     @Test
-    public void testObserver() {
+    public void testObservers() {
         ListProducer producer = Arc.container().instance(ListProducer.class).get();
         ListObserver observer = Arc.container().instance(ListObserver.class).get();
         List<Integer> intList = new ArrayList<>();
         intList.add(1);
-        producer.produce(intList);
-        List<? extends Number> observed = observer.getList();
-        assertNotNull(observed);
-        assertEquals(1, observed.size());
-        assertEquals(1, observed.get(0));
+        producer.produceInt(intList);
+        List<? extends Number> observedInt = observer.getIntList();
+        assertNotNull(observedInt);
+        assertEquals(1, observedInt.size());
+        assertEquals(1, observedInt.get(0));
+
+        List<String> strList = new ArrayList<>();
+        strList.add("ping");
+        producer.produceStr(strList);
+        List<String> observedStr = observer.getStrList();
+        assertNotNull(observedStr);
+        assertEquals(1, observedStr.size());
+        assertEquals("ping", observedStr.get(0));
     }
 
     @Singleton
     static class ListObserver {
 
-        private AtomicReference<List<? extends Number>> list;
+        private AtomicReference<List<? extends Number>> intList;
+
+        private AtomicReference<List<String>> strList;
 
         @PostConstruct
         void init() {
-            list = new AtomicReference<>();
+            intList = new AtomicReference<>();
+            strList = new AtomicReference<>();
         }
 
         <T extends List<? extends Number>> void observeIntList(@Observes T value) {
-            list.set(value);
+            intList.set(value);
         }
 
-        List<? extends Number> getList() {
-            return list.get();
+        List<? extends Number> getIntList() {
+            return intList.get();
+        }
+
+        void observeStrList(@Observes List<String> value) {
+            strList.set(value);
+        }
+
+        List<String> getStrList() {
+            return strList.get();
         }
 
     }
@@ -61,10 +81,17 @@ public class ParameterizedPayloadTest {
     static class ListProducer {
 
         @Inject
-        Event<List<Integer>> event;
+        Event<List<Integer>> intEvent;
 
-        void produce(List<Integer> value) {
-            event.fire(value);
+        @Inject
+        Event<Collection<String>> strEvent;
+
+        void produceInt(List<Integer> value) {
+            intEvent.fire(value);
+        }
+
+        void produceStr(Collection<String> value) {
+            strEvent.fire(value);
         }
 
     }

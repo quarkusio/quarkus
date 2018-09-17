@@ -166,9 +166,10 @@ class ArcContainerImpl implements ArcContainer {
         if (observers.isEmpty()) {
             return Collections.emptyList();
         }
+        Set<Type> eventTypes = new HierarchyDiscovery(eventType).getTypeClosure();
         List<InjectableObserverMethod<? super T>> resolvedObservers = new ArrayList<>();
         for (InjectableObserverMethod<?> observer : observers) {
-            if (EventTypeAssignabilityRules.matches(observer.getObservedType(), eventType)) {
+            if (EventTypeAssignabilityRules.matches(observer.getObservedType(), eventTypes)) {
                 if (observer.getObservedQualifiers().isEmpty() || Qualifiers.isSubset(observer.getObservedQualifiers(), eventQualifiers)) {
                     resolvedObservers.add((InjectableObserverMethod<? super T>) observer);
                 }

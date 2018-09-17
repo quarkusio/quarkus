@@ -9,6 +9,7 @@ import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
 
 /**
+ * Represents an injectable bean. It is an alternative to {@link javax.enterprise.inject.spi.Bean}.
  *
  * @author Martin Kouba
  *
@@ -44,7 +45,7 @@ public interface InjectableBean<T> extends Contextual<T>, InjectableReferencePro
     }
 
     /**
-     * 
+     *
      * @return the declaring bean if the bean is a producer method/field, or {@code null}
      */
     default InjectableBean<?> getDeclaringBean() {
@@ -52,7 +53,7 @@ public interface InjectableBean<T> extends Contextual<T>, InjectableReferencePro
     }
 
     /**
-     * 
+     *
      * @return the priority if the bean is an alternative, or {@code null}
      */
     default Integer getAlternativePriority() {

@@ -15,7 +15,7 @@
   <dependencies>
 
     <dependency>
-     <groupId>org.jboss.protean.arc</groupId>
+      <groupId>org.jboss.protean.arc</groupId>
       <artifactId>arc-runtime</artifactId>
     </dependency>
 

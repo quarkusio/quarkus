@@ -20,7 +20,7 @@ import javax.enterprise.inject.spi.ObserverMethod;
 import javax.enterprise.util.TypeLiteral;
 
 /**
- * 
+ *
  * @author Martin Kouba
  *
  * @param <T>
@@ -79,23 +79,14 @@ class EventImpl<T> implements Event<T> {
 
     private Notifier<? super T> createNotifier(Class<?> runtimeType) {
         Type eventType = getEventType(runtimeType);
-        EventMetadata metadata = new EventMetadataImpl(qualifiers, eventType);
-        List<ObserverMethod<? super T>> notifierObserverMethods = new ArrayList<>();
-        for (ObserverMethod<? super T> observerMethod : ArcContainerImpl.unwrap(Arc.container()).resolveObservers(eventType, qualifiers)) {
-            if (EventTypeAssignabilityRules.matches(observerMethod.getObservedType(), eventType)) {
-                notifierObserverMethods.add(observerMethod);
-            }
-        }
-        return new Notifier<>(notifierObserverMethods, metadata);
+        return createNotifier(eventType, qualifiers, ArcContainerImpl.unwrap(Arc.container()));
     }
-    
+
     static <T> Notifier<T> createNotifier(Type eventType, Set<Annotation> qualifiers, ArcContainerImpl container) {
         EventMetadata metadata = new EventMetadataImpl(qualifiers, eventType);
         List<ObserverMethod<? super T>> notifierObserverMethods = new ArrayList<>();
         for (ObserverMethod<? super T> observerMethod : container.resolveObservers(eventType, qualifiers)) {
-            if (EventTypeAssignabilityRules.matches(observerMethod.getObservedType(), eventType)) {
-                notifierObserverMethods.add(observerMethod);
-            }
+            notifierObserverMethods.add(observerMethod);
         }
         return new Notifier<>(notifierObserverMethods, metadata);
     }

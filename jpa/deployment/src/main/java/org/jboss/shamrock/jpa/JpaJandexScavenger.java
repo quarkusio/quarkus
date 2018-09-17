@@ -64,6 +64,7 @@ final class JpaJandexScavenger {
             JPADeploymentTemplate template = context.getRecordingProxy(JPADeploymentTemplate.class);
             collector.dumpAllToJPATemplate(template);
             template.enlistPersistenceUnit();
+            template.callHibernateFeatureInit();
         }
 
         return collector;

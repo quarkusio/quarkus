@@ -2,6 +2,7 @@ package org.jboss.shamrock.jpa;
 
 import java.util.Objects;
 
+import org.hibernate.tuple.component.PojoComponentTuplizer;
 import org.jboss.shamrock.deployment.ProcessorContext;
 
 /**
@@ -29,6 +30,7 @@ final class HibernateReflectiveNeeds {
     private void registerAll() {
         //Various well known needs:
         simpleConstructor(org.hibernate.tuple.entity.PojoEntityTuplizer.class);
+        allConstructors(org.hibernate.tuple.component.PojoComponentTuplizer.class);
         simpleConstructor(org.hibernate.persister.entity.SingleTableEntityPersister.class);
         simpleConstructor(org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorBuilderImpl.class);
         simpleConstructor(org.hibernate.id.enhanced.SequenceStyleGenerator.class);
@@ -51,6 +53,11 @@ final class HibernateReflectiveNeeds {
         //PostgreSQL specific (move to its own home?) FIXME
         simpleConstructor(org.hibernate.dialect.PostgreSQL95Dialect.class);
         simpleConstructor("org.postgresql.Driver");
+    }
+
+    private void allConstructors(final Class clazz) {
+        //FIXME simpleConstructor is not optimized yet to only enlist the no-arg constructor
+        simpleConstructor(clazz);
     }
 
     /**

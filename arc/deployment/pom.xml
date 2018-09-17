@@ -24,6 +24,12 @@
     <dependency>
       <groupId>org.jboss.protean.arc</groupId>
       <artifactId>arc-processor</artifactId>
+      <exclusions>
+          <exclusion>
+            <groupId>javax.annotation</groupId>
+            <artifactId>javax.annotation-api</artifactId>
+          </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
 

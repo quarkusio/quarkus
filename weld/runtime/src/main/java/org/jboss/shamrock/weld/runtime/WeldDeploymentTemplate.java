@@ -135,8 +135,17 @@ public class WeldDeploymentTemplate {
         return new BeanContainer() {
 
             @Override
-            public <T> T instance(Class<T> type, Annotation... qualifiers) {
-                return container.select(type, qualifiers).get();
+            public <T> Factory<T> instanceFactory(Class<T> type, Annotation... qualifiers) {
+                Instance<T> inst = container.select(type, qualifiers);
+                if(!inst.isResolvable()) {
+                    return null;
+                }
+                return new Factory<T>() {
+                    @Override
+                    public T get() {
+                        return inst.get();
+                    }
+                };
             }
         };
     }

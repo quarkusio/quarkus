@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.CountDownLatch;
 
+import org.jboss.shamrock.deployment.ArchiveContextBuilder;
 import org.jboss.shamrock.runtime.Timing;
 
 /**
@@ -40,8 +41,9 @@ public class RunMojoMain {
             try {
                 Thread.currentThread().setContextClassLoader(runtimeCl);
                 Class<?> runnerClass = runtimeCl.loadClass("org.jboss.shamrock.runner.RuntimeRunner");
-                Constructor ctor = runnerClass.getDeclaredConstructor( ClassLoader.class, Path.class, Path.class);
-                Object runner = ctor.newInstance( runtimeCl, classesRoot.toPath(), wiringDir.toPath());
+                ArchiveContextBuilder acb = new ArchiveContextBuilder();
+                Constructor ctor = runnerClass.getDeclaredConstructor( ClassLoader.class, Path.class, Path.class, ArchiveContextBuilder.class);
+                Object runner = ctor.newInstance( runtimeCl, classesRoot.toPath(), wiringDir.toPath(), acb);
                 ((Runnable) runner).run();
                 synchronized (RunMojoMain.class) {
                     if (awaitRestartLatch != null) {

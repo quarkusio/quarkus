@@ -1,0 +1,23 @@
+target
+*.iml
+.idea
+
+# Eclipse
+.settings
+.classpath
+.project
+
+.DS_Store
+
+#Custom:
+com.example.Main
+com.example.Main.debug
+cp.txt
+*.log
+reports
+sources
+
+#jdeps:
+classdef.jsa
+classdef.lst
+report.out

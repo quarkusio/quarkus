@@ -1,0 +1,86 @@
+[
+   {
+      "name" : "com.sun.xml.internal.stream.events.XMLEventFactoryImpl",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.boot.model.naming.ImplicitNamingStrategyJpaCompliantImpl",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.id.enhanced.SequenceStyleGenerator",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.dialect.PostgreSQL95Dialect",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.hql.internal.ast.HqlToken",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.hql.internal.ast.tree.Node",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.hql.internal.ast.tree.QueryNode",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.hql.internal.ast.tree.SqlNode",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.hql.internal.ast.tree.FromClause",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.hql.internal.ast.tree.DotNode",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.hql.internal.ast.tree.IdentNode",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.hql.internal.ast.tree.FromElement",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.hql.internal.ast.tree.SelectClause",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.hql.internal.ast.tree.SqlFragment",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.postgresql.Driver",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorBuilderImpl",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.persister.entity.SingleTableEntityPersister",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "org.hibernate.tuple.entity.PojoEntityTuplizer",
+      "allPublicConstructors" : true
+   },
+   {
+      "name" : "com.example.Person",
+      "allPublicConstructors" : true,
+      "allDeclaredMethods" : true,
+      "allPublicMethods" : true
+   },
+   {
+      "name" : "com.example.Address",
+      "allPublicConstructors" : true,
+      "allDeclaredMethods" : true,
+      "allPublicMethods" : true
+   }
+]

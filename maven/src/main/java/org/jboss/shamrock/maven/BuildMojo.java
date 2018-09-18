@@ -1,6 +1,7 @@
 package org.jboss.shamrock.maven;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -14,8 +15,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -23,6 +26,7 @@ import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.maven.artifact.Artifact;
@@ -79,6 +83,9 @@ public class BuildMojo extends AbstractMojo {
     @Parameter(defaultValue = "true")
     private boolean useStaticInit;
 
+    @Parameter(defaultValue = "false")
+    private boolean uberJar;
+
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -127,69 +134,94 @@ public class BuildMojo extends AbstractMojo {
                 //TODO: add a config option to just log an error instead
                 throw new MojoFailureException(problems.toString());
             }
+            Set<String> seen = new HashSet<>();
+            try (ZipOutputStream runner = new ZipOutputStream(new FileOutputStream(new File(buildDir, finalName + "-runner.jar")))) {
+                Map<String, List<byte[]>> services = new HashMap<>();
 
-            for (Artifact a : project.getArtifacts()) {
-                if (a.getScope().equals(PROVIDED) && !whitelist.contains(a.getDependencyConflictId())) {
-                    continue;
-                }
-                try (FileInputStream in = new FileInputStream(a.getFile())) {
-                    File file = new File(libDir, a.getFile().getName());
-                    try (FileOutputStream out = new FileOutputStream(file)) {
-                        int r;
-                        while ((r = in.read(buffer)) > 0) {
-                            out.write(buffer, 0, r);
+
+
+                for (Artifact a : project.getArtifacts()) {
+                    if (a.getScope().equals(PROVIDED) && !whitelist.contains(a.getDependencyConflictId())) {
+                        continue;
+                    }
+                    if (uberJar) {
+                        try (ZipInputStream in = new ZipInputStream(new FileInputStream(a.getFile()))) {
+                            for (ZipEntry e = in.getNextEntry(); e != null; e = in.getNextEntry()) {
+                                if (e.getName().startsWith("META-INF/services")) {
+                                    services.computeIfAbsent(e.getName(), (u) -> new ArrayList<>()).add(read(in));
+                                    continue;
+                                } else if(e.getName().equals("META-INF/MANIFEST.MF")) {
+                                    continue;
+                                }
+                                if (seen.contains(e.getName())) {
+                                    if (!e.getName().endsWith("/")) {
+                                        getLog().warn("Duplicate entry " + e.getName() + " entry from " + a + " will be ignored");
+                                    }
+                                    continue;
+                                }
+                                seen.add(e.getName());
+                                runner.putNextEntry(new ZipEntry(e.getName()));
+                                doCopy(runner, in);
+                            }
+                        }
+                    } else {
+                        try (FileInputStream in = new FileInputStream(a.getFile())) {
+                            File file = new File(libDir, a.getFile().getName());
+                            try (FileOutputStream out = new FileOutputStream(file)) {
+                                int r;
+                                while ((r = in.read(buffer)) > 0) {
+                                    out.write(buffer, 0, r);
+                                }
+                            }
+                            classPath.append(" lib/" + file.getName());
                         }
                     }
-                    classPath.append(" lib/" + file.getName());
                 }
-            }
 
-            List<ResolvedArtifact> artifactList = new ArrayList<>();
-            List<URL> classPathUrls = new ArrayList<>();
-            for (Artifact artifact : project.getArtifacts()) {
-                classPathUrls.add(artifact.getFile().toURL());
-                artifactList.add(new ResolvedArtifact(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(), artifact.getClassifier(), Paths.get(artifact.getFile().getAbsolutePath())));
-            }
+                List<ResolvedArtifact> artifactList = new ArrayList<>();
+                List<URL> classPathUrls = new ArrayList<>();
+                for (Artifact artifact : project.getArtifacts()) {
+                    classPathUrls.add(artifact.getFile().toURL());
+                    artifactList.add(new ResolvedArtifact(artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(), artifact.getClassifier(), Paths.get(artifact.getFile().getAbsolutePath())));
+                }
 
-            //we need to make sure all the deployment artifacts are on the class path
-            //to do this we need to create a new class loader to actually use for the runner
-            List<URL> cpCopy = new ArrayList<>();
+                //we need to make sure all the deployment artifacts are on the class path
+                //to do this we need to create a new class loader to actually use for the runner
+                List<URL> cpCopy = new ArrayList<>();
 
-            cpCopy.add(outputDirectory.toURL());
-            cpCopy.addAll(classPathUrls);
+                cpCopy.add(outputDirectory.toURL());
+                cpCopy.addAll(classPathUrls);
 
-            URLClassLoader runnerClassLoader = new URLClassLoader(cpCopy.toArray(new URL[0]), getClass().getClassLoader());
-            BuildTimeGenerator buildTimeGenerator = new BuildTimeGenerator(new ClassOutput() {
-                @Override
-                public void writeClass(boolean applicationClass, String className, byte[] data) throws IOException {
-                    String location = className.replace('.', '/');
-                    File file = new File(wiringClassesDirectory, location + ".class");
-                    file.getParentFile().mkdirs();
-                    try (FileOutputStream out = new FileOutputStream(file)) {
-                        out.write(data);
+                URLClassLoader runnerClassLoader = new URLClassLoader(cpCopy.toArray(new URL[0]), getClass().getClassLoader());
+                BuildTimeGenerator buildTimeGenerator = new BuildTimeGenerator(new ClassOutput() {
+                    @Override
+                    public void writeClass(boolean applicationClass, String className, byte[] data) throws IOException {
+                        String location = className.replace('.', '/');
+                        File file = new File(wiringClassesDirectory, location + ".class");
+                        file.getParentFile().mkdirs();
+                        try (FileOutputStream out = new FileOutputStream(file)) {
+                            out.write(data);
+                        }
                     }
-                }
 
-                @Override
-                public void writeResource(String name, byte[] data) throws IOException {
-                    File file = new File(wiringClassesDirectory, name);
-                    file.getParentFile().mkdirs();
-                    try (FileOutputStream out = new FileOutputStream(file)) {
-                        out.write(data);
+                    @Override
+                    public void writeResource(String name, byte[] data) throws IOException {
+                        File file = new File(wiringClassesDirectory, name);
+                        file.getParentFile().mkdirs();
+                        try (FileOutputStream out = new FileOutputStream(file)) {
+                            out.write(data);
+                        }
                     }
+
+                }, runnerClassLoader, useStaticInit, new ArchiveContextBuilder());
+                ClassLoader old = Thread.currentThread().getContextClassLoader();
+                try {
+                    Thread.currentThread().setContextClassLoader(runnerClassLoader);
+
+                    buildTimeGenerator.run(outputDirectory.toPath());
+                } finally {
+                    Thread.currentThread().setContextClassLoader(old);
                 }
-
-            }, runnerClassLoader, useStaticInit, new ArchiveContextBuilder());
-            ClassLoader old = Thread.currentThread().getContextClassLoader();
-            try {
-                Thread.currentThread().setContextClassLoader(runnerClassLoader);
-
-                buildTimeGenerator.run(outputDirectory.toPath());
-            } finally {
-                Thread.currentThread().setContextClassLoader(old);
-            }
-
-            try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(new File(buildDir, finalName + "-runner.jar")))) {
                 Path wiringJar = Paths.get(wiringClassesDirectory.getAbsolutePath());
                 Files.walk(wiringJar).forEach(new Consumer<Path>() {
                     @Override
@@ -197,13 +229,23 @@ public class BuildMojo extends AbstractMojo {
                         try {
                             String pathName = wiringJar.relativize(path).toString();
                             if (Files.isDirectory(path)) {
+                                String p = pathName + "/";
+                                if(seen.contains(p)) {
+                                    return;
+                                }
+                                seen.add(p);
                                 if (!pathName.isEmpty()) {
-                                    out.putNextEntry(new ZipEntry(pathName + "/"));
+                                    runner.putNextEntry(new ZipEntry(p));
+                                }
+                            } else if (pathName.startsWith("META-INF/services")) {
+                                try (FileInputStream in = new FileInputStream(path.toFile())) {
+                                    services.computeIfAbsent(pathName, (u) -> new ArrayList<>()).add(read(in));
                                 }
                             } else {
-                                out.putNextEntry(new ZipEntry(pathName));
+                                seen.add(pathName);
+                                runner.putNextEntry(new ZipEntry(pathName));
                                 try (FileInputStream in = new FileInputStream(path.toFile())) {
-                                    doCopy(out, in);
+                                    doCopy(runner, in);
                                 }
                             }
                         } catch (Exception e) {
@@ -211,12 +253,13 @@ public class BuildMojo extends AbstractMojo {
                         }
                     }
                 });
+
                 Manifest manifest = new Manifest();
                 manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
                 manifest.getMainAttributes().put(Attributes.Name.CLASS_PATH, classPath.toString());
                 manifest.getMainAttributes().put(Attributes.Name.MAIN_CLASS, mainClass);
-                out.putNextEntry(new ZipEntry("META-INF/MANIFEST.MF"));
-                manifest.write(out);
+                runner.putNextEntry(new ZipEntry("META-INF/MANIFEST.MF"));
+                manifest.write(runner);
                 //now copy all the contents to the runner jar
                 //I am not 100% sure about this idea, but if we are going to support bytecode transforms it seems
                 //like the cleanest way to do it
@@ -239,11 +282,11 @@ public class BuildMojo extends AbstractMojo {
                                     if (visitor != null) {
                                         visitors.add(visitor);
                                     }
-                                  }
-                                out.putNextEntry(new ZipEntry(pathName));
+                                }
+                                runner.putNextEntry(new ZipEntry(pathName));
                                 if (visitors.isEmpty()) {
                                     try (FileInputStream in = new FileInputStream(path.toFile())) {
-                                        doCopy(out, in);
+                                        doCopy(runner, in);
                                     }
                                 } else {
                                     try (InputStream in = new FileInputStream(path.toFile())) {
@@ -254,13 +297,13 @@ public class BuildMojo extends AbstractMojo {
                                             visitor = i.apply(visitor);
                                         }
                                         cr.accept(visitor, 0);
-                                        out.write(writer.toByteArray());
+                                        runner.write(writer.toByteArray());
                                     }
                                 }
                             } else {
-                                out.putNextEntry(new ZipEntry(pathName));
+                                runner.putNextEntry(new ZipEntry(pathName));
                                 try (FileInputStream in = new FileInputStream(path.toFile())) {
-                                    doCopy(out, in);
+                                    doCopy(runner, in);
                                 }
                             }
                         } catch (Exception e) {
@@ -268,6 +311,13 @@ public class BuildMojo extends AbstractMojo {
                         }
                     }
                 });
+                for (Map.Entry<String, List<byte[]>> entry : services.entrySet()) {
+                    runner.putNextEntry(new ZipEntry(entry.getKey()));
+                    for (byte[] i : entry.getValue()) {
+                        runner.write(i);
+                        runner.write('\n');
+                    }
+                }
             }
 
 
@@ -282,5 +332,15 @@ public class BuildMojo extends AbstractMojo {
         while ((r = in.read(buffer)) > 0) {
             out.write(buffer, 0, r);
         }
+    }
+
+    private static byte[] read(InputStream in) throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        byte[] buffer = new byte[1024];
+        int r;
+        while ((r = in.read(buffer)) > 0) {
+            out.write(buffer, 0, r);
+        }
+        return out.toByteArray();
     }
 }

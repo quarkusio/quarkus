@@ -76,6 +76,7 @@
                             <goal>build</goal>
                         </goals>
                         <configuration>
+                            <uberJar>true</uberJar>
                             <mainClass>org.jboss.shamrock.example.CustomMain</mainClass>
                         </configuration>
                     </execution>

@@ -1,5 +1,6 @@
 package org.jboss.shamrock.example.jpa;
 
+import javax.inject.Inject;
 import javax.persistence.*;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -22,6 +23,9 @@ import java.util.UUID;
 @WebServlet(name = "JPATestBootstrapEndpoint", urlPatterns = "/jpa/testbootstrap")
 public class JPATestBootstrapEndpoint extends HttpServlet {
 
+    @Inject
+    private EntityManagerFactory entityManagerFactory;
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
@@ -37,12 +41,7 @@ public class JPATestBootstrapEndpoint extends HttpServlet {
 
 
     public void testStoreLoadOnJPA() throws Exception {
-        EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory( "templatePU" );
-        System.out.println( "Hibernate EntityManagerFactory: booted" );
-
         doStuffWithHibernate( entityManagerFactory );
-
-        entityManagerFactory.close();
         System.out.println( "Hibernate EntityManagerFactory: shut down" );
 
     }

@@ -27,6 +27,9 @@ public final class HibernateResourceProcessor implements ResourceProcessor {
         //Modify the bytecode of all entities to enable lazy-loading, dirty checking, etc..
         enhanceEntities(domainObjects, archiveContext, processorContext);
 
+
+
+
     }
 
     private void enhanceEntities(final KnownDomainObjects domainObjects, ArchiveContext archiveContext, ProcessorContext processorContext) {

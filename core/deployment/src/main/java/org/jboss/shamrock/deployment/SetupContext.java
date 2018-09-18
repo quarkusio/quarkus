@@ -24,4 +24,10 @@ public interface SetupContext {
      * @param file The file location
      */
     void addApplicationArchiveMarker(String file);
+
+    /**
+     * Registers a capability name as being present, this can be queried via {@link ProcessorContext#isCapabilityPresent(String)}
+     * @param name The capability name
+     */
+    void addCapability(String name);
 }

@@ -74,6 +74,7 @@ public class BuildTimeGenerator {
     private final List<Function<String, Function<ClassVisitor, ClassVisitor>>> bytecodeTransformers = new ArrayList<>();
     private final Set<String> applicationArchiveMarkers;
     private final ArchiveContextBuilder archiveContextBuilder;
+    private final Set<String> capabilities;
 
     public BuildTimeGenerator(ClassOutput classOutput, ClassLoader cl, boolean useStaticInit, ArchiveContextBuilder contextBuilder) {
         this.useStaticInit = useStaticInit;
@@ -91,6 +92,7 @@ public class BuildTimeGenerator {
         this.classLoader = cl;
         this.applicationArchiveMarkers = new HashSet<>(setupContext.applicationArchiveMarkers);
         this.archiveContextBuilder = contextBuilder;
+        this.capabilities = new HashSet<>(setupContext.capabilities);
     }
 
     public List<Function<String, Function<ClassVisitor, ClassVisitor>>> getBytecodeTransformers() {
@@ -292,6 +294,11 @@ public class BuildTimeGenerator {
         @Override
         public void addProxyDefinition(String... proxyClasses) {
             this.proxyClasses.add(Arrays.asList(proxyClasses));
+        }
+
+        @Override
+        public boolean isCapabilityPresent(String capability) {
+            return capabilities.contains(capability);
         }
 
 

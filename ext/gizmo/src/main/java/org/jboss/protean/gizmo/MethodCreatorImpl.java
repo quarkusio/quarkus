@@ -3,9 +3,9 @@ package org.jboss.protean.gizmo;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -17,6 +17,7 @@ class MethodCreatorImpl extends BytecodeCreatorImpl implements MethodCreator {
     private int modifiers = Opcodes.ACC_PUBLIC;
     private final List<String> exceptions = new ArrayList<>();
     private final List<AnnotationCreatorImpl> annotations = new ArrayList<>();
+    private final Map<Integer, AnnotationParameters> parameterAnnotations = new HashMap<>();
 
     MethodCreatorImpl(MethodDescriptor methodDescriptor, String declaringClassName, ClassOutput classOutput, ClassCreator classCreator) {
         super(methodDescriptor, declaringClassName, classOutput, classCreator);
@@ -39,6 +40,16 @@ class MethodCreatorImpl extends BytecodeCreatorImpl implements MethodCreator {
     }
 
     @Override
+    public AnnotatedElement getParameterAnnotations(int param) {
+        if(parameterAnnotations.containsKey(param)) {
+            return parameterAnnotations.get(param);
+        }
+        AnnotationParameters p = new AnnotationParameters();
+        parameterAnnotations.put(param, p);
+        return p;
+    }
+
+    @Override
     public int getModifiers() {
         return modifiers;
     }
@@ -52,6 +63,8 @@ class MethodCreatorImpl extends BytecodeCreatorImpl implements MethodCreator {
     @Override
     public void write(ClassWriter file) {
         MethodVisitor visitor = file.visitMethod(modifiers, methodDescriptor.getName(), methodDescriptor.getDescriptor(), null, exceptions.toArray(new String[0]));
+
+
 
         int localVarCount = Modifier.isStatic(modifiers) ? 0 : 1;
         for (int i = 0; i < methodDescriptor.getParameterTypes().length; ++i) {
@@ -73,6 +86,15 @@ class MethodCreatorImpl extends BytecodeCreatorImpl implements MethodCreator {
             }
             av.visitEnd();
         }
+        for(Map.Entry<Integer, AnnotationParameters> entry : parameterAnnotations.entrySet()) {
+            for(AnnotationCreatorImpl annotation : entry.getValue().annotations) {
+                AnnotationVisitor av = visitor.visitParameterAnnotation(entry.getKey(), DescriptorUtils.extToInt(annotation.getAnnotationType()), true);
+                for(Map.Entry<String, Object> e : annotation.getValues().entrySet()) {
+                    av.visit(e.getKey(), e.getValue());
+                }
+                av.visitEnd();
+            }
+        }
         visitor.visitEnd();
     }
 
@@ -88,8 +110,17 @@ class MethodCreatorImpl extends BytecodeCreatorImpl implements MethodCreator {
         return ac;
     }
 
-    @Override
-    public AnnotationCreator addAnnotation(Class<?> annotationType) {
-        return addAnnotation(annotationType.getName());
+
+    private static class AnnotationParameters implements AnnotatedElement {
+
+        final List<AnnotationCreatorImpl> annotations = new ArrayList<>();
+
+        @Override
+        public AnnotationCreator addAnnotation(String annotationType) {
+            AnnotationCreatorImpl ret = new AnnotationCreatorImpl(annotationType);
+            annotations.add(ret);
+            return ret;
+        }
     }
+
 }

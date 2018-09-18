@@ -150,11 +150,6 @@ public class ClassCreator implements AutoCloseable, AnnotatedElement {
         return ac;
     }
 
-    @Override
-    public AnnotationCreator addAnnotation(Class<?> annotationType) {
-        return addAnnotation(annotationType.getName());
-    }
-
     public static class Builder {
 
         private ClassOutput classOutput;

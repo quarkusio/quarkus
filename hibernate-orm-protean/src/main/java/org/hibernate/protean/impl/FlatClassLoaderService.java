@@ -29,7 +29,7 @@ public class FlatClassLoaderService implements ClassLoaderService {
 	@Override
 	public <T> Class<T> classForName(String className) {
 		try {
-			return (Class<T>) Class.forName( className );
+			return (Class<T>) Class.forName( className, false, Thread.currentThread().getContextClassLoader() );
 		}
 		catch (ClassNotFoundException e) {
 			log.errorf( "Could not load class '%s' using Class.forName(String)", className );

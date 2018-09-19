@@ -70,7 +70,7 @@ public class RequestContext implements AlterableContext {
                     try {
                         instance.destroy();
                     } catch (Exception e) {
-                        throw new IllegalStateException("Unable to destroy instance" + instance.get());
+                        throw new IllegalStateException("Unable to destroy instance" + instance.get(), e);
                     }
                 }
             }

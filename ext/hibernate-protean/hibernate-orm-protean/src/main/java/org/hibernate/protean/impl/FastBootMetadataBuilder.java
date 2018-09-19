@@ -31,6 +31,7 @@ import org.hibernate.cfg.Environment;
 import org.hibernate.cfg.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
+import org.hibernate.engine.transaction.jta.platform.internal.JBossStandAloneJtaPlatform;
 import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform;
 import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatformResolver;
 import org.hibernate.id.factory.spi.MutableIdentifierGeneratorFactory;
@@ -268,8 +269,9 @@ class FastBootMetadataBuilder {
 	}
 
 	private JtaPlatform extractJtaPlatform() {
-		JtaPlatformResolver service = standardServiceRegistry.getService( JtaPlatformResolver.class );
-		return service.resolveJtaPlatform( this.configurationValues, (ServiceRegistryImplementor) standardServiceRegistry );
+		return new JBossStandAloneJtaPlatform();
+//		JtaPlatformResolver service = standardServiceRegistry.getService( JtaPlatformResolver.class );
+//		return service.resolveJtaPlatform( this.configurationValues, (ServiceRegistryImplementor) standardServiceRegistry );
 	}
 
 	private Dialect extractDialect() {
@@ -416,9 +418,11 @@ class FastBootMetadataBuilder {
 		else {
 			if ( txnType == PersistenceUnitTransactionType.JTA ) {
 				ssrBuilder.applySetting( TRANSACTION_COORDINATOR_STRATEGY, JtaTransactionCoordinatorBuilderImpl.class );
+				configurationValues.put(TRANSACTION_COORDINATOR_STRATEGY, JtaTransactionCoordinatorBuilderImpl.class);
 			}
 			else if ( txnType == PersistenceUnitTransactionType.RESOURCE_LOCAL ) {
 				ssrBuilder.applySetting( TRANSACTION_COORDINATOR_STRATEGY, JdbcResourceLocalTransactionCoordinatorBuilderImpl.class );
+				configurationValues.put(TRANSACTION_COORDINATOR_STRATEGY, JdbcResourceLocalTransactionCoordinatorBuilderImpl.class);
 			}
 		}
 	}

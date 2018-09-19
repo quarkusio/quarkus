@@ -56,6 +56,7 @@ public class UndertowDeploymentTemplate {
         }
         d.setClassLoader(cl);
         d.setResourceManager(new ClassPathResourceManager(d.getClassLoader(), "META-INF/resources"));
+        d.addWelcomePages("index.html", "index.htm");
         return d;
     }
 
@@ -112,7 +113,7 @@ public class UndertowDeploymentTemplate {
 
 
     public void registerListener(@ContextObject("deploymentInfo") DeploymentInfo info, Class<?> listenerClass, InstanceFactory<? extends EventListener> factory) {
-        info.addListener(new ListenerInfo((Class<? extends EventListener>)listenerClass, factory));
+        info.addListener(new ListenerInfo((Class<? extends EventListener>) listenerClass, factory));
     }
 
     public void addServletContextParameter(@ContextObject("deploymentInfo") DeploymentInfo info, String name, String value) {

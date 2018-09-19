@@ -16,6 +16,7 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.transaction.UserTransaction;
 
 /**
  * Various tests for the JPA integration.
@@ -25,6 +26,9 @@ public class JPATestEMInjectionEndpoint extends HttpServlet {
 
     @Inject
     private EntityManager em;
+
+    @Inject
+    private UserTransaction transaction;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -43,8 +47,7 @@ public class JPATestEMInjectionEndpoint extends HttpServlet {
 
     }
 
-    private void doStuffWithHibernate() {
-        EntityTransaction transaction = em.getTransaction();
+    private void doStuffWithHibernate() throws Exception {
         transaction.begin();
 
         persistNewPerson(em);
@@ -52,7 +55,6 @@ public class JPATestEMInjectionEndpoint extends HttpServlet {
         listExistingPersons(em);
 
         transaction.commit();
-        em.close();
     }
 
     private static void listExistingPersons(EntityManager em) {

@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
+import javax.enterprise.context.RequestScoped;
 import javax.enterprise.inject.Disposes;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
@@ -15,12 +16,16 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import javax.persistence.PersistenceContext;
 import javax.persistence.PersistenceUnit;
+import javax.transaction.TransactionManager;
+import javax.transaction.TransactionSynchronizationRegistry;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.protean.gizmo.ClassCreator;
 import org.jboss.protean.gizmo.ClassOutput;
+import org.jboss.protean.gizmo.FieldCreator;
 import org.jboss.protean.gizmo.FieldDescriptor;
 import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
@@ -30,6 +35,8 @@ import org.jboss.shamrock.deployment.BeanArchiveIndex;
 import org.jboss.shamrock.deployment.BeanDeployment;
 import org.jboss.shamrock.deployment.ProcessorContext;
 import org.jboss.shamrock.deployment.ResourceProcessor;
+import org.jboss.shamrock.jpa.runtime.cdi.SystemEntityManager;
+import org.jboss.shamrock.jpa.runtime.cdi.TransactionScopedEntityManager;
 
 public class HibernateCdiResourceProcessor implements ResourceProcessor {
 
@@ -45,6 +52,7 @@ public class HibernateCdiResourceProcessor implements ResourceProcessor {
 
     @Override
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
+
         Set<String> knownUnitNames = new HashSet<>();
         Set<String> knownContextNames = new HashSet<>();
         scanForAnnotations(archiveContext, knownUnitNames, PERSISTENCE_UNIT);
@@ -57,7 +65,7 @@ public class HibernateCdiResourceProcessor implements ResourceProcessor {
         Set<String> allKnownNames = new HashSet<>(knownUnitNames);
         allKnownNames.addAll(knownContextNames);
 
-        for (String name : knownContextNames) {
+        for (String name : allKnownNames) {
             String className = getClass().getName() + "$$EMFProducer-" + name;
             AtomicReference<byte[]> bytes = new AtomicReference<>();
             try (ClassCreator creator = new ClassCreator(new InMemoryClassOutput(bytes, processorContext), className, null, Object.class.getName())) {
@@ -80,27 +88,66 @@ public class HibernateCdiResourceProcessor implements ResourceProcessor {
         }
 
 
-        for (String name : knownUnitNames) {
+        for (String name : knownContextNames) {
             String className = getClass().getName() + "$$EMProducer-" + name;
             AtomicReference<byte[]> bytes = new AtomicReference<>();
 
             //we need to know if transactions are present or not
-//            if (processorContext.isCapabilityPresent("transactions")) {
-//
-//            } else {
+            //TODO: this should be based on if a PU is JTA enabled or not
+            if (processorContext.isCapabilityPresent("transactions")) {
+                try (ClassCreator creator = new ClassCreator(new InMemoryClassOutput(bytes, processorContext), className, null, Object.class.getName())) {
+
+                    creator.addAnnotation(Dependent.class);
+
+                    FieldCreator emfField = creator.getFieldCreator("emf", EntityManagerFactory.class);
+                    emfField.addAnnotation(Inject.class);
+                    if (!knownUnitNames.contains(name)) {
+                        emfField.addAnnotation(SystemEntityManager.class);
+                    }
+                    FieldDescriptor emf = emfField.getFieldDescriptor();
+
+
+                    FieldCreator tsrField = creator.getFieldCreator("tsr", TransactionSynchronizationRegistry.class);
+                    tsrField.addAnnotation(Inject.class);
+                    FieldDescriptor tsr = tsrField.getFieldDescriptor();
+
+
+                    FieldCreator tmField = creator.getFieldCreator("tm", TransactionManager.class);
+                    tmField.addAnnotation(Inject.class);
+                    FieldDescriptor tm = tmField.getFieldDescriptor();
+
+                    MethodCreator producer = creator.getMethodCreator("producerMethod", EntityManager.class);
+                    producer.addAnnotation(Produces.class);
+                    producer.addAnnotation(RequestScoped.class);
+
+                    ResultHandle emfRh = producer.readInstanceField(emf, producer.getThis());
+                    ResultHandle tsrRh = producer.readInstanceField(tsr, producer.getThis());
+                    ResultHandle tmRh = producer.readInstanceField(tm, producer.getThis());
+
+                    producer.returnValue(producer.newInstance(MethodDescriptor.ofConstructor(TransactionScopedEntityManager.class, TransactionManager.class, TransactionSynchronizationRegistry.class, EntityManagerFactory.class), tmRh, tsrRh, emfRh));
+
+
+
+                    MethodCreator disposer = creator.getMethodCreator("disposerMethod", void.class, EntityManager.class);
+                    disposer.getParameterAnnotations(0).addAnnotation(Disposes.class);
+                    disposer.invokeVirtualMethod(MethodDescriptor.ofMethod(TransactionScopedEntityManager.class, "requestDone", void.class), disposer.getMethodParam(0));
+                    disposer.returnValue(null);
+
+                }
+                beanDeployment.addGeneratedBean(className, bytes.get());
+            } else {
                 //if there is no TX support then we just use a super simple approach, and produce a normal EM
                 try (ClassCreator creator = new ClassCreator(new InMemoryClassOutput(bytes, processorContext), className, null, Object.class.getName())) {
 
                     creator.addAnnotation(Dependent.class);
 
-                    FieldDescriptor emf = creator.getFieldCreator("emf", EntityManagerFactory.class).getFieldDescriptor();
-                    MethodCreator setter = creator.getMethodCreator("setEmf", void.class, EntityManagerFactory.class);
-                    setter.writeInstanceField(emf, setter.getThis(), setter.getMethodParam(0));
-                    setter.addAnnotation(Inject.class);
+                    FieldCreator emfField = creator.getFieldCreator("emf", EntityManagerFactory.class);
+                    emfField.addAnnotation(Inject.class);
                     if (!knownUnitNames.contains(name)) {
-                        setter.addAnnotation(SystemEntityManager.class);
+                        emfField.addAnnotation(SystemEntityManager.class);
                     }
-                    setter.returnValue(null);
+                    FieldDescriptor emf = emfField.getFieldDescriptor();
+
 
                     MethodCreator producer = creator.getMethodCreator("producerMethod", EntityManager.class);
                     producer.addAnnotation(Produces.class);
@@ -117,28 +164,32 @@ public class HibernateCdiResourceProcessor implements ResourceProcessor {
 
                 }
                 beanDeployment.addGeneratedBean(className, bytes.get());
-//            }
+            }
         }
 
     }
 
     private void scanForAnnotations(ArchiveContext archiveContext, Set<String> knownUnitNames, DotName nm) {
         for (AnnotationInstance anno : archiveContext.getCombinedIndex().getAnnotations(nm)) {
+            AnnotationValue unitName = anno.value("unitName");
+            if(unitName == null) {
+                continue;
+            }
             if (anno.target().kind() == AnnotationTarget.Kind.METHOD) {
                 if (anno.target().asMethod().hasAnnotation(PRODUCES)) {
-                    knownUnitNames.add(anno.value("unitName").asString());
+                    knownUnitNames.add(unitName.asString());
                 }
             } else if (anno.target().kind() == AnnotationTarget.Kind.FIELD) {
                 for (AnnotationInstance i : anno.target().asField().annotations()) {
                     if (i.name().equals(PRODUCES)) {
-                        knownUnitNames.add(anno.value("unitName").asString());
+                        knownUnitNames.add(unitName.asString());
                         break;
                     }
                 }
             } else if (anno.target().kind() == AnnotationTarget.Kind.CLASS) {
                 for (AnnotationInstance i : anno.target().asClass().classAnnotations()) {
                     if (i.name().equals(PRODUCES)) {
-                        knownUnitNames.add(anno.value("unitName").asString());
+                        knownUnitNames.add(unitName.asString());
                         break;
                     }
                 }

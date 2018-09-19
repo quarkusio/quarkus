@@ -17,6 +17,7 @@ public class ShamrockTest extends BlockJUnit4ClassRunner {
 
     private static boolean first = true;
     private static boolean started = false;
+    private static boolean failed = false;
 
     /**
      * Creates a BlockJUnit4ClassRunner to run {@code klass}
@@ -42,19 +43,29 @@ public class ShamrockTest extends BlockJUnit4ClassRunner {
             try {
                 notifier.addListener(new RunListener() {
 
+
                     @Override
                     public void testStarted(Description description) {
+                        if (failed) {
+                            notifier.fireTestFailure(new Failure(description, new AssertionError("Startup failed")));
+                            return;
+                        }
                         if (!started) {
                             started = true;
                             //TODO: so much hacks...
-                            Class<?> theClass = description.getTestClass();
-                            String classFileName = theClass.getName().replace(".", "/") + ".class";
-                            URL resource = theClass.getClassLoader().getResource(classFileName);
-                            String testClassLocation = resource.getPath().substring(0, resource.getPath().length() - classFileName.length());
-                            String appClassLocation = testClassLocation.replace("test-classes", "classes");
-                            Path appRoot = Paths.get(appClassLocation);
-                            RuntimeRunner runtimeRunner = new RuntimeRunner(getClass().getClassLoader(), appRoot, Paths.get(testClassLocation), new ArchiveContextBuilder());
-                            runtimeRunner.run();
+                            try {
+                                Class<?> theClass = description.getTestClass();
+                                String classFileName = theClass.getName().replace(".", "/") + ".class";
+                                URL resource = theClass.getClassLoader().getResource(classFileName);
+                                String testClassLocation = resource.getPath().substring(0, resource.getPath().length() - classFileName.length());
+                                String appClassLocation = testClassLocation.replace("test-classes", "classes");
+                                Path appRoot = Paths.get(appClassLocation);
+                                RuntimeRunner runtimeRunner = new RuntimeRunner(getClass().getClassLoader(), appRoot, Paths.get(testClassLocation), new ArchiveContextBuilder());
+                                runtimeRunner.run();
+                            } catch (RuntimeException e) {
+                                failed = true;
+                                throw e;
+                            }
                         }
                     }
                 });

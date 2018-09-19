@@ -27,7 +27,13 @@ public final class HibernateEntityEnhancer implements Function<String, Function<
         Objects.requireNonNull(classnameWhitelist);
         this.classnameWhitelist = classnameWhitelist;
         BytecodeProvider provider = new org.hibernate.bytecode.internal.bytebuddy.BytecodeProviderImpl();
-        this.enhancer = provider.getEnhancer(new DefaultEnhancementContext());
+        DefaultEnhancementContext enhancementContext = new DefaultEnhancementContext() {
+            @Override
+            public ClassLoader getLoadingClassLoader() {
+                return Thread.currentThread().getContextClassLoader();
+            }
+        };
+        this.enhancer = provider.getEnhancer(enhancementContext);
     }
 
     @Override

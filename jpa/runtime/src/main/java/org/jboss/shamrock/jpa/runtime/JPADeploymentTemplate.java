@@ -1,4 +1,4 @@
-package org.jboss.shamrock.jpa;
+package org.jboss.shamrock.jpa.runtime;
 
 import org.hibernate.protean.Hibernate;
 

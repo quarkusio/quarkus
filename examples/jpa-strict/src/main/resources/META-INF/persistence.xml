@@ -4,7 +4,7 @@
              http://xmlns.jcp.org/xml/ns/persistence/persistence_2_1.xsd"
              version="2.1">
 
-    <persistence-unit name="templatePU" transaction-type="RESOURCE_LOCAL">
+    <persistence-unit name="templatePU" transaction-type="JTA">
 
         <description>Hibernate test case template Persistence Unit</description>
 

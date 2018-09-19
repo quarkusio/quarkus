@@ -1,6 +1,7 @@
 package org.jboss.shamrock.jpa;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -22,6 +23,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.shamrock.deployment.ArchiveContext;
 import org.jboss.shamrock.deployment.ProcessorContext;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
+import org.jboss.shamrock.jpa.runtime.JPADeploymentTemplate;
 
 /**
  * Scan the Jandex index to find JPA entities (and embeddables supporting entity models).
@@ -144,7 +146,7 @@ final class JpaJandexScavenger {
         }
         ClassInfo classInfo = index.getClassByName(className);
         if (classInfo == null) {
-            if (className == ClassType.OBJECT_TYPE.name()) {
+            if (className == ClassType.OBJECT_TYPE.name() || className.toString().equals(Serializable.class.getName())) {
                 return;
             }
             else {

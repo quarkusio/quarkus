@@ -1,4 +1,4 @@
-package org.jboss.shamrock.jpa.cdi;
+package org.jboss.shamrock.jpa.runtime.cdi;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

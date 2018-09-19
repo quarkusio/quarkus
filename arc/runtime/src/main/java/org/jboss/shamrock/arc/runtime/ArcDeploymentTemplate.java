@@ -11,8 +11,11 @@ import org.jboss.shamrock.runtime.InjectionFactory;
 import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.runtime.RuntimeInjector;
 
+import io.undertow.server.HttpServerExchange;
+import io.undertow.servlet.api.DeploymentInfo;
+import io.undertow.servlet.api.ThreadSetupHandler;
+
 /**
- *
  * @author Martin Kouba
  */
 public class ArcDeploymentTemplate {
@@ -41,6 +44,28 @@ public class ArcDeploymentTemplate {
                 };
             }
         };
+    }
+
+    public void setupRequestScope(@ContextObject("deploymentInfo") DeploymentInfo deploymentInfo, @ContextObject("arc.container") ArcContainer arcContainer) {
+        if(deploymentInfo == null) {
+            return;
+        }
+        deploymentInfo.addThreadSetupAction(new ThreadSetupHandler() {
+            @Override
+            public <T, C> Action<T, C> create(Action<T, C> action) {
+                return new Action<T, C>() {
+                    @Override
+                    public T call(HttpServerExchange exchange, C context) throws Exception {
+                        arcContainer.requestContext().activate();
+                        try {
+                            return action.call(exchange, context);
+                        } finally {
+                            arcContainer.requestContext().deactivate();
+                        }
+                    }
+                };
+            }
+        });
     }
 
     public void setupInjection(ArcContainer container) {

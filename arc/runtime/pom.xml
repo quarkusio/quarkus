@@ -22,6 +22,10 @@
       <groupId>org.jboss.shamrock</groupId>
       <artifactId>shamrock-core-runtime</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.undertow</groupId>
+      <artifactId>undertow-servlet</artifactId>
+    </dependency>
   </dependencies>
 
   <build>

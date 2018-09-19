@@ -62,7 +62,7 @@ final class JpaJandexScavenger {
 
         List<PersistenceUnitDescriptor> persistenceUnitDescriptors = PersistenceUnitsHolder.getPersistenceUnitDescriptors();
         for (PersistenceUnitDescriptor pud : persistenceUnitDescriptors) {
-            enlistExplicitClasses(pud.getManagedClassNames(), collector);
+            enlistExplicitClasses(pud.getManagedClassNames(), collector, index);
         }
 
         collector.registerAllForReflection(processorContext);
@@ -79,10 +79,18 @@ final class JpaJandexScavenger {
         return collector;
     }
 
-    private void enlistExplicitClasses(List<String> managedClassNames, DomainObjectSet collector) {
+    private static void enlistExplicitClasses(List<String> managedClassNames, DomainObjectSet collector, IndexView index) {
         for (String className : managedClassNames) {
-            // TODO add superclass for reflection
-            collector.addEntity(className);
+            DotName dotName = DotName.createSimple(className);
+            boolean isInIndex = index.getClassByName(dotName) != null;
+            if (isInIndex) {
+                addClassHierarchyToReflectiveList(collector, index, dotName);
+            }
+            else {
+                // We do lipstick service by manually adding explicitly the <class> reference but not navigating the hierarchy
+                System.out.println("[WARNING] Did not find `" + className + "` in the indexed jars. You likely forgot to add shamrock-build.yaml in your dependency jar. See https://github.com/protean-project/shamrock/#indexing-and-application-classes for more info.");
+                collector.addEntity(className);
+            }
         }
     }
 

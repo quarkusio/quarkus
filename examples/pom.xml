@@ -17,6 +17,7 @@
         <module>shared-library</module>
         <module>strict</module>
         <module>jpa-strict</module>
+        <module>common-jpa-entities</module>
     </modules>
 
     <dependencies>

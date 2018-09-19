@@ -77,7 +77,8 @@ public final class PersistenceUnitsHolder {
 		return fastBootMetadataBuilder.build();
 	}
 
-	static List<PersistenceUnitDescriptor> getPersistenceUnitDescriptors() {
+	// Not a public contract but used by Shamrock
+	public static List<PersistenceUnitDescriptor> getPersistenceUnitDescriptors() {
 		return COMPACT_UNITS.units;
 	}
 

@@ -16,6 +16,11 @@
     <dependencies>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
+            <artifactId>common-jpa-entities</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-jaxrs-deployment</artifactId>
             <scope>provided</scope>
         </dependency>

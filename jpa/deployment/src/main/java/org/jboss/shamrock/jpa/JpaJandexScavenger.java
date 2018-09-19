@@ -3,6 +3,7 @@ package org.jboss.shamrock.jpa;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.persistence.Embeddable;
@@ -10,6 +11,8 @@ import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.MappedSuperclass;
 
+import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
+import org.hibernate.protean.impl.PersistenceUnitsHolder;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -57,6 +60,11 @@ final class JpaJandexScavenger {
         enlistJPAModelClasses(MAPPED_SUPERCLASS, collector, index);
         enlistReturnType(collector, index);
 
+        List<PersistenceUnitDescriptor> persistenceUnitDescriptors = PersistenceUnitsHolder.getPersistenceUnitDescriptors();
+        for (PersistenceUnitDescriptor pud : persistenceUnitDescriptors) {
+            enlistExplicitClasses(pud.getManagedClassNames(), collector);
+        }
+
         collector.registerAllForReflection(processorContext);
 
         // TODO what priority to give JPA?
@@ -67,7 +75,15 @@ final class JpaJandexScavenger {
             template.callHibernateFeatureInit();
         }
 
+
         return collector;
+    }
+
+    private void enlistExplicitClasses(List<String> managedClassNames, DomainObjectSet collector) {
+        for (String className : managedClassNames) {
+            // TODO add superclass for reflection
+            collector.addEntity(className);
+        }
     }
 
     private static void enlistReturnType(DomainObjectSet collector, IndexView index) {

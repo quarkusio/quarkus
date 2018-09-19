@@ -161,4 +161,18 @@ final class LightPersistenceXmlDescriptor implements PersistenceUnitDescriptor {
 	public void pushClassTransformer(final EnhancementContext enhancementContext) {
 		//has never been supported
 	}
+
+	@Override
+	public String toString() {
+		return "PersistenceUnitDescriptor{" +
+				"name='" + name + '\'' +
+				", providerClassName='" + providerClassName + '\'' +
+				", useQuotedIdentifiers=" + useQuotedIdentifiers +
+				", transactionType=" + transactionType +
+				", validationMode=" + validationMode +
+				", sharedCachemode=" + sharedCachemode +
+				", managedClassNames=" + managedClassNames +
+				", properties=" + properties +
+				'}';
+	}
 }

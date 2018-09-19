@@ -114,6 +114,7 @@ class FastBootMetadataBuilder {
 		configure( standardServiceRegistry, mergedSettings );
 
 		final MetadataSources metadataSources = new MetadataSources( bsr );
+		addPUManagedClassNamesToMetadataSources(persistenceUnit, metadataSources);
 
 		this.metamodelBuilder = (MetadataBuilderImplementor) metadataSources.getMetadataBuilder( standardServiceRegistry );
 		populate( metamodelBuilder, mergedSettings, standardServiceRegistry );
@@ -132,6 +133,12 @@ class FastBootMetadataBuilder {
 
 		// for the time being we want to revoke access to the temp ClassLoader if one was passed
 		metamodelBuilder.applyTempClassLoader( null );
+	}
+
+	private void addPUManagedClassNamesToMetadataSources(PersistenceUnitDescriptor persistenceUnit, MetadataSources metadataSources) {
+		for ( String className : persistenceUnit.getManagedClassNames() ) {
+			metadataSources.addAnnotatedClassName(className);
+		}
 	}
 
 	private void insertStateRecorders(StandardServiceRegistryBuilder ssrBuilder) {

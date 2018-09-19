@@ -1,5 +1,7 @@
 package org.jboss.shamrock.example.jpa;
 
+import org.jboss.shamrock.examples.common.Clown;
+
 import javax.inject.Inject;
 import javax.persistence.*;
 import javax.persistence.criteria.CriteriaBuilder;
@@ -52,6 +54,7 @@ public class JPATestBootstrapEndpoint extends HttpServlet {
         transaction.begin();
 
         persistNewPerson( em );
+        persistNewClown( em );
 
         listExistingPersons( em );
 
@@ -81,6 +84,12 @@ public class JPATestBootstrapEndpoint extends HttpServlet {
         person.setName( randomName() );
         person.setAddress( new SequencedAddress( "Street " + randomName() ) );
         entityManager.persist( person );
+    }
+
+    private static void persistNewClown(EntityManager entityManager) {
+        Clown clown = new Clown();
+        clown.setName("Bozo");
+        entityManager.persist( clown );
     }
 
     private static String randomName() {

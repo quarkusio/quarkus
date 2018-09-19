@@ -16,7 +16,7 @@ public class JPADeploymentTemplate {
     }
 
     public void enlistPersistenceUnit() {
-        System.out.println("List of entities \n" + entities.toString());
+        System.out.println("List of entities found by Shamrock deployment \n" + entities.toString());
     }
 
     public void callHibernateFeatureInit() {

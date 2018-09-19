@@ -77,6 +77,7 @@
         <module>arc</module>
         <module>ext/gizmo</module>
         <module>ext/arc</module>
+        <module>ext/hibernate-protean</module>
         <module>bean-validation</module>
         <module>transactions</module>
         <module>agroal</module>

@@ -213,7 +213,17 @@ public class BuildTimeGenerator {
             if (existing == null) {
                 reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false));
             }
-            existing.fieldSet.add(fieldInfo);
+            existing.fieldSet.add(fieldInfo.name());
+        }
+
+        @Override
+        public void addReflectiveField(Field fieldInfo) {
+            String cl = fieldInfo.getDeclaringClass().getName();
+            ReflectionInfo existing = reflectiveClasses.get(cl);
+            if (existing == null) {
+                reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false));
+            }
+            existing.fieldSet.add(fieldInfo.getName());
         }
 
         @Override
@@ -226,8 +236,27 @@ public class BuildTimeGenerator {
             if (methodInfo.name().equals("<init>")) {
                 existing.ctorSet.add(methodInfo);
             } else {
-                existing.methodSet.add(methodInfo);
+                String[] params = new String[methodInfo.parameters().size()];
+                for (int i = 0; i < params.length; ++i) {
+                    params[i] = methodInfo.parameters().get(i).name().toString();
+                }
+                existing.methodSet.add(new MethodData(methodInfo.name(), params));
             }
+        }
+
+        @Override
+        public void addReflectiveMethod(Method methodInfo) {
+            String cl = methodInfo.getDeclaringClass().getName();
+            ReflectionInfo existing = reflectiveClasses.get(cl);
+            if (existing == null) {
+                reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false));
+            }
+            String[] params = new String[methodInfo.getParameterTypes().length];
+            for (int i = 0; i < params.length; ++i) {
+                params[i] = methodInfo.getParameterTypes()[i].getName();
+            }
+            existing.methodSet.add(new MethodData(methodInfo.getName(), params));
+
         }
 
         @Override
@@ -405,13 +434,13 @@ public class BuildTimeGenerator {
                     mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Executable[].class), methods);
                 } else if (!entry.getValue().methodSet.isEmpty()) {
                     ResultHandle farray = mv.newArray(Method.class, mv.load(1));
-                    for (MethodInfo method : entry.getValue().methodSet) {
-                        ResultHandle paramArray = mv.newArray(Class.class, mv.load(method.parameters().size()));
-                        for (int i = 0; i < method.parameters().size(); ++i) {
-                            Type type = method.parameters().get(i);
-                            mv.writeArrayValue(paramArray, mv.load(i), mv.loadClass(type.name().toString()));
+                    for (MethodData method : entry.getValue().methodSet) {
+                        ResultHandle paramArray = mv.newArray(Class.class, mv.load(method.params.length));
+                        for (int i = 0; i < method.params.length; ++i) {
+                            String type = method.params[i];
+                            mv.writeArrayValue(paramArray, mv.load(i), mv.loadClass(type));
                         }
-                        ResultHandle fhandle = mv.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), clazz, mv.load(method.name()), paramArray);
+                        ResultHandle fhandle = mv.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), clazz, mv.load(method.name), paramArray);
                         mv.writeArrayValue(farray, mv.load(0), fhandle);
                         mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Executable[].class), farray);
                     }
@@ -420,8 +449,8 @@ public class BuildTimeGenerator {
                     mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Field[].class), fields);
                 } else if (!entry.getValue().fieldSet.isEmpty()) {
                     ResultHandle farray = mv.newArray(Field.class, mv.load(1));
-                    for (FieldInfo field : entry.getValue().fieldSet) {
-                        ResultHandle fhandle = mv.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredField", Field.class, String.class), clazz, mv.load(field.name()));
+                    for (String field : entry.getValue().fieldSet) {
+                        ResultHandle fhandle = mv.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredField", Field.class, String.class), clazz, mv.load(field));
                         mv.writeArrayValue(farray, mv.load(0), fhandle);
                         mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Field[].class), farray);
                     }
@@ -456,12 +485,23 @@ public class BuildTimeGenerator {
         }
     }
 
+    static final class MethodData {
+
+        final String name;
+        final String[] params;
+
+        MethodData(String name, String[] params) {
+            this.name = name;
+            this.params = params;
+        }
+    }
+
     static final class ReflectionInfo {
         boolean constructors;
         boolean methods;
         boolean fields;
-        Set<FieldInfo> fieldSet = new HashSet<>();
-        Set<MethodInfo> methodSet = new HashSet<>();
+        Set<String> fieldSet = new HashSet<>();
+        Set<MethodData> methodSet = new HashSet<>();
         Set<MethodInfo> ctorSet = new HashSet<>();
 
         private ReflectionInfo(boolean constructors, boolean methods, boolean fields) {
@@ -470,4 +510,5 @@ public class BuildTimeGenerator {
             this.constructors = constructors;
         }
     }
+
 }

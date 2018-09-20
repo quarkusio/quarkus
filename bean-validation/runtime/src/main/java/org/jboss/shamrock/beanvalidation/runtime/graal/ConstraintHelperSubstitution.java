@@ -262,10 +262,10 @@ import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
 @TargetClass(ConstraintHelper.class)
-final class ConstraintHelperSubstitution {
+public final class ConstraintHelperSubstitution {
 
     @Alias
-    private final Map<Class<? extends Annotation>, List<? extends ConstraintValidatorDescriptor<?>>> builtinConstraints;
+    public final Map<Class<? extends Annotation>, List<? extends ConstraintValidatorDescriptor<?>>> builtinConstraints;
 
     @Substitute
     public ConstraintHelperSubstitution () {
@@ -541,15 +541,24 @@ final class ConstraintHelperSubstitution {
 
     @Alias
     private static <A extends Annotation> void putConstraint(Map<Class<? extends Annotation>, List<ConstraintValidatorDescriptor<?>>> validators, Class<A> constraintType, Class<? extends ConstraintValidator<A, ?>> validatorType) {
+        validators.put( constraintType, Collections.singletonList( ConstraintValidatorDescriptor.forClass( validatorType ) ) );
     }
 
     @Alias
     private static <A extends Annotation> void putConstraints(Map<Class<? extends Annotation>, List<ConstraintValidatorDescriptor<?>>> validators, Class<A> constraintType, Class<? extends ConstraintValidator<A, ?>> validatorType1, Class<? extends ConstraintValidator<A, ?>> validatorType2) {
+        List<ConstraintValidatorDescriptor<?>> descriptors = Stream.of( validatorType1, validatorType2 )
+                .map( ConstraintValidatorDescriptor::forClass )
+                .collect( Collectors.toList() );
 
+        validators.put( constraintType, CollectionHelper.toImmutableList( descriptors ) );
     }
 
     @Alias
     private static <A extends Annotation> void putConstraints(Map<Class<? extends Annotation>, List<ConstraintValidatorDescriptor<?>>> validators, Class<A> constraintType, List<Class<? extends ConstraintValidator<A, ?>>> validatorDescriptors) {
+        List<ConstraintValidatorDescriptor<?>> descriptors = validatorDescriptors.stream()
+                .map( ConstraintValidatorDescriptor::forClass )
+                .collect( Collectors.toList() );
 
+        validators.put( constraintType, CollectionHelper.toImmutableList( descriptors ) );
     }
 }

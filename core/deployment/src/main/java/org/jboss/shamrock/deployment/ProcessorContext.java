@@ -1,6 +1,8 @@
 package org.jboss.shamrock.deployment;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -51,8 +53,11 @@ public interface ProcessorContext {
 
     void addReflectiveField(FieldInfo fieldInfo);
 
+    void addReflectiveField(Field fieldInfo);
+
     void addReflectiveMethod(MethodInfo methodInfo);
 
+    void addReflectiveMethod(Method methodInfo);
     /**
      *
      * @param applicationClass If this class should be loaded by the application class loader when in runtime mode

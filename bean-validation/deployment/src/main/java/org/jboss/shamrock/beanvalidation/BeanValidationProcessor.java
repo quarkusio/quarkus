@@ -1,8 +1,12 @@
 package org.jboss.shamrock.beanvalidation;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -10,6 +14,7 @@ import javax.inject.Inject;
 import javax.validation.Constraint;
 import javax.validation.ConstraintValidator;
 
+import org.hibernate.validator.internal.engine.constraintvalidation.ConstraintValidatorDescriptor;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -18,6 +23,7 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.shamrock.beanvalidation.runtime.ValidatorProvider;
 import org.jboss.shamrock.beanvalidation.runtime.ValidatorTemplate;
+import org.jboss.shamrock.beanvalidation.runtime.graal.ConstraintHelperSubstitution;
 import org.jboss.shamrock.deployment.ArchiveContext;
 import org.jboss.shamrock.deployment.BeanDeployment;
 import org.jboss.shamrock.deployment.ProcessorContext;
@@ -41,16 +47,25 @@ class BeanValidationProcessor implements ResourceProcessor {
         beanDeployment.addAdditionalBean(ValidatorProvider.class);
         processorContext.addRuntimeInitializedClasses("javax.el.ELUtil");
         processorContext.addResourceBundle("org.hibernate.validator.ValidationMessages");
-        //int constraints = new ConstraintHelperSubstitution().builtinConstraints
         //TODO: this should not rely on the index and implementation being indexed, this stuff should just be hard coded
         processorContext.addReflectiveClass(true, false, Constraint.class.getName());
         Map<DotName, Set<DotName>> seenConstraints = new HashMap<>();
         Set<String> classesToBeValidated = new HashSet<>();
+
+        //the map of validators, first key is constraint (annotation), second is the validator class name, value is the type that is validated
+        Map<DotName, Map<DotName, DotName>> validatorsByConstraint = lookForValidatorsByConstraint(archiveContext, processorContext);
+
+        Set<DotName> constraintAnnotations = new HashSet<>();
+        constraintAnnotations.addAll(validatorsByConstraint.keySet());
+
         for (AnnotationInstance constraint : archiveContext.getCombinedIndex().getAnnotations(DotName.createSimple(Constraint.class.getName()))) {
-            Collection<AnnotationInstance> annotationInstances = archiveContext.getCombinedIndex().getAnnotations(constraint.target().asClass().name());
-            if(!annotationInstances.isEmpty()) {
-                String classToValidate = constraint.target().asClass().name().toString();
-                processorContext.addReflectiveClass(true, false, classToValidate);
+            constraintAnnotations.add(constraint.target().asClass().name());
+        }
+
+        for (DotName constraint : constraintAnnotations) {
+            Collection<AnnotationInstance> annotationInstances = archiveContext.getCombinedIndex().getAnnotations(constraint);
+            if (!annotationInstances.isEmpty()) {
+                processorContext.addReflectiveClass(true, false, constraint.toString());
             }
             for (AnnotationInstance annotation : annotationInstances) {
 
@@ -78,33 +93,6 @@ class BeanValidationProcessor implements ResourceProcessor {
             }
         }
 
-        //the map of validators, first key is constraint (annotation), second is the validator class name, value is the type that is validated
-        Map<DotName, Map<DotName, DotName>> validatorsByConstraint = new HashMap<>();
-
-        for (ClassInfo classInfo : archiveContext.getCombinedIndex().getAllKnownImplementors(CONSTRAINT_VALIDATOR)) {
-            for (Type iface : classInfo.interfaceTypes()) {
-                if (iface.kind() == Type.Kind.PARAMETERIZED_TYPE) {
-                    ParameterizedType pt = iface.asParameterizedType();
-                    if (pt.name().equals(CONSTRAINT_VALIDATOR)) {
-                        if (pt.arguments().size() == 2) {
-                            DotName type = pt.arguments().get(1).name();
-                            DotName annotation = pt.arguments().get(0).name();
-
-                            if (!type.toString().startsWith("javax.money") &&
-                                    !type.toString().startsWith("org.joda")) {
-                                //TODO: what if joda is present?
-                                Map<DotName, DotName> vals = validatorsByConstraint.get(annotation);
-                                if (vals == null) {
-                                    validatorsByConstraint.put(annotation, vals = new HashMap<>());
-                                }
-                                vals.put(classInfo.name(), type);
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
-        }
         for (Map.Entry<DotName, Map<DotName, DotName>> entry : validatorsByConstraint.entrySet()) {
 
             Set<DotName> seen = seenConstraints.get(entry.getKey());
@@ -132,15 +120,68 @@ class BeanValidationProcessor implements ResourceProcessor {
             }
         }
 
-        try(BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.BEAN_VALIDATION_DEPLOYMENT)) {
+        try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.BEAN_VALIDATION_DEPLOYMENT)) {
             ValidatorTemplate template = recorder.getRecordingProxy(ValidatorTemplate.class);
             Class[] classes = new Class[classesToBeValidated.size()];
             int j = 0;
-            for(String c : classesToBeValidated) {
+            for (String c : classesToBeValidated) {
                 classes[j++] = recorder.classProxy(c);
             }
             template.forceInit((InjectionInstance<ValidatorProvider>) recorder.newInstanceFactory(ValidatorProvider.class.getName()), classes);
         }
+    }
+
+    private Map<DotName, Map<DotName, DotName>> lookForValidatorsByConstraint(ArchiveContext archiveContext, ProcessorContext processorContext) {
+        Map<DotName, Map<DotName, DotName>> validatorsByConstraint = new HashMap<>();
+
+        //handle built in ones
+
+        Map<Class<? extends Annotation>, List<? extends ConstraintValidatorDescriptor<?>>> constraints = new ConstraintHelperSubstitution().builtinConstraints;
+        for (Map.Entry<Class<? extends Annotation>, List<? extends ConstraintValidatorDescriptor<?>>> entry : constraints.entrySet()) {
+            DotName annotationType = DotName.createSimple(entry.getKey().getName());
+            Map<DotName, DotName> vals = new HashMap<>();
+            validatorsByConstraint.put(annotationType, vals);
+            for (ConstraintValidatorDescriptor<?> val : entry.getValue()) {
+                java.lang.reflect.Type validatedType = val.getValidatedType();
+                if (validatedType instanceof Class) {
+                    vals.put(DotName.createSimple(val.getValidatorClass().getName()), DotName.createSimple(((Class) validatedType).getName()));
+                } else if(validatedType instanceof java.lang.reflect.ParameterizedType) {
+                    java.lang.reflect.Type rawType = ((java.lang.reflect.ParameterizedType) validatedType).getRawType();
+                    vals.put(DotName.createSimple(val.getValidatorClass().getName()), DotName.createSimple(((Class) rawType).getName()));
+                } else {
+                    throw new RuntimeException("Unknown type " + validatedType);
+                }
+            }
+        }
+
+        for (ClassInfo classInfo : archiveContext.getCombinedIndex().getAllKnownImplementors(CONSTRAINT_VALIDATOR)) {
+
+            //TODO: this fails for inheritance heirachies
+
+            for (Type iface : classInfo.interfaceTypes()) {
+                if (iface.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                    ParameterizedType pt = iface.asParameterizedType();
+                    if (pt.name().equals(CONSTRAINT_VALIDATOR)) {
+                        if (pt.arguments().size() == 2) {
+                            DotName type = pt.arguments().get(1).name();
+                            DotName annotation = pt.arguments().get(0).name();
+
+                            if (!type.toString().startsWith("javax.money") &&
+                                    !type.toString().startsWith("org.joda")) {
+                                //TODO: what if joda is present?
+                                Map<DotName, DotName> vals = validatorsByConstraint.get(annotation);
+                                if (vals == null) {
+                                    validatorsByConstraint.put(annotation, vals = new HashMap<>());
+                                }
+                                vals.put(classInfo.name(), type);
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return validatorsByConstraint;
     }
 
     @Override

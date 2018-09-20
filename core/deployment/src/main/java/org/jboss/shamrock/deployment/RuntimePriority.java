@@ -15,9 +15,9 @@ public class RuntimePriority {
     public static final int JAXRS_DEPLOYMENT = 350;
     public static final int ARC_DEPLOYMENT = 300;
     public static final int UNDERTOW_DEPLOY = 400;
-    public static final int UNDERTOW_START = 500;
     public static final int BEAN_VALIDATION_DEPLOYMENT = 600;
     public static final int TRANSACTIONS_DEPLOYMENT = 700;
     public static final int DATASOURCE_DEPLOYMENT = 700;
     public static final int BOOTSTRAP_EMF = 800;
+    public static final int UNDERTOW_START = 900;
 }

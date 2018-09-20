@@ -22,7 +22,7 @@ import org.hibernate.internal.CoreMessageLogger;
  */
 public class FlatClassLoaderService implements ClassLoaderService {
 
-	private static final CoreMessageLogger log = CoreLogging.messageLogger( ClassLoaderServiceImpl.class );
+	private static final CoreMessageLogger log = CoreLogging.messageLogger( FlatClassLoaderService.class );
 	public static final ClassLoaderService INSTANCE = new FlatClassLoaderService();
 
 	private FlatClassLoaderService() {
@@ -35,7 +35,7 @@ public class FlatClassLoaderService implements ClassLoaderService {
 			return (Class<T>) Class.forName( className, false, getClassLoader() );
 		}
 		catch (ClassNotFoundException e) {
-			log.errorf( "Could not load class '%s' using Class.forName(String)", className );
+			log.errorf( "Could not load class '%s' using Class.forName(String) and class loader %s", className , getClassLoader());
 		}
 		return null;
 	}

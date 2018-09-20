@@ -25,6 +25,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.shamrock.deployment.ArchiveContext;
 import org.jboss.shamrock.deployment.BeanDeployment;
+import org.jboss.shamrock.deployment.Capabilities;
 import org.jboss.shamrock.deployment.ProcessorContext;
 import org.jboss.shamrock.deployment.ResourceProcessor;
 import org.jboss.shamrock.deployment.RuntimePriority;
@@ -90,18 +91,16 @@ public class FaultToleranceAnnotationProcessor implements ResourceProcessor {
                 }
             });
         }
-        
-        // TODO there should be a proper way to detect a shamrock "feature"
-        try {
-            Class.forName("org.jboss.protean.arc.Arc");
+
+        if (processorContext.isCapabilityPresent(Capabilities.CDI_ARC)) {
             // Register bean classes
             beanDeployment.addAdditionalBean(HystrixCommandInterceptor.class);
             beanDeployment.addAdditionalBean(HystrixInitializer.class);
             beanDeployment.addAdditionalBean(DefaultHystrixConcurrencyStrategy.class);
             beanDeployment.addAdditionalBean(ShamrockFaultToleranceOperationProvider.class);
             beanDeployment.addAdditionalBean(ShamrockFallbackHandlerProvider.class);
-        } catch (Exception e) {
-            // Full CDI
+        } else {
+            // Full CDI - add extension and reflective info
             beanDeployment.addExtension(HystrixExtension.class.getName());
             processorContext.addReflectiveClass(true, true, HystrixCommandInterceptor.class.getName());
             processorContext.addReflectiveClass(true, true, HystrixInitializer.class.getName());

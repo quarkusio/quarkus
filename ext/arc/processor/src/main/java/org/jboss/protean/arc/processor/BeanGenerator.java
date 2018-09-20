@@ -697,7 +697,22 @@ public class BeanGenerator extends AbstractGenerator {
                     ResultHandle referenceHandle = create.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, providerHandle, childCtxHandle);
                     referenceHandles[paramIdx++] = referenceHandle;
                 }
-                create.invokeVirtualMethod(MethodDescriptor.of(methodInjection.target.asMethod()), instanceHandle, referenceHandles);
+                MethodInfo initializerMethod = methodInjection.target.asMethod();
+                if (Modifier.isPrivate(initializerMethod.flags())) {
+                    LOGGER.infof("@Inject %s#%s() is private - Arc users are encouraged to avoid using private injection initializers",
+                            initializerMethod.declaringClass().name(), initializerMethod.name());
+                    ResultHandle paramTypesArray = create.newArray(Class.class, create.load(referenceHandles.length));
+                    ResultHandle argsArray = create.newArray(Object.class, create.load(referenceHandles.length));
+                    for (int i = 0; i < referenceHandles.length; i++) {
+                        create.writeArrayValue(paramTypesArray, create.load(i), create.loadClass(initializerMethod.parameters().get(i).name().toString()));
+                        create.writeArrayValue(argsArray, create.load(i), referenceHandles[i]);
+                    }
+                    reflectionRegistration.registerMethod(initializerMethod);
+                    create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD, create.loadClass(providerTypeName),
+                            create.load(methodInjection.target.asMethod().name()), paramTypesArray, instanceHandle, argsArray);
+                } else {
+                    create.invokeVirtualMethod(MethodDescriptor.of(methodInjection.target.asMethod()), instanceHandle, referenceHandles);
+                }
             }
 
             // PostConstruct lifecycle callback interceptors

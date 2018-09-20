@@ -35,6 +35,9 @@ import org.jboss.shamrock.deployment.BeanArchiveIndex;
 import org.jboss.shamrock.deployment.BeanDeployment;
 import org.jboss.shamrock.deployment.ProcessorContext;
 import org.jboss.shamrock.deployment.ResourceProcessor;
+import org.jboss.shamrock.deployment.RuntimePriority;
+import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
+import org.jboss.shamrock.jpa.runtime.JPADeploymentTemplate;
 import org.jboss.shamrock.jpa.runtime.cdi.SystemEntityManager;
 import org.jboss.shamrock.jpa.runtime.cdi.TransactionScopedEntityManager;
 
@@ -88,82 +91,91 @@ public class HibernateCdiResourceProcessor implements ResourceProcessor {
         }
 
 
-        for (String name : knownContextNames) {
-            String className = getClass().getName() + "$$EMProducer-" + name;
-            AtomicReference<byte[]> bytes = new AtomicReference<>();
+        try(BytecodeRecorder recorder = processorContext.addDeploymentTask(RuntimePriority.BOOTSTRAP_EMF)) {
+            JPADeploymentTemplate template = recorder.getRecordingProxy(JPADeploymentTemplate.class);
 
-            //we need to know if transactions are present or not
-            //TODO: this should be based on if a PU is JTA enabled or not
-            if (processorContext.isCapabilityPresent("transactions")) {
-                try (ClassCreator creator = new ClassCreator(new InMemoryClassOutput(bytes, processorContext), className, null, Object.class.getName())) {
+            for (String name : knownContextNames) {
+                String className = getClass().getName() + "$$EMProducer-" + name;
+                AtomicReference<byte[]> bytes = new AtomicReference<>();
 
-                    creator.addAnnotation(Dependent.class);
+                //we need to know if transactions are present or not
+                //TODO: this should be based on if a PU is JTA enabled or not
+                if (processorContext.isCapabilityPresent("transactions")) {
+                    boolean system = false;
+                    try (ClassCreator creator = new ClassCreator(new InMemoryClassOutput(bytes, processorContext), className, null, Object.class.getName())) {
 
-                    FieldCreator emfField = creator.getFieldCreator("emf", EntityManagerFactory.class);
-                    emfField.addAnnotation(Inject.class);
-                    if (!knownUnitNames.contains(name)) {
-                        emfField.addAnnotation(SystemEntityManager.class);
+                        creator.addAnnotation(Dependent.class);
+
+                        FieldCreator emfField = creator.getFieldCreator("emf", EntityManagerFactory.class);
+                        emfField.addAnnotation(Inject.class);
+                        if (!knownUnitNames.contains(name)) {
+                            emfField.addAnnotation(SystemEntityManager.class);
+                            system = true;
+                        }
+                        FieldDescriptor emf = emfField.getFieldDescriptor();
+
+
+                        FieldCreator tsrField = creator.getFieldCreator("tsr", TransactionSynchronizationRegistry.class);
+                        tsrField.addAnnotation(Inject.class);
+                        FieldDescriptor tsr = tsrField.getFieldDescriptor();
+
+
+                        FieldCreator tmField = creator.getFieldCreator("tm", TransactionManager.class);
+                        tmField.addAnnotation(Inject.class);
+                        FieldDescriptor tm = tmField.getFieldDescriptor();
+
+                        MethodCreator producer = creator.getMethodCreator("producerMethod", EntityManager.class);
+                        producer.addAnnotation(Produces.class);
+                        producer.addAnnotation(RequestScoped.class);
+
+                        ResultHandle emfRh = producer.readInstanceField(emf, producer.getThis());
+                        ResultHandle tsrRh = producer.readInstanceField(tsr, producer.getThis());
+                        ResultHandle tmRh = producer.readInstanceField(tm, producer.getThis());
+
+                        producer.returnValue(producer.newInstance(MethodDescriptor.ofConstructor(TransactionScopedEntityManager.class, TransactionManager.class, TransactionSynchronizationRegistry.class, EntityManagerFactory.class), tmRh, tsrRh, emfRh));
+
+
+                        MethodCreator disposer = creator.getMethodCreator("disposerMethod", void.class, EntityManager.class);
+                        disposer.getParameterAnnotations(0).addAnnotation(Disposes.class);
+                        disposer.invokeVirtualMethod(MethodDescriptor.ofMethod(TransactionScopedEntityManager.class, "requestDone", void.class), disposer.getMethodParam(0));
+                        disposer.returnValue(null);
+
                     }
-                    FieldDescriptor emf = emfField.getFieldDescriptor();
+                    beanDeployment.addGeneratedBean(className, bytes.get());
+                    template.boostrapPu(null, system);
+                } else {
+                    boolean system = false;
+                    //if there is no TX support then we just use a super simple approach, and produce a normal EM
+                    try (ClassCreator creator = new ClassCreator(new InMemoryClassOutput(bytes, processorContext), className, null, Object.class.getName())) {
+
+                        creator.addAnnotation(Dependent.class);
+
+                        FieldCreator emfField = creator.getFieldCreator("emf", EntityManagerFactory.class);
+                        emfField.addAnnotation(Inject.class);
+                        if (!knownUnitNames.contains(name)) {
+                            emfField.addAnnotation(SystemEntityManager.class);
+                            system = true;
+                        }
+                        FieldDescriptor emf = emfField.getFieldDescriptor();
 
 
-                    FieldCreator tsrField = creator.getFieldCreator("tsr", TransactionSynchronizationRegistry.class);
-                    tsrField.addAnnotation(Inject.class);
-                    FieldDescriptor tsr = tsrField.getFieldDescriptor();
+                        MethodCreator producer = creator.getMethodCreator("producerMethod", EntityManager.class);
+                        producer.addAnnotation(Produces.class);
+                        producer.addAnnotation(Dependent.class);
+
+                        ResultHandle factory = producer.readInstanceField(emf, producer.getThis());
+                        producer.returnValue(producer.invokeInterfaceMethod(MethodDescriptor.ofMethod(EntityManagerFactory.class, "createEntityManager", EntityManager.class), factory));
 
 
-                    FieldCreator tmField = creator.getFieldCreator("tm", TransactionManager.class);
-                    tmField.addAnnotation(Inject.class);
-                    FieldDescriptor tm = tmField.getFieldDescriptor();
+                        MethodCreator disposer = creator.getMethodCreator("disposerMethod", void.class, EntityManager.class);
+                        disposer.getParameterAnnotations(0).addAnnotation(Disposes.class);
+                        disposer.invokeInterfaceMethod(MethodDescriptor.ofMethod(EntityManager.class, "close", void.class), disposer.getMethodParam(0));
+                        disposer.returnValue(null);
 
-                    MethodCreator producer = creator.getMethodCreator("producerMethod", EntityManager.class);
-                    producer.addAnnotation(Produces.class);
-                    producer.addAnnotation(RequestScoped.class);
-
-                    ResultHandle emfRh = producer.readInstanceField(emf, producer.getThis());
-                    ResultHandle tsrRh = producer.readInstanceField(tsr, producer.getThis());
-                    ResultHandle tmRh = producer.readInstanceField(tm, producer.getThis());
-
-                    producer.returnValue(producer.newInstance(MethodDescriptor.ofConstructor(TransactionScopedEntityManager.class, TransactionManager.class, TransactionSynchronizationRegistry.class, EntityManagerFactory.class), tmRh, tsrRh, emfRh));
-
-
-
-                    MethodCreator disposer = creator.getMethodCreator("disposerMethod", void.class, EntityManager.class);
-                    disposer.getParameterAnnotations(0).addAnnotation(Disposes.class);
-                    disposer.invokeVirtualMethod(MethodDescriptor.ofMethod(TransactionScopedEntityManager.class, "requestDone", void.class), disposer.getMethodParam(0));
-                    disposer.returnValue(null);
-
-                }
-                beanDeployment.addGeneratedBean(className, bytes.get());
-            } else {
-                //if there is no TX support then we just use a super simple approach, and produce a normal EM
-                try (ClassCreator creator = new ClassCreator(new InMemoryClassOutput(bytes, processorContext), className, null, Object.class.getName())) {
-
-                    creator.addAnnotation(Dependent.class);
-
-                    FieldCreator emfField = creator.getFieldCreator("emf", EntityManagerFactory.class);
-                    emfField.addAnnotation(Inject.class);
-                    if (!knownUnitNames.contains(name)) {
-                        emfField.addAnnotation(SystemEntityManager.class);
                     }
-                    FieldDescriptor emf = emfField.getFieldDescriptor();
-
-
-                    MethodCreator producer = creator.getMethodCreator("producerMethod", EntityManager.class);
-                    producer.addAnnotation(Produces.class);
-                    producer.addAnnotation(Dependent.class);
-
-                    ResultHandle factory = producer.readInstanceField(emf, producer.getThis());
-                    producer.returnValue(producer.invokeInterfaceMethod(MethodDescriptor.ofMethod(EntityManagerFactory.class, "createEntityManager", EntityManager.class), factory));
-
-
-                    MethodCreator disposer = creator.getMethodCreator("disposerMethod", void.class, EntityManager.class);
-                    disposer.getParameterAnnotations(0).addAnnotation(Disposes.class);
-                    disposer.invokeInterfaceMethod(MethodDescriptor.ofMethod(EntityManager.class, "close", void.class), disposer.getMethodParam(0));
-                    disposer.returnValue(null);
-
+                    beanDeployment.addGeneratedBean(className, bytes.get());
+                    template.boostrapPu(null, system);
                 }
-                beanDeployment.addGeneratedBean(className, bytes.get());
             }
         }
 

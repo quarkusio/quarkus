@@ -42,7 +42,7 @@ public class RunMojo extends AbstractMojo {
     protected MavenProject project;
 
     @Parameter(defaultValue = "${fakereplace}")
-    private boolean fakereplace = true;
+    private boolean fakereplace = false;
 
     @Parameter(defaultValue = "${debug}")
     private String debug;

@@ -53,7 +53,14 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Cons
     }
 
     @Override
-    public Enumeration<URL> getResources(String name) throws IOException {
+    public Enumeration<URL> getResources(String nm) throws IOException {
+        String name;
+        if(nm.startsWith("/")) {
+            name = nm.substring(1);
+        } else {
+            name = nm;
+        }
+
         // TODO some superugly hack for bean provider
         byte[] data = resources.get(name);
         if (data != null) {
@@ -75,6 +82,28 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Cons
             return Collections.enumeration(Collections.singleton(url));
         }
         return super.getResources(name);
+    }
+
+    @Override
+    public URL getResource(String nm) {
+        String name;
+        if(nm.startsWith("/")) {
+            name = nm.substring(1);
+        } else {
+            name = nm;
+        }
+        return super.getResource(name);
+    }
+
+    @Override
+    public InputStream getResourceAsStream(String nm) {
+        String name;
+        if(nm.startsWith("/")) {
+            name = nm.substring(1);
+        } else {
+            name = nm;
+        }
+        return super.getResourceAsStream(name);
     }
 
     @Override

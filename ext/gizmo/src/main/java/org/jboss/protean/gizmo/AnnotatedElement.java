@@ -7,7 +7,9 @@ public interface AnnotatedElement {
 
     AnnotationCreator addAnnotation(String annotationType);
 
-    AnnotationCreator addAnnotation(Class<?> annotationType);
+    default AnnotationCreator addAnnotation(Class<?> annotationType) {
+        return addAnnotation(annotationType.getName());
+    }
 
     default void addAnnotation(AnnotationInstance annotation) {
         AnnotationCreator ac = addAnnotation(annotation.name().toString());

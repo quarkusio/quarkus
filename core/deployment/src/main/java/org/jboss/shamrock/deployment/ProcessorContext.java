@@ -108,4 +108,11 @@ public interface ProcessorContext {
      * @param proxyClasses The interface names that this proxy will implement
      */
     void addProxyDefinition(String ... proxyClasses);
+
+    /**
+     *
+     * @param capability
+     * @return
+     */
+    boolean isCapabilityPresent(String capability);
 }

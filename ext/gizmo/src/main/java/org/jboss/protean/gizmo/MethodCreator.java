@@ -39,4 +39,6 @@ public interface MethodCreator extends MemberCreator<MethodCreator>, BytecodeCre
      */
     MethodDescriptor getMethodDescriptor();
 
+    AnnotatedElement getParameterAnnotations(int param);
+
 }

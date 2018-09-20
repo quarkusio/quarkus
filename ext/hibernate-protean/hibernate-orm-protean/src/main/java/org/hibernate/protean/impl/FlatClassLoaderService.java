@@ -1,10 +1,13 @@
 package org.hibernate.protean.impl;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationHandler;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ServiceLoader;
@@ -29,7 +32,7 @@ public class FlatClassLoaderService implements ClassLoaderService {
 	@Override
 	public <T> Class<T> classForName(String className) {
 		try {
-			return (Class<T>) Class.forName( className, false, Thread.currentThread().getContextClassLoader() );
+			return (Class<T>) Class.forName( className, false, getClassLoader() );
 		}
 		catch (ClassNotFoundException e) {
 			log.errorf( "Could not load class '%s' using Class.forName(String)", className );
@@ -39,7 +42,7 @@ public class FlatClassLoaderService implements ClassLoaderService {
 
 	@Override
 	public URL locateResource(String name) {
-		URL resource = FlatClassLoaderService.class.getResource( name );
+		URL resource = getClassLoader().getResource( name );
 		if ( resource == null ) {
 			log.warnf( "Loading of resource '%s' failed. Maybe that's ok, maybe you forgot to include this resource in the binary image? -H:IncludeResources=", name );
 		}
@@ -51,7 +54,7 @@ public class FlatClassLoaderService implements ClassLoaderService {
 
 	@Override
 	public InputStream locateResourceStream(String name) {
-		InputStream resourceAsStream = FlatClassLoaderService.class.getResourceAsStream( name );
+		InputStream resourceAsStream = getClassLoader().getResourceAsStream( name );
 		if ( resourceAsStream == null ) {
 			log.warnf( "Loading of resource '%s' failed. Maybe that's ok, maybe you forgot to include this resource in the binary image? -H:IncludeResources=", name );
 		}
@@ -64,12 +67,21 @@ public class FlatClassLoaderService implements ClassLoaderService {
 	@Override
 	public List<URL> locateResources(String name) {
 		log.debugf( "locateResources (plural form) was invoked for resource '%s'. Is there a real need for this plural form?", name );
-		return Collections.singletonList( locateResource( name ) );
+		try {
+			Enumeration<URL> resources = getClassLoader().getResources(name);
+			List<URL> resource = new ArrayList<>();
+			while (resources.hasMoreElements()) {
+				resource.add(resources.nextElement());
+			}
+			return resource;
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
 	public <S> Collection<S> loadJavaServices(Class<S> serviceContract) {
-		ServiceLoader<S> serviceLoader = ServiceLoader.load( serviceContract );
+		ServiceLoader<S> serviceLoader = ServiceLoader.load( serviceContract , getClassLoader());
 		final LinkedHashSet<S> services = new LinkedHashSet<S>();
 		for ( S service : serviceLoader ) {
 			services.add( service );
@@ -85,13 +97,21 @@ public class FlatClassLoaderService implements ClassLoaderService {
 
 	@Override
 	public <T> T workWithClassLoader(Work<T> work) {
-		ClassLoader systemClassLoader = ClassLoader.getSystemClassLoader();
+		ClassLoader systemClassLoader = getClassLoader();
 		return work.doWork( systemClassLoader );
 	}
 
 	@Override
 	public void stop() {
 		//easy!
+	}
+
+	private ClassLoader getClassLoader() {
+		ClassLoader cl = Thread.currentThread().getContextClassLoader();
+		if(cl == null) {
+			return FlatClassLoaderService.class.getClassLoader();
+		}
+		return cl;
 	}
 
 }

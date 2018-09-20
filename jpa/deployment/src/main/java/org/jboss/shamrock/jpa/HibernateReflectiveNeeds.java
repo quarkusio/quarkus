@@ -35,20 +35,69 @@ final class HibernateReflectiveNeeds {
         simpleConstructor(org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorBuilderImpl.class);
         simpleConstructor(org.hibernate.id.enhanced.SequenceStyleGenerator.class);
         simpleConstructor(org.hibernate.boot.model.naming.ImplicitNamingStrategyJpaCompliantImpl.class);
+        simpleConstructor(org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorBuilderImpl.class);
+        processorContext.addReflectiveClass(true, false, com.arjuna.ats.jta.UserTransaction.class.getName());
+        processorContext.addReflectiveClass(true, false, com.arjuna.ats.jta.TransactionManager.class.getName());
+
         //FIXME following is not Hibernate specific?
         simpleConstructor("com.sun.xml.internal.stream.events.XMLEventFactoryImpl");
-        //ANTLR tokens:
         simpleConstructor(org.hibernate.hql.internal.ast.HqlToken.class);
         simpleConstructor(org.hibernate.hql.internal.ast.tree.Node.class);
-        simpleConstructor(org.hibernate.hql.internal.ast.tree.QueryNode.class);
-        simpleConstructor(org.hibernate.hql.internal.ast.tree.SqlNode.class);
-        simpleConstructor(org.hibernate.hql.internal.ast.tree.FromClause.class);
-        simpleConstructor(org.hibernate.hql.internal.ast.tree.DotNode.class);
-        simpleConstructor(org.hibernate.hql.internal.ast.tree.IdentNode.class);
-        simpleConstructor(org.hibernate.hql.internal.ast.tree.FromElement.class);
+
+
+        //ANTLR tokens:
         simpleConstructor(org.hibernate.hql.internal.ast.tree.SelectClause.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.HqlSqlWalkerNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.MethodNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.AbstractStatement.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.EntityJoinFromElement.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.UnaryLogicOperatorNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.NullNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.IntoClause.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.AbstractRestrictableStatement.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.UpdateStatement.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.SelectExpressionImpl.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.CastFunctionNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.MapKeyEntityFromElement.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.DeleteStatement.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.SqlNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.SearchedCaseNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.FromElement.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.JavaConstantNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.SelectExpressionList.class);
         simpleConstructor(org.hibernate.hql.internal.ast.tree.SqlFragment.class);
-        ///TODO ... several mode ANTLR tokens will be needed. Above will do for an hello world demo.
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.MapKeyNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.ImpliedFromElement.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.IsNotNullLogicOperatorNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.InsertStatement.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.UnaryArithmeticNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.CollectionFunction.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.BinaryLogicOperatorNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.CountNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.IsNullLogicOperatorNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.IdentNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.ComponentJoin.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.ParameterNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.AbstractSelectExpression.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.MapEntryNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.MapValueNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.InLogicOperatorNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.IndexNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.AbstractNullnessCheckNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.DotNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.ResultVariableRefNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.BetweenOperatorNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.AggregateNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.QueryNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.BooleanLiteralNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.SimpleCaseNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.AbstractMapComponentNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.FromReferenceNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.OrderByClause.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.FromClause.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.ConstructorNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.LiteralNode.class);
+        simpleConstructor(org.hibernate.hql.internal.ast.tree.BinaryArithmeticOperatorNode.class);
 
         //PostgreSQL specific (move to its own home?) FIXME
         simpleConstructor(org.hibernate.dialect.PostgreSQL95Dialect.class);

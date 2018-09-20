@@ -41,33 +41,37 @@ class BeanValidationProcessor implements ResourceProcessor {
         beanDeployment.addAdditionalBean(ValidatorProvider.class);
         processorContext.addRuntimeInitializedClasses("javax.el.ELUtil");
         processorContext.addResourceBundle("org.hibernate.validator.ValidationMessages");
+        //int constraints = new ConstraintHelperSubstitution().builtinConstraints
         //TODO: this should not rely on the index and implementation being indexed, this stuff should just be hard coded
-        try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.BEAN_VALIDATION_DEPLOYMENT)) {
-            ValidatorTemplate template = recorder.getRecordingProxy(ValidatorTemplate.class);
-            template.forceInit((InjectionInstance<ValidatorProvider>) recorder.newInstanceFactory(ValidatorProvider.class.getName()));
-        }
         processorContext.addReflectiveClass(true, false, Constraint.class.getName());
         Map<DotName, Set<DotName>> seenConstraints = new HashMap<>();
+        Set<String> classesToBeValidated = new HashSet<>();
         for (AnnotationInstance constraint : archiveContext.getCombinedIndex().getAnnotations(DotName.createSimple(Constraint.class.getName()))) {
             Collection<AnnotationInstance> annotationInstances = archiveContext.getCombinedIndex().getAnnotations(constraint.target().asClass().name());
             if(!annotationInstances.isEmpty()) {
-                processorContext.addReflectiveClass(true, false, constraint.target().asClass().name().toString());
+                String classToValidate = constraint.target().asClass().name().toString();
+                processorContext.addReflectiveClass(true, false, classToValidate);
             }
             for (AnnotationInstance annotation : annotationInstances) {
+
                 Set<DotName> seenTypes = seenConstraints.get(annotation.name());
                 if (seenTypes == null) {
                     seenConstraints.put(annotation.name(), seenTypes = new HashSet<>());
                 }
                 if (annotation.target().kind() == AnnotationTarget.Kind.FIELD) {
+                    classesToBeValidated.add(annotation.target().asField().declaringClass().name().toString());
                     processorContext.addReflectiveField(annotation.target().asField());
                     seenTypes.add(annotation.target().asField().type().name());
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
+                    classesToBeValidated.add(annotation.target().asMethod().declaringClass().name().toString());
                     processorContext.addReflectiveMethod(annotation.target().asMethod());
                     seenTypes.add(annotation.target().asMethod().returnType().name());
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
+                    classesToBeValidated.add(annotation.target().asMethodParameter().method().declaringClass().name().toString());
                     processorContext.addReflectiveMethod(annotation.target().asMethodParameter().method());
                     seenTypes.add(annotation.target().asMethodParameter().asType().asClass().name());
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
+                    classesToBeValidated.add(annotation.target().asClass().name().toString());
                     seenTypes.add(annotation.target().asClass().name());
                     processorContext.addReflectiveClass(true, true, annotation.target().asClass().name().toString());
                 }
@@ -126,6 +130,16 @@ class BeanValidationProcessor implements ResourceProcessor {
                     processorContext.addReflectiveClass(false, false, i.toString());
                 }
             }
+        }
+
+        try(BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.BEAN_VALIDATION_DEPLOYMENT)) {
+            ValidatorTemplate template = recorder.getRecordingProxy(ValidatorTemplate.class);
+            Class[] classes = new Class[classesToBeValidated.size()];
+            int j = 0;
+            for(String c : classesToBeValidated) {
+                classes[j++] = recorder.classProxy(c);
+            }
+            template.forceInit((InjectionInstance<ValidatorProvider>) recorder.newInstanceFactory(ValidatorProvider.class.getName()), classes);
         }
     }
 

@@ -75,7 +75,7 @@ public class InterceptorGenerator extends BeanGenerator {
 
         createProviderFields(interceptorCreator, interceptor, injectionPointToProviderField, interceptorToProviderField);
         createConstructor(classOutput, interceptorCreator, interceptor, baseName, injectionPointToProviderField, interceptorToProviderField,
-                annotationLiterals);
+                annotationLiterals, bindings.getFieldDescriptor());
         createCreate(interceptorCreator, interceptor, providerTypeName, baseName, injectionPointToProviderField, interceptorToProviderField, reflectionRegistration);
         createGet(interceptor, interceptorCreator, providerTypeName);
         createGetTypes(interceptorCreator, beanTypes.getFieldDescriptor());
@@ -100,18 +100,17 @@ public class InterceptorGenerator extends BeanGenerator {
                 annotationLiterals);
 
         // Bindings
-        if (!interceptor.getBindings().isEmpty()) {
-            // bindings = new HashSet<>()
-            ResultHandle bindingsHandle = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+        // bindings = new HashSet<>()
+        ResultHandle bindingsHandle = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
 
-            for (AnnotationInstance bindingAnnotation : interceptor.getBindings()) {
-                // Create annotation literal first
-                ClassInfo bindingClass = interceptor.getDeployment().getInterceptorBinding(bindingAnnotation.name());
-                String literalType = annotationLiterals.process(classOutput, bindingClass, bindingAnnotation, Types.getPackageName(creator.getClassName()));
-                constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, bindingsHandle,
-                        constructor.newInstance(MethodDescriptor.ofConstructor(literalType)));
-            }
+        for (AnnotationInstance bindingAnnotation : interceptor.getBindings()) {
+            // Create annotation literal first
+            ClassInfo bindingClass = interceptor.getDeployment().getInterceptorBinding(bindingAnnotation.name());
+            String literalType = annotationLiterals.process(classOutput, bindingClass, bindingAnnotation, Types.getPackageName(creator.getClassName()));
+            constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, bindingsHandle,
+                    constructor.newInstance(MethodDescriptor.ofConstructor(literalType)));
         }
+        constructor.writeInstanceField(bindings, constructor.getThis(), bindingsHandle);
         constructor.returnValue(null);
     }
 

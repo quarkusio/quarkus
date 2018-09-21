@@ -1,11 +1,13 @@
 package org.jboss.protean.arc;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -19,6 +21,8 @@ import javax.interceptor.InvocationContext;
  */
 public class InvocationContextImpl implements InvocationContext {
 
+    public static final String KEY_INTERCEPTOR_BINDINGS = "org.jboss.protean.arc.interceptorBindings";
+
     /**
      *
      * @param target
@@ -26,42 +30,46 @@ public class InvocationContextImpl implements InvocationContext {
      * @param args
      * @param chain
      * @param aroundInvokeForward
+     * @param interceptorBindings
      * @return a new {@link javax.interceptor.AroundInvoke} invocation context
      */
     public static InvocationContextImpl aroundInvoke(Object target, Method method, Object[] args, List<InterceptorInvocation> chain,
-            Function<InvocationContext, Object> aroundInvokeForward) {
-        return new InvocationContextImpl(target, method, null, args, chain, aroundInvokeForward, null);
+            Function<InvocationContext, Object> aroundInvokeForward, Set<Annotation> interceptorBindings) {
+        return new InvocationContextImpl(target, method, null, args, chain, aroundInvokeForward, null, interceptorBindings);
     }
 
     /**
      *
      * @param target
      * @param chain
+     * @param interceptorBindings
      * @return a new {@link javax.annotation.PostConstruct} invocation context
      */
-    public static InvocationContextImpl postConstruct(Object target, List<InterceptorInvocation> chain) {
-        return new InvocationContextImpl(target, null, null, null, chain, null, null);
+    public static InvocationContextImpl postConstruct(Object target, List<InterceptorInvocation> chain, Set<Annotation> interceptorBindings) {
+        return new InvocationContextImpl(target, null, null, null, chain, null, null, interceptorBindings);
     }
 
     /**
      *
      * @param target
      * @param chain
+     * @param interceptorBindings
      * @return a new {@link javax.annotation.PreDestroy} invocation context
      */
-    public static InvocationContextImpl preDestroy(Object target, List<InterceptorInvocation> chain) {
-        return new InvocationContextImpl(target, null, null, null, chain, null, null);
+    public static InvocationContextImpl preDestroy(Object target, List<InterceptorInvocation> chain, Set<Annotation> interceptorBindings) {
+        return new InvocationContextImpl(target, null, null, null, chain, null, null, interceptorBindings);
     }
 
     /**
      *
      * @param target
      * @param chain
+     * @param interceptorBindings
      * @return a new {@link javax.interceptor.AroundConstruct} invocation context
      */
-    public static InvocationContextImpl aroundConstruct(Constructor<?> constructor, List<InterceptorInvocation> chain,
-            Supplier<Object> aroundConstructForward) {
-        return new InvocationContextImpl(null, null, constructor, null, chain, null, aroundConstructForward);
+    public static InvocationContextImpl aroundConstruct(Constructor<?> constructor, List<InterceptorInvocation> chain, Supplier<Object> aroundConstructForward,
+            Set<Annotation> interceptorBindings) {
+        return new InvocationContextImpl(null, null, constructor, null, chain, null, aroundConstructForward, interceptorBindings);
     }
 
     private final AtomicReference<Object> target;
@@ -82,24 +90,31 @@ public class InvocationContextImpl implements InvocationContext {
 
     private final Supplier<Object> aroundConstructForward;
 
+    private final Set<Annotation> interceptorBindings;
+
     /**
      * @param target
      * @param method
+     * @param constructor
      * @param args
      * @param chain
      * @param aroundInvokeForward
+     * @param aroundConstructForward
+     * @param interceptorBindings
      */
     InvocationContextImpl(Object target, Method method, Constructor<?> constructor, Object[] args, List<InterceptorInvocation> chain,
-            Function<InvocationContext, Object> aroundInvokeForward, Supplier<Object> aroundConstructForward) {
+            Function<InvocationContext, Object> aroundInvokeForward, Supplier<Object> aroundConstructForward, Set<Annotation> interceptorBindings) {
         this.target = new AtomicReference<>(target);
         this.method = method;
         this.constructor = constructor;
         this.args = args;
-        this.contextData = new HashMap<>();
         this.position = 0;
         this.chain = chain;
         this.aroundInvokeForward = aroundInvokeForward;
         this.aroundConstructForward = aroundConstructForward;
+        this.interceptorBindings = interceptorBindings;
+        contextData = new HashMap<>();
+        contextData.put(KEY_INTERCEPTOR_BINDINGS, interceptorBindings);
     }
 
     boolean hasNextInterceptor() {
@@ -190,6 +205,10 @@ public class InvocationContextImpl implements InvocationContext {
     @Override
     public Object getTimer() {
         return null;
+    }
+
+    public Set<Annotation> getInterceptorBindings() {
+        return interceptorBindings;
     }
 
     public static class InterceptorInvocation {

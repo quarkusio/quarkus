@@ -44,9 +44,9 @@ class BeanInfo {
 
     private final DisposerInfo disposer;
 
-    private Map<MethodInfo, List<InterceptorInfo>> interceptedMethods;
+    private Map<MethodInfo, InterceptionInfo> interceptedMethods;
 
-    private Map<InterceptionType, List<InterceptorInfo>> lifecycleInterceptors;
+    private Map<InterceptionType, InterceptionInfo> lifecycleInterceptors;
 
     private final Integer alternativePriority;
 
@@ -159,12 +159,12 @@ class BeanInfo {
         return injections.isEmpty() ? Optional.empty() : injections.stream().filter(i -> i.isConstructor()).findAny();
     }
 
-    Map<MethodInfo, List<InterceptorInfo>> getInterceptedMethods() {
+    Map<MethodInfo, InterceptionInfo> getInterceptedMethods() {
         return interceptedMethods;
     }
 
-    List<InterceptorInfo> getLifecycleInterceptors(InterceptionType interceptionType) {
-        return lifecycleInterceptors.containsKey(interceptionType) ? lifecycleInterceptors.get(interceptionType) : Collections.emptyList();
+    InterceptionInfo getLifecycleInterceptors(InterceptionType interceptionType) {
+        return lifecycleInterceptors.containsKey(interceptionType) ? lifecycleInterceptors.get(interceptionType) : InterceptionInfo.EMPTY;
     }
 
     boolean hasLifecycleInterceptors() {
@@ -193,11 +193,11 @@ class BeanInfo {
      */
     List<InterceptorInfo> getBoundInterceptors() {
         List<InterceptorInfo> bound = new ArrayList<>();
-        for (List<InterceptorInfo> interceptors : lifecycleInterceptors.values()) {
-            bound.addAll(interceptors);
+        for (InterceptionInfo interception : lifecycleInterceptors.values()) {
+            bound.addAll(interception.interceptors);
         }
         if (!interceptedMethods.isEmpty()) {
-            bound.addAll(interceptedMethods.values().stream().flatMap(list -> list.stream()).collect(Collectors.toList()));
+            bound.addAll(interceptedMethods.values().stream().map(m -> m.interceptors).flatMap(list -> list.stream()).collect(Collectors.toList()));
         }
         return bound.isEmpty() ? Collections.emptyList() : bound.stream().distinct().sorted().collect(Collectors.toList());
     }
@@ -241,9 +241,9 @@ class BeanInfo {
         }
     }
 
-    private Map<MethodInfo, List<InterceptorInfo>> initInterceptedMethods() {
+    private Map<MethodInfo, InterceptionInfo> initInterceptedMethods() {
         if (!isInterceptor() && isClassBean()) {
-            Map<MethodInfo, List<InterceptorInfo>> interceptedMethods = new HashMap<>();
+            Map<MethodInfo, InterceptionInfo> interceptedMethods = new HashMap<>();
             Map<MethodKey, Set<AnnotationInstance>> candidates = new HashMap<>();
             // TODO interceptor bindings are transitive!!!
 
@@ -260,7 +260,7 @@ class BeanInfo {
             for (Entry<MethodKey, Set<AnnotationInstance>> entry : candidates.entrySet()) {
                 List<InterceptorInfo> interceptors = beanDeployment.getInterceptorResolver().resolve(InterceptionType.AROUND_INVOKE, entry.getValue());
                 if (!interceptors.isEmpty()) {
-                    interceptedMethods.put(entry.getKey().method, interceptors);
+                    interceptedMethods.put(entry.getKey().method, new InterceptionInfo(interceptors, entry.getValue()));
                 }
             }
             return interceptedMethods;
@@ -269,9 +269,9 @@ class BeanInfo {
         }
     }
 
-    private Map<InterceptionType, List<InterceptorInfo>> initLifecycleInterceptors() {
+    private Map<InterceptionType, InterceptionInfo> initLifecycleInterceptors() {
         if (!isInterceptor() && isClassBean()) {
-            Map<InterceptionType, List<InterceptorInfo>> lifecycleInterceptors = new HashMap<>();
+            Map<InterceptionType, InterceptionInfo> lifecycleInterceptors = new HashMap<>();
             Set<AnnotationInstance> classLevelBindings = new HashSet<>();
             addClassLevelBindings(target.asClass(), classLevelBindings);
             putLifecycleInterceptors(lifecycleInterceptors, classLevelBindings, InterceptionType.POST_CONSTRUCT);
@@ -283,11 +283,11 @@ class BeanInfo {
         }
     }
 
-    private void putLifecycleInterceptors(Map<InterceptionType, List<InterceptorInfo>> lifecycleInterceptors, Set<AnnotationInstance> classLevelBindings,
+    private void putLifecycleInterceptors(Map<InterceptionType, InterceptionInfo> lifecycleInterceptors, Set<AnnotationInstance> classLevelBindings,
             InterceptionType interceptionType) {
         List<InterceptorInfo> interceptors = beanDeployment.getInterceptorResolver().resolve(interceptionType, classLevelBindings);
         if (!interceptors.isEmpty()) {
-            lifecycleInterceptors.put(interceptionType, interceptors);
+            lifecycleInterceptors.put(interceptionType, new InterceptionInfo(interceptors, classLevelBindings));
         }
     }
 
@@ -301,6 +301,25 @@ class BeanInfo {
                 addClassLevelBindings(superClass, bindings);
             }
         }
+    }
+
+    static class InterceptionInfo {
+
+        static final InterceptionInfo EMPTY = new InterceptionInfo(Collections.emptyList(), Collections.emptySet());
+
+        final List<InterceptorInfo> interceptors;
+
+        final Set<AnnotationInstance> bindings;
+
+        InterceptionInfo(List<InterceptorInfo> interceptors, Set<AnnotationInstance> bindings) {
+            this.interceptors = interceptors;
+            this.bindings = bindings;
+        }
+
+        boolean isEmpty() {
+            return interceptors.isEmpty();
+        }
+
     }
 
     @Override

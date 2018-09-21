@@ -51,13 +51,22 @@ public class ObserverGenerator extends AbstractGenerator {
 
     private static final AtomicInteger OBSERVER_INDEX = new AtomicInteger();
 
+    private final AnnotationLiteralProcessor annotationLiterals;
+
+    /**
+     *
+     * @param annotationLiterals
+     */
+    public ObserverGenerator(AnnotationLiteralProcessor annotationLiterals) {
+        this.annotationLiterals = annotationLiterals;
+    }
+
     /**
      *
      * @param observer
-     * @param annotationLiterals
      * @return a collection of resources
      */
-    Collection<Resource> generate(ObserverInfo observer, AnnotationLiteralProcessor annotationLiterals, ReflectionRegistration reflectionRegistration) {
+    Collection<Resource> generate(ObserverInfo observer, ReflectionRegistration reflectionRegistration) {
 
         ClassInfo declaringClass = observer.getObserverMethod().declaringClass();
         String declaringClassBase;

@@ -54,6 +54,7 @@ final class DotNames {
     static final DotName ALTERNATIVE = DotName.createSimple(Alternative.class.getName());
     static final DotName STEREOTYPE = DotName.createSimple(Stereotype.class.getName());
     static final DotName TYPED = DotName.createSimple(Typed.class.getName());
+    static final DotName CLASS = DotName.createSimple(Class.class.getName());
 
     private DotNames() {
     }

@@ -74,18 +74,17 @@ public class BeanProcessor {
         BeanDeployment beanDeployment = new BeanDeployment(new IndexWrapper(index), additionalBeanDefiningAnnotations, annotationTransformers);
         beanDeployment.init();
 
-        BeanGenerator beanGenerator = new BeanGenerator();
+        AnnotationLiteralProcessor annotationLiterals = new AnnotationLiteralProcessor(name, sharedAnnotationLiterals);
+        BeanGenerator beanGenerator = new BeanGenerator(annotationLiterals);
         ClientProxyGenerator clientProxyGenerator = new ClientProxyGenerator();
-        InterceptorGenerator interceptorGenerator = new InterceptorGenerator();
-        SubclassGenerator subclassGenerator = new SubclassGenerator();
-        ObserverGenerator observerGenerator = new ObserverGenerator();
+        InterceptorGenerator interceptorGenerator = new InterceptorGenerator(annotationLiterals);
+        SubclassGenerator subclassGenerator = new SubclassGenerator(annotationLiterals);
+        ObserverGenerator observerGenerator = new ObserverGenerator(annotationLiterals);
         AnnotationLiteralGenerator annotationLiteralsGenerator = new AnnotationLiteralGenerator();
 
         Map<BeanInfo, String> beanToGeneratedName = new HashMap<>();
         Map<ObserverInfo, String> observerToGeneratedName = new HashMap<>();
         Map<InterceptorInfo, String> interceptorToGeneratedName = new HashMap<>();
-
-        AnnotationLiteralProcessor annotationLiterals = new AnnotationLiteralProcessor(name, sharedAnnotationLiterals);
 
         long start = System.currentTimeMillis();
         List<Resource> resources = new ArrayList<>();
@@ -103,7 +102,7 @@ public class BeanProcessor {
 
         // Generate beans
         for (BeanInfo bean : beanDeployment.getBeans()) {
-            for (Resource resource : beanGenerator.generate(bean, annotationLiterals, reflectionRegistration)) {
+            for (Resource resource : beanGenerator.generate(bean, reflectionRegistration)) {
                 resources.add(resource);
                 if (SpecialType.BEAN.equals(resource.getSpecialType())) {
                     if (bean.getScope().isNormal()) {
@@ -120,7 +119,7 @@ public class BeanProcessor {
 
         // Generate observers
         for (ObserverInfo observer : beanDeployment.getObservers()) {
-            for (Resource resource : observerGenerator.generate(observer, annotationLiterals, reflectionRegistration)) {
+            for (Resource resource : observerGenerator.generate(observer, reflectionRegistration)) {
                 resources.add(resource);
                 if (SpecialType.OBSERVER.equals(resource.getSpecialType())) {
                     observerToGeneratedName.put(observer, resource.getName());

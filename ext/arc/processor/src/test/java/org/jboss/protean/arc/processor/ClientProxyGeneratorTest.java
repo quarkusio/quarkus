@@ -24,11 +24,11 @@ public class ClientProxyGeneratorTest {
         BeanDeployment deployment = new BeanDeployment(index, null, null);
         deployment.init();
 
-        BeanGenerator beanGenerator = new BeanGenerator();
+        BeanGenerator beanGenerator = new BeanGenerator( new AnnotationLiteralProcessor(BeanProcessor.DEFAULT_NAME, true));
         ClientProxyGenerator proxyGenerator = new ClientProxyGenerator();
 
         deployment.getBeans().stream().filter(bean -> bean.getScope().isNormal()).forEach(bean -> {
-            for (Resource resource : beanGenerator.generate(bean, new AnnotationLiteralProcessor(BeanProcessor.DEFAULT_NAME, true), ReflectionRegistration.NOOP)) {
+            for (Resource resource : beanGenerator.generate(bean, ReflectionRegistration.NOOP)) {
                 proxyGenerator.generate(bean, resource.getFullyQualifiedName(), ReflectionRegistration.NOOP);
             }
         });

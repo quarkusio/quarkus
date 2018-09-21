@@ -14,6 +14,8 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.PrimitiveType;
+import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.protean.arc.ComputingCache;
 import org.jboss.protean.arc.processor.AnnotationLiteralProcessor.CacheKey;
@@ -72,47 +74,94 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
                 value = method.defaultValue();
             }
             ResultHandle retValue = null;
-            if (value != null) {
+            if (value == null) {
+                switch (method.returnType().kind()) {
+                    case CLASS:
+                    case ARRAY:
+                        retValue = valueMethod.loadNull();
+                        break;
+                    case PRIMITIVE:
+                        PrimitiveType primitiveType = method.returnType().asPrimitiveType();
+                        switch (primitiveType.primitive()) {
+                            case BOOLEAN:
+                                retValue = valueMethod.load(false);
+                                break;
+                            case BYTE:
+                            case SHORT:
+                            case INT:
+                                retValue = valueMethod.load(0);
+                                break;
+                            case LONG:
+                                retValue = valueMethod.load(0L);
+                                break;
+                            case FLOAT:
+                                retValue = valueMethod.load(0.0f);
+                                break;
+                            case DOUBLE:
+                                retValue = valueMethod.load(0.0d);
+                                break;
+                            case CHAR:
+                                retValue = valueMethod.load('\u0000');
+                                break;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            } else {
                 switch (value.kind()) {
                     case BOOLEAN:
-                        retValue = value != null ? valueMethod.load(value.asBoolean()) : valueMethod.load(false);
+                        retValue = valueMethod.load(value.asBoolean());
                         break;
                     case STRING:
-                        retValue = value != null ? valueMethod.load(value.asString()) : valueMethod.loadNull();
+                        retValue = valueMethod.load(value.asString());
                         break;
                     case BYTE:
-                        retValue = value != null ? valueMethod.load(value.asByte()) : valueMethod.load(0);
+                        retValue = valueMethod.load(value.asByte());
                         break;
                     case SHORT:
-                        retValue = value != null ? valueMethod.load(value.asShort()) : valueMethod.load(0);
+                        retValue = valueMethod.load(value.asShort());
                         break;
                     case LONG:
-                        retValue = value != null ? valueMethod.load(value.asLong()) : valueMethod.load(0L);
+                        retValue = valueMethod.load(value.asLong());
                         break;
                     case INTEGER:
-                        retValue = value != null ? valueMethod.load(value.asInt()) : valueMethod.load(0);
+                        retValue = valueMethod.load(value.asInt());
                         break;
                     case FLOAT:
-                        retValue = value != null ? valueMethod.load(value.asFloat()) : valueMethod.load(0.0f);
+                        retValue = valueMethod.load(value.asFloat());
                         break;
                     case DOUBLE:
-                        retValue = value != null ? valueMethod.load(value.asDouble()) : valueMethod.load(0.0d);
+                        retValue = valueMethod.load(value.asDouble());
                         break;
                     case CHARACTER:
-                        retValue = value != null ? valueMethod.load(value.asChar()) : valueMethod.load('\u0000');
+                        retValue = valueMethod.load(value.asChar());
                         break;
                     case CLASS:
-                        retValue = value != null ? valueMethod.loadClass(value.asClass().toString()) : valueMethod.loadNull();
+                        retValue = valueMethod.loadClass(value.asClass().toString());
                         break;
                     case ARRAY:
-                        // Always return an empty array
-                        // Array members must be Nonbinding
-                        retValue = value != null ? valueMethod.newArray(componentType(method), valueMethod.load(0)) : valueMethod.loadNull();
+                        switch (value.componentKind()) {
+                            case CLASS:
+                                Type[] classArray = value.asClassArray();
+                                retValue = valueMethod.newArray(componentType(method), valueMethod.load(classArray.length));
+                                for (int i = 0; i < classArray.length; i++) {
+                                    valueMethod.writeArrayValue(retValue, valueMethod.load(i), valueMethod.loadClass(classArray[i].name().toString()));
+                                }
+                                break;
+                            // TODO other types of array components
+                            // Note that array members should be Nonbinding in CDI
+                            default:
+                                // For an empty array component kind is UNKNOWN
+                                if (!method.returnType().name().equals(DotNames.CLASS)) {
+                                    LOGGER.warnf("Unsupported array component type %s on %s - literal returns an empty array", method, annotationClass);
+                                }
+                                retValue = valueMethod.newArray(componentType(method), valueMethod.load(0));
+                        }
                         break;
                     case ENUM:
-                        retValue = value != null
-                                ? valueMethod.readStaticField(FieldDescriptor.of(value.asEnumType().toString(), value.asEnum(), value.asEnumType().toString()))
-                                : valueMethod.loadNull();
+                        retValue = valueMethod
+                                .readStaticField(FieldDescriptor.of(value.asEnumType().toString(), value.asEnum(), value.asEnumType().toString()));
                         break;
                     case NESTED:
                     default:

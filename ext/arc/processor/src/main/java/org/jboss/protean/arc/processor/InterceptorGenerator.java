@@ -42,6 +42,14 @@ public class InterceptorGenerator extends BeanGenerator {
 
     /**
      *
+     * @param annotationLiterals
+     */
+    public InterceptorGenerator(AnnotationLiteralProcessor annotationLiterals) {
+        super(annotationLiterals);
+    }
+
+    /**
+     *
      * @param interceptor bean
      * @return a collection of resources
      */
@@ -75,8 +83,9 @@ public class InterceptorGenerator extends BeanGenerator {
 
         createProviderFields(interceptorCreator, interceptor, injectionPointToProviderField, interceptorToProviderField);
         createConstructor(classOutput, interceptorCreator, interceptor, baseName, injectionPointToProviderField, interceptorToProviderField,
-                annotationLiterals, bindings.getFieldDescriptor());
-        createCreate(interceptorCreator, interceptor, providerTypeName, baseName, injectionPointToProviderField, interceptorToProviderField, reflectionRegistration);
+                bindings.getFieldDescriptor());
+        createCreate(classOutput, interceptorCreator, interceptor, providerTypeName, baseName, injectionPointToProviderField, interceptorToProviderField,
+                reflectionRegistration);
         createGet(interceptor, interceptorCreator, providerTypeName);
         createGetTypes(interceptorCreator, beanTypes.getFieldDescriptor());
         // Interceptors are always @Dependent and have always default qualifiers
@@ -93,8 +102,7 @@ public class InterceptorGenerator extends BeanGenerator {
     }
 
     protected void createConstructor(ClassOutput classOutput, ClassCreator creator, InterceptorInfo interceptor, String baseName,
-            Map<InjectionPointInfo, String> injectionPointToProviderField, Map<InterceptorInfo, String> interceptorToProviderField,
-            AnnotationLiteralProcessor annotationLiterals, FieldDescriptor bindings) {
+            Map<InjectionPointInfo, String> injectionPointToProviderField, Map<InterceptorInfo, String> interceptorToProviderField, FieldDescriptor bindings) {
 
         MethodCreator constructor = initConstructor(classOutput, creator, interceptor, baseName, injectionPointToProviderField, interceptorToProviderField,
                 annotationLiterals);
@@ -107,8 +115,7 @@ public class InterceptorGenerator extends BeanGenerator {
             // Create annotation literal first
             ClassInfo bindingClass = interceptor.getDeployment().getInterceptorBinding(bindingAnnotation.name());
             String literalType = annotationLiterals.process(classOutput, bindingClass, bindingAnnotation, Types.getPackageName(creator.getClassName()));
-            constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, bindingsHandle,
-                    constructor.newInstance(MethodDescriptor.ofConstructor(literalType)));
+            constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, bindingsHandle, constructor.newInstance(MethodDescriptor.ofConstructor(literalType)));
         }
         constructor.writeInstanceField(bindings, constructor.getThis(), bindingsHandle);
         constructor.returnValue(null);
@@ -171,7 +178,8 @@ public class InterceptorGenerator extends BeanGenerator {
         intercept.returnValue(intercept.loadNull());
     }
 
-    private void addIntercept(MethodCreator intercept, MethodInfo interceptorMethod, InterceptionType interceptionType, String providerTypeName, ReflectionRegistration reflectionRegistration) {
+    private void addIntercept(MethodCreator intercept, MethodInfo interceptorMethod, InterceptionType interceptionType, String providerTypeName,
+            ReflectionRegistration reflectionRegistration) {
         if (interceptorMethod != null) {
             ResultHandle enumValue = intercept
                     .readStaticField(FieldDescriptor.of(InterceptionType.class.getName(), interceptionType.name(), InterceptionType.class.getName()));

@@ -6,6 +6,8 @@ import javax.json.JsonReader;
 
 public interface URLResponse {
 
+    int statusCode();
+
     String asString();
 
     InputStream asInputStream();

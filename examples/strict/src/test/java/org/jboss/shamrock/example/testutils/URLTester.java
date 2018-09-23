@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -33,7 +34,7 @@ public final class URLTester {
     }
 
     private URLResponse privateInvokeURL() throws IOException {
-        URLConnection connection = fullURL.openConnection();
+        HttpURLConnection connection = (HttpURLConnection)fullURL.openConnection();
         InputStream in = connection.getInputStream();
         byte[] buf = new byte[100];
         int r;
@@ -41,7 +42,7 @@ public final class URLTester {
         while ((r = in.read(buf)) > 0) {
             out.write(buf, 0, r);
         }
-        return new URLResponseAdapter(out);
+        return new URLResponseAdapter(out, connection.getResponseCode());
     }
 
     public URLResponse invokeURL() {
@@ -55,14 +56,21 @@ public final class URLTester {
     private static class URLResponseAdapter implements URLResponse {
 
         private final ByteArrayOutputStream buffer;
+        private final int statusCode;
 
-        public URLResponseAdapter(final ByteArrayOutputStream buffer) {
+        public URLResponseAdapter(final ByteArrayOutputStream buffer, int statusCode) {
             this.buffer = buffer;
+            this.statusCode = statusCode;
         }
 
         @Override
         public String toString() {
             return new String(buffer.toByteArray());
+        }
+
+        @Override
+        public int statusCode() {
+            return 0;
         }
 
         @Override

@@ -41,6 +41,8 @@ import io.smallrye.config.inject.ConfigProducer;
 
 public class ArcAnnotationProcessor implements ResourceProcessor {
 
+    private static final DotName JAVA_LANG_OBJECT = DotName.createSimple(Object.class.getName());
+
     @Inject
     BeanDeployment beanDeployment;
 
@@ -162,6 +164,10 @@ public class ArcAnnotationProcessor implements ResourceProcessor {
                 }
             }
         }
+        if (!beanInfo.superName().equals(JAVA_LANG_OBJECT)) {
+            indexBeanClass(beanInfo.superName().toString(), indexer, shamrockIndex, additionalIndex);
+        }
+
     }
 
     private void indexBeanClass(String beanClass, Indexer indexer, IndexView shamrockIndex, Set<DotName> additionalIndex, byte[] beanData) {

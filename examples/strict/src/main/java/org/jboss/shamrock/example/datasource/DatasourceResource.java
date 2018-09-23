@@ -7,6 +7,8 @@ import java.sql.Statement;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.sql.DataSource;
+import javax.transaction.Status;
+import javax.transaction.Transactional;
 import javax.transaction.UserTransaction;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -67,4 +69,59 @@ public class DatasourceResource {
         }
     }
 
+
+
+    @GET
+    @Path("/txninterceptor0")
+    @Transactional(value = Transactional.TxType.REQUIRED)
+    public String transactionInterceptorTest0() throws Exception {
+        if (userTransaction.getStatus() != Status.STATUS_ACTIVE) {
+            return "FAILED";
+        }
+        try (Connection con = dataSource.getConnection()) {
+            try (Statement statement = con.createStatement()) {
+                statement.execute("insert into tx values (1234)");
+            }
+        }
+        return "PASSED";
+    }
+
+    @GET
+    @Path("/txninterceptor1")
+    @Transactional(value = Transactional.TxType.REQUIRED)
+    public String transactionInterceptorTest1() throws Exception {
+        if (userTransaction.getStatus() != Status.STATUS_ACTIVE) {
+            return "FAILED";
+        }
+        try (Connection con = dataSource.getConnection()) {
+            try (Statement statement = con.createStatement()) {
+                statement.execute("insert into tx values (787)");
+            }
+        }
+        throw new RuntimeException("ROLLBACK");
+    }
+
+
+    @GET
+    @Path("/txninterceptor2")
+    @Transactional(value = Transactional.TxType.REQUIRED)
+    public String transactionInterceptorTest2() throws Exception {
+        try (Connection con = dataSource.getConnection()) {
+            try (Statement statement = con.createStatement()) {
+                try (ResultSet rs = statement.executeQuery("select b from tx where b=787")) {
+                    if (rs.next()) {
+                        return "FAILED: 787 was present even though TX rolled back";
+                    }
+                }
+            }
+            try (Statement statement = con.createStatement()) {
+                try (ResultSet rs = statement.executeQuery("select b from tx where b=1234")) {
+                    if (!rs.next()) {
+                        return "FAILED: 1234 was not present";
+                    }
+                }
+            }
+            return "PASSED";
+        }
+    }
 }

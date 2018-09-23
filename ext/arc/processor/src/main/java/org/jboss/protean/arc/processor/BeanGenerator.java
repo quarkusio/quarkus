@@ -693,7 +693,7 @@ public class BeanGenerator extends AbstractGenerator {
                     LOGGER.infof("@Inject %s#%s is private - Arc users are encouraged to avoid using private injection fields",
                             fieldInjection.target.asField().declaringClass().name(), fieldInjection.target.asField().name());
                     reflectionRegistration.registerField(fieldInjection.target.asField());
-                    create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_WRITE_FIELD, create.loadClass(providerTypeName),
+                    create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_WRITE_FIELD, create.loadClass(fieldInjection.target.asField().declaringClass().name().toString()),
                             create.load(fieldInjection.target.asField().name()), instanceHandle, referenceHandle);
                 } else {
                     create.writeInstanceField(

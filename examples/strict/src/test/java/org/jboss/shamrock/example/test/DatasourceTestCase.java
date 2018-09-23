@@ -1,10 +1,12 @@
 package org.jboss.shamrock.example.test;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.hsqldb.Server;
+import org.jboss.shamrock.example.testutils.URLResponse;
 import org.jboss.shamrock.example.testutils.URLTester;
 import org.jboss.shamrock.junit.ShamrockTest;
 import org.junit.AfterClass;
@@ -43,4 +45,22 @@ public class DatasourceTestCase {
     public void testDataSourceTransactions() {
         Assert.assertEquals("PASSED", URLTester.relative("rest/datasource/txn").invokeURL().asString());
     }
+
+    @Test
+    public void testTransactionalAnnotation() {
+        //TODO: this does not really belong here, but it saves having to set all the DB stuff up again
+
+        Assert.assertEquals("PASSED", URLTester.relative("rest/datasource/txninterceptor0").invokeURL().asString());
+
+        try {
+            URLResponse resp = URLTester.relative("rest/datasource/txninterceptor1").invokeURL();
+            Assert.fail(resp.asString());
+        } catch (RuntimeException expected) {
+
+        }
+        Assert.assertEquals("PASSED", URLTester.relative("rest/datasource/txninterceptor2").invokeURL().asString());
+
+
+    }
+
 }

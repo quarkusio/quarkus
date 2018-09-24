@@ -1,6 +1,8 @@
 package org.jboss.shamrock.jpa.runtime;
 
+import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.protean.Hibernate;
+import org.hibernate.protean.impl.PersistenceUnitsHolder;
 import org.jboss.shamrock.jpa.runtime.cdi.SystemEntityManager;
 import org.jboss.shamrock.runtime.BeanContainer;
 import org.jboss.shamrock.runtime.ContextObject;
@@ -43,6 +45,10 @@ public class JPADeploymentTemplate {
         } else {
             beanContainer.instance(EntityManagerFactory.class).getProperties();
         }
+    }
+
+    public void initMetadata(List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors) {
+        PersistenceUnitsHolder.initializeJpa(parsedPersistenceXmlDescriptors);
     }
 
 }

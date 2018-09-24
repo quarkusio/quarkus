@@ -14,15 +14,14 @@ import org.hibernate.protean.recording.RecordedState;
 
 public final class PersistenceUnitsHolder {
 
-	private static final PUStatus COMPACT_UNITS = builderPuStatus();
+	private static volatile PUStatus COMPACT_UNITS = null;
 
 	private static final Object NO_NAME_TOKEN = new Object();
 
-	private static PUStatus builderPuStatus() {
-		final List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors = loadOriginalXMLParsedDescriptors();
+	public static void initializeJpa(List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors) {
 		final List<PersistenceUnitDescriptor> units = convertPersistenceUnits( parsedPersistenceXmlDescriptors );
 		final Map<String,RecordedState> metadata = constructMetadataAdvance( parsedPersistenceXmlDescriptors );
-		return new PUStatus( units, metadata );
+		COMPACT_UNITS = new PUStatus( units, metadata );
 	}
 
 	private static List<PersistenceUnitDescriptor> convertPersistenceUnits(final List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors) {
@@ -37,11 +36,13 @@ public final class PersistenceUnitsHolder {
 		}
 	}
 
-	private static List<ParsedPersistenceXmlDescriptor> loadOriginalXMLParsedDescriptors() {
+	public static List<ParsedPersistenceXmlDescriptor> loadOriginalXMLParsedDescriptors() {
 		//Enforce the persistence.xml configuration to be interpreted literally without allowing runtime overrides;
 		//(check for the runtime provided properties to be empty as well)
 		Map<Object, Object> configurationOverrides = Collections.emptyMap();
-		return PersistenceXmlParser.locatePersistenceUnits( configurationOverrides );
+		List<ParsedPersistenceXmlDescriptor> ret = PersistenceXmlParser.locatePersistenceUnits(configurationOverrides);
+		initializeJpa(ret);
+		return ret;
 	}
 
 	private static Map<String,RecordedState> constructMetadataAdvance(final List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors) {
@@ -57,6 +58,9 @@ public final class PersistenceUnitsHolder {
 	}
 
 	static RecordedState getMetadata(String persistenceUnitName) {
+		if(COMPACT_UNITS == null) {
+			throw new RuntimeException("JPA not initialized yet");
+		}
 		Object key = persistenceUnitName;
 		if ( persistenceUnitName == null ) {
 			key = NO_NAME_TOKEN;
@@ -79,6 +83,9 @@ public final class PersistenceUnitsHolder {
 
 	// Not a public contract but used by Shamrock
 	public static List<PersistenceUnitDescriptor> getPersistenceUnitDescriptors() {
+		if(COMPACT_UNITS == null) {
+			throw new RuntimeException("JPA not initialized yet");
+		}
 		return COMPACT_UNITS.units;
 	}
 
@@ -92,10 +99,6 @@ public final class PersistenceUnitsHolder {
 			this.metadata = metadata;
 		}
 
-	}
-
-	public static void featureInit(){
-		System.out.println("Hibernate's PersistenceUnitsHolder was initialized");
 	}
 
 }

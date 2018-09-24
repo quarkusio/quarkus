@@ -61,7 +61,6 @@ final class FastBootEntityManagerFactoryBuilder implements EntityManagerFactoryB
 	public EntityManagerFactory build() {
 		SessionFactoryBuilder sfBuilder = metadata.getSessionFactoryBuilder();
 		populate( sfBuilder, standardServiceRegistry );
-
 		try {
 			return sfBuilder.build();
 		}

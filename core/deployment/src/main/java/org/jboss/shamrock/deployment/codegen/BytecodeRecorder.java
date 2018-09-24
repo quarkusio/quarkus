@@ -1,6 +1,9 @@
 package org.jboss.shamrock.deployment.codegen;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.util.List;
+import java.util.function.Function;
 
 import org.jboss.shamrock.runtime.InjectionInstance;
 
@@ -37,6 +40,16 @@ public interface BytecodeRecorder extends AutoCloseable {
      * @param substitution The subclass of {@link ObjectSubstitution} that performs the substitution
      */
     <F, T> void registerSubstitution(Class<F> from, Class<T> to, Class<? extends ObjectSubstitution<F, T>> substitution);
+
+    /**
+     * Registers a way to construct an object via a non-default constructor. Each object may only have at most one
+     * non-default constructor registered
+     *
+     * @param constructor The constructor
+     * @param parameters A function that maps the object to a list of constructor parameters
+     * @param <T> The type of the object
+     */
+    <T> void registerNonDefaultConstructor(Constructor<T> constructor, Function<T, List<Object>> parameters);
 
     /**
      * Creates an instance factory that can be used to create an injected instance.

@@ -8,6 +8,7 @@ package org.jboss.shamrock.deployment;
 public class RuntimePriority {
 
     public static final int UNDERTOW_CREATE_DEPLOYMENT = 100;
+    public static final int JPA_DEPLOYMENT = 150;
     public static final int UNDERTOW_REGISTER_SERVLET = 200;
     public static final int FAULT_TOLERANCE_DEPLOYMENT = 250;
     public static final int HEALTH_DEPLOYMENT = 260;

@@ -16,7 +16,7 @@
 
             <!-- Connection specific -->
             <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQL95Dialect"/>
-            <property name="hibernate.connection.url" value="jdbc:postgresql:hibernate_orm_test"/>
+            <property name="hibernate.connection.url" value="${postgres.url}"/>
             <property name="hibernate.connection.username" value="hibernate_orm_test"/>
             <property name="hibernate.connection.password" value="hibernate_orm_test"/>
 

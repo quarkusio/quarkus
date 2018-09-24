@@ -2,6 +2,7 @@ package org.jboss.shamrock.jpa.cdi;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -19,6 +20,8 @@ import javax.persistence.PersistenceUnit;
 import javax.transaction.TransactionManager;
 import javax.transaction.TransactionSynchronizationRegistry;
 
+import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
+import org.hibernate.protean.impl.PersistenceUnitsHolder;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
@@ -48,7 +51,7 @@ public class HibernateCdiResourceProcessor implements ResourceProcessor {
     private static final DotName PRODUCES = DotName.createSimple(Produces.class.getName());
 
     @Inject
-    private BeanDeployment beanDeployment;
+    BeanDeployment beanDeployment;
 
     @Inject
     BeanArchiveIndex beanArchiveIndex;
@@ -60,13 +63,29 @@ public class HibernateCdiResourceProcessor implements ResourceProcessor {
         Set<String> knownContextNames = new HashSet<>();
         scanForAnnotations(archiveContext, knownUnitNames, PERSISTENCE_UNIT);
         scanForAnnotations(archiveContext, knownContextNames, PERSISTENCE_CONTEXT);
-        knownUnitNames.remove(""); //TODO: support for the default PU
         //now create producer beans for all of the above unit names
         //this is not great, we really need a better way to do this than generating bytecode
 
+        String defaultName = null;
+        List<PersistenceUnitDescriptor> pus = PersistenceUnitsHolder.getPersistenceUnitDescriptors();
+        if(pus.size() ==1) {
+            defaultName = pus.get(0).getName();
+
+            if(knownUnitNames.contains("")) {
+                knownUnitNames.remove("");
+                knownUnitNames.add(defaultName);
+            }
+            if(knownContextNames.contains("")) {
+                knownContextNames.remove("");
+                knownContextNames.add(defaultName);
+            }
+        }
 
         Set<String> allKnownNames = new HashSet<>(knownUnitNames);
         allKnownNames.addAll(knownContextNames);
+        if(allKnownNames.contains("") && defaultName == null) {
+            throw new RuntimeException("No default persistence unit could be determined, you must specify the name at the injection point");
+        }
 
         for (String name : allKnownNames) {
             String className = getClass().getName() + "$$EMFProducer-" + name;
@@ -183,25 +202,23 @@ public class HibernateCdiResourceProcessor implements ResourceProcessor {
 
     private void scanForAnnotations(ArchiveContext archiveContext, Set<String> knownUnitNames, DotName nm) {
         for (AnnotationInstance anno : archiveContext.getCombinedIndex().getAnnotations(nm)) {
-            AnnotationValue unitName = anno.value("unitName");
-            if(unitName == null) {
-                continue;
-            }
+            AnnotationValue unitNameValue = anno.value("unitName");
+            String unitName = unitNameValue == null ? "" : unitNameValue.asString();
             if (anno.target().kind() == AnnotationTarget.Kind.METHOD) {
                 if (anno.target().asMethod().hasAnnotation(PRODUCES)) {
-                    knownUnitNames.add(unitName.asString());
+                    knownUnitNames.add(unitName);
                 }
             } else if (anno.target().kind() == AnnotationTarget.Kind.FIELD) {
                 for (AnnotationInstance i : anno.target().asField().annotations()) {
                     if (i.name().equals(PRODUCES)) {
-                        knownUnitNames.add(unitName.asString());
+                        knownUnitNames.add(unitName);
                         break;
                     }
                 }
             } else if (anno.target().kind() == AnnotationTarget.Kind.CLASS) {
                 for (AnnotationInstance i : anno.target().asClass().classAnnotations()) {
                     if (i.name().equals(PRODUCES)) {
-                        knownUnitNames.add(unitName.asString());
+                        knownUnitNames.add(unitName);
                         break;
                     }
                 }

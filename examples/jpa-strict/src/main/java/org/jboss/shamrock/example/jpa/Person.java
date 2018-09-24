@@ -14,6 +14,7 @@ public class Person {
     private long id;
     private String name;
     private SequencedAddress address;
+    private Status status;
 
     public Person() {
     }
@@ -50,8 +51,16 @@ public class Person {
         this.address = address;
     }
 
+    public Status getStatus() {
+        return status;
+    }
+
+    public void setStatus(Status status) {
+        this.status = status;
+    }
+
     public void describeFully(StringBuilder sb) {
-        sb.append( "Person with id=" ).append( id ).append( ", name='" ).append( name ).append( "', address { " );
+        sb.append( "Person with id=" ).append( id ).append( ", name='" ).append( name ).append("', status='").append(status).append( "', address { " );
         getAddress().describeFully( sb );
         sb.append( " }" );
     }

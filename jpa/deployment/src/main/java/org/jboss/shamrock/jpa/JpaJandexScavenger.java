@@ -2,6 +2,7 @@ package org.jboss.shamrock.jpa;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -19,6 +20,7 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.shamrock.deployment.ArchiveContext;
 import org.jboss.shamrock.deployment.ProcessorContext;
@@ -42,6 +44,8 @@ final class JpaJandexScavenger {
     private static final DotName EMBEDDABLE = DotName.createSimple(Embeddable.class.getName());
     private static final DotName EMBEDDED = DotName.createSimple(Embedded.class.getName());
     private static final DotName MAPPED_SUPERCLASS = DotName.createSimple(MappedSuperclass.class.getName());
+
+    private static final DotName ENUM = DotName.createSimple(Enum.class.getName());
 
     private final ArchiveContext archiveContext;
     private final ProcessorContext processorContext;
@@ -153,6 +157,15 @@ final class JpaJandexScavenger {
                 throw new IllegalStateException("The Jandex index is not complete, missing: " + className.toString());
             }
         }
+        //we need to check for enums
+        for(FieldInfo fieldInfo : classInfo.fields()) {
+            DotName type = fieldInfo.type().name();
+            ClassInfo typeCi = index.getClassByName(type);
+            if(typeCi != null && typeCi.superName().equals(ENUM)) {
+                collector.addEnumType(type.toString());
+            }
+        }
+
         //Capture this one (for various needs: Reflective access enablement, Hibernate enhancement, JPA Template)
         collector.addEntity(className.toString());
         // add superclass recursively
@@ -166,6 +179,7 @@ final class JpaJandexScavenger {
     private static class DomainObjectSet implements KnownDomainObjects {
 
         private final Set<String> classNames = new HashSet<String>();
+        private final Set<String> enumTypes = new HashSet<String>();
 
         public void addEntity(final String className) {
             classNames.add(className);
@@ -181,11 +195,21 @@ final class JpaJandexScavenger {
             for (String className : classNames) {
                 processorContext.addReflectiveClass(true, true, className);
             }
+            if(!enumTypes.isEmpty()) {
+                processorContext.addReflectiveClass(true, false, Enum.class.getName());
+                for (String className : enumTypes) {
+                    processorContext.addReflectiveClass(true, false, className);
+                }
+            }
         }
 
         @Override
         public boolean contains(final String className) {
             return classNames.contains(className);
+        }
+
+        public void addEnumType(String s) {
+            enumTypes.add(s);
         }
     }
 

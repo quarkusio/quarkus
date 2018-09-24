@@ -72,6 +72,9 @@ public class JPATestBootstrapEndpoint extends HttpServlet {
         for (Person p : allpersons) {
             p.describeFully(sb);
             sb.append("\n\t");
+            if(p.getStatus() != Status.LIVING) {
+                throw new RuntimeException("Incorrect status " + p);
+            }
         }
         sb.append("\nList complete.\n");
         System.out.print(sb);
@@ -80,6 +83,7 @@ public class JPATestBootstrapEndpoint extends HttpServlet {
     private static void persistNewPerson(EntityManager entityManager) {
         Person person = new Person();
         person.setName(randomName());
+        person.setStatus(Status.LIVING);
         person.setAddress(new SequencedAddress("Street " + randomName()));
         entityManager.persist(person);
     }

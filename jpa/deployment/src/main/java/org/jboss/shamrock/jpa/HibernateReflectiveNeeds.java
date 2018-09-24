@@ -3,6 +3,7 @@ package org.jboss.shamrock.jpa;
 import java.util.Objects;
 
 import org.hibernate.tuple.component.PojoComponentTuplizer;
+import org.hibernate.type.EnumType;
 import org.jboss.shamrock.deployment.ProcessorContext;
 
 /**
@@ -36,6 +37,7 @@ final class HibernateReflectiveNeeds {
         simpleConstructor(org.hibernate.id.enhanced.SequenceStyleGenerator.class);
         simpleConstructor(org.hibernate.boot.model.naming.ImplicitNamingStrategyJpaCompliantImpl.class);
         simpleConstructor(org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorBuilderImpl.class);
+        simpleConstructor(EnumType.class);
         processorContext.addReflectiveClass(true, false, com.arjuna.ats.jta.UserTransaction.class.getName());
         processorContext.addReflectiveClass(true, false, com.arjuna.ats.jta.TransactionManager.class.getName());
 

@@ -1,5 +1,6 @@
 package org.jboss.protean.gizmo;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -56,6 +57,10 @@ public class MethodDescriptor {
             args[i] = DescriptorUtils.classToStringRepresentation(parameterTypes[i]);
         }
         return new MethodDescriptor(DescriptorUtils.objectToInternalClassName(declaringClass), name, DescriptorUtils.classToStringRepresentation(returnType), args);
+    }
+
+    public static MethodDescriptor ofMethod(Method method) {
+        return ofMethod(method.getDeclaringClass(), method.getName(), method.getReturnType(), method.getParameterTypes());
     }
 
     public static MethodDescriptor ofMethod(Object declaringClass, String name, Object returnType, Object... parameterTypes) {

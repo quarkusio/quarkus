@@ -63,6 +63,9 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter(defaultValue = "false")
     private boolean enableJni;
 
+    @Parameter(defaultValue = "${native-image.xmx}")
+    private String nativeImageXmx;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
 
@@ -107,6 +110,9 @@ public class NativeImageMojo extends AbstractMojo {
                 command.add("-J-Xnoagent");
                 command.add("-J-Djava.compiler=NONE");
                 command.add("-J-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y");
+            }
+            if(nativeImageXmx != null) {
+                command.add("-J-Xmx" + nativeImageXmx);
             }
             if(enableHttpUrlHandler) {
                 command.add("-H:EnableURLProtocols=http");

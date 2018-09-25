@@ -40,9 +40,6 @@ final class LightPersistenceXmlDescriptor implements PersistenceUnitDescriptor {
 		if ( toClone.getNonJtaDataSource() != null ) {
 			throw new UnsupportedOperationException( "Value found for #getNonJtaDataSource : not supported yet" );
 		}
-		if ( toClone.getJtaDataSource() != null ) {
-			throw new UnsupportedOperationException( "Value found for #getJtaDataSource : not supported yet" );
-		}
 		//This one needs to be ignored:
 		//		if ( toClone.getPersistenceUnitRootUrl() != null ) {
 		//			throw new UnsupportedOperationException( "Value found for #getPersistenceUnitRootUrl : not supported yet" );

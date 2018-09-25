@@ -54,7 +54,7 @@ public final class HibernateResourceProcessor implements ResourceProcessor {
 
         try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.JPA_DEPLOYMENT)) {
             recorder.registerNonDefaultConstructor(ParsedPersistenceXmlDescriptor.class.getDeclaredConstructor(URL.class), (i) -> Collections.singletonList(i.getPersistenceUnitRootUrl()));
-            recorder.getRecordingProxy(JPADeploymentTemplate.class).initMetadata(descriptors, scanner);
+            recorder.getRecordingProxy(JPADeploymentTemplate.class).initMetadata(descriptors, scanner, null);
         }
 
 

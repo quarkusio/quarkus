@@ -170,6 +170,9 @@ class FastBootMetadataBuilder {
 	private MergedSettings mergeSettings(PersistenceUnitDescriptor persistenceUnit) {
 		final MergedSettings mergedSettings = new MergedSettings();
 
+		if(persistenceUnit.getJtaDataSource() != null) {
+			mergedSettings.configurationValues.put("hibernate.connection.datasource", persistenceUnit.getJtaDataSource());
+		}
 		// Protean specific!
 		mergedSettings.configurationValues.put( "hibernate.temp.use_jdbc_metadata_defaults", "false" );
 

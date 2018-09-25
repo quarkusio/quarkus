@@ -1,3 +1,5 @@
 datasource:
-  url: "jdbc:hsqldb:hsql://localhost:7676/test"
-  driver: "org.hsqldb.jdbc.JDBCDriver"
+  url: ${postgres.url}
+  driver: "org.postgresql.Driver"
+  username: "hibernate_orm_test"
+  password: "hibernate_orm_test"

@@ -12,8 +12,6 @@ public class DataSourceTransactionTestCase {
 
     @Test
     public void testTransactionalAnnotation() {
-        //TODO: this does not really belong here, but it saves having to set all the DB stuff up again
-
         Assert.assertEquals("PASSED", URLTester.relative("rest/datasource/txninterceptor0").invokeURL().asString());
 
         try {

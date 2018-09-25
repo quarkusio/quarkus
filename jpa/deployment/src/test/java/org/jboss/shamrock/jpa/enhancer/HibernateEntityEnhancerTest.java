@@ -2,6 +2,7 @@ package org.jboss.shamrock.jpa.enhancer;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -60,6 +61,11 @@ public class HibernateEntityEnhancerTest {
         @Override
         public boolean contains(final String className) {
             return TEST_CLASSNAME.equals(className);
+        }
+
+        @Override
+        public Set<String> getClassNames() {
+            return Collections.singleton(TEST_CLASSNAME);
         }
     }
 

@@ -14,6 +14,7 @@ import org.hibernate.boot.CacheRegionDefinition;
 import org.hibernate.boot.MetadataBuilder;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.archive.scan.internal.StandardScanOptions;
+import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.boot.internal.MetadataImpl;
 import org.hibernate.boot.model.IdentifierGeneratorDefinition;
 import org.hibernate.boot.model.process.spi.ManagedResources;
@@ -87,7 +88,7 @@ class FastBootMetadataBuilder {
 	private final MetadataBuilderImplementor metamodelBuilder;
 	private final Object validatorFactory;
 
-	FastBootMetadataBuilder(final PersistenceUnitDescriptor persistenceUnit) {
+	FastBootMetadataBuilder(final PersistenceUnitDescriptor persistenceUnit, Scanner scanner) {
 		this.persistenceUnit = persistenceUnit;
 		final ClassLoaderService providedClassLoaderService = FlatClassLoaderService.INSTANCE;
 
@@ -118,6 +119,7 @@ class FastBootMetadataBuilder {
 		addPUManagedClassNamesToMetadataSources(persistenceUnit, metadataSources);
 
 		this.metamodelBuilder = (MetadataBuilderImplementor) metadataSources.getMetadataBuilder( standardServiceRegistry );
+		this.metamodelBuilder.applyScanner(scanner);
 		populate( metamodelBuilder, mergedSettings, standardServiceRegistry );
 
 		this.managedResources = MetadataBuildingProcess.prepare(

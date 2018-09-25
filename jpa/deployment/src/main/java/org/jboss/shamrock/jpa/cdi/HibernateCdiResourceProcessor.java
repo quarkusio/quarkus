@@ -87,31 +87,36 @@ public class HibernateCdiResourceProcessor implements ResourceProcessor {
             throw new RuntimeException("No default persistence unit could be determined, you must specify the name at the injection point");
         }
 
-        for (String name : allKnownNames) {
-            String className = getClass().getName() + "$$EMFProducer-" + name;
-            AtomicReference<byte[]> bytes = new AtomicReference<>();
-            try (ClassCreator creator = new ClassCreator(new InMemoryClassOutput(bytes, processorContext), className, null, Object.class.getName())) {
-
-                creator.addAnnotation(Dependent.class);
-                MethodCreator producer = creator.getMethodCreator("producerMethod", EntityManagerFactory.class);
-                producer.addAnnotation(Produces.class);
-                producer.addAnnotation(ApplicationScoped.class);
-                if (!knownUnitNames.contains(name)) {
-                    //there was no @PersistenceUnit producer with this name
-                    //this means that we still need it, but the user would not be expecting a bean to be registered
-                    //we register an artificial qualifier that we will use for the managed persistence contexts
-                    producer.addAnnotation(SystemEntityManager.class);
-                }
-
-                ResultHandle ret = producer.invokeStaticMethod(MethodDescriptor.ofMethod(Persistence.class, "createEntityManagerFactory", EntityManagerFactory.class, String.class), producer.load(name));
-                producer.returnValue(ret);
-            }
-            beanDeployment.addGeneratedBean(className, bytes.get());
-        }
-
-
         try(BytecodeRecorder recorder = processorContext.addDeploymentTask(RuntimePriority.BOOTSTRAP_EMF)) {
             JPADeploymentTemplate template = recorder.getRecordingProxy(JPADeploymentTemplate.class);
+
+            for (String name : allKnownNames) {
+                String className = getClass().getName() + "$$EMFProducer-" + name;
+                AtomicReference<byte[]> bytes = new AtomicReference<>();
+
+                boolean system = false;
+                try (ClassCreator creator = new ClassCreator(new InMemoryClassOutput(bytes, processorContext), className, null, Object.class.getName())) {
+
+                    creator.addAnnotation(Dependent.class);
+                    MethodCreator producer = creator.getMethodCreator("producerMethod", EntityManagerFactory.class);
+                    producer.addAnnotation(Produces.class);
+                    producer.addAnnotation(ApplicationScoped.class);
+                    if (!knownUnitNames.contains(name)) {
+                        //there was no @PersistenceUnit producer with this name
+                        //this means that we still need it, but the user would not be expecting a bean to be registered
+                        //we register an artificial qualifier that we will use for the managed persistence contexts
+                        producer.addAnnotation(SystemEntityManager.class);
+                        system = true;
+                    }
+
+                    ResultHandle ret = producer.invokeStaticMethod(MethodDescriptor.ofMethod(Persistence.class, "createEntityManagerFactory", EntityManagerFactory.class, String.class), producer.load(name));
+                    producer.returnValue(ret);
+                }
+                beanDeployment.addGeneratedBean(className, bytes.get());
+                template.boostrapPu(null, system);
+            }
+
+
 
             for (String name : knownContextNames) {
                 String className = getClass().getName() + "$$EMProducer-" + name;
@@ -120,7 +125,6 @@ public class HibernateCdiResourceProcessor implements ResourceProcessor {
                 //we need to know if transactions are present or not
                 //TODO: this should be based on if a PU is JTA enabled or not
                 if (processorContext.isCapabilityPresent("transactions")) {
-                    boolean system = false;
                     try (ClassCreator creator = new ClassCreator(new InMemoryClassOutput(bytes, processorContext), className, null, Object.class.getName())) {
 
                         creator.addAnnotation(Dependent.class);
@@ -129,7 +133,6 @@ public class HibernateCdiResourceProcessor implements ResourceProcessor {
                         emfField.addAnnotation(Inject.class);
                         if (!knownUnitNames.contains(name)) {
                             emfField.addAnnotation(SystemEntityManager.class);
-                            system = true;
                         }
                         FieldDescriptor emf = emfField.getFieldDescriptor();
 
@@ -161,9 +164,7 @@ public class HibernateCdiResourceProcessor implements ResourceProcessor {
 
                     }
                     beanDeployment.addGeneratedBean(className, bytes.get());
-                    template.boostrapPu(null, system);
                 } else {
-                    boolean system = false;
                     //if there is no TX support then we just use a super simple approach, and produce a normal EM
                     try (ClassCreator creator = new ClassCreator(new InMemoryClassOutput(bytes, processorContext), className, null, Object.class.getName())) {
 
@@ -173,7 +174,6 @@ public class HibernateCdiResourceProcessor implements ResourceProcessor {
                         emfField.addAnnotation(Inject.class);
                         if (!knownUnitNames.contains(name)) {
                             emfField.addAnnotation(SystemEntityManager.class);
-                            system = true;
                         }
                         FieldDescriptor emf = emfField.getFieldDescriptor();
 
@@ -193,7 +193,6 @@ public class HibernateCdiResourceProcessor implements ResourceProcessor {
 
                     }
                     beanDeployment.addGeneratedBean(className, bytes.get());
-                    template.boostrapPu(null, system);
                 }
             }
         }

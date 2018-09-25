@@ -1,5 +1,6 @@
 package org.jboss.shamrock.jpa.runtime;
 
+import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.protean.Hibernate;
 import org.hibernate.protean.impl.PersistenceUnitsHolder;
@@ -47,8 +48,9 @@ public class JPADeploymentTemplate {
         }
     }
 
-    public void initMetadata(List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors) {
-        PersistenceUnitsHolder.initializeJpa(parsedPersistenceXmlDescriptors);
+    public void initMetadata(List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors, Scanner scanner) {
+
+        PersistenceUnitsHolder.initializeJpa(parsedPersistenceXmlDescriptors, scanner);
     }
 
 }

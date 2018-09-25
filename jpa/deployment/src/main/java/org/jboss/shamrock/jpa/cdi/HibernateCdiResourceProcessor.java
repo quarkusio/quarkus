@@ -40,6 +40,7 @@ import org.jboss.shamrock.deployment.ProcessorContext;
 import org.jboss.shamrock.deployment.ResourceProcessor;
 import org.jboss.shamrock.deployment.RuntimePriority;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
+import org.jboss.shamrock.jpa.HibernateResourceProcessor;
 import org.jboss.shamrock.jpa.runtime.JPADeploymentTemplate;
 import org.jboss.shamrock.jpa.runtime.cdi.SystemEntityManager;
 import org.jboss.shamrock.jpa.runtime.cdi.TransactionScopedEntityManager;
@@ -67,7 +68,8 @@ public class HibernateCdiResourceProcessor implements ResourceProcessor {
         //this is not great, we really need a better way to do this than generating bytecode
 
         String defaultName = null;
-        List<PersistenceUnitDescriptor> pus = PersistenceUnitsHolder.getPersistenceUnitDescriptors();
+        List<PersistenceUnitDescriptor> pus = processorContext.getProperty(HibernateResourceProcessor.PARSED_DESCRIPTORS);
+        //look through the parsed descriptors to see if we can figure out the default PU name
         if(pus.size() ==1) {
             defaultName = pus.get(0).getName();
 
@@ -90,6 +92,7 @@ public class HibernateCdiResourceProcessor implements ResourceProcessor {
         try(BytecodeRecorder recorder = processorContext.addDeploymentTask(RuntimePriority.BOOTSTRAP_EMF)) {
             JPADeploymentTemplate template = recorder.getRecordingProxy(JPADeploymentTemplate.class);
 
+            //every persistence unit needs a producer, even if the factory is not injectable
             for (String name : allKnownNames) {
                 String className = getClass().getName() + "$$EMFProducer-" + name;
                 AtomicReference<byte[]> bytes = new AtomicReference<>();
@@ -113,7 +116,7 @@ public class HibernateCdiResourceProcessor implements ResourceProcessor {
                     producer.returnValue(ret);
                 }
                 beanDeployment.addGeneratedBean(className, bytes.get());
-                template.boostrapPu(null, system);
+                template.boostrapPu(null, system); //force PU bootstrap at startup
             }
 
 

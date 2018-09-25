@@ -19,6 +19,15 @@ public final class PersistenceUnitsHolder {
 
 	private static final Object NO_NAME_TOKEN = new Object();
 
+	/**
+	 * Initialized JPA for use in a native image. This must be called from within a static init method.
+	 *
+	 * In general the <code>parsedPersistenceXmlDescriptors</code> will be provided by caling {@link #loadOriginalXMLParsedDescriptors()}.
+	 *
+	 * The scanner may be null to use to default scanner, or a custom scanner can be used to stop hibernate scanning
+	 * @param parsedPersistenceXmlDescriptors
+	 * @param scanner
+	 */
 	public static void initializeJpa(List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors, Scanner scanner) {
 		final List<PersistenceUnitDescriptor> units = convertPersistenceUnits( parsedPersistenceXmlDescriptors );
 		final Map<String,RecordedState> metadata = constructMetadataAdvance( parsedPersistenceXmlDescriptors , scanner);

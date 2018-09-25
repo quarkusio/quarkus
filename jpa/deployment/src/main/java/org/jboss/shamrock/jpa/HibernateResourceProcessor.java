@@ -29,10 +29,13 @@ import org.jboss.shamrock.jpa.runtime.ShamrockScanner;
  */
 public final class HibernateResourceProcessor implements ResourceProcessor {
 
+    public static final String PARSED_DESCRIPTORS = HibernateResourceProcessor.class.getPackage().getName() + ".parsedDescriptors";
+
     @Override
     public void process(final ArchiveContext archiveContext, final ProcessorContext processorContext) throws Exception {
 
         List<ParsedPersistenceXmlDescriptor> descriptors = PersistenceUnitsHolder.loadOriginalXMLParsedDescriptors();
+        processorContext.setProperty(PARSED_DESCRIPTORS, descriptors);
 
         // Hibernate specific reflective classes; these are independent from the model and configuration details.
         HibernateReflectiveNeeds.registerStaticReflectiveNeeds(processorContext);
@@ -43,6 +46,8 @@ public final class HibernateResourceProcessor implements ResourceProcessor {
         //Modify the bytecode of all entities to enable lazy-loading, dirty checking, etc..
         enhanceEntities(domainObjects, archiveContext, processorContext);
 
+        //set up the scanner, as this scanning has already been done we need to just tell it about the classes we
+        //have discovered. This scanner is bytecode serializable and is passed directly into the template
         ShamrockScanner scanner = new ShamrockScanner();
         Set<ClassDescriptor> classDescriptors = new HashSet<>();
         for (String i : domainObjects.getClassNames()) {
@@ -50,9 +55,9 @@ public final class HibernateResourceProcessor implements ResourceProcessor {
             classDescriptors.add(desc);
         }
         scanner.setClassDescriptors(classDescriptors);
-        PersistenceUnitsHolder.initializeJpa(descriptors, scanner);
 
         try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.JPA_DEPLOYMENT)) {
+            //now we serialize the XML and class list to bytecode, to remove the need to re-parse the XML on JVM startup
             recorder.registerNonDefaultConstructor(ParsedPersistenceXmlDescriptor.class.getDeclaredConstructor(URL.class), (i) -> Collections.singletonList(i.getPersistenceUnitRootUrl()));
             recorder.getRecordingProxy(JPADeploymentTemplate.class).initMetadata(descriptors, scanner, null);
         }

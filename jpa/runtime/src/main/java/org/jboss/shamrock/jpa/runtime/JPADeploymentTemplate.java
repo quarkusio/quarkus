@@ -53,6 +53,8 @@ public class JPADeploymentTemplate {
 
     public void initMetadata(List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors, Scanner scanner, @ContextObject("bean.container") BeanContainer beanContainer) {
 
+        //this initializes the JPA metadata, and also sets the datasource if no connection URL has been set and a DataSource
+        //is available
         if (beanContainer != null) {
             BeanContainer.Factory<DataSource> ds = beanContainer.instanceFactory(DataSource.class);
             if (ds != null) {

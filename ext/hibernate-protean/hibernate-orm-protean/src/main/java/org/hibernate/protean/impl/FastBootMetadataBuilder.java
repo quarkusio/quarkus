@@ -119,7 +119,9 @@ class FastBootMetadataBuilder {
 		addPUManagedClassNamesToMetadataSources(persistenceUnit, metadataSources);
 
 		this.metamodelBuilder = (MetadataBuilderImplementor) metadataSources.getMetadataBuilder( standardServiceRegistry );
-		this.metamodelBuilder.applyScanner(scanner);
+		if( scanner != null ) {
+			this.metamodelBuilder.applyScanner( scanner );
+		}
 		populate( metamodelBuilder, mergedSettings, standardServiceRegistry );
 
 		this.managedResources = MetadataBuildingProcess.prepare(

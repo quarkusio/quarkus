@@ -3,6 +3,10 @@ package org.jboss.shamrock.junit;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.URL;
 import java.net.URLClassLoader;
 
@@ -19,6 +23,8 @@ import org.junit.runners.model.InitializationError;
  * basically just a big pile of hacks
  */
 public class GraalTest extends BlockJUnit4ClassRunner {
+
+    private static final long IMAGE_WAIT_TIME = 60000;
 
     private static boolean first = true;
 
@@ -68,16 +74,16 @@ public class GraalTest extends BlockJUnit4ClassRunner {
                     }
                 }
 
-                if(guessedPath == null) {
+                if (guessedPath == null) {
                     notifier.fireTestFailure(new Failure(Description.createSuiteDescription(GraalTest.class), new RuntimeException("Unable to find native image, make sure native.image.path is set")));
                     return;
                 } else {
                     String errorString = "\n=native.image.path was not set, making a guess that  " + guessedPath + " is the correct native image=";
-                    for(int i= 0; i < errorString.length(); ++i) {
+                    for (int i = 0; i < errorString.length(); ++i) {
                         System.err.print("=");
                     }
                     System.err.println(errorString);
-                    for(int i= 0; i < errorString.length(); ++i) {
+                    for (int i = 0; i < errorString.length(); ++i) {
                         System.err.print("=");
                     }
                     System.err.println();
@@ -97,7 +103,24 @@ public class GraalTest extends BlockJUnit4ClassRunner {
                 new Thread(new ProcessReader(testProcess.getInputStream())).start();
                 new Thread(new ProcessReader(testProcess.getErrorStream())).start();
 
-                Thread.sleep(1000); //wait for the image to be up, should check the port
+                int port = Integer.getInteger("http.port", 8080);
+                long bailout = System.currentTimeMillis() + IMAGE_WAIT_TIME;
+                boolean ok = false;
+                while (System.currentTimeMillis() < bailout) {
+                    try {
+                        Thread.sleep(100);
+                        try(Socket s = new Socket()) {
+                            s.connect(new InetSocketAddress("localhost", port));
+                            ok = true;
+                            break;
+                        }
+                    } catch (Exception expected) {
+                    }
+                }
+                if(!ok) {
+                    throw new RuntimeException("Unable to start native image in " + IMAGE_WAIT_TIME + "ms");
+                }
+
 
             } catch (Exception e) {
                 notifier.fireTestFailure(new Failure(Description.createSuiteDescription(GraalTest.class), e));

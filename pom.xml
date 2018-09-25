@@ -702,6 +702,11 @@
 
     <repositories>
         <repository>
+            <id>central</id>
+            <name>Maven Repository Switchboard</name>
+            <url>http://repo1.maven.org/maven2</url>
+        </repository>
+        <repository>
             <id>jboss</id>
             <url>http://repository.jboss.org/nexus/content/groups/public/</url>
             <releases>

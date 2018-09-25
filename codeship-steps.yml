@@ -1,3 +1,0 @@
-- name: ci
-  service: shamrock
-  command: install

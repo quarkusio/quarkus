@@ -49,6 +49,7 @@ public class TransactionScopedEntityManager implements EntityManager {
                 return new EntityManagerResult(em, false);
             }
             EntityManager newEm = emf.createEntityManager();
+            newEm.joinTransaction();
             tsr.putResource(transactionKey, newEm);
             tsr.registerInterposedSynchronization(new Synchronization() {
                 @Override
@@ -59,7 +60,7 @@ public class TransactionScopedEntityManager implements EntityManager {
 
                 @Override
                 public void afterCompletion(int i) {
-
+                    newEm.close();
                 }
             });
             return new EntityManagerResult(newEm, false);

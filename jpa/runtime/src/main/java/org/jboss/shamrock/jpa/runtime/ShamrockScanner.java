@@ -15,7 +15,10 @@ import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.boot.archive.spi.InputStreamAccess;
 
 /**
- * A hard coded scanner. This scanner is serialized to bytecode, and used to avoid scanning on hibernate startup
+ * A hard coded scanner. This scanner is serialized to bytecode, and used to avoid scanning on hibernate startup.
+ * Technically the scanners are receiving all classes and categorizw them as JPA sueful or not.
+ * In Shamrock's case, we detect the JPA friendly ones and not list the other ones.
+ * Emmanuel thinks it's fine as AFAICS, Hibernate ORM filter out the non JPA specific ones.
  */
 public class ShamrockScanner implements Scanner {
 

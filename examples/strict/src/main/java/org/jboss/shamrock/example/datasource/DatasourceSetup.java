@@ -15,7 +15,7 @@ public class DatasourceSetup {
     private DataSource dataSource;
 
     @PostConstruct
-    public void seetup() throws Exception {
+    public void setup() throws Exception {
 
         try (Connection con = dataSource.getConnection()) {
             try (Statement statement = con.createStatement()) {

@@ -66,16 +66,21 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter(defaultValue = "${native-image.xmx}")
     private String nativeImageXmx;
 
+    @Parameter(defaultValue = "${native-image.docker-build}")
+    private boolean dockerBuild;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
 
         HashMap<String, String> env = new HashMap<>(System.getenv());
         List<String> nativeImage;
-        String graalvmCmd = System.getenv("GRAALVM_NATIVE_IMAGE_CMD");
-        if (graalvmCmd != null) {
+        if (dockerBuild) {
+
             // E.g. "/usr/bin/docker run -v {{PROJECT_DIR}}:/project --rm protean/graalvm-native-image"
             nativeImage = new ArrayList<>();
-            Collections.addAll(nativeImage, graalvmCmd.replace("{{PROJECT_DIR}}", outputDirectory.getAbsolutePath()).split(" "));
+            //TODO: use an 'official' image
+            Collections.addAll(nativeImage, "docker", "run", "-v",outputDirectory.getAbsolutePath() + ":/project:z", "--rm", "swd847/centos-graal-native-image");
+
         } else {
             if (graalvmHome == null) {
                 throw new MojoFailureException("GRAALVM_HOME was not set");

@@ -96,6 +96,7 @@ final class JpaJandexScavenger {
             }
             else {
                 // We do lipstick service by manually adding explicitly the <class> reference but not navigating the hierarchy
+                // so a class with a complex hierarchy will fail.
                 System.out.println("[WARNING] Did not find `" + className + "` in the indexed jars. You likely forgot to add shamrock-build.yaml in your dependency jar. See https://github.com/protean-project/shamrock/#indexing-and-application-classes for more info.");
                 collector.addEntity(className);
             }

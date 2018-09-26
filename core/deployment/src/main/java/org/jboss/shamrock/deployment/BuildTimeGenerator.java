@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -175,6 +176,7 @@ public class BuildTimeGenerator {
         private final Set<String> resourceBundles = new HashSet<>();
         private final Set<String> runtimeInitializedClasses = new HashSet<>();
         private final Set<List<String>> proxyClasses = new HashSet<>();
+        private final Map<String, Object> properties = new HashMap<>();
 
         @Override
         public BytecodeRecorder addStaticInitTask(int priority) {
@@ -299,6 +301,16 @@ public class BuildTimeGenerator {
         @Override
         public boolean isCapabilityPresent(String capability) {
             return capabilities.contains(capability);
+        }
+
+        @Override
+        public <T> void setProperty(String key, T value) {
+            properties.put(key, value);
+        }
+
+        @Override
+        public <T> T getProperty(String key) {
+            return (T) properties.get(key);
         }
 
 

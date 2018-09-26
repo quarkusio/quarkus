@@ -11,6 +11,7 @@ import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunListener;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.BlockJUnit4ClassRunner;
+import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
 
 public class ShamrockTest extends BlockJUnit4ClassRunner {
@@ -31,9 +32,19 @@ public class ShamrockTest extends BlockJUnit4ClassRunner {
 
     @Override
     public void run(final RunNotifier notifier) {
-
         runInternal(notifier);
         super.run(notifier);
+    }
+
+
+
+    @Override
+    protected void runChild(final FrameworkMethod method, RunNotifier notifier) {
+        if(!failed) {
+            super.runChild(method, notifier);
+        } else {
+            notifier.fireTestIgnored(describeChild(method));
+        }
     }
 
     private void runInternal(RunNotifier notifier) {
@@ -46,10 +57,6 @@ public class ShamrockTest extends BlockJUnit4ClassRunner {
 
                     @Override
                     public void testStarted(Description description) {
-                        if (failed) {
-                            notifier.fireTestFailure(new Failure(description, new AssertionError("Startup failed")));
-                            return;
-                        }
                         if (!started) {
                             started = true;
                             //TODO: so much hacks...

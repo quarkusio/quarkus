@@ -4,12 +4,14 @@ import static org.jboss.protean.gizmo.MethodDescriptor.ofConstructor;
 import static org.jboss.protean.gizmo.MethodDescriptor.ofMethod;
 
 import java.beans.PropertyDescriptor;
-import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -18,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 import org.apache.commons.beanutils.PropertyUtils;
 import org.eclipse.microprofile.config.Config;
@@ -25,7 +28,9 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.invocation.proxy.ProxyConfiguration;
 import org.jboss.invocation.proxy.ProxyFactory;
 import org.jboss.protean.gizmo.BranchResult;
+import org.jboss.protean.gizmo.CatchBlockCreator;
 import org.jboss.protean.gizmo.ClassCreator;
+import org.jboss.protean.gizmo.ExceptionTable;
 import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
@@ -40,6 +45,8 @@ import org.jboss.shamrock.runtime.StartupTask;
 public class BytecodeRecorderImpl implements BytecodeRecorder {
 
     private static final AtomicInteger COUNT = new AtomicInteger();
+    private static final MethodDescriptor COLLECTION_ADD = ofMethod(Collection.class, "add", boolean.class, Object.class);
+    private static final MethodDescriptor MAP_PUT = ofMethod(Map.class, "put", Object.class, Object.class, Object.class);
 
     private final ClassLoader classLoader;
     private final String className;
@@ -51,6 +58,7 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
     private final Map<Class, ProxyFactory<?>> returnValueProxy = new HashMap<>();
     private final IdentityHashMap<Class<?>, String> classProxies = new IdentityHashMap<>();
     private final Map<Class<?>, SubstitutionHolder> substitutions = new HashMap<>();
+    private final Map<Class<?>, NonDefaultConstructorHolder> nonDefaulConstructors = new HashMap<>();
 
     public BytecodeRecorderImpl(ClassLoader classLoader, String className, Class<?> serviceType, ClassOutput classOutput) {
         this.classLoader = classLoader;
@@ -84,6 +92,11 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
     @Override
     public <F, T> void registerSubstitution(Class<F> from, Class<T> to, Class<? extends ObjectSubstitution<F, T>> substitution) {
         substitutions.put(from, new SubstitutionHolder(from, to, substitution));
+    }
+
+    @Override
+    public <T> void registerNonDefaultConstructor(Constructor<T> constructor, Function<T, List<Object>> parameters) {
+        nonDefaulConstructors.put(constructor.getDeclaringClass(), new NonDefaultConstructorHolder(constructor, (Function<Object, List<Object>>) parameters));
     }
 
     @Override
@@ -307,6 +320,14 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
             } else {
                 out = method.load((String) param);
             }
+        } else if (param instanceof URL) {
+            String url = ((URL) param).toExternalForm();
+            ExceptionTable et = method.addTryCatch();
+            out = method.newInstance(MethodDescriptor.ofConstructor(URL.class, String.class), method.load(url));
+            CatchBlockCreator malformed = et.addCatchClause(MalformedURLException.class);
+            malformed.throwException(RuntimeException.class, "Malformed URL", malformed.getCaughtException());
+            et.complete();
+
         } else if (param instanceof Enum) {
             Enum e = (Enum) param;
             ResultHandle nm = method.load(e.name());
@@ -361,28 +382,77 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
                 method.writeArrayValue(out, method.load(i), component);
             }
         } else {
-            try {
-                param.getClass().getDeclaredConstructor();
-            } catch (NoSuchMethodException e) {
-                throw new RuntimeException("Unable to serialize objects of type " + param.getClass() + " to bytecode as it has no default constructor");
+            if(nonDefaulConstructors.containsKey(param.getClass())) {
+                NonDefaultConstructorHolder holder = nonDefaulConstructors.get(param.getClass());
+                List<Object> params = holder.paramGenerator.apply(param);
+                if(params.size() != holder.constructor.getParameterCount()) {
+                    throw new RuntimeException("Unable to serialize " + param + " as the wrong number of parameters were generated for " + holder.constructor);
+                }
+                List<ResultHandle> handles = new ArrayList<>();
+                int count = 0;
+                for(Object i : params) {
+                    handles.add(loadObjectInstance(method, i, returnValueResults, holder.constructor.getParameterTypes()[count++]));
+                }
+                out = method.newInstance(ofConstructor(holder.constructor.getDeclaringClass(), holder.constructor.getParameterTypes()), handles.toArray(new ResultHandle[handles.size()]));
+            } else {
+                try {
+                    param.getClass().getDeclaredConstructor();
+                } catch (NoSuchMethodException e) {
+                    throw new RuntimeException("Unable to serialize objects of type " + param.getClass() + " to bytecode as it has no default constructor");
+                }
+
+                out = method.newInstance(ofConstructor(param.getClass()));
             }
-            out = method.newInstance(ofConstructor(param.getClass()));
             if (param instanceof Collection) {
                 for (Object i : (Collection) param) {
                     ResultHandle val = loadObjectInstance(method, i, returnValueResults, i.getClass());
-                    method.invokeInterfaceMethod(ofMethod(Collection.class, "add", boolean.class, Object.class), out, val);
+                    method.invokeInterfaceMethod(COLLECTION_ADD, out, val);
                 }
             }
             if (param instanceof Map) {
                 for (Map.Entry<?, ?> i : ((Map<?, ?>) param).entrySet()) {
                     ResultHandle key = loadObjectInstance(method, i.getKey(), returnValueResults, i.getKey().getClass());
                     ResultHandle val = loadObjectInstance(method, i.getValue(), returnValueResults, i.getValue().getClass());
-                    method.invokeInterfaceMethod(ofMethod(Map.class, "put", Object.class, Object.class, Object.class), out, key, val);
+                    method.invokeInterfaceMethod(MAP_PUT, out, key, val);
                 }
             }
             PropertyDescriptor[] desc = PropertyUtils.getPropertyDescriptors(param);
             for (PropertyDescriptor i : desc) {
-                if (i.getReadMethod() != null && i.getWriteMethod() != null) {
+                if(i.getReadMethod() != null && i.getWriteMethod() == null ) {
+                    try {
+                    //read only prop, we may still be able to do stuff with it if it is a collection
+                    if(Collection.class.isAssignableFrom(i.getPropertyType())) {
+                        //special case, a collection with only a read method
+                        //we assume we can just add to the connection
+
+                        Collection propertyValue = (Collection) PropertyUtils.getProperty(param, i.getName());
+                        if(!propertyValue.isEmpty()) {
+                            ResultHandle prop = method.invokeVirtualMethod(MethodDescriptor.ofMethod(i.getReadMethod()), out);
+                            for (Object c : propertyValue) {
+                                ResultHandle toAdd = loadObjectInstance(method, c, returnValueResults, Object.class);
+                                method.invokeInterfaceMethod(COLLECTION_ADD, prop, toAdd);
+                            }
+                        }
+
+                    } else if(Map.class.isAssignableFrom(i.getPropertyType())) {
+                        //special case, a map with only a read method
+                        //we assume we can just add to the map
+
+                        Map<Object, Object> propertyValue = (Map<Object, Object>)PropertyUtils.getProperty(param, i.getName());
+                        if(!propertyValue.isEmpty()) {
+                            ResultHandle prop = method.invokeVirtualMethod(MethodDescriptor.ofMethod(i.getReadMethod()), out);
+                            for (Map.Entry<Object, Object> entry : propertyValue.entrySet()) {
+                                ResultHandle key = loadObjectInstance(method, entry.getKey(), returnValueResults, Object.class);
+                                ResultHandle val = loadObjectInstance(method, entry.getValue(), returnValueResults, Object.class);
+                                method.invokeInterfaceMethod(MAP_PUT, prop, key, val);
+                            }
+                        }
+                    }
+
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                } else if (i.getReadMethod() != null && i.getWriteMethod() != null) {
                     try {
                         Object propertyValue = PropertyUtils.getProperty(param, i.getName());
                         if (propertyValue == null) {
@@ -462,6 +532,16 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
             this.from = from;
             this.to = to;
             this.sub = sub;
+        }
+    }
+
+    static final class NonDefaultConstructorHolder {
+        final Constructor<?> constructor;
+        final Function<Object, List<Object>> paramGenerator;
+
+        NonDefaultConstructorHolder(Constructor<?> constructor, Function<Object, List<Object>> paramGenerator) {
+            this.constructor = constructor;
+            this.paramGenerator = paramGenerator;
         }
     }
 

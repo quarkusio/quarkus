@@ -124,4 +124,8 @@ public class DatasourceResource {
             return "PASSED";
         }
     }
+    @Transactional(value = Transactional.TxType.REQUIRED)
+    public void someMethodWithLongParam(long param) {
+
+    }
 }

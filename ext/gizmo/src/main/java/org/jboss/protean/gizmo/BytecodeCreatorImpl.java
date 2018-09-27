@@ -37,6 +37,21 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
 
     private final BytecodeCreatorImpl owner;
 
+    private static final Map<String, String> boxingMap;
+
+    static {
+        Map<String, String> b = new HashMap<>();
+        b.put("Z", Type.getInternalName(Boolean.class));
+        b.put("B", Type.getInternalName(Byte.class));
+        b.put("C", Type.getInternalName(Character.class));
+        b.put("S", Type.getInternalName(Short.class));
+        b.put("I", Type.getInternalName(Integer.class));
+        b.put("J", Type.getInternalName(Long.class));
+        b.put("F", Type.getInternalName(Float.class));
+        b.put("D", Type.getInternalName(Double.class));
+        boxingMap = Collections.unmodifiableMap(b);
+    }
+
     public BytecodeCreatorImpl(MethodDescriptor methodDescriptor, String declaringClassName, ClassOutput classOutput, ClassCreator classCreator) {
         this(methodDescriptor, declaringClassName, classOutput, classCreator, null);
     }
@@ -496,7 +511,17 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
             if (!handle.getType().equals(expectedType)) {
                 //TODO: this will break constructors for non-superclass
                 if (!dontCast) {
-                    if (!expectedType.equals("Ljava/lang/Object;")) {
+                    if (expectedType.length() == 1) {
+                        //autoboxing support
+                        String type = boxingMap.get(expectedType);
+                        if (type == null) {
+                            throw new RuntimeException("Unknown primitive type " + expectedType);
+                        }
+                        methodVisitor.visitTypeInsn(Opcodes.CHECKCAST, type);
+                        methodVisitor.visitMethodInsn(Opcodes.INVOKEVIRTUAL, type, "valueOf", "()" + expectedType, false);
+
+
+                    } else if (!expectedType.equals("Ljava/lang/Object;")) {
                         methodVisitor.visitTypeInsn(Opcodes.CHECKCAST, DescriptorUtils.getTypeStringFromDescriptorFormat(expectedType));
                     }
                 }

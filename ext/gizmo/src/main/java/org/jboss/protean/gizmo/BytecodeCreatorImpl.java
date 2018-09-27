@@ -794,7 +794,8 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
         operations.add(new Operation() {
             @Override
             public void writeBytecode(MethodVisitor methodVisitor) {
-                if (returnValue == null) {
+                if (returnValue == null
+                        || methodDescriptor.getReturnType().equals("V")) { //ignore value for void methods, makes client code simpler
                     methodVisitor.visitInsn(Opcodes.RETURN);
                 } else {
                     loadResultHandle(methodVisitor, returnValue, BytecodeCreatorImpl.this, methodDescriptor.getReturnType());

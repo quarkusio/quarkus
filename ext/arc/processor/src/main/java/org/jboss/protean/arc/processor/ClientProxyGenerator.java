@@ -101,7 +101,8 @@ public class ClientProxyGenerator extends AbstractGenerator {
 
             if (isInterface) {
                 ret = forward.invokeInterfaceMethod(method, delegate, params);
-            } else if (Modifier.isPrivate(method.flags())) {
+            } else if (Modifier.isPrivate(method.flags()) ||
+                    (Modifier.isProtected(method.flags()) &&  !getPackage(method.declaringClass().name().toString()).equals(getPackage(generatedName)))) {
                 // Reflection fallback for private methods
                 ResultHandle paramTypesArray = forward.newArray(Class.class, forward.load(method.parameters().size()));
                 int idx = 0;
@@ -125,6 +126,14 @@ public class ClientProxyGenerator extends AbstractGenerator {
 
         clientProxy.close();
         return classOutput.getResources();
+    }
+
+    private String getPackage(String name) {
+        int index = name.lastIndexOf('.');
+        if(index == -1) {
+            return "";
+        }
+        return name.substring(0, index);
     }
 
     void createConstructor(ClassCreator clientProxy, String beanClassName, String superClasName, FieldDescriptor beanField) {

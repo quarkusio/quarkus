@@ -38,6 +38,7 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
     private final BytecodeCreatorImpl owner;
 
     private static final Map<String, String> boxingMap;
+    private static final Map<String, String> boxingMethodMap;
 
     static {
         Map<String, String> b = new HashMap<>();
@@ -50,6 +51,17 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
         b.put("F", Type.getInternalName(Float.class));
         b.put("D", Type.getInternalName(Double.class));
         boxingMap = Collections.unmodifiableMap(b);
+
+        b = new HashMap<>();
+        b.put("Z", "booleanValue");
+        b.put("B", "byteValue");
+        b.put("C", "charValue");
+        b.put("S", "shortValue");
+        b.put("I", "intValue");
+        b.put("J", "longValue");
+        b.put("F", "floatValue");
+        b.put("D", "doubleValue");
+        boxingMethodMap = Collections.unmodifiableMap(b);
     }
 
     public BytecodeCreatorImpl(MethodDescriptor methodDescriptor, String declaringClassName, ClassOutput classOutput, ClassCreator classCreator) {
@@ -256,7 +268,53 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
 
     @Override
     public ResultHandle loadClass(String className) {
-        return new ResultHandle("Ljava/lang/Class;", this, Type.getObjectType(className.replace(".", "/")));
+        Class primtiveType = null;
+        if (className.equals("boolean")) {
+            primtiveType = Boolean.class;
+        } else if (className.equals("byte")) {
+            primtiveType = Byte.class;
+        } else if (className.equals("char")) {
+            primtiveType = Character.class;
+        } else if (className.equals("short")) {
+            primtiveType = Short.class;
+        } else if (className.equals("int")) {
+            primtiveType = Integer.class;
+        } else if (className.equals("long")) {
+            primtiveType = Long.class;
+        } else if (className.equals("float")) {
+            primtiveType = Float.class;
+        } else if (className.equals("double")) {
+            primtiveType = Double.class;
+        }
+        if (primtiveType == null) {
+            return new ResultHandle("Ljava/lang/Class;", this, Type.getObjectType(className.replace(".", "/")));
+        } else {
+            Class pt = primtiveType;
+            ResultHandle ret = new ResultHandle("Ljava/lang/Class;", this);
+            operations.add(new Operation() {
+                @Override
+                void writeBytecode(MethodVisitor methodVisitor) {
+                    methodVisitor.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(pt), "TYPE", "Ljava/lang/Class;");
+                    storeResultHandle(methodVisitor, ret);
+                }
+
+                @Override
+                Set<ResultHandle> getInputResultHandles() {
+                    return Collections.emptySet();
+                }
+
+                @Override
+                ResultHandle getTopResultHandle() {
+                    return null;
+                }
+
+                @Override
+                ResultHandle getOutgoingResultHandle() {
+                    return ret;
+                }
+            });
+            return ret;
+        }
     }
 
     @Override
@@ -487,44 +545,39 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
         if (handle.getOwner() != bc && (bc.owner == null || handle.getOwner() != bc.owner)) {
             //throw new IllegalArgumentException("Wrong owner for ResultHandle " + handle);
         }
-        if (handle.getResultType() == ResultHandle.ResultType.SINGLE_USE) {
-            //already on the stack
-            if (expectedType.length() > 1 && !handle.getType().equals(expectedType)) {
-                if (!dontCast) {
-                    if (!expectedType.equals("Ljava/lang/Object;")) {
-                        methodVisitor.visitTypeInsn(Opcodes.CHECKCAST, DescriptorUtils.getTypeStringFromDescriptorFormat(expectedType));
-                    }
-                }
+        if (handle.getResultType() != ResultHandle.ResultType.SINGLE_USE) {
+            if (handle.getType().equals("S") || handle.getType().equals("Z") || handle.getType().equals("I") || handle.getType().equals("B") || handle.getType().equals("B")) {
+                methodVisitor.visitVarInsn(Opcodes.ILOAD, handle.getNo());
+            } else if (handle.getType().equals("J")) {
+                methodVisitor.visitVarInsn(Opcodes.LLOAD, handle.getNo());
+            } else if (handle.getType().equals("F")) {
+                methodVisitor.visitVarInsn(Opcodes.FLOAD, handle.getNo());
+            } else if (handle.getType().equals("D")) {
+                methodVisitor.visitVarInsn(Opcodes.DLOAD, handle.getNo());
+            } else {
+                methodVisitor.visitVarInsn(Opcodes.ALOAD, handle.getNo());
             }
-            return;
         }
-        if (handle.getType().equals("S") || handle.getType().equals("Z") || handle.getType().equals("I") || handle.getType().equals("B") || handle.getType().equals("B")) {
-            methodVisitor.visitVarInsn(Opcodes.ILOAD, handle.getNo());
-        } else if (handle.getType().equals("J")) {
-            methodVisitor.visitVarInsn(Opcodes.LLOAD, handle.getNo());
-        } else if (handle.getType().equals("F")) {
-            methodVisitor.visitVarInsn(Opcodes.FLOAD, handle.getNo());
-        } else if (handle.getType().equals("D")) {
-            methodVisitor.visitVarInsn(Opcodes.DLOAD, handle.getNo());
-        } else {
-            methodVisitor.visitVarInsn(Opcodes.ALOAD, handle.getNo());
-            if (!handle.getType().equals(expectedType)) {
-                //TODO: this will break constructors for non-superclass
-                if (!dontCast) {
-                    if (expectedType.length() == 1) {
-                        //autoboxing support
-                        String type = boxingMap.get(expectedType);
-                        if (type == null) {
-                            throw new RuntimeException("Unknown primitive type " + expectedType);
-                        }
-                        methodVisitor.visitTypeInsn(Opcodes.CHECKCAST, type);
-                        methodVisitor.visitMethodInsn(Opcodes.INVOKEVIRTUAL, type, "valueOf", "()" + expectedType, false);
-
-
-                    } else if (!expectedType.equals("Ljava/lang/Object;")) {
-                        methodVisitor.visitTypeInsn(Opcodes.CHECKCAST, DescriptorUtils.getTypeStringFromDescriptorFormat(expectedType));
-                    }
+        if (!dontCast && !expectedType.equals(handle.getType())) {
+            //both objects, we just do a checkcast
+            if (expectedType.length() > 1 && handle.getType().length() > 1) {
+                if (!expectedType.equals("Ljava/lang/Object;")) {
+                    methodVisitor.visitTypeInsn(Opcodes.CHECKCAST, DescriptorUtils.getTypeStringFromDescriptorFormat(expectedType));
                 }
+            } else if (expectedType.length() == 1 && handle.getType().length() == 1) {
+                //ignore
+            } else if (expectedType.length() == 1) {
+                //autounboxing support
+                String type = boxingMap.get(expectedType);
+                if (type == null) {
+                    throw new RuntimeException("Unknown primitive type " + expectedType);
+                }
+                methodVisitor.visitTypeInsn(Opcodes.CHECKCAST, type);
+                methodVisitor.visitMethodInsn(Opcodes.INVOKEVIRTUAL, type, boxingMethodMap.get(expectedType), "()" + expectedType, false);
+            } else {
+                //autoboxing support
+                String type = boxingMap.get(handle.getType());
+                methodVisitor.visitMethodInsn(Opcodes.INVOKESTATIC, type, "valueOf", "(" + handle.getType() + ")L" + type + ";", false);
             }
         }
     }

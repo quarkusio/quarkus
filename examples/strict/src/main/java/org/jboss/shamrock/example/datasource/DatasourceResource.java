@@ -12,6 +12,7 @@ import javax.transaction.Transactional;
 import javax.transaction.UserTransaction;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
 
 @Path("/datasource")
 public class DatasourceResource {
@@ -105,7 +106,7 @@ public class DatasourceResource {
     @GET
     @Path("/txninterceptor2")
     @Transactional(value = Transactional.TxType.REQUIRED)
-    public String transactionInterceptorTest2() throws Exception {
+    public String transactionInterceptorTest2(@QueryParam("val") long val) throws Exception {
         try (Connection con = dataSource.getConnection()) {
             try (Statement statement = con.createStatement()) {
                 try (ResultSet rs = statement.executeQuery("select b from tx where b=787")) {
@@ -123,9 +124,5 @@ public class DatasourceResource {
             }
             return "PASSED";
         }
-    }
-    @Transactional(value = Transactional.TxType.REQUIRED)
-    public void someMethodWithLongParam(long param) {
-
     }
 }

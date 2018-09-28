@@ -85,7 +85,8 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
         //this is pretty yuck, and does not really belong here, but it is needed to get the json-p
         //provider to work
         processorContext.addReflectiveClass(true, false, "org.glassfish.json.JsonProviderImpl", "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector");
-
+        processorContext.addResourceBundle("messages"); //for JSONB
+        processorContext.addResource("META-INF/services/javax.ws.rs.client.ClientBuilder");
         IndexView index = archiveContext.getCombinedIndex();
         Collection<AnnotationInstance> app = index.getAnnotations(APPLICATION_PATH);
         if (app.isEmpty()) {
@@ -145,7 +146,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
                 MethodInfo method = instance.target().asMethod();
                 if (method.returnType().kind() == Type.Kind.CLASS) {
                     String className = method.returnType().asClassType().name().toString();
-                    if (!className.equals(String.class.getName())) {
+                    if (!className.startsWith("java.")) {
                         processorContext.addReflectiveClass(true, true, className);
                     }
                 }

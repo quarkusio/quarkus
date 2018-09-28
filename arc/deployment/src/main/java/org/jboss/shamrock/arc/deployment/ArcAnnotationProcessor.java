@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -54,6 +55,7 @@ public class ArcAnnotationProcessor implements ResourceProcessor {
         try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.ARC_DEPLOYMENT)) {
 
             ArcDeploymentTemplate template = recorder.getRecordingProxy(ArcDeploymentTemplate.class);
+            processorContext.addReflectiveClass(true, false, Observes.class.getName()); //graal bug
 
             List<DotName> additionalBeanDefiningAnnotations = new ArrayList<>();
             additionalBeanDefiningAnnotations.add(DotName.createSimple("javax.servlet.annotation.WebServlet"));

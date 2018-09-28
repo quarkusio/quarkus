@@ -72,11 +72,13 @@ class RestClientProcessor implements ResourceProcessor {
                 Jdk14Logger.class.getName());
         processorContext.addReflectiveClass(false, false, ClientRequestFilter[].class.getName());
         processorContext.addReflectiveClass(false, false, ClientResponseFilter[].class.getName());
+        processorContext.addProxyDefinition("javax.ws.rs.ext.Providers");
         beanDeployment.addAdditionalBean(RestClient.class);
         processorContext.addResource("META-INF/services/javax.ws.rs.ext.Providers");
         //TODO: fix this, we don't want to just add all the providers
         processorContext.addReflectiveClass(false, false, "com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl");
         processorContext.addReflectiveClass(false, false, "com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl");
+        processorContext.addReflectiveClass(true, true, "org.jboss.resteasy.plugins.providers.jsonb.JsonBindingProvider", "org.jboss.resteasy.plugins.providers.jsonb.AbstractJsonBindingProvider");
         processorContext.addProxyDefinition(ResteasyConfiguration.class.getName());
         Map<DotName, ClassInfo> interfaces = new HashMap<>();
         for (DotName type : CLIENT_ANNOTATIONS) {

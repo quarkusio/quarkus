@@ -27,6 +27,7 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
 
@@ -68,6 +69,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
     private static final DotName PATH = DotName.createSimple("javax.ws.rs.Path");
 
     private static final DotName XML_ROOT = DotName.createSimple("javax.xml.bind.annotation.XmlRootElement");
+    private static final DotName JSONB_ANNOTATION = DotName.createSimple("javax.json.bind.annotation.JsonbAnnotation");
 
     private static final DotName[] METHOD_ANNOTATIONS = {
             DotName.createSimple("javax.ws.rs.GET"),
@@ -96,6 +98,13 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
         if (!xmlRoot.isEmpty()) {
             processorContext.addReflectiveClass(true, false, "com.sun.xml.bind.v2.ContextFactory", "com.sun.xml.internal.bind.v2.ContextFactory");
         }
+        for (DotName i : Arrays.asList(XML_ROOT, JSONB_ANNOTATION)) {
+            for (AnnotationInstance anno : index.getAnnotations(i)) {
+                if (anno.target().kind() == AnnotationTarget.Kind.CLASS) {
+                    processorContext.addReflectiveClass(true, true, anno.target().asClass().name().toString());
+                }
+            }
+        }
         AnnotationInstance appPath = app.iterator().next();
         String path = appPath.value().asString();
         try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.JAXRS_DEPLOYMENT)) {
@@ -104,7 +113,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
             InstanceFactory<? extends Servlet> factory = undertow.createInstanceFactory(instanceFactory);
             undertow.registerServlet(null, JAX_RS_SERVLET_NAME, recorder.classProxy(HttpServlet30Dispatcher.class.getName()), true, 1, factory);
             String mappingPath;
-            if(path.endsWith("/")) {
+            if (path.endsWith("/")) {
                 mappingPath = path + "*";
             } else {
                 mappingPath = path + "/*";

@@ -372,20 +372,20 @@ public class BuildTimeGenerator {
             //TODO: at some point we are going to need to break this up, as if it get too big it will hit the method size limit
 
             if (!runtimeInitializedClasses.isEmpty()) {
-                ExceptionTable tc = beforeAn.addTryCatch();
-                ResultHandle array = beforeAn.newArray(Class.class, beforeAn.load(runtimeInitializedClasses.size()));
-                int count = 0;
+                ResultHandle array = beforeAn.newArray(Class.class, beforeAn.load(1));
                 ResultHandle thisClass = beforeAn.loadClass(GRAAL_AUTOFEATURE);
                 ResultHandle cl = beforeAn.invokeVirtualMethod(ofMethod(Class.class, "getClassLoader", ClassLoader.class), thisClass);
                 for (String i : runtimeInitializedClasses) {
+                    ExceptionTable tc = beforeAn.addTryCatch();
                     ResultHandle clazz = beforeAn.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class), beforeAn.load(i), beforeAn.load(false), cl);
-                    beforeAn.writeArrayValue(array, beforeAn.load(count++), clazz);
-                }
-                beforeAn.invokeStaticMethod(MethodDescriptor.ofMethod("org.graalvm.nativeimage.RuntimeClassInitialization", "delayClassInitialization", void.class, Class[].class), array);
+                    beforeAn.writeArrayValue(array, beforeAn.load(0), clazz);
+                    beforeAn.invokeStaticMethod(MethodDescriptor.ofMethod("org.graalvm.nativeimage.RuntimeClassInitialization", "delayClassInitialization", void.class, Class[].class), array);
 
-                CatchBlockCreator cc = tc.addCatchClause(Throwable.class);
-                cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
-                tc.complete();
+                    CatchBlockCreator cc = tc.addCatchClause(Throwable.class);
+                    cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
+                    tc.complete();
+                }
+
             }
 
             if (!proxyClasses.isEmpty()) {

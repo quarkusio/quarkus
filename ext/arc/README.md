@@ -1,10 +1,8 @@
-# Weld Arc - "CDI lite" Experiments
+# Arc - "CDI lite" Experiments
 
 This repo contains a working prototype of something that could be called "CDI lite".
 The goal is to verify whether it's feasible to implement a "reasonable" subset of CDI features with minimal runtime.
 The target envs are JVM, GraalVM (both jvm and aot modes).
-
-**NOTE:** Jandex built from master is needed to build this project: https://github.com/wildfly/jandex
 
 ## Goals
 
@@ -28,16 +26,16 @@ On the other hand, the logic in generated classes should be quite straightforwar
 * Programming model
   * :heavy_check_mark: Class beans
     * :heavy_check_mark: `@PostConstruct` and `@PreDestroy` callbacks
-    * :white_check_mark: Lifecycle callbacks on superclasses
+    * :heavy_check_mark: Lifecycle callbacks on superclasses
   * :heavy_check_mark: Producer methods and fields
     * :heavy_check_mark: Private members support
-    * :white_check_mark: Disposers
-  * :white_check_mark: Stereotypes
+    * :heavy_check_mark: Disposers
+  * :heavy_check_mark: Stereotypes
 * Dependency injection
   * :heavy_check_mark: Field, constructor and initializer injection
     * :heavy_check_mark: Private injection fields
     * :heavy_check_mark: Private constructors
-    * :white_check_mark: Private initializers
+    * :heavy_check_mark: Private initializers
   * :heavy_check_mark: Type-safe resolution
     * :heavy_check_mark: Proper type-safe resolution rules at runtime; i.e. `ArcContainer.instance(Class<T>, Annotation...)`
 * Scopes and Contexts:
@@ -53,7 +51,7 @@ On the other hand, the logic in generated classes should be quite straightforwar
   * :heavy_check_mark: Lifecycle (`@PostConstruct`, `@PreDestroy`, `@AroundConstruct`)
   * :white_check_mark: Transitive interceptor bindings
   * :x: Interceptor methods on superclasses
-* :white_check_mark: Events/observers
+* :heavy_check_mark: Events/observers
 * :x: Decorators
 * :x: Portable extensions
 * :x: EL support

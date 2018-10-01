@@ -36,6 +36,7 @@ import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
 import org.jboss.shamrock.deployment.ClassOutput;
 import org.jboss.shamrock.deployment.ShamrockConfig;
+import org.jboss.shamrock.runtime.ConfiguredValue;
 import org.jboss.shamrock.runtime.ContextObject;
 import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.runtime.RuntimeInjector;
@@ -303,9 +304,13 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
                 throw new RuntimeException("Failed to substitute " + param, e);
             }
 
+        } else if (param instanceof ConfiguredValue) {
+            ConfiguredValue val = (ConfiguredValue) param;
+            String value = val.getValue();
+            String key = val.getKey();
+            out = method.newInstance(ofConstructor(ConfiguredValue.class, String.class, String.class), method.load(key), method.load(value));
         } else if (param instanceof String) {
             String configParam = ShamrockConfig.getConfigKey((String) param);
-            out = method.load((String) param);
             if (configParam != null) {
                 ResultHandle config = method.invokeStaticMethod(ofMethod(ConfigProvider.class, "getConfig", Config.class));
                 ResultHandle propName = method.load(configParam);

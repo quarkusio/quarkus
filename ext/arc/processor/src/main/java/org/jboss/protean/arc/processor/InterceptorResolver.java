@@ -1,6 +1,7 @@
 package org.jboss.protean.arc.processor;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -28,11 +29,15 @@ public class InterceptorResolver {
             for (AnnotationInstance interceptorBinding : interceptor.getBindings()) {
                 if (!hasInterceptorBinding(bindings, interceptorBinding)) {
                     matches = false;
+                    break;
                 }
             }
             if (matches) {
                 interceptors.add(interceptor);
             }
+        }
+        if (interceptors.isEmpty()) {
+            return Collections.emptyList();
         }
         interceptors.sort(this::compare);
         return interceptors;
@@ -44,11 +49,13 @@ public class InterceptorResolver {
 
     private boolean hasInterceptorBinding(Set<AnnotationInstance> bindings, AnnotationInstance interceptorBinding) {
         ClassInfo interceptorBindingClass = beanDeployment.getInterceptorBinding(interceptorBinding.name());
+
         for (AnnotationInstance binding : bindings) {
+
             if (binding.name().equals(interceptorBinding.name())) {
                 // Must have the same annotation member value for each member which is not annotated @Nonbinding
                 boolean matches = true;
-                for (AnnotationValue value : binding.values()) {
+                for (AnnotationValue value : binding.valuesWithDefaults(beanDeployment.getIndex())) {
                     if (!interceptorBindingClass.method(value.name()).hasAnnotation(DotNames.NONBINDING)
                             && !value.equals(interceptorBinding.value(value.name()))) {
                         matches = false;

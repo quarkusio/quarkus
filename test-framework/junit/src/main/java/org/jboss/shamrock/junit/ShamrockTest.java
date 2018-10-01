@@ -71,7 +71,7 @@ public class ShamrockTest extends BlockJUnit4ClassRunner {
                                 runtimeRunner.run();
                             } catch (RuntimeException e) {
                                 failed = true;
-                                throw e;
+                                throw new RuntimeException("Failed to boot Shamrock during @ShamrockTest runner!", e);
                             }
                         }
                     }

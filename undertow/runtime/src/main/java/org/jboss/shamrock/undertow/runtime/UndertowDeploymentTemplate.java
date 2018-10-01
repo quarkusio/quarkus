@@ -126,18 +126,23 @@ public class UndertowDeploymentTemplate {
 
     public void startUndertow(StartupContext startupContext, @ContextObject("servletHandler") HttpHandler handler, String port) throws ServletException {
         if (undertow == null) {
-            log.log(Level.INFO, "Starting Undertow on port " + port);
-            undertow = Undertow.builder()
-                    .addHttpListener(Integer.parseInt(port), "localhost")
-                    .setHandler(new CanonicalPathHandler(ROOT_HANDLER))
-                    .build();
-            undertow.start();
+            try {
+                log.log(Level.INFO, "Starting Undertow on port " + port);
+                undertow = Undertow.builder()
+                      .addHttpListener(Integer.parseInt(port), "localhost")
+                      .setHandler(new CanonicalPathHandler(ROOT_HANDLER))
+                      .build();
+                undertow.start();
+            }
+            catch (Exception e) {
+                log.log(Level.SEVERE, "Failed to start Undertow", e);
+            }
         }
         currentRoot = handler;
 //        startupContext.addCloseable(new Closeable() {
 //            @Override
 //            public void close() throws IOException {
-//                val.stop();
+//                undertow.stop();
 //            }
 //        });
     }

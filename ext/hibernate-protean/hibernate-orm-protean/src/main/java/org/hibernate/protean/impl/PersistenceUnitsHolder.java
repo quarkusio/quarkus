@@ -28,14 +28,14 @@ public final class PersistenceUnitsHolder {
 	 * In Shamrock this is done in Shamrock's JPA ResourceProcessor
 	 *
 	 * The scanner may be null to use to default scanner, or a custom scanner can be used to stop hibernate scanning
-     * It is expected that the scanner will be provided by Shamrock via it's hold of Jandex info.
+	 * It is expected that the scanner will be provided by Shamrock via its hold of Jandex info.
 	 *
 	 * @param parsedPersistenceXmlDescriptors
 	 * @param scanner
 	 */
 	public static void initializeJpa(List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors, Scanner scanner) {
 		final List<PersistenceUnitDescriptor> units = convertPersistenceUnits( parsedPersistenceXmlDescriptors );
-		final Map<String,RecordedState> metadata = constructMetadataAdvance( parsedPersistenceXmlDescriptors , scanner);
+		final Map<String,RecordedState> metadata = constructMetadataAdvance( parsedPersistenceXmlDescriptors, scanner );
 		COMPACT_UNITS = new PUStatus( units, metadata );
 	}
 
@@ -65,7 +65,7 @@ public final class PersistenceUnitsHolder {
 	private static Map<String,RecordedState> constructMetadataAdvance(final List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors, Scanner scanner) {
 		Map all = new HashMap(  );
 		for ( PersistenceUnitDescriptor unit : parsedPersistenceXmlDescriptors ) {
-			RecordedState m = createMetadata( unit , scanner);
+			RecordedState m = createMetadata( unit , scanner );
 			Object previous = all.put( unitName( unit ), m );
 			if ( previous != null ) {
 				throw new IllegalStateException( "Duplicate persistence unit name: " + unit.getName() );
@@ -84,7 +84,7 @@ public final class PersistenceUnitsHolder {
 	}
 
 	private static void checkJPAInitialization() {
-		if(COMPACT_UNITS == null) {
+		if ( COMPACT_UNITS == null ) {
 			throw new RuntimeException("JPA not initialized yet by Shamrock: this is likely a bug.");
 		}
 	}

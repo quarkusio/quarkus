@@ -12,8 +12,11 @@ import javax.persistence.spi.PersistenceUnitTransactionType;
 
 import org.hibernate.bytecode.enhance.spi.EnhancementContext;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
+import org.jboss.logging.Logger;
 
 final class LightPersistenceXmlDescriptor implements PersistenceUnitDescriptor {
+
+	private static final Logger log = Logger.getLogger( LightPersistenceXmlDescriptor.class );
 
 	private final String name;
 	private final String providerClassName;
@@ -23,6 +26,7 @@ final class LightPersistenceXmlDescriptor implements PersistenceUnitDescriptor {
 	private final SharedCacheMode sharedCachemode;
 	private final List<String> managedClassNames;
 	private final Properties properties;
+	private final Object jtaDataSource;
 
 	LightPersistenceXmlDescriptor(final PersistenceUnitDescriptor toClone) {
 		this.name = toClone.getName();
@@ -31,6 +35,7 @@ final class LightPersistenceXmlDescriptor implements PersistenceUnitDescriptor {
 		this.transactionType = toClone.getTransactionType();
 		this.validationMode = toClone.getValidationMode();
 		this.sharedCachemode = toClone.getSharedCacheMode();
+		this.jtaDataSource = toClone.getJtaDataSource();
 		this.managedClassNames = Collections.unmodifiableList( toClone.getManagedClassNames() );
 		this.properties = filterNonStrings( toClone.getProperties() );
 		verifyIgnoredFields( toClone );
@@ -58,12 +63,12 @@ final class LightPersistenceXmlDescriptor implements PersistenceUnitDescriptor {
 		for ( Map.Entry<Object, Object> e : entries ) {
 			final Object key = e.getKey();
 			if ( ! ( key instanceof String ) ) {
-				//TODO warn
+				log.infof( "Ignoring persistence unit property key '%s' as it's not a String", key );
 				continue;
 			}
 			final Object value = e.getValue();
 			if ( ! ( value instanceof String ) ) {
-				//TODO warn
+				log.infof( "Ignoring persistence unit property for key '%s' as the value is not a String", key );
 				continue;
 			}
 			clean.setProperty( (String)key, (String)value );
@@ -134,7 +139,7 @@ final class LightPersistenceXmlDescriptor implements PersistenceUnitDescriptor {
 
 	@Override
 	public Object getJtaDataSource() {
-		return null;
+		return jtaDataSource;
 	}
 
 	@Override

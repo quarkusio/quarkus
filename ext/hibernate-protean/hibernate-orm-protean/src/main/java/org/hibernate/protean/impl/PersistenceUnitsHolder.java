@@ -35,7 +35,7 @@ public final class PersistenceUnitsHolder {
 	 */
 	public static void initializeJpa(List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors, Scanner scanner) {
 		final List<PersistenceUnitDescriptor> units = convertPersistenceUnits( parsedPersistenceXmlDescriptors );
-		final Map<String,RecordedState> metadata = constructMetadataAdvance( parsedPersistenceXmlDescriptors, scanner );
+		final Map<String,RecordedState> metadata = constructMetadataAdvance( units, scanner );
 		COMPACT_UNITS = new PUStatus( units, metadata );
 	}
 
@@ -62,7 +62,7 @@ public final class PersistenceUnitsHolder {
 		return ret;
 	}
 
-	private static Map<String,RecordedState> constructMetadataAdvance(final List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors, Scanner scanner) {
+	private static Map<String,RecordedState> constructMetadataAdvance(final List<PersistenceUnitDescriptor> parsedPersistenceXmlDescriptors, Scanner scanner) {
 		Map all = new HashMap(  );
 		for ( PersistenceUnitDescriptor unit : parsedPersistenceXmlDescriptors ) {
 			RecordedState m = createMetadata( unit , scanner );

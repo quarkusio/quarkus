@@ -8,12 +8,19 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 
 /**
- * Injection abstraction - an injected field, a bean constructor, an initializer or a disposer method.
+ * Injection abstraction, basically a collection of injection points plus the annotation target:
+ * <ul>
+ * <li>an injected field,</li>
+ * <li>a bean constructor,</li>
+ * <li>an initializer method,</li>
+ * <li>a producer method,</li>
+ * <li>a disposer method,</li>
+ * <li>an observer method.</li>
+ * </ul>
  *
  * @author Martin Kouba
  */
@@ -21,7 +28,6 @@ public class Injection {
 
     private static final Logger LOGGER = Logger.getLogger(Injection.class);
 
-    private static final DotName JAVA_LANG_OBJECT = DotName.createSimple(Object.class.getName());
     /**
      *
      * @param beanTarget
@@ -50,8 +56,8 @@ public class Injection {
                 AnnotationTarget injectTarget = injectAnnotation.target();
                 switch (injectAnnotation.target().kind()) {
                     case FIELD:
-                        injections.add(new Injection(injectTarget,
-                                Collections.singletonList(InjectionPointInfo.fromField(injectTarget.asField(), beanDeployment))));
+                        injections.add(
+                                new Injection(injectTarget, Collections.singletonList(InjectionPointInfo.fromField(injectTarget.asField(), beanDeployment))));
                         break;
                     case METHOD:
                         injections.add(new Injection(injectTarget, InjectionPointInfo.fromMethod(injectTarget.asMethod(), beanDeployment)));
@@ -62,9 +68,9 @@ public class Injection {
                 }
             }
         }
-        if(!beanTarget.superName().equals(JAVA_LANG_OBJECT)) {
+        if (!beanTarget.superName().equals(DotNames.OBJECT)) {
             ClassInfo info = beanDeployment.getIndex().getClassByName(beanTarget.superName());
-            if(info != null) {
+            if (info != null) {
                 forClassBean(info, beanDeployment, injections);
             }
         }

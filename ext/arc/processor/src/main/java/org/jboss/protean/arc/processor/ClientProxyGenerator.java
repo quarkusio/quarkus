@@ -58,7 +58,8 @@ public class ClientProxyGenerator extends AbstractGenerator {
         ClassInfo providerClass = bean.getDeployment().getIndex().getClassByName(providerType.name());
         String providerTypeName = providerClass.name().toString();
         String baseName = getBaseName(bean, beanClassName);
-        String generatedName = getProxyPackageName(bean).replace(".", "/") + "/" + baseName + CLIENT_PROXY_SUFFIX;
+        String targetPackage = getProxyPackageName(bean);
+        String generatedName = targetPackage.replace(".", "/") + "/" + baseName + CLIENT_PROXY_SUFFIX;
 
         // Foo_ClientProxy extends Foo implements ClientProxy
         List<String> interfaces = new ArrayList<>();
@@ -78,8 +79,8 @@ public class ClientProxyGenerator extends AbstractGenerator {
         FieldCreator beanField = clientProxy.getFieldCreator("bean", DescriptorUtils.extToInt(beanClassName)).setModifiers(ACC_PRIVATE | ACC_FINAL);
 
         createConstructor(clientProxy, beanClassName, superClass, beanField.getFieldDescriptor());
-        createDelegate(clientProxy, providerTypeName, beanField.getFieldDescriptor());
-        createGetContextualInstance(clientProxy, providerTypeName);
+        implementDelegate(clientProxy, providerTypeName, beanField.getFieldDescriptor());
+        implementGetContextualInstance(clientProxy, providerTypeName);
 
         for (MethodInfo method : getDelegatingMethods(bean)) {
 
@@ -101,9 +102,8 @@ public class ClientProxyGenerator extends AbstractGenerator {
 
             if (isInterface) {
                 ret = forward.invokeInterfaceMethod(method, delegate, params);
-            } else if (Modifier.isPrivate(method.flags()) ||
-                    (Modifier.isProtected(method.flags()) &&  !getPackage(method.declaringClass().name().toString()).equals(getPackage(generatedName)))) {
-                // Reflection fallback for private methods
+            } else if (isReflectionFallbackNeeded(method, targetPackage)) {
+                // Reflection fallback
                 ResultHandle paramTypesArray = forward.newArray(Class.class, forward.load(method.parameters().size()));
                 int idx = 0;
                 for (Type param : method.parameters()) {
@@ -128,14 +128,6 @@ public class ClientProxyGenerator extends AbstractGenerator {
         return classOutput.getResources();
     }
 
-    private String getPackage(String name) {
-        int index = name.lastIndexOf('.');
-        if(index == -1) {
-            return "";
-        }
-        return name.substring(0, index);
-    }
-
     void createConstructor(ClassCreator clientProxy, String beanClassName, String superClasName, FieldDescriptor beanField) {
         MethodCreator creator = clientProxy.getMethodCreator("<init>", void.class, beanClassName);
         creator.invokeSpecialMethod(MethodDescriptor.ofConstructor(superClasName), creator.getThis());
@@ -143,7 +135,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
         creator.returnValue(null);
     }
 
-    void createDelegate(ClassCreator clientProxy, String providerTypeName, FieldDescriptor beanField) {
+    void implementDelegate(ClassCreator clientProxy, String providerTypeName, FieldDescriptor beanField) {
         // Arc.container().getContext(bean.getScope()).get(bean, new CreationalContextImpl<>());
         MethodCreator creator = clientProxy.getMethodCreator("delegate", providerTypeName).setModifiers(Modifier.PRIVATE);
         // Arc.container()
@@ -161,7 +153,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
         creator.returnValue(result);
     }
 
-    void createGetContextualInstance(ClassCreator clientProxy, String providerTypeName) {
+    void implementGetContextualInstance(ClassCreator clientProxy, String providerTypeName) {
         MethodCreator creator = clientProxy.getMethodCreator("getContextualInstance", Object.class).setModifiers(Modifier.PUBLIC);
         creator.returnValue(
                 creator.invokeVirtualMethod(MethodDescriptor.ofMethod(clientProxy.getClassName(), "delegate", providerTypeName), creator.getThis()));

@@ -65,6 +65,7 @@ import org.jboss.shamrock.deployment.ResourceProcessor;
 import org.jboss.shamrock.deployment.RuntimePriority;
 import org.jboss.shamrock.deployment.ShamrockConfig;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
+import org.jboss.shamrock.runtime.ConfiguredValue;
 import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate;
 
@@ -207,7 +208,7 @@ public class ServletResourceProcessor implements ResourceProcessor {
 
         try (BytecodeRecorder context = processorContext.addDeploymentTask(RuntimePriority.UNDERTOW_START)) {
             UndertowDeploymentTemplate template = context.getRecordingProxy(UndertowDeploymentTemplate.class);
-            template.startUndertow(null, null, config.getConfig("http.port", "8080"));
+            template.startUndertow(null, null, new ConfiguredValue("http.port", "8080"));
         }
     }
 

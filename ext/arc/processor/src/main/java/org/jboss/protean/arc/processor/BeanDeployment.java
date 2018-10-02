@@ -211,15 +211,19 @@ public class BeanDeployment {
 
                     for (MethodInfo method : beanClass.methods()) {
                         if (method.hasAnnotation(DotNames.PRODUCES)) {
+                            // Producers are not inherited
                             producerMethods.add(method);
                         } else if (method.hasAnnotation(DotNames.DISPOSES)) {
+                            // Disposers are not inherited
                             disposerMethods.add(method);
                         } else if (method.hasAnnotation(DotNames.OBSERVES)) {
+                            // TODO observers are inherited
                             observerMethods.add(method);
                         }
                     }
                     for (FieldInfo field : beanClass.fields()) {
                         if (field.annotations().stream().anyMatch(a -> a.name().equals(DotNames.PRODUCES))) {
+                            // Producer fields are not inherited
                             producerFields.add(field);
                         }
                     }

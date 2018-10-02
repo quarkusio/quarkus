@@ -82,8 +82,7 @@ public final class Reflections {
             }
             return method.invoke(instance, args);
         } catch (NoSuchMethodException | SecurityException | IllegalArgumentException | IllegalAccessException | InvocationTargetException e) {
-            System.out.println("INSTANCE: " + instance);
-            throw new RuntimeException("Cannot invoke method: " + clazz.getName() + "#" + name, e);
+            throw new RuntimeException("Cannot invoke method: " + clazz.getName() + "#" + name + " on " + instance, e);
         }
     }
 

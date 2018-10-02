@@ -185,6 +185,7 @@ public class BeanDeployment {
 
     private List<BeanInfo> findBeans(List<DotName> beanDefiningAnnotations, List<ObserverInfo> observers) {
 
+        Set<DotName> processed = new HashSet<>();
         Set<ClassInfo> beanClasses = new HashSet<>();
         Set<MethodInfo> producerMethods = new HashSet<>();
         Set<MethodInfo> disposerMethods = new HashSet<>();
@@ -196,6 +197,9 @@ public class BeanDeployment {
                 if (Kind.CLASS.equals(annotation.target().kind())) {
 
                     ClassInfo beanClass = annotation.target().asClass();
+                    if (!processed.add(beanClass.name())) {
+                        continue;
+                    }
 
                     if (beanClass.annotations().containsKey(DotNames.INTERCEPTOR)) {
                         // Skip interceptors

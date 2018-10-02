@@ -515,6 +515,18 @@
                 <groupId>org.hibernate.protean</groupId>
                 <artifactId>hibernate-orm-protean</artifactId>
                 <version>${hibernate-orm.version}</version>
+                <exclusions>
+                    <!-- JAXB is now an explicit dependency to help JDK11 users,
+                      but we don't really need it on JDK8 -->
+                    <exclusion>
+                        <groupId>org.jvnet.jaxb2_commons</groupId>
+                        <artifactId>jaxb2-basics</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.sun.xml.bind</groupId>
+                        <artifactId>jaxb-impl</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.jboss</groupId>

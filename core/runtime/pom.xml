@@ -39,6 +39,10 @@
             <artifactId>slf4j-jboss-logging</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.graalvm</groupId>
+            <artifactId>graal-sdk</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.jboss.graalvm</groupId>
             <artifactId>graal-annotations</artifactId>
         </dependency>

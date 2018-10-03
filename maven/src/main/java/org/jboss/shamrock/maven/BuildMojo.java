@@ -147,19 +147,18 @@ public class BuildMojo extends AbstractMojo {
                     if (uberJar) {
                         try (ZipInputStream in = new ZipInputStream(new FileInputStream(a.getFile()))) {
                             for (ZipEntry e = in.getNextEntry(); e != null; e = in.getNextEntry()) {
-                                if (e.getName().startsWith("META-INF/services")) {
+                                if (e.getName().startsWith("META-INF/services/") && e.getName().length() > 18) {
                                     services.computeIfAbsent(e.getName(), (u) -> new ArrayList<>()).add(read(in));
                                     continue;
                                 } else if(e.getName().equals("META-INF/MANIFEST.MF")) {
                                     continue;
                                 }
-                                if (seen.contains(e.getName())) {
+                                if (! seen.add(e.getName())) {
                                     if (!e.getName().endsWith("/")) {
                                         getLog().warn("Duplicate entry " + e.getName() + " entry from " + a + " will be ignored");
                                     }
                                     continue;
                                 }
-                                seen.add(e.getName());
                                 runner.putNextEntry(new ZipEntry(e.getName()));
                                 doCopy(runner, in);
                             }
@@ -237,7 +236,7 @@ public class BuildMojo extends AbstractMojo {
                                 if (!pathName.isEmpty()) {
                                     runner.putNextEntry(new ZipEntry(p));
                                 }
-                            } else if (pathName.startsWith("META-INF/services")) {
+                            } else if (pathName.startsWith("META-INF/services/") && pathName.length() > 18) {
                                 try (FileInputStream in = new FileInputStream(path.toFile())) {
                                     services.computeIfAbsent(pathName, (u) -> new ArrayList<>()).add(read(in));
                                 }

@@ -3,14 +3,18 @@ package org.jboss.shamrock.deployment;
 import static org.jboss.protean.gizmo.MethodDescriptor.ofConstructor;
 import static org.jboss.protean.gizmo.MethodDescriptor.ofMethod;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.AccessibleObject;
+import java.io.OutputStreamWriter;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
@@ -27,6 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.MissingResourceException;
+import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -150,6 +155,7 @@ public class BuildTimeGenerator {
                         throw new RuntimeException(e);
                     }
                 }
+                processorContext.writeProperties(root.toFile());
                 processorContext.writeMainClass();
                 processorContext.writeReflectionAutoFeature();
             } finally {
@@ -179,6 +185,7 @@ public class BuildTimeGenerator {
         private final Set<String> runtimeInitializedClasses = new HashSet<>();
         private final Set<List<String>> proxyClasses = new HashSet<>();
         private final Map<String, Object> properties = new HashMap<>();
+        private final Map<String, String> systemProperties = new HashMap<>();
 
         @Override
         public BytecodeRecorder addStaticInitTask(int priority) {
@@ -301,6 +308,11 @@ public class BuildTimeGenerator {
         }
 
         @Override
+        public void addNativeImageSystemProperty(final String name, final String value) {
+            systemProperties.put(name, value);
+        }
+
+        @Override
         public boolean isCapabilityPresent(String capability) {
             return capabilities.contains(capability);
         }
@@ -315,6 +327,15 @@ public class BuildTimeGenerator {
             return (T) properties.get(key);
         }
 
+        void writeProperties(File output) throws IOException {
+            final Properties properties = new Properties();
+            properties.putAll(systemProperties);
+            try (FileOutputStream os = new FileOutputStream(new File(output, "native-image.properties"))) {
+                try (OutputStreamWriter osw = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
+                    properties.store(osw, "Generated properties (do not edit)");
+                }
+            }
+        }
 
         void writeMainClass() throws IOException {
 
@@ -388,6 +409,33 @@ public class BuildTimeGenerator {
                     tc.complete();
                 }
 
+            }
+
+            // hack in reinitialization of process info classes
+            {
+                ResultHandle array = beforeAn.newArray(Class.class, beforeAn.load(1));
+                ResultHandle thisClass = beforeAn.loadClass(GRAAL_AUTOFEATURE);
+                ResultHandle cl = beforeAn.invokeVirtualMethod(ofMethod(Class.class, "getClassLoader", ClassLoader.class), thisClass);
+                {
+                    ExceptionTable tc = beforeAn.addTryCatch();
+                    ResultHandle clazz = beforeAn.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class), beforeAn.load("org.wildfly.common.net.HostName"), beforeAn.load(false), cl);
+                    beforeAn.writeArrayValue(array, beforeAn.load(0), clazz);
+                    beforeAn.invokeStaticMethod(MethodDescriptor.ofMethod("org.graalvm.nativeimage.RuntimeClassInitialization", "rerunClassInitialization", void.class, Class[].class), array);
+
+                    CatchBlockCreator cc = tc.addCatchClause(Throwable.class);
+                    cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
+                    tc.complete();
+                }
+                {
+                    ExceptionTable tc = beforeAn.addTryCatch();
+                    ResultHandle clazz = beforeAn.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class), beforeAn.load("org.wildfly.common.os.Process"), beforeAn.load(false), cl);
+                    beforeAn.writeArrayValue(array, beforeAn.load(0), clazz);
+                    beforeAn.invokeStaticMethod(MethodDescriptor.ofMethod("org.graalvm.nativeimage.RuntimeClassInitialization", "rerunClassInitialization", void.class, Class[].class), array);
+
+                    CatchBlockCreator cc = tc.addCatchClause(Throwable.class);
+                    cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
+                    tc.complete();
+                }
             }
 
             if (!proxyClasses.isEmpty()) {

@@ -36,7 +36,6 @@ import javax.transaction.TransactionManager;
 import javax.transaction.TransactionSynchronizationRegistry;
 
 import io.agroal.api.AgroalDataSource;
-import io.agroal.api.AgroalDataSourceListener;
 import io.agroal.api.configuration.supplier.AgroalDataSourceConfigurationSupplier;
 import io.agroal.api.security.NamePrincipal;
 import io.agroal.api.security.SimplePassword;
@@ -103,7 +102,9 @@ public class DataSourceProducer {
 
     @PreDestroy
     public void stop() {
-        agroalDataSource.close();
+        if (agroalDataSource != null) {
+            agroalDataSource.close();
+        }
     }
 
     public static Logger getLog() {

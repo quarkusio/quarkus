@@ -94,7 +94,7 @@ public class HibernateCdiResourceProcessor implements ResourceProcessor {
 
             //every persistence unit needs a producer, even if the factory is not injectable
             for (String name : allKnownNames) {
-                String className = getClass().getName() + "$$EMFProducer-" + name;
+                String className = getClass().getName() + "$$EMFProducer$$APP$$-" + name;
                 AtomicReference<byte[]> bytes = new AtomicReference<>();
 
                 boolean system = false;
@@ -111,7 +111,6 @@ public class HibernateCdiResourceProcessor implements ResourceProcessor {
                         producer.addAnnotation(SystemEntityManager.class);
                         system = true;
                     }
-
                     ResultHandle ret = producer.invokeStaticMethod(MethodDescriptor.ofMethod(Persistence.class, "createEntityManagerFactory", EntityManagerFactory.class, String.class), producer.load(name));
                     producer.returnValue(ret);
                 }

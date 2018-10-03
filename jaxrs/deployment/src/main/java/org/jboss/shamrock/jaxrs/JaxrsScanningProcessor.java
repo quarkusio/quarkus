@@ -32,6 +32,7 @@ import java.util.Collection;
 import java.util.Enumeration;
 
 import javax.servlet.Servlet;
+import javax.ws.rs.core.Application;
 import javax.ws.rs.ext.Providers;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -107,6 +108,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
         }
         AnnotationInstance appPath = app.iterator().next();
         String path = appPath.value().asString();
+        String appClass = appPath.target().asClass().name().toString();
         try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.JAXRS_DEPLOYMENT)) {
             UndertowDeploymentTemplate undertow = recorder.getRecordingProxy(UndertowDeploymentTemplate.class);
             InjectionInstance<? extends Servlet> instanceFactory = (InjectionInstance<? extends Servlet>) recorder.newInstanceFactory(HttpServlet30Dispatcher.class.getName());
@@ -146,6 +148,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
                 }
                 undertow.addServletContextParameter(null, "resteasy.servlet.mapping.prefix", path);
                 undertow.addServletContextParameter(null, "resteasy.injector.factory", ShamrockInjectorFactory.class.getName());
+                undertow.addServletContextParameter(null, Application.class.getName(), appClass);
 
             }
         }

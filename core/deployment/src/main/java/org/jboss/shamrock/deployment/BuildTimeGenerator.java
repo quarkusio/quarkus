@@ -5,6 +5,7 @@ import static org.jboss.protean.gizmo.MethodDescriptor.ofMethod;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
@@ -369,7 +370,7 @@ public class BuildTimeGenerator {
 
             //MethodCreator afterReg = file.getMethodCreator("afterRegistration", void.class, "org.graalvm.nativeimage.Feature$AfterRegistrationAccess");
             MethodCreator beforeAn = file.getMethodCreator("beforeAnalysis", "V", "org/graalvm/nativeimage/Feature$BeforeAnalysisAccess");
-
+            ExceptionTable overallCatch = beforeAn.addTryCatch();
             //TODO: at some point we are going to need to break this up, as if it get too big it will hit the method size limit
 
             if (!runtimeInitializedClasses.isEmpty()) {
@@ -407,14 +408,23 @@ public class BuildTimeGenerator {
             for (String i : resources) {
                 beforeAn.invokeStaticMethod(ofMethod(ResourceHelper.class, "registerResources", void.class, String.class), beforeAn.load(i));
             }
-            ResultHandle locSupport = beforeAn.invokeStaticMethod(MethodDescriptor.ofMethod("org.graalvm.nativeimage.ImageSingletons", "lookup", Object.class, Class.class), beforeAn.loadClass("com.oracle.svm.core.jdk.LocalizationSupport"));
-            for (String i : resourceBundles) {
-                ExceptionTable et = beforeAn.addTryCatch();
-                beforeAn.invokeVirtualMethod(ofMethod("com.oracle.svm.core.jdk.LocalizationSupport", "addToCache", void.class, String.class), locSupport, beforeAn.load(i));
-                CatchBlockCreator c = et.addCatchClause(MissingResourceException.class);
-                et.complete();
-            }
+            if(!resourceBundles.isEmpty()) {
+                ResultHandle locClass = beforeAn.loadClass("com.oracle.svm.core.jdk.LocalizationSupport");
 
+                ResultHandle params = beforeAn.marshalAsArray(Class.class, beforeAn.loadClass(String.class));
+                ResultHandle registerMethod = beforeAn.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), locClass, beforeAn.load("addBundleToCache"), params);
+                beforeAn.invokeVirtualMethod(ofMethod(AccessibleObject.class, "setAccessible", void.class, boolean.class), registerMethod, beforeAn.load(true));
+
+                ResultHandle locSupport = beforeAn.invokeStaticMethod(MethodDescriptor.ofMethod("org.graalvm.nativeimage.ImageSingletons", "lookup", Object.class, Class.class), locClass);
+                for (String i : resourceBundles) {
+                    ExceptionTable et = beforeAn.addTryCatch();
+
+                    beforeAn.invokeVirtualMethod(ofMethod(Method.class, "invoke", Object.class, Object.class, Object[].class), registerMethod, locSupport, beforeAn.marshalAsArray(Object.class, beforeAn.load(i)));
+                    CatchBlockCreator c = et.addCatchClause(Throwable.class);
+                    //c.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), c.getCaughtException());
+                    et.complete();
+                }
+            }
             int count = 0;
 
             for (Map.Entry<String, ReflectionInfo> entry : reflectiveClasses.entrySet()) {
@@ -483,7 +493,12 @@ public class BuildTimeGenerator {
                 exceptionTable.complete();
                 mv.returnValue(null);
             }
+            CatchBlockCreator print = overallCatch.addCatchClause(Throwable.class);
+            print.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), print.getCaughtException());
+            overallCatch.complete();
+
             beforeAn.returnValue(null);
+
             file.close();
         }
 

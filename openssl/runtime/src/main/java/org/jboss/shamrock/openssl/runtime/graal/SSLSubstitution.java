@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.undertow.runtime.graal;
+package org.jboss.shamrock.openssl.runtime.graal;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
@@ -26,7 +26,6 @@ import org.wildfly.openssl.SSL;
  */
 @TargetClass(SSL.class)
 public final class SSLSubstitution {
-
 
     @Substitute
     static void init() {

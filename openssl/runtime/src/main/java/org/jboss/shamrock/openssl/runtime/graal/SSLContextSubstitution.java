@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.undertow.runtime.graal;
+package org.jboss.shamrock.openssl.runtime.graal;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;

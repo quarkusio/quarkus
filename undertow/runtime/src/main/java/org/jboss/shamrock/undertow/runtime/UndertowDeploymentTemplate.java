@@ -1,6 +1,7 @@
 package org.jboss.shamrock.undertow.runtime;
 
 import java.nio.file.Paths;
+import java.security.SecureRandom;
 import java.util.EventListener;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -22,6 +23,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.CanonicalPathHandler;
 import io.undertow.server.handlers.resource.ClassPathResourceManager;
 import io.undertow.server.handlers.resource.PathResourceManager;
+import io.undertow.server.session.SessionIdGenerator;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
@@ -53,6 +55,7 @@ public class UndertowDeploymentTemplate {
     @ContextObject("deploymentInfo")
     public DeploymentInfo createDeployment(String name) {
         DeploymentInfo d = new DeploymentInfo();
+        d.setSessionIdGenerator(new ShamrockSessionIdGenerator());
         d.setClassLoader(getClass().getClassLoader());
         d.setDeploymentName(name);
         d.setContextPath("/");
@@ -164,6 +167,89 @@ public class UndertowDeploymentTemplate {
             return manager.start();
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * we can't have SecureRandom in the native image heap, so we need to lazy init
+     */
+    private static class ShamrockSessionIdGenerator implements SessionIdGenerator {
+
+
+        private volatile SecureRandom random;
+
+        private volatile int length = 30;
+
+        private static final char[] SESSION_ID_ALPHABET;
+
+        private static final String ALPHABET_PROPERTY = "io.undertow.server.session.SecureRandomSessionIdGenerator.ALPHABET";
+
+        static {
+            String alphabet = System.getProperty(ALPHABET_PROPERTY, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_");
+            if(alphabet.length() != 64) {
+                throw new RuntimeException("io.undertow.server.session.SecureRandomSessionIdGenerator must be exactly 64 characters long");
+            }
+            SESSION_ID_ALPHABET = alphabet.toCharArray();
+        }
+
+        @Override
+        public String createSessionId() {
+            if(random == null) {
+                random = new SecureRandom();
+            }
+            final byte[] bytes = new byte[length];
+            random.nextBytes(bytes);
+            return new String(encode(bytes));
+        }
+
+
+        public int getLength() {
+            return length;
+        }
+
+        public void setLength(final int length) {
+            this.length = length;
+        }
+
+        /**
+         * Encode the bytes into a String with a slightly modified Base64-algorithm
+         * This code was written by Kevin Kelley <kelley@ruralnet.net>
+         * and adapted by Thomas Peuss <jboss@peuss.de>
+         *
+         * @param data The bytes you want to encode
+         * @return the encoded String
+         */
+        private char[] encode(byte[] data) {
+            char[] out = new char[((data.length + 2) / 3) * 4];
+            char[] alphabet = SESSION_ID_ALPHABET;
+            //
+            // 3 bytes encode to 4 chars.  Output is always an even
+            // multiple of 4 characters.
+            //
+            for (int i = 0, index = 0; i < data.length; i += 3, index += 4) {
+                boolean quad = false;
+                boolean trip = false;
+
+                int val = (0xFF & (int) data[i]);
+                val <<= 8;
+                if ((i + 1) < data.length) {
+                    val |= (0xFF & (int) data[i + 1]);
+                    trip = true;
+                }
+                val <<= 8;
+                if ((i + 2) < data.length) {
+                    val |= (0xFF & (int) data[i + 2]);
+                    quad = true;
+                }
+                out[index + 3] = alphabet[(quad ? (val & 0x3F) : 63)];
+                val >>= 6;
+                out[index + 2] = alphabet[(trip ? (val & 0x3F) : 63)];
+                val >>= 6;
+                out[index + 1] = alphabet[val & 0x3F];
+                val >>= 6;
+                out[index] = alphabet[val & 0x3F];
+            }
+            return out;
         }
     }
 }

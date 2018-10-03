@@ -127,7 +127,6 @@
                                 <configuration>
                                     <reportErrorsAtRuntime>true</reportErrorsAtRuntime>
                                     <graalvmHome>${graalvmHome}</graalvmHome>
-                                    <enableJni>true</enableJni>
                                 </configuration>
                             </execution>
                         </executions>

@@ -401,4 +401,12 @@ public interface BytecodeCreator {
         ResultHandle res = newInstance(MethodDescriptor.ofConstructor(exceptionType, String.class, Throwable.class), load(message), existing);
         throwException(res);
     }
+
+    default ResultHandle marshalAsArray(Class<?> arrayClass, ResultHandle... params) {
+        ResultHandle array = newArray(arrayClass, load(params.length));
+        for (int i = 0; i < params.length; ++i) {
+            writeArrayValue(array, load(i), params[i]);
+        }
+        return array;
+    }
 }

@@ -100,9 +100,6 @@ public class ServletResourceProcessor implements ResourceProcessor {
         processorContext.addRuntimeInitializedClasses("io.undertow.server.protocol.ajp.AjpServerResponseConduit");
         processorContext.addRuntimeInitializedClasses("io.undertow.server.protocol.ajp.AjpServerRequestConduit");
 
-        //TODO: this should be somewhere else, as SSL is not specific to Undertow
-        processorContext.addRuntimeInitializedClasses("org.wildfly.openssl.OpenSSLEngine");
-
         handleResources(archiveContext, processorContext);
 
         try (BytecodeRecorder context = processorContext.addStaticInitTask(RuntimePriority.UNDERTOW_CREATE_DEPLOYMENT)) {

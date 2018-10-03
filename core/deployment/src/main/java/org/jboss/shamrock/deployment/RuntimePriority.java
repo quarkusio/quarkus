@@ -21,4 +21,5 @@ public class RuntimePriority {
     public static final int DATASOURCE_DEPLOYMENT = 700;
     public static final int BOOTSTRAP_EMF = 800;
     public static final int UNDERTOW_START = 900;
+    public static final int STARTUP_EVENT = 1000000;
 }

@@ -56,7 +56,7 @@ public class ArcDeploymentTemplate {
     }
 
     public void setupRequestScope(@ContextObject("deploymentInfo") DeploymentInfo deploymentInfo, @ContextObject("arc.container") ArcContainer arcContainer) {
-        if(deploymentInfo == null) {
+        if (deploymentInfo == null) {
             return;
         }
         deploymentInfo.addThreadSetupAction(new ThreadSetupHandler() {
@@ -110,6 +110,10 @@ public class ArcDeploymentTemplate {
             }
         });
 
+    }
+
+    public void fireStartupEvent(@ContextObject("bean.container") BeanContainer beanContainer) {
+        beanContainer.instance(StartupEventRunner.class).fireEvent();
     }
 
 }

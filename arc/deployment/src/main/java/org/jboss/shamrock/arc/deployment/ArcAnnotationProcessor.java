@@ -30,6 +30,7 @@ import org.jboss.protean.arc.processor.BeanProcessor.Builder;
 import org.jboss.protean.arc.processor.ReflectionRegistration;
 import org.jboss.protean.arc.processor.ResourceOutput;
 import org.jboss.shamrock.arc.runtime.ArcDeploymentTemplate;
+import org.jboss.shamrock.arc.runtime.StartupEventRunner;
 import org.jboss.shamrock.deployment.ArchiveContext;
 import org.jboss.shamrock.deployment.BeanArchiveIndex;
 import org.jboss.shamrock.deployment.BeanDeployment;
@@ -52,6 +53,9 @@ public class ArcAnnotationProcessor implements ResourceProcessor {
 
     @Override
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
+
+        beanDeployment.addAdditionalBean(StartupEventRunner.class);
+
         try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.ARC_DEPLOYMENT)) {
 
             ArcDeploymentTemplate template = recorder.getRecordingProxy(ArcDeploymentTemplate.class);
@@ -128,6 +132,10 @@ public class ArcAnnotationProcessor implements ResourceProcessor {
             template.initBeanContainer(container);
             template.setupInjection(null, container);
             template.setupRequestScope(null, null);
+        }
+
+        try (BytecodeRecorder recorder = processorContext.addDeploymentTask(RuntimePriority.STARTUP_EVENT)) {
+            recorder.getRecordingProxy(ArcDeploymentTemplate.class).fireStartupEvent(null);
         }
     }
 

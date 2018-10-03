@@ -74,11 +74,10 @@ import org.jboss.resteasy.specimpl.ResteasyUriBuilder;
  */
 class RestClientBuilderImpl implements RestClientBuilder {
 
-    private static final Logger LOGGER = Logger.getLogger(RestClientBuilderImpl.class);
-
     private static final String RESTEASY_PROPERTY_PREFIX = "resteasy.";
 
     private static final String DEFAULT_MAPPER_PROP = "microprofile.rest.client.disable.default.mapper";
+    private static final Logger log = Logger.getLogger("org.jboss.shamrock.restclient");
 
     RestClientBuilderImpl() {
         ClientBuilder availableBuilder = ClientBuilder.newBuilder();
@@ -347,9 +346,9 @@ class RestClientBuilderImpl implements RestClientBuilder {
                 Method builderMethod = ResteasyClientBuilder.class.getMethod(builderMethodName, unwrapPrimitiveType(value));
                 builderMethod.invoke(builderDelegate, value);
             } catch (NoSuchMethodException e) {
-                LOGGER.warnf("ResteasyClientBuilder method %s not found", builderMethodName);
+                log.warnf("ResteasyClientBuilder method %s not found", builderMethodName);
             } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-                LOGGER.errorf(e, "Unable to invoke ResteasyClientBuilder method %s", builderMethodName);
+                log.errorf(e, "Unable to invoke ResteasyClientBuilder method %s", builderMethodName);
             }
         }
         this.builderDelegate.property(name, value);
@@ -487,7 +486,7 @@ class RestClientBuilderImpl implements RestClientBuilder {
     public void registerLocalProviderInstance(Object provider, Map<Class<?>, Integer> contracts) {
         for (Object registered : getLocalProviderInstances()) {
             if (registered == provider) {
-                System.out.println("Provider already registered " + provider.getClass().getName());
+                log.infof("Provider already registered: %s", provider.getClass());
                 return;
             }
         }

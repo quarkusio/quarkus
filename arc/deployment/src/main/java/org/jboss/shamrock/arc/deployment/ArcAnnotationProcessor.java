@@ -24,6 +24,7 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.logging.Logger;
 import org.jboss.protean.arc.ArcContainer;
 import org.jboss.protean.arc.processor.BeanProcessor;
 import org.jboss.protean.arc.processor.BeanProcessor.Builder;
@@ -44,6 +45,7 @@ import io.smallrye.config.inject.ConfigProducer;
 public class ArcAnnotationProcessor implements ResourceProcessor {
 
     private static final DotName JAVA_LANG_OBJECT = DotName.createSimple(Object.class.getName());
+    private static final Logger log = Logger.getLogger("org.jboss.shamrock.arc.deployment.processor");
 
     @Inject
     BeanDeployment beanDeployment;
@@ -120,7 +122,7 @@ public class ArcAnnotationProcessor implements ResourceProcessor {
                                     }
                                 }
                             }
-                            System.out.println("Add " + (isAppClass ? "APP" : "FWK") + " class: " + resource.getFullyQualifiedName());
+                            log.infof("Add %s class: %s", (isAppClass ? "APP" : "FWK"), resource.getFullyQualifiedName());
                             processorContext.addGeneratedClass(isAppClass, resource.getName(), resource.getData());
                             break;
                         case SERVICE_PROVIDER:
@@ -156,7 +158,7 @@ public class ArcAnnotationProcessor implements ResourceProcessor {
         }
         ClassInfo beanInfo = shamrockIndex.getClassByName(beanClassName);
         if (beanInfo == null) {
-            System.out.println("Index bean class: " + beanClass);
+            log.infof("Index bean class: %s", beanClass);
             try (InputStream stream = ArcAnnotationProcessor.class.getClassLoader().getResourceAsStream(beanClass.replace('.', '/') + ".class")) {
                 beanInfo = indexer.index(stream);
                 additionalIndex.add(beanInfo.name());
@@ -171,7 +173,7 @@ public class ArcAnnotationProcessor implements ResourceProcessor {
             if (!additionalIndex.contains(annotationName) && shamrockIndex.getClassByName(annotationName) == null) {
                 try (InputStream annotationStream = ArcAnnotationProcessor.class.getClassLoader()
                         .getResourceAsStream(annotationName.toString().replace('.', '/') + ".class")) {
-                    System.out.println("Index annotation: " + annotationName);
+                    log.infof("Index annotation: %s", annotationName);
                     indexer.index(annotationStream);
                     additionalIndex.add(annotationName);
                 } catch (IOException e) {
@@ -192,7 +194,7 @@ public class ArcAnnotationProcessor implements ResourceProcessor {
         }
         ClassInfo beanInfo = shamrockIndex.getClassByName(beanClassName);
         if (beanInfo == null) {
-            System.out.println("Index bean class: " + beanClass);
+            log.infof("Index bean class: %s", beanClass);
             try (InputStream stream = new ByteArrayInputStream(beanData)) {
                 beanInfo = indexer.index(stream);
                 additionalIndex.add(beanInfo.name());
@@ -207,7 +209,7 @@ public class ArcAnnotationProcessor implements ResourceProcessor {
             if (!additionalIndex.contains(annotationName) && shamrockIndex.getClassByName(annotationName) == null) {
                 try (InputStream annotationStream = ArcAnnotationProcessor.class.getClassLoader()
                         .getResourceAsStream(annotationName.toString().replace('.', '/') + ".class")) {
-                    System.out.println("Index annotation: " + annotationName);
+                    log.infof("Index annotation: %s", annotationName);
                     indexer.index(annotationStream);
                     additionalIndex.add(annotationName);
                 } catch (IOException e) {

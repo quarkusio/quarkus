@@ -28,15 +28,12 @@ public class ShamrockConstructorInjector implements ConstructorInjector {
 
     @Override
     public CompletionStage<Object> construct(boolean unwrapAsync) {
-        System.err.println("construct() " + this.ctor);
         return this.delegate.construct(unwrapAsync);
     }
 
     @Override
     public CompletionStage<Object> construct(HttpRequest request, HttpResponse response, boolean unwrapAsync)
             throws Failure, WebApplicationException, ApplicationException {
-        System.err.println("construct(req,resp) " + this.ctor);
-        System.err.println("CAN WE CDI? " + ShamrockInjectorFactory.CONTAINER);
         if (ShamrockInjectorFactory.CONTAINER == null) {
             return delegate.construct(request, response, unwrapAsync);
         }

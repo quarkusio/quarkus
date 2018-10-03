@@ -146,15 +146,18 @@ final class NativeInfoDirectives implements CContext.Directives {
 
 final class ProcessUtils {
     static String getProcessName() {
-        String name;
-        // todo: they promised there would be an API for this in the near future
-        if (Target_com_oracle_svm_core_JavaMainWrapper.argc > 0 && Target_com_oracle_svm_core_JavaMainWrapper.argv.isNonNull()) {
-            name = CTypeConversion.toJavaString(Target_com_oracle_svm_core_JavaMainWrapper.argv.read(0));
-            final int idx = name.lastIndexOf(File.separatorChar);
-            if (idx != -1) {
-                name = name.substring(idx + 1);
+        String name = System.getProperty("jboss.process.name");
+        if (name == null) {
+            // todo: they promised there would be an API for this in the near future
+            if (Target_com_oracle_svm_core_JavaMainWrapper.argc > 0 && Target_com_oracle_svm_core_JavaMainWrapper.argv.isNonNull()) {
+                name = CTypeConversion.toJavaString(Target_com_oracle_svm_core_JavaMainWrapper.argv.read(0));
+                final int idx = name.lastIndexOf(File.separatorChar);
+                if (idx != -1) {
+                    name = name.substring(idx + 1);
+                }
             }
-        } else {
+        }
+        if (name == null) {
             name = "<unknown>";
         }
         return name;

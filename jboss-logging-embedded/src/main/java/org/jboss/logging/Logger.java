@@ -567,6 +567,7 @@ public abstract class Logger implements Serializable, BasicLogger {
      *
      * @return {@code true} if messages logged at {@link Level#DEBUG} may be accepted, {@code false} otherwise
      */
+    @AlwaysInline("Fast level checks")
     public boolean isDebugEnabled() {
         return isEnabled(Level.DEBUG);
     }
@@ -1037,6 +1038,7 @@ public abstract class Logger implements Serializable, BasicLogger {
      *
      * @return {@code true} if messages logged at {@link Level#INFO} may be accepted, {@code false} otherwise
      */
+    @AlwaysInline("Fast level checks")
     public boolean isInfoEnabled() {
         return isEnabled(Level.INFO);
     }
@@ -1046,7 +1048,6 @@ public abstract class Logger implements Serializable, BasicLogger {
      *
      * @param message the message
      */
-    @AlwaysInline("Fast level checks")
     public void info(Object message) {
         doLog(Level.INFO, FQCN, message, null, null);
     }
@@ -1057,7 +1058,6 @@ public abstract class Logger implements Serializable, BasicLogger {
      * @param message the message
      * @param t the throwable
      */
-    @AlwaysInline("Fast level checks")
     public void info(Object message, Throwable t) {
         doLog(Level.INFO, FQCN, message, null, t);
     }
@@ -1069,7 +1069,6 @@ public abstract class Logger implements Serializable, BasicLogger {
      * @param message the message
      * @param t the throwable
      */
-    @AlwaysInline("Fast level checks")
     public void info(String loggerFqcn, Object message, Throwable t) {
         doLog(Level.INFO, loggerFqcn, message, null, t);
     }
@@ -1082,7 +1081,6 @@ public abstract class Logger implements Serializable, BasicLogger {
      * @deprecated To log a message with parameters, using {@link #infov(String, Object...)} is recommended.
      */
     @Deprecated
-    @AlwaysInline("Fast level checks")
     public void info(Object message, Object[] params) {
         doLog(Level.INFO, FQCN, message, params, null);
     }
@@ -1096,7 +1094,6 @@ public abstract class Logger implements Serializable, BasicLogger {
      * @deprecated To log a message with parameters, using {@link #infov(Throwable, String, Object...)} is recommended.
      */
     @Deprecated
-    @AlwaysInline("Fast level checks")
     public void info(Object message, Object[] params, Throwable t) {
         doLog(Level.INFO, FQCN, message, params, t);
     }
@@ -1109,7 +1106,6 @@ public abstract class Logger implements Serializable, BasicLogger {
      * @param params the message parameters
      * @param t the throwable
      */
-    @AlwaysInline("Fast level checks")
     public void info(String loggerFqcn, Object message, Object[] params, Throwable t) {
         doLog(Level.INFO, loggerFqcn, message, params, t);
     }
@@ -1120,7 +1116,6 @@ public abstract class Logger implements Serializable, BasicLogger {
      * @param format the message format string
      * @param params the parameters
      */
-    @AlwaysInline("Fast level checks")
     public void infov(String format, Object... params) {
         doLog(Level.INFO, FQCN, format, params, null);
     }
@@ -1131,7 +1126,6 @@ public abstract class Logger implements Serializable, BasicLogger {
      * @param format the message format string
      * @param param1 the sole parameter
      */
-    @AlwaysInline("Fast level checks")
     public void infov(String format, Object param1) {
         if (isEnabled(Level.INFO)) {
             doLog(Level.INFO, FQCN, format, new Object[] { param1 }, null);
@@ -1145,7 +1139,6 @@ public abstract class Logger implements Serializable, BasicLogger {
      * @param param1 the first parameter
      * @param param2 the second parameter
      */
-    @AlwaysInline("Fast level checks")
     public void infov(String format, Object param1, Object param2) {
         if (isEnabled(Level.INFO)) {
             doLog(Level.INFO, FQCN, format, new Object[] { param1, param2 }, null);
@@ -1160,7 +1153,6 @@ public abstract class Logger implements Serializable, BasicLogger {
      * @param param2 the second parameter
      * @param param3 the third parameter
      */
-    @AlwaysInline("Fast level checks")
     public void infov(String format, Object param1, Object param2, Object param3) {
         if (isEnabled(Level.INFO)) {
             doLog(Level.INFO, FQCN, format, new Object[] { param1, param2, param3 }, null);
@@ -1174,7 +1166,6 @@ public abstract class Logger implements Serializable, BasicLogger {
      * @param format the message format string
      * @param params the parameters
      */
-    @AlwaysInline("Fast level checks")
     public void infov(Throwable t, String format, Object... params) {
         doLog(Level.INFO, FQCN, format, params, t);
     }
@@ -1186,7 +1177,6 @@ public abstract class Logger implements Serializable, BasicLogger {
      * @param format the message format string
      * @param param1 the sole parameter
      */
-    @AlwaysInline("Fast level checks")
     public void infov(Throwable t, String format, Object param1) {
         if (isEnabled(Level.INFO)) {
             doLog(Level.INFO, FQCN, format, new Object[] { param1 }, t);
@@ -1201,7 +1191,6 @@ public abstract class Logger implements Serializable, BasicLogger {
      * @param param1 the first parameter
      * @param param2 the second parameter
      */
-    @AlwaysInline("Fast level checks")
     public void infov(Throwable t, String format, Object param1, Object param2) {
         if (isEnabled(Level.INFO)) {
             doLog(Level.INFO, FQCN, format, new Object[] { param1, param2 }, t);
@@ -1217,7 +1206,6 @@ public abstract class Logger implements Serializable, BasicLogger {
      * @param param2 the second parameter
      * @param param3 the third parameter
      */
-    @AlwaysInline("Fast level checks")
     public void infov(Throwable t, String format, Object param1, Object param2, Object param3) {
         if (isEnabled(Level.INFO)) {
             doLog(Level.INFO, FQCN, format, new Object[] { param1, param2, param3 }, t);
@@ -1230,7 +1218,6 @@ public abstract class Logger implements Serializable, BasicLogger {
      * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
      * @param params the parameters
      */
-    @AlwaysInline("Fast level checks")
     public void infof(String format, Object... params) {
         doLogf(Level.INFO, FQCN, format, params, null);
     }
@@ -1241,7 +1228,6 @@ public abstract class Logger implements Serializable, BasicLogger {
      * @param format the format string as per {@link String#format(String, Object...)} or resource bundle key therefor
      * @param param1 the sole parameter
      */
-    @AlwaysInline("Fast level checks")
     public void infof(String format, Object param1) {
         if (isEnabled(Level.INFO)) {
             doLogf(Level.INFO, FQCN, format, new Object[] { param1 }, null);
@@ -1255,7 +1241,6 @@ public abstract class Logger implements Serializable, BasicLogger {
      * @param param1 the first parameter
      * @param param2 the second parameter
      */
-    @AlwaysInline("Fast level checks")
     public void infof(String format, Object param1, Object param2) {
         if (isEnabled(Level.INFO)) {
             doLogf(Level.INFO, FQCN, format, new Object[] { param1, param2 }, null);
@@ -1270,7 +1255,6 @@ public abstract class Logger implements Serializable, BasicLogger {
      * @param param2 the second parameter
      * @param param3 the third parameter
      */
-    @AlwaysInline("Fast level checks")
     public void infof(String format, Object param1, Object param2, Object param3) {
         if (isEnabled(Level.INFO)) {
             doLogf(Level.INFO, FQCN, format, new Object[] { param1, param2, param3 }, null);
@@ -1284,7 +1268,6 @@ public abstract class Logger implements Serializable, BasicLogger {
      * @param format the format string, as per {@link String#format(String, Object...)}
      * @param params the parameters
      */
-    @AlwaysInline("Fast level checks")
     public void infof(Throwable t, String format, Object... params) {
         doLogf(Level.INFO, FQCN, format, params, t);
     }
@@ -1296,7 +1279,6 @@ public abstract class Logger implements Serializable, BasicLogger {
      * @param format the format string, as per {@link String#format(String, Object...)}
      * @param param1 the sole parameter
      */
-    @AlwaysInline("Fast level checks")
     public void infof(Throwable t, String format, Object param1) {
         if (isEnabled(Level.INFO)) {
             doLogf(Level.INFO, FQCN, format, new Object[] { param1 }, t);
@@ -1311,7 +1293,6 @@ public abstract class Logger implements Serializable, BasicLogger {
      * @param param1 the first parameter
      * @param param2 the second parameter
      */
-    @AlwaysInline("Fast level checks")
     public void infof(Throwable t, String format, Object param1, Object param2) {
         if (isEnabled(Level.INFO)) {
             doLogf(Level.INFO, FQCN, format, new Object[] { param1, param2 }, t);
@@ -1327,7 +1308,6 @@ public abstract class Logger implements Serializable, BasicLogger {
      * @param param2 the second parameter
      * @param param3 the third parameter
      */
-    @AlwaysInline("Fast level checks")
     public void infof(Throwable t, String format, Object param1, Object param2, Object param3) {
         if (isEnabled(Level.INFO)) {
             doLogf(Level.INFO, FQCN, format, new Object[] { param1, param2, param3 }, t);

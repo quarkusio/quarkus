@@ -2,7 +2,6 @@ package org.jboss.shamrock.maven.runner;
 
 import java.io.Closeable;
 import java.io.File;
-import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -12,10 +11,6 @@ import java.util.concurrent.CountDownLatch;
 
 import org.jboss.shamrock.deployment.ArchiveContextBuilder;
 import org.jboss.shamrock.runtime.Timing;
-import org.slf4j.LoggerFactory;
-
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.joran.JoranConfigurator;
 
 /**
  * The main entry point for the run mojo execution
@@ -37,17 +32,6 @@ public class RunMojoMain {
             if (runtimeCl == null || !keepCl) {
                 runtimeCl = new URLClassLoader(new URL[]{classesRoot.toURL()}, ClassLoader.getSystemClassLoader());
             }
-            URL resource = runtimeCl.getResource("logback.xml"); //TODO: this is temporary, until David's logging thing comes it, but not having it is super annoying for demos
-            if(resource != null) {
-                LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-                loggerContext.reset();
-                JoranConfigurator configurator = new JoranConfigurator();
-                try (InputStream configStream = resource.openStream()) {
-                    configurator.setContext(loggerContext);
-                    configurator.doConfigure(configStream); // loads logback file
-                }
-            }
-
             currentAppClassLoader = runtimeCl;
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             //we can potentially throw away this class loader, and reload the app

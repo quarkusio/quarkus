@@ -9,6 +9,7 @@ import java.util.List;
 import org.eclipse.microprofile.metrics.Metadata;
 import org.eclipse.microprofile.metrics.MetricRegistry;
 import org.eclipse.microprofile.metrics.MetricType;
+import org.jboss.logging.Logger;
 import org.jboss.shamrock.runtime.BeanContainer;
 import org.jboss.shamrock.runtime.ContextObject;
 
@@ -21,22 +22,24 @@ import io.smallrye.metrics.interceptors.MetricResolver;
  */
 public class MetricsDeploymentTemplate {
 
+    private static final Logger log = Logger.getLogger("org.jboss.shamrock.metrics");
+
     /*
-    public <E extends Member & AnnotatedElement> void registerCounted(Class<?> topClass, E element) {
-        MetricRegistry registry = MetricRegistries.get(MetricRegistry.Type.APPLICATION);
-        //registry.register(name, new CounterImpl());
-        MetricResolver resolver = new MetricResolver();
-        MetricResolver.Of<Counted> of = resolver.counted(topClass, element);
-        Metadata meta = new Metadata(of.metricName(), MetricType.COUNTER);
-        //registry.register(meta, new CounterImpl());
-    }
-    */
+            public <E extends Member & AnnotatedElement> void registerCounted(Class<?> topClass, E element) {
+                MetricRegistry registry = MetricRegistries.get(MetricRegistry.Type.APPLICATION);
+                //registry.register(name, new CounterImpl());
+                MetricResolver resolver = new MetricResolver();
+                MetricResolver.Of<Counted> of = resolver.counted(topClass, element);
+                Metadata meta = new Metadata(of.metricName(), MetricType.COUNTER);
+                //registry.register(meta, new CounterImpl());
+            }
+            */
     public void registerCounted(String topClassName, String elementName) {
         MetricRegistry registry = MetricRegistries.get(MetricRegistry.Type.APPLICATION);
 
         String name = MetricRegistry.name(topClassName, elementName);
         Metadata meta = new Metadata(name, MetricType.COUNTER);
-        System.err.println("register: " + name);
+        log.debugf("Register: %s", name);
         registry.register(meta, new CounterImpl());
     }
 
@@ -101,7 +104,7 @@ public class MetricsDeploymentTemplate {
     }
 
     public void createRegistries(@ContextObject("bean.container") BeanContainer container) {
-        System.err.println("creating registries");
+        log.info("Creating registries");
         MetricRegistries.get(MetricRegistry.Type.APPLICATION);
         MetricRegistries.get(MetricRegistry.Type.BASE);
         MetricRegistries.get(MetricRegistry.Type.VENDOR);

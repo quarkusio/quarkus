@@ -2,6 +2,7 @@ package org.jboss.shamrock.jaxrs.runtime.graal;
 
 import java.lang.reflect.Constructor;
 
+import org.jboss.logging.Logger;
 import org.jboss.resteasy.core.InjectorFactoryImpl;
 import org.jboss.resteasy.spi.ConstructorInjector;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
@@ -13,17 +14,18 @@ import org.jboss.shamrock.runtime.BeanContainer;
  */
 public class ShamrockInjectorFactory extends InjectorFactoryImpl {
 
+    private static final Logger log = Logger.getLogger("org.jboss.shamrock.jaxrs.runtime");
     public static volatile BeanContainer CONTAINER = null;
 
     @Override
     public ConstructorInjector createConstructor(Constructor constructor, ResteasyProviderFactory providerFactory) {
-        System.err.println( "create constructor: " + constructor );
+        log.infof("Create constructor: %s", constructor);
         return super.createConstructor(constructor, providerFactory);
     }
 
     @Override
     public ConstructorInjector createConstructor(ResourceConstructor constructor, ResteasyProviderFactory providerFactory) {
-        System.err.println( "create resource constructor: " + constructor.getConstructor() );
+        log.infof("Create resource constructor: %s", constructor.getConstructor());
         return new ShamrockConstructorInjector(constructor.getConstructor(), super.createConstructor(constructor, providerFactory));
     }
 }

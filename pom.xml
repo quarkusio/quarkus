@@ -44,6 +44,7 @@
         <maven-plugin-annotations.version>3.5.2</maven-plugin-annotations.version>
         <plexus-component-annotations.version>1.7.1</plexus-component-annotations.version>
         <graal-annotations.version>1.0.0-rc4</graal-annotations.version>
+        <graal-sdk.version>1.0.0-rc6</graal-sdk.version>
         <jackson.version>2.9.5</jackson.version>
         <commons-beanutils-core.version>1.8.3</commons-beanutils-core.version>
         <commons-logging.version>1.2</commons-logging.version>
@@ -62,6 +63,7 @@
         <log4j.version>1.2.16</log4j.version>
         <log4j2.version>2.0</log4j2.version>
         <slf4j.version>1.7.25</slf4j.version>
+        <wildfly-common.version>1.5.0.Alpha1</wildfly-common.version>
 
         <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>
 
@@ -555,6 +557,11 @@
                 <version>${javax.json.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.graalvm</groupId>
+                <artifactId>graal-sdk</artifactId>
+                <version>${graal-sdk.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.hibernate.protean</groupId>
                 <artifactId>hibernate-orm-protean</artifactId>
                 <version>${hibernate-orm.version}</version>
@@ -742,6 +749,12 @@
                 <groupId>org.jboss.xnio</groupId>
                 <artifactId>xnio-nio</artifactId>
                 <version>${xnio.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.wildfly.common</groupId>
+                <artifactId>wildfly-common</artifactId>
+                <version>${wildfly-common.version}</version>
             </dependency>
 
             <dependency>

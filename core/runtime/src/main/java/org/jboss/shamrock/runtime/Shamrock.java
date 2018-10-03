@@ -20,8 +20,6 @@ import java.util.logging.Logger;
  */
 public class Shamrock {
 
-    private static final Logger logger = Logger.getLogger("shamrock");
-
     public static void main(String... args) throws Exception {
         try {
             //check if the main class is on the classpath
@@ -31,7 +29,7 @@ public class Shamrock {
             Method mainMethod = main.getDeclaredMethod("main", String[].class);
             mainMethod.invoke(null, (Object) args);
         } catch (Exception e) {
-            logger.log(Level.WARNING, "Could not find wiring classes, using development mode");
+            Logger.getLogger("shamrock").log(Level.WARNING, "Could not find wiring classes, using development mode");
             Runnable runnable;
             try {
                 ClassLoader cl = Thread.currentThread().getContextClassLoader();

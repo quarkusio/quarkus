@@ -1,0 +1,57 @@
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>shamrock-parent</artifactId>
+        <version>1.0.0.Alpha1-SNAPSHOT</version>
+    </parent>
+
+    <groupId>org.jboss.logging</groupId>
+    <artifactId>jboss-logging-embedded</artifactId>
+
+    <packaging>jar</packaging>
+    <name>JBoss Logging (Embedded version)</name>
+
+    <dependencies>
+        <!-- log4j backend -->
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+            <scope>provided</scope>
+        </dependency>
+        <!-- log4j2 backend -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <!-- JBoss LogManager backend -->
+        <dependency>
+            <groupId>org.jboss.logmanager</groupId>
+            <artifactId>jboss-logmanager-embedded</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <!-- slf4j backend-->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <!-- - - - -->
+        <dependency>
+            <groupId>org.jboss.graalvm</groupId>
+            <artifactId>graal-annotations</artifactId>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+</project>

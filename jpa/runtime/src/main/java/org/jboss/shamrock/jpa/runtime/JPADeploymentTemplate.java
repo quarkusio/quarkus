@@ -1,10 +1,13 @@
 package org.jboss.shamrock.jpa.runtime;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.enterprise.util.AnnotationLiteral;
+import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 
@@ -15,6 +18,7 @@ import org.hibernate.protean.impl.PersistenceUnitsHolder;
 import org.jboss.shamrock.jpa.runtime.cdi.SystemEntityManager;
 import org.jboss.shamrock.runtime.BeanContainer;
 import org.jboss.shamrock.runtime.ContextObject;
+import org.jboss.shamrock.runtime.StartupContext;
 
 /**
  * @author Emmanuel Bernard emmanuel@hibernate.org
@@ -36,19 +40,28 @@ public class JPADeploymentTemplate {
         Hibernate.featureInit();
     }
 
-    public void boostrapPu(@ContextObject("bean.container") BeanContainer beanContainer, boolean synthetic) {
+    public void boostrapPu(@ContextObject("bean.container") BeanContainer beanContainer, boolean synthetic, StartupContext startupContext) {
         //TODO: we need to take qualifiers into account, at the moment we can only have one EM, but this is probably fine for the PoC
+        final EntityManagerFactory emf;
         if (synthetic) {
-            beanContainer.instance(EntityManagerFactory.class, new AnnotationLiteral<SystemEntityManager>() {
+            emf = beanContainer.instance(EntityManagerFactory.class, new AnnotationLiteral<SystemEntityManager>() {
 
                 @Override
                 public Class<? extends Annotation> annotationType() {
                     return SystemEntityManager.class;
                 }
-            }).getProperties();
+            });
+            emf.getProperties();
         } else {
-            beanContainer.instance(EntityManagerFactory.class).getProperties();
+            emf = beanContainer.instance(EntityManagerFactory.class);
+            emf.getProperties();
         }
+        startupContext.addCloseable(new Closeable() {
+            @Override
+            public void close() throws IOException {
+                emf.close();
+            }
+        });
     }
 
     public void initMetadata(List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors, Scanner scanner, @ContextObject("bean.container") BeanContainer beanContainer) {

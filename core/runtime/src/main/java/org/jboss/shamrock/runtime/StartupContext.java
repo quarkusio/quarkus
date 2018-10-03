@@ -3,6 +3,7 @@ package org.jboss.shamrock.runtime;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +28,9 @@ public class StartupContext implements Closeable {
 
     @Override
     public void close() {
-        for(Closeable r : resources) {
+        List<Closeable> toClose = new ArrayList<>(resources);
+        Collections.reverse(toClose);
+        for(Closeable r : toClose) {
             try {
                 r.close();
             } catch (IOException e) {

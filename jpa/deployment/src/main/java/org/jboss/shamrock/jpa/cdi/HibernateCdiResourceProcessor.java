@@ -116,7 +116,7 @@ public class HibernateCdiResourceProcessor implements ResourceProcessor {
                     producer.returnValue(ret);
                 }
                 beanDeployment.addGeneratedBean(className, bytes.get());
-                template.boostrapPu(null, system); //force PU bootstrap at startup
+                template.boostrapPu(null, system, null); //force PU bootstrap at startup
             }
 
 

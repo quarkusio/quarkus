@@ -96,16 +96,19 @@ public class ObserverGenerator extends AbstractGenerator {
         initMaps(observer, injectionPointToProviderField);
 
         createProviderFields(observerCreator, observer, injectionPointToProviderField);
-
         createConstructor(classOutput, observerCreator, observer, baseName, injectionPointToProviderField, annotationLiterals);
-        createGetObservedType(observerCreator, observedType.getFieldDescriptor());
+
+        implementGetObservedType(observerCreator, observedType.getFieldDescriptor());
         if (observedQualifiers != null) {
-            createGetObservedQualifiers(observerCreator, observedQualifiers.getFieldDescriptor());
+            implementGetObservedQualifiers(observerCreator, observedQualifiers.getFieldDescriptor());
         }
-        createGetBeanClass(observerCreator, observer.getDeclaringBean().getTarget().asClass().name());
-        createNotify(observer, observerCreator, injectionPointToProviderField, reflectionRegistration);
+        implementGetBeanClass(observerCreator, observer.getDeclaringBean().getTarget().asClass().name());
+        implementNotify(observer, observerCreator, injectionPointToProviderField, reflectionRegistration);
         if (observer.getPriority() != ObserverMethod.DEFAULT_PRIORITY) {
-            createGetPriority(observerCreator, observer);
+            implementGetPriority(observerCreator, observer);
+        }
+        if (observer.isAsync()) {
+            implementIsAsync(observerCreator);
         }
 
         observerCreator.close();
@@ -120,27 +123,32 @@ public class ObserverGenerator extends AbstractGenerator {
         }
     }
 
-    protected void createGetObservedType(ClassCreator observerCreator, FieldDescriptor observedTypeField) {
+    protected void implementGetObservedType(ClassCreator observerCreator, FieldDescriptor observedTypeField) {
         MethodCreator getObservedType = observerCreator.getMethodCreator("getObservedType", Type.class).setModifiers(ACC_PUBLIC);
         getObservedType.returnValue(getObservedType.readInstanceField(observedTypeField, getObservedType.getThis()));
     }
 
-    protected void createGetObservedQualifiers(ClassCreator observerCreator, FieldDescriptor observedQualifiersField) {
+    protected void implementGetObservedQualifiers(ClassCreator observerCreator, FieldDescriptor observedQualifiersField) {
         MethodCreator getObservedQualifiers = observerCreator.getMethodCreator("getObservedQualifiers", Set.class).setModifiers(ACC_PUBLIC);
         getObservedQualifiers.returnValue(getObservedQualifiers.readInstanceField(observedQualifiersField, getObservedQualifiers.getThis()));
     }
 
-    protected void createGetBeanClass(ClassCreator observerCreator, DotName beanClass) {
+    protected void implementGetBeanClass(ClassCreator observerCreator, DotName beanClass) {
         MethodCreator getBeanClass = observerCreator.getMethodCreator("getBeanClass", Class.class).setModifiers(ACC_PUBLIC);
         getBeanClass.returnValue(getBeanClass.loadClass(beanClass.toString()));
     }
 
-    protected void createGetPriority(ClassCreator observerCreator, ObserverInfo observer) {
+    protected void implementGetPriority(ClassCreator observerCreator, ObserverInfo observer) {
         MethodCreator getPriority = observerCreator.getMethodCreator("getPriority", int.class).setModifiers(ACC_PUBLIC);
         getPriority.returnValue(getPriority.load(observer.getPriority()));
     }
 
-    protected void createNotify(ObserverInfo observer, ClassCreator observerCreator, Map<InjectionPointInfo, String> injectionPointToProviderField,
+    protected void implementIsAsync(ClassCreator observerCreator) {
+        MethodCreator isAsync = observerCreator.getMethodCreator("isAsync", boolean.class).setModifiers(ACC_PUBLIC);
+        isAsync.returnValue(isAsync.load(true));
+    }
+
+    protected void implementNotify(ObserverInfo observer, ClassCreator observerCreator, Map<InjectionPointInfo, String> injectionPointToProviderField,
             ReflectionRegistration reflectionRegistration) {
         MethodCreator notify = observerCreator.getMethodCreator("notify", void.class, EventContext.class).setModifiers(ACC_PUBLIC);
 

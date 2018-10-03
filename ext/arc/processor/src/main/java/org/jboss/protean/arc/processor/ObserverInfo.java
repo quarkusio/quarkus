@@ -15,6 +15,11 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 
+/**
+ * Represents an observer method.
+ *
+ * @author Martin Kouba
+ */
 public class ObserverInfo {
 
     private final BeanInfo declaringBean;
@@ -29,7 +34,9 @@ public class ObserverInfo {
 
     private final int priority;
 
-    ObserverInfo(BeanInfo declaringBean, MethodInfo observerMethod, Injection injection) {
+    private final boolean isAsync;
+
+    ObserverInfo(BeanInfo declaringBean, MethodInfo observerMethod, Injection injection, boolean isAsync) {
         this.declaringBean = declaringBean;
         this.observerMethod = observerMethod;
         this.injection = injection;
@@ -41,6 +48,7 @@ public class ObserverInfo {
         } else {
             this.priority = ObserverMethod.DEFAULT_PRIORITY;
         }
+        this.isAsync = isAsync;
     }
 
     BeanInfo getDeclaringBean() {
@@ -61,6 +69,10 @@ public class ObserverInfo {
 
     Injection getInjection() {
         return injection;
+    }
+
+    boolean isAsync() {
+        return isAsync;
     }
 
     void init() {
@@ -90,7 +102,8 @@ public class ObserverInfo {
     MethodParameterInfo initEventParam(MethodInfo observerMethod) {
         List<MethodParameterInfo> eventParams = new ArrayList<>();
         for (AnnotationInstance annotation : observerMethod.annotations()) {
-            if (Kind.METHOD_PARAMETER == annotation.target().kind() && annotation.name().equals(DotNames.OBSERVES)) {
+            if (Kind.METHOD_PARAMETER == annotation.target().kind()
+                    && (annotation.name().equals(DotNames.OBSERVES) || annotation.name().equals(DotNames.OBSERVES_ASYNC))) {
                 eventParams.add(annotation.target().asMethodParameter());
             }
         }

@@ -81,6 +81,7 @@
         <module>test-framework</module>
         <module>weld</module>
         <module>health</module>
+        <module>logging</module>
         <module>metrics</module>
         <module>openapi</module>
         <module>jpa</module>
@@ -265,6 +266,16 @@
             <dependency>
                 <groupId>org.jboss.shamrock</groupId>
                 <artifactId>shamrock-legacy-launcher</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-logging-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-logging-runtime</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

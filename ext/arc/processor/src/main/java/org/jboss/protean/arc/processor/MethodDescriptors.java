@@ -88,6 +88,9 @@ final class MethodDescriptors {
     static final MethodDescriptor INVOCATION_CONTEXT_PRE_DESTROY = MethodDescriptor.ofMethod(InvocationContextImpl.class, "preDestroy",
             InvocationContextImpl.class, Object.class, List.class, Set.class);
 
+    static final MethodDescriptor CREATIONAL_CTX_ADD_DEP_TO_PARENT = MethodDescriptor.ofMethod(CreationalContextImpl.class, "addDependencyToParent", void.class, InjectableBean.class,
+            Object.class, CreationalContext.class);
+
     private MethodDescriptors() {
     }
 

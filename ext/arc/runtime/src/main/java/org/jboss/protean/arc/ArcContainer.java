@@ -26,7 +26,7 @@ public interface ArcContainer {
      *
      * @return the context for {@link javax.enterprise.context.RequestScoped}
      */
-    RequestContext requestContext();
+    ManagedContext requestContext();
 
     void withinRequest(Runnable action);
 

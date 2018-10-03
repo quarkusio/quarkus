@@ -7,6 +7,7 @@ import java.lang.annotation.Annotation;
 import org.jboss.protean.arc.Arc;
 import org.jboss.protean.arc.ArcContainer;
 import org.jboss.protean.arc.InstanceHandle;
+import org.jboss.protean.arc.ManagedContext;
 import org.jboss.shamrock.runtime.BeanContainer;
 import org.jboss.shamrock.runtime.ContextObject;
 import org.jboss.shamrock.runtime.InjectionFactory;
@@ -65,11 +66,12 @@ public class ArcDeploymentTemplate {
                 return new Action<T, C>() {
                     @Override
                     public T call(HttpServerExchange exchange, C context) throws Exception {
-                        arcContainer.requestContext().activate();
+                        ManagedContext requestContext = arcContainer.requestContext();
+                        requestContext.activate();
                         try {
                             return action.call(exchange, context);
                         } finally {
-                            arcContainer.requestContext().deactivate();
+                            requestContext.terminate();
                         }
                     }
                 };

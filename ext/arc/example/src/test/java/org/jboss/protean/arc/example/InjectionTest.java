@@ -17,18 +17,17 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class InjectionTest {
-    
+
     @BeforeClass
     public static void init() {
         Arc.initialize();
     }
-    
+
     @AfterClass
     public static void shutdown() {
         Arc.shutdown();
     }
 
-    @SuppressWarnings("serial")
     @Test
     public void testInjection() {
         ArcContainer arc = Arc.container();
@@ -41,7 +40,7 @@ public class InjectionTest {
         assertEquals("Lu Foo", foo.get().ping());
         assertEquals("Lu Foo", foo.get().lazyPing());
         assertEquals(foo.get(), arc.instance(Foo.class, new MyQualifier.OneLiteral()).get());
-        foo.release();
+        foo.destroy();
     }
 
     @Test

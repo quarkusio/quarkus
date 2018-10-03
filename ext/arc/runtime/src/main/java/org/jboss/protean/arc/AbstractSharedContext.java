@@ -1,10 +1,13 @@
 package org.jboss.protean.arc;
 
-import javax.enterprise.context.spi.AlterableContext;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
 
-abstract class AbstractSharedContext implements AlterableContext {
+abstract class AbstractSharedContext implements InjectableContext {
 
     private final ComputingCache<Key<?>, InstanceHandleImpl<?>> instances;
 
@@ -25,6 +28,13 @@ abstract class AbstractSharedContext implements AlterableContext {
     }
 
     @Override
+    public Collection<InstanceHandle<?>> getAll() {
+        List<InstanceHandle<?>> all = new ArrayList<>();
+        instances.forEachValue(v -> all.add(v));
+        return all;
+    }
+
+    @Override
     public boolean isActive() {
         return true;
     }
@@ -33,15 +43,13 @@ abstract class AbstractSharedContext implements AlterableContext {
     public void destroy(Contextual<?> contextual) {
         InstanceHandleImpl<?> handle = instances.remove(new Key<>(contextual, null));
         if (handle != null) {
-            handle.destroy();
+            handle.destroyInternal();
         }
     }
 
-    public void destroy() {
-        synchronized (this) {
-            instances.forEachValue(instance -> instance.destroy());
-            instances.clear();
-        }
+    public synchronized void destroy() {
+        instances.forEachValue(instance -> instance.destroyInternal());
+        instances.clear();
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })

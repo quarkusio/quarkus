@@ -17,19 +17,27 @@ public interface InstanceHandle<T> extends AutoCloseable {
 
     /**
      *
-     * @return an injected instance of {@code T}
+     * @return an injected instance of {@code T} or {@code null}
      */
     T get();
 
     /**
-     * Destroys the underlying injected instance.
+     * Destroys the instance and removes the instance from the underlying context.
      *
-     * @see javax.enterprise.context.spi.Contextual#destroy(Object, javax.enterprise.context.spi.CreationalContext)
      */
-    void release();
+    void destroy();
 
+    /**
+     *
+     * @return the injectable bean
+     */
+    InjectableBean<T> getBean();
+
+    /**
+     * Delegates to {@link #destroy()}.
+     */
     default void close() {
-        release();
+        destroy();
     }
 
 }

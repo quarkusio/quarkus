@@ -14,3 +14,8 @@ hotspot.log
 .directory
 .java-version
 .graal-install
+hs_err_pid*.log
+server.log
+dumps
+*.orig
+*.rej

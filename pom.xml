@@ -43,8 +43,8 @@
         <plexus-utils.version>3.0.24</plexus-utils.version>
         <maven-plugin-annotations.version>3.5.2</maven-plugin-annotations.version>
         <plexus-component-annotations.version>1.7.1</plexus-component-annotations.version>
-        <jboss-logging.version>3.3.1.Final</jboss-logging.version>
         <graal-annotations.version>1.0.0-rc4</graal-annotations.version>
+        <graal-sdk.version>1.0.0-rc6</graal-sdk.version>
         <jackson.version>2.9.5</jackson.version>
         <commons-beanutils-core.version>1.8.3</commons-beanutils-core.version>
         <commons-logging.version>1.2</commons-logging.version>
@@ -60,6 +60,11 @@
         <rxjava.version>2.1.12</rxjava.version>
         <microprofile-rest-client-api.version>1.0</microprofile-rest-client-api.version>
         <wildfly.openssl.version>1.0.6.Final</wildfly.openssl.version>
+        <log4j.version>1.2.16</log4j.version>
+        <log4j2.version>2.0</log4j2.version>
+        <slf4j.version>1.7.25</slf4j.version>
+        <wildfly-common.version>1.5.0.Alpha1</wildfly-common.version>
+        <jboss-modules.version>1.8.0.Final</jboss-modules.version>
 
         <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>
 
@@ -67,6 +72,8 @@
     </properties>
 
     <modules>
+        <module>jboss-logmanager-embedded</module>
+        <module>jboss-logging-embedded</module>
         <module>core</module>
         <module>undertow</module>
         <module>maven</module>
@@ -74,6 +81,7 @@
         <module>test-framework</module>
         <module>weld</module>
         <module>health</module>
+        <module>logging</module>
         <module>metrics</module>
         <module>openapi</module>
         <module>jpa</module>
@@ -122,6 +130,10 @@
                                         <excludes>
                                             <exclude>org.jboss.spec.javax.annotation:jboss-annotations-api_1.2_spec
                                             </exclude>
+                                            <!-- use our jboss-logging -->
+                                            <exclude>org.jboss.logging:jboss-logging</exclude>
+                                            <!-- use our jboss-logmanager -->
+                                            <exclude>org.jboss.logging:jboss-logmanager</exclude>
                                         </excludes>
                                     </bannedDependencies>
                                 </rules>
@@ -257,6 +269,16 @@
             </dependency>
             <dependency>
                 <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-logging-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-logging-runtime</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
                 <artifactId>shamrock-rest-client-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -332,6 +354,27 @@
             </dependency>
 
             <dependency>
+                <groupId>org.jboss.logging</groupId>
+                <artifactId>jboss-logging-embedded</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.logmanager</groupId>
+                <artifactId>jboss-logmanager-embedded</artifactId>
+                <version>${project.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.modules</groupId>
+                        <artifactId>jboss-modules</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.glassfish</groupId>
+                        <artifactId>javax.json</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+
+            <dependency>
                 <groupId>org.jboss.protean.gizmo</groupId>
                 <artifactId>gizmo</artifactId>
                 <version>${project.version}</version>
@@ -404,6 +447,10 @@
                 <version>${undertow.version}</version>
                 <exclusions>
                     <exclusion>
+                        <groupId>org.jboss.logging</groupId>
+                        <artifactId>jboss-logging</artifactId>
+                    </exclusion>
+                    <exclusion>
                         <groupId>org.jboss.spec.javax.annotation</groupId>
                         <artifactId>jboss-annotations-api_1.2_spec</artifactId>
                     </exclusion>
@@ -423,16 +470,34 @@
                 <groupId>io.smallrye</groupId>
                 <artifactId>smallrye-metrics</artifactId>
                 <version>${smallrye-metrics.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.logging</groupId>
+                        <artifactId>jboss-logging</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>io.smallrye</groupId>
                 <artifactId>smallrye-open-api</artifactId>
                 <version>${smallrye-open-api.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.logging</groupId>
+                        <artifactId>jboss-logging</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>io.smallrye</groupId>
                 <artifactId>smallrye-fault-tolerance</artifactId>
                 <version>${smallrye-fault-tolerance.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.logging</groupId>
+                        <artifactId>jboss-logging</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>javax.inject</groupId>
@@ -459,6 +524,16 @@
                 <artifactId>junit</artifactId>
                 <version>4.12</version>
                 <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>log4j</groupId>
+                <artifactId>log4j</artifactId>
+                <version>${log4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-api</artifactId>
+                <version>${log4j2.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.maven</groupId>
@@ -512,6 +587,11 @@
                 <version>${javax.json.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.graalvm</groupId>
+                <artifactId>graal-sdk</artifactId>
+                <version>${graal-sdk.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.hibernate.protean</groupId>
                 <artifactId>hibernate-orm-protean</artifactId>
                 <version>${hibernate-orm.version}</version>
@@ -525,6 +605,10 @@
                     <exclusion>
                         <groupId>com.sun.xml.bind</groupId>
                         <artifactId>jaxb-impl</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.jboss.logging</groupId>
+                        <artifactId>jboss-logging</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -545,11 +629,6 @@
                 <scope>provided</scope>
             </dependency>
             <dependency>
-                <groupId>org.jboss.logging</groupId>
-                <artifactId>jboss-logging</artifactId>
-                <version>${jboss-logging.version}</version>
-            </dependency>
-            <dependency>
                 <groupId>org.jboss.invocation</groupId>
                 <artifactId>jboss-invocation</artifactId>
                 <version>${jboss-invocation.version}</version>
@@ -566,6 +645,11 @@
                 </exclusions>
             </dependency>
 
+            <dependency>
+                <groupId>org.jboss.modules</groupId>
+                <artifactId>jboss-modules</artifactId>
+                <version>${jboss-modules.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.jboss.narayana.jta</groupId>
                 <artifactId>narayana-jta</artifactId>
@@ -585,12 +669,22 @@
                 <groupId>org.jboss.resteasy</groupId>
                 <artifactId>resteasy-client</artifactId>
                 <version>${resteasy.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.logging</groupId>
+                        <artifactId>jboss-logging</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.jboss.resteasy</groupId>
                 <artifactId>resteasy-jaxrs</artifactId>
                 <version>${resteasy.version}</version>
                 <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.logging</groupId>
+                        <artifactId>jboss-logging</artifactId>
+                    </exclusion>
                     <exclusion>
                         <groupId>org.jboss.spec.javax.annotation</groupId>
                         <artifactId>jboss-annotations-api_1.2_spec</artifactId>
@@ -616,11 +710,23 @@
                 <groupId>org.jboss.resteasy</groupId>
                 <artifactId>resteasy-jaxb-provider</artifactId>
                 <version>${resteasy.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.logging</groupId>
+                        <artifactId>jboss-logging</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.jboss.resteasy</groupId>
                 <artifactId>resteasy-rxjava2</artifactId>
                 <version>${resteasy.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.logging</groupId>
+                        <artifactId>jboss-logging</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.jboss.spec.javax.servlet</groupId>
@@ -646,11 +752,23 @@
                 <groupId>org.jboss.weld.se</groupId>
                 <artifactId>weld-se-core</artifactId>
                 <version>${weld-se-core.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.logging</groupId>
+                        <artifactId>jboss-logging</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.jboss.protean.arc</groupId>
                 <artifactId>arc-processor</artifactId>
                 <version>${project.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.logging</groupId>
+                        <artifactId>jboss-logging</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.jboss.protean.arc</groupId>
@@ -666,6 +784,12 @@
                 <groupId>org.jboss.xnio</groupId>
                 <artifactId>xnio-nio</artifactId>
                 <version>${xnio.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.wildfly.common</groupId>
+                <artifactId>wildfly-common</artifactId>
+                <version>${wildfly-common.version}</version>
             </dependency>
 
             <dependency>
@@ -690,9 +814,20 @@
                 <version>1.21</version>
             </dependency>
             <dependency>
-                <groupId>ch.qos.logback</groupId>
-                <artifactId>logback-classic</artifactId>
-                <version>${logback.version}</version>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.slf4j</groupId>
+                <artifactId>slf4j-jboss-logging</artifactId>
+                <version>1.1.0.Final</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.logging</groupId>
+                        <artifactId>jboss-logging</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>javax.enterprise</groupId>
@@ -703,6 +838,12 @@
                 <groupId>org.hibernate.validator</groupId>
                 <artifactId>hibernate-validator</artifactId>
                 <version>${hibernate-validator.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.logging</groupId>
+                        <artifactId>jboss-logging</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.glassfish.web</groupId>

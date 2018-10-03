@@ -1,6 +1,7 @@
 package org.hibernate.protean;
 
 import org.hibernate.protean.impl.PersistenceProviderSetup;
+import org.jboss.logging.Logger;
 
 public class Hibernate {
 
@@ -9,7 +10,7 @@ public class Hibernate {
 	}
 
 	public static void featureInit(){
-		System.out.println("Hibernate Features Enabled");
+		Logger.getLogger("org.hibernate.protean.feature").info("Hibernate Features Enabled");
 	}
 
 }

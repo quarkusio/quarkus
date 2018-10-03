@@ -10,7 +10,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 
 public class ShamrockConfig {
 
-    public static ShamrockConfig INSTANCE = new ShamrockConfig();
+    public static final ShamrockConfig INSTANCE = new ShamrockConfig();
 
 
     private static final Config config = ConfigProvider.getConfig();

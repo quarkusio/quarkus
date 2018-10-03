@@ -12,6 +12,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
@@ -113,6 +114,13 @@ public class BuildConfig {
                 return NULL;
             }
             return NULL;
+        }
+
+        public Set<String> getChildKeys() {
+            if (node instanceof Map) {
+                return ((Map) node).keySet();
+            }
+            return Collections.emptySet();
         }
 
         public Boolean asBoolean() {

@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ JBoss, Home of Professional Open Source.
+  ~
+  ~ Copyright 2017 Red Hat, Inc., and individual contributors
+  ~ as indicated by the @author tags.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="urn:jboss:logmanager:formatter:1.0"
+           xmlns="urn:jboss:logmanager:formatter:1.0"
+           elementFormDefault="qualified"
+           attributeFormDefault="unqualified"
+           version="1.0">
+
+    <xs:element name="record" type="recordType"/>
+
+    <xs:complexType name="recordType">
+        <xs:annotation>
+            <xs:documentation>
+                Defines a log record.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="timestamp" type="xs:dateTime" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The date and time the log record was recorded. The format is configured via the formatter.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="sequence" type="xs:long" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The sequence number of the record.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="loggerClassName" type="xs:string" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The name of the logger class that created the message.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="loggerName" type="xs:string" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The name of the logger.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="level" type="xs:string" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The level the message was logged at.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="message" type="xs:string" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The message that was logged.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="threadName" type="xs:string" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The name of the thread where the message was logged from.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="threadId" type="xs:int" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The threads id where the message was logged from.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="mdc" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        Defines the key of the MDC entry as an element with the value being the value of the element.
+                    </xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                    <xs:sequence minOccurs="0" maxOccurs="unbounded">
+                        <xs:any processContents="lax"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+            <xs:element name="ndc" type="xs:string" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The nested diagnostics for the logged message.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="hostName" type="xs:string" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The host name from the record if known.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="processName" type="xs:string" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The process name from the record if known.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="processId" type="xs:long" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The process id from the record if known.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="exception" type="exceptionType" minOccurs="0" maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>
+                        The exception from the logged message.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="stackTrace" type="xs:string" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The stack trace of the exception logged.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="sourceClassName" type="xs:string" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The name of the class that (allegedly) issued the logging request.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="sourceFileName" type="xs:string" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The source file name.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="sourceMethodName" type="xs:string" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The name of the method that (allegedly) issued the logging request.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="sourceLineNumber" type="xs:int" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The source line number.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="sourceModuleName" type="xs:string" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The name of the module that (allegedly) issued the logging request.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="sourceModuleVersion" type="xs:string" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The version of the module that (allegedly) issued the logging request.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="metaData" type="metaDataType" minOccurs="0" maxOccurs="unbounded">
+                <xs:annotation>
+                    <xs:documentation>
+                        The source line number.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="mdcType">
+        <xs:annotation>
+            <xs:documentation>
+                Defines the key of the MDC entry as an element with the value being the value of the element.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence maxOccurs="unbounded">
+            <xs:any processContents="lax"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="exceptionType">
+        <xs:annotation>
+            <xs:documentation>
+                Defines the frame of a stack trace element.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:choice>
+            <xs:sequence>
+                <xs:element name="exceptionType" type="xs:string" minOccurs="1" maxOccurs="1">
+                    <xs:annotation>
+                        <xs:documentation>
+                            The type of the exception.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="message" type="xs:string" minOccurs="1" maxOccurs="1">
+                    <xs:annotation>
+                        <xs:documentation>
+                            The message from the exception.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="frames" type="framesType" minOccurs="1" maxOccurs="1"/>
+                <xs:element name="suppressed" type="suppressedType" minOccurs="0" maxOccurs="1">
+                    <xs:annotation>
+                        <xs:documentation>
+                            The optional suppressed exceptions.
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+                <xs:element name="causedBy" type="causedByType" minOccurs="0" maxOccurs="1">
+                    <xs:annotation>
+                        <xs:documentation>
+                            The optional cause
+                        </xs:documentation>
+                    </xs:annotation>
+                </xs:element>
+            </xs:sequence>
+            <xs:element name="circularReference" type="circularReferenceType" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:choice>
+        <xs:attribute name="refId" type="xs:int" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    A reference id.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
+
+    <xs:complexType name="suppressedType">
+        <xs:annotation>
+            <xs:documentation>
+                Defines the suppressed exceptions.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="exception" type="exceptionType" minOccurs="1" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="circularReferenceType">
+        <xs:annotation>
+            <xs:documentation>
+                A circular reference to a previous exception in the stack.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="message" type="xs:string" minOccurs="1" maxOccurs="1"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="causedByType">
+        <xs:annotation>
+            <xs:documentation>
+                The cause of the exception.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="exception" type="exceptionType" minOccurs="1" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="frameType">
+        <xs:annotation>
+            <xs:documentation>
+                Defines the frame of a stack trace element.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="class" type="xs:string" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The fully qualified class name.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="method" type="xs:string" minOccurs="1" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The name of the method.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+            <xs:element name="line" type="xs:int" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                    <xs:documentation>
+                        The line the error occurred on.
+                    </xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="framesType">
+        <xs:annotation>
+            <xs:documentation>
+                The exception stack trace frames.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="frame" type="frameType" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="metaDataType">
+        <xs:annotation>
+            <xs:documentation>
+                Represents key/value meta data.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute type="xs:string" use="required" name="key"/>
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+</xs:schema>

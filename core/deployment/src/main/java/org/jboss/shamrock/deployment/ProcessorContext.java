@@ -110,6 +110,14 @@ public interface ProcessorContext {
     void addProxyDefinition(String ... proxyClasses);
 
     /**
+     * Set a system property to be passed in to the native image tool.
+     *
+     * @param name the property name (must not be {@code null})
+     * @param value the property value
+     */
+    void addNativeImageSystemProperty(String name, String value);
+
+    /**
      *
      * @param capability
      * @return

@@ -1,5 +1,6 @@
 package org.jboss.shamrock.undertow.runtime;
 
+import java.nio.file.Paths;
 import java.util.EventListener;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -14,13 +15,13 @@ import javax.servlet.ServletException;
 import org.jboss.shamrock.runtime.ConfiguredValue;
 import org.jboss.shamrock.runtime.ContextObject;
 import org.jboss.shamrock.runtime.InjectionInstance;
-import org.jboss.shamrock.runtime.StartupContext;
 
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.CanonicalPathHandler;
 import io.undertow.server.handlers.resource.ClassPathResourceManager;
+import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
@@ -44,6 +45,7 @@ public class UndertowDeploymentTemplate {
             currentRoot.handleRequest(exchange);
         }
     };
+    private static final String RESOURCES_PROP = "shamrock.undertow.resources";
 
     private static volatile Undertow undertow;
     private static volatile HttpHandler currentRoot;
@@ -60,7 +62,13 @@ public class UndertowDeploymentTemplate {
             };
         }
         d.setClassLoader(cl);
-        d.setResourceManager(new ClassPathResourceManager(d.getClassLoader(), "META-INF/resources"));
+        //TODO: this is a big hack
+        String resourcesDir = System.getProperty(RESOURCES_PROP);
+        if(resourcesDir == null) {
+            d.setResourceManager(new ClassPathResourceManager(d.getClassLoader(), "META-INF/resources"));
+        } else {
+            d.setResourceManager(new PathResourceManager(Paths.get(resourcesDir)));
+        }
         d.addWelcomePages("index.html", "index.htm");
         return d;
     }
@@ -125,17 +133,16 @@ public class UndertowDeploymentTemplate {
         info.addInitParameter(name, value);
     }
 
-    public void startUndertow(StartupContext startupContext, @ContextObject("servletHandler") HttpHandler handler, ConfiguredValue port) throws ServletException {
+    public void startUndertow(@ContextObject("servletHandler") HttpHandler handler, ConfiguredValue port) throws ServletException {
         if (undertow == null) {
             try {
                 log.log(Level.INFO, "Starting Undertow on port " + port);
                 undertow = Undertow.builder()
-                      .addHttpListener(Integer.parseInt(port.getValue()), "localhost")
-                      .setHandler(new CanonicalPathHandler(ROOT_HANDLER))
-                      .build();
+                        .addHttpListener(Integer.parseInt(port.getValue()), "localhost")
+                        .setHandler(new CanonicalPathHandler(ROOT_HANDLER))
+                        .build();
                 undertow.start();
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 log.log(Level.SEVERE, "Failed to start Undertow", e);
             }
         }

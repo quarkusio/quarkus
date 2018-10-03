@@ -6,7 +6,6 @@ import java.io.FileOutputStream;
 import java.net.JarURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.jar.Attributes;
@@ -15,6 +14,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -32,6 +32,7 @@ import org.jboss.shamrock.maven.ProcessReader;
 @Mojo(name = "run", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class RunMojo extends AbstractMojo {
 
+    private static final String RESOURCES_PROP = "shamrock.undertow.resources";
     /**
      * The directory for compiled classes.
      */
@@ -53,22 +54,33 @@ public class RunMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project.build.sourceDirectory}")
     private File sourceDir;
 
+
     @Override
     public void execute() throws MojoFailureException {
         try {
-
             List<String> args = new ArrayList<>();
             args.add("java");
             if (debug != null) {
                 args.add("-Xdebug");
                 args.add("-Xnoagent");
                 args.add("-Djava.compiler=NONE");
-                if(debug.equals("client")) {
+                if (debug.equals("client")) {
                     args.add("-Xrunjdwp:transport=dt_socket,address=localhost:5005,server=n,suspend=n");
                 } else {
                     args.add("-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y");
                 }
             }
+
+            for (Resource r : project.getBuild().getResources()) {
+                File f = new File(r.getDirectory());
+                File servletRes = new File(f, "META-INF/resources");
+                if (servletRes.exists()) {
+                    args.add("-D" + RESOURCES_PROP + "=" + servletRes.getAbsolutePath());
+                    System.out.println("Using servlet resources " + servletRes.getAbsolutePath());
+                    break;
+                }
+            }
+
             args.add("-XX:TieredStopAtLevel=1");
             //build a class-path string for the base platform
             //this stuff does not change

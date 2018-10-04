@@ -9,11 +9,13 @@ import java.io.StringWriter;
 import java.lang.instrument.ClassDefinition;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.fakereplace.core.Fakereplace;
 import org.fakereplace.replacement.AddedClass;
@@ -86,57 +88,36 @@ public class RuntimeUpdatesHandler implements HttpHandler {
     }
 
     private boolean doScan() throws IOException {
-        Set<File> changedSourceFiles = new HashSet<>();
+        final Set<File> changedSourceFiles;
         final long start = System.currentTimeMillis();
-        if(sourcesDir != null) {
-            Files.walk(sourcesDir).forEach(new Consumer<Path>() {
-                @Override
-                public void accept(Path path) {
-                    try {
-                        if (!path.toString().endsWith(".java")) {
-                            return;
-                        }
-                        long lastModified = Files.getLastModifiedTime(path).toMillis();
-                        if (lastModified > lastChange) {
-                            changedSourceFiles.add(path.toFile());
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
+        if (sourcesDir != null) {
+            try (final Stream<Path> sourcesStream = Files.walk(sourcesDir)) {
+                changedSourceFiles = sourcesStream
+                      .parallel()
+                      .filter(p -> p.toString().endsWith(".java"))
+                      .filter(p -> wasRecentlyModified(p))
+                      .map(Path::toFile)
+                      //Needing a concurrent Set, not many standard options:
+                      .collect(Collectors.toCollection(ConcurrentSkipListSet::new));
+            }
+        }
+        else {
+            changedSourceFiles = Collections.EMPTY_SET;
         }
         if (!changedSourceFiles.isEmpty()) {
             compiler.compile(changedSourceFiles);
         }
-        Map<String, byte[]> changedClasses = new HashMap<>();
-        Files.walk(classesDir).forEach(new Consumer<Path>() {
-            @Override
-            public void accept(Path path) {
-                try {
-                    if (!path.toString().endsWith(".class")) {
-                        return;
-                    }
-                    long lastModified = Files.getLastModifiedTime(path).toMillis();
-                    if (lastModified > lastChange) {
-                        String pathName = classesDir.relativize(path).toString();
-                        String className = pathName.substring(0, pathName.length() - 6).replace("/", ".");
-                        ByteArrayOutputStream out = new ByteArrayOutputStream();
-                        byte[] buf = new byte[1024];
-                        int r;
-                        try (FileInputStream in = new FileInputStream(path.toFile())) {
-                            while ((r = in.read(buf)) > 0) {
-                                out.write(buf, 0, r);
-                            }
-                            changedClasses.put(className, out.toByteArray());
-                        }
-
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+        final ConcurrentMap<String, byte[]> changedClasses;
+        try (final Stream<Path> classesStream = Files.walk(classesDir)) {
+            changedClasses = classesStream
+                  .parallel()
+                  .filter(p -> p.toString().endsWith(".class"))
+                  .filter(p -> wasRecentlyModified(p))
+                  .collect(Collectors.toConcurrentMap(
+                        p -> pathToClassName(p),
+                        p -> readFileContentNoIOExceptions(p))
+                  );
+        }
         if (changedClasses.isEmpty()) {
             return false;
         }
@@ -151,6 +132,48 @@ public class RuntimeUpdatesHandler implements HttpHandler {
         System.out.println("Hot replace total time: " + (System.currentTimeMillis() - start) + "ms");
 
         return true;
+    }
+
+    private boolean wasRecentlyModified(final Path p) {
+        try {
+            return Files.getLastModifiedTime(p).toMillis() > lastChange;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private String pathToClassName(final Path path) {
+        String pathName = classesDir.relativize(path).toString();
+        String className = pathName.substring(0, pathName.length() - 6).replace("/", ".");
+        return className;
+    }
+
+    private byte[] readFileContentNoIOExceptions(final Path path) {
+        try {
+            return readFileContent(path);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private byte[] readFileContent(final Path path) throws IOException {
+        final File file = path.toFile();
+        final long fileLength = file.length();
+        if (fileLength>Integer.MAX_VALUE) {
+            throw new RuntimeException("Can't process class files larger than Integer.MAX_VALUE bytes");
+        }
+        try (FileInputStream stream = new FileInputStream(file)) {
+            //Might be large but we need a single byte[] at the end of things, might as well allocate it in one shot:
+            ByteArrayOutputStream out = new ByteArrayOutputStream((int)fileLength);
+            byte[] buf = new byte[1024];
+            int r;
+            try (FileInputStream in = new FileInputStream(path.toFile())) {
+                while ((r = in.read(buf)) > 0) {
+                    out.write(buf, 0, r);
+                }
+                return out.toByteArray();
+            }
+        }
     }
 
     public static void displayErrorPage(HttpServerExchange exchange, final Throwable exception) throws IOException {

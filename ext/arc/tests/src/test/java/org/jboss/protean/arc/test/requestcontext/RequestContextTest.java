@@ -36,7 +36,7 @@ public class RequestContextTest {
         Controller controller2 = arc.instance(Controller.class).get();
         String controller2Id = controller2.getId();
         assertEquals(controller1.getId(), controller2Id);
-        arc.requestContext().deactivate();
+        arc.requestContext().terminate();
         assertTrue(Controller.DESTROYED.get());
 
         try {

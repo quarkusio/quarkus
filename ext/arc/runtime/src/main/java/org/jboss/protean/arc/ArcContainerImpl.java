@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.Dependent;
 import javax.enterprise.context.Initialized;
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.context.spi.Context;
@@ -77,17 +78,19 @@ class ArcContainerImpl implements ArcContainer {
     }
 
     @Override
-    public RequestContext requestContext() {
-        return (RequestContext) getContext(RequestScoped.class);
+    public ManagedContext requestContext() {
+        return (ManagedContext) getContext(RequestScoped.class);
     }
 
     @Override
     public void withinRequest(Runnable action) {
+        ManagedContext requestContext = requestContext();
         try {
-            requestContext().activate();
+            requestContext.activate();
             action.run();
         } finally {
-            requestContext().deactivate();
+            requestContext.destroy();
+            requestContext.deactivate();
         }
     }
 
@@ -105,11 +108,14 @@ class ArcContainerImpl implements ArcContainer {
 
     private <T> InstanceHandle<T> instance(InjectableBean<T> bean) {
         if (bean != null) {
-            CreationalContextImpl<T> parentContext = new CreationalContextImpl<>();
+            CreationalContextImpl<T> parentContext = null;
+            if (Dependent.class.equals(bean.getScope())) {
+                parentContext = new CreationalContextImpl<>();
+            }
+            CreationalContextImpl<T> creationalContext = parentContext != null ? parentContext.child() : new CreationalContextImpl<>();
             InjectionPoint prev = InjectionPointProvider.CURRENT.get();
             InjectionPointProvider.CURRENT.set(CurrentInjectionPointProvider.EMPTY);
             try {
-                CreationalContextImpl<T> creationalContext = parentContext.child();
                 return new InstanceHandleImpl<T>(bean, bean.get(creationalContext), creationalContext, parentContext);
             } finally {
                 if (prev != null) {
@@ -119,7 +125,7 @@ class ArcContainerImpl implements ArcContainer {
                 }
             }
         } else {
-            return InstanceHandleImpl.unresolvable();
+            return InstanceHandleImpl.unavailable();
         }
     }
 

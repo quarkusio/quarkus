@@ -39,11 +39,11 @@ public class SimpleInterceptorTest {
         assertEquals("oof", simpleBean.bar());
         assertEquals(1, counter.get());
         assertEquals("foo", LoggingInterceptor.LOG.get());
-        
+
         simpleBean.baz(42);
         assertEquals(2, counter.get());
 
-        handle.release();
+        handle.destroy();
         assertEquals(1, LifecycleInterceptor.PRE_DESTROYS.size());
         assertEquals(simpleBean, LifecycleInterceptor.PRE_DESTROYS.get(0));
     }

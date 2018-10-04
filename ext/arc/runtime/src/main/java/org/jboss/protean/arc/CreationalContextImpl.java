@@ -34,7 +34,7 @@ public class CreationalContextImpl<T> implements CreationalContext<T> {
         synchronized (dependentInstances) {
             for (InstanceHandle<?> instanceHandle : dependentInstances) {
                 if (instanceHandle.get() == dependentInstance) {
-                    instanceHandle.release();
+                    instanceHandle.destroy();
                     dependentInstances.remove(instanceHandle);
                     break;
                 }
@@ -51,7 +51,7 @@ public class CreationalContextImpl<T> implements CreationalContext<T> {
     public void release() {
         synchronized (dependentInstances) {
             for (InstanceHandle<?> instance : dependentInstances) {
-                instance.release();
+                instance.destroy();
             }
         }
     }

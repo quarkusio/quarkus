@@ -997,8 +997,7 @@ public class BeanGenerator extends AbstractGenerator {
                     MethodDescriptor.ofMethod(beanCreator.getClassName(), "create", providerTypeName, CreationalContext.class), get.getThis(),
                     get.getMethodParam(0));
             // CreationalContextImpl.addDependencyToParent(this,instance,ctx)
-            get.invokeStaticMethod(MethodDescriptor.ofMethod(CreationalContextImpl.class, "addDependencyToParent", void.class, InjectableBean.class,
-                    Object.class, CreationalContext.class), get.getThis(), instance, get.getMethodParam(0));
+            get.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_ADD_DEP_TO_PARENT, get.getThis(), instance, get.getMethodParam(0));
             // return instance
             get.returnValue(instance);
         } else if (ScopeInfo.SINGLETON.equals(bean.getScope())) {

@@ -15,11 +15,11 @@ import javax.inject.Singleton;
 class InstanceHandleImpl<T> implements InstanceHandle<T> {
 
     @SuppressWarnings("unchecked")
-    public static final <T> InstanceHandle<T> unresolvable() {
-        return (InstanceHandle<T>) UNRESOLVABLE;
+    public static final <T> InstanceHandle<T> unavailable() {
+        return (InstanceHandle<T>) UNAVAILABLE;
     }
 
-    static final InstanceHandleImpl<Object> UNRESOLVABLE = new InstanceHandleImpl<Object>(null, null, null, null);
+    static final InstanceHandleImpl<Object> UNAVAILABLE = new InstanceHandleImpl<Object>(null, null, null, null);
 
     private final InjectableBean<T> bean;
 
@@ -51,21 +51,34 @@ class InstanceHandleImpl<T> implements InstanceHandle<T> {
     }
 
     @Override
-    public void release() {
+    public InjectableBean<T> getBean() {
+        return bean;
+    }
+
+    @Override
+    public void destroy() {
         if (isAvailable()) {
             if (bean.getScope().equals(ApplicationScoped.class) || bean.getScope().equals(RequestScoped.class) || bean.getScope().equals(Singleton.class)) {
                 ((AlterableContext) Arc.container().getContext(bean.getScope())).destroy(bean);
             } else {
-                destroy();
+                destroyInternal();
             }
         }
     }
 
-    void destroy() {
+    public void destroyInternal() {
         if (parentCreationalContext != null) {
             parentCreationalContext.release();
         } else {
             bean.destroy(instance, creationalContext);
+        }
+    }
+
+    static <T> InstanceHandleImpl<T> unwrap(InstanceHandle<T> handle) {
+        if (handle instanceof InstanceHandleImpl) {
+            return (InstanceHandleImpl<T>) handle;
+        } else {
+            throw new IllegalArgumentException("Failed to unwrap InstanceHandleImpl: " + handle);
         }
     }
 

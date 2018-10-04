@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
@@ -98,12 +99,33 @@ class ArcContainerImpl implements ArcContainer {
     public void withinRequest(Runnable action) {
         requireRunning();
         ManagedContext requestContext = requestContext();
-        try {
-            requestContext.activate();
+        if (requestContext.isActive()) {
             action.run();
-        } finally {
-            requestContext.destroy();
-            requestContext.deactivate();
+        } else {
+            try {
+                requestContext.activate();
+                action.run();
+            } finally {
+                requestContext.destroy();
+                requestContext.deactivate();
+            }
+        }
+    }
+
+    @Override
+    public <T> T withinRequest(Supplier<T> action) {
+        requireRunning();
+        ManagedContext requestContext = requestContext();
+        if (requestContext.isActive()) {
+            return action.get();
+        } else {
+            try {
+                requestContext.activate();
+                return action.get();
+            } finally {
+                requestContext.destroy();
+                requestContext.deactivate();
+            }
         }
     }
 

@@ -1,6 +1,7 @@
 package org.jboss.protean.arc;
 
 import java.lang.annotation.Annotation;
+import java.util.function.Supplier;
 
 import javax.enterprise.util.TypeLiteral;
 
@@ -27,6 +28,18 @@ public interface ArcContainer {
      */
     ManagedContext requestContext();
 
+    /**
+     * Ensures the action is perform with the request context active. Does not manage the context if it's already active.
+     *
+     * @param action
+     */
     void withinRequest(Runnable action);
+
+    /**
+     * Ensures the action is perform with the request context active. Does not manage the context if it's already active.
+     *
+     * @param action
+     */
+    <T> T withinRequest(Supplier<T> action);
 
 }

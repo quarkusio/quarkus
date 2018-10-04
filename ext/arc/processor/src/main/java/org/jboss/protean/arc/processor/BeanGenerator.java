@@ -39,6 +39,7 @@ import org.jboss.protean.arc.CreationalContextImpl;
 import org.jboss.protean.arc.CurrentInjectionPointProvider;
 import org.jboss.protean.arc.InitializedInterceptor;
 import org.jboss.protean.arc.InjectableBean;
+import org.jboss.protean.arc.InjectableContext;
 import org.jboss.protean.arc.InjectableInterceptor;
 import org.jboss.protean.arc.InjectableReferenceProvider;
 import org.jboss.protean.arc.LazyValue;
@@ -1005,8 +1006,8 @@ public class BeanGenerator extends AbstractGenerator {
             ResultHandle container = get.invokeStaticMethod(MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
             ResultHandle creationalContext = get.newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class));
             ResultHandle scope = get.loadClass(bean.getScope().getClazz());
-            ResultHandle context = get.invokeInterfaceMethod(MethodDescriptor.ofMethod(ArcContainer.class, "getContext", Context.class, Class.class), container,
-                    scope);
+            ResultHandle context = get.invokeInterfaceMethod(MethodDescriptor.ofMethod(ArcContainer.class, "getContext", InjectableContext.class, Class.class),
+                    container, scope);
             get.returnValue(get.invokeInterfaceMethod(MethodDescriptor.ofMethod(Context.class, "get", Object.class, Contextual.class, CreationalContext.class),
                     context, get.getThis(), creationalContext));
         } else if (bean.getScope().isNormal()) {

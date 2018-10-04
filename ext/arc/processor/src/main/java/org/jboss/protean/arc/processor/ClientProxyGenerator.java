@@ -25,6 +25,7 @@ import org.jboss.protean.arc.ArcContainer;
 import org.jboss.protean.arc.ClientProxy;
 import org.jboss.protean.arc.CreationalContextImpl;
 import org.jboss.protean.arc.InjectableBean;
+import org.jboss.protean.arc.InjectableContext;
 import org.jboss.protean.arc.processor.ResourceOutput.Resource;
 import org.jboss.protean.gizmo.ClassCreator;
 import org.jboss.protean.gizmo.DescriptorUtils;
@@ -144,8 +145,8 @@ public class ClientProxyGenerator extends AbstractGenerator {
         ResultHandle bean = creator.readInstanceField(beanField, creator.getThis());
         ResultHandle scope = creator.invokeInterfaceMethod(MethodDescriptor.ofMethod(InjectableBean.class, "getScope", Class.class), bean);
         // getContext()
-        ResultHandle context = creator.invokeInterfaceMethod(MethodDescriptor.ofMethod(ArcContainer.class, "getContext", Context.class, Class.class), container,
-                scope);
+        ResultHandle context = creator.invokeInterfaceMethod(MethodDescriptor.ofMethod(ArcContainer.class, "getContext", InjectableContext.class, Class.class),
+                container, scope);
         // new CreationalContextImpl<>()
         ResultHandle creationContext = creator.newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class));
         ResultHandle result = creator.invokeInterfaceMethod(

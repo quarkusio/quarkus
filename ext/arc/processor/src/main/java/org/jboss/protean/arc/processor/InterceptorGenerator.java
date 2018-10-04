@@ -195,9 +195,9 @@ public class InterceptorGenerator extends BeanGenerator {
                         interceptorMethod.declaringClass().name(), interceptorMethod.name());
                 // Use reflection fallback
                 ResultHandle paramTypesArray = trueBranch.newArray(Class.class, trueBranch.load(1));
-                trueBranch.writeArrayValue(paramTypesArray, trueBranch.load(0), trueBranch.loadClass(InvocationContext.class));
+                trueBranch.writeArrayValue(paramTypesArray, 0, trueBranch.loadClass(InvocationContext.class));
                 ResultHandle argsArray = trueBranch.newArray(Object.class, trueBranch.load(1));
-                trueBranch.writeArrayValue(argsArray, trueBranch.load(0), intercept.getMethodParam(2));
+                trueBranch.writeArrayValue(argsArray, 0, intercept.getMethodParam(2));
                 reflectionRegistration.registerMethod(interceptorMethod);
                 ret = trueBranch.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
                         trueBranch.loadClass(interceptorMethod.declaringClass().name().toString()), trueBranch.load(interceptorMethod.name()), paramTypesArray,

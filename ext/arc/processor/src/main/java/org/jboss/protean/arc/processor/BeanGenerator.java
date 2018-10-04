@@ -520,8 +520,8 @@ public class BeanGenerator extends AbstractGenerator {
                 ResultHandle paramTypesArray = destroy.newArray(Class.class, destroy.load(referenceHandles.length));
                 ResultHandle argsArray = destroy.newArray(Object.class, destroy.load(referenceHandles.length));
                 for (int i = 0; i < referenceHandles.length; i++) {
-                    destroy.writeArrayValue(paramTypesArray, destroy.load(i), destroy.loadClass(disposerMethod.parameters().get(i).name().toString()));
-                    destroy.writeArrayValue(argsArray, destroy.load(i), referenceHandles[i]);
+                    destroy.writeArrayValue(paramTypesArray, i, destroy.loadClass(disposerMethod.parameters().get(i).name().toString()));
+                    destroy.writeArrayValue(argsArray, i, referenceHandles[i]);
                 }
                 reflectionRegistration.registerMethod(disposerMethod);
                 destroy.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD, destroy.loadClass(disposerMethod.declaringClass().name().toString()),
@@ -644,7 +644,7 @@ public class BeanGenerator extends AbstractGenerator {
                     paramsHandles[0] = create.loadClass(providerTypeName);
                     ResultHandle paramsArray = create.newArray(Class.class, create.load(paramTypes.size()));
                     for (ListIterator<String> iterator = paramTypes.listIterator(); iterator.hasNext();) {
-                        create.writeArrayValue(paramsArray, create.load(iterator.nextIndex()), create.loadClass(iterator.next()));
+                        create.writeArrayValue(paramsArray, iterator.nextIndex(), create.loadClass(iterator.next()));
                     }
                     paramsHandles[1] = paramsArray;
                     constructorHandle = create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_CONSTRUCTOR, paramsHandles);
@@ -735,8 +735,8 @@ public class BeanGenerator extends AbstractGenerator {
                     ResultHandle paramTypesArray = create.newArray(Class.class, create.load(referenceHandles.length));
                     ResultHandle argsArray = create.newArray(Object.class, create.load(referenceHandles.length));
                     for (int i = 0; i < referenceHandles.length; i++) {
-                        create.writeArrayValue(paramTypesArray, create.load(i), create.loadClass(initializerMethod.parameters().get(i).name().toString()));
-                        create.writeArrayValue(argsArray, create.load(i), referenceHandles[i]);
+                        create.writeArrayValue(paramTypesArray, i, create.loadClass(initializerMethod.parameters().get(i).name().toString()));
+                        create.writeArrayValue(argsArray, i, referenceHandles[i]);
                     }
                     reflectionRegistration.registerMethod(initializerMethod);
                     create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
@@ -823,8 +823,8 @@ public class BeanGenerator extends AbstractGenerator {
                 ResultHandle paramTypesArray = create.newArray(Class.class, create.load(referenceHandles.length));
                 ResultHandle argsArray = create.newArray(Object.class, create.load(referenceHandles.length));
                 for (int i = 0; i < referenceHandles.length; i++) {
-                    create.writeArrayValue(paramTypesArray, create.load(i), create.loadClass(producerMethod.parameters().get(i).name().toString()));
-                    create.writeArrayValue(argsArray, create.load(i), referenceHandles[i]);
+                    create.writeArrayValue(paramTypesArray, i, create.loadClass(producerMethod.parameters().get(i).name().toString()));
+                    create.writeArrayValue(argsArray, i, referenceHandles[i]);
                 }
                 reflectionRegistration.registerMethod(producerMethod);
                 instanceHandle = create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,
@@ -950,8 +950,8 @@ public class BeanGenerator extends AbstractGenerator {
                 ResultHandle paramTypesArray = creator.newArray(Class.class, creator.load(providerHandles.size()));
                 ResultHandle argsArray = creator.newArray(Object.class, creator.load(providerHandles.size()));
                 for (int i = 0; i < injectionPoints.size(); i++) {
-                    creator.writeArrayValue(paramTypesArray, creator.load(i), creator.loadClass(injectionPoints.get(i).requiredType.name().toString()));
-                    creator.writeArrayValue(argsArray, creator.load(i), providerHandles.get(i));
+                    creator.writeArrayValue(paramTypesArray, i, creator.loadClass(injectionPoints.get(i).requiredType.name().toString()));
+                    creator.writeArrayValue(argsArray, i, providerHandles.get(i));
                 }
                 registration.registerMethod(constructor);
                 return creator.invokeStaticMethod(MethodDescriptors.REFLECTIONS_NEW_INSTANCE, creator.loadClass(constructor.declaringClass().name().toString()),

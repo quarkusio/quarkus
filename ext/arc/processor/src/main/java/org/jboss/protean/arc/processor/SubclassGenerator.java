@@ -207,7 +207,7 @@ public class SubclassGenerator extends AbstractGenerator {
             if (!method.parameters().isEmpty()) {
                 ResultHandle paramsArray = constructor.newArray(Class.class, constructor.load(method.parameters().size()));
                 for (ListIterator<Type> iterator = method.parameters().listIterator(); iterator.hasNext();) {
-                    constructor.writeArrayValue(paramsArray, constructor.load(iterator.nextIndex()), constructor.loadClass(iterator.next().name().toString()));
+                    constructor.writeArrayValue(paramsArray, iterator.nextIndex(), constructor.loadClass(iterator.next().name().toString()));
                 }
                 paramsHandles[2] = paramsArray;
             } else {
@@ -239,7 +239,7 @@ public class SubclassGenerator extends AbstractGenerator {
         // Object[] params = new Object[] {p1}
         ResultHandle paramsHandle = forwardMethod.newArray(Object.class, forwardMethod.load(method.parameters().size()));
         for (int i = 0; i < method.parameters().size(); i++) {
-            forwardMethod.writeArrayValue(paramsHandle, forwardMethod.load(i), forwardMethod.getMethodParam(i));
+            forwardMethod.writeArrayValue(paramsHandle, i, forwardMethod.getMethodParam(i));
         }
 
         // Forwarding function
@@ -252,7 +252,7 @@ public class SubclassGenerator extends AbstractGenerator {
                 ctxHandle);
         // TODO autoboxing?
         for (int i = 0; i < superParamHandles.length; i++) {
-            superParamHandles[i] = funcBytecode.readArrayValue(ctxParamsHandle, funcBytecode.load(i));
+            superParamHandles[i] = funcBytecode.readArrayValue(ctxParamsHandle, i);
         }
         ResultHandle superResult = funcBytecode.invokeSpecialMethod(
                 MethodDescriptor.ofMethod(providerTypeName, method.name(), method.returnType().name().toString(),

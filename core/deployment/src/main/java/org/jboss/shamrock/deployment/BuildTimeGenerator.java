@@ -401,7 +401,7 @@ public class BuildTimeGenerator {
                 for (String i : runtimeInitializedClasses) {
                     ExceptionTable tc = beforeAn.addTryCatch();
                     ResultHandle clazz = beforeAn.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class), beforeAn.load(i), beforeAn.load(false), cl);
-                    beforeAn.writeArrayValue(array, beforeAn.load(0), clazz);
+                    beforeAn.writeArrayValue(array, 0, clazz);
                     beforeAn.invokeStaticMethod(MethodDescriptor.ofMethod("org.graalvm.nativeimage.RuntimeClassInitialization", "delayClassInitialization", void.class, Class[].class), array);
 
                     CatchBlockCreator cc = tc.addCatchClause(Throwable.class);
@@ -419,7 +419,7 @@ public class BuildTimeGenerator {
                 {
                     ExceptionTable tc = beforeAn.addTryCatch();
                     ResultHandle clazz = beforeAn.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class), beforeAn.load("org.wildfly.common.net.HostName"), beforeAn.load(false), cl);
-                    beforeAn.writeArrayValue(array, beforeAn.load(0), clazz);
+                    beforeAn.writeArrayValue(array, 0, clazz);
                     beforeAn.invokeStaticMethod(MethodDescriptor.ofMethod("org.graalvm.nativeimage.RuntimeClassInitialization", "rerunClassInitialization", void.class, Class[].class), array);
 
                     CatchBlockCreator cc = tc.addCatchClause(Throwable.class);
@@ -429,7 +429,7 @@ public class BuildTimeGenerator {
                 {
                     ExceptionTable tc = beforeAn.addTryCatch();
                     ResultHandle clazz = beforeAn.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class), beforeAn.load("org.wildfly.common.os.Process"), beforeAn.load(false), cl);
-                    beforeAn.writeArrayValue(array, beforeAn.load(0), clazz);
+                    beforeAn.writeArrayValue(array, 0, clazz);
                     beforeAn.invokeStaticMethod(MethodDescriptor.ofMethod("org.graalvm.nativeimage.RuntimeClassInitialization", "rerunClassInitialization", void.class, Class[].class), array);
 
                     CatchBlockCreator cc = tc.addCatchClause(Throwable.class);
@@ -446,7 +446,7 @@ public class BuildTimeGenerator {
                     int i = 0;
                     for (String p : proxy) {
                         ResultHandle clazz = beforeAn.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class), beforeAn.load(p));
-                        beforeAn.writeArrayValue(array, beforeAn.load(i++), clazz);
+                        beforeAn.writeArrayValue(array, i++, clazz);
 
                     }
                     beforeAn.invokeInterfaceMethod(ofMethod("com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry", "addProxyClass", void.class, Class[].class), proxySupport, array);
@@ -492,7 +492,7 @@ public class BuildTimeGenerator {
 
 
                 ResultHandle carray = mv.newArray(Class.class, mv.load(1));
-                mv.writeArrayValue(carray, mv.load(0), clazz);
+                mv.writeArrayValue(carray, 0, clazz);
                 mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Class[].class), carray);
 
 
@@ -504,10 +504,10 @@ public class BuildTimeGenerator {
                         ResultHandle paramArray = mv.newArray(Class.class, mv.load(ctor.parameters().size()));
                         for (int i = 0; i < ctor.parameters().size(); ++i) {
                             Type type = ctor.parameters().get(i);
-                            mv.writeArrayValue(paramArray, mv.load(i), mv.loadClass(type.name().toString()));
+                            mv.writeArrayValue(paramArray, i, mv.loadClass(type.name().toString()));
                         }
                         ResultHandle fhandle = mv.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredConstructor", Constructor.class, Class[].class), clazz, paramArray);
-                        mv.writeArrayValue(farray, mv.load(0), fhandle);
+                        mv.writeArrayValue(farray, 0, fhandle);
                         mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Executable[].class), farray);
                     }
                 }
@@ -519,10 +519,10 @@ public class BuildTimeGenerator {
                         ResultHandle paramArray = mv.newArray(Class.class, mv.load(method.params.length));
                         for (int i = 0; i < method.params.length; ++i) {
                             String type = method.params[i];
-                            mv.writeArrayValue(paramArray, mv.load(i), mv.loadClass(type));
+                            mv.writeArrayValue(paramArray, i, mv.loadClass(type));
                         }
                         ResultHandle fhandle = mv.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), clazz, mv.load(method.name), paramArray);
-                        mv.writeArrayValue(farray, mv.load(0), fhandle);
+                        mv.writeArrayValue(farray, 0, fhandle);
                         mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Executable[].class), farray);
                     }
                 }
@@ -532,7 +532,7 @@ public class BuildTimeGenerator {
                     ResultHandle farray = mv.newArray(Field.class, mv.load(1));
                     for (String field : entry.getValue().fieldSet) {
                         ResultHandle fhandle = mv.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredField", Field.class, String.class), clazz, mv.load(field));
-                        mv.writeArrayValue(farray, mv.load(0), fhandle);
+                        mv.writeArrayValue(farray, 0, fhandle);
                         mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Field[].class), farray);
                     }
                 }

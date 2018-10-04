@@ -108,12 +108,12 @@ public class ClientProxyGenerator extends AbstractGenerator {
                 ResultHandle paramTypesArray = forward.newArray(Class.class, forward.load(method.parameters().size()));
                 int idx = 0;
                 for (Type param : method.parameters()) {
-                    forward.writeArrayValue(paramTypesArray, forward.load(idx++), forward.loadClass(param.name().toString()));
+                    forward.writeArrayValue(paramTypesArray, idx++, forward.loadClass(param.name().toString()));
                 }
                 ResultHandle argsArray = forward.newArray(Object.class, forward.load(params.length));
                 idx = 0;
                 for (ResultHandle argHandle : params) {
-                    forward.writeArrayValue(argsArray, forward.load(idx++), argHandle);
+                    forward.writeArrayValue(argsArray, idx++, argHandle);
                 }
                 reflectionRegistration.registerMethod(method);
                 ret = forward.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD, forward.loadClass(method.declaringClass().name().toString()),

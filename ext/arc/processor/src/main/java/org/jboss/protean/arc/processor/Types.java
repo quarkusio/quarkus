@@ -48,7 +48,7 @@ final class Types {
             } else {
                 boundsHandle = creator.newArray(java.lang.reflect.Type.class, creator.load(bounds.size()));
                 for (int i = 0; i < bounds.size(); i++) {
-                    creator.writeArrayValue(boundsHandle, creator.load(i), getTypeHandle(creator, bounds.get(i)));
+                    creator.writeArrayValue(boundsHandle, i, getTypeHandle(creator, bounds.get(i)));
                 }
             }
             return creator.newInstance(MethodDescriptor.ofConstructor(TypeVariableImpl.class, String.class, java.lang.reflect.Type[].class),
@@ -61,7 +61,7 @@ final class Types {
             List<Type> arguments = parameterizedType.arguments();
             ResultHandle typeArgsHandle = creator.newArray(java.lang.reflect.Type.class, creator.load(arguments.size()));
             for (int i = 0; i < arguments.size(); i++) {
-                creator.writeArrayValue(typeArgsHandle, creator.load(i), getTypeHandle(creator, arguments.get(i)));
+                creator.writeArrayValue(typeArgsHandle, i, getTypeHandle(creator, arguments.get(i)));
             }
             return creator.newInstance(
                     MethodDescriptor.ofConstructor(ParameterizedTypeImpl.class, java.lang.reflect.Type.class, java.lang.reflect.Type[].class),

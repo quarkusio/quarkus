@@ -187,8 +187,8 @@ public class ObserverGenerator extends AbstractGenerator {
             ResultHandle paramTypesArray = notify.newArray(Class.class, notify.load(referenceHandles.length));
             ResultHandle argsArray = notify.newArray(Object.class, notify.load(referenceHandles.length));
             for (int i = 0; i < referenceHandles.length; i++) {
-                notify.writeArrayValue(paramTypesArray, notify.load(i), notify.loadClass(observer.getObserverMethod().parameters().get(i).name().toString()));
-                notify.writeArrayValue(argsArray, notify.load(i), referenceHandles[i]);
+                notify.writeArrayValue(paramTypesArray, i, notify.loadClass(observer.getObserverMethod().parameters().get(i).name().toString()));
+                notify.writeArrayValue(argsArray, i, referenceHandles[i]);
             }
             reflectionRegistration.registerMethod(observer.getObserverMethod());
             notify.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD,

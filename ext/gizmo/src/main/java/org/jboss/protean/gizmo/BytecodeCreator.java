@@ -315,6 +315,13 @@ public interface BytecodeCreator {
 
     void writeArrayValue(ResultHandle array, ResultHandle index, ResultHandle value);
 
+    default ResultHandle readArrayValue(ResultHandle array, int index) {
+        return readArrayValue(array, load(index));
+    }
+
+    default void writeArrayValue(ResultHandle array, int index, ResultHandle value) {
+        writeArrayValue(array, load(index), value);
+    }
 
     /**
      * Adds a try catch block

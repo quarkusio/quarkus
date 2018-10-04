@@ -92,6 +92,9 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
         processorContext.addResourceBundle("messages"); //for JSONB
         processorContext.addResource("META-INF/services/javax.ws.rs.client.ClientBuilder");
         IndexView index = archiveContext.getCombinedIndex();
+
+        processorContext.addProxyDefinition(javax.ws.rs.core.SecurityContext.class.getName());
+
         Collection<AnnotationInstance> app = index.getAnnotations(APPLICATION_PATH);
         if (app.isEmpty()) {
             return;

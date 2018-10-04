@@ -1,9 +1,5 @@
 package org.jboss.shamrock.agroal;
 
-import java.sql.ResultSet;
-import java.sql.Statement;
-import java.util.function.Function;
-
 import javax.inject.Inject;
 
 import org.jboss.shamrock.agroal.runtime.DataSourceProducer;
@@ -15,11 +11,6 @@ import org.jboss.shamrock.deployment.ResourceProcessor;
 import org.jboss.shamrock.deployment.RuntimePriority;
 import org.jboss.shamrock.deployment.buildconfig.BuildConfig;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Opcodes;
-
-import io.agroal.pool.ConnectionHandler;
 
 class AgroalProcessor implements ResourceProcessor {
 
@@ -36,10 +27,10 @@ class AgroalProcessor implements ResourceProcessor {
         String driver = ds.get("driver").asString();
         String url = ds.get("url").asString();
         if (driver == null) {
-            throw new RuntimeException("Driver is required");
+            throw new RuntimeException("Driver is required (property 'driver' under 'datasource')");
         }
         if (url == null) {
-            throw new RuntimeException("Driver is required");
+            throw new RuntimeException("JDBC URL is required (property 'url' under 'datasource')");
         }
         String userName = ds.get("username").asString();
         String password = ds.get("password").asString();

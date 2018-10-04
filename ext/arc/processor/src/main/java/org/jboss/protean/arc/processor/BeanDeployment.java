@@ -190,7 +190,8 @@ public class BeanDeployment {
         Set<MethodInfo> producerMethods = new HashSet<>();
         Set<MethodInfo> disposerMethods = new HashSet<>();
         Set<FieldInfo> producerFields = new HashSet<>();
-        Set<MethodInfo> observerMethods = new HashSet<>();
+        Set<MethodInfo> syncObserverMethods = new HashSet<>();
+        Set<MethodInfo> asyncObserverMethods = new HashSet<>();
 
         for (DotName beanDefiningAnnotation : beanDefiningAnnotations) {
             for (AnnotationInstance annotation : index.getAnnotations(beanDefiningAnnotation)) {
@@ -222,7 +223,10 @@ public class BeanDeployment {
                             disposerMethods.add(method);
                         } else if (method.hasAnnotation(DotNames.OBSERVES)) {
                             // TODO observers are inherited
-                            observerMethods.add(method);
+                            syncObserverMethods.add(method);
+                        } else if (method.hasAnnotation(DotNames.OBSERVES_ASYNC)) {
+                            // TODO observers are inherited
+                            asyncObserverMethods.add(method);
                         }
                     }
                     for (FieldInfo field : beanClass.fields()) {
@@ -266,10 +270,16 @@ public class BeanDeployment {
             }
         }
 
-        for (MethodInfo observerMethod : observerMethods) {
+        for (MethodInfo observerMethod : syncObserverMethods) {
             BeanInfo declaringBean = beanClassToBean.get(observerMethod.declaringClass());
             if (declaringBean != null) {
-                observers.add(new ObserverInfo(declaringBean, observerMethod, Injection.forObserver(observerMethod, this)));
+                observers.add(new ObserverInfo(declaringBean, observerMethod, Injection.forObserver(observerMethod, this), false));
+            }
+        }
+        for (MethodInfo observerMethod : asyncObserverMethods) {
+            BeanInfo declaringBean = beanClassToBean.get(observerMethod.declaringClass());
+            if (declaringBean != null) {
+                observers.add(new ObserverInfo(declaringBean, observerMethod, Injection.forObserver(observerMethod, this), true));
             }
         }
 

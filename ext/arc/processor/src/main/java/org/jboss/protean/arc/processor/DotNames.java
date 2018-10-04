@@ -5,6 +5,7 @@ import javax.annotation.PreDestroy;
 import javax.annotation.Priority;
 import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
+import javax.enterprise.event.ObservesAsync;
 import javax.enterprise.inject.Alternative;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Default;
@@ -31,6 +32,7 @@ final class DotNames {
 
     static final DotName OBJECT = DotName.createSimple(Object.class.getName());
     static final DotName OBSERVES = DotName.createSimple(Observes.class.getName());
+    static final DotName OBSERVES_ASYNC = DotName.createSimple(ObservesAsync.class.getName());
     static final DotName PRODUCES = DotName.createSimple(Produces.class.getName());
     static final DotName DISPOSES = DotName.createSimple(Disposes.class.getName());
     static final DotName QUALIFIER = DotName.createSimple(Qualifier.class.getName());

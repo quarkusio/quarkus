@@ -4,14 +4,22 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 
 import javax.enterprise.event.Event;
 import javax.enterprise.event.NotificationOptions;
+import javax.enterprise.event.ObserverException;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.spi.EventContext;
 import javax.enterprise.inject.spi.EventMetadata;
@@ -29,11 +37,13 @@ class EventImpl<T> implements Event<T> {
 
     private static final int DEFAULT_CACHE_CAPACITY = 4;
 
+    private static final NotificationOptions DEFAULT_OPTIONS = NotificationOptions.ofExecutor(ForkJoinPool.commonPool());
+
     private final HierarchyDiscovery injectionPointTypeHierarchy;
 
     private final Set<Annotation> qualifiers;
 
-    private final ConcurrentMap<Class<?>, Notifier<? super T>> notifierCache;
+    private final ConcurrentMap<Class<?>, Notifier<? super T>> notifiers;
 
     public EventImpl(Type eventType, Set<Annotation> qualifiers) {
         if (eventType instanceof ParameterizedType) {
@@ -44,22 +54,39 @@ class EventImpl<T> implements Event<T> {
         this.injectionPointTypeHierarchy = new HierarchyDiscovery(eventType);
         this.qualifiers = qualifiers;
         this.qualifiers.add(Any.Literal.INSTANCE);
-        this.notifierCache = new ConcurrentHashMap<>(DEFAULT_CACHE_CAPACITY);
+        this.notifiers = new ConcurrentHashMap<>(DEFAULT_CACHE_CAPACITY);
     }
 
     @Override
     public void fire(T event) {
-        notifierCache.computeIfAbsent(event.getClass(), this::createNotifier).notify(event);
+        notifiers.computeIfAbsent(event.getClass(), this::createNotifier).notify(event, ObserverExceptionHandler.IMMEDIATE_HANDLER, false);
     }
 
     @Override
     public <U extends T> CompletionStage<U> fireAsync(U event) {
-        throw new UnsupportedOperationException();
+        return fireAsync(event, DEFAULT_OPTIONS);
     }
 
     @Override
     public <U extends T> CompletionStage<U> fireAsync(U event, NotificationOptions options) {
-        throw new UnsupportedOperationException();
+        Objects.requireNonNull(options);
+
+        @SuppressWarnings("unchecked")
+        Notifier<U> notifier = (Notifier<U>) notifiers.computeIfAbsent(event.getClass(), this::createNotifier);
+        Executor executor = options.getExecutor();
+
+        if (notifier.isEmpty()) {
+            return AsyncEventDeliveryStage.completed(event, executor);
+        }
+
+        ObserverExceptionHandler exceptionHandler = new CollectingExceptionHandler();
+        CompletableFuture<U> completableFuture = CompletableFuture.supplyAsync(() -> {
+            notifier.notify(event, exceptionHandler, true);
+            handleExceptions(exceptionHandler);
+            return event;
+        }, executor);
+
+        return new AsyncEventDeliveryStage<>(completableFuture, executor);
     }
 
     @Override
@@ -113,6 +140,22 @@ class EventImpl<T> implements Event<T> {
         return resolvedType;
     }
 
+    private void handleExceptions(ObserverExceptionHandler handler) {
+        List<Throwable> handledExceptions = handler.getHandledExceptions();
+        if (!handledExceptions.isEmpty()) {
+            CompletionException exception = null;
+            if (handledExceptions.size() == 1) {
+                exception = new CompletionException(handledExceptions.get(0));
+            } else {
+                exception = new CompletionException(null);
+            }
+            for (Throwable handledException : handledExceptions) {
+                exception.addSuppressed(handledException);
+            }
+            throw exception;
+        }
+    }
+
     static class Notifier<T> {
 
         private final List<ObserverMethod<? super T>> observerMethods;
@@ -124,14 +167,28 @@ class EventImpl<T> implements Event<T> {
             this.eventMetadata = eventMetadata;
         }
 
-        @SuppressWarnings({ "rawtypes", "unchecked" })
         void notify(T event) {
-            if (!observerMethods.isEmpty()) {
+            notify(event, ObserverExceptionHandler.IMMEDIATE_HANDLER, false);
+        }
+
+        @SuppressWarnings({ "rawtypes", "unchecked" })
+        void notify(T event, ObserverExceptionHandler exceptionHandler, boolean async) {
+            if (!isEmpty()) {
                 EventContext eventContext = new EventContextImpl<>(event, eventMetadata);
                 for (ObserverMethod<? super T> observerMethod : observerMethods) {
-                    observerMethod.notify(eventContext);
+                    if (observerMethod.isAsync() == async) {
+                        try {
+                            observerMethod.notify(eventContext);
+                        } catch (Throwable e) {
+                            exceptionHandler.handle(e);
+                        }
+                    }
                 }
             }
+        }
+
+        boolean isEmpty() {
+            return observerMethods.isEmpty();
         }
 
     }
@@ -186,6 +243,57 @@ class EventImpl<T> implements Event<T> {
             return eventType;
         }
 
+    }
+
+    /**
+     * There are two different strategies of exception handling for observer methods. When an exception is raised by a synchronous or transactional observer for
+     * a synchronous event, this exception stops the notification chain and the exception is propagated immediately. On the other hand, an exception thrown
+     * during asynchronous event delivery never is never propagated directly. Instead, all the exceptions for a given asynchronous event are collected and then
+     * made available together using CompletionException.
+     *
+     * @author Jozef Hartinger
+     *
+     */
+    protected interface ObserverExceptionHandler {
+
+        ObserverExceptionHandler IMMEDIATE_HANDLER = throwable -> {
+            if (throwable instanceof RuntimeException) {
+                throw (RuntimeException) throwable;
+            }
+            if (throwable instanceof Error) {
+                throw (Error) throwable;
+            }
+            throw new ObserverException(throwable);
+        };
+
+        void handle(Throwable throwable);
+
+        default List<Throwable> getHandledExceptions() {
+            return Collections.emptyList();
+        }
+    }
+
+    static class CollectingExceptionHandler implements ObserverExceptionHandler {
+
+        private List<Throwable> throwables;
+
+        CollectingExceptionHandler() {
+            this(new LinkedList<>());
+        }
+
+        CollectingExceptionHandler(List<Throwable> throwables) {
+            this.throwables = throwables;
+        }
+
+        @Override
+        public void handle(Throwable throwable) {
+            throwables.add(throwable);
+        }
+
+        @Override
+        public List<Throwable> getHandledExceptions() {
+            return throwables;
+        }
     }
 
 }

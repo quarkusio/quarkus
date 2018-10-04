@@ -32,7 +32,7 @@ class InjectionPointInfo {
         return fromMethod(method, beanDeployment, null);
     }
 
-    static List<InjectionPointInfo> fromMethod(MethodInfo method, BeanDeployment beanDeployment, Predicate<Set<AnnotationInstance>> skiPredicate) {
+    static List<InjectionPointInfo> fromMethod(MethodInfo method, BeanDeployment beanDeployment, Predicate<Set<AnnotationInstance>> skipPredicate) {
         List<InjectionPointInfo> injectionPoints = new ArrayList<>();
         for (ListIterator<Type> iterator = method.parameters().listIterator(); iterator.hasNext();) {
             Type paramType = iterator.next();
@@ -43,7 +43,7 @@ class InjectionPointInfo {
                     paramAnnotations.add(annotation);
                 }
             }
-            if (skiPredicate != null && skiPredicate.test(paramAnnotations)) {
+            if (skipPredicate != null && skipPredicate.test(paramAnnotations)) {
                 // Skip parameter, e.g. @Disposes
                 continue;
             }

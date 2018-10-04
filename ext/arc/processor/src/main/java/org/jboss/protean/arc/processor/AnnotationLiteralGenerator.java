@@ -13,6 +13,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
@@ -36,6 +37,9 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
     static final String ANNOTATION_LITERAL_SUFFIX = "_AnnotationLiteral";
 
     private static final Logger LOGGER = Logger.getLogger(AnnotationLiteralGenerator.class);
+
+    private static final String INIT = "<init>";
+    private static final String CLINIT = "<clinit>";
 
     /**
      *
@@ -68,6 +72,9 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
                 .interfaces(annotationClass.name().toString()).signature(signature).build();
 
         for (MethodInfo method : annotationClass.methods()) {
+            if(method.name().equals(CLINIT) || method.name().equals(INIT)) {
+                continue;
+            }
             MethodCreator valueMethod = annotationLiteral.getMethodCreator(MethodDescriptor.of(method));
             AnnotationValue value = annotationValues.get(method.name());
             if (value == null) {
@@ -146,7 +153,7 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
                                 Type[] classArray = value.asClassArray();
                                 retValue = valueMethod.newArray(componentType(method), valueMethod.load(classArray.length));
                                 for (int i = 0; i < classArray.length; i++) {
-                                    valueMethod.writeArrayValue(retValue, valueMethod.load(i), valueMethod.loadClass(classArray[i].name().toString()));
+                                    valueMethod.writeArrayValue(retValue, i, valueMethod.loadClass(classArray[i].name().toString()));
                                 }
                                 break;
                             // TODO other types of array components

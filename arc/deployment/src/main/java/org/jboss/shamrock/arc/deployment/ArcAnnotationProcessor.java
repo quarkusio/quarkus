@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.enterprise.event.Observes;
@@ -25,6 +26,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
+import org.jboss.protean.arc.ActivateRequestContextInterceptor;
 import org.jboss.protean.arc.ArcContainer;
 import org.jboss.protean.arc.processor.BeanProcessor;
 import org.jboss.protean.arc.processor.BeanProcessor.Builder;
@@ -45,6 +47,7 @@ import io.smallrye.config.inject.ConfigProducer;
 public class ArcAnnotationProcessor implements ResourceProcessor {
 
     private static final DotName JAVA_LANG_OBJECT = DotName.createSimple(Object.class.getName());
+
     private static final Logger log = Logger.getLogger("org.jboss.shamrock.arc.deployment.processor");
 
     @Inject
@@ -61,7 +64,7 @@ public class ArcAnnotationProcessor implements ResourceProcessor {
         try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.ARC_DEPLOYMENT)) {
 
             ArcDeploymentTemplate template = recorder.getRecordingProxy(ArcDeploymentTemplate.class);
-            processorContext.addReflectiveClass(true, false, Observes.class.getName()); //graal bug
+            processorContext.addReflectiveClass(true, false, Observes.class.getName()); // graal bug
 
             List<DotName> additionalBeanDefiningAnnotations = new ArrayList<>();
             additionalBeanDefiningAnnotations.add(DotName.createSimple("javax.servlet.annotation.WebServlet"));
@@ -80,6 +83,19 @@ public class ArcAnnotationProcessor implements ResourceProcessor {
                 String name = dotName.toString();
                 return name.substring(0, name.lastIndexOf("."));
             }).collect(Collectors.toSet());
+            List<Predicate<String>> frameworkPredicates = new ArrayList<>();
+            frameworkPredicates.add(fqcn -> {
+                for (String frameworkPackage : frameworkPackages) {
+                    if (fqcn.startsWith(frameworkPackage)) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+            // For some odd reason we cannot add org.jboss.protean.arc as a fwk package
+            frameworkPredicates.add(fqcn -> {
+                return fqcn.startsWith(ActivateRequestContextInterceptor.class.getName()) || fqcn.startsWith("org.jboss.protean.arc.ActivateRequestContext");
+            });
 
             for (Map.Entry<String, byte[]> beanClass : beanDeployment.getGeneratedBeans().entrySet()) {
                 indexBeanClass(beanClass.getKey(), indexer, beanArchiveIndex.getIndex(), additionalIndex, beanClass.getValue());
@@ -113,12 +129,13 @@ public class ArcAnnotationProcessor implements ResourceProcessor {
                             // TODO a better way to identify app classes
                             boolean isAppClass = true;
 
-                            if(!resource.getFullyQualifiedName().contains("$$APP$$")) {
-                                //horrible hack, we really need to look into into
-                                //app vs framework classes cause big problems for the runtime runner
-                                for (String frameworkPackage : frameworkPackages) {
-                                    if (resource.getFullyQualifiedName().startsWith(frameworkPackage)) {
+                            if (!resource.getFullyQualifiedName().contains("$$APP$$")) {
+                                // ^ horrible hack, we really need to look into into
+                                // app vs framework classes cause big problems for the runtime runner
+                                for (Predicate<String> predicate : frameworkPredicates) {
+                                    if (predicate.test(resource.getFullyQualifiedName())) {
                                         isAppClass = false;
+                                        break;
                                     }
                                 }
                             }

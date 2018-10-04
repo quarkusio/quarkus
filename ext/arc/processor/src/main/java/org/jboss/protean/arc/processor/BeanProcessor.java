@@ -12,6 +12,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 
+import javax.enterprise.context.control.ActivateRequestContext;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Default;
 import javax.inject.Named;
@@ -25,6 +26,7 @@ import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
+import org.jboss.protean.arc.ActivateRequestContextInterceptor;
 import org.jboss.protean.arc.processor.ResourceOutput.Resource;
 import org.jboss.protean.arc.processor.ResourceOutput.Resource.SpecialType;
 
@@ -91,7 +93,7 @@ public class BeanProcessor {
 
         // Generate interceptors
         for (InterceptorInfo interceptor : beanDeployment.getInterceptors()) {
-            for (Resource resource : interceptorGenerator.generate(interceptor, annotationLiterals, reflectionRegistration)) {
+            for (Resource resource : interceptorGenerator.generate(interceptor, reflectionRegistration)) {
                 resources.add(resource);
                 if (SpecialType.INTERCEPTOR_BEAN.equals(resource.getSpecialType())) {
                     interceptorToGeneratedName.put(interceptor, resource.getName());
@@ -142,15 +144,18 @@ public class BeanProcessor {
         return beanDeployment;
     }
 
-    private static IndexView addBuiltinQualifiersIfNeeded(IndexView index) {
+    private static IndexView addBuiltinClasses(IndexView index) {
+        Indexer indexer = new Indexer();
+        // Add builtin interceptors and bindings
+        index(indexer, ActivateRequestContext.class.getName());
+        index(indexer, ActivateRequestContextInterceptor.class.getName());
+        // Add builtin qualifiers if needed
         if (index.getClassByName(DotNames.ANY) == null) {
-            Indexer indexer = new Indexer();
             index(indexer, Default.class.getName());
             index(indexer, Any.class.getName());
             index(indexer, Named.class.getName());
-            return CompositeIndex.create(index, indexer.complete());
         }
-        return index;
+        return CompositeIndex.create(index, indexer.complete());
     }
 
     private static void index(Indexer indexer, String className) {
@@ -213,7 +218,7 @@ public class BeanProcessor {
         }
 
         public BeanProcessor build() {
-            return new BeanProcessor(name, addBuiltinQualifiersIfNeeded(index), additionalBeanDefiningAnnotations, output, sharedAnnotationLiterals,
+            return new BeanProcessor(name, addBuiltinClasses(index), additionalBeanDefiningAnnotations, output, sharedAnnotationLiterals,
                     reflectionRegistration, annotationTransformers);
         }
 

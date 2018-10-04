@@ -106,8 +106,7 @@ class ArcContainerImpl implements ArcContainer {
                 requestContext.activate();
                 action.run();
             } finally {
-                requestContext.destroy();
-                requestContext.deactivate();
+                requestContext.terminate();
             }
         }
     }
@@ -123,8 +122,7 @@ class ArcContainerImpl implements ArcContainer {
                 requestContext.activate();
                 return action.get();
             } finally {
-                requestContext.destroy();
-                requestContext.deactivate();
+                requestContext.terminate();
             }
         }
     }

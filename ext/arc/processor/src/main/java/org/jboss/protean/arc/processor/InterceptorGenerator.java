@@ -51,9 +51,10 @@ public class InterceptorGenerator extends BeanGenerator {
     /**
      *
      * @param interceptor bean
+     * @param reflectionRegistration
      * @return a collection of resources
      */
-    Collection<Resource> generate(InterceptorInfo interceptor, AnnotationLiteralProcessor annotationLiterals, ReflectionRegistration reflectionRegistration) {
+    Collection<Resource> generate(InterceptorInfo interceptor, ReflectionRegistration reflectionRegistration) {
 
         Type providerType = interceptor.getProviderType();
         ClassInfo interceptorClass = interceptor.getTarget().asClass();

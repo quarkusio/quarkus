@@ -29,6 +29,11 @@ public class JaxRSTestCase {
     }
 
     @Test
+    public void testContextInjection() {
+        Assert.assertEquals("/rest/test/request-test", URLTester.relative("rest/test/request-test").invokeURL().asString());
+    }
+
+    @Test
     public void testJsonp() {
         JsonObject obj = URLTester.relative("rest/test/jsonp").invokeURL().asJsonReader().readObject();
         Assert.assertEquals("Stuart", obj.getString("name"));

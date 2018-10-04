@@ -73,6 +73,7 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
 
     private static final DotName XML_ROOT = DotName.createSimple("javax.xml.bind.annotation.XmlRootElement");
     private static final DotName JSONB_ANNOTATION = DotName.createSimple("javax.json.bind.annotation.JsonbAnnotation");
+    private static final DotName CONTEXT = DotName.createSimple("javax.ws.rs.core.Context");
 
     private static final DotName[] METHOD_ANNOTATIONS = {
             DotName.createSimple("javax.ws.rs.GET"),
@@ -93,8 +94,6 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
         processorContext.addResource("META-INF/services/javax.ws.rs.client.ClientBuilder");
         IndexView index = archiveContext.getCombinedIndex();
 
-        processorContext.addProxyDefinition(javax.ws.rs.core.SecurityContext.class.getName());
-
         Collection<AnnotationInstance> app = index.getAnnotations(APPLICATION_PATH);
         if (app.isEmpty()) {
             return;
@@ -107,6 +106,40 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
             for (AnnotationInstance anno : index.getAnnotations(i)) {
                 if (anno.target().kind() == AnnotationTarget.Kind.CLASS) {
                     processorContext.addReflectiveClass(true, true, anno.target().asClass().name().toString());
+                }
+            }
+        }
+
+        //@Context uses proxies for interface injection
+        for(AnnotationInstance annotation : index.getAnnotations(CONTEXT)) {
+            DotName typeName = null;
+            if(annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
+                MethodInfo method = annotation.target().asMethod();
+                if(method.parameters().size() == 1) {
+                    typeName = method.parameters().get(0).name();
+                }
+            } else if(annotation.target().kind() == AnnotationTarget.Kind.FIELD) {
+                typeName = annotation.target().asField().type().name();
+            } else if(annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
+                int pos = annotation.target().asMethodParameter().position();
+                typeName = annotation.target().asMethodParameter().method().parameters().get(pos).name();
+            }
+            if(typeName != null) {
+                ClassInfo type = index.getClassByName(typeName);
+                if(type != null) {
+                    if(Modifier.isInterface(type.flags())) {
+                        processorContext.addProxyDefinition(type.toString());
+                    }
+                } else {
+                    //might be a framework class, which should be loadable
+                    try {
+                        Class<?> typeClass = Class.forName(typeName.toString());
+                        if(typeClass.isInterface()) {
+                            processorContext.addProxyDefinition(typeName.toString());
+                        }
+                    } catch (Exception e) {
+                        //ignore
+                    }
                 }
             }
         }

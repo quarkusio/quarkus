@@ -2,16 +2,22 @@ package org.jboss.shamrock.example.rest;
 
 import javax.json.Json;
 import javax.json.JsonObject;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Request;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import io.reactivex.Single;
 
 @Path("/test")
 public class TestResource {
+
+    @Context
+    HttpServletRequest request;
 
     @GET
     public String getTest() {
@@ -22,6 +28,12 @@ public class TestResource {
     @Path("/int/{val}")
     public Integer getInt(@PathParam("val") Integer val) {
         return val + 1;
+    }
+
+    @GET
+    @Path("/request-test")
+    public String requestTest() {
+        return request.getRequestURI();
     }
 
     @GET

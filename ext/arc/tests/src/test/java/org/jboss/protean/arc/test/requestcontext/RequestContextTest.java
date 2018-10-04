@@ -47,11 +47,11 @@ public class RequestContextTest {
 
         // Id must be different in a different request
         Controller.DESTROYED.set(false);
-        arc.withinRequest(() -> assertNotEquals(controller2Id, arc.instance(Controller.class).get().getId()));
+        arc.withinRequest(() -> assertNotEquals(controller2Id, arc.instance(Controller.class).get().getId())).run();
         assertTrue(Controller.DESTROYED.get());
 
         Controller.DESTROYED.set(false);
-        assertNotEquals(controller2Id, arc.withinRequest(() -> arc.instance(Controller.class).get().getId()));
+        assertNotEquals(controller2Id, arc.withinRequest(() -> arc.instance(Controller.class).get().getId()).get());
         assertTrue(Controller.DESTROYED.get());
 
         // @ActivateRequestContext

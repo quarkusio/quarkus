@@ -13,6 +13,7 @@ import java.util.concurrent.TimeoutException;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.Dependent;
+import javax.enterprise.context.RequestScoped;
 import javax.enterprise.event.Event;
 import javax.enterprise.event.Observes;
 import javax.enterprise.event.ObservesAsync;
@@ -28,7 +29,7 @@ import org.junit.Test;
 public class AsyncObserverTest {
 
     @Rule
-    public ArcTestContainer container = new ArcTestContainer(StringProducer.class, StringObserver.class);
+    public ArcTestContainer container = new ArcTestContainer(StringProducer.class, StringObserver.class, ThreadNameProvider.class);
 
     @Test
     public void testAsyncObservers() throws InterruptedException, ExecutionException, TimeoutException {
@@ -57,13 +58,16 @@ public class AsyncObserverTest {
 
         private List<String> events;
 
+        @Inject
+        ThreadNameProvider threadNameProvider;
+
         @PostConstruct
         void init() {
             events = new CopyOnWriteArrayList<>();
         }
 
         void observeAsync(@ObservesAsync String value) {
-            events.add("async::" + value + "::" + Thread.currentThread().getName());
+            events.add("async::" + value + "::" + threadNameProvider.get());
         }
 
         void observeSync(@Observes String value) {
@@ -88,6 +92,15 @@ public class AsyncObserverTest {
 
         CompletionStage<String> produceAsync(String value) {
             return event.fireAsync(value);
+        }
+
+    }
+
+    @RequestScoped
+    static class ThreadNameProvider {
+
+        String get() {
+            return Thread.currentThread().getName();
         }
 
     }

@@ -710,6 +710,16 @@
                 <artifactId>el-impl</artifactId>
                 <version>${el-impl.version}</version>
             </dependency>
+            <dependency>
+                <groupId>javax.money</groupId>
+                <artifactId>money-api</artifactId>
+                <version>1.0.3</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jsoup</groupId>
+                <artifactId>jsoup</artifactId>
+                <version>1.10.2</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 

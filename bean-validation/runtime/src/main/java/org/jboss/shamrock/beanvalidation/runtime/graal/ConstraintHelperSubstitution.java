@@ -277,24 +277,26 @@ public final class ConstraintHelperSubstitution {
         putConstraint( tmpConstraints, AssertTrue.class, AssertTrueValidator.class );
 
 
-            putConstraints( tmpConstraints, DecimalMax.class, Arrays.asList(
-                    DecimalMaxValidatorForBigDecimal.class,
-                    DecimalMaxValidatorForBigInteger.class,
-                    DecimalMaxValidatorForDouble.class,
-                    DecimalMaxValidatorForFloat.class,
-                    DecimalMaxValidatorForLong.class,
-                    DecimalMaxValidatorForNumber.class,
-                    DecimalMaxValidatorForCharSequence.class
-            ) );
-            putConstraints( tmpConstraints, DecimalMin.class, Arrays.asList(
-                    DecimalMinValidatorForBigDecimal.class,
-                    DecimalMinValidatorForBigInteger.class,
-                    DecimalMinValidatorForDouble.class,
-                    DecimalMinValidatorForFloat.class,
-                    DecimalMinValidatorForLong.class,
-                    DecimalMinValidatorForNumber.class,
-                    DecimalMinValidatorForCharSequence.class
-            ) );
+        putConstraints( tmpConstraints, DecimalMax.class,  Arrays.asList(
+                DecimalMaxValidatorForBigDecimal.class,
+                DecimalMaxValidatorForBigInteger.class,
+                DecimalMaxValidatorForDouble.class,
+                DecimalMaxValidatorForFloat.class,
+                DecimalMaxValidatorForLong.class,
+                DecimalMaxValidatorForNumber.class,
+                DecimalMaxValidatorForCharSequence.class,
+                DecimalMaxValidatorForMonetaryAmount.class
+        ) );
+        putConstraints( tmpConstraints, DecimalMin.class, Arrays.asList(
+                DecimalMinValidatorForBigDecimal.class,
+                DecimalMinValidatorForBigInteger.class,
+                DecimalMinValidatorForDouble.class,
+                DecimalMinValidatorForFloat.class,
+                DecimalMinValidatorForLong.class,
+                DecimalMinValidatorForNumber.class,
+                DecimalMinValidatorForCharSequence.class,
+                DecimalMinValidatorForMonetaryAmount.class
+        ));
 
         putConstraints( tmpConstraints, Digits.class, DigitsValidatorForCharSequence.class, DigitsValidatorForNumber.class );
         putConstraint( tmpConstraints, Email.class, EmailValidator.class );
@@ -343,48 +345,50 @@ public final class ConstraintHelperSubstitution {
 
         putConstraint( tmpConstraints, ISBN.class, ISBNValidator.class );
 
-            putConstraints( tmpConstraints, Max.class, Arrays.asList(
-                    MaxValidatorForBigDecimal.class,
-                    MaxValidatorForBigInteger.class,
-                    MaxValidatorForDouble.class,
-                    MaxValidatorForFloat.class,
-                    MaxValidatorForLong.class,
-                    MaxValidatorForNumber.class,
-                    MaxValidatorForCharSequence.class
-            ) );
-            putConstraints( tmpConstraints, Min.class, Arrays.asList(
-                    MinValidatorForBigDecimal.class,
-                    MinValidatorForBigInteger.class,
-                    MinValidatorForDouble.class,
-                    MinValidatorForFloat.class,
-                    MinValidatorForLong.class,
-                    MinValidatorForNumber.class,
-                    MinValidatorForCharSequence.class
-            ) );
+        putConstraints( tmpConstraints, Max.class, Arrays.asList(
+                MaxValidatorForBigDecimal.class,
+                MaxValidatorForBigInteger.class,
+                MaxValidatorForDouble.class,
+                MaxValidatorForFloat.class,
+                MaxValidatorForLong.class,
+                MaxValidatorForNumber.class,
+                MaxValidatorForCharSequence.class,
+                MaxValidatorForMonetaryAmount.class
+        ) );
+        putConstraints( tmpConstraints, Min.class, Arrays.asList(
+                MinValidatorForBigDecimal.class,
+                MinValidatorForBigInteger.class,
+                MinValidatorForDouble.class,
+                MinValidatorForFloat.class,
+                MinValidatorForLong.class,
+                MinValidatorForNumber.class,
+                MinValidatorForCharSequence.class,
+                MinValidatorForMonetaryAmount.class
+        ) );
 
-            putConstraints( tmpConstraints, Negative.class, Arrays.asList(
-                    NegativeValidatorForBigDecimal.class,
-                    NegativeValidatorForBigInteger.class,
-                    NegativeValidatorForDouble.class,
-                    NegativeValidatorForFloat.class,
-                    NegativeValidatorForLong.class,
-                    NegativeValidatorForInteger.class,
-                    NegativeValidatorForShort.class,
-                    NegativeValidatorForByte.class,
-                    NegativeValidatorForNumber.class
-            ) );
+        putConstraints( tmpConstraints, Negative.class, Arrays.asList(
+                NegativeValidatorForBigDecimal.class,
+                NegativeValidatorForBigInteger.class,
+                NegativeValidatorForDouble.class,
+                NegativeValidatorForFloat.class,
+                NegativeValidatorForLong.class,
+                NegativeValidatorForInteger.class,
+                NegativeValidatorForShort.class,
+                NegativeValidatorForByte.class,
+                NegativeValidatorForNumber.class,
+                NegativeValidatorForMonetaryAmount.class ) );
 
-            putConstraints( tmpConstraints, NegativeOrZero.class, Arrays.asList(
-                    NegativeOrZeroValidatorForBigDecimal.class,
-                    NegativeOrZeroValidatorForBigInteger.class,
-                    NegativeOrZeroValidatorForDouble.class,
-                    NegativeOrZeroValidatorForFloat.class,
-                    NegativeOrZeroValidatorForLong.class,
-                    NegativeOrZeroValidatorForInteger.class,
-                    NegativeOrZeroValidatorForShort.class,
-                    NegativeOrZeroValidatorForByte.class,
-                    NegativeOrZeroValidatorForNumber.class
-            ) );
+        putConstraints( tmpConstraints, NegativeOrZero.class, Arrays.asList(
+                NegativeOrZeroValidatorForBigDecimal.class,
+                NegativeOrZeroValidatorForBigInteger.class,
+                NegativeOrZeroValidatorForDouble.class,
+                NegativeOrZeroValidatorForFloat.class,
+                NegativeOrZeroValidatorForLong.class,
+                NegativeOrZeroValidatorForInteger.class,
+                NegativeOrZeroValidatorForShort.class,
+                NegativeOrZeroValidatorForByte.class,
+                NegativeOrZeroValidatorForNumber.class,
+                NegativeOrZeroValidatorForMonetaryAmount.class ) );
 
         putConstraint( tmpConstraints, NotBlank.class, NotBlankValidator.class );
 
@@ -449,29 +453,30 @@ public final class ConstraintHelperSubstitution {
         putConstraints( tmpConstraints, PastOrPresent.class, pastOrPresentValidators );
 
         putConstraint( tmpConstraints, Pattern.class, PatternValidator.class );
-            putConstraints( tmpConstraints, Positive.class, Arrays.asList(
-                    PositiveValidatorForBigDecimal.class,
-                    PositiveValidatorForBigInteger.class,
-                    PositiveValidatorForDouble.class,
-                    PositiveValidatorForFloat.class,
-                    PositiveValidatorForLong.class,
-                    PositiveValidatorForInteger.class,
-                    PositiveValidatorForShort.class,
-                    PositiveValidatorForByte.class,
-                    PositiveValidatorForNumber.class
-            ) );
 
-            putConstraints( tmpConstraints, PositiveOrZero.class, Arrays.asList(
-                    PositiveOrZeroValidatorForBigDecimal.class,
-                    PositiveOrZeroValidatorForBigInteger.class,
-                    PositiveOrZeroValidatorForDouble.class,
-                    PositiveOrZeroValidatorForFloat.class,
-                    PositiveOrZeroValidatorForLong.class,
-                    PositiveOrZeroValidatorForInteger.class,
-                    PositiveOrZeroValidatorForShort.class,
-                    PositiveOrZeroValidatorForByte.class,
-                    PositiveOrZeroValidatorForNumber.class
-            ) );
+        putConstraints( tmpConstraints, Positive.class, Arrays.asList(
+                PositiveValidatorForBigDecimal.class,
+                PositiveValidatorForBigInteger.class,
+                PositiveValidatorForDouble.class,
+                PositiveValidatorForFloat.class,
+                PositiveValidatorForLong.class,
+                PositiveValidatorForInteger.class,
+                PositiveValidatorForShort.class,
+                PositiveValidatorForByte.class,
+                PositiveValidatorForNumber.class,
+                PositiveValidatorForMonetaryAmount.class ) );
+
+        putConstraints( tmpConstraints, PositiveOrZero.class, Arrays.asList(
+                PositiveOrZeroValidatorForBigDecimal.class,
+                PositiveOrZeroValidatorForBigInteger.class,
+                PositiveOrZeroValidatorForDouble.class,
+                PositiveOrZeroValidatorForFloat.class,
+                PositiveOrZeroValidatorForLong.class,
+                PositiveOrZeroValidatorForInteger.class,
+                PositiveOrZeroValidatorForShort.class,
+                PositiveOrZeroValidatorForByte.class,
+                PositiveOrZeroValidatorForNumber.class,
+                PositiveOrZeroValidatorForMonetaryAmount.class ) );
 
         List<Class<? extends ConstraintValidator<Size, ?>>> sizeValidators = new ArrayList<>( 11 );
         sizeValidators.add( SizeValidatorForCharSequence.class );

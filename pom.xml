@@ -258,6 +258,16 @@
             </dependency>
             <dependency>
                 <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-openssl-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-openssl-runtime</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
                 <artifactId>shamrock-rest-client-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>

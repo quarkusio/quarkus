@@ -18,17 +18,34 @@
 
 package org.jboss.shamrock.logging.deployment;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.function.Function;
+import java.util.logging.ErrorManager;
+import java.util.logging.Formatter;
+import java.util.logging.Handler;
+import java.util.logging.Level;
 
+import org.graalvm.nativeimage.ImageInfo;
+import org.jboss.logmanager.EmbeddedConfigurator;
+import org.jboss.logmanager.formatters.PatternFormatter;
+import org.jboss.logmanager.handlers.ConsoleHandler;
+import org.jboss.logmanager.handlers.FileHandler;
+import org.jboss.protean.gizmo.BranchResult;
+import org.jboss.protean.gizmo.BytecodeCreator;
+import org.jboss.protean.gizmo.ClassCreator;
+import org.jboss.protean.gizmo.ClassOutput;
+import org.jboss.protean.gizmo.FieldDescriptor;
+import org.jboss.protean.gizmo.MethodCreator;
+import org.jboss.protean.gizmo.MethodDescriptor;
+import org.jboss.protean.gizmo.ResultHandle;
 import org.jboss.shamrock.deployment.ArchiveContext;
 import org.jboss.shamrock.deployment.ProcessorContext;
 import org.jboss.shamrock.deployment.ResourceProcessor;
 import org.jboss.shamrock.deployment.buildconfig.BuildConfig;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
 import org.jboss.shamrock.logging.runtime.LogSetupTemplate;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 /**
@@ -46,348 +63,202 @@ public final class LoggingResourceProcessor implements ResourceProcessor {
             return;
         }
 
-        final ClassWriter cv = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-        cv.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC, GENERATED_CONFIGURATOR, null, "java/lang/Object", new String[] { "org/jboss/logmanager/EmbeddedConfigurator" });
-        cv.visitSource("LoggingResourceProcessor.java", null);
+        final String rootMinLevel;
+        final String rootLevel;
+        final boolean consoleEnable;
+        final String consoleFormat;
+        final String consoleLevel;
+        final boolean fileEnable;
+        final String fileFormat;
+        final String fileLevel;
+        final String filePath;
+        final MethodCreator minimumLevelOf;
+        final MethodCreator levelOf;
+        final MethodCreator handlersOf;
+        try (ClassCreator cc = new ClassCreator(new ProcessorClassOutput(processorContext), GENERATED_CONFIGURATOR, null, "java/lang/Object", "org/jboss/logmanager/EmbeddedConfigurator")) {
+            // TODO set source file
+            final MethodCreator ctor = cc.getMethodCreator("<init>", void.class);
+            ctor.setModifiers(Opcodes.ACC_PUBLIC);
+            ctor.invokeSpecialMethod(MethodDescriptor.ofConstructor(Object.class), ctor.getThis());
+            ctor.returnValue(null);
 
-        // simple ctor
-        final MethodVisitor ctor = new DebugMethodVisitor(cv.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null));
-        ctor.visitVarInsn(Opcodes.ALOAD, 0);
-        ctor.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
-        ctor.visitInsn(Opcodes.RETURN);
-        ctor.visitMaxs(0, 0);
-        ctor.visitEnd();
+            final BuildConfig.ConfigNode rootLoggerNode = loggingNode.get("root");
+            final BuildConfig.ConfigNode rootMinLevelNode = rootLoggerNode.get("min-level");
+            rootMinLevel = rootMinLevelNode.isNull() ? "INFO" : rootMinLevelNode.asString();
+            final BuildConfig.ConfigNode rootLevelNode = rootLoggerNode.get("level");
+            rootLevel = rootLevelNode.isNull() ? rootMinLevel : rootLevelNode.asString();
 
-        final BuildConfig.ConfigNode rootLoggerNode = loggingNode.get("root");
-        final BuildConfig.ConfigNode rootMinLevelNode = rootLoggerNode.get("min-level");
-        final String rootMinLevel = rootMinLevelNode.isNull() ? "INFO" : rootMinLevelNode.asString();
-        final BuildConfig.ConfigNode rootLevelNode = rootLoggerNode.get("level");
-        final String rootLevel = rootLevelNode.isNull() ? rootMinLevel :  rootLevelNode.asString();
+            final BuildConfig.ConfigNode consoleNode = loggingNode.get("console");
+            final BuildConfig.ConfigNode consoleEnableNode = consoleNode.get("enable");
+            consoleEnable = consoleEnableNode.isNull() || consoleEnableNode.asBoolean().booleanValue();
+            final BuildConfig.ConfigNode consoleFormatNode = consoleNode.get("format");
+            consoleFormat = consoleFormatNode.isNull() ? "%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c{1.}] (%t) %s%e%n" : consoleFormatNode.asString();
+            final BuildConfig.ConfigNode consoleLevelNode = consoleNode.get("level");
+            consoleLevel = consoleLevelNode.isNull() ? "INFO" : consoleLevelNode.asString();
 
-        int handlers = 0;
+            final BuildConfig.ConfigNode fileNode = loggingNode.get("file");
+            final BuildConfig.ConfigNode fileEnableNode = fileNode.get("enable");
+            fileEnable = fileEnableNode.isNull() || fileEnableNode.asBoolean().booleanValue();
+            final BuildConfig.ConfigNode fileFormatNode = fileNode.get("format");
+            fileFormat = fileFormatNode.isNull() ? "%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c] (%t) %s%e%n" : fileFormatNode.asString();
+            final BuildConfig.ConfigNode fileLevelNode = fileNode.get("level");
+            fileLevel = fileLevelNode.isNull() ? "ALL" : fileLevelNode.asString();
+            final BuildConfig.ConfigNode filePathNode = fileNode.get("path");
+            filePath = filePathNode.isNull() ? "server.log" : filePathNode.asString();
 
-        final BuildConfig.ConfigNode consoleNode = loggingNode.get("console");
-        final BuildConfig.ConfigNode consoleEnableNode = consoleNode.get("enable");
-        final boolean consoleEnable = consoleEnableNode.isNull() || consoleEnableNode.asBoolean().booleanValue();
-        if (consoleEnable) handlers ++;
-        final BuildConfig.ConfigNode consoleFormatNode = consoleNode.get("format");
-        final String consoleFormat = consoleFormatNode.isNull() ? "%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c{1.}] (%t) %s%e%n" : consoleFormatNode.asString();
-        final BuildConfig.ConfigNode consoleLevelNode = consoleNode.get("level");
-        final String consoleLevel = consoleLevelNode.isNull() ? "INFO" : consoleLevelNode.asString();
+            minimumLevelOf = cc.getMethodCreator("getMinimumLevelOf", Level.class, String.class);
+            minimumLevelOf.setModifiers(Opcodes.ACC_PUBLIC);
+            // TODO set minimumLevelOf parameter names
 
-        final BuildConfig.ConfigNode fileNode = loggingNode.get("file");
-        final BuildConfig.ConfigNode fileEnableNode = fileNode.get("enable");
-        final boolean fileEnable = fileEnableNode.isNull() || fileEnableNode.asBoolean().booleanValue();
-        if (fileEnable) handlers ++;
-        final BuildConfig.ConfigNode fileFormatNode = fileNode.get("format");
-        final String fileFormat = fileFormatNode.isNull() ? "%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c] (%t) %s%e%n" : fileFormatNode.asString();
-        final BuildConfig.ConfigNode fileLevelNode = fileNode.get("level");
-        final String fileLevel = fileLevelNode.isNull() ? "ALL" : fileLevelNode.asString();
-        final BuildConfig.ConfigNode filePathNode = fileNode.get("path");
-        final String filePath = filePathNode.isNull() ? "server.log" : filePathNode.asString();
+            levelOf = cc.getMethodCreator("getLevelOf", Level.class, String.class);
+            levelOf.setModifiers(Opcodes.ACC_PUBLIC);
+            // TODO set levelOf parameter names
 
-        final MethodVisitor minimumLevelOf = new DebugMethodVisitor(cv.visitMethod(Opcodes.ACC_PUBLIC, "getMinimumLevelOf", "(Ljava/lang/String;)Ljava/util/logging/Level;", null, null));
-        minimumLevelOf.visitParameter("name", 0);
-        minimumLevelOf.visitCode();
-        final MethodVisitor levelOf = new DebugMethodVisitor(cv.visitMethod(Opcodes.ACC_PUBLIC, "getLevelOf", "(Ljava/lang/String;)Ljava/util/logging/Level;", null, null));
-        levelOf.visitParameter("name", 0);
-        levelOf.visitCode();
+            handlersOf = cc.getMethodCreator("getHandlersOf", Handler[].class, String.class);
+            handlersOf.setModifiers(Opcodes.ACC_PUBLIC);
+            // TODO set handlersOf parameter names
 
-        final MethodVisitor handlersOf = new DebugMethodVisitor(cv.visitMethod(Opcodes.ACC_PUBLIC, "getHandlersOf", "(Ljava/lang/String;)[Ljava/util/logging/Handler;", null, null));
-        handlersOf.visitParameter("name", 0);
-        handlersOf.visitCode();
+            // in image build phase, do a special console handler config
 
-        // in image build phase, do a special console handler config
+            final BytecodeCreator ifRootLogger = ifRootLogger(handlersOf, b ->
+                b.readStaticField(
+                    FieldDescriptor.of(
+                        EmbeddedConfigurator.class.getName(),
+                        "NO_HANDLERS",
+                        "[Ljava/util/logging/Handler;"
+                    )
+                )
+            );
+            BranchResult buildOrRunBranchResult = ifRootLogger.ifNonZero(ifRootLogger.invokeStaticMethod(MethodDescriptor.ofMethod(ImageInfo.class, "inImageBuildtimeCode", boolean.class)));
 
-        // S: -
-        Label runTime = new Label();
-        handlersOf.visitMethodInsn(Opcodes.INVOKESTATIC, "org/graalvm/nativeimage/ImageInfo", "inImageBuildtimeCode", "()Z", false);
-        // S: bool
-        handlersOf.visitJumpInsn(Opcodes.IFEQ, runTime); // true/1 = build time, false/0 = run time
-
-        // build time
-        // S: -
-        handlersOf.visitVarInsn(Opcodes.ALOAD, 1);
-        // S: name
-        handlersOf.visitLdcInsn("");
-        // S: name ""
-        handlersOf.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z", false);
-        // S: match
-        Label noMatch = new Label();
-        handlersOf.visitJumpInsn(Opcodes.IFEQ, noMatch); // actually if equal to false/0
-
-        // S: -
-        iconst(handlersOf, 1);
-        // S: 1
-        handlersOf.visitTypeInsn(Opcodes.ANEWARRAY, "java/util/logging/Handler");
-        // S: array
-        handlersOf.visitInsn(Opcodes.DUP);
-        // S: array array
-        iconst(handlersOf, 0);
-        // S: array array 0
-        handlersOf.visitTypeInsn(Opcodes.NEW, "org/jboss/logmanager/formatters/PatternFormatter");
-        // S: array array 0 fmt
-        handlersOf.visitInsn(Opcodes.DUP);
-        // S: array array 0 fmt fmt
-        handlersOf.visitLdcInsn("%d{HH:mm:ss,SSS} %-5p [%c{1.}] %s%e%n");
-        // S: array array 0 fmt fmt str
-        handlersOf.visitMethodInsn(Opcodes.INVOKESPECIAL, "org/jboss/logmanager/formatters/PatternFormatter", "<init>", "(Ljava/lang/String;)V", false);
-        // S: array array 0 fmt
-        handlersOf.visitTypeInsn(Opcodes.NEW, "org/jboss/logmanager/handlers/ConsoleHandler");
-        // S: array array 0 fmt handler
-        handlersOf.visitInsn(Opcodes.DUP_X1);
-        // S: array array 0 handler fmt handler
-        handlersOf.visitInsn(Opcodes.SWAP);
-        // S: array array 0 handler handler fmt
-        handlersOf.visitMethodInsn(Opcodes.INVOKESPECIAL, "org/jboss/logmanager/handlers/ConsoleHandler", "<init>", "(Ljava/util/logging/Formatter;)V", false);
-        // S: array array 0 handler
-        handlersOf.visitInsn(Opcodes.DUP);
-        // S: array array 0 handler handler
-        levelInsn(handlersOf, consoleLevel);
-        // S: array array 0 handler handler level
-        handlersOf.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/util/logging/Handler", "setLevel", "(Ljava/util/logging/Level;)V", false);
-        // S: array array 0 handler
-        handlersOf.visitInsn(Opcodes.AASTORE);
-        // S: array
-        handlersOf.visitInsn(Opcodes.ARETURN);
-        // S: -
-        handlersOf.visitLabel(noMatch);
-        // S: -
-        handlersOf.visitVarInsn(Opcodes.ALOAD, 0);
-        // S: this
-        handlersOf.visitVarInsn(Opcodes.ALOAD, 1);
-        // S: this name
-        handlersOf.visitMethodInsn(Opcodes.INVOKESPECIAL, "org/jboss/logmanager/EmbeddedConfigurator", "getHandlersOf", "(Ljava/lang/String;)[Ljava/util/logging/Handler;", true);
-        // S: array
-        handlersOf.visitInsn(Opcodes.ARETURN);
-        // S: -
-
-        // run time
-        handlersOf.visitLabel(runTime);
-        // S: -
-        handlersOf.visitVarInsn(Opcodes.ALOAD, 1);
-        // S: name
-        handlersOf.visitLdcInsn("");
-        // S: name ""
-        handlersOf.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z", false);
-        // S: match
-        noMatch = new Label();
-        handlersOf.visitJumpInsn(Opcodes.IFEQ, noMatch); // actually if equal to false/0
-        // S: -
-
-        // in image or run time
-
-        // S: -
-        iconst(handlersOf, handlers);
-        // S: cnt
-        handlersOf.visitTypeInsn(Opcodes.ANEWARRAY, "java/util/logging/Handler");
-        // S: array
-        int index = 0;
-        int consoleIndex = -1;
-        if (consoleEnable) {
-            // S: array
-            handlersOf.visitInsn(Opcodes.DUP);
-            // S: array array
-            handlersOf.visitTypeInsn(Opcodes.NEW, "org/jboss/logmanager/handlers/ConsoleHandler");
-            // S: array array handler
-            handlersOf.visitInsn(Opcodes.DUP);
-            // S: array array handler handler
-            handlersOf.visitTypeInsn(Opcodes.NEW, "org/jboss/logmanager/formatters/PatternFormatter");
-            // S: array array handler handler fmt
-            handlersOf.visitInsn(Opcodes.DUP);
-            // S: array array handler handler fmt fmt
-            handlersOf.visitLdcInsn(consoleFormat);
-            // S: array array handler handler fmt fmt fmtStr
-            handlersOf.visitMethodInsn(Opcodes.INVOKESPECIAL, "org/jboss/logmanager/formatters/PatternFormatter", "<init>", "(Ljava/lang/String;)V", false);
-            // S: array array handler handler fmt
-            handlersOf.visitMethodInsn(Opcodes.INVOKESPECIAL, "org/jboss/logmanager/handlers/ConsoleHandler", "<init>", "(Ljava/util/logging/Formatter;)V", false);
-            // S: array array handler
-            handlersOf.visitInsn(Opcodes.DUP);
-            // S: array array handler handler
-            levelInsn(handlersOf, consoleLevel);
-            // S: array array handler handler level
-            handlersOf.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/util/logging/Handler", "setLevel", "(Ljava/util/logging/Level;)V", false);
-            // S: array array handler
-            iconst(handlersOf, consoleIndex = index++);
-            // S: array array handler idx
-            handlersOf.visitInsn(Opcodes.SWAP);
-            // S: array array idx handler
-            handlersOf.visitInsn(Opcodes.AASTORE);
-            // S: array
-        }
-        if (fileEnable) {
-            // S: array
-            handlersOf.visitInsn(Opcodes.DUP);
-            // S: array array
-            handlersOf.visitTypeInsn(Opcodes.NEW, "org/jboss/logmanager/handlers/FileHandler");
-            // S: array array handler
-            handlersOf.visitInsn(Opcodes.DUP);
-            // S: array array handler handler
-            handlersOf.visitTypeInsn(Opcodes.NEW, "org/jboss/logmanager/formatters/PatternFormatter");
-            // S: array array handler handler fmt
-            handlersOf.visitInsn(Opcodes.DUP);
-            // S: array array handler handler fmt fmt
-            handlersOf.visitLdcInsn(fileFormat);
-            // S: array array handler handler fmt fmt fmtStr
-            handlersOf.visitMethodInsn(Opcodes.INVOKESPECIAL, "org/jboss/logmanager/formatters/PatternFormatter", "<init>", "(Ljava/lang/String;)V", false);
-            // S: array array handler handler fmt
-            handlersOf.visitTypeInsn(Opcodes.NEW, "java/io/File");
-            // S: array array handler handler fmt file
-            handlersOf.visitInsn(Opcodes.DUP);
-            // S: array array handler handler fmt file file
-            handlersOf.visitLdcInsn(filePath);
-            // S: array array handler handler fmt file file fileStr
-            handlersOf.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/io/File", "<init>", "(Ljava/lang/String;)V", false);
-            // S: array array handler handler fmt file
-            iconst(handlersOf, 1);
-            // S: array array handler handler fmt file autoflush
-            handlersOf.visitMethodInsn(Opcodes.INVOKESPECIAL, "org/jboss/logmanager/handlers/FileHandler", "<init>", "(Ljava/util/logging/Formatter;Ljava/io/File;Z)V", false);
-            // S: array array handler
-            handlersOf.visitInsn(Opcodes.DUP);
-            // S: array array handler handler
-            levelInsn(handlersOf, fileLevel);
-            // S: array array handler handler level
-            handlersOf.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/util/logging/Handler", "setLevel", "(Ljava/util/logging/Level;)V", false);
-            // S: array array handler
-            // special case: if the console handler is configured, use it as an error manager
+            // run time
+            BytecodeCreator branch = buildOrRunBranchResult.falseBranch();
+            ResultHandle consoleErrorManager;
+            ResultHandle console, file;
             if (consoleEnable) {
-                // S: array array handler
-                handlersOf.visitInsn(Opcodes.DUP2);
-                // S: array array handler array handler
-                handlersOf.visitInsn(Opcodes.SWAP);
-                // S: array array handler handler array
-                iconst(handlersOf, consoleIndex);
-                // S: array array handler handler array consoleIdx
-                handlersOf.visitInsn(Opcodes.AALOAD);
-                // S: array array handler handler console
-                handlersOf.visitTypeInsn(Opcodes.CHECKCAST, "org/jboss/logmanager/handlers/ConsoleHandler");
-                // S: array array handler handler console'
-                handlersOf.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "org/jboss/logmanager/handlers/ConsoleHandler", "getLocalErrorManager", "()Ljava/util/logging/ErrorManager;", false);
-                // S: array array handler handler manager
-                handlersOf.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/util/logging/Handler", "setErrorManager", "(Ljava/util/logging/ErrorManager;)V", false);
-            }
-            // S: array array handler
-            //noinspection UnusedAssignment
-            iconst(handlersOf, index++);
-            // S: array array handler idx
-            handlersOf.visitInsn(Opcodes.SWAP);
-            // S: array array idx handler
-            handlersOf.visitInsn(Opcodes.AASTORE);
-            // S: array
-        }
-        // S: array
-        handlersOf.visitInsn(Opcodes.ARETURN);
-
-        // no-match path
-        handlersOf.visitLabel(noMatch);
-        // S: -
-        handlersOf.visitVarInsn(Opcodes.ALOAD, 0);
-        // S: this
-        handlersOf.visitVarInsn(Opcodes.ALOAD, 1);
-        // S: this name
-        handlersOf.visitMethodInsn(Opcodes.INVOKESPECIAL, "org/jboss/logmanager/EmbeddedConfigurator", "getHandlersOf", "(Ljava/lang/String;)[Ljava/util/logging/Handler;", true);
-        // S: array
-        handlersOf.visitInsn(Opcodes.ARETURN);
-        // S: -
-        handlersOf.visitMaxs(0, 0);
-        handlersOf.visitEnd();
-
-        // method: levelOf
-        // configure the root logger
-        // S: -
-        levelOf.visitVarInsn(Opcodes.ALOAD, 1);
-        // S: name
-        levelOf.visitLdcInsn("");
-        // S: name ""
-        levelOf.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z", false);
-        // S: bool
-        noMatch = new Label();
-        levelOf.visitJumpInsn(Opcodes.IFEQ, noMatch); // if result == to 0 (false)
-        // S: -
-        levelInsn(levelOf, rootLevel);
-        // S: level
-        levelOf.visitInsn(Opcodes.ARETURN);
-        // S: -
-        levelOf.visitLabel(noMatch);
-
-        // method: minimumLevelOf
-        // S: -
-        minimumLevelOf.visitVarInsn(Opcodes.ALOAD, 1);
-        // S: name
-        minimumLevelOf.visitLdcInsn("");
-        // S: name ""
-        minimumLevelOf.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z", false);
-        // S: bool
-        noMatch = new Label();
-        minimumLevelOf.visitJumpInsn(Opcodes.IFEQ, noMatch); // if result == to 0 (false)
-        // S: -
-        levelInsn(minimumLevelOf, rootMinLevel);
-        // S: level
-        minimumLevelOf.visitInsn(Opcodes.ARETURN);
-        // S: -
-        minimumLevelOf.visitLabel(noMatch);
-        // S: -
-
-        final BuildConfig.ConfigNode categoryNode = loggingNode.get("category");
-        for (String category : categoryNode.getChildKeys()) {
-            // configure category
-            final BuildConfig.ConfigNode baseNode = categoryNode.get(category);
-            final BuildConfig.ConfigNode minLevelNode = baseNode.get("min-level");
-            final String minLevel = minLevelNode.isNull() ? "inherit" : minLevelNode.asString();
-            final BuildConfig.ConfigNode levelNode = baseNode.get("level");
-            final String level = levelNode.isNull() ? "inherit" : levelNode.asString();
-            // level
-            final boolean inheritLevel = level.equals("inherit");
-            // S: -
-            levelOf.visitVarInsn(Opcodes.ALOAD, 1); // name
-            // S: name
-            levelOf.visitLdcInsn(category);
-            // S: name categoryName
-            levelOf.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z", false);
-            noMatch = new Label();
-            // S: bool
-            levelOf.visitJumpInsn(Opcodes.IFEQ, noMatch); // if result == to 0 (false)
-            // use default level, if one is specified
-            if (! inheritLevel) {
-                // S: -
-                levelInsn(levelOf, level);
+                ResultHandle formatter = branch.newInstance(
+                    MethodDescriptor.ofConstructor(PatternFormatter.class, String.class),
+                    branch.load(consoleFormat)
+                );
+                console = branch.newInstance(
+                    MethodDescriptor.ofConstructor(ConsoleHandler.class, Formatter.class),
+                    formatter
+                );
+                branch.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(ConsoleHandler.class, "setLevel", void.class, Level.class),
+                    console,
+                    getLevelFor(branch, consoleLevel)
+                );
+                consoleErrorManager = branch.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(ConsoleHandler.class, "getLocalErrorManager", ErrorManager.class),
+                    console
+                );
+                branch.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(ConsoleHandler.class, "setLevel", void.class, Level.class),
+                    console,
+                    getLevelFor(branch, consoleLevel)
+                );
             } else {
-                // S: -
-                levelOf.visitInsn(Opcodes.ACONST_NULL);
+                consoleErrorManager = null;
+                console = null;
             }
-            // S: level
-            levelOf.visitInsn(Opcodes.ARETURN);
-            // S: -
-            levelOf.visitLabel(noMatch);
-            // min level
-            if (! minLevel.equals("inherit")) {
-                minimumLevelOf.visitVarInsn(Opcodes.ALOAD, 1); // name
-                minimumLevelOf.visitLdcInsn(category);
-                minimumLevelOf.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z", false);
-                noMatch = new Label();
-                minimumLevelOf.visitJumpInsn(Opcodes.IFEQ, noMatch); // if result == to 0 (false)
-                levelInsn(minimumLevelOf, minLevel);
-                minimumLevelOf.visitInsn(Opcodes.ARETURN);
-                minimumLevelOf.visitLabel(noMatch);
+            if (fileEnable) {
+                ResultHandle formatter = branch.newInstance(
+                    MethodDescriptor.ofConstructor(PatternFormatter.class, String.class),
+                    branch.load(fileFormat)
+                );
+                file = branch.newInstance(
+                    MethodDescriptor.ofConstructor(FileHandler.class, Formatter.class),
+                    formatter
+                );
+                branch.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(FileHandler.class, "setLevel", void.class, Level.class),
+                    file,
+                    getLevelFor(branch, fileLevel)
+                );
+                branch.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(FileHandler.class, "setFile", void.class, File.class),
+                    file,
+                    branch.newInstance(MethodDescriptor.ofConstructor(File.class, String.class), branch.load(filePath))
+                );
+                if (consoleErrorManager != null) {
+                    branch.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(FileHandler.class, "setErrorManager", void.class, ErrorManager.class),
+                        file,
+                        consoleErrorManager
+                    );
+                }
+            } else {
+                file = null;
             }
+            ResultHandle array;
+            if (consoleEnable && fileEnable) {
+                array = branch.newArray(Handler[].class, branch.load(2));
+                branch.writeArrayValue(array, branch.load(0), console);
+                branch.writeArrayValue(array, branch.load(1), file);
+            } else if (consoleEnable) {
+                array = branch.newArray(Handler[].class, branch.load(1));
+                branch.writeArrayValue(array, branch.load(0), console);
+            } else if (fileEnable) {
+                array = branch.newArray(Handler[].class, branch.load(1));
+                branch.writeArrayValue(array, branch.load(0), file);
+            } else {
+                array = branch.readStaticField(FieldDescriptor.of(EmbeddedConfigurator.class, "NO_HANDLERS", Handler[].class));
+            }
+            branch.returnValue(array);
+
+            // build time
+            branch = buildOrRunBranchResult.trueBranch();
+            ResultHandle formatter = branch.newInstance(
+                MethodDescriptor.ofConstructor(PatternFormatter.class, String.class),
+                branch.load("%d{HH:mm:ss,SSS} %-5p [%c{1.}] %s%e%n") // fixed format at build time
+            );
+            console = branch.newInstance(
+                MethodDescriptor.ofConstructor(ConsoleHandler.class, Formatter.class),
+                formatter
+            );
+            branch.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(ConsoleHandler.class, "setLevel", void.class, Level.class),
+                console,
+                getLevelFor(branch, "ALL")
+            );
+            array = branch.newArray(
+                Handler[].class,
+                branch.load(1)
+            );
+            branch.writeArrayValue(
+                array,
+                branch.load(0),
+                console
+            );
+            branch.returnValue(
+                array
+            );
+
+            // levels do not have the option of being reconfigured at run time
+            BytecodeCreator levelOfBc = ifNotRootLogger(levelOf, b -> getLevelFor(b, rootLevel));
+            BytecodeCreator minLevelOfBc = ifNotRootLogger(minimumLevelOf, b -> getLevelFor(b, rootMinLevel));
+
+            final BuildConfig.ConfigNode categoryNode = loggingNode.get("category");
+            for (String category : categoryNode.getChildKeys()) {
+                // configure category
+                final BuildConfig.ConfigNode baseNode = categoryNode.get(category);
+                final BuildConfig.ConfigNode minLevelNode = baseNode.get("min-level");
+                final String minLevel = minLevelNode.isNull() ? "inherit" : minLevelNode.asString();
+                final BuildConfig.ConfigNode levelNode = baseNode.get("level");
+                final String level = levelNode.isNull() ? "inherit" : levelNode.asString();
+
+                levelOfBc = ifNotLogger(levelOfBc, category, b -> getLevelFor(b, level));
+                minLevelOfBc = ifNotLogger(minLevelOfBc, category, b -> getLevelFor(b, minLevel));
+            }
+
+            // epilogues
+
+            levelOfBc.returnValue(levelOfBc.loadNull());
+            minLevelOfBc.returnValue(levelOfBc.loadNull());
         }
 
-        // epilogues
-
-        levelOf.visitInsn(Opcodes.ACONST_NULL);
-        levelOf.visitInsn(Opcodes.ARETURN);
-        levelOf.visitMaxs(0, 0);
-        levelOf.visitEnd();
-        minimumLevelOf.visitInsn(Opcodes.ACONST_NULL);
-        minimumLevelOf.visitInsn(Opcodes.ARETURN);
-        minimumLevelOf.visitMaxs(0, 0);
-        minimumLevelOf.visitEnd();
-        cv.visitEnd();
-
-        final String niceName = GENERATED_CONFIGURATOR.replace('/', '.');
-        processorContext.addGeneratedClass(false, niceName, cv.toByteArray());
-
-        processorContext.createResource("META-INF/services/org.jboss.logmanager.EmbeddedConfigurator", niceName.getBytes(StandardCharsets.UTF_8));
+        processorContext.createResource("META-INF/services/org.jboss.logmanager.EmbeddedConfigurator", GENERATED_CONFIGURATOR.replace('/', '.').getBytes(StandardCharsets.UTF_8));
 
         // now inject the system property setter
 
@@ -400,17 +271,57 @@ public final class LoggingResourceProcessor implements ResourceProcessor {
         processorContext.addNativeImageSystemProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
     }
 
-    private static void levelInsn(MethodVisitor mv, String levelName) {
-        final String ownerClass;
+    private BytecodeCreator ifRootLogger(BytecodeCreator orig, Function<BytecodeCreator, ResultHandle> returnIfNotRoot) {
+        BranchResult branchResult = orig.ifNonZero(
+            orig.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(String.class, "isEmpty", boolean.class),
+                orig.getMethodParam(0) // name
+            )
+        );
+        final BytecodeCreator falseBranch = branchResult.falseBranch();
+        falseBranch.returnValue(returnIfNotRoot.apply(falseBranch));
+
+        return branchResult.trueBranch();
+    }
+
+    private BytecodeCreator ifNotRootLogger(BytecodeCreator orig, Function<BytecodeCreator, ResultHandle> returnIfRoot) {
+        BranchResult branchResult = orig.ifNonZero(
+            orig.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(String.class, "isEmpty", boolean.class),
+                orig.getMethodParam(0) // name
+            )
+        );
+        final BytecodeCreator trueBranch = branchResult.trueBranch();
+        trueBranch.returnValue(returnIfRoot.apply(trueBranch));
+
+        return branchResult.falseBranch();
+    }
+
+    private BytecodeCreator ifNotLogger(BytecodeCreator orig, String category, Function<BytecodeCreator, ResultHandle> returnIfCategory) {
+        BranchResult branchResult = orig.ifNonZero(
+            orig.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(String.class, "equals", boolean.class, Object.class),
+                orig.getMethodParam(0), // name
+                orig.load(category)
+            )
+        );
+        final BytecodeCreator trueBranch = branchResult.trueBranch();
+        trueBranch.returnValue(returnIfCategory.apply(trueBranch));
+
+        return branchResult.falseBranch();
+    }
+
+    private ResultHandle getLevelFor(final BytecodeCreator bc, final String levelName) {
         switch (levelName) {
+            case "inherit":
+                return bc.loadNull();
             case "FATAL":
             case "ERROR":
             case "WARN":
             case "INFO":
             case "DEBUG":
             case "TRACE":
-                ownerClass = "org/jboss/logmanager/Level";
-                break;
+                return bc.readStaticField(FieldDescriptor.of(org.jboss.logmanager.Level.class, levelName, org.jboss.logmanager.Level.class));
             case "OFF":
             case "SEVERE":
             case "WARNING":
@@ -420,29 +331,32 @@ public final class LoggingResourceProcessor implements ResourceProcessor {
             case "FINER":
             case "FINEST":
             case "ALL":
-                ownerClass = "java/util/logging/Level";
-                break;
+                return bc.readStaticField(FieldDescriptor.of(Level.class, levelName, Level.class));
             default:
-                mv.visitLdcInsn(levelName);
-                mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/util/logging/Level", "parse", "(Ljava/lang/String;)Ljava/util/logging/Level;", false);
-                return;
-        }
-        mv.visitFieldInsn(Opcodes.GETSTATIC, ownerClass, levelName, "L" + ownerClass + ";");
-    }
-
-    private static void iconst(MethodVisitor mv, int val) {
-        switch (val) {
-            case 0: mv.visitInsn(Opcodes.ICONST_0); break;
-            case 1: mv.visitInsn(Opcodes.ICONST_1); break;
-            case 2: mv.visitInsn(Opcodes.ICONST_2); break;
-            case 3: mv.visitInsn(Opcodes.ICONST_3); break;
-            case 4: mv.visitInsn(Opcodes.ICONST_4); break;
-            case 5: mv.visitInsn(Opcodes.ICONST_5); break;
-            default: mv.visitLdcInsn(Integer.valueOf(val)); break;
+                return bc.invokeStaticMethod(
+                    MethodDescriptor.ofMethod(Level.class, "parse", Level.class, String.class),
+                    bc.load(levelName)
+                );
         }
     }
 
     public int getPriority() {
         return 1;
+    }
+
+    static final class ProcessorClassOutput implements ClassOutput {
+        private final ProcessorContext processorContext;
+
+        public void write(final String name, final byte[] data) {
+            try {
+                processorContext.addGeneratedClass(false, name, data);
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
+        ProcessorClassOutput(final ProcessorContext processorContext) {
+            this.processorContext = processorContext;
+        }
     }
 }

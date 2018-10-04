@@ -24,6 +24,18 @@ public class FieldDescriptor {
         return new FieldDescriptor(DescriptorUtils.objectToInternalClassName(declaringClass), name, DescriptorUtils.objectToDescriptor(type));
     }
 
+    public static FieldDescriptor of(String declaringClass, String name, Class<?> type) {
+        return new FieldDescriptor(DescriptorUtils.objectToInternalClassName(declaringClass), name, DescriptorUtils.objectToDescriptor(type));
+    }
+
+    public static FieldDescriptor of(Class<?> declaringClass, String name, String type) {
+        return new FieldDescriptor(DescriptorUtils.objectToInternalClassName(declaringClass), name, DescriptorUtils.objectToDescriptor(type));
+    }
+
+    public static FieldDescriptor of(Class<?> declaringClass, String name, Class<?> type) {
+        return new FieldDescriptor(DescriptorUtils.objectToInternalClassName(declaringClass), name, DescriptorUtils.objectToDescriptor(type));
+    }
+
     public static FieldDescriptor of(FieldInfo fieldInfo) {
         return new FieldDescriptor(fieldInfo);
     }

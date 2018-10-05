@@ -92,8 +92,8 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
         //provider to work
         processorContext.addReflectiveClass(true, false, "org.glassfish.json.JsonProviderImpl",
                 "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector",
-                "com.fasterxml.jackson.databind.ser.std.SqlDateSerializer",
-                ArrayList.class.getName());
+                "com.fasterxml.jackson.databind.ser.std.SqlDateSerializer");
+        processorContext.addReflectiveClass(false, false, ArrayList.class.getName());
         processorContext.addResourceBundle("messages"); //for JSONB
         processorContext.addResource("META-INF/services/javax.ws.rs.client.ClientBuilder");
         IndexView index = archiveContext.getCombinedIndex();

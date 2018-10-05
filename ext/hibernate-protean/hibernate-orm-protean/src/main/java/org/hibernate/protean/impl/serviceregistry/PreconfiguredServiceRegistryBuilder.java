@@ -7,7 +7,6 @@ import java.util.Map;
 
 import org.hibernate.boot.registry.BootstrapServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceInitiator;
-import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.internal.BootstrapServiceRegistryImpl;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
 import org.hibernate.boot.registry.selector.internal.StrategySelectorImpl;
@@ -21,8 +20,8 @@ import org.hibernate.engine.jdbc.internal.JdbcServicesInitiator;
 import org.hibernate.engine.jndi.internal.JndiServiceInitiator;
 import org.hibernate.engine.transaction.jta.platform.internal.JBossStandAloneJtaPlatform;
 import org.hibernate.engine.transaction.jta.platform.internal.JtaPlatformInitiator;
-import org.hibernate.engine.transaction.jta.platform.internal.JtaPlatformResolverInitiator;
 import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform;
+import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.hql.internal.QueryTranslatorFactoryInitiator;
 import org.hibernate.id.factory.internal.MutableIdentifierGeneratorFactoryInitiator;
 import org.hibernate.integrator.spi.Integrator;
@@ -201,6 +200,8 @@ public class PreconfiguredServiceRegistryBuilder {
 		serviceInitiators.add( TransactionCoordinatorBuilderInitiator.INSTANCE );
 
 		serviceInitiators.add( ManagedBeanRegistryInitiator.INSTANCE );
+
+		serviceInitiators.add( EntityCopyObserverFactoryInitiator.INSTANCE );
 
 		serviceInitiators.trimToSize();
 		return serviceInitiators;

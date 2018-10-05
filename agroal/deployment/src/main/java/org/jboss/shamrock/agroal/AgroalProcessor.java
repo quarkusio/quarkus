@@ -19,7 +19,14 @@ class AgroalProcessor implements ResourceProcessor {
 
     @Override
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
-        processorContext.addReflectiveClass(false, false, io.agroal.pool.ConnectionHandler[].class.getName(), io.agroal.pool.ConnectionHandler.class.getName());
+        processorContext.addReflectiveClass(false, false,
+                io.agroal.pool.ConnectionHandler[].class.getName(),
+                io.agroal.pool.ConnectionHandler.class.getName(),
+                java.sql.Statement[].class.getName(),
+                java.sql.Statement.class.getName(),
+                java.sql.ResultSet.class.getName(),
+                java.sql.ResultSet[].class.getName()
+                );
         BuildConfig config = archiveContext.getBuildConfig();
         BuildConfig.ConfigNode ds = config.getApplicationConfig().get("datasource");
         if (ds.isNull()) {

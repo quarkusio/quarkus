@@ -241,17 +241,18 @@ final class Beans {
             throw new UnsatisfiedResolutionException(injectionPoint + " on " + bean);
         } else if (resolved.size() > 1) {
             // Try to resolve the ambiguity
-            for (Iterator<BeanInfo> iterator = resolved.iterator(); iterator.hasNext();) {
+            List<BeanInfo> resolvedAmbiguity = new ArrayList<>(resolved);
+            for (Iterator<BeanInfo> iterator = resolvedAmbiguity.iterator(); iterator.hasNext();) {
                 BeanInfo beanInfo = iterator.next();
                 if (!beanInfo.isAlternative() && (beanInfo.getDeclaringBean() == null || !beanInfo.getDeclaringBean().isAlternative())) {
                     iterator.remove();
                 }
             }
-            if (resolved.size() == 1) {
-                selected = resolved.get(0);
-            } else if (resolved.size() > 1) {
-                resolved.sort(Beans::compareAlternativeBeans);
-                selected = resolved.get(0);
+            if (resolvedAmbiguity.size() == 1) {
+                selected = resolvedAmbiguity.get(0);
+            } else if (resolvedAmbiguity.size() > 1) {
+                resolvedAmbiguity.sort(Beans::compareAlternativeBeans);
+                selected = resolvedAmbiguity.get(0);
             } else {
                 throw new AmbiguousResolutionException(
                         injectionPoint + " on " + bean + "\nBeans:\n" + resolved.stream().map(Object::toString).collect(Collectors.joining("\n")));

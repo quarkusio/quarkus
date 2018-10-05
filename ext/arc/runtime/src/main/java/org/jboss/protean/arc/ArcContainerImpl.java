@@ -45,6 +45,8 @@ class ArcContainerImpl implements ArcContainer {
 
     private final ComputingCache<Resolvable, List<InjectableBean<?>>> resolved;
 
+    private final List<ResourceReferenceProvider> resourceProviders;
+
     public ArcContainerImpl() {
         id = UUID.randomUUID().toString();
         running = new AtomicBoolean(true);
@@ -60,6 +62,10 @@ class ArcContainerImpl implements ArcContainer {
         contexts.put(Singleton.class, new SingletonContext());
         contexts.put(RequestScoped.class, new RequestContext());
         resolved = new ComputingCache<>(this::resolve);
+        resourceProviders = new ArrayList<>();
+        for (ResourceReferenceProvider resourceProvider : ServiceLoader.load(ResourceReferenceProvider.class)) {
+            resourceProviders.add(resourceProvider);
+        }
     }
 
     void init() {
@@ -149,6 +155,16 @@ class ArcContainerImpl implements ArcContainer {
                 observers.clear();
             }
         }
+    }
+
+    InstanceHandle<Object> getResource(Type type, Set<Annotation> annotations) {
+        for (ResourceReferenceProvider resourceProvider : resourceProviders) {
+            InstanceHandle<Object> ret = resourceProvider.get(type, annotations);
+            if (ret != null) {
+                return ret;
+            }
+        }
+        return null;
     }
 
     private <T> InstanceHandle<T> instanceHandle(Type type, Annotation... qualifiers) {
@@ -249,12 +265,16 @@ class ArcContainerImpl implements ArcContainer {
         return Qualifiers.hasQualifiers(bean, qualifiers);
     }
 
-    static <T> ArcContainerImpl unwrap(ArcContainer container) {
+    static ArcContainerImpl unwrap(ArcContainer container) {
         if (container instanceof ArcContainerImpl) {
             return (ArcContainerImpl) container;
         } else {
             throw new IllegalArgumentException();
         }
+    }
+
+    static ArcContainerImpl instance() {
+        return unwrap(Arc.container());
     }
 
     private void requireRunning() {

@@ -11,7 +11,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -28,6 +27,10 @@ class InjectionPointInfo {
                 field.annotations().stream().filter(a -> beanDeployment.getQualifier(a.name()) != null).collect(Collectors.toSet()));
     }
 
+    static InjectionPointInfo fromResourceField(FieldInfo field, BeanDeployment beanDeployment) {
+        return new InjectionPointInfo(field.type(), new HashSet<>(field.annotations()), Kind.RESOURCE);
+    }
+
     static List<InjectionPointInfo> fromMethod(MethodInfo method, BeanDeployment beanDeployment) {
         return fromMethod(method, beanDeployment, null);
     }
@@ -38,7 +41,7 @@ class InjectionPointInfo {
             Type paramType = iterator.next();
             Set<AnnotationInstance> paramAnnotations = new HashSet<>();
             for (AnnotationInstance annotation : method.annotations()) {
-                if (Kind.METHOD_PARAMETER.equals(annotation.target().kind())
+                if (org.jboss.jandex.AnnotationTarget.Kind.METHOD_PARAMETER.equals(annotation.target().kind())
                         && annotation.target().asMethodParameter().position() == iterator.previousIndex()) {
                     paramAnnotations.add(annotation);
                 }
@@ -64,12 +67,19 @@ class InjectionPointInfo {
 
     final AtomicReference<BeanInfo> resolvedBean;
 
+    final Kind kind;
+
     public InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers) {
+        this(requiredType, requiredQualifiers, Kind.CDI);
+    }
+
+    public InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, Kind kind) {
         this.requiredType = requiredType;
         this.requiredQualifiers = requiredQualifiers.isEmpty()
                 ? Collections.singleton(AnnotationInstance.create(DotNames.DEFAULT, null, Collections.emptyList()))
                 : requiredQualifiers;
         this.resolvedBean = new AtomicReference<BeanInfo>(null);
+        this.kind = kind;
     }
 
     void resolve(BeanInfo bean) {
@@ -83,6 +93,10 @@ class InjectionPointInfo {
     @Override
     public String toString() {
         return "InjectionPointInfo [requiredType=" + requiredType + ", requiredQualifiers=" + requiredQualifiers + "]";
+    }
+
+    enum Kind {
+        CDI, RESOURCE
     }
 
 }

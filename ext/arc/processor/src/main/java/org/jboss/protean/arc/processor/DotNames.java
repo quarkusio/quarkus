@@ -58,6 +58,9 @@ final class DotNames {
     static final DotName TYPED = DotName.createSimple(Typed.class.getName());
     static final DotName CLASS = DotName.createSimple(Class.class.getName());
 
+    static final DotName PERSISTENCE_CONTEXT = DotName.createSimple("javax.persistence.PersistenceContext");
+    static final DotName PERSISTENCE_UNIT = DotName.createSimple("javax.persistence.PersistenceUnit");
+
     private DotNames() {
     }
 
@@ -69,7 +72,7 @@ final class DotNames {
     static String packageName(DotName dotName) {
         String name = dotName.toString();
         int index = name.lastIndexOf('.');
-        if(index == -1) {
+        if (index == -1) {
             return "";
         }
         return name.substring(0, index);

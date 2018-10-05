@@ -1,7 +1,7 @@
 package org.jboss.protean.arc;
 
 /**
- * Represents a contextual instance handle.
+ * Represents an instance handle.
  *
  * @author Martin Kouba
  *
@@ -11,27 +11,32 @@ public interface InstanceHandle<T> extends AutoCloseable {
 
     /**
      *
-     * @return {@code true} if there is exactly one bean that matches the required type and qualifiers, {@code false} otherwise
-     */
-    boolean isAvailable();
-
-    /**
-     *
-     * @return an injected instance of {@code T} or {@code null}
+     * @return an instance of {@code T} or {@code null}
      */
     T get();
 
     /**
-     * Destroys the instance and removes the instance from the underlying context.
      *
+     * @return {@code true} if an instance is available, {@code false} otherwise
      */
-    void destroy();
+    default boolean isAvailable() {
+        return get() != null;
+    }
+
+    /**
+     * Destroy/release the instance. If this is a CDI contextual instance it's also removed from the underlying context.
+     */
+    default void destroy() {
+        // No-op
+    }
 
     /**
      *
-     * @return the injectable bean
+     * @return the injectable bean for a CDI contextual instance or {@code null}
      */
-    InjectableBean<T> getBean();
+    default InjectableBean<T> getBean() {
+        return null;
+    }
 
     /**
      * Delegates to {@link #destroy()}.

@@ -8,6 +8,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 
@@ -68,6 +69,22 @@ public class Injection {
                 }
             }
         }
+
+        for (DotName resourceAnnotation : beanDeployment.getResourceAnnotations()) {
+            List<AnnotationInstance> resourceAnnotations = beanTarget.annotations().get(resourceAnnotation);
+            if (resourceAnnotations != null) {
+                for (AnnotationInstance resourceAnnotationInstance : resourceAnnotations) {
+                    if (Kind.FIELD == resourceAnnotationInstance.target().kind() && resourceAnnotationInstance.target().asField().annotations().stream()
+                            .noneMatch(a -> DotNames.INJECT.equals(a.name()))) {
+                        // Add special injection for a resource field
+                        injections.add(new Injection(resourceAnnotationInstance.target(),
+                                Collections.singletonList(InjectionPointInfo.fromResourceField(resourceAnnotationInstance.target().asField(), beanDeployment))));
+                    }
+                    // TODO setter injection
+                }
+            }
+        }
+
         if (!beanTarget.superName().equals(DotNames.OBJECT)) {
             ClassInfo info = beanDeployment.getIndex().getClassByName(beanTarget.superName());
             if (info != null) {

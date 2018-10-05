@@ -41,11 +41,6 @@ class InstanceHandleImpl<T> implements InstanceHandle<T> {
     }
 
     @Override
-    public boolean isAvailable() {
-        return instance != null;
-    }
-
-    @Override
     public T get() {
         return instance;
     }

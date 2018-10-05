@@ -4,17 +4,23 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.annotation.Annotation;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
 import org.jboss.protean.arc.Arc;
 import org.jboss.protean.arc.ComponentsProvider;
+import org.jboss.protean.arc.ResourceReferenceProvider;
 import org.jboss.protean.arc.processor.BeanProcessor;
 import org.jboss.protean.arc.processor.ResourceOutput;
 import org.junit.rules.TestRule;
@@ -23,10 +29,60 @@ import org.junit.runners.model.Statement;
 
 public class ArcTestContainer implements TestRule {
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private final List<Class<?>> resourceReferenceProviders;
+
+        private final List<Class<?>> beanClasses;
+
+        private final List<Class<? extends Annotation>> resourceAnnotations;
+
+        public Builder() {
+            this.resourceReferenceProviders = new ArrayList<>();
+            this.beanClasses = new ArrayList<>();
+            this.resourceAnnotations = new ArrayList<>();
+        }
+
+        public Builder resourceReferenceProviders(Class<?>... resourceReferenceProviders) {
+            Collections.addAll(this.resourceReferenceProviders, resourceReferenceProviders);
+            return this;
+        }
+
+        public Builder beanClasses(Class<?>... beanClasses) {
+            Collections.addAll(this.beanClasses, beanClasses);
+            return this;
+        }
+
+        @SafeVarargs
+        public final Builder resourceAnnotations(Class<? extends Annotation>... resourceAnnotations) {
+            Collections.addAll(this.resourceAnnotations, resourceAnnotations);
+            return this;
+        }
+
+        public ArcTestContainer build() {
+            return new ArcTestContainer(resourceReferenceProviders, beanClasses, resourceAnnotations);
+        }
+
+    }
+
+    private final List<Class<?>> resourceReferenceProviders;
+
     private final List<Class<?>> beanClasses;
 
+    private final List<Class<? extends Annotation>> resourceAnnotations;
+
     public ArcTestContainer(Class<?>... beanClasses) {
-        this.beanClasses = Arrays.asList(beanClasses);
+        this(Collections.emptyList(), Arrays.asList(beanClasses), Collections.emptyList());
+    }
+
+    public ArcTestContainer(List<Class<?>> resourceReferenceProviders, List<Class<?>> beanClasses, List<Class<? extends Annotation>> resourceAnnotations) {
+        this.resourceReferenceProviders = resourceReferenceProviders;
+        this.beanClasses = beanClasses;
+        this.resourceAnnotations = resourceAnnotations;
     }
 
     @Override
@@ -67,7 +123,23 @@ public class ArcTestContainer implements TestRule {
         File componentsProviderFile = new File(generatedSourcesDirectory + "/" + nameToPath(testClass.getPackage().getName()),
                 ComponentsProvider.class.getSimpleName());
 
-        BeanProcessor beanProcessor = BeanProcessor.builder().setName(testClass.getSimpleName()).setIndex(index).setOutput(new ResourceOutput() {
+        File resourceReferenceProviderFile = new File(generatedSourcesDirectory + "/" + nameToPath(testClass.getPackage().getName()),
+                ResourceReferenceProvider.class.getSimpleName());
+
+        if (!resourceReferenceProviders.isEmpty()) {
+            try {
+                resourceReferenceProviderFile.getParentFile().mkdirs();
+                Files.write(resourceReferenceProviderFile.toPath(), resourceReferenceProviders.stream().map(c -> c.getName()).collect(Collectors.toList()));
+            } catch (IOException e) {
+                throw new IllegalStateException("Error generating resource reference providers", e);
+            }
+        }
+
+        BeanProcessor.Builder beanProcessorBuilder = BeanProcessor.builder().setName(testClass.getSimpleName()).setIndex(index);
+        if (!resourceAnnotations.isEmpty()) {
+            beanProcessorBuilder.addResourceAnnotations(resourceAnnotations.stream().map(c -> DotName.createSimple(c.getName())).collect(Collectors.toList()));
+        }
+        beanProcessorBuilder.setOutput(new ResourceOutput() {
 
             @Override
             public void writeResource(Resource resource) throws IOException {
@@ -87,7 +159,10 @@ public class ArcTestContainer implements TestRule {
                         throw new IllegalArgumentException();
                 }
             }
-        }).build();
+        });
+
+        BeanProcessor beanProcessor = beanProcessorBuilder.build();
+
         try {
             beanProcessor.process();
         } catch (IOException e) {
@@ -101,15 +176,17 @@ public class ArcTestContainer implements TestRule {
                 if (("META-INF/services/" + ComponentsProvider.class.getName()).equals(name)) {
                     // return URL that points to the correct test bean provider
                     return Collections.enumeration(Collections.singleton(componentsProviderFile.toURI().toURL()));
+                } else if (("META-INF/services/" + ResourceReferenceProvider.class.getName()).equals(name) && !resourceReferenceProviders.isEmpty()) {
+                    return Collections.enumeration(Collections.singleton(resourceReferenceProviderFile.toURI().toURL()));
                 }
                 return super.getResources(name);
             }
         };
         Thread.currentThread().setContextClassLoader(testClassLoader);
-        
+
         // Now we are ready to initialize Arc
         Arc.initialize();
-        
+
         return old;
     }
 

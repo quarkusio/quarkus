@@ -14,13 +14,10 @@
 
             <!-- Connection specific -->
             <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQL95Dialect"/>
-            <!--
-            Disabled as the Agroal Datasource is injected:
             <property name="hibernate.connection.url" value="${postgres.url}"/>
             <property name="hibernate.connection.username" value="hibernate_orm_test"/>
             <property name="hibernate.connection.password" value="hibernate_orm_test"/>
             <property name="hibernate.connection.pool_size" value="2"/>
-            -->
 
             <!-- Tuning and debugging -->
             <property name="hibernate.show_sql" value="false"/>

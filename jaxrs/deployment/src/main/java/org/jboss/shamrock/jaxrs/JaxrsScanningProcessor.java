@@ -27,6 +27,7 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -89,7 +90,10 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
         //this is pretty yuck, and does not really belong here, but it is needed to get the json-p
         //provider to work
-        processorContext.addReflectiveClass(true, false, "org.glassfish.json.JsonProviderImpl", "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector");
+        processorContext.addReflectiveClass(true, false, "org.glassfish.json.JsonProviderImpl",
+                "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector",
+                "com.fasterxml.jackson.databind.ser.std.SqlDateSerializer",
+                ArrayList.class.getName());
         processorContext.addResourceBundle("messages"); //for JSONB
         processorContext.addResource("META-INF/services/javax.ws.rs.client.ClientBuilder");
         IndexView index = archiveContext.getCombinedIndex();

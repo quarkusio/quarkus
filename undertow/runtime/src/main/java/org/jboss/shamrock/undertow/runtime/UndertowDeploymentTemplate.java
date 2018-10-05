@@ -139,7 +139,7 @@ public class UndertowDeploymentTemplate {
     public void startUndertow(@ContextObject("servletHandler") HttpHandler handler, ConfiguredValue port) throws ServletException {
         if (undertow == null) {
             try {
-                log.log(Level.INFO, "Starting Undertow on port " + port);
+                log.log(Level.INFO, "Starting Undertow on port " + port.getValue());
                 undertow = Undertow.builder()
                         .addHttpListener(Integer.parseInt(port.getValue()), "localhost")
                         .setHandler(new CanonicalPathHandler(ROOT_HANDLER))

@@ -36,10 +36,10 @@ import org.hibernate.id.factory.internal.MutableIdentifierGeneratorFactoryInitia
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.integrator.spi.IntegratorService;
 import org.hibernate.internal.util.config.ConfigurationHelper;
-import org.hibernate.jmx.internal.JmxServiceInitiator;
 import org.hibernate.persister.internal.PersisterClassResolverInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
+import org.hibernate.protean.recording.customservices.DisabledJMXInitiator;
 import org.hibernate.resource.beans.spi.ManagedBeanRegistryInitiator;
 import org.hibernate.resource.transaction.internal.TransactionCoordinatorBuilderInitiator;
 import org.hibernate.service.Service;
@@ -90,7 +90,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 		return aggregatedCfgXml;
 	}
 
-	//TODO custom
+	//WARNING: this is a customized list: we started from a copy of ORM's standard list, then changes have evolved.
 	private static List<StandardServiceInitiator> standardInitiatorList() {
 		final ArrayList<StandardServiceInitiator> serviceInitiators = new ArrayList<StandardServiceInitiator>();
 
@@ -103,7 +103,9 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 
 		serviceInitiators.add( JdbcEnvironmentInitiator.INSTANCE );
 		serviceInitiators.add( JndiServiceInitiator.INSTANCE );
-		serviceInitiators.add( JmxServiceInitiator.INSTANCE );
+
+		//Custom one!
+		serviceInitiators.add( DisabledJMXInitiator.INSTANCE );
 
 		serviceInitiators.add( PersisterClassResolverInitiator.INSTANCE );
 		serviceInitiators.add( PersisterFactoryInitiator.INSTANCE );

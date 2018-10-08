@@ -15,15 +15,17 @@ import org.jboss.jandex.AnnotationTarget;
 public class BeanDeployment {
 
     private final List<String> additionalBeans = new ArrayList<>();
-    
+
     private final Map<String, byte[]> generatedBeans = new HashMap<>();
-    
+
     // Lite profile
     private final List<BiFunction<AnnotationTarget, Collection<AnnotationInstance>, Collection<AnnotationInstance>>> annotationTransformers = new ArrayList<>();
 
+    private final List<String> resourceAnnotations = new ArrayList<>();
+
     // Full profile
     private final List<String> extensions = new ArrayList<>();
-    
+
     public void addAdditionalBean(Class<?>... beanClass) {
         additionalBeans.addAll(Arrays.stream(beanClass).map(Class::getName).collect(Collectors.toList()));
     }
@@ -31,7 +33,7 @@ public class BeanDeployment {
     public void addAdditionalBean(String... beanClass) {
         additionalBeans.addAll(Arrays.stream(beanClass).collect(Collectors.toList()));
     }
-    
+
     public void addGeneratedBean(String name, byte[] bean) {
         generatedBeans.put(name, bean);
     }
@@ -39,11 +41,15 @@ public class BeanDeployment {
     public void addAnnotationTransformer(BiFunction<AnnotationTarget, Collection<AnnotationInstance>, Collection<AnnotationInstance>> transformer) {
         annotationTransformers.add(transformer);
     }
-    
+
     public void addExtension(String extensionClass) {
         extensions.add(extensionClass);
     }
-    
+
+    public void addResourceAnnotation(String resourceAnnotation) {
+        resourceAnnotations.add(resourceAnnotation);
+    }
+
     public List<String> getAdditionalBeans() {
         return additionalBeans;
     }
@@ -51,7 +57,7 @@ public class BeanDeployment {
     public Map<String, byte[]> getGeneratedBeans() {
         return generatedBeans;
     }
-    
+
     public List<BiFunction<AnnotationTarget, Collection<AnnotationInstance>, Collection<AnnotationInstance>>> getAnnotationTransformers() {
         return annotationTransformers;
     }
@@ -59,5 +65,9 @@ public class BeanDeployment {
     public List<String> getExtensions() {
         return extensions;
     }
-   
+
+    public List<String> getResourceAnnotations() {
+        return resourceAnnotations;
+    }
+
 }

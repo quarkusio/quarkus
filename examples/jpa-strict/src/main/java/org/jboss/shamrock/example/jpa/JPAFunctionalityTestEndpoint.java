@@ -8,7 +8,7 @@ import java.util.UUID;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
-import javax.persistence.Persistence;
+import javax.persistence.PersistenceUnit;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -24,26 +24,17 @@ import javax.servlet.http.HttpServletResponse;
 @WebServlet(name = "JPATestBootstrapEndpoint", urlPatterns = "/jpa/testfunctionality")
 public class JPAFunctionalityTestEndpoint extends HttpServlet {
 
+    @PersistenceUnit(unitName = "templatePU")
+    EntityManagerFactory entityManagerFactory;
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
-            bootAndDoStuff();
+            doStuffWithHibernate(entityManagerFactory);
         } catch (Exception e) {
             reportException("Oops, shit happened, No boot for you!", e, resp);
         }
         resp.getWriter().write("OK");
-    }
-
-    public void bootAndDoStuff() throws Exception {
-        EntityManagerFactory entityManagerFactory = Persistence.createEntityManagerFactory("templatePU");
-        try {
-            System.out.println("Hibernate EntityManagerFactory: booted");
-            doStuffWithHibernate(entityManagerFactory);
-        }
-        finally {
-            entityManagerFactory.close();
-            System.out.println("Hibernate EntityManagerFactory: shut down");
-        }
     }
 
     /**

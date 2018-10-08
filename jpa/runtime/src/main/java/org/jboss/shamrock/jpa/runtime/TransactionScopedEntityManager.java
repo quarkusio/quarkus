@@ -1,4 +1,4 @@
-package org.jboss.shamrock.jpa.runtime.cdi;
+package org.jboss.shamrock.jpa.runtime;
 
 import java.util.List;
 import java.util.Map;

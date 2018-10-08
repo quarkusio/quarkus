@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.DotName;
 
 public class BeanDeployment {
 
@@ -21,7 +22,7 @@ public class BeanDeployment {
     // Lite profile
     private final List<BiFunction<AnnotationTarget, Collection<AnnotationInstance>, Collection<AnnotationInstance>>> annotationTransformers = new ArrayList<>();
 
-    private final List<String> resourceAnnotations = new ArrayList<>();
+    private final List<DotName> resourceAnnotations = new ArrayList<>();
 
     // Full profile
     private final List<String> extensions = new ArrayList<>();
@@ -46,7 +47,7 @@ public class BeanDeployment {
         extensions.add(extensionClass);
     }
 
-    public void addResourceAnnotation(String resourceAnnotation) {
+    public void addResourceAnnotation(DotName resourceAnnotation) {
         resourceAnnotations.add(resourceAnnotation);
     }
 
@@ -66,7 +67,7 @@ public class BeanDeployment {
         return extensions;
     }
 
-    public List<String> getResourceAnnotations() {
+    public List<DotName> getResourceAnnotations() {
         return resourceAnnotations;
     }
 

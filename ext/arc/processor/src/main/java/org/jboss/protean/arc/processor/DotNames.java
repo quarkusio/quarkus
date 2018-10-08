@@ -58,9 +58,6 @@ final class DotNames {
     static final DotName TYPED = DotName.createSimple(Typed.class.getName());
     static final DotName CLASS = DotName.createSimple(Class.class.getName());
 
-    static final DotName PERSISTENCE_CONTEXT = DotName.createSimple("javax.persistence.PersistenceContext");
-    static final DotName PERSISTENCE_UNIT = DotName.createSimple("javax.persistence.PersistenceUnit");
-
     private DotNames() {
     }
 

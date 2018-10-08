@@ -41,6 +41,10 @@ public class JPADeploymentTemplate {
         beanContainer.instance(JPAConfig.class).bootstrapPersistenceUnit(unitName);
     }
 
+    public void initDefaultPersistenceUnit(@ContextObject("bean.container") BeanContainer beanContainer) {
+        beanContainer.instance(JPAConfig.class).initDefaultPersistenceUnit();
+    }
+
     public void initMetadata(List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors, Scanner scanner, @ContextObject("bean.container") BeanContainer beanContainer) {
 
         //this initializes the JPA metadata, and also sets the datasource if no connection URL has been set and a DataSource

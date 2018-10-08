@@ -105,7 +105,7 @@ public class ArcAnnotationProcessor implements ResourceProcessor {
             builder.setIndex(index);
             builder.setAdditionalBeanDefiningAnnotations(additionalBeanDefiningAnnotations);
             builder.setSharedAnnotationLiterals(false);
-            builder.addResourceAnnotations(beanDeployment.getResourceAnnotations().stream().map(ran -> DotName.createSimple(ran)).collect(Collectors.toList()));
+            builder.addResourceAnnotations(beanDeployment.getResourceAnnotations());
             builder.setReflectionRegistration(new ReflectionRegistration() {
                 @Override
                 public void registerMethod(MethodInfo methodInfo) {

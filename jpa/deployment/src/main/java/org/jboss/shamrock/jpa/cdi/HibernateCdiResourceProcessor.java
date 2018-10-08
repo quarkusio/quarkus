@@ -42,8 +42,13 @@ public class HibernateCdiResourceProcessor implements ResourceProcessor {
             JPADeploymentTemplate template = recorder.getRecordingProxy(JPADeploymentTemplate.class);
 
             beanDeployment.addAdditionalBean(JPAConfig.class, TransactionEntityManagers.class);
-            beanDeployment.addResourceAnnotation(PERSISTENCE_CONTEXT.toString());
-            beanDeployment.addResourceAnnotation(PERSISTENCE_UNIT.toString());
+
+            if (processorContext.isCapabilityPresent(Capabilities.CDI_ARC)) {
+                processorContext.createResource("META-INF/services/org.jboss.protean.arc.ResourceReferenceProvider",
+                        "org.jboss.shamrock.jpa.runtime.JPAResourceReferenceProvider".getBytes());
+                beanDeployment.addResourceAnnotation(PERSISTENCE_CONTEXT);
+                beanDeployment.addResourceAnnotation(PERSISTENCE_UNIT);
+            }
 
             template.initializeJpa(null, processorContext.isCapabilityPresent(Capabilities.TRANSACTIONS));
 
@@ -53,6 +58,7 @@ public class HibernateCdiResourceProcessor implements ResourceProcessor {
             for (PersistenceUnitDescriptor persistenceUnitDescriptor : pus) {
                 template.bootstrapPersistenceUnit(null, persistenceUnitDescriptor.getName());
             }
+            template.initDefaultPersistenceUnit(null);
 
             if (pus.size() == 1) {
                 // There is only one persistence unit - register CDI beans for EM and EMF if no
@@ -63,11 +69,6 @@ public class HibernateCdiResourceProcessor implements ResourceProcessor {
                 if (isUserDefinedProducerMissing(archiveContext.getCombinedIndex(), PERSISTENCE_CONTEXT)) {
                     beanDeployment.addAdditionalBean(DefaultEntityManagerProducer.class);
                 }
-            }
-
-            if (processorContext.isCapabilityPresent(Capabilities.CDI_ARC)) {
-                processorContext.createResource("META-INF/services/org.jboss.protean.arc.ResourceReferenceProvider",
-                        "org.jboss.shamrock.jpa.runtime.JPAResourceReferenceProvider".getBytes());
             }
         }
     }

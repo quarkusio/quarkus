@@ -105,6 +105,7 @@ public class ServletResourceProcessor implements ResourceProcessor {
         try (BytecodeRecorder context = processorContext.addStaticInitTask(RuntimePriority.UNDERTOW_CREATE_DEPLOYMENT)) {
             UndertowDeploymentTemplate template = context.getRecordingProxy(UndertowDeploymentTemplate.class);
             template.createDeployment("test");
+            template.initHandlerWrappers();
         }
         final IndexView index = archiveContext.getCombinedIndex();
         WebMetaData result = processAnnotations(index);
@@ -205,7 +206,7 @@ public class ServletResourceProcessor implements ResourceProcessor {
 
         try (BytecodeRecorder context = processorContext.addDeploymentTask(RuntimePriority.UNDERTOW_START)) {
             UndertowDeploymentTemplate template = context.getRecordingProxy(UndertowDeploymentTemplate.class);
-            template.startUndertow(null, new ConfiguredValue("http.port", "8080"));
+            template.startUndertow(null, null, new ConfiguredValue("http.port", "8080"), null);
         }
     }
 

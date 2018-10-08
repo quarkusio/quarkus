@@ -2,12 +2,11 @@ package org.jboss.shamrock.maven.runner;
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.CountDownLatch;
 
 import org.jboss.shamrock.deployment.ArchiveContextBuilder;
 import org.jboss.shamrock.runtime.Timing;
@@ -17,67 +16,80 @@ import org.jboss.shamrock.runtime.Timing;
  */
 public class RunMojoMain {
 
-    private static CountDownLatch awaitChangeLatch = null;
-    private static CountDownLatch awaitRestartLatch = null;
     private static volatile boolean keepCl = false;
     private static volatile ClassLoader currentAppClassLoader;
+    private static volatile URLClassLoader runtimeCl;
+    private static File classesRoot;
+    private static File wiringDir;
+
+    private static Closeable closeable;
+    static volatile Throwable deploymentProblem;
 
     public static void main(String... args) throws Exception {
         Timing.staticInitStarted();
         //the path that contains the compiled classes
-        File classesRoot = new File(args[0]);
-        File wiringDir = new File(args[1]);
-        URLClassLoader runtimeCl = null;
-        do {
+        classesRoot = new File(args[0]);
+        wiringDir = new File(args[1]);
+        //TODO: we can't handle an exception on startup with hot replacement, as Undertow might not have started
+
+        doStart();
+        Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+            @Override
+            public void run() {
+                synchronized (RunMojoMain.class) {
+                    if (closeable != null) {
+                        try {
+                            closeable.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        }, "Shamrock Shutdown Thread"));
+    }
+
+    private static synchronized void doStart() {
+        try {
             if (runtimeCl == null || !keepCl) {
                 runtimeCl = new URLClassLoader(new URL[]{classesRoot.toURL()}, ClassLoader.getSystemClassLoader());
             }
             currentAppClassLoader = runtimeCl;
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             //we can potentially throw away this class loader, and reload the app
-            synchronized (RunMojoMain.class) {
-                awaitChangeLatch = new CountDownLatch(1);
-            }
             try {
                 Thread.currentThread().setContextClassLoader(runtimeCl);
                 Class<?> runnerClass = runtimeCl.loadClass("org.jboss.shamrock.runner.RuntimeRunner");
                 ArchiveContextBuilder acb = new ArchiveContextBuilder();
-                Constructor ctor = runnerClass.getDeclaredConstructor( ClassLoader.class, Path.class, Path.class, ArchiveContextBuilder.class);
-                Object runner = ctor.newInstance( runtimeCl, classesRoot.toPath(), wiringDir.toPath(), acb);
+                Constructor ctor = runnerClass.getDeclaredConstructor(ClassLoader.class, Path.class, Path.class, ArchiveContextBuilder.class);
+                Object runner = ctor.newInstance(runtimeCl, classesRoot.toPath(), wiringDir.toPath(), acb);
                 ((Runnable) runner).run();
-                synchronized (RunMojoMain.class) {
-                    if (awaitRestartLatch != null) {
-                        awaitRestartLatch.countDown();
-                        awaitRestartLatch = null;
-                    }
-                }
-                awaitChangeLatch.await();
-                ((Closeable) runner).close();
+                closeable = ((Closeable) runner);
+                deploymentProblem = null;
             } finally {
                 Thread.currentThread().setContextClassLoader(old);
             }
-
-        } while (true);
+        } catch (Throwable t) {
+            deploymentProblem = t;
+        }
     }
 
-    public static void restartApp(boolean keepClassloader) {
+    public static synchronized void restartApp(boolean keepClassloader) {
         keepCl = keepClassloader;
-        Timing.restart();
-        CountDownLatch restart = null;
-        synchronized (RunMojoMain.class) {
-            if (awaitChangeLatch != null) {
-                restart = awaitRestartLatch = new CountDownLatch(1);
-                awaitChangeLatch.countDown();
-            }
-            awaitChangeLatch = null;
-        }
-        if (restart != null) {
+        if (closeable != null) {
+
+            ClassLoader old = Thread.currentThread().getContextClassLoader();
+            Thread.currentThread().setContextClassLoader(runtimeCl);
             try {
-                restart.await();
-            } catch (InterruptedException e) {
+                closeable.close();
+            } catch (IOException e) {
                 e.printStackTrace();
+            } finally {
+                Thread.currentThread().setContextClassLoader(old);
             }
         }
+        closeable = null;
+        doStart();
     }
 
     public static ClassLoader getCurrentAppClassLoader() {

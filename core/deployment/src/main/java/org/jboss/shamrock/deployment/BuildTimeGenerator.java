@@ -7,8 +7,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.AccessibleObject;
 import java.io.OutputStreamWriter;
+import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
@@ -30,7 +30,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.MissingResourceException;
 import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.Set;
@@ -358,23 +357,35 @@ public class BuildTimeGenerator {
             mv.invokeStaticMethod(MethodDescriptor.ofMethod(Timing.class, "staticInitStarted", void.class));
             ResultHandle startupContext = mv.newInstance(ofConstructor(StartupContext.class));
             mv.writeStaticField(scField.getFieldDescriptor(), startupContext);
+            ExceptionTable catchBlock = mv.addTryCatch();
             for (DeploymentTaskHolder holder : staticInitTasks) {
                 ResultHandle dup = mv.newInstance(ofConstructor(holder.className));
                 mv.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup, startupContext);
             }
             mv.returnValue(null);
 
+            CatchBlockCreator cb = catchBlock.addCatchClause(Throwable.class);
+            cb.invokeVirtualMethod(ofMethod(StartupContext.class, "close", void.class), startupContext);
+            cb.throwException(RuntimeException.class, "Failed to start shamrock", cb.getCaughtException());
+            catchBlock.complete();
+
             mv = file.getMethodCreator("main", void.class, String[].class);
             mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
             mv.invokeStaticMethod(ofMethod(Timing.class, "mainStarted", void.class));
             startupContext = mv.readStaticField(scField.getFieldDescriptor());
-
+            catchBlock = mv.addTryCatch();
             for (DeploymentTaskHolder holder : tasks) {
                 ResultHandle dup = mv.newInstance(ofConstructor(holder.className));
                 mv.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup, startupContext);
             }
+
             mv.invokeStaticMethod(ofMethod(Timing.class, "printStartupTime", void.class));
             mv.returnValue(null);
+
+            cb = catchBlock.addCatchClause(Throwable.class);
+            cb.invokeVirtualMethod(ofMethod(StartupContext.class, "close", void.class), startupContext);
+            cb.throwException(RuntimeException.class, "Failed to start shamrock", cb.getCaughtException());
+            catchBlock.complete();
 
             mv = file.getMethodCreator("close", void.class);
             mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
@@ -456,7 +467,7 @@ public class BuildTimeGenerator {
             for (String i : resources) {
                 beforeAn.invokeStaticMethod(ofMethod(ResourceHelper.class, "registerResources", void.class, String.class), beforeAn.load(i));
             }
-            if(!resourceBundles.isEmpty()) {
+            if (!resourceBundles.isEmpty()) {
                 ResultHandle locClass = beforeAn.loadClass("com.oracle.svm.core.jdk.LocalizationSupport");
 
                 ResultHandle params = beforeAn.marshalAsArray(Class.class, beforeAn.loadClass(String.class));

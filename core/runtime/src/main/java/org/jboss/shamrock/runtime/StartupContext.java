@@ -38,5 +38,6 @@ public class StartupContext implements Closeable {
                 e.printStackTrace();
             }
         }
+        resources.clear();
     }
 }

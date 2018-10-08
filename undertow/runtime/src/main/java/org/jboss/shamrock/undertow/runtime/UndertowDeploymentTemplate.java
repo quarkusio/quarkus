@@ -1,8 +1,11 @@
 package org.jboss.shamrock.undertow.runtime;
 
+import java.io.Closeable;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.EventListener;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -16,8 +19,10 @@ import javax.servlet.ServletException;
 import org.jboss.shamrock.runtime.ConfiguredValue;
 import org.jboss.shamrock.runtime.ContextObject;
 import org.jboss.shamrock.runtime.InjectionInstance;
+import org.jboss.shamrock.runtime.StartupContext;
 
 import io.undertow.Undertow;
+import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.CanonicalPathHandler;
@@ -67,7 +72,7 @@ public class UndertowDeploymentTemplate {
         d.setClassLoader(cl);
         //TODO: this is a big hack
         String resourcesDir = System.getProperty(RESOURCES_PROP);
-        if(resourcesDir == null) {
+        if (resourcesDir == null) {
             d.setResourceManager(new ClassPathResourceManager(d.getClassLoader(), "META-INF/resources"));
         } else {
             d.setResourceManager(new PathResourceManager(Paths.get(resourcesDir)));
@@ -136,27 +141,54 @@ public class UndertowDeploymentTemplate {
         info.addInitParameter(name, value);
     }
 
-    public void startUndertow(@ContextObject("servletHandler") HttpHandler handler, ConfiguredValue port) throws ServletException {
-        if (undertow == null) {
-            try {
-                log.log(Level.INFO, "Starting Undertow on port " + port.getValue());
-                undertow = Undertow.builder()
-                        .addHttpListener(Integer.parseInt(port.getValue()), "localhost")
-                        .setHandler(new CanonicalPathHandler(ROOT_HANDLER))
-                        .build();
-                undertow.start();
-            } catch (Exception e) {
-                log.log(Level.SEVERE, "Failed to start Undertow", e);
-            }
-        }
-        currentRoot = handler;
-//        startupContext.addCloseable(new Closeable() {
-//            @Override
-//            public void close() throws IOException {
-//                undertow.stop();
-//            }
-//        });
+    @ContextObject("undertow.handler-wrappers")
+    public List<HandlerWrapper> initHandlerWrappers() {
+        return new ArrayList<>();
     }
+
+    public void startUndertow(StartupContext startupContext, @ContextObject("servletHandler") HttpHandler handler, ConfiguredValue port, @ContextObject("undertow.handler-wrappers") List<HandlerWrapper> wrappers) throws ServletException {
+        if (undertow == null) {
+            startUndertowEagerly(port, null);
+
+            //in development mode undertow is started eagerly
+            startupContext.addCloseable(new Closeable() {
+                @Override
+                public void close() {
+                    undertow.stop();
+                }
+            });
+        }
+        HttpHandler main = handler;
+        for(HandlerWrapper i : wrappers) {
+            main = i.wrap(main);
+        }
+        currentRoot = main;
+    }
+
+
+    /**
+     * Used for shamrock:run, where we want undertow to start very early in the process.
+     * <p>
+     * This enables recovery from errors on boot. In a normal boot undertow is one of the last things start, so there would
+     * be no chance to use hot deployment to fix the error. In development mode we start Undertow early, so any error
+     * on boot can be corrected via the hot deployment handler
+     */
+    public void startUndertowEagerly(ConfiguredValue port, HandlerWrapper hotDeploymentWrapper) throws ServletException {
+        if (undertow == null) {
+            log.log(Level.INFO, "Starting Undertow on port " + port.getValue());
+            HttpHandler rootHandler = new CanonicalPathHandler(ROOT_HANDLER);
+            if (hotDeploymentWrapper != null) {
+                rootHandler = hotDeploymentWrapper.wrap(rootHandler);
+            }
+
+            undertow = Undertow.builder()
+                    .addHttpListener(Integer.parseInt(port.getValue()), "localhost")
+                    .setHandler(rootHandler)
+                    .build();
+            undertow.start();
+        }
+    }
+
 
     @ContextObject("servletHandler")
     public HttpHandler bootServletContainer(@ContextObject("deploymentInfo") DeploymentInfo info) {
@@ -186,7 +218,7 @@ public class UndertowDeploymentTemplate {
 
         static {
             String alphabet = System.getProperty(ALPHABET_PROPERTY, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_");
-            if(alphabet.length() != 64) {
+            if (alphabet.length() != 64) {
                 throw new RuntimeException("io.undertow.server.session.SecureRandomSessionIdGenerator must be exactly 64 characters long");
             }
             SESSION_ID_ALPHABET = alphabet.toCharArray();
@@ -194,7 +226,7 @@ public class UndertowDeploymentTemplate {
 
         @Override
         public String createSessionId() {
-            if(random == null) {
+            if (random == null) {
                 random = new SecureRandom();
             }
             final byte[] bytes = new byte[length];

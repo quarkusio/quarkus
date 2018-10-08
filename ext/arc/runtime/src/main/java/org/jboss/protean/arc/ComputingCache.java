@@ -54,6 +54,15 @@ public class ComputingCache<K, V> {
         }
     }
 
+    public void forEachExistingValue(Consumer<? super V> action) {
+        Objects.requireNonNull(action);
+        for (LazyValue<V> value : map.values()) {
+            if(value.isSet()) {
+                action.accept(value.get());
+            }
+        }
+    }
+
     public void forEachEntry(BiConsumer<? super K, ? super V> action) {
         Objects.requireNonNull(action);
         for (Map.Entry<K, LazyValue<V>> entry : map.entrySet()) {

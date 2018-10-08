@@ -21,6 +21,12 @@
       <groupId>org.jboss.shamrock</groupId>
       <artifactId>shamrock-fault-tolerance-runtime</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.jboss.graalvm</groupId>
+      <artifactId>graal-annotations</artifactId>
+      <version>1.0.0-rc4</version>
+      <scope>provided</scope>
+    </dependency>
   </dependencies>
 
 </project>

@@ -56,6 +56,9 @@ public class FaultToleranceAnnotationProcessor implements ResourceProcessor {
 
         IndexView index = archiveContext.getCombinedIndex();
 
+        //Make sure rx.internal.util.unsafe.UnsafeAccess.DISABLED_BY_USER is set.
+        processorContext.addNativeImageSystemProperty( "rx.unsafe-disable", "true" );
+
         // Add reflective acccess to fallback handlers
         Collection<ClassInfo> fallbackHandlers = index.getAllKnownImplementors(DotName.createSimple(FallbackHandler.class.getName()));
         for (ClassInfo fallbackHandler : fallbackHandlers) {

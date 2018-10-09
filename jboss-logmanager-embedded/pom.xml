@@ -44,7 +44,6 @@
         <dependency>
             <groupId>org.jboss.graalvm</groupId>
             <artifactId>graal-annotations</artifactId>
-            <scope>provided</scope>
         </dependency>
 
         <dependency>

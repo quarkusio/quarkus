@@ -146,9 +146,9 @@ public class UndertowDeploymentTemplate {
         return new ArrayList<>();
     }
 
-    public void startUndertow(StartupContext startupContext, @ContextObject("servletHandler") HttpHandler handler, ConfiguredValue port, @ContextObject("undertow.handler-wrappers") List<HandlerWrapper> wrappers) throws ServletException {
+    public void startUndertow(StartupContext startupContext, @ContextObject("servletHandler") HttpHandler handler, ConfiguredValue port, ConfiguredValue host, @ContextObject("undertow.handler-wrappers") List<HandlerWrapper> wrappers) throws ServletException {
         if (undertow == null) {
-            startUndertowEagerly(port, null);
+            startUndertowEagerly(port, host, null);
 
             //in development mode undertow is started eagerly
             startupContext.addCloseable(new Closeable() {
@@ -173,7 +173,7 @@ public class UndertowDeploymentTemplate {
      * be no chance to use hot deployment to fix the error. In development mode we start Undertow early, so any error
      * on boot can be corrected via the hot deployment handler
      */
-    public void startUndertowEagerly(ConfiguredValue port, HandlerWrapper hotDeploymentWrapper) throws ServletException {
+    public void startUndertowEagerly(ConfiguredValue port, ConfiguredValue host, HandlerWrapper hotDeploymentWrapper) throws ServletException {
         if (undertow == null) {
             log.log(Level.INFO, "Starting Undertow on port " + port.getValue());
             HttpHandler rootHandler = new CanonicalPathHandler(ROOT_HANDLER);
@@ -182,7 +182,7 @@ public class UndertowDeploymentTemplate {
             }
 
             undertow = Undertow.builder()
-                    .addHttpListener(Integer.parseInt(port.getValue()), "localhost")
+                    .addHttpListener(Integer.parseInt(port.getValue()), host.getValue())
                     .setHandler(rootHandler)
                     .build();
             undertow.start();

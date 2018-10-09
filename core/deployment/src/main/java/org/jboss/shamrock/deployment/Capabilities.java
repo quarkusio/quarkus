@@ -10,6 +10,7 @@ public final class Capabilities {
 
     public static final String CDI_WELD = "org.jboss.shamrock.cdi.weld";
     public static final String CDI_ARC = "org.jboss.shamrock.cdi.arc";
+    public static final String TRANSACTIONS = "org.jboss.shamrock.transactions";
 
     private Capabilities() {
     }

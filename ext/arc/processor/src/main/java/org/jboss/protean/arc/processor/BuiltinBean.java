@@ -2,6 +2,7 @@ package org.jboss.protean.arc.processor;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
@@ -12,6 +13,8 @@ import org.jboss.protean.arc.EventProvider;
 import org.jboss.protean.arc.InjectableReferenceProvider;
 import org.jboss.protean.arc.InjectionPointProvider;
 import org.jboss.protean.arc.InstanceProvider;
+import org.jboss.protean.arc.ResourceProvider;
+import org.jboss.protean.arc.processor.InjectionPointInfo.Kind;
 import org.jboss.protean.gizmo.ClassCreator;
 import org.jboss.protean.gizmo.ClassOutput;
 import org.jboss.protean.gizmo.FieldDescriptor;
@@ -101,27 +104,61 @@ enum BuiltinBean {
                 }
             }
             ResultHandle parameterizedType = Types.getTypeHandle(constructor, injectionPoint.requiredType);
-            ResultHandle eventProvider = constructor.newInstance(
-                    MethodDescriptor.ofConstructor(EventProvider.class, java.lang.reflect.Type.class, Set.class), parameterizedType, qualifiers);
+            ResultHandle eventProvider = constructor.newInstance(MethodDescriptor.ofConstructor(EventProvider.class, java.lang.reflect.Type.class, Set.class),
+                    parameterizedType, qualifiers);
             constructor.writeInstanceField(FieldDescriptor.of(clazzCreator.getClassName(), providerName, InjectableReferenceProvider.class.getName()),
                     constructor.getThis(), eventProvider);
         }
-    });
+    }), RESOURCE(DotNames.OBJECT, new Generator() {
+        @Override
+        void generate(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint, ClassCreator clazzCreator,
+                MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals) {
+
+            ResultHandle annotations = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+            // For a resource field the requiredQualifiers field contains all annotations declared on the field
+            if (!injectionPoint.requiredQualifiers.isEmpty()) {
+                for (AnnotationInstance annotation : injectionPoint.requiredQualifiers) {
+                    // Create annotation literal first
+                    ClassInfo annotationClass = beanDeployment.getIndex().getClassByName(annotation.name());
+                    String annotationLiteralName = annotationLiterals.process(classOutput, annotationClass, annotation,
+                            Types.getPackageName(clazzCreator.getClassName()));
+                    constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, annotations,
+                            constructor.newInstance(MethodDescriptor.ofConstructor(annotationLiteralName)));
+                }
+            }
+            ResultHandle parameterizedType = Types.getTypeHandle(constructor, injectionPoint.requiredType);
+            ResultHandle resourceProvider = constructor.newInstance(
+                    MethodDescriptor.ofConstructor(ResourceProvider.class, java.lang.reflect.Type.class, Set.class), parameterizedType, annotations);
+            constructor.writeInstanceField(FieldDescriptor.of(clazzCreator.getClassName(), providerName, InjectableReferenceProvider.class.getName()),
+                    constructor.getThis(), resourceProvider);
+        }
+    }, ip -> ip.kind == Kind.RESOURCE);
 
     private final DotName rawTypeDotName;
 
     private final Generator generator;
 
+    private final Predicate<InjectionPointInfo> matcher;
+
     BuiltinBean(DotName rawTypeDotName, Generator generator) {
-        this.rawTypeDotName = rawTypeDotName;
-        this.generator = generator;
+        this(rawTypeDotName, generator, ip -> ip.kind == Kind.CDI && rawTypeDotName.equals(ip.requiredType.name()));
     }
 
-    public DotName getRawTypeDotName() {
+    BuiltinBean(DotName rawTypeDotName, Generator generator, Predicate<InjectionPointInfo> matcher) {
+        this.rawTypeDotName = rawTypeDotName;
+        this.generator = generator;
+        this.matcher = matcher;
+    }
+
+    boolean matches(InjectionPointInfo injectionPoint) {
+        return matcher.test(injectionPoint);
+    }
+
+    DotName getRawTypeDotName() {
         return rawTypeDotName;
     }
 
-    public Generator getGenerator() {
+    Generator getGenerator() {
         return generator;
     }
 
@@ -131,7 +168,7 @@ enum BuiltinBean {
 
     static BuiltinBean resolve(InjectionPointInfo injectionPoint) {
         for (BuiltinBean bean : values()) {
-            if (bean.getRawTypeDotName().equals(injectionPoint.requiredType.name())) {
+            if (bean.matches(injectionPoint)) {
                 return bean;
             }
         }

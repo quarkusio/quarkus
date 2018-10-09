@@ -3,12 +3,10 @@ package org.jboss.shamrock.deployment;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
 import org.objectweb.asm.ClassVisitor;
 
@@ -120,7 +118,8 @@ public interface ProcessorContext {
     /**
      *
      * @param capability
-     * @return
+     * @return if the given capability is present
+     * @see Capabilities
      */
     boolean isCapabilityPresent(String capability);
 

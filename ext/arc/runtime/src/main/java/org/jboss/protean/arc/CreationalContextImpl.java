@@ -27,7 +27,11 @@ public class CreationalContextImpl<T> implements CreationalContext<T> {
     }
 
     public <I> void addDependentInstance(InjectableBean<I> bean, I instance, CreationalContext<I> ctx) {
-        dependentInstances.add(new InstanceHandleImpl<I>(bean, instance, ctx));
+        addDependentInstance(new InstanceHandleImpl<I>(bean, instance, ctx));
+    }
+
+    public <I> void addDependentInstance(InstanceHandle<I> instanceHandle) {
+        dependentInstances.add(instanceHandle);
     }
 
     void destroyDependentInstance(Object dependentInstance) {

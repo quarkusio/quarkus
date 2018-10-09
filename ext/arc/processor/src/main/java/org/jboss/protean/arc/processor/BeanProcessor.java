@@ -58,9 +58,12 @@ public class BeanProcessor {
 
     private final List<BiFunction<AnnotationTarget, Collection<AnnotationInstance>, Collection<AnnotationInstance>>> annotationTransformers;
 
+    private final Collection<DotName> resourceAnnotations;
+
     private BeanProcessor(String name, IndexView index, Collection<DotName> additionalBeanDefiningAnnotations, ResourceOutput output,
             boolean sharedAnnotationLiterals, ReflectionRegistration reflectionRegistration,
-            List<BiFunction<AnnotationTarget, Collection<AnnotationInstance>, Collection<AnnotationInstance>>> annotationTransformers) {
+            List<BiFunction<AnnotationTarget, Collection<AnnotationInstance>, Collection<AnnotationInstance>>> annotationTransformers,
+            Collection<DotName> resourceAnnotations) {
         this.reflectionRegistration = reflectionRegistration;
         Objects.requireNonNull(output);
         this.name = name;
@@ -69,11 +72,13 @@ public class BeanProcessor {
         this.output = output;
         this.sharedAnnotationLiterals = sharedAnnotationLiterals;
         this.annotationTransformers = annotationTransformers;
+        this.resourceAnnotations = resourceAnnotations;
     }
 
     public BeanDeployment process() throws IOException {
 
-        BeanDeployment beanDeployment = new BeanDeployment(new IndexWrapper(index), additionalBeanDefiningAnnotations, annotationTransformers);
+        BeanDeployment beanDeployment = new BeanDeployment(new IndexWrapper(index), additionalBeanDefiningAnnotations, annotationTransformers,
+                resourceAnnotations);
         beanDeployment.init();
 
         AnnotationLiteralProcessor annotationLiterals = new AnnotationLiteralProcessor(name, sharedAnnotationLiterals);
@@ -182,6 +187,8 @@ public class BeanProcessor {
 
         private final List<BiFunction<AnnotationTarget, Collection<AnnotationInstance>, Collection<AnnotationInstance>>> annotationTransformers = new ArrayList<>();
 
+        private final List<DotName> resourceAnnotations = new ArrayList<>();
+
         public Builder setName(String name) {
             this.name = name;
             return this;
@@ -217,9 +224,14 @@ public class BeanProcessor {
             return this;
         }
 
+        public Builder addResourceAnnotations(Collection<DotName> resourceAnnotations) {
+            this.resourceAnnotations.addAll(resourceAnnotations);
+            return this;
+        }
+
         public BeanProcessor build() {
             return new BeanProcessor(name, addBuiltinClasses(index), additionalBeanDefiningAnnotations, output, sharedAnnotationLiterals,
-                    reflectionRegistration, annotationTransformers);
+                    reflectionRegistration, annotationTransformers, resourceAnnotations);
         }
 
     }

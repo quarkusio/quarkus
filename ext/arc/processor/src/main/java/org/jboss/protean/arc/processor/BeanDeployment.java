@@ -3,6 +3,7 @@ package org.jboss.protean.arc.processor;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -55,9 +56,18 @@ public class BeanDeployment {
 
     private final List<BiFunction<AnnotationTarget, Collection<AnnotationInstance>, Collection<AnnotationInstance>>> annotationTransformers;
 
+    private final Set<DotName> resourceAnnotations;
+
     BeanDeployment(IndexView index, Collection<DotName> additionalBeanDefiningAnnotations,
             List<BiFunction<AnnotationTarget, Collection<AnnotationInstance>, Collection<AnnotationInstance>>> annotationTransformers) {
+        this(index, additionalBeanDefiningAnnotations, annotationTransformers, Collections.emptyList());
+    }
+
+    BeanDeployment(IndexView index, Collection<DotName> additionalBeanDefiningAnnotations,
+            List<BiFunction<AnnotationTarget, Collection<AnnotationInstance>, Collection<AnnotationInstance>>> annotationTransformers,
+            Collection<DotName> resourceAnnotations) {
         long start = System.currentTimeMillis();
+        this.resourceAnnotations = new HashSet<>(resourceAnnotations);
         this.index = index;
         this.qualifiers = findQualifiers(index);
         // TODO interceptor bindings are transitive!!!
@@ -107,6 +117,10 @@ public class BeanDeployment {
 
     StereotypeInfo getStereotype(DotName name) {
         return stereotypes.get(name);
+    }
+
+    Set<DotName> getResourceAnnotations() {
+        return resourceAnnotations;
     }
 
     Collection<AnnotationInstance> getAnnotations(AnnotationTarget target) {

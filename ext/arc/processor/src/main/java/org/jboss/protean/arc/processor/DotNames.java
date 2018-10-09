@@ -69,7 +69,7 @@ final class DotNames {
     static String packageName(DotName dotName) {
         String name = dotName.toString();
         int index = name.lastIndexOf('.');
-        if(index == -1) {
+        if (index == -1) {
             return "";
         }
         return name.substring(0, index);

@@ -33,7 +33,6 @@ public final class HibernateResourceProcessor implements ResourceProcessor {
 
     @Override
     public void process(final ArchiveContext archiveContext, final ProcessorContext processorContext) throws Exception {
-
         List<ParsedPersistenceXmlDescriptor> descriptors = PersistenceUnitsHolder.loadOriginalXMLParsedDescriptors();
         processorContext.setProperty(PARSED_DESCRIPTORS, descriptors);
 
@@ -55,6 +54,14 @@ public final class HibernateResourceProcessor implements ResourceProcessor {
             classDescriptors.add(desc);
         }
         scanner.setClassDescriptors(classDescriptors);
+        for(ParsedPersistenceXmlDescriptor i : descriptors) {
+            //add resources
+            if(i.getProperties().containsKey("javax.persistence.sql-load-script-source")) {
+                processorContext.addResource((String) i.getProperties().get("javax.persistence.sql-load-script-source"));
+            } else {
+                processorContext.addResource("import.sql");
+            }
+        }
 
         try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.JPA_DEPLOYMENT)) {
             //now we serialize the XML and class list to bytecode, to remove the need to re-parse the XML on JVM startup

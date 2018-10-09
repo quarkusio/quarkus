@@ -70,6 +70,9 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter(defaultValue = "false")
     private boolean enableJni;
 
+    @Parameter(defaultValue = "false")
+    private boolean dumpProxies;
+
     @Parameter(defaultValue = "${native-image.xmx}")
     private String nativeImageXmx;
 
@@ -141,6 +144,12 @@ public class NativeImageMojo extends AbstractMojo {
                 command.add("-J-Xnoagent");
                 command.add("-J-Djava.compiler=NONE");
                 command.add("-J-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y");
+            }
+            if (dumpProxies) {
+                command.add("-Dsun.misc.ProxyGenerator.saveGeneratedFiles=true");
+                if (enableServer) {
+                    getLog().warn( "Options dumpProxies and enableServer are both enabled: this will get the proxies dumped in an unknown external working directory" );
+                }
             }
             if(nativeImageXmx != null) {
                 command.add("-J-Xmx" + nativeImageXmx);

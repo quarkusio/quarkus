@@ -129,6 +129,8 @@
                                     <reportErrorsAtRuntime>false</reportErrorsAtRuntime>
                                     <cleanupServer>true</cleanupServer>
                                     <enableHttpUrlHandler>true</enableHttpUrlHandler>
+                                    <enableServer>false</enableServer>
+                                    <dumpProxies>false</dumpProxies>
                                     <!-- Requires Protean Graal fork to work, will fail otherwise
                                       <enableRetainedHeapReporting>true</enableRetainedHeapReporting>
                                       <enableCodeSizeReporting>true</enableCodeSizeReporting>

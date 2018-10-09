@@ -37,7 +37,7 @@
         <fakereplace.version>1.0.0.Alpha7</fakereplace.version>
         <hibernate-orm.version>1.0.0-SNAPSHOT</hibernate-orm.version>
         <jboss-metadata-web.version>11.0.0.Final</jboss-metadata-web.version>
-        <maven-core.version>3.5.0</maven-core.version>
+        <maven-core.version>3.5.4</maven-core.version>
         <guava.version>23.0</guava.version>
         <plexus-utils.version>3.0.24</plexus-utils.version>
         <maven-plugin-annotations.version>3.5.2</maven-plugin-annotations.version>
@@ -102,6 +102,7 @@
             <plugins>
                 <plugin>
                     <artifactId>maven-dependency-plugin</artifactId>
+                    <version>3.1.1</version>
                     <executions>
                         <execution>
                             <goals>

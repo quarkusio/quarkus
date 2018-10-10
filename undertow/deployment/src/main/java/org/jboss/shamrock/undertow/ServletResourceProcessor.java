@@ -206,7 +206,7 @@ public class ServletResourceProcessor implements ResourceProcessor {
 
         try (BytecodeRecorder context = processorContext.addDeploymentTask(RuntimePriority.UNDERTOW_START)) {
             UndertowDeploymentTemplate template = context.getRecordingProxy(UndertowDeploymentTemplate.class);
-            template.startUndertow(null, null, new ConfiguredValue("http.port", "8080"), new ConfiguredValue("http.host", "localhost"), null);
+            template.startUndertow(null, null, new ConfiguredValue("http.port", "8080"), new ConfiguredValue("http.host", "localhost"), new ConfiguredValue("http.io-threads",""), new ConfiguredValue("http.worker-threads",""), null);
         }
     }
 

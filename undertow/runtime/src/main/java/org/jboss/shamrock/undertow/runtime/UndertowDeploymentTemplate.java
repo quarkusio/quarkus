@@ -20,6 +20,7 @@ import org.jboss.shamrock.runtime.ConfiguredValue;
 import org.jboss.shamrock.runtime.ContextObject;
 import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.runtime.StartupContext;
+import org.xnio.Options;
 
 import io.undertow.Undertow;
 import io.undertow.server.HandlerWrapper;
@@ -146,9 +147,9 @@ public class UndertowDeploymentTemplate {
         return new ArrayList<>();
     }
 
-    public void startUndertow(StartupContext startupContext, @ContextObject("servletHandler") HttpHandler handler, ConfiguredValue port, ConfiguredValue host, @ContextObject("undertow.handler-wrappers") List<HandlerWrapper> wrappers) throws ServletException {
+    public void startUndertow(StartupContext startupContext, @ContextObject("servletHandler") HttpHandler handler, ConfiguredValue port, ConfiguredValue host, ConfiguredValue ioThreads, ConfiguredValue workerThreads,@ContextObject("undertow.handler-wrappers") List<HandlerWrapper> wrappers) throws ServletException {
         if (undertow == null) {
-            startUndertowEagerly(port, host, null);
+            startUndertowEagerly(port, host, ioThreads, workerThreads, null);
 
             //in development mode undertow is started eagerly
             startupContext.addCloseable(new Closeable() {
@@ -173,7 +174,7 @@ public class UndertowDeploymentTemplate {
      * be no chance to use hot deployment to fix the error. In development mode we start Undertow early, so any error
      * on boot can be corrected via the hot deployment handler
      */
-    public void startUndertowEagerly(ConfiguredValue port, ConfiguredValue host, HandlerWrapper hotDeploymentWrapper) throws ServletException {
+    public void startUndertowEagerly(ConfiguredValue port, ConfiguredValue host, ConfiguredValue ioThreads, ConfiguredValue workerThreads, HandlerWrapper hotDeploymentWrapper) throws ServletException {
         if (undertow == null) {
             log.log(Level.INFO, "Starting Undertow on port " + port.getValue());
             HttpHandler rootHandler = new CanonicalPathHandler(ROOT_HANDLER);
@@ -181,9 +182,16 @@ public class UndertowDeploymentTemplate {
                 rootHandler = hotDeploymentWrapper.wrap(rootHandler);
             }
 
-            undertow = Undertow.builder()
+            Undertow.Builder builder = Undertow.builder()
                     .addHttpListener(Integer.parseInt(port.getValue()), host.getValue())
-                    .setHandler(rootHandler)
+                    .setHandler(rootHandler);
+            if(!ioThreads.getValue().equals("")) {
+                builder.setIoThreads(Integer.parseInt(ioThreads.getValue()));
+            }
+            if(!workerThreads.getValue().equals("")) {
+                builder.setWorkerThreads(Integer.parseInt(workerThreads.getValue()));
+            }
+            undertow = builder
                     .build();
             undertow.start();
         }

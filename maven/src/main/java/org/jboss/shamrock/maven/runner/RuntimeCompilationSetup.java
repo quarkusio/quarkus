@@ -32,7 +32,7 @@ public class RuntimeCompilationSetup implements ShamrockSetup {
                 public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
                     try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.HOT_DEPLOYMENT_START_UNDERTOW)) {
                         HandlerWrapper wrapper = recorder.getRecordingProxy(RuntimeCompilationTemplate.class).createHandlerWrapper();
-                        recorder.getRecordingProxy(UndertowDeploymentTemplate.class).startUndertowEagerly(new ConfiguredValue("http.port", "8080"), new ConfiguredValue("http.host", "localhost"), wrapper);
+                        recorder.getRecordingProxy(UndertowDeploymentTemplate.class).startUndertowEagerly(new ConfiguredValue("http.port", "8080"), new ConfiguredValue("http.host", "localhost"), new ConfiguredValue("http.io-threads",""), new ConfiguredValue("http.worker-threads",""), wrapper);
                     }
                 }
 

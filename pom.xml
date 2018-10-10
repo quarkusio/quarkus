@@ -62,7 +62,7 @@
         <log4j.version>1.2.16</log4j.version>
         <log4j2.version>2.0</log4j2.version>
         <slf4j.version>1.7.25</slf4j.version>
-        <wildfly-common.version>1.5.0.Alpha1</wildfly-common.version>
+        <wildfly-common.version>1.5.0.Alpha1-format-002</wildfly-common.version>
         <jboss-modules.version>1.8.0.Final</jboss-modules.version>
 
         <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>

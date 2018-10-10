@@ -29,6 +29,7 @@ import java.util.logging.Level;
 
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logmanager.EmbeddedConfigurator;
+import org.jboss.logmanager.formatters.ColorPatternFormatter;
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.jboss.logmanager.handlers.ConsoleHandler;
 import org.jboss.logmanager.handlers.FileHandler;
@@ -68,6 +69,7 @@ public final class LoggingResourceProcessor implements ResourceProcessor {
         final boolean consoleEnable;
         final String consoleFormat;
         final String consoleLevel;
+        final boolean consoleColor;
         final boolean fileEnable;
         final String fileFormat;
         final String fileLevel;
@@ -95,6 +97,11 @@ public final class LoggingResourceProcessor implements ResourceProcessor {
             consoleFormat = consoleFormatNode.isNull() ? "%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c{1.}] (%t) %s%e%n" : consoleFormatNode.asString();
             final BuildConfig.ConfigNode consoleLevelNode = consoleNode.get("level");
             consoleLevel = consoleLevelNode.isNull() ? "INFO" : consoleLevelNode.asString();
+            final BuildConfig.ConfigNode consoleColorNode = consoleNode.get("color");
+            consoleColor = consoleColorNode.isNull() || consoleColorNode.asBoolean().booleanValue();
+            if (consoleColor) {
+                processorContext.addRuntimeInitializedClasses("org.jboss.logmanager.formatters.TrueColorHolder");
+            }
 
             final BuildConfig.ConfigNode fileNode = loggingNode.get("file");
             final BuildConfig.ConfigNode fileEnableNode = fileNode.get("enable");
@@ -137,7 +144,7 @@ public final class LoggingResourceProcessor implements ResourceProcessor {
             ResultHandle console, file;
             if (consoleEnable) {
                 ResultHandle formatter = branch.newInstance(
-                    MethodDescriptor.ofConstructor(PatternFormatter.class, String.class),
+                    MethodDescriptor.ofConstructor(consoleColor ? ColorPatternFormatter.class : PatternFormatter.class, String.class),
                     branch.load(consoleFormat)
                 );
                 console = branch.newInstance(

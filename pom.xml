@@ -175,6 +175,10 @@
 
     <dependencyManagement>
         <dependencies>
+         <dependency>
+            <groupId>org.wildfly.openssl</groupId>
+            <artifactId>wildfly-openssl-java</artifactId>
+        </dependency>
             <dependency>
                 <groupId>org.jboss.shamrock</groupId>
                 <artifactId>shamrock-agroal-deployment</artifactId>

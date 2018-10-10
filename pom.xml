@@ -71,6 +71,7 @@
     </properties>
 
     <modules>
+        <module>openssl</module>
         <module>jboss-logmanager-embedded</module>
         <module>jboss-logging-embedded</module>
         <module>core</module>
@@ -95,7 +96,6 @@
         <module>fault-tolerance</module>
         <module>examples</module>
         <module>legacy</module>
-        <module>openssl</module>
     </modules>
     <build>
         <pluginManagement>
@@ -880,7 +880,7 @@
         <repository>
             <id>central</id>
             <name>Maven Repository Switchboard</name>
-            <url>http://repo1.maven.org/maven2</url>
+            <url>http://repo.maven.apache.org/maven2</url>
         </repository>
         <repository>
             <id>jboss</id>

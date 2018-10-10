@@ -129,7 +129,7 @@ public class NativeImageMojo extends AbstractMojo {
                     }
                 }
             }
-            command.add("-H:InitialCollectionPolicy=\"com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime\""); //the default collection policy results in full GC's 50% of the time
+            command.add("-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
             command.add("-jar");
             command.add(finalName + "-runner.jar");
             //https://github.com/oracle/graal/issues/660

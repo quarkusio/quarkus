@@ -27,6 +27,28 @@ import java.util.logging.Formatter;
  * A single format step which handles some part of rendering a log record.
  */
 public interface FormatStep {
+    /**
+     * An array of no steps.
+     */
+    FormatStep[] NO_STEPS = new FormatStep[0];
+
+    FormatStep NULL_STEP = new FormatStep() {
+        public void render(final StringBuilder builder, final ExtLogRecord record) {
+        }
+
+        public int estimateLength() {
+            return 0;
+        }
+    };
+
+    static FormatStep createCompoundStep(final FormatStep... steps) {
+        final FormatStep[] clonedSteps = steps.clone();
+        if (clonedSteps.length == 0) {
+            return NULL_STEP;
+        } else if (clonedSteps.length == 1) {
+            return clonedSteps[0];
+        } else return new CompoundFormatStep(clonedSteps);
+    }
 
     /**
      * Render a part of the log record.
@@ -62,5 +84,76 @@ public interface FormatStep {
      */
     default boolean isCallerInformationRequired() {
         return false;
+    }
+
+    /**
+     * Get child steps that compose this step.
+     *
+     * @return the child steps (not {@code null})
+     */
+    default FormatStep[] childSteps() {
+        return NO_STEPS;
+    }
+
+    default int childStepCount() {
+        return 0;
+    }
+
+    default FormatStep getChildStep(int idx) {
+        throw new IndexOutOfBoundsException();
+    }
+
+    /**
+     * Get the item type of this step.
+     *
+     * @return the item type
+     */
+    default ItemType getItemType() {
+        return ItemType.GENERIC;
+    }
+
+    /**
+     * An enumeration of the types of items that can be rendered.  Note that this enumeration may be expanded
+     * in the future, so unknown values should be handled gracefully as if {@link #GENERIC} were used.
+     */
+    enum ItemType {
+        /** An item of unknown kind. */
+        GENERIC,
+
+        /** A compound step. */
+        COMPOUND,
+
+        // == // == //
+
+        /** A log level. */
+        LEVEL,
+
+        // == // == //
+
+        SOURCE_CLASS_NAME,
+        DATE,
+        SOURCE_FILE_NAME,
+        HOST_NAME,
+        SOURCE_LINE_NUMBER,
+        LINE_SEPARATOR,
+        CATEGORY,
+        MDC,
+        /**
+         * The log message without the exception trace.
+         */
+        MESSAGE,
+        EXCEPTION_TRACE,
+        SOURCE_METHOD_NAME,
+        SOURCE_MODULE_NAME,
+        SOURCE_MODULE_VERSION,
+        NDC,
+        PROCESS_ID,
+        PROCESS_NAME,
+        RELATIVE_TIME,
+        RESOURCE_KEY,
+        SYSTEM_PROPERTY,
+        TEXT,
+        THREAD_ID,
+        THREAD_NAME,
     }
 }

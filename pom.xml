@@ -880,7 +880,7 @@
         <repository>
             <id>central</id>
             <name>Maven Repository Switchboard</name>
-            <url>http://repo1.maven.org/maven2</url>
+            <url>http://repo.maven.apache.org/maven2</url>
         </repository>
         <repository>
             <id>jboss</id>

@@ -20,6 +20,7 @@
 package org.jboss.logmanager;
 
 import org.jboss.logmanager.ExtLogRecord.FormatStyle;
+import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.jboss.logmanager.filters.AcceptAllFilter;
@@ -373,6 +374,7 @@ public final class FilterTests {
     }
 
     @Test
+    @Ignore("This test is testing essentially invalid/coincidental behavior")
     public void testRegexFilter2() {
         final Filter filter = new RegexFilter("pest");
         final AtomicBoolean ran = new AtomicBoolean();

@@ -19,6 +19,7 @@
 
 package org.jboss.logmanager.filters;
 
+import java.text.MessageFormat;
 import java.util.logging.LogRecord;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -77,7 +78,7 @@ public final class SubstituteFilter implements Filter {
         if (record instanceof ExtLogRecord) {
             currentMsg = ((ExtLogRecord) record).getFormattedMessage();
         } else {
-            currentMsg = record.getMessage();
+            currentMsg = MessageFormat.format(record.getMessage(), record.getParameters());
         }
         final Matcher matcher = pattern.matcher(String.valueOf(currentMsg));
         final String msg;

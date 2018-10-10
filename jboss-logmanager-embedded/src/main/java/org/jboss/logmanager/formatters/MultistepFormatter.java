@@ -86,7 +86,7 @@ public class MultistepFormatter extends ExtFormatter {
     public String format(final ExtLogRecord record) {
         final StringBuilder builder = new StringBuilder(builderLength);
         for (FormatStep step : steps) {
-            step.render(builder, record);
+            step.render(this, builder, record);
         }
         return builder.toString();
     }

@@ -144,8 +144,6 @@ public class AsyncHandler extends ExtHandler {
             record.disableCallerCalculation();
             // Copy the MDC over
             record.copyMdc();
-            // In case serialization is required by a child handler
-            record.getFormattedMessage();
         }
         if (overflowAction == OverflowAction.DISCARD) {
             recordQueue.offer(record);

@@ -66,8 +66,6 @@ public class DelayedHandler extends ExtHandler {
                         record.disableCallerCalculation();
                         // Copy the MDC over
                         record.copyMdc();
-                        // In case serialization is required by a child handler
-                        record.getFormattedMessage();
                     }
                     logRecords.addLast(record);
                 }

@@ -82,8 +82,6 @@ public class QueueHandler extends ExtHandler {
                     record.disableCallerCalculation();
                     // Copy the MDC over
                     record.copyMdc();
-                    // In case serialization is required by a child handler
-                    record.getFormattedMessage();
                 }
                 if (buffer.size() == limit) { buffer.removeFirst(); }
                 buffer.addLast(record);

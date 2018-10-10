@@ -214,7 +214,7 @@ public abstract class StructuredFormatter extends ExtFormatter {
                     .add(getKey(Key.LOGGER_CLASS_NAME), record.getLoggerClassName())
                     .add(getKey(Key.LOGGER_NAME), record.getLoggerName())
                     .add(getKey(Key.LEVEL), record.getLevel().getName())
-                    .add(getKey(Key.MESSAGE), record.getFormattedMessage())
+                    .add(getKey(Key.MESSAGE), formatMessage(record))
                     .add(getKey(Key.THREAD_NAME), record.getThreadName())
                     .add(getKey(Key.THREAD_ID), record.getThreadID())
                     .add(getKey(Key.MDC), record.getMdcCopy())

@@ -46,7 +46,7 @@ public abstract class ExtHandler extends Handler implements FlushableCloseable {
      * The sub-handlers for this handler.  May only be updated using the {@link #handlersUpdater} atomic updater.  The array
      * instance should not be modified (treat as immutable).
      */
-    @SuppressWarnings({ "UnusedDeclaration" })
+    @SuppressWarnings("unused")
     protected volatile Handler[] handlers;
 
     /**
@@ -296,9 +296,12 @@ public abstract class ExtHandler extends Handler implements FlushableCloseable {
         Formatter formatter = getFormatter();
         if (formatterRequiresCallerCalculation(formatter)) {
             return true;
-        } else {
-            final Handler[] handlers = getHandlers();
-            for (Handler handler : handlers) {
+        } else for (Handler handler : getHandlers()) {
+            if (handler instanceof ExtHandler) {
+                if (((ExtHandler) handler).isCallerCalculationRequired()) {
+                    return true;
+                }
+            } else {
                 formatter = handler.getFormatter();
                 if (formatterRequiresCallerCalculation(formatter)) {
                     return true;

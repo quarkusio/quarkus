@@ -140,7 +140,7 @@ public class ArcAnnotationProcessor implements ResourceProcessor {
                                     }
                                 }
                             }
-                            log.infof("Add %s class: %s", (isAppClass ? "APP" : "FWK"), resource.getFullyQualifiedName());
+                            log.debugf("Add %s class: %s", (isAppClass ? "APP" : "FWK"), resource.getFullyQualifiedName());
                             processorContext.addGeneratedClass(isAppClass, resource.getName(), resource.getData());
                             break;
                         case SERVICE_PROVIDER:
@@ -176,7 +176,7 @@ public class ArcAnnotationProcessor implements ResourceProcessor {
         }
         ClassInfo beanInfo = shamrockIndex.getClassByName(beanClassName);
         if (beanInfo == null) {
-            log.infof("Index bean class: %s", beanClass);
+            log.debugf("Index bean class: %s", beanClass);
             try (InputStream stream = ArcAnnotationProcessor.class.getClassLoader().getResourceAsStream(beanClass.replace('.', '/') + ".class")) {
                 beanInfo = indexer.index(stream);
                 additionalIndex.add(beanInfo.name());
@@ -191,7 +191,7 @@ public class ArcAnnotationProcessor implements ResourceProcessor {
             if (!additionalIndex.contains(annotationName) && shamrockIndex.getClassByName(annotationName) == null) {
                 try (InputStream annotationStream = ArcAnnotationProcessor.class.getClassLoader()
                         .getResourceAsStream(annotationName.toString().replace('.', '/') + ".class")) {
-                    log.infof("Index annotation: %s", annotationName);
+                    log.debugf("Index annotation: %s", annotationName);
                     indexer.index(annotationStream);
                     additionalIndex.add(annotationName);
                 } catch (IOException e) {

@@ -65,7 +65,7 @@ import io.undertow.servlet.api.InstanceFactory;
  */
 public class JaxrsScanningProcessor implements ResourceProcessor {
 
-    private static final String JAX_RS_SERVLET_NAME = "javax.ws.rs.core.Application";
+    private static final String JAX_RS_SERVLET_NAME = "javax.ws.rs.Application";
 
     private static final DotName APPLICATION_PATH = DotName.createSimple("javax.ws.rs.ApplicationPath");
 

@@ -160,10 +160,12 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
                             // Note that array members should be Nonbinding in CDI
                             default:
                                 // For an empty array component kind is UNKNOWN
-                                if (!method.returnType().name().equals(DotNames.CLASS)) {
+
+                                String arrayType = componentType(method);
+                                if (!arrayType.equals(Class.class.getName())) {
                                     LOGGER.warnf("Unsupported array component type %s on %s - literal returns an empty array", method, annotationClass);
                                 }
-                                retValue = valueMethod.newArray(componentType(method), valueMethod.load(0));
+                                retValue = valueMethod.newArray(arrayType, valueMethod.load(0));
                         }
                         break;
                     case ENUM:

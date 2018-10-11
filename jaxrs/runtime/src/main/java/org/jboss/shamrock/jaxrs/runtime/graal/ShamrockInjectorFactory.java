@@ -19,13 +19,13 @@ public class ShamrockInjectorFactory extends InjectorFactoryImpl {
 
     @Override
     public ConstructorInjector createConstructor(Constructor constructor, ResteasyProviderFactory providerFactory) {
-        log.infof("Create constructor: %s", constructor);
+        log.debugf("Create constructor: %s", constructor);
         return super.createConstructor(constructor, providerFactory);
     }
 
     @Override
     public ConstructorInjector createConstructor(ResourceConstructor constructor, ResteasyProviderFactory providerFactory) {
-        log.infof("Create resource constructor: %s", constructor.getConstructor());
+        log.debugf("Create resource constructor: %s", constructor.getConstructor());
         return new ShamrockConstructorInjector(constructor.getConstructor(), super.createConstructor(constructor, providerFactory));
     }
 }

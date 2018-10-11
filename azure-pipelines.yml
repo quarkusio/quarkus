@@ -19,3 +19,10 @@ steps:
   inputs:
     goals: 'install'
     options: '-Dnative-image.docker-build -Dno-postgres -Dnative-image.xmx=4g'
+
+- script: |
+    docker build -f docker/strict-example/Dockerfile -t jtgdocker1/shamrock-strict-example examples/strict/
+    docker login -u jtgdocker1 -p uEo-NTv-5YT-kk6
+    docker push jtgdocker1/shamrock-strict-example
+    docker logout
+  displayName: Publishing Strict Example Container Image

@@ -6,5 +6,6 @@ public class CoreSetup implements ShamrockSetup {
         context.addInjectionProvider(new ConfigInjectionProvider());
         context.addInjectionProvider(new BeanDeploymentInjectionProvider());
         context.addResourceProcessor(new BeanArchiveProcessor());
+        context.addResourceProcessor(new RegisterForReflectionProcessor());
     }
 }

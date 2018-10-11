@@ -11,6 +11,7 @@ import org.jboss.shamrock.deployment.ResourceProcessor;
 import org.jboss.shamrock.deployment.RuntimePriority;
 import org.jboss.shamrock.deployment.buildconfig.BuildConfig;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
+import org.jboss.shamrock.runtime.ConfiguredValue;
 
 class AgroalProcessor implements ResourceProcessor {
 
@@ -34,10 +35,12 @@ class AgroalProcessor implements ResourceProcessor {
         }
         String driver = ds.get("driver").asString();
         String url = ds.get("url").asString();
-        if (driver == null) {
+        ConfiguredValue configuredDriver = new ConfiguredValue("datasource.driver", driver);
+        ConfiguredValue configuredURL = new ConfiguredValue("datasource.url", url);
+        if (configuredDriver.getValue() == null) {
             throw new RuntimeException("Driver is required (property 'driver' under 'datasource')");
         }
-        if (url == null) {
+        if (configuredURL.getValue() == null) {
             throw new RuntimeException("JDBC URL is required (property 'url' under 'datasource')");
         }
         String userName = ds.get("username").asString();
@@ -47,7 +50,7 @@ class AgroalProcessor implements ResourceProcessor {
         beanDeployment.addAdditionalBean(DataSourceProducer.class);
         try (BytecodeRecorder bc = processorContext.addDeploymentTask(RuntimePriority.DATASOURCE_DEPLOYMENT)) {
             DataSourceTemplate template = bc.getRecordingProxy(DataSourceTemplate.class);
-            template.addDatasource(null, url, bc.classProxy(driver), userName, password);
+            template.addDatasource(null, configuredURL.getValue(), bc.classProxy(configuredDriver.getValue()), userName, password);
         }
     }
 

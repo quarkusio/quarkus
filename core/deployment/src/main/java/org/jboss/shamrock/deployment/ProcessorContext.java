@@ -76,8 +76,13 @@ public interface ProcessorContext {
     /**
      * Adds a bytecode transformer that can transform application classes.
      * <p>
-     * This takes the form of a function that takes a string, and returns an ASM visitor, or null if transformation
-     * is not required.
+     * This takes the form of a function that takes the class name as a String, and returns a Function that wraps an
+     * ASM {@link ClassVisitor}.
+     *
+     * If this function returns null then no transform is applied. If it returns a function then it will be transformed.
+     *
+     * The transformation is applied by calling each function that has been registered it turn to create a chain
+     * of visitors. These visitors are then applied and the result is saved to the output.
      *
      * At present these transformations are only applied to application classes, not classes provided by dependencies
      */

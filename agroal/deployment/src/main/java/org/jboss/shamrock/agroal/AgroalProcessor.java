@@ -44,13 +44,15 @@ class AgroalProcessor implements ResourceProcessor {
             throw new RuntimeException("JDBC URL is required (property 'url' under 'datasource')");
         }
         String userName = ds.get("username").asString();
+        ConfiguredValue configuredUsername = new ConfiguredValue("datasource.user", userName);
         String password = ds.get("password").asString();
+        ConfiguredValue configuredPassword = new ConfiguredValue("datasource.password", password);
 
         processorContext.addReflectiveClass(false, false, driver);
         beanDeployment.addAdditionalBean(DataSourceProducer.class);
         try (BytecodeRecorder bc = processorContext.addDeploymentTask(RuntimePriority.DATASOURCE_DEPLOYMENT)) {
             DataSourceTemplate template = bc.getRecordingProxy(DataSourceTemplate.class);
-            template.addDatasource(null, configuredURL.getValue(), bc.classProxy(configuredDriver.getValue()), userName, password);
+            template.addDatasource(null, configuredURL.getValue(), bc.classProxy(configuredDriver.getValue()), configuredUsername.getValue(), configuredPassword.getValue());
         }
     }
 

@@ -6,6 +6,7 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -59,7 +60,7 @@ public class UndertowDeploymentTemplate {
     private static volatile HttpHandler currentRoot;
 
     @ContextObject("deploymentInfo")
-    public DeploymentInfo createDeployment(String name) {
+    public DeploymentInfo createDeployment(String name, Set<String> knownFile, Set<String> knownDirectories) {
         DeploymentInfo d = new DeploymentInfo();
         d.setSessionIdGenerator(new ShamrockSessionIdGenerator());
         d.setClassLoader(getClass().getClassLoader());
@@ -74,7 +75,7 @@ public class UndertowDeploymentTemplate {
         //TODO: this is a big hack
         String resourcesDir = System.getProperty(RESOURCES_PROP);
         if (resourcesDir == null) {
-            d.setResourceManager(new ClassPathResourceManager(d.getClassLoader(), "META-INF/resources"));
+            d.setResourceManager(new KnownPathResourceManager(knownFile, knownDirectories, new ClassPathResourceManager(d.getClassLoader(), "META-INF/resources")));
         } else {
             d.setResourceManager(new PathResourceManager(Paths.get(resourcesDir)));
         }

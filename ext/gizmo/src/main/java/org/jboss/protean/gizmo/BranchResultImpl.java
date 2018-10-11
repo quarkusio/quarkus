@@ -31,9 +31,14 @@ class BranchResultImpl implements BranchResult {
             if(!trueResult.getType().equals(falseResult.getType())) {
                 throw new RuntimeException("Result handles must be of the same type " + trueResult.getType() + " " + falseResult.getType());
             }
-            ResultHandle rs = new ResultHandle(trueResult.getType(), owner);
-            underlyingTrueBranch.assign(rs, trueResult);
-            underlyingFalseBranch.assign(rs, falseResult);
-            return rs;
+            return mergeBranches(trueResult, falseResult, trueResult.getType());
+    }
+
+    @Override
+    public ResultHandle mergeBranches(final ResultHandle trueResult, final ResultHandle falseResult, final String expectedType) {
+        ResultHandle rs = new ResultHandle(expectedType, owner);
+        underlyingTrueBranch.assign(rs, trueResult);
+        underlyingFalseBranch.assign(rs, falseResult);
+        return rs;
     }
 }

@@ -1028,7 +1028,7 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
         operations.add(new Operation() {
             @Override
             void writeBytecode(MethodVisitor methodVisitor) {
-                loadResultHandle(methodVisitor, value, BytecodeCreatorImpl.this, value.getType());
+                loadResultHandle(methodVisitor, value, BytecodeCreatorImpl.this, target.getType());
                 storeResultHandle(methodVisitor, target);
             }
 

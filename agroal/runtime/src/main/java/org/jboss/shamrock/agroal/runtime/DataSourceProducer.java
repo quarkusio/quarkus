@@ -35,6 +35,8 @@ import javax.sql.XADataSource;
 import javax.transaction.TransactionManager;
 import javax.transaction.TransactionSynchronizationRegistry;
 
+import com.arjuna.ats.arjuna.common.CoreEnvironmentBeanException;
+import com.arjuna.ats.arjuna.common.arjPropertyManager;
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.supplier.AgroalDataSourceConfigurationSupplier;
 import io.agroal.api.security.NamePrincipal;
@@ -84,6 +86,11 @@ public class DataSourceProducer {
         dataSourceConfiguration.connectionPoolConfiguration().connectionFactoryConfiguration().connectionProviderClass(providerClass);
 
         if (jta || xa) {
+            try {
+                arjPropertyManager.getCoreEnvironmentBean().setNodeIdentifier("shamrock");
+            } catch (CoreEnvironmentBeanException e) {
+                e.printStackTrace();
+            }
             TransactionIntegration txIntegration = new NarayanaTransactionIntegration(transactionManager, transactionSynchronizationRegistry, null, connectable);
             dataSourceConfiguration.connectionPoolConfiguration().transactionIntegration(txIntegration);
         }

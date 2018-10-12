@@ -115,30 +115,30 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
         }
 
         //@Context uses proxies for interface injection
-        for(AnnotationInstance annotation : index.getAnnotations(CONTEXT)) {
+        for (AnnotationInstance annotation : index.getAnnotations(CONTEXT)) {
             DotName typeName = null;
-            if(annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
+            if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
                 MethodInfo method = annotation.target().asMethod();
-                if(method.parameters().size() == 1) {
+                if (method.parameters().size() == 1) {
                     typeName = method.parameters().get(0).name();
                 }
-            } else if(annotation.target().kind() == AnnotationTarget.Kind.FIELD) {
+            } else if (annotation.target().kind() == AnnotationTarget.Kind.FIELD) {
                 typeName = annotation.target().asField().type().name();
-            } else if(annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
+            } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
                 int pos = annotation.target().asMethodParameter().position();
                 typeName = annotation.target().asMethodParameter().method().parameters().get(pos).name();
             }
-            if(typeName != null) {
+            if (typeName != null) {
                 ClassInfo type = index.getClassByName(typeName);
-                if(type != null) {
-                    if(Modifier.isInterface(type.flags())) {
+                if (type != null) {
+                    if (Modifier.isInterface(type.flags())) {
                         processorContext.addProxyDefinition(type.toString());
                     }
                 } else {
                     //might be a framework class, which should be loadable
                     try {
                         Class<?> typeClass = Class.forName(typeName.toString());
-                        if(typeClass.isInterface()) {
+                        if (typeClass.isInterface()) {
                             processorContext.addProxyDefinition(typeName.toString());
                         }
                     } catch (Exception e) {
@@ -202,18 +202,10 @@ public class JaxrsScanningProcessor implements ResourceProcessor {
             Collection<AnnotationInstance> instances = index.getAnnotations(annotationType);
             for (AnnotationInstance instance : instances) {
                 MethodInfo method = instance.target().asMethod();
-                if (method.returnType().kind() == Type.Kind.CLASS) {
-                    String className = method.returnType().asClassType().name().toString();
-                    if (!className.startsWith("java.")) {
-                        processorContext.addReflectiveClass(true, true, className);
-                    }
-                }
+                processorContext.addReflectiveHierarchy(method.returnType());
                 for (Type param : method.parameters()) {
                     if (param.kind() != Type.Kind.PRIMITIVE) {
-                        String className = param.name().toString();
-                        if (!className.equals(String.class.getName())) {
-                            processorContext.addReflectiveClass(true, true, className);
-                        }
+                        processorContext.addReflectiveHierarchy(param);
                     }
                 }
             }

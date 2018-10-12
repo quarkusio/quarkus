@@ -38,11 +38,19 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.jboss.jandex.ArrayType;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassType;
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.ParameterizedType;
+import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.UnresolvedTypeVariable;
+import org.jboss.jandex.VoidType;
 import org.jboss.protean.gizmo.CatchBlockCreator;
 import org.jboss.protean.gizmo.ClassCreator;
 import org.jboss.protean.gizmo.ExceptionTable;
@@ -141,9 +149,9 @@ public class BuildTimeGenerator {
             Index appIndex = indexer.complete();
             List<ApplicationArchive> applicationArchives = ApplicationArchiveLoader.scanForOtherIndexes(classLoader, config, applicationArchiveMarkers, root, archiveContextBuilder.getAdditionalApplicationArchives());
 
-            ArchiveContext context = new ArchiveContextImpl(new ApplicationArchiveImpl(appIndex, root, null), applicationArchives, config);
+            ArchiveContextImpl context = new ArchiveContextImpl(new ApplicationArchiveImpl(appIndex, root, null), applicationArchives, config);
 
-            ProcessorContextImpl processorContext = new ProcessorContextImpl();
+            ProcessorContextImpl processorContext = new ProcessorContextImpl(context);
             processorContext.addResource("META-INF/microprofile-config.properties");
             try {
                 for (ResourceProcessor processor : processors) {
@@ -179,12 +187,18 @@ public class BuildTimeGenerator {
         private final List<DeploymentTaskHolder> tasks = new ArrayList<>();
         private final List<DeploymentTaskHolder> staticInitTasks = new ArrayList<>();
         private final Map<String, ReflectionInfo> reflectiveClasses = new LinkedHashMap<>();
+        private final Set<DotName> processedReflectiveHierarchies = new HashSet<>();
         private final Set<String> resources = new HashSet<>();
         private final Set<String> resourceBundles = new HashSet<>();
         private final Set<String> runtimeInitializedClasses = new HashSet<>();
         private final Set<List<String>> proxyClasses = new HashSet<>();
         private final Map<String, Object> properties = new HashMap<>();
         private final Map<String, String> systemProperties = new HashMap<>();
+        private final ArchiveContextImpl archiveContext;
+
+        private ProcessorContextImpl(ArchiveContextImpl archiveContext) {
+            this.archiveContext = archiveContext;
+        }
 
         @Override
         public BytecodeRecorder addStaticInitTask(int priority) {
@@ -270,6 +284,52 @@ public class BuildTimeGenerator {
             existing.methodSet.add(new MethodData(methodInfo.getName(), params));
 
         }
+
+        @Override
+        public void addReflectiveHierarchy(Type type) {
+
+            if (type instanceof VoidType ||
+                    type instanceof PrimitiveType ||
+                    type instanceof UnresolvedTypeVariable) {
+                return;
+            } else if (type instanceof ClassType) {
+                addClassTypeHierarchy(type.name());
+            } else if (type instanceof ArrayType) {
+                addReflectiveHierarchy(type.asArrayType().component());
+            } else if (type instanceof ParameterizedType) {
+                ParameterizedType p = (ParameterizedType) type;
+                addReflectiveHierarchy(p.owner());
+                for (Type arg : p.arguments()) {
+                    addReflectiveHierarchy(arg);
+                }
+            }
+        }
+
+        private void addClassTypeHierarchy(DotName name) {
+            if (name.toString().startsWith("java.") ||
+                    processedReflectiveHierarchies.contains(name)) {
+                return;
+            }
+            processedReflectiveHierarchies.add(name);
+            addReflectiveClass(true, true, name.toString());
+            ClassInfo info = archiveContext.getCombinedIndex().getClassByName(name);
+            if (info == null) {
+                log.warning("Unable to find annotation info for " + name + ", it may not be correctly registered for reflection");
+            } else {
+                addClassTypeHierarchy(info.superName());
+                for (FieldInfo i : info.fields()) {
+                    addReflectiveHierarchy(i.type());
+                }
+                for (MethodInfo i : info.methods()) {
+                    addReflectiveHierarchy(i.returnType());
+                    for (Type p : i.parameters()) {
+                        addReflectiveHierarchy(p);
+                    }
+                }
+            }
+
+        }
+
 
         @Override
         public void addGeneratedClass(boolean applicationClass, String name, byte[] classData) throws IOException {
@@ -608,4 +668,35 @@ public class BuildTimeGenerator {
         }
     }
 
+    static final class HierachyInfo {
+        boolean methods;
+        boolean fields;
+        final Type type;
+
+        HierachyInfo(Type type, boolean methods, boolean fields) {
+            this.type = type;
+            this.methods = methods;
+            this.fields = fields;
+        }
+
+        public boolean isMethods() {
+            return methods;
+        }
+
+        public void setMethods(boolean methods) {
+            this.methods = methods;
+        }
+
+        public boolean isFields() {
+            return fields;
+        }
+
+        public void setFields(boolean fields) {
+            this.fields = fields;
+        }
+
+        public Type getType() {
+            return type;
+        }
+    }
 }

@@ -7,6 +7,7 @@ import java.util.function.Function;
 
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
 import org.objectweb.asm.ClassVisitor;
 
@@ -56,6 +57,28 @@ public interface ProcessorContext {
     void addReflectiveMethod(MethodInfo methodInfo);
 
     void addReflectiveMethod(Method methodInfo);
+
+    /**
+     * Attempts to register a complete type hierarchy for reflection.
+     *
+     * This is intended to be used to register types that are going to be serialized,
+     * e.g. by Jackson or some other JSON mapper.
+     *
+     * This will do 'smart discovery' and in addition to registering the type itself it will also attempt to
+     * register the following:
+     *
+     * - Superclasses
+     * - Component types of collections
+     * - Types used in bean properties if (if method reflection is enabled)
+     * - Field types (if field reflection is enabled)
+     *
+     * This discovery is applied recursively, so any additional types that are registered will also have their dependencies
+     * discovered
+     *
+     */
+    void addReflectiveHierarchy(Type type);
+
+
     /**
      *
      * @param applicationClass If this class should be loaded by the application class loader when in runtime mode

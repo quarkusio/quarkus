@@ -2,6 +2,7 @@ package org.jboss.shamrock.example.test;
 
 import java.io.InputStream;
 
+import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -70,5 +71,26 @@ public class JaxRSTestCase {
     public void testRxJava() {
         Assert.assertEquals("Hello", URLTester.relative("rest/test/rx").invokeURL().asString());
     }
+
+    @Test
+    public void testComplexObjectReflectionRegistration() {
+
+        JsonArray obj = URLTester.relative("rest/test/complex").invokeURL().asJsonReader().readArray();
+        Assert.assertEquals(1, obj.size());
+        JsonObject val = obj.getJsonObject(0);
+        System.out.println(val);
+        Assert.assertEquals("component value", val.getString("value"));
+
+        JsonArray collection = val.getJsonArray("collectionTypes");
+        Assert.assertEquals(1, collection.size());
+        Assert.assertEquals("collection type", collection.getJsonObject(0).getString("value"));
+
+        JsonObject sub = val.getJsonObject("subComponent");
+        JsonArray subArray = sub.getJsonArray("data");
+        Assert.assertEquals(1, subArray.size());
+        Assert.assertEquals("sub component list value", subArray.getString(0));
+
+    }
+
 
 }

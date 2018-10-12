@@ -1,5 +1,8 @@
 package org.jboss.shamrock.example.rest;
 
+import java.util.Collections;
+import java.util.List;
+
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.servlet.http.HttpServletRequest;
@@ -8,7 +11,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Request;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import io.reactivex.Single;
@@ -71,6 +73,21 @@ public class TestResource {
         return Single.just("Hello");
     }
 
+    @GET
+    @Path("/complex")
+    @Produces("application/json")
+    public List<ComponentType> complex() {
+        ComponentType ret = new ComponentType();
+        ret.setValue("component value");
+        CollectionType ct = new CollectionType();
+        ct.setValue("collection type");
+        ret.getCollectionTypes().add(ct);
+        SubComponent subComponent = new SubComponent();
+        subComponent.getData().add("sub component list value");
+        ret.setSubComponent(subComponent);
+        return Collections.singletonList(ret);
+
+    }
 
     @XmlRootElement
     public static class XmlObject {

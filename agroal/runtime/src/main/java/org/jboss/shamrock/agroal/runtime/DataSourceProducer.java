@@ -81,8 +81,14 @@ public class DataSourceProducer {
                 throw new RuntimeException("Driver is an XA datasource and xa has been configured");
             }
         }
+
+        String targetUrl = System.getenv("DATASOURCE_URL");
+        if (targetUrl == null || targetUrl.isEmpty()) {
+            targetUrl = url;
+        }
+
         AgroalDataSourceConfigurationSupplier dataSourceConfiguration = new AgroalDataSourceConfigurationSupplier();
-        dataSourceConfiguration.connectionPoolConfiguration().connectionFactoryConfiguration().jdbcUrl(url);
+        dataSourceConfiguration.connectionPoolConfiguration().connectionFactoryConfiguration().jdbcUrl(targetUrl);
         dataSourceConfiguration.connectionPoolConfiguration().connectionFactoryConfiguration().connectionProviderClass(providerClass);
 
         if (jta || xa) {

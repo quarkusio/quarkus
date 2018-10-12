@@ -22,6 +22,7 @@ import java.util.function.Function;
 
 import org.hibernate.bytecode.enhance.spi.DefaultEnhancementContext;
 import org.hibernate.bytecode.enhance.spi.Enhancer;
+import org.hibernate.bytecode.enhance.spi.UnloadedClass;
 import org.hibernate.bytecode.spi.BytecodeProvider;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -49,6 +50,11 @@ public final class HibernateEntityEnhancer implements BiFunction<String, ClassVi
             @Override
             public ClassLoader getLoadingClassLoader() {
                 return Thread.currentThread().getContextClassLoader();
+            }
+
+            @Override
+            public boolean doExtendedEnhancement(UnloadedClass classDescriptor) {
+                return true;
             }
         };
         this.enhancer = provider.getEnhancer(enhancementContext);

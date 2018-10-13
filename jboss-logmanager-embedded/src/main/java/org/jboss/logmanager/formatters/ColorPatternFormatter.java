@@ -69,53 +69,53 @@ public class ColorPatternFormatter extends PatternFormatter {
             case LEVEL:
                 return new LevelColorStep(step);
             case SOURCE_CLASS_NAME:
-                return new ColorStep(step, 0xff, 0xff, 0xdd);
+                return new ColorStep(step, 0xff, 0xff, 0x44);
             case DATE:
                 return new ColorStep(step, 0xc0, 0xc0, 0xc0);
             case SOURCE_FILE_NAME:
-                return new ColorStep(step, 0xff, 0xff, 0xdd);
+                return new ColorStep(step, 0xff, 0xff, 0x44);
             case HOST_NAME:
-                return new ColorStep(step, 0xdd, 0xff, 0xdd);
+                return new ColorStep(step, 0x44, 0xff, 0x44);
             case SOURCE_LINE_NUMBER:
-                return new ColorStep(step, 0xff, 0xff, 0xdd);
+                return new ColorStep(step, 0xff, 0xff, 0x44);
             case LINE_SEPARATOR:
                 return step;
             case CATEGORY:
-                return new ColorStep(step, 0xdd, 0xdd, 0xff);
+                return new ColorStep(step, 0x44, 0x88, 0xff);
             case MDC:
-                return new ColorStep(step, 0xdd, 0xff, 0xaa);
+                return new ColorStep(step, 0x44, 0xff, 0xaa);
             case MESSAGE:
                 return new ColorStep(step, 0xff, 0xff, 0xff);
             case EXCEPTION_TRACE:
-                return new ColorStep(step, 0xff, 0xdd, 0xdd);
+                return new ColorStep(step, 0xff, 0x44, 0x44);
             case SOURCE_METHOD_NAME:
-                return new ColorStep(step, 0xff, 0xff, 0xdd);
+                return new ColorStep(step, 0xff, 0xff, 0x44);
             case SOURCE_MODULE_NAME:
-                return new ColorStep(step, 0x88, 0xff, 0xdd);
+                return new ColorStep(step, 0x88, 0xff, 0x44);
             case SOURCE_MODULE_VERSION:
-                return new ColorStep(step, 0xdd, 0xff, 0xdd);
+                return new ColorStep(step, 0x44, 0xff, 0x44);
             case NDC:
-                return new ColorStep(step, 0xdd, 0xff, 0xaa);
+                return new ColorStep(step, 0x44, 0xff, 0xaa);
             case PROCESS_ID:
-                return new ColorStep(step, 0xff, 0xdd, 0xff);
+                return new ColorStep(step, 0xdd, 0xbb, 0x77);
             case PROCESS_NAME:
-                return new ColorStep(step, 0xff, 0xdd, 0xff);
+                return new ColorStep(step, 0xdd, 0xdd, 0x77);
             case RELATIVE_TIME:
                 return new ColorStep(step, 0xc0, 0xc0, 0xc0);
             case RESOURCE_KEY:
-                return new ColorStep(step, 0xdd, 0xff, 0xdd);
+                return new ColorStep(step, 0x44, 0xff, 0x44);
             case SYSTEM_PROPERTY:
                 return new ColorStep(step, 0x88, 0x88, 0x00);
             case TEXT:
-                return new ColorStep(step, 0xdd, 0xdd, 0xdd);
+                return new ColorStep(step, 0xd0, 0xd0, 0xd0);
             case THREAD_ID:
-                return new ColorStep(step, 0xdd, 0x88, 0xdd);
+                return new ColorStep(step, 0x44, 0xaa, 0x44);
             case THREAD_NAME:
-                return new ColorStep(step, 0xdd, 0x88, 0xdd);
+                return new ColorStep(step, 0x44, 0xaa, 0x44);
             case COMPOUND:
             case GENERIC:
             default:
-                return new ColorStep(step, 0xc0, 0xc0, 0xc0);
+                return new ColorStep(step, 0xb0, 0xd0, 0xb0);
         }
     }
 
@@ -184,7 +184,7 @@ public class ColorPatternFormatter extends PatternFormatter {
     static final class LevelColorStep implements FormatStep {
         private static final int LARGEST_LEVEL = Level.ERROR.intValue();
         private static final int SMALLEST_LEVEL = Level.TRACE.intValue();
-        private static final int SATURATION = 128;
+        private static final int SATURATION = 66;
         private final FormatStep delegate;
 
         LevelColorStep(final FormatStep delegate) {
@@ -194,9 +194,9 @@ public class ColorPatternFormatter extends PatternFormatter {
         public void render(final Formatter formatter, final StringBuilder builder, final ExtLogRecord record) {
             final int level = Math.max(Math.min(record.getLevel().intValue(), LARGEST_LEVEL), SMALLEST_LEVEL) - SMALLEST_LEVEL;
             // really crappy linear interpolation
-            int r = (level < 200 ? 0 : (level - 200) * (255 - SATURATION) / 400) + SATURATION;
+            int r = (level < 300 ? 0 : (level - 300) * (255 - SATURATION) / 300) + SATURATION;
             int g = (300 - abs(level - 300)) * (255 - SATURATION) / 300 + SATURATION;
-            int b = (level > 400 ? 0 : level * (255 - SATURATION - 1) / 400) + SATURATION;
+            int b = (level > 300 ? 0 : level * (255 - SATURATION) / 300) + SATURATION;
             ColorUtil.startFgColor(builder, isTrueColor(), r, g, b);
             delegate.render(formatter, builder, record);
             ColorUtil.endFgColor(builder);

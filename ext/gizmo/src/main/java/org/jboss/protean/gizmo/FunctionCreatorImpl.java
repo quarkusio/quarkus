@@ -307,6 +307,11 @@ public class FunctionCreatorImpl implements FunctionCreator {
         }
 
         @Override
+        public ResultHandle checkCast(final ResultHandle resultHandle, final String castTarget) {
+            return delegate.checkCast(resultHandle, castTarget);
+        }
+
+        @Override
         public ResultHandle getCaughtException() {
             if(delegate instanceof CatchBlockCreator) {
                 return ((CatchBlockCreator) delegate).getCaughtException();

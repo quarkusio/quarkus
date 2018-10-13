@@ -377,6 +377,26 @@ public interface BytecodeCreator {
     void throwException(ResultHandle exception);
 
     /**
+     * Perform a check cast operation which transforms the type of the given result handle.
+     *
+     * @param resultHandle the result handle
+     * @param castTarget the cast target type descriptor
+     * @return a new result handle with updated type
+     */
+    ResultHandle checkCast(ResultHandle resultHandle, String castTarget);
+
+    /**
+     * Perform a check cast operation which transforms the type of the given result handle.
+     *
+     * @param resultHandle the result handle
+     * @param castTarget the cast target class
+     * @return a new result handle with updated type
+     */
+    default ResultHandle checkCast(ResultHandle resultHandle, Class<?> castTarget) {
+        return checkCast(resultHandle, castTarget.getName());
+    }
+
+    /**
      * Throws an exception. The exception must have a constructor that takes a single String argument
      *
      * @param exceptionType The exception type

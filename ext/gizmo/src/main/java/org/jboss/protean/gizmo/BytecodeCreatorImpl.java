@@ -507,6 +507,33 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
         });
     }
 
+    @Override
+    public ResultHandle checkCast(final ResultHandle resultHandle, final String castTarget) {
+        final String intName = castTarget.replace('.', '/');
+        // seems like a waste of local vars but it's the safest approach since result type can't be mutated
+        final ResultHandle result = allocateResult("L" + intName + ";");
+        assert result != null;
+        operations.add(new Operation() {
+            void writeBytecode(final MethodVisitor methodVisitor) {
+                loadResultHandle(methodVisitor, resultHandle, BytecodeCreatorImpl.this, result.getType());
+                storeResultHandle(methodVisitor, result);
+            }
+
+            Set<ResultHandle> getInputResultHandles() {
+                return Collections.singleton(resultHandle);
+            }
+
+            ResultHandle getTopResultHandle() {
+                return resultHandle;
+            }
+
+            ResultHandle getOutgoingResultHandle() {
+                return result;
+            }
+        });
+        return result;
+    }
+
     static void storeResultHandle(MethodVisitor methodVisitor, ResultHandle handle) {
         if (handle.getResultType() == ResultHandle.ResultType.UNUSED) {
             if (handle.getType().equals("J") || handle.getType().equals("D")) {
@@ -1001,7 +1028,7 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
         operations.add(new Operation() {
             @Override
             void writeBytecode(MethodVisitor methodVisitor) {
-                loadResultHandle(methodVisitor, value, BytecodeCreatorImpl.this, value.getType());
+                loadResultHandle(methodVisitor, value, BytecodeCreatorImpl.this, target.getType());
                 storeResultHandle(methodVisitor, target);
             }
 

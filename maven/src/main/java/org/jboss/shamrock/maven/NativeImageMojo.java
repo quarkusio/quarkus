@@ -71,6 +71,9 @@ public class NativeImageMojo extends AbstractMojo {
     private boolean enableJni;
 
     @Parameter(defaultValue = "false")
+    private boolean autoServiceLoaderRegistration;
+
+    @Parameter(defaultValue = "false")
     private boolean dumpProxies;
 
     @Parameter(defaultValue = "${native-image.xmx}")
@@ -182,12 +185,21 @@ public class NativeImageMojo extends AbstractMojo {
             if (enableVMInspection) {
                 command.add("-H:+AllowVMInspection");
             }
+            if (autoServiceLoaderRegistration) {
+                command.add("-H:+UseServiceLoaderFeature");
+                //When enabling, at least print what exactly is being added:
+                command.add("-H:+TraceServiceLoaderFeature");
+            }
+            else {
+                command.add("-H:-UseServiceLoaderFeature");
+            }
             if (fullStackTraces) {
                 command.add("-H:+StackTrace");
             }
             else {
                 command.add("-H:-StackTrace");
             }
+
             System.out.println(command);
             Process process = Runtime.getRuntime().exec(command.toArray(new String[0]), null, outputDirectory);
             new Thread(new ProcessReader(process.getInputStream(), false)).start();

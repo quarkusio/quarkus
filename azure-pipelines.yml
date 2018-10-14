@@ -35,6 +35,7 @@ jobs:
     vmImage: 'Ubuntu 16.04'
 
   steps:
+  - checkout: none
   - script: |
        curl https://github.com/openshift/origin/releases/download/v3.10.0/openshift-origin-client-tools-v3.10.0-dd10d17-linux-64bit.tar.gz --location --output oc-client.tgz
        tar -xzvf oc-client.tgz

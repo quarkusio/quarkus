@@ -133,7 +133,8 @@ public class DataSourceProducer {
             poolConfiguration.maxSize( DEFAULT_MAX_POOL_SIZE );
         }
 
-        agroalDataSource = AgroalDataSource.from(dataSourceConfiguration);
+        //Explicit reference to bypass reflection need of the ServiceLoader used by AgroalDataSource#from
+        agroalDataSource = new io.agroal.pool.DataSource(dataSourceConfiguration.get());
         log.log(Level.INFO, "Started data source " + url);
         return agroalDataSource;
     }

@@ -166,5 +166,24 @@ public class BuildConfig {
         public boolean isNull() {
             return node == null;
         }
+
+        public Integer asInteger() {
+            if (node==null) {
+                return null;
+            }
+            if (node instanceof Integer) {
+                return (Integer) node;
+            }
+            //be nice to users using quotes:
+            if (node instanceof String) {
+                try {
+                    return Integer.valueOf(node.toString());
+                }
+                catch (NumberFormatException nfe) {
+                    throw new IllegalStateException("Node was expected to be an Integer in Yaml configuration, could not convert", nfe );
+                }
+            }
+            throw new IllegalStateException("Node was expected to be an Integer in Yaml configuration, found type: " + node.getClass());
+        }
     }
 }

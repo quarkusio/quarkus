@@ -48,11 +48,15 @@ class AgroalProcessor implements ResourceProcessor {
         String password = ds.get("password").asString();
         ConfiguredValue configuredPassword = new ConfiguredValue("datasource.password", password);
 
+        final Integer minSize = ds.get("minSize").asInteger();
+        final Integer maxSize = ds.get("maxSize").asInteger();
+
+
         processorContext.addReflectiveClass(false, false, driver);
         beanDeployment.addAdditionalBean(DataSourceProducer.class);
         try (BytecodeRecorder bc = processorContext.addDeploymentTask(RuntimePriority.DATASOURCE_DEPLOYMENT)) {
             DataSourceTemplate template = bc.getRecordingProxy(DataSourceTemplate.class);
-            template.addDatasource(null, configuredURL.getValue(), bc.classProxy(configuredDriver.getValue()), configuredUsername.getValue(), configuredPassword.getValue());
+            template.addDatasource(null, configuredURL.getValue(), bc.classProxy(configuredDriver.getValue()), configuredUsername.getValue(), configuredPassword.getValue(), minSize, maxSize );
         }
     }
 

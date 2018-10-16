@@ -15,6 +15,13 @@
         <dependency>
             <groupId>org.hibernate.protean</groupId>
             <artifactId>hibernate-orm-protean</artifactId>
+            <exclusions>
+                <!-- Byte Buddy might be needed during build but not at runtime -->
+                <exclusion>
+                    <groupId>net.bytebuddy</groupId>
+                    <artifactId>byte-buddy</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>

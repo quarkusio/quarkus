@@ -24,6 +24,14 @@
             <artifactId>shamrock-transactions-deployment</artifactId>
         </dependency>
 
+        <!--
+           Re-import this so to dodge the Byte Buddy exclusion we declared in shamrock-jpa-runtime
+           I prefer to use exclusions only so to transitively let Hibernate ORM manage the versions -->
+        <dependency>
+            <groupId>org.hibernate.protean</groupId>
+            <artifactId>hibernate-orm-protean</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

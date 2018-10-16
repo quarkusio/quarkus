@@ -16,6 +16,10 @@ import org.objectweb.asm.Opcodes;
  * this function adapts the Shamrock bytecode transformer API - which uses ASM - to use the Entity Enhancement API of
  * Hibernate ORM, which exposes a simple byte array.
  *
+ * N.B. For enhancement the hardcoded tool of choice is the Byte Buddy based enhancer.
+ * This is not configurable, and we enforce the ORM environment to use the "noop" enhancer as we require all
+ * entities to be enhanced at build time.
+ *
  * @author Sanne Grinovero  <sanne@hibernate.org>
  */
 public final class HibernateEntityEnhancer implements Function<String, Function<ClassVisitor, ClassVisitor>> {

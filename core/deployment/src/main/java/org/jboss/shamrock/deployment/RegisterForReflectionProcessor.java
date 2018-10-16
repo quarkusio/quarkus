@@ -14,6 +14,10 @@ public class RegisterForReflectionProcessor implements ResourceProcessor {
             boolean fields = i.value("fields") == null || i.value("fields").asBoolean();
             processorContext.addReflectiveClass(methods, fields, target.name().toString());
         }
+
+        //TODO: where should stuff like this go?
+        //this will hold a heap of memory when it is initialized, and is rarely used (but it generally on the analysis path)
+        processorContext.addRuntimeInitializedClasses("com.sun.org.apache.xml.internal.serializer.ToHTMLStream");
     }
 
     @Override

@@ -20,30 +20,29 @@ import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.annotate.TargetElement;
 
+import io.netty.bootstrap.AbstractBootstrapConfig;
+import io.netty.bootstrap.ChannelFactory;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.DefaultChannelPromise;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.ByteToMessageDecoder.Cumulator;
 import io.netty.handler.ssl.ApplicationProtocolConfig;
 import io.netty.handler.ssl.CipherSuiteFilter;
 import io.netty.handler.ssl.ClientAuth;
+import io.netty.handler.ssl.JdkAlpnApplicationProtocolNegotiator;
+import io.netty.handler.ssl.JdkApplicationProtocolNegotiator;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslProvider;
+import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import io.netty.util.internal.logging.JdkLoggerFactory;
-import io.vertx.core.net.impl.transport.Transport;
 
 @TargetClass(className = "io.netty.util.internal.shaded.org.jctools.util.UnsafeRefArrayAccess")
 final class Target_io_netty_util_internal_shaded_org_jctools_util_UnsafeRefArrayAccess {
      @Alias
      @RecomputeFieldValue(kind = Kind.ArrayIndexShift, declClass = Object[].class)
      public static int REF_ELEMENT_SHIFT;
-}
-
-@TargetClass(className = "io.vertx.core.net.impl.transport.Transport")
-final class Target_io_vertx_core_net_impl_transport_Transport {
-	@Substitute
-	public static Transport nativeTransport() {
-		return Transport.JDK;
-	}
 }
 
 @Substitute
@@ -207,6 +206,109 @@ final class Target_io_netty_util_internal_logging_InternalLoggerFactory {
     }
 }
 
-public class NettySubstitutions {
+@TargetClass(className = "io.netty.handler.ssl.JdkDefaultApplicationProtocolNegotiator")
+final class Target_io_netty_handler_ssl_JdkDefaultApplicationProtocolNegotiator {
+	@Alias
+    public static Target_io_netty_handler_ssl_JdkDefaultApplicationProtocolNegotiator INSTANCE;
+}
+
+@TargetClass(className = "io.netty.handler.ssl.JdkSslContext")
+final class Target_io_netty_handler_ssl_JdkSslContext{
+	@Substitute
+    static JdkApplicationProtocolNegotiator toNegotiator(ApplicationProtocolConfig config, boolean isServer) {
+        if (config == null) {
+            return (JdkApplicationProtocolNegotiator)(Object)Target_io_netty_handler_ssl_JdkDefaultApplicationProtocolNegotiator.INSTANCE;
+        }
+
+        switch(config.protocol()) {
+        case NONE:
+            return (JdkApplicationProtocolNegotiator)(Object)Target_io_netty_handler_ssl_JdkDefaultApplicationProtocolNegotiator.INSTANCE;
+        case ALPN:
+            if (isServer) {
+                switch(config.selectorFailureBehavior()) {
+                case FATAL_ALERT:
+                    return new JdkAlpnApplicationProtocolNegotiator(true, config.supportedProtocols());
+                case NO_ADVERTISE:
+                    return new JdkAlpnApplicationProtocolNegotiator(false, config.supportedProtocols());
+                default:
+                    throw new UnsupportedOperationException(new StringBuilder("JDK provider does not support ")
+                    .append(config.selectorFailureBehavior()).append(" failure behavior").toString());
+                }
+            } else {
+                switch(config.selectedListenerFailureBehavior()) {
+                case ACCEPT:
+                    return new JdkAlpnApplicationProtocolNegotiator(false, config.supportedProtocols());
+                case FATAL_ALERT:
+                    return new JdkAlpnApplicationProtocolNegotiator(true, config.supportedProtocols());
+                default:
+                    throw new UnsupportedOperationException(new StringBuilder("JDK provider does not support ")
+                    .append(config.selectedListenerFailureBehavior()).append(" failure behavior").toString());
+                }
+            }
+        default:
+            throw new UnsupportedOperationException(new StringBuilder("JDK provider does not support ")
+            .append(config.protocol()).append(" protocol").toString());
+        }
+    }
+
+}
+
+/* 
+ * This one only prints exceptions otherwise we get a useless bogus
+ * exception message: https://github.com/eclipse-vertx/vert.x/issues/1657
+ */
+@TargetClass(className = "io.netty.bootstrap.AbstractBootstrap")
+final class Target_io_netty_bootstrap_AbstractBootstrap {
+	@Alias
+    private ChannelFactory channelFactory;
+
+	@Alias
+    void init(Channel channel) throws Exception{}
+	
+	@Alias
+    public AbstractBootstrapConfig config() { return null; }
+
+
+	@Substitute
+    final ChannelFuture initAndRegister() {
+        Channel channel = null;
+        try {
+            channel = channelFactory.newChannel();
+            init(channel);
+        } catch (Throwable t) {
+        	// THE FIX IS HERE:
+        	t.printStackTrace();
+            if (channel != null) {
+                // channel can be null if newChannel crashed (eg SocketException("too many open files"))
+                channel.unsafe().closeForcibly();
+            }
+            // as the Channel is not registered yet we need to force the usage of the GlobalEventExecutor
+            return new DefaultChannelPromise(channel, GlobalEventExecutor.INSTANCE).setFailure(t);
+        }
+
+        ChannelFuture regFuture = config().group().register(channel);
+        if (regFuture.cause() != null) {
+            if (channel.isRegistered()) {
+                channel.close();
+            } else {
+                channel.unsafe().closeForcibly();
+            }
+        }
+
+        // If we are here and the promise is not failed, it's one of the following cases:
+        // 1) If we attempted registration from the event loop, the registration has been completed at this point.
+        //    i.e. It's safe to attempt bind() or connect() now because the channel has been registered.
+        // 2) If we attempted registration from the other thread, the registration request has been successfully
+        //    added to the event loop's task queue for later execution.
+        //    i.e. It's safe to attempt bind() or connect() now:
+        //         because bind() or connect() will be executed *after* the scheduled registration task is executed
+        //         because register(), bind(), and connect() are all bound to the same thread.
+
+        return regFuture;
+
+    }
+}
+
+class NettySubstitutions {
 
 }

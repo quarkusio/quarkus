@@ -11,6 +11,7 @@ import org.jboss.shamrock.deployment.ProcessorContext;
 import org.jboss.shamrock.deployment.ResourceProcessor;
 import org.jboss.shamrock.deployment.RuntimePriority;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
+import org.jboss.shamrock.runtime.ConfiguredValue;
 import org.jboss.shamrock.transactions.runtime.TransactionProducers;
 import org.jboss.shamrock.transactions.runtime.TransactionTemplate;
 import org.jboss.shamrock.transactions.runtime.interceptor.TransactionalInterceptorBase;
@@ -59,6 +60,7 @@ class TransactionsProcessor implements ResourceProcessor {
             TransactionTemplate tt = bc.getRecordingProxy(TransactionTemplate.class);
             Properties defaultProperties = PropertiesFactory.getDefaultProperties();
             tt.setDefaultProperties(defaultProperties);
+            tt.setNodeName(new ConfiguredValue("transactions.node-name", "shamrock"));
         }
 
     }

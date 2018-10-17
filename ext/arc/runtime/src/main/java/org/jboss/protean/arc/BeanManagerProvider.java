@@ -4,7 +4,7 @@ import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.spi.BeanManager;
 
 /**
- * Dummy {@link BeanManager} provider.
+ * {@link BeanManager} provider.
  *
  * @author Martin Kouba
  */
@@ -12,8 +12,7 @@ public class BeanManagerProvider<T> implements InjectableReferenceProvider<BeanM
 
     @Override
     public BeanManager get(CreationalContext<BeanManager> creationalContext) {
-        // TODO log a warning
-        return null;
+        return BeanManagerImpl.INSTANCE.get();
     }
 
 }

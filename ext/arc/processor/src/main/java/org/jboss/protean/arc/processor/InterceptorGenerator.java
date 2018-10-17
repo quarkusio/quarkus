@@ -40,6 +40,8 @@ public class InterceptorGenerator extends BeanGenerator {
 
     private static final Logger LOGGER = Logger.getLogger(InterceptorGenerator.class);
 
+    protected static final String FIELD_NAME_BINDINGS = "bindings";
+
     /**
      *
      * @param annotationLiterals
@@ -76,8 +78,8 @@ public class InterceptorGenerator extends BeanGenerator {
                 .build();
 
         // Fields
-        FieldCreator beanTypes = interceptorCreator.getFieldCreator("beanTypes", Set.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
-        FieldCreator bindings = interceptorCreator.getFieldCreator("bindings", Set.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
+        FieldCreator beanTypes = interceptorCreator.getFieldCreator(FIELD_NAME_BEAN_TYPES, Set.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
+        FieldCreator bindings = interceptorCreator.getFieldCreator(FIELD_NAME_BINDINGS, Set.class).setModifiers(ACC_PRIVATE | ACC_FINAL);
 
         Map<InjectionPointInfo, String> injectionPointToProviderField = new HashMap<>();
         Map<InterceptorInfo, String> interceptorToProviderField = new HashMap<>();

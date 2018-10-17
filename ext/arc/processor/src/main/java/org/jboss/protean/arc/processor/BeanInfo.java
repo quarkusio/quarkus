@@ -18,6 +18,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.protean.arc.processor.Methods.MethodKey;
@@ -98,6 +99,13 @@ class BeanInfo {
 
     boolean isProducerField() {
         return Kind.FIELD.equals(target.kind());
+    }
+
+    DotName getBeanClass() {
+        if (declaringBean != null) {
+            return declaringBean.target.asClass().name();
+        }
+        return target.asClass().name();
     }
 
     boolean isInterceptor() {

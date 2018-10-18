@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
@@ -56,8 +55,8 @@ class ArcContainerImpl implements ArcContainer {
     public ArcContainerImpl() {
         id = UUID.randomUUID().toString();
         running = new AtomicBoolean(true);
-        beans = new CopyOnWriteArrayList<>();
-        observers = new CopyOnWriteArrayList<>();
+        beans = new ArrayList<>();
+        observers = new ArrayList<>();
         for (ComponentsProvider componentsProvider : ServiceLoader.load(ComponentsProvider.class)) {
             Components components = componentsProvider.getComponents();
             beans.addAll(components.getBeans());

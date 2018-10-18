@@ -1,6 +1,8 @@
 package org.jboss.shamrock.maven;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -20,6 +22,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.jar.Attributes;
@@ -135,9 +142,8 @@ public class BuildMojo extends AbstractMojo {
                 throw new MojoFailureException(problems.toString());
             }
             Set<String> seen = new HashSet<>();
-            try (ZipOutputStream runner = new ZipOutputStream(new FileOutputStream(new File(buildDir, finalName + "-runner.jar")))) {
+            try (ZipOutputStream runner = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(new File(buildDir, finalName + "-runner.jar"))))) {
                 Map<String, List<byte[]>> services = new HashMap<>();
-
 
 
                 for (Artifact a : project.getArtifacts()) {
@@ -150,10 +156,10 @@ public class BuildMojo extends AbstractMojo {
                                 if (e.getName().startsWith("META-INF/services/") && e.getName().length() > 18) {
                                     services.computeIfAbsent(e.getName(), (u) -> new ArrayList<>()).add(read(in));
                                     continue;
-                                } else if(e.getName().equals("META-INF/MANIFEST.MF")) {
+                                } else if (e.getName().equals("META-INF/MANIFEST.MF")) {
                                     continue;
                                 }
-                                if (! seen.add(e.getName())) {
+                                if (!seen.add(e.getName())) {
                                     if (!e.getName().endsWith("/")) {
                                         getLog().warn("Duplicate entry " + e.getName() + " entry from " + a + " will be ignored");
                                     }
@@ -229,7 +235,7 @@ public class BuildMojo extends AbstractMojo {
                             String pathName = wiringJar.relativize(path).toString();
                             if (Files.isDirectory(path)) {
                                 String p = pathName + "/";
-                                if(seen.contains(p)) {
+                                if (seen.contains(p)) {
                                     return;
                                 }
                                 seen.add(p);
@@ -264,52 +270,76 @@ public class BuildMojo extends AbstractMojo {
                 //like the cleanest way to do it
                 //at the end of the PoC phase all this needs review
                 Path appJar = Paths.get(outputDirectory.getAbsolutePath());
-                Files.walk(appJar).forEach(new Consumer<Path>() {
-                    @Override
-                    public void accept(Path path) {
-                        try {
-                            String pathName = appJar.relativize(path).toString();
-                            if (Files.isDirectory(path)) {
+                ExecutorService executorPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+                ConcurrentLinkedDeque<Future<FutureEntry>> transformed = new ConcurrentLinkedDeque<>();
+                try {
+                    Files.walk(appJar).forEach(new Consumer<Path>() {
+                        @Override
+                        public void accept(Path path) {
+                            try {
+                                String pathName = appJar.relativize(path).toString();
+                                if (Files.isDirectory(path)) {
 //                                if (!pathName.isEmpty()) {
 //                                    out.putNextEntry(new ZipEntry(pathName + "/"));
 //                                }
-                            } else if (pathName.endsWith(".class") && !buildTimeGenerator.getBytecodeTransformers().isEmpty()) {
-                                String className = pathName.substring(0, pathName.length() - 6).replace("/", ".");
-                                List<Function<ClassVisitor, ClassVisitor>> visitors = new ArrayList<>();
-                                for (Function<String, Function<ClassVisitor, ClassVisitor>> t : buildTimeGenerator.getBytecodeTransformers()) {
-                                    Function<ClassVisitor, ClassVisitor> visitor = t.apply(className);
-                                    if (visitor != null) {
-                                        visitors.add(visitor);
+                                } else if (pathName.endsWith(".class") && !buildTimeGenerator.getBytecodeTransformers().isEmpty()) {
+                                    String className = pathName.substring(0, pathName.length() - 6).replace("/", ".");
+                                    List<Function<ClassVisitor, ClassVisitor>> visitors = new ArrayList<>();
+                                    for (Function<String, Function<ClassVisitor, ClassVisitor>> t : buildTimeGenerator.getBytecodeTransformers()) {
+                                        Function<ClassVisitor, ClassVisitor> visitor = t.apply(className);
+                                        if (visitor != null) {
+                                            visitors.add(visitor);
+                                        }
                                     }
-                                }
-                                runner.putNextEntry(new ZipEntry(pathName));
-                                if (visitors.isEmpty()) {
+                                    if (visitors.isEmpty()) {
+                                        runner.putNextEntry(new ZipEntry(pathName));
+                                        try (FileInputStream in = new FileInputStream(path.toFile())) {
+                                            doCopy(runner, in);
+                                        }
+                                    } else {
+                                        ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+                                        try (InputStream in = new FileInputStream(path.toFile())) {
+                                            int r;
+                                            byte[] bytes = new byte[2048];
+                                            while ((r = in.read(bytes)) > 0) {
+                                                out.write(bytes, 0, r);
+                                            }
+                                        }
+                                        transformed.add(executorPool.submit(new Callable<FutureEntry>() {
+                                            @Override
+                                            public FutureEntry call() throws Exception {
+                                                ClassReader cr = new ClassReader(new ByteArrayInputStream(out.toByteArray()));
+                                                ClassWriter writer = new ClassWriter(cr, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+                                                ClassVisitor visitor = writer;
+                                                for (Function<ClassVisitor, ClassVisitor> i : visitors) {
+                                                    visitor = i.apply(visitor);
+                                                }
+                                                cr.accept(visitor, 0);
+                                                return new FutureEntry(writer.toByteArray(), pathName);
+                                            }
+                                        }));
+                                    }
+                                } else {
+                                    runner.putNextEntry(new ZipEntry(pathName));
                                     try (FileInputStream in = new FileInputStream(path.toFile())) {
                                         doCopy(runner, in);
                                     }
-                                } else {
-                                    try (InputStream in = new FileInputStream(path.toFile())) {
-                                        ClassReader cr = new ClassReader(in);
-                                        ClassWriter writer = new ClassWriter(cr, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-                                        ClassVisitor visitor = writer;
-                                        for (Function<ClassVisitor, ClassVisitor> i : visitors) {
-                                            visitor = i.apply(visitor);
-                                        }
-                                        cr.accept(visitor, 0);
-                                        runner.write(writer.toByteArray());
-                                    }
                                 }
-                            } else {
-                                runner.putNextEntry(new ZipEntry(pathName));
-                                try (FileInputStream in = new FileInputStream(path.toFile())) {
-                                    doCopy(runner, in);
-                                }
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
                             }
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
                         }
+                    });
+                    for (Future<FutureEntry> i : transformed) {
+
+                        FutureEntry res = i.get();
+                        runner.putNextEntry(new ZipEntry(res.location));
+                        runner.write(res.data);
                     }
-                });
+                } finally {
+                    executorPool.shutdown();
+                }
                 for (Map.Entry<String, List<byte[]>> entry : services.entrySet()) {
                     runner.putNextEntry(new ZipEntry(entry.getKey()));
                     for (byte[] i : entry.getValue()) {
@@ -341,5 +371,15 @@ public class BuildMojo extends AbstractMojo {
             out.write(buffer, 0, r);
         }
         return out.toByteArray();
+    }
+
+    private static final class FutureEntry {
+        final byte[] data;
+        final String location;
+
+        private FutureEntry(byte[] data, String location) {
+            this.data = data;
+            this.location = location;
+        }
     }
 }

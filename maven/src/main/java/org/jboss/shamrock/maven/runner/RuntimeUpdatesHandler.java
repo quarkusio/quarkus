@@ -17,6 +17,8 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.jboss.shamrock.maven.CopyUtils;
+
 import org.fakereplace.core.Fakereplace;
 import org.fakereplace.replacement.AddedClass;
 
@@ -116,7 +118,7 @@ public class RuntimeUpdatesHandler implements HttpHandler {
                     .filter(p -> wasRecentlyModified(p))
                     .collect(Collectors.toConcurrentMap(
                             p -> pathToClassName(p),
-                            p -> readFileContentNoIOExceptions(p))
+                            p -> CopyUtils.readFileContentNoIOExceptions( p))
                     );
         }
         if (changedClasses.isEmpty()) {
@@ -146,34 +148,6 @@ public class RuntimeUpdatesHandler implements HttpHandler {
         String pathName = classesDir.relativize(path).toString();
         String className = pathName.substring(0, pathName.length() - 6).replace("/", ".");
         return className;
-    }
-
-    private byte[] readFileContentNoIOExceptions(final Path path) {
-        try {
-            return readFileContent(path);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private byte[] readFileContent(final Path path) throws IOException {
-        final File file = path.toFile();
-        final long fileLength = file.length();
-        if (fileLength > Integer.MAX_VALUE) {
-            throw new RuntimeException("Can't process class files larger than Integer.MAX_VALUE bytes");
-        }
-        try (FileInputStream stream = new FileInputStream(file)) {
-            //Might be large but we need a single byte[] at the end of things, might as well allocate it in one shot:
-            ByteArrayOutputStream out = new ByteArrayOutputStream((int) fileLength);
-            byte[] buf = new byte[1024];
-            int r;
-            try (FileInputStream in = new FileInputStream(path.toFile())) {
-                while ((r = in.read(buf)) > 0) {
-                    out.write(buf, 0, r);
-                }
-                return out.toByteArray();
-            }
-        }
     }
 
     interface UpdateHandler {

@@ -21,8 +21,10 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.context.Initialized;
 import javax.enterprise.context.RequestScoped;
+import javax.enterprise.inject.AmbiguousResolutionException;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Default;
+import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.util.TypeLiteral;
 import javax.inject.Singleton;
@@ -43,7 +45,7 @@ class ArcContainerImpl implements ArcContainer {
 
     private final Map<Class<? extends Annotation>, InjectableContext> contexts;
 
-    private final ComputingCache<Resolvable, List<InjectableBean<?>>> resolved;
+    private final ComputingCache<Resolvable, Set<InjectableBean<?>>> resolved;
 
     private final List<ResourceReferenceProvider> resourceProviders;
 
@@ -168,13 +170,12 @@ class ArcContainerImpl implements ArcContainer {
     }
 
     private <T> InstanceHandle<T> instanceHandle(Type type, Annotation... qualifiers) {
-        return instance(getBean(type, qualifiers));
+        return beanInstanceHandle(getBean(type, qualifiers), null);
     }
 
-    private <T> InstanceHandle<T> instance(InjectableBean<T> bean) {
+    <T> InstanceHandle<T> beanInstanceHandle(InjectableBean<T> bean, CreationalContextImpl<T> parentContext) {
         if (bean != null) {
-            CreationalContextImpl<T> parentContext = null;
-            if (Dependent.class.equals(bean.getScope())) {
+            if (parentContext == null && Dependent.class.equals(bean.getScope())) {
                 parentContext = new CreationalContextImpl<>();
             }
             CreationalContextImpl<T> creationalContext = parentContext != null ? parentContext.child() : new CreationalContextImpl<>();
@@ -199,30 +200,98 @@ class ArcContainerImpl implements ArcContainer {
         if (qualifiers == null || qualifiers.length == 0) {
             qualifiers = new Annotation[] { Default.Literal.INSTANCE };
         }
-        List<InjectableBean<?>> resolvedBeans = resolved.getValue(new Resolvable(requiredType, qualifiers));
-        return resolvedBeans.isEmpty() ? null : (InjectableBean<T>) resolvedBeans.get(0);
+        Set<InjectableBean<?>> resolvedBeans = resolved.getValue(new Resolvable(requiredType, qualifiers));
+        return resolvedBeans.isEmpty() || resolvedBeans.size() > 1 ? null : (InjectableBean<T>) resolvedBeans.iterator().next();
     }
 
-    private List<InjectableBean<?>> resolve(Resolvable resolvable) {
-        List<InjectableBean<?>> resolvedBeans = new ArrayList<>();
-        for (InjectableBean<?> bean : beans) {
-            if (matches(bean, resolvable.requiredType, resolvable.qualifiers)) {
-                resolvedBeans.add(bean);
+    Set<Bean<?>> getBeans(Type requiredType, Annotation... qualifiers) {
+        // This method does not cache the results
+        return new HashSet<>(getMatchingBeans(new Resolvable(requiredType, qualifiers)));
+    }
+
+    @SuppressWarnings("unchecked")
+    <X> Bean<? extends X> resolve(Set<Bean<? extends X>> beans) {
+        if (beans == null || beans.isEmpty()) {
+            return null;
+        } else if (beans.size() == 1) {
+            return beans.iterator().next();
+        } else {
+            // Try to resolve the ambiguity
+            if (beans.stream().allMatch(b -> b instanceof InjectableBean)) {
+                List<InjectableBean<?>> matching = new ArrayList<>();
+                for (Bean<? extends X> bean : beans) {
+                    matching.add((InjectableBean<? extends X>) bean);
+                }
+                Set<InjectableBean<?>> resolved = resolve(matching);
+                if (resolved.size() != 1) {
+                    throw new AmbiguousResolutionException(resolved.toString());
+                }
+                return (Bean<? extends X>) resolved.iterator().next();
+            } else {
+                // The set contains non-Arc beans - give our best effort
+                Set<Bean<? extends X>> resolved = new HashSet<>(beans);
+                for (Iterator<Bean<? extends X>> iterator = resolved.iterator(); iterator.hasNext();) {
+                    if (!iterator.next().isAlternative()) {
+                        iterator.remove();
+                    }
+                }
+                if (resolved.size() != 1) {
+                    throw new AmbiguousResolutionException(resolved.toString());
+                }
+                return resolved.iterator().next();
             }
         }
-        if (resolvedBeans.size() > 1) {
-            // Try to resolve the ambiguity
-            for (Iterator<InjectableBean<?>> iterator = resolvedBeans.iterator(); iterator.hasNext();) {
-                InjectableBean<?> bean = iterator.next();
-                if (bean.getAlternativePriority() == null && (bean.getDeclaringBean() == null || bean.getDeclaringBean().getAlternativePriority() == null)) {
+    }
+
+    private Set<InjectableBean<?>> resolve(Resolvable resolvable) {
+        return resolve(getMatchingBeans(resolvable));
+    }
+
+    private Set<InjectableBean<?>> resolve(List<InjectableBean<?>> matching) {
+        if (matching.isEmpty()) {
+            return Collections.emptySet();
+        } else if (matching.size() == 1) {
+            return Collections.singleton(matching.get(0));
+        }
+        // Try to resolve the ambiguity
+        List<InjectableBean<?>> resolved = new ArrayList<>(matching);
+        for (Iterator<InjectableBean<?>> iterator = resolved.iterator(); iterator.hasNext();) {
+            InjectableBean<?> bean = iterator.next();
+            if (bean.getAlternativePriority() == null && (bean.getDeclaringBean() == null || bean.getDeclaringBean().getAlternativePriority() == null)) {
+                // Remove non-alternatives
+                iterator.remove();
+            }
+        }
+        if (resolved.size() == 1) {
+            return Collections.singleton(resolved.get(0));
+        } else if (resolved.size() > 1) {
+            resolved.sort(this::compareAlternativeBeans);
+            // Keep only the highest priorities
+            Integer highest = getAlternativePriority(resolved.get(0));
+            for (Iterator<InjectableBean<?>> iterator = resolved.iterator(); iterator.hasNext();) {
+                if (!highest.equals(getAlternativePriority(iterator.next()))) {
                     iterator.remove();
                 }
             }
-            if (resolvedBeans.size() > 1) {
-                resolvedBeans.sort(this::compareAlternativeBeans);
+            if (resolved.size() == 1) {
+                return Collections.singleton(resolved.get(0));
             }
         }
-        return resolvedBeans;
+        return new HashSet<>(matching);
+    }
+
+    private Integer getAlternativePriority(InjectableBean<?> bean) {
+        return bean.getDeclaringBean() != null ? bean.getDeclaringBean().getAlternativePriority() : bean.getAlternativePriority();
+    }
+
+    List<InjectableBean<?>> getMatchingBeans(Resolvable resolvable) {
+        List<InjectableBean<?>> matching = new ArrayList<>();
+        for (InjectableBean<?> bean : beans) {
+            if (matches(bean, resolvable.requiredType, resolvable.qualifiers)) {
+                matching.add(bean);
+            }
+        }
+        return matching;
     }
 
     private int compareAlternativeBeans(InjectableBean<?> bean1, InjectableBean<?> bean2) {
@@ -251,7 +320,14 @@ class ArcContainerImpl implements ArcContainer {
         return resolvedObservers;
     }
 
-    List<InjectableBean<?>> geBeans(Type requiredType, Annotation... qualifiers) {
+    /**
+     * Performs typesafe resolution and resolves ambiguities.
+     *
+     * @param requiredType
+     * @param qualifiers
+     * @return the set of resolved beans
+     */
+    Set<InjectableBean<?>> getResolvedBeans(Type requiredType, Annotation... qualifiers) {
         if (qualifiers == null || qualifiers.length == 0) {
             qualifiers = new Annotation[] { Default.Literal.INSTANCE };
         }

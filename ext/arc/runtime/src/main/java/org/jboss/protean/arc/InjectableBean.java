@@ -2,20 +2,22 @@ package org.jboss.protean.arc;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.Collections;
 import java.util.Set;
 
 import javax.enterprise.context.Dependent;
-import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
+import javax.enterprise.inject.spi.Bean;
+import javax.enterprise.inject.spi.InjectionPoint;
 
 /**
- * Represents an injectable bean. It is an alternative to {@link javax.enterprise.inject.spi.Bean}.
+ * Represents an injectable bean.
  *
  * @author Martin Kouba
  *
  * @param <T>
  */
-public interface InjectableBean<T> extends Contextual<T>, InjectableReferenceProvider<T> {
+public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<T> {
 
     /**
      *
@@ -27,7 +29,7 @@ public interface InjectableBean<T> extends Contextual<T>, InjectableReferencePro
 
     /**
      *
-     * @return the set of bean type
+     * @return the set of bean types
      */
     Set<Type> getTypes();
 
@@ -50,6 +52,31 @@ public interface InjectableBean<T> extends Contextual<T>, InjectableReferencePro
      */
     default InjectableBean<?> getDeclaringBean() {
         return null;
+    }
+
+    @Override
+    default String getName() {
+        return null;
+    }
+
+    @Override
+    default Set<Class<? extends Annotation>> getStereotypes() {
+        return Collections.emptySet();
+    }
+
+    @Override
+    default Set<InjectionPoint> getInjectionPoints() {
+        return Collections.emptySet();
+    }
+
+    @Override
+    default boolean isNullable() {
+        return false;
+    }
+
+    @Override
+    default boolean isAlternative() {
+        return getAlternativePriority() != null;
     }
 
     /**

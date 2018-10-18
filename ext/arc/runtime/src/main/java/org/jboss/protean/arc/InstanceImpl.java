@@ -7,7 +7,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 
 import javax.enterprise.context.Dependent;
@@ -48,13 +47,13 @@ class InstanceImpl<T> implements Instance<T> {
     @SuppressWarnings("unchecked")
     @Override
     public T get() {
-        List<InjectableBean<?>> beans = getBeans();
+        Set<InjectableBean<?>> beans = getBeans();
         if (beans.isEmpty()) {
             throw new UnsatisfiedResolutionException();
         } else if (beans.size() > 1) {
             throw new AmbiguousResolutionException();
         }
-        return getBeanInstance((InjectableBean<T>) beans.get(0));
+        return getBeanInstance((InjectableBean<T>) beans.iterator().next());
     }
 
     @Override
@@ -107,8 +106,8 @@ class InstanceImpl<T> implements Instance<T> {
         return instance;
     }
 
-    private List<InjectableBean<?>> getBeans() {
-        return ArcContainerImpl.unwrap(Arc.container()).geBeans(type, qualifiers.toArray(EMPTY_ANNOTATION_ARRAY));
+    private Set<InjectableBean<?>> getBeans() {
+        return ArcContainerImpl.instance().getResolvedBeans(type, qualifiers.toArray(EMPTY_ANNOTATION_ARRAY));
     }
 
     class InstanceIterator implements Iterator<T> {

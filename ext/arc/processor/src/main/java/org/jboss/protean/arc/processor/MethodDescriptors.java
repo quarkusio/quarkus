@@ -2,6 +2,7 @@ package org.jboss.protean.arc.processor;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -90,6 +91,8 @@ final class MethodDescriptors {
 
     static final MethodDescriptor CREATIONAL_CTX_ADD_DEP_TO_PARENT = MethodDescriptor.ofMethod(CreationalContextImpl.class, "addDependencyToParent", void.class, InjectableBean.class,
             Object.class, CreationalContext.class);
+
+    static final MethodDescriptor COLLECTIONS_UNMODIFIABLE_SET = MethodDescriptor.ofMethod(Collections.class, "unmodifiableSet", Set.class, Set.class);
 
     private MethodDescriptors() {
     }

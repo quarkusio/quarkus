@@ -79,4 +79,9 @@ public class InitializedInterceptor<T> implements InjectableInterceptor<T> {
         return delegate.getPriority();
     }
 
+    @Override
+    public Class<?> getBeanClass() {
+        return delegate.getBeanClass();
+    }
+
 }

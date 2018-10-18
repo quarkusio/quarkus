@@ -29,11 +29,15 @@ import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.util.TypeLiteral;
 import javax.inject.Singleton;
 
+import org.jboss.logging.Logger;
+
 /**
  *
  * @author Martin Kouba
  */
 class ArcContainerImpl implements ArcContainer {
+
+    private static final Logger LOGGER = Logger.getLogger(ArcContainerImpl.class.getPackage().getName());
 
     private final String id;
 
@@ -77,6 +81,7 @@ class ArcContainerImpl implements ArcContainer {
         qualifiers.add(Initialized.Literal.APPLICATION);
         qualifiers.add(Any.Literal.INSTANCE);
         EventImpl.createNotifier(Object.class, qualifiers, this).notify(toString());
+        LOGGER.infof("Arc container %s initialized", id);
     }
 
     @Override

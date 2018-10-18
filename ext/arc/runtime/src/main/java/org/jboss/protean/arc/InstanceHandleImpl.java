@@ -1,10 +1,7 @@
 package org.jboss.protean.arc;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.RequestScoped;
-import javax.enterprise.context.spi.AlterableContext;
+import javax.enterprise.context.Dependent;
 import javax.enterprise.context.spi.CreationalContext;
-import javax.inject.Singleton;
 
 /**
  *
@@ -52,16 +49,16 @@ class InstanceHandleImpl<T> implements InstanceHandle<T> {
 
     @Override
     public void destroy() {
-        if (isAvailable()) {
-            if (bean.getScope().equals(ApplicationScoped.class) || bean.getScope().equals(RequestScoped.class) || bean.getScope().equals(Singleton.class)) {
-                ((AlterableContext) Arc.container().getContext(bean.getScope())).destroy(bean);
-            } else {
+        if (instance != null) {
+            if (bean.getScope().equals(Dependent.class)) {
                 destroyInternal();
+            } else {
+                Arc.container().getContext(bean.getScope()).destroy(bean);
             }
         }
     }
 
-    public void destroyInternal() {
+    void destroyInternal() {
         if (parentCreationalContext != null) {
             parentCreationalContext.release();
         } else {

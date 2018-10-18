@@ -9,7 +9,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.AmbiguousResolutionException;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.UnsatisfiedResolutionException;
@@ -100,9 +99,6 @@ class InstanceImpl<T> implements Instance<T> {
         CreationalContextImpl<T> ctx = creationalContext.child();
         // TODO current injection point?
         T instance = bean.get(ctx);
-        if (Dependent.class.equals(bean.getScope())) {
-            creationalContext.addDependentInstance(bean, instance, ctx);
-        }
         return instance;
     }
 

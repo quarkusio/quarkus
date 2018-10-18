@@ -1,7 +1,9 @@
 package org.jboss.protean.arc;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.enterprise.context.spi.CreationalContext;
 
@@ -23,7 +25,7 @@ public class CreationalContextImpl<T> implements CreationalContext<T> {
 
     public CreationalContextImpl(CreationalContextImpl<?> parent) {
         this.parent = parent;
-        this.dependentInstances = new CopyOnWriteArrayList<>();
+        this.dependentInstances = Collections.synchronizedList(new ArrayList<>());
     }
 
     public <I> void addDependentInstance(InjectableBean<I> bean, I instance, CreationalContext<I> ctx) {
@@ -36,10 +38,11 @@ public class CreationalContextImpl<T> implements CreationalContext<T> {
 
     void destroyDependentInstance(Object dependentInstance) {
         synchronized (dependentInstances) {
-            for (InstanceHandle<?> instanceHandle : dependentInstances) {
+            for (Iterator<InstanceHandle<?>> iterator = dependentInstances.iterator(); iterator.hasNext();) {
+                InstanceHandle<?> instanceHandle = iterator.next();
                 if (instanceHandle.get() == dependentInstance) {
                     instanceHandle.destroy();
-                    dependentInstances.remove(instanceHandle);
+                    iterator.remove();
                     break;
                 }
             }

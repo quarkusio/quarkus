@@ -45,19 +45,19 @@ public class BeanInfoInjectionsTest {
         for (Injection injection : injections) {
             if (injection.target.kind().equals(org.jboss.jandex.AnnotationTarget.Kind.FIELD) && injection.target.asField().name().equals("foo")) {
                 assertEquals(1, injection.injectionPoints.size());
-                assertEquals(fooType, injection.injectionPoints.get(0).requiredType);
-                assertEquals(1, injection.injectionPoints.get(0).requiredQualifiers.size());
+                assertEquals(fooType, injection.injectionPoints.get(0).getRequiredType());
+                assertEquals(1, injection.injectionPoints.get(0).getRequiredQualifiers().size());
             } else if (injection.target.kind().equals(org.jboss.jandex.AnnotationTarget.Kind.METHOD) && injection.target.asMethod().name().equals("<init>")) {
                 // Constructor
                 assertEquals(2, injection.injectionPoints.size());
-                assertEquals(listStringType, injection.injectionPoints.get(0).requiredType);
-                assertEquals(fooType, injection.injectionPoints.get(1).requiredType);
-                assertEquals(1, injection.injectionPoints.get(1).requiredQualifiers.size());
+                assertEquals(listStringType, injection.injectionPoints.get(0).getRequiredType());
+                assertEquals(fooType, injection.injectionPoints.get(1).getRequiredType());
+                assertEquals(1, injection.injectionPoints.get(1).getRequiredQualifiers().size());
             } else if (injection.target.kind().equals(org.jboss.jandex.AnnotationTarget.Kind.METHOD) && injection.target.asMethod().name().equals("init")) {
                 // Initializer
                 assertEquals(2, injection.injectionPoints.size());
-                assertEquals(listStringType, injection.injectionPoints.get(1).requiredType);
-                assertEquals(fooType, injection.injectionPoints.get(0).requiredType);
+                assertEquals(listStringType, injection.injectionPoints.get(1).getRequiredType());
+                assertEquals(fooType, injection.injectionPoints.get(0).getRequiredType());
             } else {
                 Assert.fail();
             }

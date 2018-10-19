@@ -18,6 +18,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
@@ -37,6 +41,8 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Cons
 
     private final Path applicationClasses;
     private final Path frameworkClassesPath;
+
+    private static final ConcurrentHashMap<String, Future<Class<?>>> loadingClasses = new ConcurrentHashMap<>();
 
     static {
         registerAsParallelCapable();
@@ -118,26 +124,36 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Cons
         String fileName = name.replace(".", "/") + ".class";
         Path classLoc = applicationClasses.resolve(fileName);
         if (Files.exists(classLoc)) {
-            byte[] buf = new byte[1024];
-            int r;
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            try (FileInputStream in = new FileInputStream(classLoc.toFile())) {
-                while ((r = in.read(buf)) > 0) {
-                    out.write(buf, 0, r);
+            CompletableFuture<Class<?>> res = new CompletableFuture<>();
+            Future<Class<?>> existing = loadingClasses.putIfAbsent(name, res);
+            if(existing != null) {
+                try {
+                    return existing.get();
+                } catch (Exception e) {
+                    throw new ClassNotFoundException("Failed to load " + name, e);
                 }
-            } catch (IOException e) {
-                throw new ClassNotFoundException("Failed to load class", e);
             }
-            byte[] bytes = out.toByteArray();
-            bytes = handleTransform(name, bytes);
             try {
-                return defineClass(name, bytes, 0, bytes.length);
-            } catch (Error e) {
-                //potential race conditions if another thread is loading the same class
-                ex = findLoadedClass(name);
-                if(ex != null) {
-                    return ex;
+                byte[] buf = new byte[1024];
+                int r;
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                try (FileInputStream in = new FileInputStream(classLoc.toFile())) {
+                    while ((r = in.read(buf)) > 0) {
+                        out.write(buf, 0, r);
+                    }
+                } catch (IOException e) {
+                    throw new ClassNotFoundException("Failed to load class", e);
                 }
+                byte[] bytes = out.toByteArray();
+                bytes = handleTransform(name, bytes);
+                Class<?> clazz = defineClass(name, bytes, 0, bytes.length);
+                res.complete(clazz);
+                return clazz;
+            } catch (RuntimeException e) {
+                res.completeExceptionally(e);
+                throw e;
+            } catch (Throwable e) {
+                res.completeExceptionally(e);
                 throw e;
             }
         }

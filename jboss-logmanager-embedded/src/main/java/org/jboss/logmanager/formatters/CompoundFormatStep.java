@@ -18,6 +18,8 @@
 
 package org.jboss.logmanager.formatters;
 
+import java.util.logging.Formatter;
+
 import org.jboss.logmanager.ExtLogRecord;
 
 /**
@@ -30,10 +32,14 @@ public class CompoundFormatStep implements FormatStep {
         this.steps = clonedSteps;
     }
 
-    public void render(final StringBuilder builder, final ExtLogRecord record) {
+    public void render(final Formatter formatter, final StringBuilder builder, final ExtLogRecord record) {
         for (FormatStep step : steps) {
-            step.render(builder, record);
+            step.render(formatter, builder, record);
         }
+    }
+
+    public void render(final StringBuilder builder, final ExtLogRecord record) {
+        render(null, builder, record);
     }
 
     public int estimateLength() {

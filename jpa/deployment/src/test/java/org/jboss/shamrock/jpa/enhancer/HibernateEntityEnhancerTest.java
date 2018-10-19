@@ -38,7 +38,7 @@ public class HibernateEntityEnhancerTest {
         ClassWriter writer = new ClassWriter(classReader, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
         ClassVisitor visitor = writer;
         HibernateEntityEnhancer hibernateEntityEnhancer = new HibernateEntityEnhancer(new TestingKnownDomainObjects());
-        visitor = hibernateEntityEnhancer.apply(TEST_CLASSNAME).apply(visitor);
+        visitor = hibernateEntityEnhancer.apply(TEST_CLASSNAME, visitor);
         classReader.accept(visitor, 0);
         final byte[] modifiedBytecode = writer.toByteArray();
 

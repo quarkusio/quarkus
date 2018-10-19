@@ -152,6 +152,7 @@ public class RunMojo extends AbstractMojo {
             args.add(tempFile.getAbsolutePath());
             args.add(outputDirectory.getAbsolutePath());
             args.add(wiringClassesDirectory.getAbsolutePath());
+            args.add(new File(buildDir, "transformer-cache").getAbsolutePath());
             Process p = Runtime.getRuntime().exec(args.toArray(new String[0]), null, outputDirectory);
             new Thread(new ProcessReader(p.getErrorStream(), true)).start();
             new Thread(new ProcessReader(p.getInputStream(), false)).start();

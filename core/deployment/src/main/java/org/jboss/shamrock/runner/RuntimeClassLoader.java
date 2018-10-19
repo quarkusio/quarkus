@@ -33,7 +33,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 
-public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Consumer<Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>>> {
+public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
 
     private static final Logger log = Logger.getLogger(RuntimeClassLoader.class);
 
@@ -261,7 +261,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Cons
         }
     }
 
-    public void accept(Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> functions) {
+    public void setTransformers(Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> functions) {
         this.bytecodeTransformers = functions;
     }
 

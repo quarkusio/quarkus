@@ -44,7 +44,7 @@ public class RuntimeRunner implements Runnable, Closeable {
         try {
             BuildTimeGenerator buildTimeGenerator = new BuildTimeGenerator(loader, loader, false, archiveContextBuilder);
             buildTimeGenerator.run(target);
-            loader.accept(buildTimeGenerator.getByteCodeTransformers());
+            loader.setTransformers(buildTimeGenerator.getByteCodeTransformers());
             if(!buildTimeGenerator.getByteCodeTransformers().isEmpty()) {
                 //transformation can be slow, and classes that are transformed are generally always loaded on startup
                 //to speed this along we eagerly load the classes in parallel

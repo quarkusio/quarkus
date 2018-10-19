@@ -43,10 +43,25 @@ class InterceptorInfo extends BeanInfo implements Comparable<InterceptorInfo> {
                 null, null, null, Collections.emptyList());
         this.bindings = bindings;
         this.priority = priority;
-        this.aroundInvoke = target.asClass().methods().stream().filter(m -> m.hasAnnotation(DotNames.AROUND_INVOKE)).findAny().orElse(null);
-        this.aroundConstruct = target.asClass().methods().stream().filter(m -> m.hasAnnotation(DotNames.AROUND_CONSTRUCT)).findAny().orElse(null);
-        this.postConstruct = target.asClass().methods().stream().filter(m -> m.hasAnnotation(DotNames.POST_CONSTRUCT)).findAny().orElse(null);
-        this.preDestroy = target.asClass().methods().stream().filter(m -> m.hasAnnotation(DotNames.PRE_DESTROY)).findAny().orElse(null);
+        MethodInfo aroundInvoke = null;
+        MethodInfo aroundConstruct = null;
+        MethodInfo postConstruct = null;
+        MethodInfo preDestroy = null;
+        for (MethodInfo method : target.asClass().methods()) {
+            if (aroundInvoke == null && method.hasAnnotation(DotNames.AROUND_INVOKE)) {
+                aroundInvoke = method;
+            } else if (aroundConstruct == null && method.hasAnnotation(DotNames.AROUND_CONSTRUCT)) {
+                aroundConstruct = method;
+            } else if (postConstruct == null && method.hasAnnotation(DotNames.POST_CONSTRUCT)) {
+                postConstruct = method;
+            } else if (preDestroy == null && method.hasAnnotation(DotNames.PRE_DESTROY)) {
+                preDestroy = method;
+            }
+        }
+        this.aroundInvoke = aroundInvoke;
+        this.aroundConstruct = aroundConstruct;
+        this.postConstruct = postConstruct;
+        this.preDestroy = preDestroy;
     }
 
     Set<AnnotationInstance> getBindings() {

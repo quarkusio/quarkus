@@ -33,11 +33,11 @@ enum BuiltinBean {
                 MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals) {
 
             ResultHandle qualifiers = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-            if (!injectionPoint.requiredQualifiers.isEmpty()) {
+            if (!injectionPoint.getRequiredQualifiers().isEmpty()) {
                 // Set<Annotation> instanceProvider1Qualifiers = new HashSet<>()
                 // instanceProvider1Qualifiers.add(javax.enterprise.inject.Default.Literal.INSTANCE)
 
-                for (AnnotationInstance qualifierAnnotation : injectionPoint.requiredQualifiers) {
+                for (AnnotationInstance qualifierAnnotation : injectionPoint.getRequiredQualifiers()) {
                     BuiltinQualifier qualifier = BuiltinQualifier.of(qualifierAnnotation);
                     if (qualifier != null) {
                         constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiers, qualifier.getLiteralInstance(constructor));
@@ -51,7 +51,7 @@ enum BuiltinBean {
                     }
                 }
             }
-            ResultHandle parameterizedType = Types.getTypeHandle(constructor, injectionPoint.requiredType);
+            ResultHandle parameterizedType = Types.getTypeHandle(constructor, injectionPoint.getRequiredType());
             ResultHandle instanceProvider = constructor.newInstance(
                     MethodDescriptor.ofConstructor(InstanceProvider.class, java.lang.reflect.Type.class, Set.class), parameterizedType, qualifiers);
             constructor.writeInstanceField(FieldDescriptor.of(clazzCreator.getClassName(), providerName, InjectableReferenceProvider.class.getName()),
@@ -85,11 +85,11 @@ enum BuiltinBean {
                 MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals) {
 
             ResultHandle qualifiers = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-            if (!injectionPoint.requiredQualifiers.isEmpty()) {
+            if (!injectionPoint.getRequiredQualifiers().isEmpty()) {
                 // Set<Annotation> instanceProvider1Qualifiers = new HashSet<>()
                 // instanceProvider1Qualifiers.add(javax.enterprise.inject.Default.Literal.INSTANCE)
 
-                for (AnnotationInstance qualifierAnnotation : injectionPoint.requiredQualifiers) {
+                for (AnnotationInstance qualifierAnnotation : injectionPoint.getRequiredQualifiers()) {
                     BuiltinQualifier qualifier = BuiltinQualifier.of(qualifierAnnotation);
                     if (qualifier != null) {
                         constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiers, qualifier.getLiteralInstance(constructor));
@@ -103,7 +103,7 @@ enum BuiltinBean {
                     }
                 }
             }
-            ResultHandle parameterizedType = Types.getTypeHandle(constructor, injectionPoint.requiredType);
+            ResultHandle parameterizedType = Types.getTypeHandle(constructor, injectionPoint.getRequiredType());
             ResultHandle eventProvider = constructor.newInstance(MethodDescriptor.ofConstructor(EventProvider.class, java.lang.reflect.Type.class, Set.class),
                     parameterizedType, qualifiers);
             constructor.writeInstanceField(FieldDescriptor.of(clazzCreator.getClassName(), providerName, InjectableReferenceProvider.class.getName()),
@@ -115,9 +115,9 @@ enum BuiltinBean {
                 MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals) {
 
             ResultHandle annotations = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-            // For a resource field the requiredQualifiers field contains all annotations declared on the field
-            if (!injectionPoint.requiredQualifiers.isEmpty()) {
-                for (AnnotationInstance annotation : injectionPoint.requiredQualifiers) {
+            // For a resource field the required qualifiers contain all annotations declared on the field
+            if (!injectionPoint.getRequiredQualifiers().isEmpty()) {
+                for (AnnotationInstance annotation : injectionPoint.getRequiredQualifiers()) {
                     // Create annotation literal first
                     ClassInfo annotationClass = beanDeployment.getIndex().getClassByName(annotation.name());
                     String annotationLiteralName = annotationLiterals.process(classOutput, annotationClass, annotation,
@@ -126,13 +126,13 @@ enum BuiltinBean {
                             constructor.newInstance(MethodDescriptor.ofConstructor(annotationLiteralName)));
                 }
             }
-            ResultHandle parameterizedType = Types.getTypeHandle(constructor, injectionPoint.requiredType);
+            ResultHandle parameterizedType = Types.getTypeHandle(constructor, injectionPoint.getRequiredType());
             ResultHandle resourceProvider = constructor.newInstance(
                     MethodDescriptor.ofConstructor(ResourceProvider.class, java.lang.reflect.Type.class, Set.class), parameterizedType, annotations);
             constructor.writeInstanceField(FieldDescriptor.of(clazzCreator.getClassName(), providerName, InjectableReferenceProvider.class.getName()),
                     constructor.getThis(), resourceProvider);
         }
-    }, ip -> ip.kind == Kind.RESOURCE);
+    }, ip -> ip.getKind() == Kind.RESOURCE);
 
     private final DotName rawTypeDotName;
 
@@ -141,7 +141,7 @@ enum BuiltinBean {
     private final Predicate<InjectionPointInfo> matcher;
 
     BuiltinBean(DotName rawTypeDotName, Generator generator) {
-        this(rawTypeDotName, generator, ip -> ip.kind == Kind.CDI && rawTypeDotName.equals(ip.requiredType.name()));
+        this(rawTypeDotName, generator, ip -> ip.getKind() == Kind.CDI && rawTypeDotName.equals(ip.getRequiredType().name()));
     }
 
     BuiltinBean(DotName rawTypeDotName, Generator generator, Predicate<InjectionPointInfo> matcher) {

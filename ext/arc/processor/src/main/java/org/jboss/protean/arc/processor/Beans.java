@@ -22,6 +22,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
+import org.jboss.protean.arc.processor.InjectionPointInfo.TypeAndQualifiers;
 
 final class Beans {
 
@@ -205,20 +206,21 @@ final class Beans {
         return false;
     }
 
-    static boolean matches(BeanInfo bean, InjectionPointInfo injectionPoint) {
+    static boolean matches(BeanInfo bean, TypeAndQualifiers typeAndQualifiers) {
         // Bean has all the required qualifiers
-        for (AnnotationInstance requiredQualifier : injectionPoint.requiredQualifiers) {
+        for (AnnotationInstance requiredQualifier : typeAndQualifiers.qualifiers) {
             if (!hasQualifier(bean, requiredQualifier)) {
                 return false;
             }
         }
         // Bean has a bean type that matches the required type
-        return matchesType(bean, injectionPoint.requiredType);
+        return matchesType(bean, typeAndQualifiers.type);
     }
 
     static boolean matchesType(BeanInfo bean, Type requiredType) {
+        BeanResolver beanResolver = bean.getDeployment().getBeanResolver();
         for (Type beanType : bean.getTypes()) {
-            if (bean.getDeployment().getBeanResolver().matches(requiredType, beanType)) {
+            if (beanResolver.matches(requiredType, beanType)) {
                 return true;
             }
         }
@@ -230,12 +232,7 @@ final class Beans {
             // Skip built-in beans
             return;
         }
-        List<BeanInfo> resolved = new ArrayList<>();
-        for (BeanInfo b : deployment.getBeans()) {
-            if (matches(b, injectionPoint)) {
-                resolved.add(b);
-            }
-        }
+        List<BeanInfo> resolved = deployment.getBeanResolver().resolve(injectionPoint.getTypeAndQualifiers());
         BeanInfo selected = null;
         if (resolved.isEmpty()) {
             throw new UnsatisfiedResolutionException(injectionPoint + " on " + bean);
@@ -289,9 +286,12 @@ final class Beans {
     }
 
     static boolean hasQualifier(ClassInfo requiredInfo, AnnotationInstance required, Collection<AnnotationInstance> qualifiers) {
-        List<AnnotationValue> binding = required.values().stream().filter(v -> {
-            return !requiredInfo.method(v.name()).hasAnnotation(DotNames.NONBINDING);
-        }).collect(Collectors.toList());
+        List<AnnotationValue> binding = new ArrayList<>();
+        for (AnnotationValue val : required.values()) {
+            if (!requiredInfo.method(val.name()).hasAnnotation(DotNames.NONBINDING)) {
+                binding.add(val);
+            }
+        }
         for (AnnotationInstance qualifier : qualifiers) {
             if (required.name().equals(qualifier.name())) {
                 // Must have the same annotation member value for each member which is not annotated @Nonbinding

@@ -7,9 +7,11 @@ import static org.jboss.jandex.Type.Kind.PARAMETERIZED_TYPE;
 import static org.jboss.jandex.Type.Kind.TYPE_VARIABLE;
 import static org.jboss.jandex.Type.Kind.WILDCARD_TYPE;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -22,6 +24,7 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.jandex.WildcardType;
+import org.jboss.protean.arc.processor.InjectionPointInfo.TypeAndQualifiers;
 
 /**
  *
@@ -29,11 +32,16 @@ import org.jboss.jandex.WildcardType;
  */
 class BeanResolver {
 
+    private final BeanDeployment beanDeployment;
+
     private final ConcurrentMap<DotName, Set<DotName>> assignableFromMap;
 
     private final Function<DotName, Set<DotName>> assignableFromMapFunction;
 
+    private final Map<TypeAndQualifiers, List<BeanInfo>> resolved;
+
     public BeanResolver(BeanDeployment beanDeployment) {
+        this.beanDeployment = beanDeployment;
         this.assignableFromMap = new ConcurrentHashMap<>();
         this.assignableFromMapFunction = name -> {
             Set<DotName> assignables = new HashSet<>();
@@ -41,6 +49,21 @@ class BeanResolver {
             assignables.addAll(beanDeployment.getIndex().getAllKnownImplementors(name).stream().map(c -> c.name()).collect(Collectors.toSet()));
             return assignables;
         };
+        this.resolved = new ConcurrentHashMap<>();
+    }
+
+    List<BeanInfo> resolve(TypeAndQualifiers typeAndQualifiers) {
+        return resolved.computeIfAbsent(typeAndQualifiers, this::findMatching);
+    }
+
+    private List<BeanInfo> findMatching(TypeAndQualifiers typeAndQualifiers) {
+        List<BeanInfo> resolved = new ArrayList<>();
+        for (BeanInfo b : beanDeployment.getBeans()) {
+            if (Beans.matches(b, typeAndQualifiers)) {
+                resolved.add(b);
+            }
+        }
+        return resolved.isEmpty() ? Collections.emptyList() : resolved;
     }
 
     boolean matches(Type requiredType, Type beanType) {

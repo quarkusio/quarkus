@@ -118,7 +118,7 @@ public class ObserverGenerator extends AbstractGenerator {
     protected void initMaps(ObserverInfo observer, Map<InjectionPointInfo, String> injectionPointToProvider) {
         int providerIdx = 1;
         for (InjectionPointInfo injectionPoint : observer.getInjection().injectionPoints) {
-            String name = providerName(DotNames.simpleName(injectionPoint.requiredType.name())) + "Provider" + providerIdx++;
+            String name = providerName(DotNames.simpleName(injectionPoint.getRequiredType().name())) + "Provider" + providerIdx++;
             injectionPointToProvider.put(injectionPoint, name);
         }
     }
@@ -249,11 +249,11 @@ public class ObserverGenerator extends AbstractGenerator {
                         injectionPointToProviderField.get(injectionPoint), annotationLiterals);
             } else {
                 if (injectionPoint.getResolvedBean().getAllInjectionPoints().stream()
-                        .anyMatch(ip -> BuiltinBean.INJECTION_POINT.getRawTypeDotName().equals(ip.requiredType.name()))) {
+                        .anyMatch(ip -> BuiltinBean.INJECTION_POINT.getRawTypeDotName().equals(ip.getRequiredType().name()))) {
                     // IMPL NOTE: Injection point resolves to a dependent bean that injects InjectionPoint metadata and so we need to wrap the injectable
                     // reference provider
                     ResultHandle requiredQualifiersHandle = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-                    for (AnnotationInstance qualifierAnnotation : injectionPoint.requiredQualifiers) {
+                    for (AnnotationInstance qualifierAnnotation : injectionPoint.getRequiredQualifiers()) {
                         BuiltinQualifier qualifier = BuiltinQualifier.of(qualifierAnnotation);
                         if (qualifier != null) {
                             constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, requiredQualifiersHandle, qualifier.getLiteralInstance(constructor));
@@ -269,7 +269,7 @@ public class ObserverGenerator extends AbstractGenerator {
                     ResultHandle wrapHandle = constructor.newInstance(
                             MethodDescriptor.ofConstructor(CurrentInjectionPointProvider.class, InjectableReferenceProvider.class, java.lang.reflect.Type.class,
                                     Set.class),
-                            constructor.getMethodParam(paramIdx++), Types.getTypeHandle(constructor, injectionPoint.requiredType), requiredQualifiersHandle);
+                            constructor.getMethodParam(paramIdx++), Types.getTypeHandle(constructor, injectionPoint.getRequiredType()), requiredQualifiersHandle);
                     constructor.writeInstanceField(FieldDescriptor.of(observerCreator.getClassName(), injectionPointToProviderField.get(injectionPoint),
                             InjectableReferenceProvider.class.getName()), constructor.getThis(), wrapHandle);
                 } else {

@@ -8,7 +8,6 @@ import java.util.ListIterator;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.FieldInfo;
@@ -23,8 +22,13 @@ import org.jboss.jandex.Type;
 class InjectionPointInfo {
 
     static InjectionPointInfo fromField(FieldInfo field, BeanDeployment beanDeployment) {
-        return new InjectionPointInfo(field.type(),
-                field.annotations().stream().filter(a -> beanDeployment.getQualifier(a.name()) != null).collect(Collectors.toSet()));
+        Set<AnnotationInstance> qualifiers = new HashSet<>();
+        for (AnnotationInstance annotation : field.annotations()) {
+            if (beanDeployment.getQualifier(annotation.name()) != null) {
+                qualifiers.add(annotation);
+            }
+        }
+        return new InjectionPointInfo(field.type(), qualifiers.isEmpty() ? Collections.emptySet() : qualifiers);
     }
 
     static InjectionPointInfo fromResourceField(FieldInfo field, BeanDeployment beanDeployment) {
@@ -61,23 +65,20 @@ class InjectionPointInfo {
         return injectionPoints;
     }
 
-    final Type requiredType;
+    private final TypeAndQualifiers typeAndQualifiers;
 
-    final Set<AnnotationInstance> requiredQualifiers;
+    private final AtomicReference<BeanInfo> resolvedBean;
 
-    final AtomicReference<BeanInfo> resolvedBean;
-
-    final Kind kind;
+    private final Kind kind;
 
     public InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers) {
         this(requiredType, requiredQualifiers, Kind.CDI);
     }
 
     public InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, Kind kind) {
-        this.requiredType = requiredType;
-        this.requiredQualifiers = requiredQualifiers.isEmpty()
-                ? Collections.singleton(AnnotationInstance.create(DotNames.DEFAULT, null, Collections.emptyList()))
-                : requiredQualifiers;
+        this.typeAndQualifiers = new TypeAndQualifiers(requiredType,
+                requiredQualifiers.isEmpty() ? Collections.singleton(AnnotationInstance.create(DotNames.DEFAULT, null, Collections.emptyList()))
+                        : requiredQualifiers);
         this.resolvedBean = new AtomicReference<BeanInfo>(null);
         this.kind = kind;
     }
@@ -90,13 +91,80 @@ class InjectionPointInfo {
         return resolvedBean.get();
     }
 
+    Kind getKind() {
+        return kind;
+    }
+
+    Type getRequiredType() {
+        return typeAndQualifiers.type;
+    }
+
+    Set<AnnotationInstance> getRequiredQualifiers() {
+        return typeAndQualifiers.qualifiers;
+    }
+
+    TypeAndQualifiers getTypeAndQualifiers() {
+        return typeAndQualifiers;
+    }
+
     @Override
     public String toString() {
-        return "InjectionPointInfo [requiredType=" + requiredType + ", requiredQualifiers=" + requiredQualifiers + "]";
+        return "InjectionPointInfo [requiredType=" + typeAndQualifiers.type + ", requiredQualifiers=" + typeAndQualifiers.qualifiers + "]";
     }
 
     enum Kind {
         CDI, RESOURCE
+    }
+
+    static class TypeAndQualifiers {
+
+        final Type type;
+
+        final Set<AnnotationInstance> qualifiers;
+
+        public TypeAndQualifiers(Type type, Set<AnnotationInstance> qualifiers) {
+            this.type = type;
+            this.qualifiers = qualifiers;
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + ((qualifiers == null) ? 0 : qualifiers.hashCode());
+            result = prime * result + ((type == null) ? 0 : type.hashCode());
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null) {
+                return false;
+            }
+            if (getClass() != obj.getClass()) {
+                return false;
+            }
+            TypeAndQualifiers other = (TypeAndQualifiers) obj;
+            if (qualifiers == null) {
+                if (other.qualifiers != null) {
+                    return false;
+                }
+            } else if (!qualifiers.equals(other.qualifiers)) {
+                return false;
+            }
+            if (type == null) {
+                if (other.type != null) {
+                    return false;
+                }
+            } else if (!type.equals(other.type)) {
+                return false;
+            }
+            return true;
+        }
+
     }
 
 }

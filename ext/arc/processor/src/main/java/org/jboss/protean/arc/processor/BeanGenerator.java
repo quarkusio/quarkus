@@ -21,7 +21,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import javax.enterprise.context.spi.Context;
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.spi.InterceptionType;
@@ -33,13 +32,10 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
-import org.jboss.protean.arc.Arc;
-import org.jboss.protean.arc.ArcContainer;
 import org.jboss.protean.arc.CreationalContextImpl;
 import org.jboss.protean.arc.CurrentInjectionPointProvider;
 import org.jboss.protean.arc.InitializedInterceptor;
 import org.jboss.protean.arc.InjectableBean;
-import org.jboss.protean.arc.InjectableContext;
 import org.jboss.protean.arc.InjectableInterceptor;
 import org.jboss.protean.arc.InjectableReferenceProvider;
 import org.jboss.protean.arc.LazyValue;
@@ -307,12 +303,12 @@ public class BeanGenerator extends AbstractGenerator {
     protected void initMaps(BeanInfo bean, Map<InjectionPointInfo, String> injectionPointToProvider, Map<InterceptorInfo, String> interceptorToProvider) {
         int providerIdx = 1;
         for (InjectionPointInfo injectionPoint : bean.getAllInjectionPoints()) {
-            String name = providerName(DotNames.simpleName(injectionPoint.requiredType.name())) + "Provider" + providerIdx++;
+            String name = providerName(DotNames.simpleName(injectionPoint.getRequiredType().name())) + "Provider" + providerIdx++;
             injectionPointToProvider.put(injectionPoint, name);
         }
         if (bean.getDisposer() != null) {
             for (InjectionPointInfo injectionPoint : bean.getDisposer().getInjection().injectionPoints) {
-                String name = providerName(DotNames.simpleName(injectionPoint.requiredType.name())) + "Provider" + providerIdx++;
+                String name = providerName(DotNames.simpleName(injectionPoint.getRequiredType().name())) + "Provider" + providerIdx++;
                 injectionPointToProvider.put(injectionPoint, name);
             }
         }
@@ -398,11 +394,11 @@ public class BeanGenerator extends AbstractGenerator {
                         injectionPointToProviderField.get(injectionPoint), annotationLiterals);
             } else {
                 if (injectionPoint.getResolvedBean().getAllInjectionPoints().stream()
-                        .anyMatch(ip -> BuiltinBean.INJECTION_POINT.getRawTypeDotName().equals(ip.requiredType.name()))) {
+                        .anyMatch(ip -> BuiltinBean.INJECTION_POINT.getRawTypeDotName().equals(ip.getRequiredType().name()))) {
                     // IMPL NOTE: Injection point resolves to a dependent bean that injects InjectionPoint metadata and so we need to wrap the injectable
                     // reference provider
                     ResultHandle requiredQualifiersHandle = constructor.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
-                    for (AnnotationInstance qualifierAnnotation : injectionPoint.requiredQualifiers) {
+                    for (AnnotationInstance qualifierAnnotation : injectionPoint.getRequiredQualifiers()) {
                         BuiltinQualifier qualifier = BuiltinQualifier.of(qualifierAnnotation);
                         if (qualifier != null) {
                             constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, requiredQualifiersHandle, qualifier.getLiteralInstance(constructor));
@@ -418,7 +414,8 @@ public class BeanGenerator extends AbstractGenerator {
                     ResultHandle wrapHandle = constructor.newInstance(
                             MethodDescriptor.ofConstructor(CurrentInjectionPointProvider.class, InjectableReferenceProvider.class, java.lang.reflect.Type.class,
                                     Set.class),
-                            constructor.getMethodParam(paramIdx++), Types.getTypeHandle(constructor, injectionPoint.requiredType), requiredQualifiersHandle);
+                            constructor.getMethodParam(paramIdx++), Types.getTypeHandle(constructor, injectionPoint.getRequiredType()),
+                            requiredQualifiersHandle);
                     constructor.writeInstanceField(FieldDescriptor.of(beanCreator.getClassName(), injectionPointToProviderField.get(injectionPoint),
                             InjectableReferenceProvider.class.getName()), constructor.getThis(), wrapHandle);
                 } else {
@@ -676,7 +673,7 @@ public class BeanGenerator extends AbstractGenerator {
                 Optional<Injection> constructorInjection = bean.getConstructorInjection();
                 ResultHandle constructorHandle;
                 if (constructorInjection.isPresent()) {
-                    List<String> paramTypes = constructorInjection.get().injectionPoints.stream().map(i -> i.requiredType.name().toString())
+                    List<String> paramTypes = constructorInjection.get().injectionPoints.stream().map(i -> i.getRequiredType().name().toString())
                             .collect(Collectors.toList());
                     ResultHandle[] paramsHandles = new ResultHandle[2];
                     paramsHandles[0] = create.loadClass(providerTypeName);
@@ -749,7 +746,7 @@ public class BeanGenerator extends AbstractGenerator {
                             create.load(injectedField.name()), instanceHandle, referenceHandle);
 
                 } else {
-                    create.writeInstanceField(FieldDescriptor.of(providerTypeName, injectedField.name(), injectionPoint.requiredType.name().toString()),
+                    create.writeInstanceField(FieldDescriptor.of(providerTypeName, injectedField.name(), injectionPoint.getRequiredType().name().toString()),
                             instanceHandle, referenceHandle);
                 }
             }
@@ -963,7 +960,7 @@ public class BeanGenerator extends AbstractGenerator {
 
             // 1. constructor injection points
             for (int i = 0; i < injectionPoints.size(); i++) {
-                paramTypes.add(injectionPoints.get(i).requiredType.name().toString());
+                paramTypes.add(injectionPoints.get(i).getRequiredType().name().toString());
                 paramHandles.add(providerHandles.get(i));
             }
 
@@ -988,7 +985,7 @@ public class BeanGenerator extends AbstractGenerator {
                 ResultHandle paramTypesArray = creator.newArray(Class.class, creator.load(providerHandles.size()));
                 ResultHandle argsArray = creator.newArray(Object.class, creator.load(providerHandles.size()));
                 for (int i = 0; i < injectionPoints.size(); i++) {
-                    creator.writeArrayValue(paramTypesArray, i, creator.loadClass(injectionPoints.get(i).requiredType.name().toString()));
+                    creator.writeArrayValue(paramTypesArray, i, creator.loadClass(injectionPoints.get(i).getRequiredType().name().toString()));
                     creator.writeArrayValue(argsArray, i, providerHandles.get(i));
                 }
                 registration.registerMethod(constructor);
@@ -998,7 +995,7 @@ public class BeanGenerator extends AbstractGenerator {
                 // new SimpleBean(foo)
                 return creator.newInstance(
                         MethodDescriptor.ofConstructor(providerTypeName,
-                                injectionPoints.stream().map(ip -> ip.requiredType.name().toString()).collect(Collectors.toList()).toArray(new String[0])),
+                                injectionPoints.stream().map(ip -> ip.getRequiredType().name().toString()).collect(Collectors.toList()).toArray(new String[0])),
                         providerHandles.toArray(new ResultHandle[0]));
             }
         } else {
@@ -1041,17 +1038,15 @@ public class BeanGenerator extends AbstractGenerator {
             get.returnValue(instance);
         } else if (ScopeInfo.SINGLETON.equals(bean.getScope())) {
             // return Arc.container().getContext(getScope()).get(this, new CreationalContextImpl<>())
-            ResultHandle container = get.invokeStaticMethod(MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
+            ResultHandle container = get.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
             ResultHandle creationalContext = get.newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class));
             ResultHandle scope = get.loadClass(bean.getScope().getClazz());
-            ResultHandle context = get.invokeInterfaceMethod(MethodDescriptor.ofMethod(ArcContainer.class, "getContext", InjectableContext.class, Class.class),
-                    container, scope);
-            get.returnValue(get.invokeInterfaceMethod(MethodDescriptor.ofMethod(Context.class, "get", Object.class, Contextual.class, CreationalContext.class),
-                    context, get.getThis(), creationalContext));
+            ResultHandle context = get.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_GET_CONTEXT, container, scope);
+            get.returnValue(get.invokeInterfaceMethod(MethodDescriptors.CONTEXT_GET, context, get.getThis(), creationalContext));
         } else if (bean.getScope().isNormal()) {
             // return proxy.get()
             ResultHandle proxy = get.readInstanceField(FieldDescriptor.of(beanCreator.getClassName(), "proxy", LazyValue.class.getName()), get.getThis());
-            get.returnValue(get.invokeVirtualMethod(MethodDescriptor.ofMethod(LazyValue.class, "get", Object.class), proxy));
+            get.returnValue(get.invokeVirtualMethod(MethodDescriptors.LAZY_VALUE_GET, proxy));
         }
 
         // Bridge method needed

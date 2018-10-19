@@ -105,10 +105,8 @@ public class BuildMojo extends AbstractMojo {
             Set<String> whitelist = new HashSet<>();
             for (Artifact a : project.getArtifacts()) {
                 try (ZipFile zip = new ZipFile(a.getFile())) {
-                    if (zip.getEntry("META-INF/services/org.jboss.shamrock.deployment.ShamrockSetup") != null) {
-                        if (!a.getScope().equals(PROVIDED)) {
-                            problems.add("Artifact " + a + " is a deployment artifact, however it does not have scope required. This will result in unnecessary jars being included in the final image");
-                        }
+                    if (!a.getScope().equals(PROVIDED) && zip.getEntry("META-INF/services/org.jboss.shamrock.deployment.ShamrockSetup") != null) {
+                         problems.add("Artifact " + a + " is a deployment artifact, however it does not have scope required. This will result in unnecessary jars being included in the final image");
                     }
                     ZipEntry deps = zip.getEntry(DEPENDENCIES_RUNTIME);
                     if (deps != null) {

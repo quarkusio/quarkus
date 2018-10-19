@@ -4,6 +4,7 @@ import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -39,39 +40,33 @@ public class ClassTransformerProcessor implements ResourceProcessor {
             }
         }
         if (!pathAnnotatedClasses.isEmpty()) {
-            processorContext.addByteCodeTransformer(new Function<String, Function<ClassVisitor, ClassVisitor>>() {
-                @Override
-                public Function<ClassVisitor, ClassVisitor> apply(String s) {
-                    if (!pathAnnotatedClasses.contains(s)) {
-                        return null;
+            for (String i : pathAnnotatedClasses) {
+                processorContext.addByteCodeTransformer(i, new BiFunction<String, ClassVisitor, ClassVisitor>() {
+                    @Override
+                    public ClassVisitor apply(String className, ClassVisitor classVisitor) {
+                        ClassVisitor cv = new ClassVisitor(Opcodes.ASM6, classVisitor) {
+
+                            @Override
+                            public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+                                super.visit(version, access, name, signature, superName, interfaces);
+                                MethodVisitor mv = visitMethod(Modifier.PUBLIC, "transformed", "()Ljava/lang/String;", null, null);
+
+                                AnnotationVisitor annotation = mv.visitAnnotation("Ljavax/ws/rs/Path;", true);
+                                annotation.visit("value", "/transformed");
+                                annotation.visitEnd();
+                                annotation = mv.visitAnnotation("Ljavax/ws/rs/GET;", true);
+                                annotation.visitEnd();
+
+                                mv.visitLdcInsn("Transformed Endpoint");
+                                mv.visitInsn(Opcodes.ARETURN);
+                                mv.visitMaxs(1, 1);
+                                mv.visitEnd();
+                            }
+                        };
+                        return cv;
                     }
-                    return new Function<ClassVisitor, ClassVisitor>() {
-                        @Override
-                        public ClassVisitor apply(ClassVisitor classVisitor) {
-                            ClassVisitor cv = new ClassVisitor(Opcodes.ASM6, classVisitor) {
-
-                                @Override
-                                public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-                                    super.visit(version, access, name, signature, superName, interfaces);
-                                    MethodVisitor mv = visitMethod(Modifier.PUBLIC, "transformed", "()Ljava/lang/String;", null, null);
-
-                                    AnnotationVisitor annotation = mv.visitAnnotation("Ljavax/ws/rs/Path;", true);
-                                    annotation.visit("value", "/transformed");
-                                    annotation.visitEnd();
-                                    annotation = mv.visitAnnotation("Ljavax/ws/rs/GET;", true);
-                                    annotation.visitEnd();
-
-                                    mv.visitLdcInsn("Transformed Endpoint");
-                                    mv.visitInsn(Opcodes.ARETURN);
-                                    mv.visitMaxs(1, 1);
-                                    mv.visitEnd();
-                                }
-                            };
-                            return cv;
-                        }
-                    };
-                }
-            });
+                });
+            }
         }
     }
 

@@ -8,6 +8,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
 
+import org.jboss.logging.Logger;
 import org.jboss.shamrock.deployment.ArchiveContextBuilder;
 import org.jboss.shamrock.runtime.Timing;
 
@@ -15,6 +16,8 @@ import org.jboss.shamrock.runtime.Timing;
  * The main entry point for the run mojo execution
  */
 public class RunMojoMain {
+
+    private static final Logger log = Logger.getLogger(RunMojoMain.class);
 
     private static volatile boolean keepCl = false;
     private static volatile ClassLoader currentAppClassLoader;
@@ -71,6 +74,7 @@ public class RunMojoMain {
             }
         } catch (Throwable t) {
             deploymentProblem = t;
+            log.error("Failed to start shamrock", t);
         }
     }
 

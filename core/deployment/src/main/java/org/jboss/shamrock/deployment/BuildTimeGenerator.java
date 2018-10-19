@@ -34,6 +34,7 @@ import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -86,7 +87,7 @@ public class BuildTimeGenerator {
     private final DeploymentProcessorInjection injection;
     private final ClassLoader classLoader;
     private final boolean useStaticInit;
-    private final List<Function<String, Function<ClassVisitor, ClassVisitor>>> bytecodeTransformers = new ArrayList<>();
+    private final Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> byteCodeTransformers = new HashMap<>();
     private final Set<String> applicationArchiveMarkers;
     private final ArchiveContextBuilder archiveContextBuilder;
     private final Set<String> capabilities;
@@ -110,8 +111,8 @@ public class BuildTimeGenerator {
         this.capabilities = new HashSet<>(setupContext.capabilities);
     }
 
-    public List<Function<String, Function<ClassVisitor, ClassVisitor>>> getBytecodeTransformers() {
-        return bytecodeTransformers;
+    public Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> getByteCodeTransformers() {
+        return byteCodeTransformers;
     }
 
     public void run(Path root) throws IOException {
@@ -342,8 +343,8 @@ public class BuildTimeGenerator {
         }
 
         @Override
-        public void addByteCodeTransformer(Function<String, Function<ClassVisitor, ClassVisitor>> visitorFunction) {
-            bytecodeTransformers.add(visitorFunction);
+        public void addByteCodeTransformer(String className, BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction) {
+            byteCodeTransformers.computeIfAbsent(className, (e) -> new ArrayList<>()).add(visitorFunction);
         }
 
         @Override
@@ -438,7 +439,6 @@ public class BuildTimeGenerator {
                 ResultHandle dup = mv.newInstance(ofConstructor(holder.className));
                 mv.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup, startupContext);
             }
-
             mv.invokeStaticMethod(ofMethod(Timing.class, "printStartupTime", void.class));
             mv.returnValue(null);
 

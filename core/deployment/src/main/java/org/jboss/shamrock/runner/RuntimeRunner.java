@@ -5,9 +5,17 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.jboss.shamrock.deployment.ArchiveContextBuilder;
 import org.jboss.shamrock.deployment.BuildTimeGenerator;
+import org.jboss.shamrock.runtime.Timing;
+import org.objectweb.asm.ClassVisitor;
 
 /**
  * Class that can be used to run shamrock directly, ececuting the build and runtime
@@ -38,7 +46,29 @@ public class RuntimeRunner implements Runnable, Closeable {
         try {
             BuildTimeGenerator buildTimeGenerator = new BuildTimeGenerator(loader, loader, false, archiveContextBuilder);
             buildTimeGenerator.run(target);
-            loader.accept(buildTimeGenerator.getBytecodeTransformers());
+            loader.accept(buildTimeGenerator.getByteCodeTransformers());
+            if(!buildTimeGenerator.getByteCodeTransformers().isEmpty()) {
+                //transformation can be slow, and classes that are transformed are generally always loaded on startup
+                //to speed this along we eagerly load the classes in parallel
+
+                ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+                for(Map.Entry<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> entry : buildTimeGenerator.getByteCodeTransformers().entrySet()) {
+                    executorService.submit(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                loader.loadClass(entry.getKey(), true);
+                            } catch (ClassNotFoundException e) {
+                                //ignore
+                                //this will show up at runtime anyway
+                            }
+                        }
+                    });
+                }
+                executorService.shutdown();
+
+            }
+
             Class<?> mainClass = loader.findClass(BuildTimeGenerator.MAIN_CLASS);
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             try {

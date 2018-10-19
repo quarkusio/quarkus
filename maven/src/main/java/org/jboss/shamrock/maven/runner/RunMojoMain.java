@@ -24,6 +24,7 @@ public class RunMojoMain {
     private static volatile URLClassLoader runtimeCl;
     private static File classesRoot;
     private static File wiringDir;
+    private static File cacheDir;
 
     private static Closeable closeable;
     static volatile Throwable deploymentProblem;
@@ -33,6 +34,7 @@ public class RunMojoMain {
         //the path that contains the compiled classes
         classesRoot = new File(args[0]);
         wiringDir = new File(args[1]);
+        cacheDir = new File(args[2]);
         //TODO: we can't handle an exception on startup with hot replacement, as Undertow might not have started
 
         doStart();
@@ -64,8 +66,8 @@ public class RunMojoMain {
                 Thread.currentThread().setContextClassLoader(runtimeCl);
                 Class<?> runnerClass = runtimeCl.loadClass("org.jboss.shamrock.runner.RuntimeRunner");
                 ArchiveContextBuilder acb = new ArchiveContextBuilder();
-                Constructor ctor = runnerClass.getDeclaredConstructor(ClassLoader.class, Path.class, Path.class, ArchiveContextBuilder.class);
-                Object runner = ctor.newInstance(runtimeCl, classesRoot.toPath(), wiringDir.toPath(), acb);
+                Constructor ctor = runnerClass.getDeclaredConstructor(ClassLoader.class, Path.class, Path.class, Path.class, ArchiveContextBuilder.class);
+                Object runner = ctor.newInstance(runtimeCl, classesRoot.toPath(), wiringDir.toPath(), cacheDir.toPath(), acb);
                 ((Runnable) runner).run();
                 closeable = ((Closeable) runner);
                 deploymentProblem = null;

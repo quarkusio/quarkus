@@ -2,6 +2,7 @@ package org.jboss.shamrock.runner;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -11,6 +12,8 @@ import java.net.URLConnection;
 import java.net.URLStreamHandler;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -20,17 +23,19 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
+import org.jboss.logging.Logger;
 import org.jboss.shamrock.deployment.ClassOutput;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 
 public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Consumer<Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>>> {
+
+    private static final Logger log = Logger.getLogger(RuntimeClassLoader.class);
 
     private final Map<String, byte[]> appClasses = new HashMap<>();
     private final Set<String> frameworkClasses = new HashSet<>();
@@ -41,6 +46,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Cons
 
     private final Path applicationClasses;
     private final Path frameworkClassesPath;
+    private final Path transformerCache;
 
     private static final ConcurrentHashMap<String, Future<Class<?>>> loadingClasses = new ConcurrentHashMap<>();
 
@@ -48,10 +54,11 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Cons
         registerAsParallelCapable();
     }
 
-    public RuntimeClassLoader(ClassLoader parent, Path applicationClasses, Path frameworkClassesPath) {
+    public RuntimeClassLoader(ClassLoader parent, Path applicationClasses, Path frameworkClassesPath, Path transformerCache) {
         super(parent);
         this.applicationClasses = applicationClasses;
         this.frameworkClassesPath = frameworkClassesPath;
+        this.transformerCache = transformerCache;
     }
 
     @Override
@@ -168,6 +175,24 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Cons
         if (transformers == null) {
             return bytes;
         }
+
+        Path hashPath = null;
+        if(transformerCache != null) {
+
+            try {
+                MessageDigest md = MessageDigest.getInstance("MD5");
+                byte[] thedigest = md.digest(bytes);
+                String hash = Base64.getUrlEncoder().encodeToString(thedigest);
+                hashPath = transformerCache.resolve(hash);
+                if(Files.exists(hashPath)) {
+                    return readFileContent(hashPath);
+                }
+            } catch (Exception e) {
+                log.error("Unable to load transformed class from cache", e);
+            }
+        }
+
+
         ClassReader cr = new ClassReader(bytes);
         ClassWriter writer = new ClassWriter(cr, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
         ClassVisitor visitor = writer;
@@ -176,6 +201,18 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Cons
         }
         cr.accept(visitor, 0);
         byte[] data = writer.toByteArray();
+        if(hashPath != null) {
+            try {
+
+                File file = hashPath.toFile();
+                file.getParentFile().mkdirs();
+                try (FileOutputStream out = new FileOutputStream(file)) {
+                    out.write(data);
+                }
+            } catch (Exception e) {
+                log.error("Unable to write class to cache", e);
+            }
+        }
         return data;
     }
 
@@ -230,6 +267,26 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Cons
 
     public void writeResource(String name, byte[] data) throws IOException {
         resources.put(name, data);
+    }
+
+    public static byte[] readFileContent(final Path path) throws IOException {
+        final File file = path.toFile();
+        final long fileLength = file.length();
+        if (fileLength > Integer.MAX_VALUE) {
+            throw new RuntimeException("Can't process class files larger than Integer.MAX_VALUE bytes");
+        }
+        final int intLength = (int) fileLength;
+        try (FileInputStream in = new FileInputStream(file)) {
+            //Might be large but we need a single byte[] at the end of things, might as well allocate it in one shot:
+            ByteArrayOutputStream out = new ByteArrayOutputStream(intLength);
+            final int reasonableBufferSize = Math.min(intLength, 2048);
+            byte[] buf = new byte[reasonableBufferSize];
+            int r;
+            while ((r = in.read(buf)) > 0) {
+                out.write(buf, 0, r);
+            }
+            return out.toByteArray();
+        }
     }
 
 }

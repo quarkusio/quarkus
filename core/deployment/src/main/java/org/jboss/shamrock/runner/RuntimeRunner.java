@@ -10,11 +10,9 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import org.jboss.shamrock.deployment.ArchiveContextBuilder;
 import org.jboss.shamrock.deployment.BuildTimeGenerator;
-import org.jboss.shamrock.runtime.Timing;
 import org.objectweb.asm.ClassVisitor;
 
 /**
@@ -28,10 +26,10 @@ public class RuntimeRunner implements Runnable, Closeable {
     private Closeable closeTask;
     private final ArchiveContextBuilder archiveContextBuilder;
 
-    public RuntimeRunner(ClassLoader classLoader, Path target, Path frameworkClassesPath, ArchiveContextBuilder archiveContextBuilder) {
+    public RuntimeRunner(ClassLoader classLoader, Path target, Path frameworkClassesPath, Path transformerCache, ArchiveContextBuilder archiveContextBuilder) {
         this.target = target;
         this.archiveContextBuilder = archiveContextBuilder;
-        this.loader = new RuntimeClassLoader(classLoader, target, frameworkClassesPath);
+        this.loader = new RuntimeClassLoader(classLoader, target, frameworkClassesPath, transformerCache);
     }
 
     @Override

@@ -96,7 +96,7 @@ public class Main {
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             try {
                 Thread.currentThread().setContextClassLoader(ucl);
-                RuntimeRunner runner = new RuntimeRunner(ucl, archive, archive, archiveContextBuilder);
+                RuntimeRunner runner = new RuntimeRunner(ucl, archive, archive, null, archiveContextBuilder);
                 runner.run();
             } finally {
                 Thread.currentThread().setContextClassLoader(old);

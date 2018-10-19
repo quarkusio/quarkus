@@ -71,8 +71,8 @@ public final class HibernateResourceProcessor implements ResourceProcessor {
     }
 
     private void enhanceEntities(final KnownDomainObjects domainObjects, ArchiveContext archiveContext, ProcessorContext processorContext) {
-        HibernateEntityEnhancer hibernateEntityEnhancer = new HibernateEntityEnhancer(domainObjects);
-        for(String i : domainObjects.getClassNames()) {
+        HibernateEntityEnhancer hibernateEntityEnhancer = new HibernateEntityEnhancer();
+        for (String i : domainObjects.getClassNames()) {
             processorContext.addByteCodeTransformer(i, hibernateEntityEnhancer);
         }
     }

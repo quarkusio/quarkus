@@ -37,7 +37,7 @@ public class HibernateEntityEnhancerTest {
         ClassReader classReader = new ClassReader(TEST_CLASSNAME);
         ClassWriter writer = new ClassWriter(classReader, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
         ClassVisitor visitor = writer;
-        HibernateEntityEnhancer hibernateEntityEnhancer = new HibernateEntityEnhancer(new TestingKnownDomainObjects());
+        HibernateEntityEnhancer hibernateEntityEnhancer = new HibernateEntityEnhancer();
         visitor = hibernateEntityEnhancer.apply(TEST_CLASSNAME, visitor);
         classReader.accept(visitor, 0);
         final byte[] modifiedBytecode = writer.toByteArray();
@@ -54,19 +54,6 @@ public class HibernateEntityEnhancerTest {
         return interfaces.contains(ManagedEntity.class) &&
               interfaces.contains(PersistentAttributeInterceptable.class) &&
               interfaces.contains(SelfDirtinessTracker.class);
-    }
-
-    private static class TestingKnownDomainObjects implements KnownDomainObjects {
-
-        @Override
-        public boolean contains(final String className) {
-            return TEST_CLASSNAME.equals(className);
-        }
-
-        @Override
-        public Set<String> getClassNames() {
-            return Collections.singleton(TEST_CLASSNAME);
-        }
     }
 
 }

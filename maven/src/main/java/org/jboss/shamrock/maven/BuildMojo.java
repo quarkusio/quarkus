@@ -15,6 +15,7 @@ import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -96,7 +97,6 @@ public class BuildMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-        final byte[] buffer = new byte[8000];
         libDir.mkdirs();
         wiringClassesDirectory.mkdirs();
         try {
@@ -148,8 +148,9 @@ public class BuildMojo extends AbstractMojo {
                     if (a.getScope().equals(PROVIDED) && !whitelist.contains(a.getDependencyConflictId())) {
                         continue;
                     }
+                    final File artifactFile = a.getFile();
                     if (uberJar) {
-                        try (ZipInputStream in = new ZipInputStream(new FileInputStream(a.getFile()))) {
+                        try (ZipInputStream in = new ZipInputStream(new FileInputStream(artifactFile))) {
                             for (ZipEntry e = in.getNextEntry(); e != null; e = in.getNextEntry()) {
                                 if (e.getName().startsWith("META-INF/services/") && e.getName().length() > 18) {
                                     services.computeIfAbsent(e.getName(), (u) -> new ArrayList<>()).add(read(in));
@@ -168,16 +169,9 @@ public class BuildMojo extends AbstractMojo {
                             }
                         }
                     } else {
-                        try (FileInputStream in = new FileInputStream(a.getFile())) {
-                            File file = new File(libDir, a.getFile().getName());
-                            try (FileOutputStream out = new FileOutputStream(file)) {
-                                int r;
-                                while ((r = in.read(buffer)) > 0) {
-                                    out.write(buffer, 0, r);
-                                }
-                            }
-                            classPath.append(" lib/" + file.getName());
-                        }
+                        final Path targetPath = libDir.toPath().resolve(artifactFile.getName());
+                        Files.copy(artifactFile.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+                        classPath.append(" lib/" + artifactFile.getName());
                     }
                 }
 

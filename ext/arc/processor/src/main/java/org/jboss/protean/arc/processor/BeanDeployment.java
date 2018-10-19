@@ -367,7 +367,7 @@ public class BeanDeployment {
             beanDefiningAnnotations.addAll(additionalBeanDefiningAnnotationss);
         }
         beanDefiningAnnotations.addAll(stereotypes.keySet());
-        beanDefiningAnnotations.add(DotName.createSimple(Model.class.getName()));
+        beanDefiningAnnotations.add(DotNames.create(Model.class));
         return beanDefiningAnnotations;
     }
 

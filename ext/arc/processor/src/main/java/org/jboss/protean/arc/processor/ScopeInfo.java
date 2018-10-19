@@ -28,7 +28,7 @@ public enum ScopeInfo {
     }
 
     private ScopeInfo(Class<? extends Annotation> clazz, boolean isNormal) {
-        this.dotName = DotName.createSimple(clazz.getName());
+        this.dotName = DotNames.create(clazz);
         this.clazz = clazz;
         this.isNormal = isNormal;
     }

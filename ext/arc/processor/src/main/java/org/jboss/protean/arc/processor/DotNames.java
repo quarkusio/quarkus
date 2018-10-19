@@ -1,5 +1,8 @@
 package org.jboss.protean.arc.processor;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Priority;
@@ -30,35 +33,51 @@ import org.jboss.jandex.DotName;
 
 final class DotNames {
 
-    static final DotName OBJECT = DotName.createSimple(Object.class.getName());
-    static final DotName OBSERVES = DotName.createSimple(Observes.class.getName());
-    static final DotName OBSERVES_ASYNC = DotName.createSimple(ObservesAsync.class.getName());
-    static final DotName PRODUCES = DotName.createSimple(Produces.class.getName());
-    static final DotName DISPOSES = DotName.createSimple(Disposes.class.getName());
-    static final DotName QUALIFIER = DotName.createSimple(Qualifier.class.getName());
-    static final DotName NONBINDING = DotName.createSimple(Nonbinding.class.getName());
-    static final DotName INJECT = DotName.createSimple(Inject.class.getName());
-    static final DotName POST_CONSTRUCT = DotName.createSimple(PostConstruct.class.getName());
-    static final DotName PRE_DESTROY = DotName.createSimple(PreDestroy.class.getName());
-    static final DotName INSTANCE = DotName.createSimple(Instance.class.getName());
-    static final DotName INJECTION_POINT = DotName.createSimple(InjectionPoint.class.getName());
-    static final DotName INTERCEPTOR = DotName.createSimple(Interceptor.class.getName());
-    static final DotName INTERCEPTOR_BINDING = DotName.createSimple(InterceptorBinding.class.getName());
-    static final DotName AROUND_INVOKE = DotName.createSimple(AroundInvoke.class.getName());
-    static final DotName AROUND_CONSTRUCT = DotName.createSimple(AroundConstruct.class.getName());
-    static final DotName PRIORITY = DotName.createSimple(Priority.class.getName());
-    static final DotName DEFAULT = DotName.createSimple(Default.class.getName());
-    static final DotName ANY = DotName.createSimple(Any.class.getName());
-    static final DotName BEAN = DotName.createSimple(Bean.class.getName());
-    static final DotName BEAN_MANAGER = DotName.createSimple(BeanManager.class.getName());
-    static final DotName EVENT = DotName.createSimple(Event.class.getName());
-    static final DotName EVENT_METADATA = DotName.createSimple(EventMetadata.class.getName());
-    static final DotName ALTERNATIVE = DotName.createSimple(Alternative.class.getName());
-    static final DotName STEREOTYPE = DotName.createSimple(Stereotype.class.getName());
-    static final DotName TYPED = DotName.createSimple(Typed.class.getName());
-    static final DotName CLASS = DotName.createSimple(Class.class.getName());
+    private static final Map<String, DotName> NAMES = new ConcurrentHashMap<>();
+
+    static final DotName OBJECT = create(Object.class);
+    static final DotName OBSERVES = create(Observes.class);
+    static final DotName OBSERVES_ASYNC = create(ObservesAsync.class);
+    static final DotName PRODUCES = create(Produces.class);
+    static final DotName DISPOSES = create(Disposes.class);
+    static final DotName QUALIFIER = create(Qualifier.class);
+    static final DotName NONBINDING = create(Nonbinding.class);
+    static final DotName INJECT = create(Inject.class);
+    static final DotName POST_CONSTRUCT = create(PostConstruct.class);
+    static final DotName PRE_DESTROY = create(PreDestroy.class);
+    static final DotName INSTANCE = create(Instance.class);
+    static final DotName INJECTION_POINT = create(InjectionPoint.class);
+    static final DotName INTERCEPTOR = create(Interceptor.class);
+    static final DotName INTERCEPTOR_BINDING = create(InterceptorBinding.class);
+    static final DotName AROUND_INVOKE = create(AroundInvoke.class);
+    static final DotName AROUND_CONSTRUCT = create(AroundConstruct.class);
+    static final DotName PRIORITY = create(Priority.class);
+    static final DotName DEFAULT = create(Default.class);
+    static final DotName ANY = create(Any.class);
+    static final DotName BEAN = create(Bean.class);
+    static final DotName BEAN_MANAGER = create(BeanManager.class);
+    static final DotName EVENT = create(Event.class);
+    static final DotName EVENT_METADATA = create(EventMetadata.class);
+    static final DotName ALTERNATIVE = create(Alternative.class);
+    static final DotName STEREOTYPE = create(Stereotype.class);
+    static final DotName TYPED = create(Typed.class);
+    static final DotName CLASS = create(Class.class);
 
     private DotNames() {
+    }
+
+    static DotName create(Class<?> clazz) {
+        return create(clazz.getName());
+    }
+
+    static DotName create(String name) {
+        if (!name.contains(".")) {
+            return DotName.createComponentized(null, name);
+        }
+        String prefix = name.substring(0, name.lastIndexOf('.'));
+        DotName prefixName = NAMES.computeIfAbsent(prefix, DotNames::create);
+        String local = name.substring(name.lastIndexOf('.') + 1);
+        return DotName.createComponentized(prefixName, local);
     }
 
     static String simpleName(DotName dotName) {

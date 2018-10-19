@@ -55,6 +55,10 @@ public class RunMojo extends AbstractMojo {
     private File sourceDir;
 
 
+    @Parameter(defaultValue = "${jvm.args}")
+    private String jvmArgs;
+
+
     @Override
     public void execute() throws MojoFailureException {
         try {
@@ -69,6 +73,9 @@ public class RunMojo extends AbstractMojo {
                 } else {
                     args.add("-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y");
                 }
+            }
+            if(jvmArgs != null) {
+                args.add(jvmArgs);
             }
 
             for (Resource r : project.getBuild().getResources()) {

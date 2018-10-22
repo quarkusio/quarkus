@@ -50,14 +50,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Inject
-    transient javax.enterprise.inject.spi.BeanManager beanManager;
-
-    @Inject
-    private TransactionManager transactionManager;
-
-    @Inject
-    @Intercepted
-    private Bean<?> interceptedBean;
+    TransactionManager transactionManager;
 
     private final boolean userTransactionAvailable;
 

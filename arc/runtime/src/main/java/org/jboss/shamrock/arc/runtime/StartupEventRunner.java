@@ -13,7 +13,7 @@ import org.jboss.shamrock.runtime.StartupEvent;
 public class StartupEventRunner {
 
     @Inject
-    private Event<StartupEvent> event;
+    Event<StartupEvent> event;
 
     public void fireEvent() {
         event.fire(new StartupEvent());

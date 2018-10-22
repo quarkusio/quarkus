@@ -95,9 +95,12 @@
         <module>agroal</module>
         <module>rest-client</module>
         <module>fault-tolerance</module>
+        <module>vertx</module>
         <module>examples</module>
         <module>legacy</module>
-        <module>vertx</module>
+
+        <!-- Do not add modules after legacy. JVM state will fail CI -->
+
     </modules>
     <build>
         <pluginManagement>

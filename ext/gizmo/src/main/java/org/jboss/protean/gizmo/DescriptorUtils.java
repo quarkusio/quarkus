@@ -64,28 +64,15 @@ public class DescriptorUtils {
         } else if (boolean.class.equals(c)) {
             return "Z";
         } else if (c.isArray()) {
-            return replace(c.getName(), '.', '/');
+            return c.getName().replace('.', '/');
         } else {
             return extToInt(c.getName());
         }
     }
 
     public static String extToInt(String className) {
-        String repl = replace(className, '.', '/');
+        String repl = className.replace('.', '/');
         return 'L' + repl + ';';
-    }
-
-    static String replace(CharSequence target, char toReplace, char replacement) {
-        StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < target.length(); i++) {
-            char character = target.charAt(i);
-            if (character == toReplace) {
-                builder.append(replacement);
-            } else {
-                builder.append(character);
-            }
-        }
-        return builder.toString();
     }
 
     public static boolean isPrimitive(String descriptor) {

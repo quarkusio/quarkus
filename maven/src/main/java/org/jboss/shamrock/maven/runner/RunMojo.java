@@ -129,7 +129,7 @@ public class RunMojo extends AbstractMojo {
             //we also want to add the maven plugin jar to the class path
             //this allows us to just directly use classes, without messing around copying them
             //to the runner jar
-            URL classFile = getClass().getClassLoader().getResource(getClass().getName().replace(".", "/") + ".class");
+            URL classFile = getClass().getClassLoader().getResource(getClass().getName().replace('.', '/') + ".class");
             classPath.append(((JarURLConnection) classFile.openConnection()).getJarFileURL().getFile());
 
             //now we need to build a temporary jar to actually run

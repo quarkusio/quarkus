@@ -9,7 +9,7 @@ public class FieldDescriptor {
     private final String type;
 
     private FieldDescriptor(String declaringClass, String name, String type) {
-        this.declaringClass = declaringClass.replace(".", "/");
+        this.declaringClass = declaringClass.replace('.', '/');
         this.name = name;
         this.type = type;
     }
@@ -17,7 +17,7 @@ public class FieldDescriptor {
     private FieldDescriptor(FieldInfo fieldInfo) {
         this.name = fieldInfo.name();
         this.type = DescriptorUtils.typeToString(fieldInfo.type());
-        this.declaringClass = fieldInfo.declaringClass().toString().replace(".", "/");
+        this.declaringClass = fieldInfo.declaringClass().toString().replace('.', '/');
     }
 
     public static FieldDescriptor of(String declaringClass, String name, String type) {

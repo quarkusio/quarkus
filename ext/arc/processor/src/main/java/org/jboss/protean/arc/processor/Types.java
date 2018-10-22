@@ -205,11 +205,11 @@ final class Types {
     }
 
     static String convertNested(String name) {
-        return name.replace("$", ".");
+        return name.replace('$', '.');
     }
 
     static String getPackageName(String className) {
-        className = className.replace("/", ".");
+        className = className.replace('/', '.');
         return className.contains(".") ? className.substring(0, className.lastIndexOf(".")) : "";
     }
 

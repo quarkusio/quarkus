@@ -51,7 +51,7 @@ public class SubclassGenerator extends AbstractGenerator {
     static final String SUBCLASS_SUFFIX = "_Subclass";
 
     static String generatedName(DotName providerTypeName, String baseName) {
-        return DotNames.packageName(providerTypeName).replace(".", "/") + "/" + baseName + SUBCLASS_SUFFIX;
+        return DotNames.packageName(providerTypeName).replace('.', '/') + "/" + baseName + SUBCLASS_SUFFIX;
     }
 
     private final AnnotationLiteralProcessor annotationLiterals;

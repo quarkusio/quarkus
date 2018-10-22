@@ -77,7 +77,7 @@ public class ObserverGenerator extends AbstractGenerator {
         }
 
         String baseName = declaringClassBase + OBSERVER_SUFFIX + OBSERVER_INDEX.incrementAndGet();
-        String generatedName = DotNames.packageName(declaringClass.name()).replace(".", "/") + "/" + baseName;
+        String generatedName = DotNames.packageName(declaringClass.name()).replace('.', '/') + "/" + baseName;
 
         ResourceClassOutput classOutput = new ResourceClassOutput(name -> name.equals(generatedName) ? SpecialType.OBSERVER : null);
 

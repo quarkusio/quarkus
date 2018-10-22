@@ -19,7 +19,7 @@ import java.util.List;
 public class Main {
 
     public static void main(String... args) {
-        String classFileName = Main.class.getName().replace(".", "/") + ".class";
+        String classFileName = Main.class.getName().replace('.', '/') + ".class";
         URL location = Main.class.getClassLoader().getResource(classFileName);
         File libDir;
         if (location.getProtocol().equals("jar")) {

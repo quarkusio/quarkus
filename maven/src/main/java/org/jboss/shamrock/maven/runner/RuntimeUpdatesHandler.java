@@ -146,7 +146,7 @@ public class RuntimeUpdatesHandler implements HttpHandler {
 
     private String pathToClassName(final Path path) {
         String pathName = classesDir.relativize(path).toString();
-        String className = pathName.substring(0, pathName.length() - 6).replace("/", ".");
+        String className = pathName.substring(0, pathName.length() - 6).replace('/', '.');
         return className;
     }
 

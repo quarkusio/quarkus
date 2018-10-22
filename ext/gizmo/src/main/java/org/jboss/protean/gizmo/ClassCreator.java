@@ -37,12 +37,12 @@ public class ClassCreator implements AutoCloseable, AnnotatedElement {
 
     public ClassCreator(ClassOutput classOutput, String name, String signature, String superClass, String... interfaces) {
         this.classOutput = classOutput;
-        this.superClass = superClass.replace(".", "/");
+        this.superClass = superClass.replace('.', '/');
         this.interfaces = new String[interfaces.length];
         for (int i = 0; i < interfaces.length; ++i) {
-            this.interfaces[i] = interfaces[i].replace(".", "/");
+            this.interfaces[i] = interfaces[i].replace('.', '/');
         }
-        this.className = name.replace(".", "/");
+        this.className = name.replace('.', '/');
         this.signature = signature;
     }
 

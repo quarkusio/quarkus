@@ -128,7 +128,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
             return super.loadClass(name, resolve);
         }
 
-        String fileName = name.replace(".", "/") + ".class";
+        final String fileName = name.replace('.', '/') + ".class";
         Path classLoc = applicationClasses.resolve(fileName);
         if (Files.exists(classLoc)) {
             CompletableFuture<Class<?>> res = new CompletableFuture<>();
@@ -249,7 +249,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
             //however as we add them to the frameworkClasses set we know to load them
             //from the parent CL
             frameworkClasses.add(className.replace('/', '.'));
-            Path fileName = frameworkClassesPath.resolve(className.replace(".", "/") + ".class");
+            final Path fileName = frameworkClassesPath.resolve(className.replace('.', '/') + ".class");
             try {
                 Files.createDirectories(fileName.getParent());
                 try (FileOutputStream out = new FileOutputStream(fileName.toFile())) {

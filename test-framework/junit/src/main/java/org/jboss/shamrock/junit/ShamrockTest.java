@@ -62,7 +62,7 @@ public class ShamrockTest extends BlockJUnit4ClassRunner {
                             //TODO: so much hacks...
                             try {
                                 Class<?> theClass = description.getTestClass();
-                                String classFileName = theClass.getName().replace(".", "/") + ".class";
+                                String classFileName = theClass.getName().replace('.', '/') + ".class";
                                 URL resource = theClass.getClassLoader().getResource(classFileName);
                                 String testClassLocation = resource.getPath().substring(0, resource.getPath().length() - classFileName.length());
                                 String appClassLocation = testClassLocation.replace("test-classes", "classes");

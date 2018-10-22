@@ -87,7 +87,7 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
 
     @Override
     public ResultHandle getThis() {
-        ResultHandle resultHandle = new ResultHandle("L" + declaringClassName.replace(".", "/") + ";", this);
+        ResultHandle resultHandle = new ResultHandle("L" + declaringClassName.replace('.', '/') + ";", this);
         resultHandle.setNo(0);
         return resultHandle;
     }
@@ -296,7 +296,7 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
             primtiveType = Double.class;
         }
         if (primtiveType == null) {
-            return new ResultHandle("Ljava/lang/Class;", this, Type.getObjectType(className.replace(".", "/")));
+            return new ResultHandle("Ljava/lang/Class;", this, Type.getObjectType(className.replace('.', '/')));
         } else {
             Class pt = primtiveType;
             ResultHandle ret = new ResultHandle("Ljava/lang/Class;", this);
@@ -663,7 +663,7 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
         return new ExceptionTable() {
             @Override
             public CatchBlockCreator addCatchClause(String exception) {
-                String name = exception.replace(".", "/");
+                String name = exception.replace('.', '/');
                 if (catchBlocks.containsKey(name)) {
                     throw new IllegalStateException("Catch block for " + exception + " already exists");
                 }

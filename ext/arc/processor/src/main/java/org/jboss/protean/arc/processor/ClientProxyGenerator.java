@@ -60,7 +60,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
         String providerTypeName = providerClass.name().toString();
         String baseName = getBaseName(bean, beanClassName);
         String targetPackage = getProxyPackageName(bean);
-        String generatedName = targetPackage.replace(".", "/") + "/" + baseName + CLIENT_PROXY_SUFFIX;
+        String generatedName = targetPackage.replace('.', '/') + "/" + baseName + CLIENT_PROXY_SUFFIX;
 
         // Foo_ClientProxy extends Foo implements ClientProxy
         List<String> interfaces = new ArrayList<>();

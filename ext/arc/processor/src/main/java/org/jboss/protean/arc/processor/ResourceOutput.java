@@ -38,7 +38,7 @@ public interface ResourceOutput {
          */
         default String getFullyQualifiedName() {
             if (Type.JAVA_CLASS.equals(getType()) || Type.JAVA_SOURCE.equals(getType())) {
-                return getName().replace("/", ".");
+                return getName().replace('/', '.');
             }
             throw new UnsupportedOperationException();
         }

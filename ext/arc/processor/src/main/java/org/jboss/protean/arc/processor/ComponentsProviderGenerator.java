@@ -149,7 +149,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             resources.add(resource);
             // TODO proper name conversion
             resources.add(ResourceImpl.serviceProvider(ComponentsProvider.class.getName(),
-                    (resource.getName().replace("/", ".")).getBytes(Charset.forName("UTF-8"))));
+                    (resource.getName().replace('/', '.')).getBytes(Charset.forName("UTF-8"))));
         }
         return resources;
     }

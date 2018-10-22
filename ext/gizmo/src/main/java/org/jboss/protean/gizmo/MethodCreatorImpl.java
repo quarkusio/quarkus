@@ -25,7 +25,7 @@ class MethodCreatorImpl extends BytecodeCreatorImpl implements MethodCreator {
 
     @Override
     public MethodCreator addException(String exception) {
-        exceptions.add(exception.replace(".", "/"));
+        exceptions.add(exception.replace('.', '/'));
         return this;
     }
 

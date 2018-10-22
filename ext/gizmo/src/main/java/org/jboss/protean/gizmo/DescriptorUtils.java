@@ -111,7 +111,7 @@ public class DescriptorUtils {
                 return s; //primitive
             }
             if (s.startsWith("[")) {
-                return s.replace(".", "/");
+                return s.replace('.', '/');
             }
             if (s.endsWith(";")) {
                 //jvm internal name
@@ -122,7 +122,7 @@ public class DescriptorUtils {
                     return classToStringRepresentation(prim);
                 }
             }
-            return "L" + s.replace(".", "/") + ";";
+            return "L" + s.replace('.', '/') + ';';
         } else if (param instanceof Class) {
             return classToStringRepresentation((Class<?>) param);
         }
@@ -146,9 +146,9 @@ public class DescriptorUtils {
     public static String objectToInternalClassName(Object param) {
         if (param instanceof String) {
             String s = (String) param;
-            return s.replace(".", "/");
+            return s.replace('.', '/');
         } else if (param instanceof Class) {
-            return ((Class) param).getName().replace(".", "/");
+            return ((Class) param).getName().replace('.', '/');
         }
         throw new IllegalArgumentException("Must be a Class or String, got " + param);
     }
@@ -180,26 +180,26 @@ public class DescriptorUtils {
             return "V";
         } else if (type.kind() == Type.Kind.ARRAY) {
             ArrayType array = type.asArrayType();
-            return array.name().toString().replace(".", "/");
+            return array.name().toString().replace('.', '/');
         } else if (type.kind() == Type.Kind.PARAMETERIZED_TYPE) {
             ParameterizedType pt = type.asParameterizedType();
             StringBuilder ret = new StringBuilder();
             ret.append("L");
-            ret.append(pt.name().toString().replace(".", "/"));
+            ret.append(pt.name().toString().replace('.', '/'));
             ret.append(";");
             return ret.toString();
         } else if (type.kind() == Type.Kind.CLASS) {
             ClassType pt = type.asClassType();
             StringBuilder ret = new StringBuilder();
             ret.append("L");
-            ret.append(pt.name().toString().replace(".", "/"));
+            ret.append(pt.name().toString().replace('.', '/'));
             ret.append(";");
             return ret.toString();
         } else if (type.kind() == Type.Kind.TYPE_VARIABLE) {
             TypeVariable pt = type.asTypeVariable();
             StringBuilder ret = new StringBuilder();
             ret.append("L");
-            ret.append(pt.name().toString().replace(".", "/"));
+            ret.append(pt.name().toString().replace('.', '/'));
             ret.append(";");
             return ret.toString();
         } else {

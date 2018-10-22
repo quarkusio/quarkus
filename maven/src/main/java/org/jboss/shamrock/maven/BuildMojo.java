@@ -276,7 +276,7 @@ public class BuildMojo extends AbstractMojo {
 //                                    out.putNextEntry(new ZipEntry(pathName + "/"));
 //                                }
                                 } else if (pathName.endsWith(".class") && !buildTimeGenerator.getByteCodeTransformers().isEmpty()) {
-                                    String className = pathName.substring(0, pathName.length() - 6).replace("/", ".");
+                                    String className = pathName.substring(0, pathName.length() - 6).replace('/', '.');
                                     List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors = buildTimeGenerator.getByteCodeTransformers().get(className);
 
                                     if (visitors == null || visitors.isEmpty()) {

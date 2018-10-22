@@ -65,8 +65,8 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
         Map<String, AnnotationValue> annotationValues = values.stream().collect(Collectors.toMap(AnnotationValue::name, Function.identity()));
 
         // Ljavax/enterprise/util/AnnotationLiteral<Lcom/foo/MyQualifier;>;Lcom/foo/MyQualifier;
-        String signature = String.format("Ljavax/enterprise/util/AnnotationLiteral<L%1$s;>;L%1$s;", annotationClass.name().toString().replace(".", "/"));
-        String generatedName = literalName.replace(".", "/");
+        String signature = String.format("Ljavax/enterprise/util/AnnotationLiteral<L%1$s;>;L%1$s;", annotationClass.name().toString().replace('.', '/'));
+        String generatedName = literalName.replace('.', '/');
 
         ClassCreator annotationLiteral = ClassCreator.builder().classOutput(classOutput).className(generatedName).superClass(AnnotationLiteral.class)
                 .interfaces(annotationClass.name().toString()).signature(signature).build();

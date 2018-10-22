@@ -78,7 +78,7 @@ public class BuildTimeGenerator {
 
     private static final AtomicInteger COUNT = new AtomicInteger();
     public static final String MAIN_CLASS_INTERNAL = "org/jboss/shamrock/runner/GeneratedMain";
-    public static final String MAIN_CLASS = MAIN_CLASS_INTERNAL.replace("/", ".");
+    public static final String MAIN_CLASS = MAIN_CLASS_INTERNAL.replace('/', '.');
     private static final String GRAAL_AUTOFEATURE = "org/jboss/shamrock/runner/AutoFeature";
     private static final String STARTUP_CONTEXT = "STARTUP_CONTEXT";
 

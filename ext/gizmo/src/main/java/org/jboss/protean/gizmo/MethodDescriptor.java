@@ -43,7 +43,7 @@ public class MethodDescriptor {
             paramTypes[i] = DescriptorUtils.typeToString(info.parameters().get(i));
         }
         this.parameterTypes = paramTypes;
-        this.declaringClass = info.declaringClass().toString().replace(".", "/");
+        this.declaringClass = info.declaringClass().toString().replace('.', '/');
         this.descriptor = DescriptorUtils.methodSignitureToDescriptor(returnType, parameterTypes);
     }
 

@@ -91,7 +91,7 @@ public class ShamrockScanner implements Scanner {
 
         @Override
         public InputStreamAccess getStreamAccess() {
-            return new UrlInputStreamAccess(Thread.currentThread().getContextClassLoader().getResource(name.replace(".", "/") + ".class"));
+            return new UrlInputStreamAccess(Thread.currentThread().getContextClassLoader().getResource(name.replace('.', '/') + ".class"));
         }
     }
 }

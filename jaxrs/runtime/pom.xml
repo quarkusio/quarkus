@@ -13,10 +13,9 @@
     <artifactId>shamrock-jaxrs-runtime</artifactId>
 
     <dependencies>
-
         <dependency>
-            <groupId>org.jboss.graalvm</groupId>
-            <artifactId>graal-annotations</artifactId>
+            <groupId>com.oracle.substratevm</groupId>
+            <artifactId>svm</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>

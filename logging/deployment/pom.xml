@@ -19,13 +19,13 @@
             <artifactId>shamrock-core-deployment</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.graalvm</groupId>
+            <groupId>org.graalvm.sdk</groupId>
             <artifactId>graal-sdk</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.jboss.graalvm</groupId>
-            <artifactId>graal-annotations</artifactId>
+            <groupId>com.oracle.substratevm</groupId>
+            <artifactId>svm</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.logmanager</groupId>

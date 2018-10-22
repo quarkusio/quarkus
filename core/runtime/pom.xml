@@ -39,12 +39,12 @@
             <artifactId>slf4j-jboss-logging</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.graalvm</groupId>
+            <groupId>org.graalvm.sdk</groupId>
             <artifactId>graal-sdk</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.graalvm</groupId>
-            <artifactId>graal-annotations</artifactId>
+            <groupId>com.oracle.substratevm</groupId>
+            <artifactId>svm</artifactId>
         </dependency>
     </dependencies>
 

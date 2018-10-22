@@ -95,8 +95,8 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.jboss.graalvm</groupId>
-            <artifactId>graal-annotations</artifactId>
+            <groupId>com.oracle.substratevm</groupId>
+            <artifactId>svm</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.resteasy</groupId>

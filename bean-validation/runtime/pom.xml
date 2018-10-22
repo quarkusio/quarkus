@@ -22,8 +22,8 @@
             <artifactId>hibernate-validator</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.graalvm</groupId>
-            <artifactId>graal-annotations</artifactId>
+            <groupId>com.oracle.substratevm</groupId>
+            <artifactId>svm</artifactId>
         </dependency>
         <!-- This gets brought in by SafeHtmlValidator, this should be fixed -->
         <dependency>

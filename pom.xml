@@ -42,8 +42,7 @@
         <plexus-utils.version>3.0.24</plexus-utils.version>
         <maven-plugin-annotations.version>3.5.2</maven-plugin-annotations.version>
         <plexus-component-annotations.version>1.7.1</plexus-component-annotations.version>
-        <graal-annotations.version>1.0.0-rc4</graal-annotations.version>
-        <graal-sdk.version>1.0.0-rc6</graal-sdk.version>
+        <graal-sdk.version>1.0.0-rc8</graal-sdk.version>
         <jackson.version>2.9.5</jackson.version>
         <commons-beanutils-core.version>1.8.3</commons-beanutils-core.version>
         <commons-logging.version>1.2</commons-logging.version>
@@ -615,7 +614,7 @@
                 <version>${javax.json.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.graalvm</groupId>
+                <groupId>org.graalvm.sdk</groupId>
                 <artifactId>graal-sdk</artifactId>
                 <version>${graal-sdk.version}</version>
             </dependency>
@@ -651,10 +650,17 @@
                 <version>${jboss-classfilewriter.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.jboss.graalvm</groupId>
-                <artifactId>graal-annotations</artifactId>
-                <version>${graal-annotations.version}</version>
+                <groupId>com.oracle.substratevm</groupId>
+                <artifactId>svm</artifactId>
+                <version>${graal-sdk.version}</version>
                 <scope>provided</scope>
+                <!-- We only want the included annotations -->
+                <exclusions>
+                    <exclusion>
+                        <artifactId>*</artifactId>
+                        <groupId>*</groupId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.jboss.invocation</groupId>

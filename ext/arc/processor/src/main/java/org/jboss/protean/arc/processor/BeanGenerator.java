@@ -19,7 +19,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
@@ -604,8 +603,15 @@ public class BeanGenerator extends AbstractGenerator {
         ResultHandle instanceHandle = null;
 
         if (bean.isClassBean()) {
-            List<Injection> methodInjections = bean.getInjections().stream().filter(i -> i.isMethod() && !i.isConstructor()).collect(Collectors.toList());
-            List<Injection> fieldInjections = bean.getInjections().stream().filter(i -> i.isField()).collect(Collectors.toList());
+            List<Injection> methodInjections = new ArrayList<>();
+            List<Injection> fieldInjections = new ArrayList<>();
+            for (Injection injection : bean.getInjections()) {
+                if (injection.isField()) {
+                    fieldInjections.add(injection);
+                } else if(injection.isMethod() && !injection.isConstructor()) {
+                    methodInjections.add(injection);
+                }
+            }
 
             ResultHandle postConstructsHandle = null;
             ResultHandle aroundConstructsHandle = null;
@@ -673,8 +679,10 @@ public class BeanGenerator extends AbstractGenerator {
                 Optional<Injection> constructorInjection = bean.getConstructorInjection();
                 ResultHandle constructorHandle;
                 if (constructorInjection.isPresent()) {
-                    List<String> paramTypes = constructorInjection.get().injectionPoints.stream().map(i -> i.getRequiredType().name().toString())
-                            .collect(Collectors.toList());
+                    List<String> paramTypes = new ArrayList<>();
+                    for (InjectionPointInfo injectionPoint : constructorInjection.get().injectionPoints) {
+                        paramTypes.add(injectionPoint.getRequiredType().name().toString());
+                    }
                     ResultHandle[] paramsHandles = new ResultHandle[2];
                     paramsHandles[0] = create.loadClass(providerTypeName);
                     ResultHandle paramsArray = create.newArray(Class.class, create.load(paramTypes.size()));
@@ -993,10 +1001,12 @@ public class BeanGenerator extends AbstractGenerator {
                         paramTypesArray, argsArray);
             } else {
                 // new SimpleBean(foo)
-                return creator.newInstance(
-                        MethodDescriptor.ofConstructor(providerTypeName,
-                                injectionPoints.stream().map(ip -> ip.getRequiredType().name().toString()).collect(Collectors.toList()).toArray(new String[0])),
-                        providerHandles.toArray(new ResultHandle[0]));
+                String[] paramTypes = new String[injectionPoints.size()];
+                for (ListIterator<InjectionPointInfo> iterator = injectionPoints.listIterator(); iterator.hasNext();) {
+                    InjectionPointInfo injectionPoint = iterator.next();
+                    paramTypes[iterator.previousIndex()] = injectionPoint.getRequiredType().name().toString();
+                }
+                return creator.newInstance(MethodDescriptor.ofConstructor(providerTypeName, paramTypes), providerHandles.toArray(new ResultHandle[0]));
             }
         } else {
             MethodInfo noArgsConstructor = bean.getTarget().asClass().method("<init>");

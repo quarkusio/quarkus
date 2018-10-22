@@ -104,7 +104,10 @@ public class BuildMojo extends AbstractMojo {
             List<String> problems = new ArrayList<>();
             Set<String> whitelist = new HashSet<>();
             for (Artifact a : project.getArtifacts()) {
-                try (ZipFile zip = new ZipFile(a.getFile())) {
+                if ( ! "jar".equals(a.getType())) {
+                    continue;
+                }
+                try (ZipFile zip = openZipFile(a)) {
                     if (!a.getScope().equals(PROVIDED) && zip.getEntry("META-INF/services/org.jboss.shamrock.deployment.ShamrockSetup") != null) {
                          problems.add("Artifact " + a + " is a deployment artifact, however it does not have scope required. This will result in unnecessary jars being included in the final image");
                     }
@@ -329,6 +332,21 @@ public class BuildMojo extends AbstractMojo {
 
         } catch (Exception e) {
             throw new MojoFailureException("Failed to run", e);
+        }
+    }
+
+    private ZipFile openZipFile(final Artifact a) {
+        final File file = a.getFile();
+        if (file==null){
+            throw new RuntimeException("No file for Artifact:" + a.toString());
+        }
+        if (!Files.isReadable(file.toPath())){
+            throw new RuntimeException("File not existing or not allowed for reading: " + file.getAbsolutePath());
+        }
+        try {
+            return new ZipFile(file);
+        } catch (IOException e) {
+            throw new RuntimeException("Error opening zip stream from artifact: " + a.toString());
         }
     }
 

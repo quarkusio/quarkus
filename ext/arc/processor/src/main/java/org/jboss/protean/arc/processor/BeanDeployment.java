@@ -216,8 +216,8 @@ public class BeanDeployment {
                         continue;
                     }
 
-                    if (beanClass.annotations().containsKey(DotNames.INTERCEPTOR)) {
-                        // Skip interceptors
+                    if (beanClass.annotations().containsKey(DotNames.INTERCEPTOR) || beanClass.annotations().containsKey(DotNames.VETOED)) {
+                        // Skip interceptors and vetoed classes
                         continue;
                     }
                     if (beanClass.nestingType().equals(NestingType.ANONYMOUS) || beanClass.nestingType().equals(NestingType.LOCAL)

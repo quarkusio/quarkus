@@ -59,7 +59,7 @@ public class InterceptorGenerator extends BeanGenerator {
     Collection<Resource> generate(InterceptorInfo interceptor, ReflectionRegistration reflectionRegistration) {
 
         Type providerType = interceptor.getProviderType();
-        ClassInfo interceptorClass = interceptor.getTarget().asClass();
+        ClassInfo interceptorClass = interceptor.getTarget().get().asClass();
         String baseName;
         if (interceptorClass.enclosingClass() != null) {
             baseName = DotNames.simpleName(interceptorClass.enclosingClass()) + "_" + DotNames.simpleName(interceptorClass.name());

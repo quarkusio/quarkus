@@ -28,6 +28,7 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 import org.jboss.protean.arc.ActivateRequestContextInterceptor;
 import org.jboss.protean.arc.ArcContainer;
+import org.jboss.protean.arc.processor.AnnotationsTransformer;
 import org.jboss.protean.arc.processor.BeanProcessor;
 import org.jboss.protean.arc.processor.BeanProcessor.Builder;
 import org.jboss.protean.arc.processor.ReflectionRegistration;
@@ -119,7 +120,14 @@ public class ArcAnnotationProcessor implements ResourceProcessor {
             });
             for (BiFunction<AnnotationTarget, Collection<AnnotationInstance>, Collection<AnnotationInstance>> transformer : beanDeployment
                     .getAnnotationTransformers()) {
-                builder.addAnnotationTransformer(transformer);
+                // TODO make use of Arc API instead of BiFunction
+                builder.addAnnotationTransformer(new AnnotationsTransformer() {
+
+                    @Override
+                    public Collection<AnnotationInstance> transform(AnnotationTarget target, Collection<AnnotationInstance> annotations) {
+                        return transformer.apply(target, annotations);
+                    }
+                });
             }
 
             builder.setOutput(new ResourceOutput() {

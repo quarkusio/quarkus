@@ -37,7 +37,7 @@ public class SubclassGeneratorTest {
         BeanGenerator beanGenerator = new BeanGenerator(annotationLiteralProcessor);
         SubclassGenerator generator = new SubclassGenerator(annotationLiteralProcessor);
         BeanInfo simpleBean = deployment.getBeans().stream()
-                .filter(b -> b.getTarget().asClass().name().equals(DotName.createSimple(SimpleBean.class.getName()))).findAny().get();
+                .filter(b -> b.getTarget().get().asClass().name().equals(DotName.createSimple(SimpleBean.class.getName()))).findAny().get();
         for (Resource resource : beanGenerator.generate(simpleBean, ReflectionRegistration.NOOP)) {
             generator.generate(simpleBean, resource.getFullyQualifiedName(), ReflectionRegistration.NOOP);
         }

@@ -56,8 +56,8 @@ public class FaultToleranceAnnotationProcessor implements ResourceProcessor {
 
         IndexView index = archiveContext.getCombinedIndex();
 
-        //Make sure rx.internal.util.unsafe.UnsafeAccess.DISABLED_BY_USER is set.
-        processorContext.addNativeImageSystemProperty( "rx.unsafe-disable", "true" );
+        // Make sure rx.internal.util.unsafe.UnsafeAccess.DISABLED_BY_USER is set.
+        processorContext.addNativeImageSystemProperty("rx.unsafe-disable", "true");
 
         // Add reflective acccess to fallback handlers
         Collection<ClassInfo> fallbackHandlers = index.getAllKnownImplementors(DotName.createSimple(FallbackHandler.class.getName()));
@@ -66,36 +66,35 @@ public class FaultToleranceAnnotationProcessor implements ResourceProcessor {
         }
         processorContext.addReflectiveClass(false, true, HystrixCircuitBreaker.Factory.class.getName());
 
-        // Add HystrixCommandBinding to app classes
-        Set<String> ftClasses = new HashSet<>();
-        for (DotName annotation : FT_ANNOTATIONS) {
-            Collection<AnnotationInstance> annotationInstances = index.getAnnotations(annotation);
-            for (AnnotationInstance instance : annotationInstances) {
-                if (instance.target().kind() == Kind.CLASS) {
-                    ftClasses.add(instance.target().asClass().toString());
-                } else if (instance.target().kind() == Kind.METHOD) {
-                    ftClasses.add(instance.target().asMethod().declaringClass().toString());
-                }
-            }
-            // Needed for substrate VM
-            processorContext.addReflectiveClass(true, false, annotation.toString());
-        }
-        if (!ftClasses.isEmpty()) {
-            beanDeployment.addAnnotationTransformer(new BiFunction<AnnotationTarget, Collection<AnnotationInstance>, Collection<AnnotationInstance>>() {
-                @Override
-                public Collection<AnnotationInstance> apply(AnnotationTarget target, Collection<AnnotationInstance> annotations) {
-                    if (Kind.CLASS != target.kind() || !ftClasses.contains(target.asClass().name().toString())) {
-                        return annotations;
-                    }
-                    // Add @HystrixCommandBinding
-                    List<AnnotationInstance> modified = new ArrayList<>(annotations);
-                    modified.add(AnnotationInstance.create(DotName.createSimple(HystrixCommandBinding.class.getName()), target, new AnnotationValue[0]));
-                    return modified;
-                }
-            });
-        }
-
         if (processorContext.isCapabilityPresent(Capabilities.CDI_ARC)) {
+            // Add HystrixCommandBinding to app classes
+            Set<String> ftClasses = new HashSet<>();
+            for (DotName annotation : FT_ANNOTATIONS) {
+                Collection<AnnotationInstance> annotationInstances = index.getAnnotations(annotation);
+                for (AnnotationInstance instance : annotationInstances) {
+                    if (instance.target().kind() == Kind.CLASS) {
+                        ftClasses.add(instance.target().asClass().toString());
+                    } else if (instance.target().kind() == Kind.METHOD) {
+                        ftClasses.add(instance.target().asMethod().declaringClass().toString());
+                    }
+                }
+                // Needed for substrate VM
+                processorContext.addReflectiveClass(true, false, annotation.toString());
+            }
+            if (!ftClasses.isEmpty()) {
+                beanDeployment.addAnnotationTransformer(new BiFunction<AnnotationTarget, Collection<AnnotationInstance>, Collection<AnnotationInstance>>() {
+                    @Override
+                    public Collection<AnnotationInstance> apply(AnnotationTarget target, Collection<AnnotationInstance> annotations) {
+                        if (Kind.CLASS != target.kind() || !ftClasses.contains(target.asClass().name().toString())) {
+                            return annotations;
+                        }
+                        // Add @HystrixCommandBinding
+                        List<AnnotationInstance> modified = new ArrayList<>(annotations);
+                        modified.add(AnnotationInstance.create(DotName.createSimple(HystrixCommandBinding.class.getName()), target, new AnnotationValue[0]));
+                        return modified;
+                    }
+                });
+            }
             // Register bean classes
             beanDeployment.addAdditionalBean(HystrixCommandInterceptor.class);
             beanDeployment.addAdditionalBean(HystrixInitializer.class);

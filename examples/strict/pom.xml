@@ -217,6 +217,9 @@
                     <name>!no-postgres</name>
                 </property>
             </activation>
+            <properties>
+                <postgres.url>jdbc:postgresql://localhost:5431/hibernate_orm_test</postgres.url>
+            </properties>
             <build>
                 <plugins>
                     <plugin>
@@ -235,7 +238,7 @@
                                             <POSTGRES_DB>hibernate_orm_test</POSTGRES_DB>
                                         </env>
                                         <ports>
-                                            <port>5432:5432</port>
+                                            <port>5431:5432</port>
                                         </ports>
                                         <wait>
                                             <tcp>

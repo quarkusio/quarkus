@@ -33,6 +33,12 @@ At the moment is has the following features:
 
 ## How to build Shamrock
 
+* Install platform C developer tools:
+
+** OSX
+*** `xcode-select --install`
+** Linux
+*** TBD
 * Install GraalVM (minimum RC6)
 * set `GRAALVM_HOME` to your GraalVM Home directory e.g. `/Users/emmanuel/JDK/GraalVM/Contents/Home`
 * `mvn install`

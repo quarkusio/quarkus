@@ -78,8 +78,6 @@ public class FaultToleranceAnnotationProcessor implements ResourceProcessor {
                         ftClasses.add(instance.target().asMethod().declaringClass().toString());
                     }
                 }
-                // Needed for substrate VM
-                processorContext.addReflectiveClass(true, false, annotation.toString());
             }
             if (!ftClasses.isEmpty()) {
                 beanDeployment.addAnnotationTransformer(new BiFunction<AnnotationTarget, Collection<AnnotationInstance>, Collection<AnnotationInstance>>() {
@@ -109,6 +107,11 @@ public class FaultToleranceAnnotationProcessor implements ResourceProcessor {
             processorContext.addReflectiveClass(true, true, DefaultHystrixConcurrencyStrategy.class.getName());
             processorContext.addReflectiveClass(true, true, DefaultFaultToleranceOperationProvider.class.getName());
             processorContext.addReflectiveClass(true, true, DefaultFallbackHandlerProvider.class.getName());
+
+            for (DotName annotation : FT_ANNOTATIONS) {
+                // Needed for substrate VM
+                processorContext.addReflectiveClass(true, false, annotation.toString());
+            }
         }
     }
 

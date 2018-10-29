@@ -1,12 +1,8 @@
-package org.jboss.protean.arc.example;
+package org.jboss.protean.arc;
 
 import org.jboss.protean.arc.Arc;
 
-/**
- *
- * @author Martin Kouba
- */
-public class Main {
+public class ArcMain {
 
     static {
         // This is needed for graal ahead-of-time compilation
@@ -15,8 +11,8 @@ public class Main {
     }
 
     public static void main(String[] args) {
-        Baz baz = Arc.container().instance(Baz.class).get();
-        System.out.println(baz.pingFoo());
+        Arc.container().instance(Generator.class).get().run();
+        Arc.shutdown();
     }
 
 }

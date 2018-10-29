@@ -414,6 +414,17 @@
                 <scope>test</scope>
                 <version>${project.version}</version>
             </dependency>
+            
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-camel-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-camel-runtime</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- Additional dependencies, keep in alphabetical order-->
 

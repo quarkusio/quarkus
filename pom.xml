@@ -95,6 +95,7 @@
         <module>rest-client</module>
         <module>fault-tolerance</module>
         <module>vertx</module>
+        <module>camel</module>
         <module>examples</module>
         <module>legacy</module>
 

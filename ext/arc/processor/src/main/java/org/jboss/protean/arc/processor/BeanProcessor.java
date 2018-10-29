@@ -6,11 +6,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import javax.enterprise.context.control.ActivateRequestContext;
 import javax.enterprise.inject.Any;
@@ -26,7 +26,8 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
 import org.jboss.protean.arc.ActivateRequestContextInterceptor;
-import org.jboss.protean.arc.processor.BuildProcessor.BuildContext;
+import org.jboss.protean.arc.processor.BuildExtension.BuildContext;
+import org.jboss.protean.arc.processor.BuildExtension.Key;
 import org.jboss.protean.arc.processor.DeploymentEnhancer.DeploymentContext;
 import org.jboss.protean.arc.processor.ResourceOutput.Resource;
 import org.jboss.protean.arc.processor.ResourceOutput.Resource.SpecialType;
@@ -63,6 +64,8 @@ public class BeanProcessor {
 
     private final List<BeanRegistrar> beanRegistrars;
 
+    private final BuildContextImpl buildContext;
+
     private BeanProcessor(String name, IndexView index, Collection<DotName> additionalBeanDefiningAnnotations, ResourceOutput output,
             boolean sharedAnnotationLiterals, ReflectionRegistration reflectionRegistration, List<AnnotationsTransformer> annotationTransformers,
             Collection<DotName> resourceAnnotations, List<BeanRegistrar> beanRegistrars, List<DeploymentEnhancer> deploymentEnhancers) {
@@ -76,26 +79,22 @@ public class BeanProcessor {
         this.resourceAnnotations = resourceAnnotations;
 
         // Initialize all build processors
-        ConcurrentMap<String, Object> data = new ConcurrentHashMap<>();
-        BuildContext buildContext = new BuildContext() {
-            @Override
-            public IndexView getIndex() {
-                return index;
+        buildContext = new BuildContextImpl();
+        buildContext.putInternal(Key.INDEX.asString(), index);
+        for (Iterator<DeploymentEnhancer> iterator = deploymentEnhancers.iterator(); iterator.hasNext();) {
+            if (!iterator.next().initialize(buildContext)) {
+                iterator.remove();
             }
-
-            @Override
-            public Map<String, Object> getContextData() {
-                return data;
+        }
+        for (Iterator<AnnotationsTransformer> iterator = annotationTransformers.iterator(); iterator.hasNext();) {
+            if (!iterator.next().initialize(buildContext)) {
+                iterator.remove();
             }
-        };
-        for (AnnotationsTransformer transformer : annotationTransformers) {
-            transformer.initialize(buildContext);
         }
-        for (DeploymentEnhancer enhancer : deploymentEnhancers) {
-            enhancer.initialize(buildContext);
-        }
-        for (BeanRegistrar registrar : beanRegistrars) {
-            registrar.initialize(buildContext);
+        for (Iterator<BeanRegistrar> iterator = beanRegistrars.iterator(); iterator.hasNext();) {
+            if (!iterator.next().initialize(buildContext)) {
+                iterator.remove();
+            }
         }
 
         if (!deploymentEnhancers.isEmpty()) {
@@ -112,7 +111,7 @@ public class BeanProcessor {
                     index(indexer, clazz.getName());
                 }
             };
-            deploymentEnhancers.sort(BuildProcessor::compare);
+            deploymentEnhancers.sort(BuildExtension::compare);
             for (DeploymentEnhancer enhancer : deploymentEnhancers) {
                 enhancer.enhance(deploymentContext);
             }
@@ -121,14 +120,14 @@ public class BeanProcessor {
             this.index = index;
         }
 
-        beanRegistrars.sort(BuildProcessor::compare);
+        beanRegistrars.sort(BuildExtension::compare);
         this.beanRegistrars = beanRegistrars;
     }
 
     public BeanDeployment process() throws IOException {
 
         BeanDeployment beanDeployment = new BeanDeployment(new IndexWrapper(index), additionalBeanDefiningAnnotations, annotationTransformers,
-                resourceAnnotations, beanRegistrars);
+                resourceAnnotations, beanRegistrars, buildContext);
         beanDeployment.init();
 
         AnnotationLiteralProcessor annotationLiterals = new AnnotationLiteralProcessor(name, sharedAnnotationLiterals);
@@ -355,6 +354,32 @@ public class BeanProcessor {
         @Override
         public Collection<AnnotationInstance> getAnnotations(DotName annotationName) {
             return index.getAnnotations(annotationName);
+        }
+
+    }
+
+    static class BuildContextImpl implements BuildContext {
+
+        private final Map<String, Object> data = new ConcurrentHashMap<>();
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public <V> V get(Key<V> key) {
+            return (V) data.get(key.asString());
+        }
+
+        @Override
+        public <V> V put(Key<V> key, V value) {
+            String keyStr = key.asString();
+            if (keyStr.startsWith(Key.BUILT_IN_PREFIX)) {
+                throw new IllegalArgumentException("Key may not start wit " + Key.BUILT_IN_PREFIX + ": " + keyStr);
+            }
+            return putInternal(keyStr, value);
+        }
+
+        @SuppressWarnings("unchecked")
+        <V> V putInternal(String key, V value) {
+            return (V) data.put(key, value);
         }
 
     }

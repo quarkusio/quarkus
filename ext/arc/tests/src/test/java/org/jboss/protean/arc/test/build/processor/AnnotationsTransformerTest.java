@@ -2,10 +2,12 @@ package org.jboss.protean.arc.test.build.processor;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.AbstractList;
 import java.util.Collection;
+import java.util.Collections;
 
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Vetoed;
@@ -14,6 +16,7 @@ import javax.inject.Inject;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.DotName;
 import org.jboss.protean.arc.Arc;
 import org.jboss.protean.arc.ArcContainer;
 import org.jboss.protean.arc.InstanceHandle;
@@ -27,7 +30,7 @@ public class AnnotationsTransformerTest {
 
     @Rule
     public ArcTestContainer container = ArcTestContainer.builder().beanClasses(Seven.class, One.class, IWantToBeABean.class)
-            .annotationsTransformers(new MyTransformer()).build();
+            .annotationsTransformers(new MyTransformer(), new DisabledTransformer()).build();
 
     @Test
     public void testVetoed() {
@@ -44,6 +47,12 @@ public class AnnotationsTransformerTest {
     }
 
     static class MyTransformer implements AnnotationsTransformer {
+
+        @Override
+        public boolean initialize(BuildContext buildContext) {
+            assertNotNull(buildContext.get(Key.INDEX).getClassByName(DotName.createSimple(IWantToBeABean.class.getName())));
+            return true;
+        }
 
         @Override
         public boolean appliesTo(Kind kind) {
@@ -64,6 +73,20 @@ public class AnnotationsTransformerTest {
                 return Transformation.with(target, annotations).add(Inject.class).done();
             }
             return annotations;
+        }
+
+    }
+
+    static class DisabledTransformer implements AnnotationsTransformer {
+
+        @Override
+        public boolean initialize(BuildContext buildContext) {
+            return false;
+        }
+
+        @Override
+        public Collection<AnnotationInstance> transform(AnnotationTarget target, Collection<AnnotationInstance> annotations) {
+            return Collections.emptyList();
         }
 
     }

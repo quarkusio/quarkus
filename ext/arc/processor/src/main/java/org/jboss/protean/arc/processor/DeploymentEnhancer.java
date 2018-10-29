@@ -5,7 +5,7 @@ package org.jboss.protean.arc.processor;
  *
  * @author Martin Kouba
  */
-public interface DeploymentEnhancer extends BuildProcessor {
+public interface DeploymentEnhancer extends BuildExtension {
 
     /**
      *

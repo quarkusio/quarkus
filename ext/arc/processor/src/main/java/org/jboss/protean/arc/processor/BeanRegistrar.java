@@ -7,7 +7,7 @@ import org.jboss.protean.arc.InjectableBean;
  *
  * @author Martin Kouba
  */
-public interface BeanRegistrar extends BuildProcessor {
+public interface BeanRegistrar extends BuildExtension {
 
     /**
      *

@@ -11,7 +11,7 @@ import org.jboss.jandex.AnnotationTarget.Kind;
  *
  * @author Martin Kouba
  */
-public interface AnnotationsTransformer extends BuildProcessor {
+public interface AnnotationsTransformer extends BuildExtension {
 
     /**
      * By default, the transformation is applied to all kinds of targets.

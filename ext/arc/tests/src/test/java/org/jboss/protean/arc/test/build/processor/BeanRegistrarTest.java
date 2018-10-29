@@ -30,6 +30,12 @@ public class BeanRegistrarTest {
     static class TestRegistrar implements BeanRegistrar {
 
         @Override
+        public boolean initialize(BuildContext buildContext) {
+            buildContext.get(Key.INDEX).getKnownClasses();
+            return true;
+        }
+
+        @Override
         public void register(RegistrationContext registrationContext) {
             BeanConfigurator<Integer> integerConfigurator = registrationContext.configure(Integer.class);
             integerConfigurator.types(Integer.class).creator(mc -> {

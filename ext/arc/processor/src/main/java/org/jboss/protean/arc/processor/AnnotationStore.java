@@ -73,6 +73,7 @@ public class AnnotationStore {
             case CLASS:
                 return target.asClass().classAnnotations();
             case METHOD:
+                // TODO filter method params?
                 return target.asMethod().annotations();
             case FIELD:
                 return target.asField().annotations();
@@ -91,7 +92,7 @@ public class AnnotationStore {
         if (found.isEmpty()) {
             return Collections.emptyList();
         }
-        found.sort(BuildProcessor::compare);
+        found.sort(BuildExtension::compare);
         return found;
     }
 

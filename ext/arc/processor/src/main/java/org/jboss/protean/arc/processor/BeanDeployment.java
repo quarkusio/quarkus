@@ -26,7 +26,9 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.logging.Logger.Level;
+import org.jboss.protean.arc.processor.BeanProcessor.BuildContextImpl;
 import org.jboss.protean.arc.processor.BeanRegistrar.RegistrationContext;
+import org.jboss.protean.arc.processor.BuildExtension.Key;
 
 /**
  *
@@ -59,15 +61,19 @@ public class BeanDeployment {
     private final Set<DotName> resourceAnnotations;
 
     BeanDeployment(IndexView index, Collection<DotName> additionalBeanDefiningAnnotations, List<AnnotationsTransformer> annotationTransformers) {
-        this(index, additionalBeanDefiningAnnotations, annotationTransformers, Collections.emptyList(), Collections.emptyList());
+        this(index, additionalBeanDefiningAnnotations, annotationTransformers, Collections.emptyList(), Collections.emptyList(), null);
     }
 
     BeanDeployment(IndexView index, Collection<DotName> additionalBeanDefiningAnnotations, List<AnnotationsTransformer> annotationTransformers,
-            Collection<DotName> resourceAnnotations, List<BeanRegistrar> beanRegistrars) {
+            Collection<DotName> resourceAnnotations, List<BeanRegistrar> beanRegistrars, BuildContextImpl buildContext) {
         long start = System.currentTimeMillis();
         this.resourceAnnotations = new HashSet<>(resourceAnnotations);
         this.index = index;
         this.annotationStore = new AnnotationStore(annotationTransformers);
+
+        if (buildContext != null) {
+            buildContext.putInternal(Key.ANNOTATION_STORE.asString(), annotationStore);
+        }
 
         this.qualifiers = findQualifiers(index);
         // TODO interceptor bindings are transitive!!!
@@ -76,7 +82,12 @@ public class BeanDeployment {
         this.interceptors = findInterceptors();
         this.beanResolver = new BeanResolver(this);
         List<ObserverInfo> observers = new ArrayList<>();
-        this.beans = findBeans(initBeanDefiningAnnotations(additionalBeanDefiningAnnotations, stereotypes), observers);
+        List<InjectionPointInfo> injectionPoints = new ArrayList<>();
+        this.beans = findBeans(initBeanDefiningAnnotations(additionalBeanDefiningAnnotations, stereotypes), observers, injectionPoints);
+
+        if (buildContext != null) {
+            buildContext.putInternal(Key.INJECTION_POINTS.asString(), Collections.unmodifiableList(injectionPoints));
+        }
 
         // Register synthetic beans
         if (!beanRegistrars.isEmpty()) {
@@ -205,7 +216,7 @@ public class BeanDeployment {
         return stereotypes;
     }
 
-    private List<BeanInfo> findBeans(List<DotName> beanDefiningAnnotations, List<ObserverInfo> observers) {
+    private List<BeanInfo> findBeans(List<DotName> beanDefiningAnnotations, List<ObserverInfo> observers, List<InjectionPointInfo> injectionPoints) {
 
         Set<ClassInfo> beanClasses = new HashSet<>();
         Set<MethodInfo> producerMethods = new HashSet<>();
@@ -282,20 +293,26 @@ public class BeanDeployment {
             BeanInfo classBean = Beans.createClassBean(beanClass, this);
             beans.add(classBean);
             beanClassToBean.put(beanClass, classBean);
+            injectionPoints.addAll(classBean.getAllInjectionPoints());
         }
 
         List<DisposerInfo> disposers = new ArrayList<>();
         for (MethodInfo disposerMethod : disposerMethods) {
             BeanInfo declaringBean = beanClassToBean.get(disposerMethod.declaringClass());
             if (declaringBean != null) {
-                disposers.add(new DisposerInfo(declaringBean, disposerMethod, Injection.forDisposer(disposerMethod, this)));
+                Injection injection = Injection.forDisposer(disposerMethod, this);
+                disposers.add(new DisposerInfo(declaringBean, disposerMethod, injection));
+                injectionPoints.addAll(injection.injectionPoints);
             }
         }
 
         for (MethodInfo producerMethod : producerMethods) {
             BeanInfo declaringBean = beanClassToBean.get(producerMethod.declaringClass());
             if (declaringBean != null) {
-                beans.add(Beans.createProducerMethod(producerMethod, declaringBean, this, findDisposer(declaringBean, producerMethod, disposers)));
+                BeanInfo producerMethodBean = Beans.createProducerMethod(producerMethod, declaringBean, this,
+                        findDisposer(declaringBean, producerMethod, disposers));
+                beans.add(producerMethodBean);
+                injectionPoints.addAll(producerMethodBean.getAllInjectionPoints());
             }
         }
 
@@ -309,13 +326,17 @@ public class BeanDeployment {
         for (MethodInfo observerMethod : syncObserverMethods) {
             BeanInfo declaringBean = beanClassToBean.get(observerMethod.declaringClass());
             if (declaringBean != null) {
-                observers.add(new ObserverInfo(declaringBean, observerMethod, Injection.forObserver(observerMethod, this), false));
+                Injection injection = Injection.forObserver(observerMethod, this);
+                observers.add(new ObserverInfo(declaringBean, observerMethod, injection, false));
+                injectionPoints.addAll(injection.injectionPoints);
             }
         }
         for (MethodInfo observerMethod : asyncObserverMethods) {
             BeanInfo declaringBean = beanClassToBean.get(observerMethod.declaringClass());
             if (declaringBean != null) {
-                observers.add(new ObserverInfo(declaringBean, observerMethod, Injection.forObserver(observerMethod, this), true));
+                Injection injection = Injection.forObserver(observerMethod, this);
+                observers.add(new ObserverInfo(declaringBean, observerMethod, injection, true));
+                injectionPoints.addAll(injection.injectionPoints);
             }
         }
 

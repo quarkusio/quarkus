@@ -164,9 +164,9 @@ public class ClientProxyGenerator extends AbstractGenerator {
         Map<Methods.MethodKey, MethodInfo> methods = new HashMap<>();
 
         if (bean.isClassBean()) {
-            Methods.addDelegatingMethods(bean.getDeployment().getIndex(), bean.getTarget().asClass(), Collections.emptyMap(), methods);
+            Methods.addDelegatingMethods(bean.getDeployment().getIndex(), bean.getTarget().get().asClass(), Collections.emptyMap(), methods);
         } else if (bean.isProducerMethod()) {
-            MethodInfo producerMethod = bean.getTarget().asMethod();
+            MethodInfo producerMethod = bean.getTarget().get().asMethod();
             Map<TypeVariable, Type> resolved = Collections.emptyMap();
             ClassInfo returnTypeClass = bean.getDeployment().getIndex().getClassByName(producerMethod.returnType().name());
             if (!returnTypeClass.typeParameters().isEmpty()) {
@@ -175,7 +175,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
             }
             Methods.addDelegatingMethods(bean.getDeployment().getIndex(), returnTypeClass, resolved, methods);
         } else if (bean.isProducerField()) {
-            FieldInfo producerField = bean.getTarget().asField();
+            FieldInfo producerField = bean.getTarget().get().asField();
             Map<TypeVariable, Type> resolved = Collections.emptyMap();
             ClassInfo fieldClass = bean.getDeployment().getIndex().getClassByName(producerField.type().name());
             if (!fieldClass.typeParameters().isEmpty()) {

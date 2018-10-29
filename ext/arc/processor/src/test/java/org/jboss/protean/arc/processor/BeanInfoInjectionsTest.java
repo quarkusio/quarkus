@@ -39,7 +39,7 @@ public class BeanInfoInjectionsTest {
         Type listStringType = ParameterizedType.create(name(List.class), new Type[] { Type.create(name(String.class), Kind.CLASS) }, null);
 
         BeanDeployment deployment = new BeanDeployment(index, null, null);
-        BeanInfo barBean = deployment.getBeans().stream().filter(b -> b.getTarget().equals(barClass)).findFirst().get();
+        BeanInfo barBean = deployment.getBeans().stream().filter(b -> b.getTarget().get().equals(barClass)).findFirst().get();
         List<Injection> injections = barBean.getInjections();
         assertEquals(3, injections.size());
         for (Injection injection : injections) {

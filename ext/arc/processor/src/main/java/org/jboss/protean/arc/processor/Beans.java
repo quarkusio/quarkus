@@ -43,7 +43,7 @@ final class Beans {
         boolean isAlternative = false;
         List<StereotypeInfo> stereotypes = new ArrayList<>();
 
-        for (AnnotationInstance annotation : beanClass.classAnnotations()) {
+        for (AnnotationInstance annotation : beanDeployment.getAnnotations(beanClass)) {
             if (beanDeployment.getQualifier(annotation.name()) != null) {
                 qualifiers.add(annotation);
             } else if (annotation.name().equals(DotNames.ALTERNATIVE)) {
@@ -116,7 +116,7 @@ final class Beans {
             alternativePriority = declaringBean.getAlternativePriority();
             if (alternativePriority == null) {
                 // Declaring bean itself does not have to be an alternive and can only have @Priority
-                alternativePriority = declaringBean.getTarget().asClass().classAnnotations().stream().filter(a -> a.name().equals(DotNames.PRIORITY)).findAny()
+                alternativePriority = declaringBean.getTarget().get().asClass().classAnnotations().stream().filter(a -> a.name().equals(DotNames.PRIORITY)).findAny()
                         .map(a -> a.value().asInt()).orElse(null);
             }
         }
@@ -167,7 +167,7 @@ final class Beans {
             alternativePriority = declaringBean.getAlternativePriority();
             if (alternativePriority == null) {
                 // Declaring bean itself does not have to be an alternive and can only have @Priority
-                alternativePriority = declaringBean.getTarget().asClass().classAnnotations().stream().filter(a -> a.name().equals(DotNames.PRIORITY)).findAny()
+                alternativePriority = declaringBean.getTarget().get().asClass().classAnnotations().stream().filter(a -> a.name().equals(DotNames.PRIORITY)).findAny()
                         .map(a -> a.value().asInt()).orElse(null);
             }
         }

@@ -102,7 +102,7 @@ public class ObserverGenerator extends AbstractGenerator {
         if (observedQualifiers != null) {
             implementGetObservedQualifiers(observerCreator, observedQualifiers.getFieldDescriptor());
         }
-        implementGetBeanClass(observerCreator, observer.getDeclaringBean().getTarget().asClass().name());
+        implementGetBeanClass(observerCreator, observer.getDeclaringBean().getTarget().get().asClass().name());
         implementNotify(observer, observerCreator, injectionPointToProviderField, reflectionRegistration);
         if (observer.getPriority() != ObserverMethod.DEFAULT_PRIORITY) {
             implementGetPriority(observerCreator, observer);

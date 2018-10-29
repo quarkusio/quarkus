@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import javax.enterprise.inject.spi.InterceptionType;
@@ -22,6 +23,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.protean.arc.processor.Methods.MethodKey;
+import org.jboss.protean.gizmo.MethodCreator;
 
 /**
  *
@@ -29,7 +31,9 @@ import org.jboss.protean.arc.processor.Methods.MethodKey;
  */
 class BeanInfo {
 
-    private final AnnotationTarget target;
+    private final ClassInfo implClazz;
+
+    private final Optional<AnnotationTarget> target;
 
     private final BeanDeployment beanDeployment;
 
@@ -53,23 +57,40 @@ class BeanInfo {
 
     private final List<StereotypeInfo> stereotypes;
 
-    /**
-     *
-     * @param target
-     * @param beanDeployment
-     * @param scope
-     * @param types
-     * @param qualifiers
-     * @param alternativePriority
-     * @param injections
-     * @param declaringBean
-     * @param disposer
-     * @param alternativePriority
-     * @param stereotypes
-     */
+    // Gizmo consumers are only used by synthetic beans
+
+    private final Consumer<MethodCreator> creatorConsumer;
+
+    private final Consumer<MethodCreator> destroyerConsumer;
+
+    private final Map<String, Object> params;
+
     BeanInfo(AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope, Set<Type> types, Set<AnnotationInstance> qualifiers,
             List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer, Integer alternativePriority, List<StereotypeInfo> stereotypes) {
-        this.target = target;
+        this(null, target, beanDeployment, scope, types, qualifiers, injections, declaringBean, disposer, alternativePriority, stereotypes, null, null,
+                Collections.emptyMap());
+    }
+
+    BeanInfo(ClassInfo implClazz, AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope, Set<Type> types, Set<AnnotationInstance> qualifiers,
+            List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer, Integer alternativePriority, List<StereotypeInfo> stereotypes,
+            Consumer<MethodCreator> creatorConsumer, Consumer<MethodCreator> destroyerConsumer, Map<String, Object> params) {
+        this.target = Optional.ofNullable(target);
+        if (implClazz == null && target != null) {
+            switch (target.kind()) {
+                case CLASS:
+                    implClazz = target.asClass();
+                    break;
+                case FIELD:
+                    implClazz = beanDeployment.getIndex().getClassByName(target.asField().type().name());
+                    break;
+                case METHOD:
+                    implClazz = beanDeployment.getIndex().getClassByName(target.asMethod().returnType().name());
+                    break;
+                default:
+                    break;
+            }
+        }
+        this.implClazz = implClazz;
         this.beanDeployment = beanDeployment;
         this.scope = scope != null ? scope : ScopeInfo.DEPENDENT;
         this.types = types;
@@ -83,29 +104,40 @@ class BeanInfo {
         this.disposer = disposer;
         this.alternativePriority = alternativePriority;
         this.stereotypes = stereotypes;
+        this.creatorConsumer = creatorConsumer;
+        this.destroyerConsumer = destroyerConsumer;
+        this.params = params;
     }
 
-    AnnotationTarget getTarget() {
+    Optional<AnnotationTarget> getTarget() {
         return target;
     }
 
+    ClassInfo getImplClazz() {
+        return implClazz;
+    }
+
     boolean isClassBean() {
-        return Kind.CLASS.equals(target.kind());
+        return target.isPresent() && Kind.CLASS.equals(target.get().kind());
     }
 
     boolean isProducerMethod() {
-        return Kind.METHOD.equals(target.kind());
+        return target.isPresent() && Kind.METHOD.equals(target.get().kind());
     }
 
     boolean isProducerField() {
-        return Kind.FIELD.equals(target.kind());
+        return target.isPresent() && Kind.FIELD.equals(target.get().kind());
+    }
+
+    boolean isSynthetic() {
+        return !target.isPresent();
     }
 
     DotName getBeanClass() {
         if (declaringBean != null) {
-            return declaringBean.target.asClass().name();
+            return declaringBean.implClazz.name();
         }
-        return target.asClass().name();
+        return implClazz.name();
     }
 
     boolean isInterceptor() {
@@ -121,14 +153,21 @@ class BeanInfo {
     }
 
     Type getProviderType() {
-        if (Kind.CLASS.equals(target.kind())) {
-            return Types.getProviderType(target.asClass());
-        } else if (Kind.METHOD.equals(target.kind())) {
-            return target.asMethod().returnType();
-        } else if (Kind.FIELD.equals(target.kind())) {
-            return target.asField().type();
+        if (target.isPresent()) {
+            switch (target.get().kind()) {
+                case CLASS:
+                    return Types.getProviderType(target.get().asClass());
+                case FIELD:
+                    return target.get().asField().type();
+                case METHOD:
+                    return target.get().asMethod().returnType();
+                default:
+                    break;
+            }
+        } else if (implClazz != null) {
+            return Type.create(implClazz.name(), org.jboss.jandex.Type.Kind.CLASS);
         }
-        throw new IllegalStateException("Cannot infer provider type");
+        throw new IllegalStateException("Cannot infer the provider type");
     }
 
     ScopeInfo getScope() {
@@ -189,7 +228,7 @@ class BeanInfo {
         }
         if (isClassBean()) {
             return getLifecycleInterceptors(InterceptionType.PRE_DESTROY).isEmpty()
-                    && Beans.getCallbacks(target.asClass(), DotNames.PRE_DESTROY, beanDeployment.getIndex()).isEmpty();
+                    && Beans.getCallbacks(target.get().asClass(), DotNames.PRE_DESTROY, beanDeployment.getIndex()).isEmpty();
         } else {
             return disposer == null;
         }
@@ -226,6 +265,18 @@ class BeanInfo {
         return stereotypes;
     }
 
+    Consumer<MethodCreator> getCreatorConsumer() {
+        return creatorConsumer;
+    }
+
+    Consumer<MethodCreator> getDestroyerConsumer() {
+        return destroyerConsumer;
+    }
+
+    Map<String, Object> getParams() {
+        return params;
+    }
+
     void init() {
         for (Injection injection : injections) {
             for (InjectionPointInfo injectionPoint : injection.injectionPoints) {
@@ -240,12 +291,14 @@ class BeanInfo {
     }
 
     protected String getType() {
-        if (Kind.METHOD.equals(target.kind())) {
+        if (isProducerMethod()) {
             return "PRODUCER METHOD";
-        } else if (Kind.FIELD.equals(target.kind())) {
+        } else if (isProducerField()) {
             return "PRODUCER FIELD";
+        } else if (isSynthetic()) {
+            return "SYNTHETIC";
         } else {
-            return target.kind().toString();
+            return target.get().kind().toString();
         }
     }
 
@@ -256,14 +309,14 @@ class BeanInfo {
             // TODO interceptor bindings are transitive!!!
 
             List<AnnotationInstance> classLevelBindings = new ArrayList<>();
-            addClassLevelBindings(target.asClass(), classLevelBindings);
+            addClassLevelBindings(target.get().asClass(), classLevelBindings);
             if (!stereotypes.isEmpty()) {
                 for (StereotypeInfo stereotype : stereotypes) {
                     addClassLevelBindings(stereotype.getTarget(), classLevelBindings);
                 }
             }
 
-            Methods.addInterceptedMethodCandidates(beanDeployment, target.asClass(), candidates, classLevelBindings);
+            Methods.addInterceptedMethodCandidates(beanDeployment, target.get().asClass(), candidates, classLevelBindings);
 
             for (Entry<MethodKey, Set<AnnotationInstance>> entry : candidates.entrySet()) {
                 List<InterceptorInfo> interceptors = beanDeployment.getInterceptorResolver().resolve(InterceptionType.AROUND_INVOKE, entry.getValue());
@@ -281,7 +334,7 @@ class BeanInfo {
         if (!isInterceptor() && isClassBean()) {
             Map<InterceptionType, InterceptionInfo> lifecycleInterceptors = new HashMap<>();
             Set<AnnotationInstance> classLevelBindings = new HashSet<>();
-            addClassLevelBindings(target.asClass(), classLevelBindings);
+            addClassLevelBindings(target.get().asClass(), classLevelBindings);
             putLifecycleInterceptors(lifecycleInterceptors, classLevelBindings, InterceptionType.POST_CONSTRUCT);
             putLifecycleInterceptors(lifecycleInterceptors, classLevelBindings, InterceptionType.PRE_DESTROY);
             putLifecycleInterceptors(lifecycleInterceptors, classLevelBindings, InterceptionType.AROUND_CONSTRUCT);
@@ -346,6 +399,118 @@ class BeanInfo {
         }
         builder.append("]");
         return builder.toString();
+    }
+
+    static class Builder {
+
+        private ClassInfo implClazz;
+
+        private AnnotationTarget target;
+
+        private BeanDeployment beanDeployment;
+
+        private ScopeInfo scope;
+
+        private Set<Type> types;
+
+        private Set<AnnotationInstance> qualifiers;
+
+        private List<Injection> injections;
+
+        private BeanInfo declaringBean;
+
+        private DisposerInfo disposer;
+
+        private Integer alternativePriority;
+
+        private List<StereotypeInfo> stereotypes;
+
+        private Consumer<MethodCreator> creatorConsumer;
+
+        private Consumer<MethodCreator> destroyerConsumer;
+
+        private Map<String, Object> params;
+
+        Builder() {
+            injections = Collections.emptyList();
+            stereotypes = Collections.emptyList();
+        }
+
+        Builder implClazz(ClassInfo implClazz) {
+            this.implClazz = implClazz;
+            return this;
+        }
+
+        Builder beanDeployment(BeanDeployment beanDeployment) {
+            this.beanDeployment = beanDeployment;
+            return this;
+        }
+
+        Builder target(AnnotationTarget target) {
+            this.target = target;
+            return this;
+        }
+
+        Builder scope(ScopeInfo scope) {
+            this.scope = scope;
+            return this;
+        }
+
+        Builder types(Set<Type> types) {
+            this.types = types;
+            return this;
+        }
+
+        Builder qualifiers(Set<AnnotationInstance> qualifiers) {
+            this.qualifiers = qualifiers;
+            return this;
+        }
+
+        Builder injections(List<Injection> injections) {
+            this.injections = injections;
+            return this;
+        }
+
+        Builder declaringBean(BeanInfo declaringBean) {
+            this.declaringBean = declaringBean;
+            return this;
+        }
+
+        Builder disposer(DisposerInfo disposer) {
+            this.disposer = disposer;
+            return this;
+        }
+
+        Builder alternativePriority(Integer alternativePriority) {
+            this.alternativePriority = alternativePriority;
+            return this;
+        }
+
+        Builder stereotypes(List<StereotypeInfo> stereotypes) {
+            this.stereotypes = stereotypes;
+            return this;
+        }
+
+        Builder creator(Consumer<MethodCreator> creatorConsumer) {
+            this.creatorConsumer = creatorConsumer;
+            return this;
+        }
+
+        Builder destroyer(Consumer<MethodCreator> destroyerConsumer) {
+            this.destroyerConsumer = destroyerConsumer;
+            return this;
+        }
+
+        Builder params(Map<String, Object> params) {
+            this.params = params;
+            return this;
+        }
+
+        BeanInfo build() {
+            return new BeanInfo(implClazz, target, beanDeployment, scope, types, qualifiers, injections, declaringBean, disposer, alternativePriority,
+                    stereotypes, creatorConsumer, destroyerConsumer, params);
+        }
+
     }
 
 }

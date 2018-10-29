@@ -21,8 +21,11 @@ import org.jboss.jandex.Indexer;
 import org.jboss.protean.arc.Arc;
 import org.jboss.protean.arc.ComponentsProvider;
 import org.jboss.protean.arc.ResourceReferenceProvider;
+import org.jboss.protean.arc.processor.AnnotationsTransformer;
 import org.jboss.protean.arc.processor.BeanProcessor;
+import org.jboss.protean.arc.processor.DeploymentEnhancer;
 import org.jboss.protean.arc.processor.ResourceOutput;
+import org.jboss.protean.arc.processor.BeanRegistrar;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -41,10 +44,19 @@ public class ArcTestContainer implements TestRule {
 
         private final List<Class<? extends Annotation>> resourceAnnotations;
 
+        private final List<BeanRegistrar> beanRegistrars;
+
+        private final List<AnnotationsTransformer> annotationsTransformers;
+
+        private final List<DeploymentEnhancer> deploymentEnhancers;
+
         public Builder() {
-            this.resourceReferenceProviders = new ArrayList<>();
-            this.beanClasses = new ArrayList<>();
-            this.resourceAnnotations = new ArrayList<>();
+            resourceReferenceProviders = new ArrayList<>();
+            beanClasses = new ArrayList<>();
+            resourceAnnotations = new ArrayList<>();
+            beanRegistrars = new ArrayList<>();
+            annotationsTransformers = new ArrayList<>();
+            deploymentEnhancers = new ArrayList<>();
         }
 
         public Builder resourceReferenceProviders(Class<?>... resourceReferenceProviders) {
@@ -63,8 +75,24 @@ public class ArcTestContainer implements TestRule {
             return this;
         }
 
+        public Builder beanRegistrars(BeanRegistrar... registrars) {
+            Collections.addAll(this.beanRegistrars, registrars);
+            return this;
+        }
+
+        public Builder annotationsTransformers(AnnotationsTransformer... transformers) {
+            Collections.addAll(this.annotationsTransformers, transformers);
+            return this;
+        }
+
+        public Builder deploymentEnhancers(DeploymentEnhancer... enhancers) {
+            Collections.addAll(this.deploymentEnhancers, enhancers);
+            return this;
+        }
+
         public ArcTestContainer build() {
-            return new ArcTestContainer(resourceReferenceProviders, beanClasses, resourceAnnotations);
+            return new ArcTestContainer(resourceReferenceProviders, beanClasses, resourceAnnotations, beanRegistrars, annotationsTransformers,
+                    deploymentEnhancers);
         }
 
     }
@@ -75,14 +103,26 @@ public class ArcTestContainer implements TestRule {
 
     private final List<Class<? extends Annotation>> resourceAnnotations;
 
+    private final List<BeanRegistrar> beanRegistrars;
+
+    private final List<AnnotationsTransformer> annotationsTransformers;
+
+    private final List<DeploymentEnhancer> deploymentEnhancers;
+
     public ArcTestContainer(Class<?>... beanClasses) {
-        this(Collections.emptyList(), Arrays.asList(beanClasses), Collections.emptyList());
+        this(Collections.emptyList(), Arrays.asList(beanClasses), Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
+                Collections.emptyList());
     }
 
-    public ArcTestContainer(List<Class<?>> resourceReferenceProviders, List<Class<?>> beanClasses, List<Class<? extends Annotation>> resourceAnnotations) {
+    public ArcTestContainer(List<Class<?>> resourceReferenceProviders, List<Class<?>> beanClasses, List<Class<? extends Annotation>> resourceAnnotations,
+            List<BeanRegistrar> beanRegistrars, List<AnnotationsTransformer> annotationsTransformers,
+            List<DeploymentEnhancer> deploymentEnhancers) {
         this.resourceReferenceProviders = resourceReferenceProviders;
         this.beanClasses = beanClasses;
         this.resourceAnnotations = resourceAnnotations;
+        this.beanRegistrars = beanRegistrars;
+        this.annotationsTransformers = annotationsTransformers;
+        this.deploymentEnhancers = deploymentEnhancers;
     }
 
     @Override
@@ -138,6 +178,15 @@ public class ArcTestContainer implements TestRule {
         BeanProcessor.Builder beanProcessorBuilder = BeanProcessor.builder().setName(testClass.getSimpleName()).setIndex(index);
         if (!resourceAnnotations.isEmpty()) {
             beanProcessorBuilder.addResourceAnnotations(resourceAnnotations.stream().map(c -> DotName.createSimple(c.getName())).collect(Collectors.toList()));
+        }
+        for (BeanRegistrar registrar : beanRegistrars) {
+            beanProcessorBuilder.addBeanRegistrar(registrar);
+        }
+        for (AnnotationsTransformer annotationsTransformer : annotationsTransformers) {
+            beanProcessorBuilder.addAnnotationTransformer(annotationsTransformer);
+        }
+        for (DeploymentEnhancer enhancer : deploymentEnhancers) {
+            beanProcessorBuilder.addDeploymentEnhancer(enhancer);
         }
         beanProcessorBuilder.setOutput(new ResourceOutput() {
 

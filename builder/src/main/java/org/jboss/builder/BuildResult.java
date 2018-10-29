@@ -19,6 +19,7 @@
 package org.jboss.builder;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -69,14 +70,14 @@ public final class BuildResult {
      *
      * @param type the item element type (must not be {@code null})
      * @return the produced items (may be empty, will not be {@code null})
-     * @throws IllegalArgumentException if this deployer was not declared to consume {@code type}, or if {@code type} is {@code null}
+     * @throws IllegalArgumentException if this deployer was not declared to consume {@code type}
      */
     public <T extends MultiBuildItem> List<T> consumeMulti(Class<T> type) {
         final ItemId itemId = new ItemId(type, null);
         @SuppressWarnings("unchecked")
         final List<T> items = (List<T>) (List) multiItems.get(itemId);
         if (items == null) {
-            throw Messages.msg.undeclaredItem(itemId);
+            return Collections.emptyList();
         }
         return new ArrayList<>(items);
     }

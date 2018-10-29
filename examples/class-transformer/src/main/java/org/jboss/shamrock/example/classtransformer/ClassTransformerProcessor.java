@@ -5,14 +5,16 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
-import org.jboss.shamrock.deployment.ArchiveContext;
-import org.jboss.shamrock.deployment.ProcessorContext;
-import org.jboss.shamrock.deployment.ResourceProcessor;
+import org.jboss.shamrock.annotations.BuildStep;
+import org.jboss.shamrock.annotations.BuildProducer;
+import javax.inject.Inject;
+
+import org.jboss.shamrock.deployment.builditem.BytecodeTransformerBuildItem;
+import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -25,15 +27,21 @@ import org.objectweb.asm.Opcodes;
  * This is intended as a test of the class transformation functionality, it should probably be removed
  * when we have better test frameworks
  */
-public class ClassTransformerProcessor implements ResourceProcessor {
+public class ClassTransformerProcessor {
 
     private static final DotName PATH = DotName.createSimple("javax.ws.rs.Path");
 
-    @Override
-    public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
+    @Inject
+    CombinedIndexBuildItem combinedIndex;
+
+    @Inject
+    BuildProducer<BytecodeTransformerBuildItem> transformers;
+
+    @BuildStep
+    public void build() throws Exception {
         final Set<String> pathAnnotatedClasses = new HashSet<>();
 
-        Collection<AnnotationInstance> annotations = archiveContext.getCombinedIndex().getAnnotations(PATH);
+        Collection<AnnotationInstance> annotations = combinedIndex.getIndex().getAnnotations(PATH);
         for (AnnotationInstance a : annotations) {
             if (a.target().kind() == AnnotationTarget.Kind.CLASS) {
                 pathAnnotatedClasses.add(a.target().asClass().toString());
@@ -41,7 +49,7 @@ public class ClassTransformerProcessor implements ResourceProcessor {
         }
         if (!pathAnnotatedClasses.isEmpty()) {
             for (String i : pathAnnotatedClasses) {
-                processorContext.addByteCodeTransformer(i, new BiFunction<String, ClassVisitor, ClassVisitor>() {
+                transformers.produce(new BytecodeTransformerBuildItem(i, new BiFunction<String, ClassVisitor, ClassVisitor>() {
                     @Override
                     public ClassVisitor apply(String className, ClassVisitor classVisitor) {
                         ClassVisitor cv = new ClassVisitor(Opcodes.ASM6, classVisitor) {
@@ -65,13 +73,8 @@ public class ClassTransformerProcessor implements ResourceProcessor {
                         };
                         return cv;
                     }
-                });
+                }));
             }
         }
-    }
-
-    @Override
-    public int getPriority() {
-        return 0;
     }
 }

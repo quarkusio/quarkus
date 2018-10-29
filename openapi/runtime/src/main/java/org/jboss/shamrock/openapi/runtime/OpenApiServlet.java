@@ -25,7 +25,7 @@ public class OpenApiServlet extends HttpServlet {
     private static final String QUERY_PARAM_FORMAT = "format";
 
     @Inject
-    private OpenApiDocument openApiDocument;
+    OpenApiDocument openApiDocument;
 
     private final Map<OpenApiSerializer.Format, String> cachedModels = new ConcurrentHashMap<>();
 

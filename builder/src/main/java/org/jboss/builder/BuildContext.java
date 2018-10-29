@@ -73,6 +73,19 @@ public final class BuildContext {
     }
 
     /**
+     * Produce the given items.  This method can be called more than once for the given {@code type}
+     *
+     * @param items the items (must not be {@code null})
+     * @throws IllegalArgumentException if the type of item could not be determined
+     */
+    public void produce(List<MultiBuildItem> items) {
+        Assert.checkNotNullParam("items", items);
+        for(MultiBuildItem item : items) {
+            doProduce(new ItemId(item.getClass(), null), item);
+        }
+    }
+
+    /**
      * Produce the given item.  If the {@code type} refers to a item which is declared with multiplicity, then this
      * method can be called more than once for the given {@code type}, otherwise it must be called no more than once.
      *

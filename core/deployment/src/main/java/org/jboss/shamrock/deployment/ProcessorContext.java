@@ -4,12 +4,11 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
-import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
+import org.jboss.shamrock.deployment.recording.BytecodeRecorder;
 import org.objectweb.asm.ClassVisitor;
 
 /**
@@ -17,26 +16,6 @@ import org.objectweb.asm.ClassVisitor;
  * to generate bytecode or provide additional information.
  */
 public interface ProcessorContext {
-
-
-    /**
-     * Adds a new static init task with the given priority. This task will be from a static init
-     * block in priority order
-     * <p>
-     * These tasks are always run before deployment tasks
-     *
-     * @param priority The priority
-     * @return A recorder than can be used to generate bytecode
-     */
-    BytecodeRecorder addStaticInitTask(int priority);
-
-    /**
-     * Adds a new deployment task with the given priority. This task will be run on startup in priority order.
-     *
-     * @param priority The priority
-     * @return A recorder than can be used to generate bytecode
-     */
-    BytecodeRecorder addDeploymentTask(int priority);
 
     /**
      * This method is used to indicate that a given class requires reflection.
@@ -143,13 +122,6 @@ public interface ProcessorContext {
      * @param value the property value
      */
     void addNativeImageSystemProperty(String name, String value);
-
-    /**
-     * @param capability
-     * @return if the given capability is present
-     * @see Capabilities
-     */
-    boolean isCapabilityPresent(String capability);
 
     <T> void setProperty(String key, T value);
 

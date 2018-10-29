@@ -75,6 +75,10 @@ public final class Diagnostic {
         return b.toString();
     }
 
+    public Throwable getThrown() {
+        return thrown;
+    }
+
     public Level getLevel() {
         return level;
     }

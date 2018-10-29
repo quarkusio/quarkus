@@ -42,7 +42,7 @@ public class RuntimeRunner implements Runnable, Closeable {
     @Override
     public void run() {
         try {
-            BuildTimeGenerator buildTimeGenerator = new BuildTimeGenerator(loader, loader, false, archiveContextBuilder);
+            BuildTimeGenerator buildTimeGenerator = new BuildTimeGenerator(loader, loader, archiveContextBuilder);
             buildTimeGenerator.run(target);
             loader.setTransformers(buildTimeGenerator.getByteCodeTransformers());
             if(!buildTimeGenerator.getByteCodeTransformers().isEmpty()) {

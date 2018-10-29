@@ -29,7 +29,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
@@ -215,7 +214,7 @@ public class BuildMojo extends AbstractMojo {
                         }
                     }
 
-                }, runnerClassLoader, useStaticInit, new ArchiveContextBuilder());
+                }, runnerClassLoader, new ArchiveContextBuilder());
                 ClassLoader old = Thread.currentThread().getContextClassLoader();
                 try {
                     Thread.currentThread().setContextClassLoader(runnerClassLoader);

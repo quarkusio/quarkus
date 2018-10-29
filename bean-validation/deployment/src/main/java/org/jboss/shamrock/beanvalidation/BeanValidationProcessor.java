@@ -1,8 +1,8 @@
 package org.jboss.shamrock.beanvalidation;
 
+import static org.jboss.shamrock.annotations.ExecutionTime.STATIC_INIT;
+
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.inject.Inject;
 import javax.validation.Constraint;
 import javax.validation.ConstraintValidator;
 
@@ -21,51 +20,59 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
+import org.jboss.shamrock.annotations.BuildProducer;
+import org.jboss.shamrock.annotations.BuildStep;
+import org.jboss.shamrock.annotations.ExecutionTime;
+import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.beanvalidation.runtime.ValidatorProvider;
 import org.jboss.shamrock.beanvalidation.runtime.ValidatorTemplate;
 import org.jboss.shamrock.beanvalidation.runtime.graal.ConstraintHelperSubstitution;
-import org.jboss.shamrock.deployment.ArchiveContext;
-import org.jboss.shamrock.deployment.BeanDeployment;
-import org.jboss.shamrock.deployment.ProcessorContext;
-import org.jboss.shamrock.deployment.ResourceProcessor;
-import org.jboss.shamrock.deployment.RuntimePriority;
-import org.jboss.shamrock.deployment.ShamrockConfig;
-import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
+import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
+import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
+import org.jboss.shamrock.deployment.builditem.ReflectiveClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.ReflectiveFieldBuildItem;
+import org.jboss.shamrock.deployment.builditem.ReflectiveMethodBuildItem;
+import org.jboss.shamrock.deployment.builditem.SubstrateConfigBuildItem;
+import org.jboss.shamrock.deployment.recording.BeanFactory;
+import org.jboss.shamrock.deployment.recording.BytecodeRecorder;
 import org.jboss.shamrock.runtime.InjectionInstance;
 
-class BeanValidationProcessor implements ResourceProcessor {
+class BeanValidationProcessor {
 
     private static final DotName CONSTRAINT_VALIDATOR = DotName.createSimple(ConstraintValidator.class.getName());
-    @Inject
-    private BeanDeployment beanDeployment;
 
-    @Inject
-    private ShamrockConfig config;
+    @BuildStep
+    AdditionalBeanBuildItem registerBean() {
+        return new AdditionalBeanBuildItem(ValidatorProvider.class);
+    }
 
-    @Override
-    public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
-        beanDeployment.addAdditionalBean(ValidatorProvider.class);
-        processorContext.addRuntimeInitializedClasses("javax.el.ELUtil");
-        processorContext.addResourceBundle("org.hibernate.validator.ValidationMessages");
+    @BuildStep
+    @Record(STATIC_INIT)
+    public void build(ValidatorTemplate template, BytecodeRecorder recorder, BeanFactory beanFactory,
+                      BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
+                      BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
+                      CombinedIndexBuildItem combinedIndexBuildItem,
+                      BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws Exception {
+
         //TODO: this should not rely on the index and implementation being indexed, this stuff should just be hard coded
-        processorContext.addReflectiveClass(true, false, Constraint.class.getName());
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, Constraint.class.getName()));
         Map<DotName, Set<DotName>> seenConstraints = new HashMap<>();
         Set<String> classesToBeValidated = new HashSet<>();
 
         //the map of validators, first key is constraint (annotation), second is the validator class name, value is the type that is validated
-        Map<DotName, Map<DotName, DotName>> validatorsByConstraint = lookForValidatorsByConstraint(archiveContext, processorContext);
+        Map<DotName, Map<DotName, DotName>> validatorsByConstraint = lookForValidatorsByConstraint(combinedIndexBuildItem);
 
         Set<DotName> constraintAnnotations = new HashSet<>();
         constraintAnnotations.addAll(validatorsByConstraint.keySet());
 
-        for (AnnotationInstance constraint : archiveContext.getCombinedIndex().getAnnotations(DotName.createSimple(Constraint.class.getName()))) {
+        for (AnnotationInstance constraint : combinedIndexBuildItem.getIndex().getAnnotations(DotName.createSimple(Constraint.class.getName()))) {
             constraintAnnotations.add(constraint.target().asClass().name());
         }
 
         for (DotName constraint : constraintAnnotations) {
-            Collection<AnnotationInstance> annotationInstances = archiveContext.getCombinedIndex().getAnnotations(constraint);
+            Collection<AnnotationInstance> annotationInstances = combinedIndexBuildItem.getIndex().getAnnotations(constraint);
             if (!annotationInstances.isEmpty()) {
-                processorContext.addReflectiveClass(true, false, constraint.toString());
+                reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, constraint.toString()));
             }
             for (AnnotationInstance annotation : annotationInstances) {
 
@@ -75,20 +82,20 @@ class BeanValidationProcessor implements ResourceProcessor {
                 }
                 if (annotation.target().kind() == AnnotationTarget.Kind.FIELD) {
                     classesToBeValidated.add(annotation.target().asField().declaringClass().name().toString());
-                    processorContext.addReflectiveField(annotation.target().asField());
+                    reflectiveFields.produce(new ReflectiveFieldBuildItem(annotation.target().asField()));
                     seenTypes.add(annotation.target().asField().type().name());
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
                     classesToBeValidated.add(annotation.target().asMethod().declaringClass().name().toString());
-                    processorContext.addReflectiveMethod(annotation.target().asMethod());
+                    reflectiveMethods.produce(new ReflectiveMethodBuildItem(annotation.target().asMethod()));
                     seenTypes.add(annotation.target().asMethod().returnType().name());
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
                     classesToBeValidated.add(annotation.target().asMethodParameter().method().declaringClass().name().toString());
-                    processorContext.addReflectiveMethod(annotation.target().asMethodParameter().method());
+                    reflectiveMethods.produce(new ReflectiveMethodBuildItem(annotation.target().asMethodParameter().method()));
                     seenTypes.add(annotation.target().asMethodParameter().asType().asClass().name());
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
                     classesToBeValidated.add(annotation.target().asClass().name().toString());
                     seenTypes.add(annotation.target().asClass().name());
-                    processorContext.addReflectiveClass(true, true, annotation.target().asClass().name().toString());
+                    reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, annotation.target().asClass().name().toString()));
                 }
             }
         }
@@ -115,23 +122,29 @@ class BeanValidationProcessor implements ResourceProcessor {
                     }
                 }
                 for (DotName i : toRegister) { //such hacks
-                    processorContext.addReflectiveClass(false, false, i.toString());
+                    reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, i.toString()));
                 }
             }
         }
 
-        try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.BEAN_VALIDATION_DEPLOYMENT)) {
-            ValidatorTemplate template = recorder.getRecordingProxy(ValidatorTemplate.class);
-            Class[] classes = new Class[classesToBeValidated.size()];
-            int j = 0;
-            for (String c : classesToBeValidated) {
-                classes[j++] = recorder.classProxy(c);
-            }
-            template.forceInit((InjectionInstance<ValidatorProvider>) recorder.newInstanceFactory(ValidatorProvider.class.getName()), classes);
+        Class[] classes = new Class[classesToBeValidated.size()];
+        int j = 0;
+        for (String c : classesToBeValidated) {
+            classes[j++] = recorder.classProxy(c);
         }
+        template.forceInit((InjectionInstance<ValidatorProvider>) beanFactory.newInstanceFactory(ValidatorProvider.class.getName()), classes);
     }
 
-    private Map<DotName, Map<DotName, DotName>> lookForValidatorsByConstraint(ArchiveContext archiveContext, ProcessorContext processorContext) {
+    @BuildStep
+    SubstrateConfigBuildItem substrateConfig() {
+        return SubstrateConfigBuildItem.builder()
+                .addRuntimeInitializedClass("javax.el.ELUtil")
+                .addResourceBundle("org.hibernate.validator.ValidationMessages")
+                .build();
+    }
+
+
+    private Map<DotName, Map<DotName, DotName>> lookForValidatorsByConstraint(CombinedIndexBuildItem combinedIndexBuildItem) {
         Map<DotName, Map<DotName, DotName>> validatorsByConstraint = new HashMap<>();
 
         //handle built in ones
@@ -145,7 +158,7 @@ class BeanValidationProcessor implements ResourceProcessor {
                 java.lang.reflect.Type validatedType = val.getValidatedType();
                 if (validatedType instanceof Class) {
                     vals.put(DotName.createSimple(val.getValidatorClass().getName()), DotName.createSimple(((Class) validatedType).getName()));
-                } else if(validatedType instanceof java.lang.reflect.ParameterizedType) {
+                } else if (validatedType instanceof java.lang.reflect.ParameterizedType) {
                     java.lang.reflect.Type rawType = ((java.lang.reflect.ParameterizedType) validatedType).getRawType();
                     vals.put(DotName.createSimple(val.getValidatorClass().getName()), DotName.createSimple(((Class) rawType).getName()));
                 } else {
@@ -154,7 +167,7 @@ class BeanValidationProcessor implements ResourceProcessor {
             }
         }
 
-        for (ClassInfo classInfo : archiveContext.getCombinedIndex().getAllKnownImplementors(CONSTRAINT_VALIDATOR)) {
+        for (ClassInfo classInfo : combinedIndexBuildItem.getIndex().getAllKnownImplementors(CONSTRAINT_VALIDATOR)) {
 
             //TODO: this fails for inheritance heirachies
 
@@ -182,10 +195,5 @@ class BeanValidationProcessor implements ResourceProcessor {
             }
         }
         return validatorsByConstraint;
-    }
-
-    @Override
-    public int getPriority() {
-        return 1;
     }
 }

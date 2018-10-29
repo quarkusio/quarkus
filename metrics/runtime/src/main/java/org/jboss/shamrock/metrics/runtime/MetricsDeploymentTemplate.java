@@ -10,16 +10,16 @@ import org.eclipse.microprofile.metrics.Metadata;
 import org.eclipse.microprofile.metrics.MetricRegistry;
 import org.eclipse.microprofile.metrics.MetricType;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.runtime.BeanContainer;
-import org.jboss.shamrock.runtime.ContextObject;
+import org.jboss.shamrock.runtime.Template;
+import org.jboss.shamrock.runtime.cdi.BeanContainer;
 
 import io.smallrye.metrics.MetricRegistries;
 import io.smallrye.metrics.app.CounterImpl;
-import io.smallrye.metrics.interceptors.MetricResolver;
 
 /**
  * Created by bob on 7/30/18.
  */
+@Template
 public class MetricsDeploymentTemplate {
 
     private static final Logger log = Logger.getLogger("org.jboss.shamrock.metrics");
@@ -103,7 +103,7 @@ public class MetricsDeploymentTemplate {
 
     }
 
-    public void createRegistries(@ContextObject("bean.container") BeanContainer container) {
+    public void createRegistries(BeanContainer container) {
         log.info("Creating registries");
         MetricRegistries.get(MetricRegistry.Type.APPLICATION);
         MetricRegistries.get(MetricRegistry.Type.BASE);

@@ -7,8 +7,9 @@ import java.util.Optional;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.builder.item.SimpleBuildItem;
 
-public class ShamrockConfig {
+public final class ShamrockConfig extends SimpleBuildItem {
 
     public static final ShamrockConfig INSTANCE = new ShamrockConfig();
 

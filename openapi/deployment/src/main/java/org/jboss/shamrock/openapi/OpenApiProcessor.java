@@ -1,28 +1,30 @@
 package org.jboss.shamrock.openapi;
 
+import static org.jboss.shamrock.annotations.ExecutionTime.STATIC_INIT;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Path;
-
-import javax.inject.Inject;
+import java.util.Arrays;
+import java.util.List;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.jboss.jandex.IndexView;
-import org.jboss.shamrock.deployment.ArchiveContext;
-import org.jboss.shamrock.deployment.BeanDeployment;
-import org.jboss.shamrock.deployment.ProcessorContext;
-import org.jboss.shamrock.deployment.ResourceProcessor;
-import org.jboss.shamrock.deployment.RuntimePriority;
+import org.jboss.shamrock.annotations.BuildStep;
+import org.jboss.shamrock.annotations.ExecutionTime;
+import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.deployment.ShamrockConfig;
-import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
+import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
+import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
+import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
+import org.jboss.shamrock.deployment.cdi.BeanContainerListenerBuildItem;
 import org.jboss.shamrock.openapi.runtime.OpenApiDeploymentTemplate;
 import org.jboss.shamrock.openapi.runtime.OpenApiDocumentProducer;
 import org.jboss.shamrock.openapi.runtime.OpenApiServlet;
-import org.jboss.shamrock.undertow.ServletData;
-import org.jboss.shamrock.undertow.ServletDeployment;
+import org.jboss.shamrock.undertow.ServletBuildItem;
 
 import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.OpenApiConfigImpl;
@@ -33,35 +35,30 @@ import io.smallrye.openapi.runtime.scanner.OpenApiAnnotationScanner;
 /**
  * @author Ken Finnigan
  */
-public class OpenApiProcessor implements ResourceProcessor {
+public class OpenApiProcessor {
 
-    @Inject
-    private BeanDeployment beanDeployment;
+    @BuildStep
+    ServletBuildItem servlet(ShamrockConfig config) {
+        ServletBuildItem servletBuildItem = new ServletBuildItem("openapi", OpenApiServlet.class.getName());
+        servletBuildItem.getMappings().add(config.getConfig("openapi.path", "/openapi"));
+        return servletBuildItem;
+    }
 
-    @Inject
-    private ShamrockConfig config;
+    @BuildStep
+    List<AdditionalBeanBuildItem> beans() {
+        return Arrays.asList(new AdditionalBeanBuildItem(OpenApiServlet.class),
+                new AdditionalBeanBuildItem(OpenApiDocumentProducer.class));
+    }
 
-    @Inject
-    private ServletDeployment servletDeployment;
-
-    private OpenApiSerializer.Format format = OpenApiSerializer.Format.YAML;
-
-    @Override
-    public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
-        ServletData servletData = new ServletData("openapi", OpenApiServlet.class.getName());
-        servletData.getMapings().add(config.getConfig("openapi.path", "/openapi"));
-        servletDeployment.addServlet(servletData);
-        beanDeployment.addAdditionalBean(OpenApiServlet.class);
-        beanDeployment.addAdditionalBean(OpenApiDocumentProducer.class);
-
-        String resourcePath = findStaticModel(archiveContext);
-
-        try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.WELD_DEPLOYMENT + 30)) {
-            OpenApiDeploymentTemplate template = recorder.getRecordingProxy(OpenApiDeploymentTemplate.class);
-            OpenAPI sm = generateStaticModel(resourcePath, format);
-            OpenAPI am = generateAnnotationModel(archiveContext.getCombinedIndex());
-            template.setupModel(null, sm, am);
-        }
+    @BuildStep
+    @Record(STATIC_INIT)
+    public BeanContainerListenerBuildItem build(OpenApiDeploymentTemplate template,
+                                                ApplicationArchivesBuildItem archivesBuildItem,
+                                                CombinedIndexBuildItem combinedIndexBuildItem) throws Exception {
+        Result resourcePath = findStaticModel(archivesBuildItem);
+        OpenAPI sm = generateStaticModel(resourcePath == null ? null : resourcePath.path, resourcePath == null ? OpenApiSerializer.Format.YAML : resourcePath.format);
+        OpenAPI am = generateAnnotationModel(combinedIndexBuildItem.getIndex());
+        return new BeanContainerListenerBuildItem(template.setupModel(sm, am));
     }
 
 
@@ -86,29 +83,25 @@ public class OpenApiProcessor implements ResourceProcessor {
         return new OpenApiAnnotationScanner(openApiConfig, indexView).scan();
     }
 
-    @Override
-    public int getPriority() {
-        return 1;
-    }
-
-    private String findStaticModel(ArchiveContext archiveContext) {
+    private Result findStaticModel(ApplicationArchivesBuildItem archivesBuildItem) {
         // Check for the file in both META-INF and WEB-INF/classes/META-INF
-        Path resourcePath = archiveContext.getRootArchive().getChildPath("META-INF/openapi.yaml");
+        OpenApiSerializer.Format format = OpenApiSerializer.Format.YAML;
+        Path resourcePath = archivesBuildItem.getRootArchive().getChildPath("META-INF/openapi.yaml");
         if (resourcePath == null) {
-            resourcePath = archiveContext.getRootArchive().getChildPath("WEB-INF/classes/META-INF/openapi.yaml");
+            resourcePath = archivesBuildItem.getRootArchive().getChildPath("WEB-INF/classes/META-INF/openapi.yaml");
         }
         if (resourcePath == null) {
-            resourcePath = archiveContext.getRootArchive().getChildPath("META-INF/openapi.yml");
+            resourcePath = archivesBuildItem.getRootArchive().getChildPath("META-INF/openapi.yml");
         }
         if (resourcePath == null) {
-            resourcePath = archiveContext.getRootArchive().getChildPath("WEB-INF/classes/META-INF/openapi.yml");
+            resourcePath = archivesBuildItem.getRootArchive().getChildPath("WEB-INF/classes/META-INF/openapi.yml");
         }
         if (resourcePath == null) {
-            resourcePath = archiveContext.getRootArchive().getChildPath("META-INF/openapi.json");
+            resourcePath = archivesBuildItem.getRootArchive().getChildPath("META-INF/openapi.json");
             format = OpenApiSerializer.Format.JSON;
         }
         if (resourcePath == null) {
-            resourcePath = archiveContext.getRootArchive().getChildPath("WEB-INF/classes/META-INF/openapi.json");
+            resourcePath = archivesBuildItem.getRootArchive().getChildPath("WEB-INF/classes/META-INF/openapi.json");
             format = OpenApiSerializer.Format.JSON;
         }
 
@@ -116,6 +109,17 @@ public class OpenApiProcessor implements ResourceProcessor {
             return null;
         }
 
-        return archiveContext.getRootArchive().getArchiveRoot().relativize(resourcePath).toString();
+        return new Result(format, archivesBuildItem.getRootArchive().getArchiveRoot().relativize(resourcePath).toString());
     }
+
+    static class Result {
+        final OpenApiSerializer.Format format;
+        final String path;
+
+        Result(OpenApiSerializer.Format format, String path) {
+            this.format = format;
+            this.path = path;
+        }
+    }
+
 }

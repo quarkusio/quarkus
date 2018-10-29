@@ -18,8 +18,11 @@
 
 package org.jboss.shamrock.logging.runtime;
 
+import org.jboss.shamrock.runtime.Template;
+
 /**
  */
+@Template
 public class LogSetupTemplate {
     public void initializeLogManager() {
         // not used in native image, where the property should have been set on the command line

@@ -7,6 +7,7 @@ import java.lang.reflect.Field;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.jar.JarFile;
@@ -17,16 +18,18 @@ import javax.enterprise.inject.se.SeContainerInitializer;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.Extension;
 
-import org.jboss.shamrock.runtime.BeanContainer;
-import org.jboss.shamrock.runtime.ContextObject;
+import org.jboss.shamrock.runtime.Template;
+import org.jboss.shamrock.runtime.cdi.BeanContainer;
 import org.jboss.shamrock.runtime.InjectionFactory;
 import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.runtime.RuntimeInjector;
 import org.jboss.shamrock.runtime.StartupContext;
+import org.jboss.shamrock.runtime.cdi.BeanContainerListener;
 import org.jboss.weld.config.ConfigurationKey;
 import org.jboss.weld.config.ConfigurationKey.UnusedBeans;
 import org.jboss.weld.environment.se.Weld;
 
+@Template
 public class WeldDeploymentTemplate {
 
     public SeContainerInitializer createWeld() throws Exception {
@@ -71,13 +74,12 @@ public class WeldDeploymentTemplate {
     public void addInterceptor(SeContainerInitializer initialize, Class<?> interceptorClass) {
         initialize.enableInterceptors(interceptorClass);
     }
-    
-	@SuppressWarnings("unchecked")
-	public void addExtension(SeContainerInitializer initializer, Class<?> extensionClazz) {
-        initializer.addExtensions((Class<? extends Extension>)extensionClazz);
+
+    @SuppressWarnings("unchecked")
+    public void addExtension(SeContainerInitializer initializer, Class<?> extensionClazz) {
+        initializer.addExtensions((Class<? extends Extension>) extensionClazz);
     }
 
-    @ContextObject("weld.container")
     public SeContainer doBoot(StartupContext startupContext, SeContainerInitializer initializer) throws Exception {
         SeContainer container = initializer.initialize();
         // Force client proxy init to run
@@ -130,14 +132,13 @@ public class WeldDeploymentTemplate {
         });
     }
 
-    @ContextObject("bean.container")
-    public BeanContainer initBeanContainer(SeContainer container) throws Exception {
-        return new BeanContainer() {
+    public BeanContainer initBeanContainer(SeContainer container, List<BeanContainerListener> beanConfigurators) throws Exception {
+        BeanContainer beanContainer = new BeanContainer() {
 
             @Override
             public <T> Factory<T> instanceFactory(Class<T> type, Annotation... qualifiers) {
                 Instance<T> inst = container.select(type, qualifiers);
-                if(!inst.isResolvable()) {
+                if (!inst.isResolvable()) {
                     return null;
                 }
                 return new Factory<T>() {
@@ -148,6 +149,10 @@ public class WeldDeploymentTemplate {
                 };
             }
         };
+        for(BeanContainerListener i : beanConfigurators) {
+            i.created(beanContainer);
+        }
+        return beanContainer;
     }
 
 }

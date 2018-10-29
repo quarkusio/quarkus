@@ -13,16 +13,23 @@ import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.shamrock.annotations.BuildProducer;
+import org.jboss.shamrock.annotations.BuildStep;
+import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
+import org.jboss.shamrock.deployment.builditem.BeanArchiveIndexBuildItem;
 
-public class BeanArchiveProcessor implements ResourceProcessor {
+public class BeanArchiveProcessor {
 
     @Inject
-    private BeanArchiveIndex beanArchiveIndex;
+    BuildProducer<BeanArchiveIndexBuildItem> beanArchiveIndexBuildProducer;
 
-    @Override
-    public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
+    @Inject
+    ApplicationArchivesBuildItem applicationArchivesBuildItem;
 
-        Set<ApplicationArchive> archives = archiveContext.getAllApplicationArchives();
+    @BuildStep
+    public void build() throws Exception {
+
+        Set<ApplicationArchive> archives = applicationArchivesBuildItem.getAllApplicationArchives();
 
         // The list is not exhaustive - it merely contains all annotations supported by Arc
         List<DotName> beanDefiningAnnotations = new ArrayList<>();
@@ -72,12 +79,7 @@ public class BeanArchiveProcessor implements ResourceProcessor {
                 }
             }
         }
-        beanArchiveIndex.setIndex(CompositeIndex.create(indexes));
+        beanArchiveIndexBuildProducer.produce(new BeanArchiveIndexBuildItem(CompositeIndex.create(indexes)));
     }
 
-    @Override
-    public int getPriority() {
-        // we want this to run early
-        return -1000;
-    }
 }

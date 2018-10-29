@@ -50,9 +50,12 @@ public class BuildException extends Exception {
      * @param diagnostics the diagnostics associated with the build failure (not {@code null})
      */
     public BuildException(final String msg, final List<Diagnostic> diagnostics) {
-        super(msg);
+        super(msg + diagnostics);
         Assert.checkNotNullParam("diagnostics", diagnostics);
         this.diagnostics = diagnostics;
+        for(Diagnostic d : diagnostics) {
+            addSuppressed(d.getThrown());
+        }
     }
 
     /**

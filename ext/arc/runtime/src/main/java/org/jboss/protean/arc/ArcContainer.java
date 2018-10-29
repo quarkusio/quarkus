@@ -23,6 +23,15 @@ public interface ArcContainer {
     <T> InstanceHandle<T> instance(TypeLiteral<T> type, Annotation... qualifiers);
 
     /**
+     * Returns a supplier that can be used to create new instances, or null if no matching bean can be found
+     * @param type
+     * @param qualifiers
+     * @param <T>
+     * @return
+     */
+    <T> Supplier<InstanceHandle<T>> instanceSupplier(Class<T> type, Annotation... qualifiers);
+
+    /**
      *
      * @return the context for {@link javax.enterprise.context.RequestScoped}
      */

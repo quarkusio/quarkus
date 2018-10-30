@@ -88,6 +88,9 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter(defaultValue = "true")
     private boolean fullStackTraces;
 
+    @Parameter
+    private List<String> additionalBuildArgs;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
 
@@ -139,6 +142,9 @@ public class NativeImageMojo extends AbstractMojo {
                         command.add("-J-D" + propertyName + "=" + propertyValue);
                     }
                 }
+            }
+            if (additionalBuildArgs != null) {
+                additionalBuildArgs.forEach(command::add);
             }
             command.add("-H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime"); //the default collection policy results in full GC's 50% of the time
             command.add("-jar");

@@ -418,7 +418,7 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
             if (param instanceof Map) {
                 for (Map.Entry<?, ?> i : ((Map<?, ?>) param).entrySet()) {
                     ResultHandle key = loadObjectInstance(method, i.getKey(), returnValueResults, i.getKey().getClass());
-                    ResultHandle val = loadObjectInstance(method, i.getValue(), returnValueResults, i.getValue().getClass());
+                    ResultHandle val = i.getValue() != null ? loadObjectInstance(method, i.getValue(), returnValueResults, i.getValue().getClass()) : null;
                     method.invokeInterfaceMethod(MAP_PUT, out, key, val);
                 }
             }
@@ -449,7 +449,7 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
                             ResultHandle prop = method.invokeVirtualMethod(MethodDescriptor.ofMethod(i.getReadMethod()), out);
                             for (Map.Entry<Object, Object> entry : propertyValue.entrySet()) {
                                 ResultHandle key = loadObjectInstance(method, entry.getKey(), returnValueResults, Object.class);
-                                ResultHandle val = loadObjectInstance(method, entry.getValue(), returnValueResults, Object.class);
+                                ResultHandle val = entry.getValue() != null ? loadObjectInstance(method, entry.getValue(), returnValueResults, Object.class) : method.loadNull();
                                 method.invokeInterfaceMethod(MAP_PUT, prop, key, val);
                             }
                         }

@@ -408,6 +408,7 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
 
                 out = method.newInstance(ofConstructor(param.getClass()));
             }
+            returnValueResults.put(param, out);
             if (param instanceof Collection) {
                 for (Object i : (Collection) param) {
                     ResultHandle val = loadObjectInstance(method, i, returnValueResults, i.getClass());

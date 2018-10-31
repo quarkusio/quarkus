@@ -1,0 +1,2 @@
+index-dependencies:
+  - "org.apache.camel:camel-core"

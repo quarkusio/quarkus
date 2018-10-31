@@ -38,14 +38,10 @@ class VertxProcessor {
         return SubstrateConfigBuildItem.builder()
                 .addNativeImageSystemProperty("io.netty.noUnsafe", "true")
                 .addRuntimeInitializedClass("io.netty.handler.codec.http.HttpObjectEncoder")
+                .addRuntimeInitializedClass("io.netty.handler.codec.http2.Http2CodecUtil")
+                .addRuntimeInitializedClass("io.netty.handler.codec.http2.DefaultHttp2FrameWriter")
+                .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.WebSocket00FrameEncoder")
                 .build();
-
-        // These may need to be added depending on the application
-//    			"io.netty.handler.codec.http2.Http2CodecUtil",
-//    			"io.netty.handler.codec.http2.DefaultHttp2FrameWriter",
-//    			"io.netty.handler.codec.http.websocketx.WebSocket00FrameEncoder"
-//    			);
-
     }
 
 }

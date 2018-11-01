@@ -443,4 +443,12 @@ public interface BytecodeCreator {
         }
         return array;
     }
+
+    /**
+     * Determine if this bytecode creator is scoped within the given bytecode creator.
+     *
+     * @param other the other bytecode creator
+     * @return {@code true} if this bytecode creator is scoped within the given creator, {@code false} otherwise
+     */
+    boolean isScopedWithin(BytecodeCreator other);
 }

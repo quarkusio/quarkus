@@ -451,4 +451,32 @@ public interface BytecodeCreator {
      * @return {@code true} if this bytecode creator is scoped within the given creator, {@code false} otherwise
      */
     boolean isScopedWithin(BytecodeCreator other);
+
+    /**
+     * Go to the top of the given scope.
+     *
+     * @param scope the scope to continue
+     */
+    void continueScope(BytecodeCreator scope);
+
+    /**
+     * Go to the top of this scope.
+     */
+    default void continueScope() {
+        continueScope(this);
+    }
+
+    /**
+     * Go to the end of the given scope.
+     *
+     * @param scope the scope to break out of
+     */
+    void breakScope(BytecodeCreator scope);
+
+    /**
+     * Go to the end of this scope.
+     */
+    default void breakScope() {
+        breakScope(this);
+    }
 }

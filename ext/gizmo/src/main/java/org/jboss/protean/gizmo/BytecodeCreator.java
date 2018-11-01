@@ -479,4 +479,12 @@ public interface BytecodeCreator {
     default void breakScope() {
         breakScope(this);
     }
+
+    /**
+     * Create a nested scope.  Bytecode added to the nested scope will be inserted at this point of the
+     * enclosing scope.
+     *
+     * @return the nested scope
+     */
+    BytecodeCreator createScope();
 }

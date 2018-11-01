@@ -20,7 +20,7 @@ class MethodCreatorImpl extends BytecodeCreatorImpl implements MethodCreator {
     private final Map<Integer, AnnotationParameters> parameterAnnotations = new HashMap<>();
 
     MethodCreatorImpl(MethodDescriptor methodDescriptor, String declaringClassName, ClassOutput classOutput, ClassCreator classCreator) {
-        super(methodDescriptor, declaringClassName, classOutput, classCreator);
+        super(methodDescriptor, declaringClassName, classOutput, classCreator, null);
     }
 
     @Override

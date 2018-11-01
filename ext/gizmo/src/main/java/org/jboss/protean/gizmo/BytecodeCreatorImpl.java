@@ -46,6 +46,9 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
 
     private final BytecodeCreatorImpl owner;
 
+    private final Label top = new Label();
+    private final Label bottom = new Label();
+
     private static final Map<String, String> boxingMap;
     private static final Map<String, String> boxingMethodMap;
 
@@ -547,6 +550,20 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
         return other == this || other instanceof BytecodeCreatorImpl && isScopedWithin(((BytecodeCreatorImpl) other).owner);
     }
 
+    public void continueScope(final BytecodeCreator scope) {
+        if (! isScopedWithin(scope)) {
+            throw new IllegalArgumentException("Cannot continue non-enclosing scope");
+        }
+        operations.add(new JumpOperation(((BytecodeCreatorImpl) scope).top));
+    }
+
+    public void breakScope(final BytecodeCreator scope) {
+        if (! isScopedWithin(scope)) {
+            throw new IllegalArgumentException("Cannot break non-enclosing scope");
+        }
+        operations.add(new JumpOperation(((BytecodeCreatorImpl) scope).bottom));
+    }
+
     static void storeResultHandle(MethodVisitor methodVisitor, ResultHandle handle) {
         if (handle.getResultType() == ResultHandle.ResultType.UNUSED) {
             if (handle.getType().equals("J") || handle.getType().equals("D")) {
@@ -1029,9 +1046,11 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
     }
 
     protected void writeOperations(MethodVisitor visitor) {
+        visitor.visitLabel(top);
         for (Operation op : operations) {
             op.doProcess(visitor);
         }
+        visitor.visitLabel(bottom);
     }
 
 
@@ -1162,6 +1181,30 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
         @Override
         ResultHandle getOutgoingResultHandle() {
             return ret;
+        }
+    }
+
+    static class JumpOperation extends Operation {
+        private final Label target;
+
+        JumpOperation(final Label target) {
+            this.target = target;
+        }
+
+        void writeBytecode(final MethodVisitor methodVisitor) {
+            methodVisitor.visitJumpInsn(Opcodes.GOTO, target);
+        }
+
+        Set<ResultHandle> getInputResultHandles() {
+            return Collections.emptySet();
+        }
+
+        ResultHandle getTopResultHandle() {
+            return null;
+        }
+
+        ResultHandle getOutgoingResultHandle() {
+            return null;
         }
     }
 

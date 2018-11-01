@@ -84,16 +84,16 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
         return bottom;
     }
 
-    public BytecodeCreatorImpl(MethodDescriptor methodDescriptor, String declaringClassName, ClassOutput classOutput, ClassCreator classCreator) {
-        this(methodDescriptor, declaringClassName, classOutput, classCreator, null);
-    }
-
-    public BytecodeCreatorImpl(MethodDescriptor methodDescriptor, String declaringClassName, ClassOutput classOutput, ClassCreator classCreator, BytecodeCreatorImpl owner) {
+    BytecodeCreatorImpl(MethodDescriptor methodDescriptor, String declaringClassName, ClassOutput classOutput, ClassCreator classCreator, BytecodeCreatorImpl owner) {
         this.methodDescriptor = methodDescriptor;
         this.declaringClassName = declaringClassName;
         this.classOutput = classOutput;
         this.classCreator = classCreator;
         this.owner = owner;
+    }
+
+    BytecodeCreatorImpl(BytecodeCreatorImpl enclosing) {
+        this(enclosing.methodDescriptor, enclosing.declaringClassName, enclosing.classOutput, enclosing.classCreator, enclosing);
     }
 
     @Override
@@ -573,7 +573,7 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
     }
 
     public BytecodeCreator createScope() {
-        final BytecodeCreatorImpl enclosed = new BytecodeCreatorImpl(methodDescriptor, declaringClassName, classOutput, classCreator, this);
+        final BytecodeCreatorImpl enclosed = new BytecodeCreatorImpl(this);
         operations.add(new Operation() {
             void writeBytecode(final MethodVisitor methodVisitor) {
                 enclosed.writeOperations(methodVisitor);
@@ -722,7 +722,7 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
                 if (catchBlocks.containsKey(name)) {
                     throw new IllegalStateException("Catch block for " + exception + " already exists");
                 }
-                CatchBlockCreatorImpl impl = new CatchBlockCreatorImpl(methodDescriptor, declaringClassName, name, classOutput, classCreator);
+                CatchBlockCreatorImpl impl = new CatchBlockCreatorImpl(name, BytecodeCreatorImpl.this);
                 catchBlocks.put(name, impl);
                 return impl;
             }
@@ -807,8 +807,8 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
 
     @Override
     public BranchResult ifNonZero(ResultHandle resultHandle) {
-        BytecodeCreatorImpl trueBranch = new BytecodeCreatorImpl(methodDescriptor, declaringClassName, classOutput, classCreator, this);
-        BytecodeCreatorImpl falseBranch = new BytecodeCreatorImpl(methodDescriptor, declaringClassName, classOutput, classCreator, this);
+        BytecodeCreatorImpl trueBranch = new BytecodeCreatorImpl(this);
+        BytecodeCreatorImpl falseBranch = new BytecodeCreatorImpl(this);
         operations.add(new Operation() {
             @Override
             public void writeBytecode(MethodVisitor methodVisitor) {
@@ -845,8 +845,8 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
 
     @Override
     public BranchResult ifNull(ResultHandle resultHandle) {
-        BytecodeCreatorImpl trueBranch = new BytecodeCreatorImpl(methodDescriptor, declaringClassName, classOutput, classCreator, this);
-        BytecodeCreatorImpl falseBranch = new BytecodeCreatorImpl(methodDescriptor, declaringClassName, classOutput, classCreator, this);
+        BytecodeCreatorImpl trueBranch = new BytecodeCreatorImpl(this);
+        BytecodeCreatorImpl falseBranch = new BytecodeCreatorImpl(this);
         operations.add(new Operation() {
             @Override
             public void writeBytecode(MethodVisitor methodVisitor) {

@@ -317,6 +317,20 @@ public class FunctionCreatorImpl implements FunctionCreator {
         }
 
         @Override
+        public void continueScope(final BytecodeCreator scope) {
+            throw nonLocalReturn();
+        }
+
+        @Override
+        public void breakScope(final BytecodeCreator scope) {
+            throw nonLocalReturn();
+        }
+
+        private UnsupportedOperationException nonLocalReturn() {
+            return new UnsupportedOperationException("Non-local return is unsupported");
+        }
+
+        @Override
         public ResultHandle getCaughtException() {
             if(delegate instanceof CatchBlockCreator) {
                 return ((CatchBlockCreator) delegate).getCaughtException();

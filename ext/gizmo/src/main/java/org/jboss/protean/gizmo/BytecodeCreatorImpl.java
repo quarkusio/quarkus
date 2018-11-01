@@ -543,6 +543,10 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
         return result;
     }
 
+    public boolean isScopedWithin(final BytecodeCreator other) {
+        return other == this || other instanceof BytecodeCreatorImpl && isScopedWithin(((BytecodeCreatorImpl) other).owner);
+    }
+
     static void storeResultHandle(MethodVisitor methodVisitor, ResultHandle handle) {
         if (handle.getResultType() == ResultHandle.ResultType.UNUSED) {
             if (handle.getType().equals("J") || handle.getType().equals("D")) {

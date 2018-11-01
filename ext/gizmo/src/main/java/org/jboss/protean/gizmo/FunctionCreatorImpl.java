@@ -312,6 +312,11 @@ public class FunctionCreatorImpl implements FunctionCreator {
         }
 
         @Override
+        public boolean isScopedWithin(final BytecodeCreator other) {
+            return delegate.isScopedWithin(other);
+        }
+
+        @Override
         public ResultHandle getCaughtException() {
             if(delegate instanceof CatchBlockCreator) {
                 return ((CatchBlockCreator) delegate).getCaughtException();

@@ -52,4 +52,19 @@ public class SampleTest {
         Assert.assertEquals("PARAM", myInterface.transform("PARAM"));
         Assert.assertEquals("TRUE BRANCH", myInterface.transform("TEST"));
     }
+
+    @Test
+    public void testIfNull() throws Exception {
+        TestClassLoader cl = new TestClassLoader(getClass().getClassLoader());
+        try (ClassCreator creator = ClassCreator.builder().classOutput(cl).className("com.MyTest").interfaces(MyInterface.class).build()) {
+            MethodCreator method = creator.getMethodCreator("transform", String.class, String.class);
+            ResultHandle nullHandle = method.loadNull();
+            BranchResult branch = method.ifNull(nullHandle);
+            branch.trueBranch().returnValue(branch.trueBranch().load("TRUE"));
+            branch.falseBranch().returnValue(branch.trueBranch().load("FALSE"));
+        }
+        MyInterface myInterface = (MyInterface) cl.loadClass("com.MyTest").newInstance();
+        Assert.assertEquals("TRUE", myInterface.transform("TEST"));
+    }
+
 }

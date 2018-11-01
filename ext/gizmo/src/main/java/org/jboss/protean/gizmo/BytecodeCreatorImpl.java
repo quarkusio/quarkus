@@ -76,6 +76,14 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
         boxingMethodMap = Collections.unmodifiableMap(b);
     }
 
+    Label getTop() {
+        return top;
+    }
+
+    Label getBottom() {
+        return bottom;
+    }
+
     public BytecodeCreatorImpl(MethodDescriptor methodDescriptor, String declaringClassName, ClassOutput classOutput, ClassCreator classCreator) {
         this(methodDescriptor, declaringClassName, classOutput, classCreator, null);
     }
@@ -805,14 +813,10 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
             @Override
             public void writeBytecode(MethodVisitor methodVisitor) {
                 loadResultHandle(methodVisitor, resultHandle, BytecodeCreatorImpl.this, "I");
-                Label label = new Label();
-                methodVisitor.visitJumpInsn(Opcodes.IFEQ, label);
-                trueBranch.writeOperations(methodVisitor);
-                Label end = new Label();
-                methodVisitor.visitJumpInsn(Opcodes.GOTO, end);
-                methodVisitor.visitLabel(label);
+                methodVisitor.visitJumpInsn(Opcodes.IFNE, trueBranch.getTop());
                 falseBranch.writeOperations(methodVisitor);
-                methodVisitor.visitLabel(end);
+                methodVisitor.visitJumpInsn(Opcodes.GOTO, trueBranch.getBottom());
+                trueBranch.writeOperations(methodVisitor);
             }
 
             @Override
@@ -847,14 +851,10 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
             @Override
             public void writeBytecode(MethodVisitor methodVisitor) {
                 loadResultHandle(methodVisitor, resultHandle, BytecodeCreatorImpl.this, "Ljava/lang/Object;");
-                Label label = new Label();
-                methodVisitor.visitJumpInsn(Opcodes.IFNULL, label);
-                trueBranch.writeOperations(methodVisitor);
-                Label end = new Label();
-                methodVisitor.visitJumpInsn(Opcodes.GOTO, end);
-                methodVisitor.visitLabel(label);
+                methodVisitor.visitJumpInsn(Opcodes.IFNULL, trueBranch.getTop());
                 falseBranch.writeOperations(methodVisitor);
-                methodVisitor.visitLabel(end);
+                methodVisitor.visitJumpInsn(Opcodes.GOTO, trueBranch.getBottom());
+                trueBranch.writeOperations(methodVisitor);
             }
 
             @Override

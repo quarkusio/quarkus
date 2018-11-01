@@ -308,7 +308,7 @@ public class FunctionCreatorImpl implements FunctionCreator {
 
         @Override
         public ResultHandle checkCast(final ResultHandle resultHandle, final String castTarget) {
-            return delegate.checkCast(resultHandle, castTarget);
+            return delegate.checkCast(apply(resultHandle), castTarget);
         }
 
         @Override

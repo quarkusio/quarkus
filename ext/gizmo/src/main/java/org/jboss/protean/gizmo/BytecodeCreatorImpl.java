@@ -564,6 +564,32 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
         operations.add(new JumpOperation(((BytecodeCreatorImpl) scope).bottom));
     }
 
+    public BytecodeCreator createScope() {
+        final BytecodeCreatorImpl enclosed = new BytecodeCreatorImpl(methodDescriptor, declaringClassName, classOutput, classCreator, this);
+        operations.add(new Operation() {
+            void writeBytecode(final MethodVisitor methodVisitor) {
+                enclosed.writeOperations(methodVisitor);
+            }
+
+            Set<ResultHandle> getInputResultHandles() {
+                return Collections.emptySet();
+            }
+
+            ResultHandle getTopResultHandle() {
+                return null;
+            }
+
+            ResultHandle getOutgoingResultHandle() {
+                return null;
+            }
+
+            public void findResultHandles(final Set<ResultHandle> vc) {
+                enclosed.findActiveResultHandles(vc);
+            }
+        });
+        return enclosed;
+    }
+
     static void storeResultHandle(MethodVisitor methodVisitor, ResultHandle handle) {
         if (handle.getResultType() == ResultHandle.ResultType.UNUSED) {
             if (handle.getType().equals("J") || handle.getType().equals("D")) {

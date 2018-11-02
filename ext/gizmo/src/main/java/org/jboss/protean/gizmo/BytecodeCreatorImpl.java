@@ -637,7 +637,7 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
             //throw new IllegalArgumentException("Wrong owner for ResultHandle " + handle);
         }
         if (handle.getResultType() != ResultHandle.ResultType.SINGLE_USE) {
-            if (handle.getType().equals("S") || handle.getType().equals("Z") || handle.getType().equals("I") || handle.getType().equals("B") || handle.getType().equals("B")) {
+            if (handle.getType().equals("S") || handle.getType().equals("Z") || handle.getType().equals("I") || handle.getType().equals("B") || handle.getType().equals("C")) {
                 methodVisitor.visitVarInsn(Opcodes.ILOAD, handle.getNo());
             } else if (handle.getType().equals("J")) {
                 methodVisitor.visitVarInsn(Opcodes.LLOAD, handle.getNo());

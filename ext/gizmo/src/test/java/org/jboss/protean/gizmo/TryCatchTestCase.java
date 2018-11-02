@@ -10,12 +10,11 @@ public class TryCatchTestCase {
         TestClassLoader cl = new TestClassLoader(getClass().getClassLoader());
         try (ClassCreator creator = ClassCreator.builder().classOutput(cl).className("com.MyTest").interfaces(MyInterface.class).build()) {
             MethodCreator method = creator.getMethodCreator("transform", String.class, String.class);
-            ExceptionTable table = method.addTryCatch();
-            BytecodeCreator illegalState = table.addCatchClause(IllegalStateException.class);
+            TryBlock tb = method.tryBlock();
+            BytecodeCreator illegalState = tb.addCatch(IllegalStateException.class);
             illegalState.returnValue(illegalState.load("caught-exception"));
-            method.invokeStaticMethod(MethodDescriptor.ofMethod(ExceptionClass.class.getName(), "throwIllegalState", "V"));
-            method.returnValue(method.load("complete"));
-            table.complete();
+            tb.invokeStaticMethod(MethodDescriptor.ofMethod(ExceptionClass.class.getName(), "throwIllegalState", "V"));
+            tb.returnValue(method.load("complete"));
         }
         Class<?> clazz = cl.loadClass("com.MyTest");
         Assert.assertTrue(clazz.isSynthetic());
@@ -29,10 +28,9 @@ public class TryCatchTestCase {
         try (ClassCreator creator = ClassCreator.builder().classOutput(cl).className("com.MyTest").interfaces(MyInterface.class).build()) {
             MethodCreator method = creator.getMethodCreator("transform", String.class, String.class);
             ResultHandle existingVal = method.load("complete");
-            ExceptionTable table = method.addTryCatch();
-            table.addCatchClause(IllegalStateException.class).load(34);
-            method.invokeStaticMethod(MethodDescriptor.ofMethod(ExceptionClass.class.getName(), "throwIllegalState", "V"));
-            table.complete();
+            TryBlock tb = method.tryBlock();
+            tb.addCatch(IllegalStateException.class).load(34);
+            tb.invokeStaticMethod(MethodDescriptor.ofMethod(ExceptionClass.class.getName(), "throwIllegalState", "V"));
             method.returnValue(existingVal);
         }
         Class<?> clazz = cl.loadClass("com.MyTest");

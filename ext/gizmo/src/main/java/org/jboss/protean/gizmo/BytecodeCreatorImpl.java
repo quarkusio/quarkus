@@ -1250,10 +1250,9 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
             this.resultHandle = resultHandle;
             this.descriptor = descriptor;
             this.object = object;
-            this.args = new ResultHandle[args.length];
+            this.args = args.clone();
             this.interfaceMethod = interfaceMethod;
             this.specialMethod = specialMethod;
-            System.arraycopy(args, 0, this.args, 0, args.length);
             this.staticMethod = false;
         }
 
@@ -1264,8 +1263,7 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
             this.resultHandle = resultHandle;
             this.descriptor = descriptor;
             this.object = null;
-            this.args = new ResultHandle[args.length];
-            System.arraycopy(args, 0, this.args, 0, args.length);
+            this.args = args.clone();
             this.staticMethod = true;
             this.interfaceMethod = false;
             this.specialMethod = false;

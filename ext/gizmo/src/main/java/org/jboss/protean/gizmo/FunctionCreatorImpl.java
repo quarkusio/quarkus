@@ -7,7 +7,7 @@ import java.util.Set;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-public class FunctionCreatorImpl implements FunctionCreator {
+class FunctionCreatorImpl implements FunctionCreator {
 
     static final String FIELD_NAME = "f";
     private final ResultHandle instance;

@@ -5,7 +5,7 @@ import java.util.Set;
 
 import org.objectweb.asm.MethodVisitor;
 
-public class CatchBlockCreatorImpl extends BytecodeCreatorImpl implements CatchBlockCreator {
+class CatchBlockCreatorImpl extends BytecodeCreatorImpl implements CatchBlockCreator {
 
     private final ResultHandle handle;
 

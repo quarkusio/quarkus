@@ -20,7 +20,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
-public class BytecodeCreatorImpl implements BytecodeCreator {
+class BytecodeCreatorImpl implements BytecodeCreator {
 
     public static final String DEBUG_HELPERS_PROPERTY = "org.jboss.protean.gizmo.DEBUG_HELPERS_ON";
     private static final boolean DEBUG_HELPERS_ON = Boolean.getBoolean(DEBUG_HELPERS_PROPERTY);

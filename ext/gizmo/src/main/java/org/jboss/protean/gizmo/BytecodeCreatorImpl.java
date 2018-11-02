@@ -26,7 +26,6 @@ class BytecodeCreatorImpl implements BytecodeCreator {
     private static final boolean DEBUG_HELPERS_ON = Boolean.getBoolean(DEBUG_HELPERS_PROPERTY);
 
     private static final AtomicInteger functionCount = new AtomicInteger();
-    private static final AtomicInteger accessorCount = new AtomicInteger();
 
     private static final String FUNCTION = "$$function$$";
     private static final ErrorReporter PLAIN_ERROR = new ErrorReporter() {
@@ -39,8 +38,6 @@ class BytecodeCreatorImpl implements BytecodeCreator {
     protected final List<Operation> operations = new ArrayList<>();
 
     private final MethodCreatorImpl method;
-
-    private final Map<MethodDescriptor, MethodDescriptor> superclassAccessors = new HashMap<>();
 
     private final BytecodeCreatorImpl owner;
 
@@ -1108,22 +1105,6 @@ class BytecodeCreatorImpl implements BytecodeCreator {
                 return target;
             }
         });
-    }
-
-    public MethodDescriptor getSuperclassAccessor(MethodDescriptor descriptor) {
-        if (superclassAccessors.containsKey(descriptor)) {
-            return superclassAccessors.get(descriptor);
-        }
-        String name = descriptor.getName() + "$$superaccessor" + accessorCount.incrementAndGet();
-        MethodCreator ctor = getMethod().getClassCreator().getMethodCreator(name, descriptor.getReturnType(), descriptor.getParameterTypes());
-        ResultHandle[] params = new ResultHandle[descriptor.getParameterTypes().length];
-        for (int i = 0; i < params.length; ++i) {
-            params[i] = ctor.getMethodParam(i);
-        }
-        ResultHandle ret = ctor.invokeSpecialMethod(MethodDescriptor.ofMethod(getMethod().getClassCreator().getSuperClass(), descriptor.getName(), descriptor.getReturnType(), descriptor.getParameterTypes()), ctor.getThis(), params);
-        ctor.returnValue(ret);
-        superclassAccessors.put(descriptor, ctor.getMethodDescriptor());
-        return ctor.getMethodDescriptor();
     }
 
     MethodCreatorImpl getMethod() {

@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -34,6 +35,8 @@ public class ClassCreator implements AutoCloseable, AnnotatedElement {
     private final List<AnnotationCreatorImpl> annotations = new ArrayList<>();
     private final String className;
     private final String signature;
+    private final Map<MethodDescriptor, MethodDescriptor> superclassAccessors = new HashMap<>();
+    private static final AtomicInteger accessorCount = new AtomicInteger();
 
     public ClassCreator(ClassOutput classOutput, String name, String signature, String superClass, String... interfaces) {
         this.classOutput = classOutput;
@@ -94,6 +97,22 @@ public class ClassCreator implements AutoCloseable, AnnotatedElement {
 
     public String getClassName() {
         return className;
+    }
+
+    MethodDescriptor getSuperclassAccessor(MethodDescriptor descriptor) {
+        if (superclassAccessors.containsKey(descriptor)) {
+            return superclassAccessors.get(descriptor);
+        }
+        String name = descriptor.getName() + "$$superaccessor" + accessorCount.incrementAndGet();
+        MethodCreator ctor = getMethodCreator(name, descriptor.getReturnType(), descriptor.getParameterTypes());
+        ResultHandle[] params = new ResultHandle[descriptor.getParameterTypes().length];
+        for (int i = 0; i < params.length; ++i) {
+            params[i] = ctor.getMethodParam(i);
+        }
+        ResultHandle ret = ctor.invokeSpecialMethod(MethodDescriptor.ofMethod(getSuperClass(), descriptor.getName(), descriptor.getReturnType(), descriptor.getParameterTypes()), ctor.getThis(), params);
+        ctor.returnValue(ret);
+        superclassAccessors.put(descriptor, ctor.getMethodDescriptor());
+        return ctor.getMethodDescriptor();
     }
 
     public void close() {

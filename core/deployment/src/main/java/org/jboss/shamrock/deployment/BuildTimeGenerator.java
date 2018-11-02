@@ -54,11 +54,11 @@ import org.jboss.jandex.UnresolvedTypeVariable;
 import org.jboss.jandex.VoidType;
 import org.jboss.protean.gizmo.CatchBlockCreator;
 import org.jboss.protean.gizmo.ClassCreator;
-import org.jboss.protean.gizmo.ExceptionTable;
 import org.jboss.protean.gizmo.FieldCreator;
 import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
+import org.jboss.protean.gizmo.TryBlock;
 import org.jboss.shamrock.deployment.buildconfig.BuildConfig;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
 import org.jboss.shamrock.deployment.codegen.BytecodeRecorderImpl;
@@ -418,34 +418,32 @@ public class BuildTimeGenerator {
             mv.invokeStaticMethod(MethodDescriptor.ofMethod(Timing.class, "staticInitStarted", void.class));
             ResultHandle startupContext = mv.newInstance(ofConstructor(StartupContext.class));
             mv.writeStaticField(scField.getFieldDescriptor(), startupContext);
-            ExceptionTable catchBlock = mv.addTryCatch();
+            TryBlock catchBlock = mv.tryBlock();
             for (DeploymentTaskHolder holder : staticInitTasks) {
-                ResultHandle dup = mv.newInstance(ofConstructor(holder.className));
-                mv.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup, startupContext);
+                ResultHandle dup = catchBlock.newInstance(ofConstructor(holder.className));
+                catchBlock.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup, startupContext);
             }
-            mv.returnValue(null);
+            catchBlock.returnValue(null);
 
-            CatchBlockCreator cb = catchBlock.addCatchClause(Throwable.class);
+            CatchBlockCreator cb = catchBlock.addCatch(Throwable.class);
             cb.invokeVirtualMethod(ofMethod(StartupContext.class, "close", void.class), startupContext);
             cb.throwException(RuntimeException.class, "Failed to start shamrock", cb.getCaughtException());
-            catchBlock.complete();
 
             mv = file.getMethodCreator("main", void.class, String[].class);
             mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
             mv.invokeStaticMethod(ofMethod(Timing.class, "mainStarted", void.class));
             startupContext = mv.readStaticField(scField.getFieldDescriptor());
-            catchBlock = mv.addTryCatch();
+            catchBlock = mv.tryBlock();
             for (DeploymentTaskHolder holder : tasks) {
-                ResultHandle dup = mv.newInstance(ofConstructor(holder.className));
-                mv.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup, startupContext);
+                ResultHandle dup = catchBlock.newInstance(ofConstructor(holder.className));
+                catchBlock.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup, startupContext);
             }
-            mv.invokeStaticMethod(ofMethod(Timing.class, "printStartupTime", void.class));
+            catchBlock.invokeStaticMethod(ofMethod(Timing.class, "printStartupTime", void.class));
             mv.returnValue(null);
 
-            cb = catchBlock.addCatchClause(Throwable.class);
+            cb = catchBlock.addCatch(Throwable.class);
             cb.invokeVirtualMethod(ofMethod(StartupContext.class, "close", void.class), startupContext);
             cb.throwException(RuntimeException.class, "Failed to start shamrock", cb.getCaughtException());
-            catchBlock.complete();
 
             mv = file.getMethodCreator("close", void.class);
             mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
@@ -462,86 +460,82 @@ public class BuildTimeGenerator {
 
             //MethodCreator afterReg = file.getMethodCreator("afterRegistration", void.class, "org.graalvm.nativeimage.Feature$AfterRegistrationAccess");
             MethodCreator beforeAn = file.getMethodCreator("beforeAnalysis", "V", "org/graalvm/nativeimage/Feature$BeforeAnalysisAccess");
-            ExceptionTable overallCatch = beforeAn.addTryCatch();
+            TryBlock overallCatch = beforeAn.tryBlock();
             //TODO: at some point we are going to need to break this up, as if it get too big it will hit the method size limit
 
             if (!runtimeInitializedClasses.isEmpty()) {
-                ResultHandle array = beforeAn.newArray(Class.class, beforeAn.load(1));
-                ResultHandle thisClass = beforeAn.loadClass(GRAAL_AUTOFEATURE);
-                ResultHandle cl = beforeAn.invokeVirtualMethod(ofMethod(Class.class, "getClassLoader", ClassLoader.class), thisClass);
+                ResultHandle array = overallCatch.newArray(Class.class, overallCatch.load(1));
+                ResultHandle thisClass = overallCatch.loadClass(GRAAL_AUTOFEATURE);
+                ResultHandle cl = overallCatch.invokeVirtualMethod(ofMethod(Class.class, "getClassLoader", ClassLoader.class), thisClass);
                 for (String i : runtimeInitializedClasses) {
-                    ExceptionTable tc = beforeAn.addTryCatch();
-                    ResultHandle clazz = beforeAn.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class), beforeAn.load(i), beforeAn.load(false), cl);
-                    beforeAn.writeArrayValue(array, 0, clazz);
-                    beforeAn.invokeStaticMethod(MethodDescriptor.ofMethod("org.graalvm.nativeimage.RuntimeClassInitialization", "delayClassInitialization", void.class, Class[].class), array);
+                    TryBlock tc = overallCatch.tryBlock();
+                    ResultHandle clazz = tc.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class), tc.load(i), tc.load(false), cl);
+                    tc.writeArrayValue(array, 0, clazz);
+                    tc.invokeStaticMethod(MethodDescriptor.ofMethod("org.graalvm.nativeimage.RuntimeClassInitialization", "delayClassInitialization", void.class, Class[].class), array);
 
-                    CatchBlockCreator cc = tc.addCatchClause(Throwable.class);
+                    CatchBlockCreator cc = tc.addCatch(Throwable.class);
                     cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
-                    tc.complete();
                 }
 
             }
 
             // hack in reinitialization of process info classes
             {
-                ResultHandle array = beforeAn.newArray(Class.class, beforeAn.load(1));
-                ResultHandle thisClass = beforeAn.loadClass(GRAAL_AUTOFEATURE);
-                ResultHandle cl = beforeAn.invokeVirtualMethod(ofMethod(Class.class, "getClassLoader", ClassLoader.class), thisClass);
+                ResultHandle array = overallCatch.newArray(Class.class, overallCatch.load(1));
+                ResultHandle thisClass = overallCatch.loadClass(GRAAL_AUTOFEATURE);
+                ResultHandle cl = overallCatch.invokeVirtualMethod(ofMethod(Class.class, "getClassLoader", ClassLoader.class), thisClass);
                 {
-                    ExceptionTable tc = beforeAn.addTryCatch();
-                    ResultHandle clazz = beforeAn.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class), beforeAn.load("org.wildfly.common.net.HostName"), beforeAn.load(false), cl);
-                    beforeAn.writeArrayValue(array, 0, clazz);
-                    beforeAn.invokeStaticMethod(MethodDescriptor.ofMethod("org.graalvm.nativeimage.RuntimeClassInitialization", "rerunClassInitialization", void.class, Class[].class), array);
+                    TryBlock tc = overallCatch.tryBlock();
+                    ResultHandle clazz = tc.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class), tc.load("org.wildfly.common.net.HostName"), tc.load(false), cl);
+                    tc.writeArrayValue(array, 0, clazz);
+                    tc.invokeStaticMethod(MethodDescriptor.ofMethod("org.graalvm.nativeimage.RuntimeClassInitialization", "rerunClassInitialization", void.class, Class[].class), array);
 
-                    CatchBlockCreator cc = tc.addCatchClause(Throwable.class);
+                    CatchBlockCreator cc = tc.addCatch(Throwable.class);
                     cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
-                    tc.complete();
                 }
                 {
-                    ExceptionTable tc = beforeAn.addTryCatch();
-                    ResultHandle clazz = beforeAn.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class), beforeAn.load("org.wildfly.common.os.Process"), beforeAn.load(false), cl);
-                    beforeAn.writeArrayValue(array, 0, clazz);
-                    beforeAn.invokeStaticMethod(MethodDescriptor.ofMethod("org.graalvm.nativeimage.RuntimeClassInitialization", "rerunClassInitialization", void.class, Class[].class), array);
+                    TryBlock tc = overallCatch.tryBlock();
+                    ResultHandle clazz = tc.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class), tc.load("org.wildfly.common.os.Process"), tc.load(false), cl);
+                    tc.writeArrayValue(array, 0, clazz);
+                    tc.invokeStaticMethod(MethodDescriptor.ofMethod("org.graalvm.nativeimage.RuntimeClassInitialization", "rerunClassInitialization", void.class, Class[].class), array);
 
-                    CatchBlockCreator cc = tc.addCatchClause(Throwable.class);
+                    CatchBlockCreator cc = tc.addCatch(Throwable.class);
                     cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
-                    tc.complete();
                 }
             }
 
             if (!proxyClasses.isEmpty()) {
-                ResultHandle proxySupportClass = beforeAn.loadClass("com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry");
-                ResultHandle proxySupport = beforeAn.invokeStaticMethod(ofMethod("org.graalvm.nativeimage.ImageSingletons", "lookup", Object.class, Class.class), proxySupportClass);
+                ResultHandle proxySupportClass = overallCatch.loadClass("com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry");
+                ResultHandle proxySupport = overallCatch.invokeStaticMethod(ofMethod("org.graalvm.nativeimage.ImageSingletons", "lookup", Object.class, Class.class), proxySupportClass);
                 for (List<String> proxy : proxyClasses) {
-                    ResultHandle array = beforeAn.newArray(Class.class, beforeAn.load(proxy.size()));
+                    ResultHandle array = overallCatch.newArray(Class.class, overallCatch.load(proxy.size()));
                     int i = 0;
                     for (String p : proxy) {
-                        ResultHandle clazz = beforeAn.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class), beforeAn.load(p));
-                        beforeAn.writeArrayValue(array, i++, clazz);
+                        ResultHandle clazz = overallCatch.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class), overallCatch.load(p));
+                        overallCatch.writeArrayValue(array, i++, clazz);
 
                     }
-                    beforeAn.invokeInterfaceMethod(ofMethod("com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry", "addProxyClass", void.class, Class[].class), proxySupport, array);
+                    overallCatch.invokeInterfaceMethod(ofMethod("com.oracle.svm.core.jdk.proxy.DynamicProxyRegistry", "addProxyClass", void.class, Class[].class), proxySupport, array);
                 }
             }
 
             for (String i : resources) {
-                beforeAn.invokeStaticMethod(ofMethod(ResourceHelper.class, "registerResources", void.class, String.class), beforeAn.load(i));
+                overallCatch.invokeStaticMethod(ofMethod(ResourceHelper.class, "registerResources", void.class, String.class), overallCatch.load(i));
             }
             if (!resourceBundles.isEmpty()) {
-                ResultHandle locClass = beforeAn.loadClass("com.oracle.svm.core.jdk.LocalizationSupport");
+                ResultHandle locClass = overallCatch.loadClass("com.oracle.svm.core.jdk.LocalizationSupport");
 
-                ResultHandle params = beforeAn.marshalAsArray(Class.class, beforeAn.loadClass(String.class));
-                ResultHandle registerMethod = beforeAn.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), locClass, beforeAn.load("addBundleToCache"), params);
-                beforeAn.invokeVirtualMethod(ofMethod(AccessibleObject.class, "setAccessible", void.class, boolean.class), registerMethod, beforeAn.load(true));
+                ResultHandle params = overallCatch.marshalAsArray(Class.class, overallCatch.loadClass(String.class));
+                ResultHandle registerMethod = overallCatch.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), locClass, overallCatch.load("addBundleToCache"), params);
+                overallCatch.invokeVirtualMethod(ofMethod(AccessibleObject.class, "setAccessible", void.class, boolean.class), registerMethod, overallCatch.load(true));
 
-                ResultHandle locSupport = beforeAn.invokeStaticMethod(MethodDescriptor.ofMethod("org.graalvm.nativeimage.ImageSingletons", "lookup", Object.class, Class.class), locClass);
+                ResultHandle locSupport = overallCatch.invokeStaticMethod(MethodDescriptor.ofMethod("org.graalvm.nativeimage.ImageSingletons", "lookup", Object.class, Class.class), locClass);
                 for (String i : resourceBundles) {
-                    ExceptionTable et = beforeAn.addTryCatch();
+                    TryBlock et = overallCatch.tryBlock();
 
-                    beforeAn.invokeVirtualMethod(ofMethod(Method.class, "invoke", Object.class, Object.class, Object[].class), registerMethod, locSupport, beforeAn.marshalAsArray(Object.class, beforeAn.load(i)));
-                    CatchBlockCreator c = et.addCatchClause(Throwable.class);
+                    et.invokeVirtualMethod(ofMethod(Method.class, "invoke", Object.class, Object.class, Object[].class), registerMethod, locSupport, et.marshalAsArray(Object.class, et.load(i)));
+                    CatchBlockCreator c = et.addCatch(Throwable.class);
                     //c.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), c.getCaughtException());
-                    et.complete();
                 }
             }
             int count = 0;
@@ -550,71 +544,69 @@ public class BuildTimeGenerator {
 
                 MethodCreator mv = file.getMethodCreator("registerClass" + count++, "V");
                 mv.setModifiers(Modifier.PRIVATE | Modifier.STATIC);
-                beforeAn.invokeStaticMethod(mv.getMethodDescriptor());
+                overallCatch.invokeStaticMethod(mv.getMethodDescriptor());
 
-                ExceptionTable exceptionTable = mv.addTryCatch();
+                TryBlock tc = mv.tryBlock();
 
 
-                ResultHandle clazz = mv.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class), mv.load(entry.getKey()));
+                ResultHandle clazz = tc.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class), tc.load(entry.getKey()));
                 //we call these methods first, so if they are going to throw an exception it happens before anything has been registered
-                ResultHandle constructors = mv.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredConstructors", Constructor[].class), clazz);
-                ResultHandle methods = mv.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredMethods", Method[].class), clazz);
-                ResultHandle fields = mv.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredFields", Field[].class), clazz);
+                ResultHandle constructors = tc.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredConstructors", Constructor[].class), clazz);
+                ResultHandle methods = tc.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredMethods", Method[].class), clazz);
+                ResultHandle fields = tc.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredFields", Field[].class), clazz);
 
 
-                ResultHandle carray = mv.newArray(Class.class, mv.load(1));
-                mv.writeArrayValue(carray, 0, clazz);
-                mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Class[].class), carray);
+                ResultHandle carray = tc.newArray(Class.class, tc.load(1));
+                tc.writeArrayValue(carray, 0, clazz);
+                tc.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Class[].class), carray);
 
 
                 if (entry.getValue().constructors) {
-                    mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Executable[].class), constructors);
+                    tc.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Executable[].class), constructors);
                 } else if (!entry.getValue().ctorSet.isEmpty()) {
-                    ResultHandle farray = mv.newArray(Constructor.class, mv.load(1));
+                    ResultHandle farray = tc.newArray(Constructor.class, tc.load(1));
                     for (MethodInfo ctor : entry.getValue().ctorSet) {
-                        ResultHandle paramArray = mv.newArray(Class.class, mv.load(ctor.parameters().size()));
+                        ResultHandle paramArray = tc.newArray(Class.class, tc.load(ctor.parameters().size()));
                         for (int i = 0; i < ctor.parameters().size(); ++i) {
                             Type type = ctor.parameters().get(i);
-                            mv.writeArrayValue(paramArray, i, mv.loadClass(type.name().toString()));
+                            tc.writeArrayValue(paramArray, i, tc.loadClass(type.name().toString()));
                         }
-                        ResultHandle fhandle = mv.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredConstructor", Constructor.class, Class[].class), clazz, paramArray);
-                        mv.writeArrayValue(farray, 0, fhandle);
-                        mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Executable[].class), farray);
+                        ResultHandle fhandle = tc.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredConstructor", Constructor.class, Class[].class), clazz, paramArray);
+                        tc.writeArrayValue(farray, 0, fhandle);
+                        tc.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Executable[].class), farray);
                     }
                 }
                 if (entry.getValue().methods) {
-                    mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Executable[].class), methods);
+                    tc.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Executable[].class), methods);
                 } else if (!entry.getValue().methodSet.isEmpty()) {
-                    ResultHandle farray = mv.newArray(Method.class, mv.load(1));
+                    ResultHandle farray = tc.newArray(Method.class, tc.load(1));
                     for (MethodData method : entry.getValue().methodSet) {
-                        ResultHandle paramArray = mv.newArray(Class.class, mv.load(method.params.length));
+                        ResultHandle paramArray = tc.newArray(Class.class, tc.load(method.params.length));
                         for (int i = 0; i < method.params.length; ++i) {
                             String type = method.params[i];
-                            mv.writeArrayValue(paramArray, i, mv.loadClass(type));
+                            tc.writeArrayValue(paramArray, i, tc.loadClass(type));
                         }
-                        ResultHandle fhandle = mv.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), clazz, mv.load(method.name), paramArray);
-                        mv.writeArrayValue(farray, 0, fhandle);
-                        mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Executable[].class), farray);
+                        ResultHandle fhandle = tc.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), clazz, tc.load(method.name), paramArray);
+                        tc.writeArrayValue(farray, 0, fhandle);
+                        tc.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Executable[].class), farray);
                     }
                 }
                 if (entry.getValue().fields) {
-                    mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Field[].class), fields);
+                    tc.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Field[].class), fields);
                 } else if (!entry.getValue().fieldSet.isEmpty()) {
-                    ResultHandle farray = mv.newArray(Field.class, mv.load(1));
+                    ResultHandle farray = tc.newArray(Field.class, tc.load(1));
                     for (String field : entry.getValue().fieldSet) {
-                        ResultHandle fhandle = mv.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredField", Field.class, String.class), clazz, mv.load(field));
-                        mv.writeArrayValue(farray, 0, fhandle);
-                        mv.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Field[].class), farray);
+                        ResultHandle fhandle = tc.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredField", Field.class, String.class), clazz, tc.load(field));
+                        tc.writeArrayValue(farray, 0, fhandle);
+                        tc.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Field[].class), farray);
                     }
                 }
-                CatchBlockCreator cc = exceptionTable.addCatchClause(Throwable.class);
+                CatchBlockCreator cc = tc.addCatch(Throwable.class);
                 //cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
-                exceptionTable.complete();
                 mv.returnValue(null);
             }
-            CatchBlockCreator print = overallCatch.addCatchClause(Throwable.class);
+            CatchBlockCreator print = overallCatch.addCatch(Throwable.class);
             print.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), print.getCaughtException());
-            overallCatch.complete();
 
             beforeAn.returnValue(null);
 

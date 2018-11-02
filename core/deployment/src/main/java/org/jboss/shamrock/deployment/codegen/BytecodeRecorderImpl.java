@@ -30,10 +30,10 @@ import org.jboss.invocation.proxy.ProxyFactory;
 import org.jboss.protean.gizmo.BranchResult;
 import org.jboss.protean.gizmo.CatchBlockCreator;
 import org.jboss.protean.gizmo.ClassCreator;
-import org.jboss.protean.gizmo.ExceptionTable;
 import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
+import org.jboss.protean.gizmo.TryBlock;
 import org.jboss.shamrock.deployment.ClassOutput;
 import org.jboss.shamrock.deployment.ShamrockConfig;
 import org.jboss.shamrock.runtime.ConfiguredValue;
@@ -327,11 +327,10 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
             }
         } else if (param instanceof URL) {
             String url = ((URL) param).toExternalForm();
-            ExceptionTable et = method.addTryCatch();
-            out = method.newInstance(MethodDescriptor.ofConstructor(URL.class, String.class), method.load(url));
-            CatchBlockCreator malformed = et.addCatchClause(MalformedURLException.class);
+            TryBlock et = method.tryBlock();
+            out = et.newInstance(MethodDescriptor.ofConstructor(URL.class, String.class), et.load(url));
+            CatchBlockCreator malformed = et.addCatch(MalformedURLException.class);
             malformed.throwException(RuntimeException.class, "Malformed URL", malformed.getCaughtException());
-            et.complete();
 
         } else if (param instanceof Enum) {
             Enum e = (Enum) param;

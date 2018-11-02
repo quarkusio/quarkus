@@ -48,13 +48,13 @@ import org.jboss.protean.gizmo.BytecodeCreator;
 import org.jboss.protean.gizmo.CatchBlockCreator;
 import org.jboss.protean.gizmo.ClassCreator;
 import org.jboss.protean.gizmo.ClassOutput;
-import org.jboss.protean.gizmo.ExceptionTable;
 import org.jboss.protean.gizmo.FieldCreator;
 import org.jboss.protean.gizmo.FieldDescriptor;
 import org.jboss.protean.gizmo.FunctionCreator;
 import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
+import org.jboss.protean.gizmo.TryBlock;
 
 /**
  *
@@ -831,13 +831,12 @@ public class BeanGenerator extends AbstractGenerator {
                 // InvocationContextImpl.aroundConstruct(constructor,aroundConstructs,forward).proceed()
                 ResultHandle invocationContextHandle = create.invokeStaticMethod(MethodDescriptors.INVOCATION_CONTEXT_AROUND_CONSTRUCT, constructorHandle,
                         aroundConstructsHandle, func.getInstance(), bindingsHandle);
-                ExceptionTable tryCatch = create.addTryCatch();
-                CatchBlockCreator exceptionCatch = tryCatch.addCatchClause(Exception.class);
+                TryBlock tryCatch = create.tryBlock();
+                CatchBlockCreator exceptionCatch = tryCatch.addCatch(Exception.class);
                 // throw new RuntimeException(e)
                 exceptionCatch.throwException(RuntimeException.class, "Error invoking aroundConstructs", exceptionCatch.getCaughtException());
-                instanceHandle = create.invokeInterfaceMethod(MethodDescriptor.ofMethod(InvocationContext.class, "proceed", Object.class),
+                instanceHandle = tryCatch.invokeInterfaceMethod(MethodDescriptor.ofMethod(InvocationContext.class, "proceed", Object.class),
                         invocationContextHandle);
-                tryCatch.complete();
 
             } else {
                 instanceHandle = newInstanceHandle(bean, beanCreator, create, create, providerTypeName, baseName,
@@ -918,12 +917,11 @@ public class BeanGenerator extends AbstractGenerator {
                 ResultHandle invocationContextHandle = create.invokeStaticMethod(MethodDescriptors.INVOCATION_CONTEXT_POST_CONSTRUCT, instanceHandle,
                         postConstructsHandle, bindingsHandle);
 
-                ExceptionTable tryCatch = create.addTryCatch();
-                CatchBlockCreator exceptionCatch = tryCatch.addCatchClause(Exception.class);
+                TryBlock tryCatch = create.tryBlock();
+                CatchBlockCreator exceptionCatch = tryCatch.addCatch(Exception.class);
                 // throw new RuntimeException(e)
                 exceptionCatch.throwException(RuntimeException.class, "Error invoking postConstructs", exceptionCatch.getCaughtException());
-                create.invokeInterfaceMethod(MethodDescriptor.ofMethod(InvocationContext.class, "proceed", Object.class), invocationContextHandle);
-                tryCatch.complete();
+                tryCatch.invokeInterfaceMethod(MethodDescriptor.ofMethod(InvocationContext.class, "proceed", Object.class), invocationContextHandle);
             }
 
             // PostConstruct callbacks

@@ -12,7 +12,6 @@ class FunctionCreatorImpl implements FunctionCreator {
     static final String FIELD_NAME = "f";
     private final ResultHandle instance;
     private final ClassCreator classCreator;
-    private final MethodCreatorImpl methodCreator;
     private final Map<ResultHandle, CapturedResultHandle> capturedResultHandles = new LinkedHashMap<>();
     private final BytecodeCreatorImpl owner;
     private final FunctionBytecodeCreator fbc;
@@ -22,7 +21,6 @@ class FunctionCreatorImpl implements FunctionCreator {
     FunctionCreatorImpl(ResultHandle instance, ClassCreator classCreator, MethodCreatorImpl methodCreator, BytecodeCreatorImpl owner) {
         this.instance = instance;
         this.classCreator = classCreator;
-        this.methodCreator = methodCreator;
         this.owner = owner;
         fbc = new FunctionBytecodeCreator(this, methodCreator, owner);
     }

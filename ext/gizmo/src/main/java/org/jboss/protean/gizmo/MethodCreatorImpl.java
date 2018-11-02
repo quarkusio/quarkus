@@ -19,8 +19,17 @@ class MethodCreatorImpl extends BytecodeCreatorImpl implements MethodCreator {
     private final List<AnnotationCreatorImpl> annotations = new ArrayList<>();
     private final Map<Integer, AnnotationParameters> parameterAnnotations = new HashMap<>();
 
+    private final MethodDescriptor methodDescriptor;
+    private final String declaringClassName;
+    private final ClassOutput classOutput;
+    private final ClassCreator classCreator;
+
     MethodCreatorImpl(MethodDescriptor methodDescriptor, String declaringClassName, ClassOutput classOutput, ClassCreator classCreator) {
-        super(methodDescriptor, declaringClassName, classOutput, classCreator, null);
+        super();
+        this.methodDescriptor = methodDescriptor;
+        this.declaringClassName = declaringClassName;
+        this.classOutput = classOutput;
+        this.classCreator = classCreator;
     }
 
     @Override
@@ -100,7 +109,7 @@ class MethodCreatorImpl extends BytecodeCreatorImpl implements MethodCreator {
 
     @Override
     public String toString() {
-        return "MethodCreatorImpl [declaringClassName=" + declaringClassName + ", methodDescriptor=" + methodDescriptor + "]";
+        return "MethodCreatorImpl [declaringClassName=" + getDeclaringClassName() + ", methodDescriptor=" + methodDescriptor + "]";
     }
 
     @Override
@@ -110,6 +119,17 @@ class MethodCreatorImpl extends BytecodeCreatorImpl implements MethodCreator {
         return ac;
     }
 
+    String getDeclaringClassName() {
+        return declaringClassName;
+    }
+
+    ClassOutput getClassOutput() {
+        return classOutput;
+    }
+
+    ClassCreator getClassCreator() {
+        return classCreator;
+    }
 
     private static class AnnotationParameters implements AnnotatedElement {
 

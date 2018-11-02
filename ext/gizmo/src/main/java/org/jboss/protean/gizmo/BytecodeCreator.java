@@ -328,7 +328,15 @@ public interface BytecodeCreator {
      *
      * @return An {@link ExceptionTable} that is used to construct the try catch block
      */
+    @Deprecated
     ExceptionTable addTryCatch();
+
+    /**
+     * Add a {@code try} block.
+     *
+     * @return the {@code try} block
+     */
+    TryBlock tryBlock();
 
     /**
      * An if statement.

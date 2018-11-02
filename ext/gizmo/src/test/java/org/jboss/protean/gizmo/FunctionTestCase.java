@@ -1,6 +1,7 @@
 package org.jboss.protean.gizmo;
 
 import java.util.function.Function;
+import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 import org.junit.Assert;
@@ -73,5 +74,28 @@ public class FunctionTestCase {
         Assert.assertTrue(clazz.isSynthetic());
         Superclass superclass = (Superclass) clazz.newInstance();
         Assert.assertEquals("Superclass-func", superclass.getMessage());
+    }
+
+    @Test
+    public void testNestedFunction() throws Exception {
+        MethodDescriptor getAsInt = MethodDescriptor.ofMethod(IntSupplier.class, "getAsInt", int.class);
+        MethodDescriptor addExact = MethodDescriptor.ofMethod(Math.class, "addExact", int.class, int.class, int.class);
+
+        final TestClassLoader cl = new TestClassLoader(getClass().getClassLoader());
+        try (ClassCreator creator = ClassCreator.builder().classOutput(cl).className("com.MyTest").interfaces(IntSupplier.class).build()) {
+            MethodCreator bc = creator.getMethodCreator("getAsInt", int.class);
+            ResultHandle seven = bc.invokeStaticMethod(addExact, bc.load(2), bc.load(5));
+            FunctionCreator f1 = bc.createFunction(IntSupplier.class);
+            BytecodeCreator f1bc = f1.getBytecode();
+            ResultHandle four = f1bc.invokeStaticMethod(addExact, seven, f1bc.load(- 3));
+            FunctionCreator f2 = f1bc.createFunction(IntSupplier.class);
+            BytecodeCreator f2bc = f2.getBytecode();
+            f2bc.returnValue(f2bc.invokeStaticMethod(addExact, seven, four));
+            f1bc.returnValue(f1bc.invokeInterfaceMethod(getAsInt, f2.getInstance()));
+            bc.returnValue(bc.invokeInterfaceMethod(getAsInt, f1.getInstance()));
+        }
+        Class<? extends IntSupplier> clazz = cl.loadClass("com.MyTest").asSubclass(IntSupplier.class);
+        IntSupplier supplier = clazz.newInstance();
+        Assert.assertEquals(11, supplier.getAsInt());
     }
 }

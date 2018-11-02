@@ -79,7 +79,7 @@ class ArcContainerImpl implements ArcContainer {
         Set<Annotation> qualifiers = new HashSet<>(4);
         qualifiers.add(Initialized.Literal.APPLICATION);
         qualifiers.add(Any.Literal.INSTANCE);
-        EventImpl.createNotifier(Object.class, qualifiers, this).notify(toString());
+        EventImpl.createNotifier(Object.class, Object.class, qualifiers, this).notify(toString());
         LOGGER.infof("ArC DI container initialized [beans=%s, observers=%s]", beans.size(), observers.size());
     }
 

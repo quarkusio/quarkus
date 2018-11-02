@@ -122,8 +122,7 @@ public class BeanGenerator extends AbstractGenerator {
         Type providerType = bean.getProviderType();
         ClassInfo providerClass = bean.getDeployment().getIndex().getClassByName(providerType.name());
         String providerTypeName = providerClass.name().toString();
-        // TODO getProxyPackageName() change name and place in AbstractGenerator
-        String targetPackage = ClientProxyGenerator.getProxyPackageName(bean);
+        String targetPackage = getPackageName(bean);
         String generatedName = targetPackage.replace('.', '/') + "/" + baseName + SYNTHETIC_SUFFIX + BEAN_SUFFIX;
 
         ResourceClassOutput classOutput = new ResourceClassOutput(name -> name.equals(generatedName) ? SpecialType.BEAN : null);
@@ -576,7 +575,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         if (bean.getScope().isNormal()) {
             // this.proxy = new LazyValue(() -> new Bar_ClientProxy(this))
-            String proxyTypeName = ClientProxyGenerator.getProxyPackageName(bean) + "." + baseName + ClientProxyGenerator.CLIENT_PROXY_SUFFIX;
+            String proxyTypeName = getPackageName(bean) + "." + baseName + ClientProxyGenerator.CLIENT_PROXY_SUFFIX;
             FunctionCreator func = constructor.createFunction(Supplier.class);
             BytecodeCreator funcBytecode = func.getBytecode();
             funcBytecode

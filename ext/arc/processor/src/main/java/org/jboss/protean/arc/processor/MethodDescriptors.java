@@ -117,6 +117,8 @@ final class MethodDescriptors {
 
     static final MethodDescriptor CONTEXT_GET = MethodDescriptor.ofMethod(Context.class, "get", Object.class, Contextual.class, CreationalContext.class);
 
+    static final MethodDescriptor CONTEXT_GET_IF_PRESENT = MethodDescriptor.ofMethod(Context.class, "get", Object.class, Contextual.class);
+
     static final MethodDescriptor LAZY_VALUE_GET = MethodDescriptor.ofMethod(LazyValue.class, "get", Object.class);
 
     private MethodDescriptors() {

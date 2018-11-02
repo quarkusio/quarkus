@@ -29,6 +29,10 @@ public class LazyValue<T> {
         }
     }
 
+    public T getIfPresent() {
+        return value;
+    }
+
     public void clear() {
         synchronized (this) {
             value = null;

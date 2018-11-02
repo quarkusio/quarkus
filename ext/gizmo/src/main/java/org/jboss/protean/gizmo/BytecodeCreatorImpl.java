@@ -911,9 +911,6 @@ class BytecodeCreatorImpl implements BytecodeCreator {
         if (functionMethod == null) {
             throw new IllegalArgumentException("Could not find function method " + functionalInterface);
         }
-        String type = Type.getDescriptor(functionMethod.getReturnType());
-
-
         final String functionName = getMethod().getDeclaringClassName() + FUNCTION + functionCount.incrementAndGet();
         ResultHandle ret = new ResultHandle("L" + functionName.replace('.', '/') + ";", this);
         ClassCreator cc = ClassCreator.builder().classOutput(getMethod().getClassOutput()).className(functionName).interfaces(functionalInterface).build();

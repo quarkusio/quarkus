@@ -6,7 +6,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -19,8 +18,6 @@ class MethodCreatorImpl extends BytecodeCreatorImpl implements MethodCreator {
     private final List<String> exceptions = new ArrayList<>();
     private final List<AnnotationCreatorImpl> annotations = new ArrayList<>();
     private final Map<Integer, AnnotationParameters> parameterAnnotations = new HashMap<>();
-    private final Map<MethodDescriptor, MethodDescriptor> superclassAccessors = new HashMap<>();
-    private static final AtomicInteger accessorCount = new AtomicInteger();
 
     private final MethodDescriptor methodDescriptor;
     private final String declaringClassName;
@@ -108,22 +105,6 @@ class MethodCreatorImpl extends BytecodeCreatorImpl implements MethodCreator {
             }
         }
         visitor.visitEnd();
-    }
-
-    MethodDescriptor getSuperclassAccessor(MethodDescriptor descriptor) {
-        if (superclassAccessors.containsKey(descriptor)) {
-            return superclassAccessors.get(descriptor);
-        }
-        String name = descriptor.getName() + "$$superaccessor" + accessorCount.incrementAndGet();
-        MethodCreator ctor = getClassCreator().getMethodCreator(name, descriptor.getReturnType(), descriptor.getParameterTypes());
-        ResultHandle[] params = new ResultHandle[descriptor.getParameterTypes().length];
-        for (int i = 0; i < params.length; ++i) {
-            params[i] = ctor.getMethodParam(i);
-        }
-        ResultHandle ret = ctor.invokeSpecialMethod(MethodDescriptor.ofMethod(getClassCreator().getSuperClass(), descriptor.getName(), descriptor.getReturnType(), descriptor.getParameterTypes()), ctor.getThis(), params);
-        ctor.returnValue(ret);
-        superclassAccessors.put(descriptor, ctor.getMethodDescriptor());
-        return ctor.getMethodDescriptor();
     }
 
     @Override

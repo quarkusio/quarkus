@@ -141,7 +141,7 @@ class FunctionCreatorImpl implements FunctionCreator {
             args = apply(args);
             if (descriptor.getDeclaringClass().equals(owner.getMethod().getClassCreator().getSuperClass())) {
                 //this is an invokespecial on the owners superclass, we can't do this directly
-                MethodDescriptor newMethod = owner.getMethod().getSuperclassAccessor(descriptor);
+                MethodDescriptor newMethod = owner.getMethod().getClassCreator().getSuperclassAccessor(descriptor);
                 return delegate.invokeVirtualMethod(newMethod, object, args);
             } else {
                 return delegate.invokeSpecialMethod(descriptor, object, args);

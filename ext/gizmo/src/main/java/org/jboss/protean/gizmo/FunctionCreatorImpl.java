@@ -11,7 +11,6 @@ class FunctionCreatorImpl implements FunctionCreator {
 
     static final String FIELD_NAME = "f";
     private final ResultHandle instance;
-    private final String className;
     private final ClassCreator classCreator;
     private final MethodCreatorImpl methodCreator;
     private final Map<ResultHandle, CapturedResultHandle> capturedResultHandles = new LinkedHashMap<>();
@@ -20,9 +19,8 @@ class FunctionCreatorImpl implements FunctionCreator {
 
     private int fieldCount;
 
-    public FunctionCreatorImpl(ResultHandle instance, String className, ClassCreator classCreator, MethodCreatorImpl methodCreator, BytecodeCreatorImpl owner) {
+    public FunctionCreatorImpl(ResultHandle instance, ClassCreator classCreator, MethodCreatorImpl methodCreator, BytecodeCreatorImpl owner) {
         this.instance = instance;
-        this.className = className;
         this.classCreator = classCreator;
         this.methodCreator = methodCreator;
         this.owner = owner;
@@ -91,7 +89,7 @@ class FunctionCreatorImpl implements FunctionCreator {
          * @return The substituted handler
          */
         ResultHandle apply(ResultHandle handle) {
-            if (handle.getOwner() == functionCreator.owner) {
+            if (handle.getOwner().getMethod() == functionCreator.owner.getMethod()) {
                 CapturedResultHandle capture = functionCreator.capturedResultHandles.get(handle);
                 if (capture != null) {
                     return capture.substitute;

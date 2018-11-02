@@ -922,7 +922,7 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
 
 
         final String functionName = declaringClassName + FUNCTION + functionCount.incrementAndGet();
-        ResultHandle ret = new ResultHandle(type, this);
+        ResultHandle ret = new ResultHandle("L" + functionName.replace('.', '/') + ";", this);
         ClassCreator cc = ClassCreator.builder().classOutput(classOutput).className(functionName).interfaces(functionalInterface).build();
         MethodCreatorImpl mc = (MethodCreatorImpl) cc.getMethodCreator(functionMethod.getName(), functionMethod.getReturnType(), functionMethod.getParameterTypes());
         FunctionCreatorImpl fc = new FunctionCreatorImpl(ret, functionName, cc, mc, this);

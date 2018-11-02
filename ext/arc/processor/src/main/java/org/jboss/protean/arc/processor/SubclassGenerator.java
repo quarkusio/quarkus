@@ -34,13 +34,13 @@ import org.jboss.protean.gizmo.CatchBlockCreator;
 import org.jboss.protean.gizmo.ClassCreator;
 import org.jboss.protean.gizmo.ClassOutput;
 import org.jboss.protean.gizmo.DescriptorUtils;
-import org.jboss.protean.gizmo.ExceptionTable;
 import org.jboss.protean.gizmo.FieldCreator;
 import org.jboss.protean.gizmo.FieldDescriptor;
 import org.jboss.protean.gizmo.FunctionCreator;
 import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
+import org.jboss.protean.gizmo.TryBlock;
 
 /**
  *
@@ -247,33 +247,32 @@ public class SubclassGenerator extends AbstractGenerator {
 
         // InvocationContext
         // (java.lang.String) InvocationContextImpl.aroundInvoke(this, methods.get("m1"), params, interceptorChains.get("m1"), forward).proceed()
-        ExceptionTable tryCatch = forwardMethod.addTryCatch();
+        TryBlock tryCatch = forwardMethod.tryBlock();
         // catch (Exception e)
-        CatchBlockCreator exception = tryCatch.addCatchClause(Exception.class);
+        CatchBlockCreator exception = tryCatch.addCatch(Exception.class);
         // throw new RuntimeException(e)
         exception.throwException(RuntimeException.class, "Error invoking subclass", exception.getCaughtException());
         // InvocationContextImpl.aroundInvoke(this, methods.get("m1"), params, interceptorChains.get("m1"), forward)
-        ResultHandle methodIdHandle = forwardMethod.load(methodId);
-        ResultHandle interceptedMethodHandle = forwardMethod.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
-                forwardMethod.readInstanceField(methodsField, forwardMethod.getThis()), methodIdHandle);
-        ResultHandle interceptedChainHandle = forwardMethod.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
-                forwardMethod.readInstanceField(interceptorChainsField, forwardMethod.getThis()), methodIdHandle);
+        ResultHandle methodIdHandle = tryCatch.load(methodId);
+        ResultHandle interceptedMethodHandle = tryCatch.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
+                tryCatch.readInstanceField(methodsField, tryCatch.getThis()), methodIdHandle);
+        ResultHandle interceptedChainHandle = tryCatch.invokeInterfaceMethod(MethodDescriptors.MAP_GET,
+                tryCatch.readInstanceField(interceptorChainsField, tryCatch.getThis()), methodIdHandle);
         // Interceptor bindings
-        ResultHandle bindingsHandle = forwardMethod.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
+        ResultHandle bindingsHandle = tryCatch.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
         for (AnnotationInstance binding : interceptedMethod.bindings) {
             // Create annotation literals first
             ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(binding.name());
             String literalType = annotationLiterals.process(classOutput, bindingClass, binding, Types.getPackageName(subclass.getClassName()));
-            forwardMethod.invokeInterfaceMethod(MethodDescriptors.SET_ADD, bindingsHandle,
-                    forwardMethod.newInstance(MethodDescriptor.ofConstructor(literalType)));
+            tryCatch.invokeInterfaceMethod(MethodDescriptors.SET_ADD, bindingsHandle,
+                    tryCatch.newInstance(MethodDescriptor.ofConstructor(literalType)));
         }
 
-        ResultHandle invocationContext = forwardMethod.invokeStaticMethod(MethodDescriptors.INVOCATION_CONTEXT_AROUND_INVOKE, forwardMethod.getThis(),
+        ResultHandle invocationContext = tryCatch.invokeStaticMethod(MethodDescriptors.INVOCATION_CONTEXT_AROUND_INVOKE, tryCatch.getThis(),
                 interceptedMethodHandle, paramsHandle, interceptedChainHandle, func.getInstance(), bindingsHandle);
         // InvocationContext.proceed()
-        ResultHandle ret = forwardMethod.invokeInterfaceMethod(MethodDescriptors.INVOCATION_CONTEXT_PROCEED, invocationContext);
-        forwardMethod.returnValue(superResult != null ? ret : null);
-        tryCatch.complete();
+        ResultHandle ret = tryCatch.invokeInterfaceMethod(MethodDescriptors.INVOCATION_CONTEXT_PROCEED, invocationContext);
+        tryCatch.returnValue(superResult != null ? ret : null);
     }
 
     /**
@@ -299,19 +298,18 @@ public class SubclassGenerator extends AbstractGenerator {
             }
 
             // try
-            ExceptionTable tryCatch = destroy.addTryCatch();
+            TryBlock tryCatch = destroy.tryBlock();
             // catch (Exception e)
-            CatchBlockCreator exception = tryCatch.addCatchClause(Exception.class);
+            CatchBlockCreator exception = tryCatch.addCatch(Exception.class);
             // throw new RuntimeException(e)
             exception.throwException(RuntimeException.class, "Error destroying subclass", exception.getCaughtException());
 
             // InvocationContextImpl.preDestroy(this,predestroys)
-            ResultHandle invocationContext = destroy.invokeStaticMethod(MethodDescriptors.INVOCATION_CONTEXT_PRE_DESTROY, destroy.getThis(), predestroysHandle,
+            ResultHandle invocationContext = tryCatch.invokeStaticMethod(MethodDescriptors.INVOCATION_CONTEXT_PRE_DESTROY, tryCatch.getThis(), predestroysHandle,
                     bindingsHandle);
 
             // InvocationContext.proceed()
-            destroy.invokeInterfaceMethod(MethodDescriptors.INVOCATION_CONTEXT_PROCEED, invocationContext);
-            tryCatch.complete();
+            tryCatch.invokeInterfaceMethod(MethodDescriptors.INVOCATION_CONTEXT_PROCEED, invocationContext);
             destroy.returnValue(null);
         }
     }

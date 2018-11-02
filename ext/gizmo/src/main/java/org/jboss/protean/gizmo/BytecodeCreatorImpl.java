@@ -1158,37 +1158,6 @@ class BytecodeCreatorImpl implements BytecodeCreator {
         }
     }
 
-    private static class LoadOperation extends Operation {
-        private final Object val;
-        private final ResultHandle ret;
-
-        public LoadOperation(Object val, ResultHandle ret) {
-            this.val = val;
-            this.ret = ret;
-        }
-
-        @Override
-        public void writeBytecode(MethodVisitor methodVisitor) {
-            methodVisitor.visitLdcInsn(val);
-            storeResultHandle(methodVisitor, ret);
-        }
-
-        @Override
-        Set<ResultHandle> getInputResultHandles() {
-            return Collections.emptySet();
-        }
-
-        @Override
-        ResultHandle getTopResultHandle() {
-            return null;
-        }
-
-        @Override
-        ResultHandle getOutgoingResultHandle() {
-            return ret;
-        }
-    }
-
     static class JumpOperation extends Operation {
         private final Label target;
 

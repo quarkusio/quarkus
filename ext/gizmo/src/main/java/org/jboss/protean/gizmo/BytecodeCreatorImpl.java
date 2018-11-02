@@ -578,27 +578,7 @@ class BytecodeCreatorImpl implements BytecodeCreator {
 
     public BytecodeCreator createScope() {
         final BytecodeCreatorImpl enclosed = new BytecodeCreatorImpl(this);
-        operations.add(new Operation() {
-            void writeBytecode(final MethodVisitor methodVisitor) {
-                enclosed.writeOperations(methodVisitor);
-            }
-
-            Set<ResultHandle> getInputResultHandles() {
-                return Collections.emptySet();
-            }
-
-            ResultHandle getTopResultHandle() {
-                return null;
-            }
-
-            ResultHandle getOutgoingResultHandle() {
-                return null;
-            }
-
-            public void findResultHandles(final Set<ResultHandle> vc) {
-                enclosed.findActiveResultHandles(vc);
-            }
-        });
+        operations.add(new BlockOperation(enclosed));
         return enclosed;
     }
 
@@ -801,6 +781,12 @@ class BytecodeCreatorImpl implements BytecodeCreator {
                 });
             }
         };
+    }
+
+    public TryBlock tryBlock() {
+        final TryBlockImpl tryBlock = new TryBlockImpl(this);
+        operations.add(new BlockOperation(tryBlock));
+        return tryBlock;
     }
 
     private ErrorReporter makeDebugHelper() {
@@ -1019,10 +1005,14 @@ class BytecodeCreatorImpl implements BytecodeCreator {
 
     protected void writeOperations(MethodVisitor visitor) {
         visitor.visitLabel(top);
+        writeInteriorOperations(visitor);
+        visitor.visitLabel(bottom);
+    }
+
+    protected void writeInteriorOperations(MethodVisitor visitor) {
         for (Operation op : operations) {
             op.doProcess(visitor);
         }
-        visitor.visitLabel(bottom);
     }
 
     ResultHandle resolve(ResultHandle handle) {
@@ -1326,6 +1316,34 @@ class BytecodeCreatorImpl implements BytecodeCreator {
         public void findResultHandles(Set<ResultHandle> vc) {
             trueBranch.findActiveResultHandles(vc);
             falseBranch.findActiveResultHandles(vc);
+        }
+    }
+
+    static class BlockOperation extends Operation {
+        private final BytecodeCreatorImpl block;
+
+        BlockOperation(final BytecodeCreatorImpl block) {
+            this.block = block;
+        }
+
+        void writeBytecode(final MethodVisitor methodVisitor) {
+            block.writeOperations(methodVisitor);
+        }
+
+        Set<ResultHandle> getInputResultHandles() {
+            return Collections.emptySet();
+        }
+
+        ResultHandle getTopResultHandle() {
+            return null;
+        }
+
+        ResultHandle getOutgoingResultHandle() {
+            return null;
+        }
+
+        public void findResultHandles(final Set<ResultHandle> vc) {
+            block.findActiveResultHandles(vc);
         }
     }
 }

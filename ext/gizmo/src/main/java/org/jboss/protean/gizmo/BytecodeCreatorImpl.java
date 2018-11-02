@@ -36,12 +36,10 @@ class BytecodeCreatorImpl implements BytecodeCreator {
         }
     };
 
-    protected final MethodDescriptor methodDescriptor;
-    protected final String declaringClassName;
     protected final List<Operation> operations = new ArrayList<>();
 
-    private final ClassOutput classOutput;
-    private final ClassCreator classCreator;
+    private final MethodCreatorImpl method;
+
     private final Map<MethodDescriptor, MethodDescriptor> superclassAccessors = new HashMap<>();
 
     private final BytecodeCreatorImpl owner;
@@ -84,21 +82,19 @@ class BytecodeCreatorImpl implements BytecodeCreator {
         return bottom;
     }
 
-    BytecodeCreatorImpl(MethodDescriptor methodDescriptor, String declaringClassName, ClassOutput classOutput, ClassCreator classCreator, BytecodeCreatorImpl owner) {
-        this.methodDescriptor = methodDescriptor;
-        this.declaringClassName = declaringClassName;
-        this.classOutput = classOutput;
-        this.classCreator = classCreator;
-        this.owner = owner;
+    BytecodeCreatorImpl() {
+        this.method = (MethodCreatorImpl) this;
+        this.owner = null;
     }
 
     BytecodeCreatorImpl(BytecodeCreatorImpl enclosing) {
-        this(enclosing.methodDescriptor, enclosing.declaringClassName, enclosing.classOutput, enclosing.classCreator, enclosing);
+        this.method = enclosing.getMethod();
+        this.owner = enclosing;
     }
 
     @Override
     public ResultHandle getThis() {
-        ResultHandle resultHandle = new ResultHandle("L" + declaringClassName.replace('.', '/') + ";", this);
+        ResultHandle resultHandle = new ResultHandle("L" + getMethod().getDeclaringClassName().replace('.', '/') + ";", this);
         resultHandle.setNo(0);
         return resultHandle;
     }
@@ -887,14 +883,14 @@ class BytecodeCreatorImpl implements BytecodeCreator {
     public ResultHandle getMethodParam(int methodNo) {
         int count = 1;
         for (int i = 0; i < methodNo; ++i) {
-            String s = methodDescriptor.getParameterTypes()[i];
+            String s = getMethod().getMethodDescriptor().getParameterTypes()[i];
             if (s.equals("J") || s.equals("D")) {
                 count += 2;
             } else {
                 count++;
             }
         }
-        ResultHandle resultHandle = new ResultHandle(methodDescriptor.getParameterTypes()[methodNo], this);
+        ResultHandle resultHandle = new ResultHandle(getMethod().getMethodDescriptor().getParameterTypes()[methodNo], this);
         resultHandle.setNo(count);
         return resultHandle;
     }
@@ -921,9 +917,9 @@ class BytecodeCreatorImpl implements BytecodeCreator {
         String type = Type.getDescriptor(functionMethod.getReturnType());
 
 
-        final String functionName = declaringClassName + FUNCTION + functionCount.incrementAndGet();
+        final String functionName = getMethod().getDeclaringClassName() + FUNCTION + functionCount.incrementAndGet();
         ResultHandle ret = new ResultHandle("L" + functionName.replace('.', '/') + ";", this);
-        ClassCreator cc = ClassCreator.builder().classOutput(classOutput).className(functionName).interfaces(functionalInterface).build();
+        ClassCreator cc = ClassCreator.builder().classOutput(getMethod().getClassOutput()).className(functionName).interfaces(functionalInterface).build();
         MethodCreatorImpl mc = (MethodCreatorImpl) cc.getMethodCreator(functionMethod.getName(), functionMethod.getReturnType(), functionMethod.getParameterTypes());
         FunctionCreatorImpl fc = new FunctionCreatorImpl(ret, functionName, cc, mc, this);
         operations.add(new Operation() {
@@ -958,6 +954,7 @@ class BytecodeCreatorImpl implements BytecodeCreator {
 
     @Override
     public void returnValue(ResultHandle returnValue) {
+        final MethodDescriptor methodDescriptor = getMethod().getMethodDescriptor();
         operations.add(new Operation() {
             @Override
             public void writeBytecode(MethodVisitor methodVisitor) {
@@ -1118,15 +1115,19 @@ class BytecodeCreatorImpl implements BytecodeCreator {
             return superclassAccessors.get(descriptor);
         }
         String name = descriptor.getName() + "$$aupseraccessor" + accessorCount.incrementAndGet();
-        MethodCreator ctor = classCreator.getMethodCreator(name, descriptor.getReturnType(), descriptor.getParameterTypes());
+        MethodCreator ctor = getMethod().getClassCreator().getMethodCreator(name, descriptor.getReturnType(), descriptor.getParameterTypes());
         ResultHandle[] params = new ResultHandle[descriptor.getParameterTypes().length];
         for (int i = 0; i < params.length; ++i) {
             params[i] = ctor.getMethodParam(i);
         }
-        ResultHandle ret = ctor.invokeSpecialMethod(MethodDescriptor.ofMethod(classCreator.getSuperClass(), descriptor.getName(), descriptor.getReturnType(), descriptor.getParameterTypes()), ctor.getThis(), params);
+        ResultHandle ret = ctor.invokeSpecialMethod(MethodDescriptor.ofMethod(getMethod().getClassCreator().getSuperClass(), descriptor.getName(), descriptor.getReturnType(), descriptor.getParameterTypes()), ctor.getThis(), params);
         ctor.returnValue(ret);
         superclassAccessors.put(descriptor, ctor.getMethodDescriptor());
         return ctor.getMethodDescriptor();
+    }
+
+    MethodCreatorImpl getMethod() {
+        return method;
     }
 
     static abstract class Operation {
@@ -1321,10 +1322,6 @@ class BytecodeCreatorImpl implements BytecodeCreator {
 
     Operation createNewInstanceOp(ResultHandle handle, MethodDescriptor descriptor, ResultHandle[] args) {
         return new NewInstanceOperation(handle, descriptor, args);
-    }
-
-    ClassCreator getClassCreator() {
-        return classCreator;
     }
 
     class NewInstanceOperation extends Operation {

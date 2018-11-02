@@ -32,7 +32,7 @@ class BytecodeCreatorImpl implements BytecodeCreator {
     private static final ErrorReporter PLAIN_ERROR = new ErrorReporter() {
         @Override
         public void reportError(final String errorPrefix) {
-            throw new IllegalStateException(errorPrefix + " To see the invoking stack, rerun this with the following system property enabled: \" + DEBUG_HELPERS_PROPERTY");
+            throw new IllegalStateException(errorPrefix + " To see the invoking stack, rerun this with the following system property enabled: " + DEBUG_HELPERS_PROPERTY);
         }
     };
 

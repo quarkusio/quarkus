@@ -1114,7 +1114,7 @@ class BytecodeCreatorImpl implements BytecodeCreator {
         if (superclassAccessors.containsKey(descriptor)) {
             return superclassAccessors.get(descriptor);
         }
-        String name = descriptor.getName() + "$$aupseraccessor" + accessorCount.incrementAndGet();
+        String name = descriptor.getName() + "$$superaccessor" + accessorCount.incrementAndGet();
         MethodCreator ctor = getMethod().getClassCreator().getMethodCreator(name, descriptor.getReturnType(), descriptor.getParameterTypes());
         ResultHandle[] params = new ResultHandle[descriptor.getParameterTypes().length];
         for (int i = 0; i < params.length; ++i) {

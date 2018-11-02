@@ -867,7 +867,8 @@ class BytecodeCreatorImpl implements BytecodeCreator {
         ResultHandle ret = new ResultHandle("L" + functionName.replace('.', '/') + ";", this);
         ClassCreator cc = ClassCreator.builder().classOutput(getMethod().getClassOutput()).className(functionName).interfaces(functionalInterface).build();
         MethodCreatorImpl mc = (MethodCreatorImpl) cc.getMethodCreator(functionMethod.getName(), functionMethod.getReturnType(), functionMethod.getParameterTypes());
-        FunctionCreatorImpl fc = new FunctionCreatorImpl(ret, cc, mc, this);
+
+        FunctionCreatorImpl fc = mc.addFunctionBody(ret, cc, mc, this);
         operations.add(new Operation() {
             @Override
             public void writeBytecode(MethodVisitor methodVisitor) {
@@ -1025,11 +1026,11 @@ class BytecodeCreatorImpl implements BytecodeCreator {
     }
 
     ResultHandle resolve(ResultHandle handle) {
-        return handle;
+        return owner.resolve(handle);
     }
 
     ResultHandle[] resolve(ResultHandle... handles) {
-        return handles;
+        return owner.resolve(handles);
     }
 
     /**
@@ -1069,6 +1070,10 @@ class BytecodeCreatorImpl implements BytecodeCreator {
 
     MethodCreatorImpl getMethod() {
         return method;
+    }
+
+    BytecodeCreatorImpl getOwner() {
+        return owner;
     }
 
     static abstract class Operation {

@@ -15,15 +15,16 @@ class FunctionCreatorImpl implements FunctionCreator {
     private final MethodCreatorImpl methodCreator;
     private final Map<ResultHandle, CapturedResultHandle> capturedResultHandles = new LinkedHashMap<>();
     private final BytecodeCreatorImpl owner;
-
+    private final FunctionBytecodeCreator fbc;
 
     private int fieldCount;
 
-    public FunctionCreatorImpl(ResultHandle instance, ClassCreator classCreator, MethodCreatorImpl methodCreator, BytecodeCreatorImpl owner) {
+    FunctionCreatorImpl(ResultHandle instance, ClassCreator classCreator, MethodCreatorImpl methodCreator, BytecodeCreatorImpl owner) {
         this.instance = instance;
         this.classCreator = classCreator;
         this.methodCreator = methodCreator;
         this.owner = owner;
+        fbc = new FunctionBytecodeCreator(this, methodCreator, owner);
     }
 
     @Override
@@ -36,8 +37,8 @@ class FunctionCreatorImpl implements FunctionCreator {
     }
 
     @Override
-    public BytecodeCreator getBytecode() {
-        return new FunctionBytecodeCreator(this, methodCreator, owner);
+    public BytecodeCreatorImpl getBytecode() {
+        return fbc;
     }
 
     public void writeCreateInstance(MethodVisitor methodVisitor) {
@@ -68,16 +69,15 @@ class FunctionCreatorImpl implements FunctionCreator {
      * <p>
      * These get transformed into local result handles, that are a read from a field
      */
-    private static class FunctionBytecodeCreator implements BytecodeCreator, CatchBlockCreator {
+    private static class FunctionBytecodeCreator extends BytecodeCreatorImpl {
 
-        private final BytecodeCreator delegate;
-        private FunctionCreatorImpl functionCreator;
-        private final BytecodeCreatorImpl owner;
+        private final FunctionCreatorImpl functionCreator;
+        private final MethodCreatorImpl method;
 
-        private FunctionBytecodeCreator(FunctionCreatorImpl functionCreator, BytecodeCreator delegate, BytecodeCreatorImpl owner) {
-            this.delegate = delegate;
+        FunctionBytecodeCreator(FunctionCreatorImpl functionCreator, MethodCreatorImpl method, BytecodeCreatorImpl owner) {
+            super(owner);
             this.functionCreator = functionCreator;
-            this.owner = owner;
+            this.method = method;
         }
 
         /**
@@ -88,8 +88,11 @@ class FunctionCreatorImpl implements FunctionCreator {
          * @param handle The handle that may be a parent handle
          * @return The substituted handler
          */
-        ResultHandle apply(ResultHandle handle) {
-            if (handle.getOwner().getMethod() == functionCreator.owner.getMethod()) {
+        ResultHandle resolve(ResultHandle handle) {
+            // resolve any captures of captures.
+            if (handle == null || handle.getResultType() == ResultHandle.ResultType.CONSTANT) return handle;
+            handle = getOwner().resolve(handle);
+            if (handle.getOwner().getMethod() == getOwner().getMethod()) {
                 CapturedResultHandle capture = functionCreator.capturedResultHandles.get(handle);
                 if (capture != null) {
                     return capture.substitute;
@@ -97,7 +100,7 @@ class FunctionCreatorImpl implements FunctionCreator {
                     String name = FIELD_NAME + (functionCreator.fieldCount++);
                     FieldCreator field = functionCreator.classCreator.getFieldCreator(name, handle.getType());
                     field.setModifiers(Opcodes.ACC_PRIVATE | Opcodes.ACC_FINAL);
-                    ResultHandle sub = delegate.readInstanceField(field.getFieldDescriptor(), delegate.getThis());
+                    ResultHandle sub = super.readInstanceField(field.getFieldDescriptor(), getMethod().getThis());
                     capture = functionCreator.new CapturedResultHandle(sub, field.getFieldDescriptor());
                     functionCreator.capturedResultHandles.put(handle, capture);
                     return sub;
@@ -107,211 +110,26 @@ class FunctionCreatorImpl implements FunctionCreator {
             }
         }
 
-        ResultHandle[] apply(ResultHandle[] handle) {
+        ResultHandle[] resolve(ResultHandle[] handle) {
             ResultHandle[] ret = new ResultHandle[handle.length];
             for (int i = 0; i < handle.length; ++i) {
-                ret[i] = apply(handle[i]);
+                ret[i] = resolve(handle[i]);
             }
             return ret;
         }
 
-        public ResultHandle getThis() {
-            return delegate.getThis();
-        }
-
-        public ResultHandle invokeVirtualMethod(MethodDescriptor descriptor, ResultHandle object, ResultHandle... args) {
-            object = apply(object);
-            args = apply(args);
-            return delegate.invokeVirtualMethod(descriptor, object, args);
-        }
-
-        public ResultHandle invokeInterfaceMethod(MethodDescriptor descriptor, ResultHandle object, ResultHandle... args) {
-            object = apply(object);
-            args = apply(args);
-            return delegate.invokeInterfaceMethod(descriptor, object, args);
-        }
-
-        public ResultHandle invokeStaticMethod(MethodDescriptor descriptor, ResultHandle... args) {
-            args = apply(args);
-            return delegate.invokeStaticMethod(descriptor, args);
+        MethodCreatorImpl getMethod() {
+            return method;
         }
 
         public ResultHandle invokeSpecialMethod(MethodDescriptor descriptor, ResultHandle object, ResultHandle... args) {
-            object = apply(object);
-            args = apply(args);
-            if (descriptor.getDeclaringClass().equals(owner.getMethod().getClassCreator().getSuperClass())) {
+            if (descriptor.getDeclaringClass().equals(getOwner().getMethod().getClassCreator().getSuperClass())) {
                 //this is an invokespecial on the owners superclass, we can't do this directly
-                MethodDescriptor newMethod = owner.getMethod().getClassCreator().getSuperclassAccessor(descriptor);
-                return delegate.invokeVirtualMethod(newMethod, object, args);
+                MethodDescriptor newMethod = getOwner().getMethod().getClassCreator().getSuperclassAccessor(descriptor);
+                return super.invokeVirtualMethod(newMethod, object, args);
             } else {
-                return delegate.invokeSpecialMethod(descriptor, object, args);
+                return super.invokeSpecialMethod(descriptor, object, args);
             }
-        }
-
-        public ResultHandle newInstance(MethodDescriptor descriptor, ResultHandle... args) {
-            args = apply(args);
-            return delegate.newInstance(descriptor, args);
-        }
-
-        @Override
-        public ResultHandle newArray(String type, ResultHandle length) {
-            length = apply(length);
-            return delegate.newArray(type, length);
-        }
-
-        public ResultHandle load(String val) {
-            return delegate.load(val);
-        }
-
-        public ResultHandle load(byte val) {
-            return delegate.load(val);
-        }
-
-        public ResultHandle load(short val) {
-            return delegate.load(val);
-        }
-
-        public ResultHandle load(char val) {
-            return delegate.load(val);
-        }
-
-        public ResultHandle load(int val) {
-            return delegate.load(val);
-        }
-
-        public ResultHandle load(long val) {
-            return delegate.load(val);
-        }
-
-        public ResultHandle load(float val) {
-            return delegate.load(val);
-        }
-
-        public ResultHandle load(double val) {
-            return delegate.load(val);
-        }
-
-        public ResultHandle load(boolean val) {
-            return delegate.load(val);
-        }
-
-        @Override
-        public ResultHandle loadClass(String className) {
-            return delegate.loadClass(className);
-        }
-
-        @Override
-        public ResultHandle loadNull() {
-            return delegate.loadNull();
-        }
-
-        public void writeInstanceField(FieldDescriptor fieldDescriptor, ResultHandle instance, ResultHandle value) {
-            instance = apply(instance);
-            value = apply(value);
-            delegate.writeInstanceField(fieldDescriptor, instance, value);
-        }
-
-        public ResultHandle readInstanceField(FieldDescriptor fieldDescriptor, ResultHandle instance) {
-            instance = apply(instance);
-            return delegate.readInstanceField(fieldDescriptor, instance);
-        }
-
-        public void writeStaticField(FieldDescriptor fieldDescriptor, ResultHandle value) {
-            value = apply(value);
-            delegate.writeStaticField(fieldDescriptor, value);
-        }
-
-        public ResultHandle readStaticField(FieldDescriptor fieldDescriptor) {
-            return delegate.readStaticField(fieldDescriptor);
-        }
-
-        @Override
-        public ResultHandle readArrayValue(ResultHandle array, ResultHandle index) {
-            array = apply(array);
-            index = apply(index);
-            return delegate.readArrayValue(array, index);
-        }
-
-        @Override
-        public void writeArrayValue(ResultHandle array, ResultHandle index, ResultHandle value) {
-            array = apply(array);
-            index = apply(index);
-            value = apply(value);
-            delegate.writeArrayValue(array, index, value);
-        }
-
-        public ExceptionTable addTryCatch() {
-            ExceptionTable ex = delegate.addTryCatch();
-            return new ExceptionTable() {
-                @Override
-                public CatchBlockCreator addCatchClause(String exception) {
-                    CatchBlockCreator del = ex.addCatchClause(exception);
-                    return new FunctionBytecodeCreator(functionCreator, del, owner);
-                }
-
-                @Override
-                public void complete() {
-                    ex.complete();
-                }
-            };
-        }
-
-        public BranchResult ifNonZero(ResultHandle resultHandle) {
-            resultHandle = apply(resultHandle);
-            BranchResult delegate = this.delegate.ifNonZero(resultHandle);
-            BytecodeCreator trueBranch = new FunctionBytecodeCreator(functionCreator, delegate.trueBranch(), owner);
-            BytecodeCreator falseBranch = new FunctionBytecodeCreator(functionCreator, delegate.falseBranch(), owner);
-            return new BranchResultImpl(owner, trueBranch, falseBranch, (BytecodeCreatorImpl) delegate.trueBranch(), (BytecodeCreatorImpl)delegate.falseBranch());
-        }
-
-        @Override
-        public BranchResult ifNull(ResultHandle resultHandle) {
-            resultHandle = apply(resultHandle);
-            BranchResult delegate = this.delegate.ifNull(resultHandle);
-            BytecodeCreator trueBranch = new FunctionBytecodeCreator(functionCreator, delegate.trueBranch(), owner);
-            BytecodeCreator falseBranch = new FunctionBytecodeCreator(functionCreator, delegate.falseBranch(), owner);
-            return new BranchResultImpl(owner, trueBranch, falseBranch, (BytecodeCreatorImpl) delegate.trueBranch(), (BytecodeCreatorImpl)delegate.falseBranch());
-        }
-
-        public ResultHandle getMethodParam(int methodNo) {
-            return delegate.getMethodParam(methodNo);
-        }
-
-        public FunctionCreator createFunction(Class<?> functionalInterface) {
-            FunctionCreator fc = this.delegate.createFunction(functionalInterface);
-            BytecodeCreator del = new FunctionBytecodeCreator(functionCreator, fc.getBytecode(), owner);
-            return new FunctionCreator() {
-                @Override
-                public ResultHandle getInstance() {
-                    return fc.getInstance();
-                }
-
-                @Override
-                public BytecodeCreator getBytecode() {
-                    return del;
-                }
-            };
-        }
-
-        public void returnValue(ResultHandle returnValue) {
-            returnValue = apply(returnValue);
-            delegate.returnValue(returnValue);
-        }
-
-        @Override
-        public void throwException(ResultHandle exception) {
-            exception = apply(exception);
-            delegate.throwException(exception);
-        }
-
-        @Override
-        public ResultHandle checkCast(final ResultHandle resultHandle, final String castTarget) {
-            return delegate.checkCast(apply(resultHandle), castTarget);
-        }
-
-        @Override
-        public boolean isScopedWithin(final BytecodeCreator other) {
-            return delegate.isScopedWithin(other);
         }
 
         @Override
@@ -324,21 +142,8 @@ class FunctionCreatorImpl implements FunctionCreator {
             throw nonLocalReturn();
         }
 
-        @Override
-        public BytecodeCreator createScope() {
-            return new FunctionBytecodeCreator(functionCreator, delegate.createScope(), owner);
-        }
-
         private UnsupportedOperationException nonLocalReturn() {
             return new UnsupportedOperationException("Non-local return is unsupported");
-        }
-
-        @Override
-        public ResultHandle getCaughtException() {
-            if(delegate instanceof CatchBlockCreator) {
-                return ((CatchBlockCreator) delegate).getCaughtException();
-            }
-            throw new IllegalStateException("Not a catch block");
         }
     }
 

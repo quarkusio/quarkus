@@ -802,37 +802,7 @@ class BytecodeCreatorImpl implements BytecodeCreator {
     public BranchResult ifNonZero(ResultHandle resultHandle) {
         BytecodeCreatorImpl trueBranch = new BytecodeCreatorImpl(this);
         BytecodeCreatorImpl falseBranch = new BytecodeCreatorImpl(this);
-        operations.add(new Operation() {
-            @Override
-            public void writeBytecode(MethodVisitor methodVisitor) {
-                loadResultHandle(methodVisitor, resultHandle, BytecodeCreatorImpl.this, "I");
-                methodVisitor.visitJumpInsn(Opcodes.IFNE, trueBranch.getTop());
-                falseBranch.writeOperations(methodVisitor);
-                methodVisitor.visitJumpInsn(Opcodes.GOTO, trueBranch.getBottom());
-                trueBranch.writeOperations(methodVisitor);
-            }
-
-            @Override
-            Set<ResultHandle> getInputResultHandles() {
-                return Collections.singleton(resultHandle);
-            }
-
-            @Override
-            ResultHandle getTopResultHandle() {
-                return resultHandle;
-            }
-
-            @Override
-            ResultHandle getOutgoingResultHandle() {
-                return null;
-            }
-
-            @Override
-            public void findResultHandles(Set<ResultHandle> vc) {
-                trueBranch.findActiveResultHandles(vc);
-                falseBranch.findActiveResultHandles(vc);
-            }
-        });
+        operations.add(new IfOperation(Opcodes.IFNE, "I", resultHandle, trueBranch, falseBranch));
         return new BranchResultImpl(owner == null ? this : owner, trueBranch, falseBranch, trueBranch, falseBranch);
     }
 
@@ -840,38 +810,7 @@ class BytecodeCreatorImpl implements BytecodeCreator {
     public BranchResult ifNull(ResultHandle resultHandle) {
         BytecodeCreatorImpl trueBranch = new BytecodeCreatorImpl(this);
         BytecodeCreatorImpl falseBranch = new BytecodeCreatorImpl(this);
-        operations.add(new Operation() {
-            @Override
-            public void writeBytecode(MethodVisitor methodVisitor) {
-                loadResultHandle(methodVisitor, resultHandle, BytecodeCreatorImpl.this, "Ljava/lang/Object;");
-                methodVisitor.visitJumpInsn(Opcodes.IFNULL, trueBranch.getTop());
-                falseBranch.writeOperations(methodVisitor);
-                methodVisitor.visitJumpInsn(Opcodes.GOTO, trueBranch.getBottom());
-                trueBranch.writeOperations(methodVisitor);
-            }
-
-            @Override
-            Set<ResultHandle> getInputResultHandles() {
-                return Collections.singleton(resultHandle);
-            }
-
-            @Override
-            ResultHandle getTopResultHandle() {
-                return resultHandle;
-            }
-
-            @Override
-            ResultHandle getOutgoingResultHandle() {
-                return null;
-            }
-
-            @Override
-            public void findResultHandles(Set<ResultHandle> vc) {
-                trueBranch.findActiveResultHandles(vc);
-                falseBranch.findActiveResultHandles(vc);
-            }
-        });
-
+        operations.add(new IfOperation(Opcodes.IFNULL, "Ljava/lang/Object;", resultHandle, trueBranch, falseBranch));
         return new BranchResultImpl(owner == null ? this : owner, trueBranch, falseBranch, trueBranch, falseBranch);
     }
 
@@ -1312,6 +1251,52 @@ class BytecodeCreatorImpl implements BytecodeCreator {
         @Override
         ResultHandle getOutgoingResultHandle() {
             return resultHandle;
+        }
+    }
+
+    class IfOperation extends Operation {
+        private final int opcode;
+        private final String opType;
+        private final ResultHandle resultHandle;
+        private final BytecodeCreatorImpl trueBranch;
+        private final BytecodeCreatorImpl falseBranch;
+
+        IfOperation(final int opcode, final String opType, final ResultHandle resultHandle, final BytecodeCreatorImpl trueBranch, final BytecodeCreatorImpl falseBranch) {
+            this.opcode = opcode;
+            this.opType = opType;
+            this.resultHandle = resultHandle;
+            this.trueBranch = trueBranch;
+            this.falseBranch = falseBranch;
+        }
+
+        @Override
+        public void writeBytecode(MethodVisitor methodVisitor) {
+            loadResultHandle(methodVisitor, resultHandle, BytecodeCreatorImpl.this, opType);
+            methodVisitor.visitJumpInsn(opcode, trueBranch.getTop());
+            falseBranch.writeOperations(methodVisitor);
+            methodVisitor.visitJumpInsn(Opcodes.GOTO, trueBranch.getBottom());
+            trueBranch.writeOperations(methodVisitor);
+        }
+
+        @Override
+        Set<ResultHandle> getInputResultHandles() {
+            return Collections.singleton(resultHandle);
+        }
+
+        @Override
+        ResultHandle getTopResultHandle() {
+            return resultHandle;
+        }
+
+        @Override
+        ResultHandle getOutgoingResultHandle() {
+            return null;
+        }
+
+        @Override
+        public void findResultHandles(Set<ResultHandle> vc) {
+            trueBranch.findActiveResultHandles(vc);
+            falseBranch.findActiveResultHandles(vc);
         }
     }
 }

@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -107,6 +108,14 @@ class MethodCreatorImpl extends BytecodeCreatorImpl implements MethodCreator {
         visitor.visitEnd();
     }
 
+    ResultHandle resolve(final ResultHandle handle) {
+        return handle;
+    }
+
+    ResultHandle[] resolve(final ResultHandle... handles) {
+        return handles;
+    }
+
     @Override
     public String toString() {
         return "MethodCreatorImpl [declaringClassName=" + getDeclaringClassName() + ", methodDescriptor=" + methodDescriptor + "]";
@@ -129,6 +138,32 @@ class MethodCreatorImpl extends BytecodeCreatorImpl implements MethodCreator {
 
     ClassCreator getClassCreator() {
         return classCreator;
+    }
+
+    FunctionCreatorImpl addFunctionBody(final ResultHandle instance, final ClassCreator cc, final MethodCreatorImpl mc, final BytecodeCreatorImpl owner) {
+        FunctionCreatorImpl fc = new FunctionCreatorImpl(instance, cc, mc, owner);
+        operations.add(new Operation() {
+            void writeBytecode(final MethodVisitor methodVisitor) {
+                fc.getBytecode().writeOperations(methodVisitor);
+            }
+
+            Set<ResultHandle> getInputResultHandles() {
+                return Collections.emptySet();
+            }
+
+            ResultHandle getTopResultHandle() {
+                return null;
+            }
+
+            ResultHandle getOutgoingResultHandle() {
+                return null;
+            }
+
+            public void findResultHandles(final Set<ResultHandle> vc) {
+                fc.getBytecode().findActiveResultHandles(vc);
+            }
+        });
+        return fc;
     }
 
     private static class AnnotationParameters implements AnnotatedElement {

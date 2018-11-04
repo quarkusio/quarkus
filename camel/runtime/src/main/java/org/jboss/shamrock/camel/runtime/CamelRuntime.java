@@ -19,43 +19,53 @@ package org.jboss.shamrock.camel.runtime;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Properties;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
+import org.apache.camel.Route;
+import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.component.properties.PropertiesComponent;
 import org.apache.camel.impl.DefaultCamelContext;
-import org.apache.camel.impl.SimpleRegistry;
 import org.apache.camel.main.MainSupport;
 
 public abstract class CamelRuntime extends RouteBuilder {
 
     private Main main = new Main();
-    private SimpleRegistry registry = createRegistry();
-    private CamelContext context = createContext();
+    private SimpleLazyRegistry registry;
+    private Properties properties;
 
     public CamelRuntime() {
-        setContext(context);
     }
 
     public void bind(String name, Object object) {
         registry.put(name, object);
     }
 
-    public void run(String[] args) throws Exception {
-        main.setRouteBuilders(Collections.singletonList(this));
-        main.run(args);
+    public void init() throws Exception {
+        if (main.getRouteBuilders().isEmpty()) {
+            main.init();
+            main.getRouteBuilders().add(this);
+            main.start();
+        }
     }
 
-    public SimpleRegistry getRegistry() {
-        return registry;
+    public void run() throws Exception {
+        init();
+        main.run();
     }
 
-    protected SimpleRegistry createRegistry() {
-        return new SimpleRegistry();
+    protected DefaultCamelContext createContext() {
+        return new FastCamelContext();
     }
 
-    protected CamelContext createContext() {
-        return new DefaultCamelContext(registry);
+    public void setRegistry(SimpleLazyRegistry registry) {
+        this.registry = registry;
+    }
+
+    public void setProperties(Properties properties) {
+        this.properties = properties;
     }
 
     class Main extends MainSupport {
@@ -64,26 +74,48 @@ public abstract class CamelRuntime extends RouteBuilder {
         }
 
         @Override
+        protected void doInit() {
+            try {
+                disableHangupSupport();
+
+                DefaultCamelContext context = createContext();
+                context.setRegistry(registry);
+                context.setAutoStartup(false);
+
+                PropertiesComponent props = new PropertiesComponent();
+                props.setInitialProperties(properties);
+                context.addComponent("properties", props);
+
+                context.start();
+                setContext(context);
+            } catch (Exception e) {
+                throw RuntimeCamelException.wrapRuntimeCamelException(e);
+            }
+        }
+
+        @Override
         protected void doStop() throws Exception {
-            super.doStop();
-            context.stop();
+            getContext().stop();
+            completed();
         }
 
         @Override
         protected void doStart() throws Exception {
-            super.doStart();
             postProcessContext();
-            context.start();
+            for (Route route : getContext().getRoutes()) {
+                getContext().getRouteController().startRoute(route.getId());
+            }
         }
 
         @Override
         protected ProducerTemplate findOrCreateCamelTemplate() {
-            return context.createProducerTemplate();
+            return getContext().createProducerTemplate();
         }
 
         @Override
         protected Map<String, CamelContext> getCamelContextMap() {
-            return Collections.singletonMap("camel-1", context);
+            return Collections.singletonMap("camel-1", getContext());
         }
     }
+
 }

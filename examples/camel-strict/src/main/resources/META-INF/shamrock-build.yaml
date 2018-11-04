@@ -1,2 +1,3 @@
 index-dependencies:
   - "org.apache.camel:camel-core"
+folder: "./target/orders"

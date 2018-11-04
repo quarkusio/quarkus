@@ -12,15 +12,20 @@ import org.apache.camel.Processor;
 import org.apache.camel.component.bean.BeanProcessor;
 import org.apache.camel.support.DefaultExchange;
 import org.jboss.shamrock.camel.runtime.CamelRuntime;
+import org.jboss.shamrock.runtime.RegisterForReflection;
 
 public class SimpleCamelRouteBuilder extends CamelRuntime {
 
     public SimpleCamelRouteBuilder() {
     }
 
+    public static void main(String[] args) throws Exception {
+        new SimpleCamelRouteBuilder().run();
+    }
+
     @Override
     public void configure() {
-        from("file:./target/orders")
+        from("file:{{folder}}")
             .setHeader(MyOrderService.class.getName(), MyOrderService::new)
             .split(body().tokenize("@"), SimpleCamelRouteBuilder.this::aggregate)
             // each splitted message is then send to this bean where we can process it
@@ -78,6 +83,7 @@ public class SimpleCamelRouteBuilder extends CamelRuntime {
         };
     }
 
+    @RegisterForReflection
     public class MyOrderService {
 
         private int counter;

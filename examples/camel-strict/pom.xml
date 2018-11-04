@@ -20,7 +20,23 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-camel-runtime</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-logging-deployment</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-logging-runtime</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.slf4j</groupId>
+            <artifactId>slf4j-jboss-logging</artifactId>
+            <version>1.1.0.Final</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

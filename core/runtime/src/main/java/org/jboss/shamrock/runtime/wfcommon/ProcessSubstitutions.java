@@ -23,6 +23,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import java.util.regex.Pattern;
 
 import com.oracle.svm.core.annotate.Alias;
@@ -45,24 +46,61 @@ final class Target_com_oracle_svm_core_JavaMainWrapper {
     static CCharPointerPointer argv;
 }
 
-@TargetClass(className = "org.wildfly.common.os.GetProcessInfoAction")
+@TargetClass(className = "org.wildfly.common.os.GetProcessInfoAction", onlyWith = Target_org_wildfly_common_os_GetProcessInfoAction.Selector.class)
 final class Target_org_wildfly_common_os_GetProcessInfoAction {
 
     @Substitute
     public Object[] run() {
         return new Object[] { Long.valueOf(NativeInfo.getpid() & 0xffff_ffffL), ProcessUtils.getProcessName() };
     }
+    static final class Selector implements BooleanSupplier {
+
+        @Override
+        public boolean getAsBoolean() {
+            try {
+                Class.forName("org.wildfly.common.os.GetProcessInfoAction");
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+        }
+    }
 }
 
-@TargetClass(className = "org.wildfly.common.net.HostName")
+@TargetClass(className = "org.wildfly.common.net.HostName", onlyWith = Target_org_wildfly_common_net_HostName.Selector.class)
 final class Target_org_wildfly_common_net_HostName {
 
     @Alias
     static native InetAddress getLocalHost() throws UnknownHostException;
+
+    static final class Selector implements BooleanSupplier {
+        @Override
+        public boolean getAsBoolean() {
+            try {
+                Class.forName("org.wildfly.common.net.HostName");
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+        }
+    }
 }
 
-@TargetClass(className = "org.wildfly.common.net.GetHostInfoAction")
+@TargetClass(className = "org.wildfly.common.net.GetHostInfoAction", onlyWith = org.jboss.shamrock.runtime.wfcommon.Target_org_wildfly_common_net_GetHostInfoAction.Selector.class)
 final class Target_org_wildfly_common_net_GetHostInfoAction {
+
+    static final class Selector implements BooleanSupplier {
+        @Override
+        public boolean getAsBoolean() {
+            try {
+                Class.forName("org.wildfly.common.net.GetHostInfoAction");
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+        }
+    }
+
 
     @Substitute
     public String[] run() {

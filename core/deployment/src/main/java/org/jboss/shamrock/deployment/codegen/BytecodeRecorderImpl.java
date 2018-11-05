@@ -195,16 +195,6 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
         ClassCreator file = ClassCreator.builder().classOutput(ClassOutput.gizmoAdaptor(classOutput,  true)).className(className).superClass(Object.class).interfaces(StartupTask.class).build();
         MethodCreator method = file.getMethodCreator(this.method.getName(), this.method.getReturnType(), this.method.getParameterTypes());
 
-        //figure out where we can start using local variables
-        int localVarCounter = 1;
-        for (Class<?> t : this.method.getParameterTypes()) {
-            if (t == double.class || t == long.class) {
-                localVarCounter += 2;
-            } else {
-                localVarCounter++;
-            }
-        }
-
         //now create instances of all the classes we invoke on and store them in variables as well
         Map<Class, ResultHandle> classInstanceVariables = new HashMap<>();
         Map<Object, ResultHandle> returnValueResults = new IdentityHashMap<>();

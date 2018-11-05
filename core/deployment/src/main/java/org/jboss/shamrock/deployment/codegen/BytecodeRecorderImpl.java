@@ -130,10 +130,10 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
 
         public <T> T getRecordingProxy(Class<T> theClass) {
             if (existingProxyClasses.containsKey(theClass)) {
-                return (T) existingProxyClasses.get(theClass);
+                return theClass.cast(existingProxyClasses.get(theClass));
             }
-            ProxyFactory<T> factory = new ProxyFactory<>(new ProxyConfiguration<T>()
-                    .setSuperClass((Class) theClass)
+            ProxyFactory<T> factory = new ProxyFactory<T>(new ProxyConfiguration<T>()
+                    .setSuperClass(theClass)
                     .setClassLoader(classLoader)
                     .setProxyName(getClass().getName() + "$$RecordingProxyProxy" + COUNT.incrementAndGet()));
             try {

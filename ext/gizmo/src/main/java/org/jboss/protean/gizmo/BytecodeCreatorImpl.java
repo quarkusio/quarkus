@@ -802,11 +802,11 @@ public class BytecodeCreatorImpl implements BytecodeCreator {
                 loadResultHandle(methodVisitor, resultHandle, BytecodeCreatorImpl.this, "Ljava/lang/Object;");
                 Label label = new Label();
                 methodVisitor.visitJumpInsn(Opcodes.IFNULL, label);
-                trueBranch.writeOperations(methodVisitor);
+                falseBranch.writeOperations(methodVisitor);
                 Label end = new Label();
                 methodVisitor.visitJumpInsn(Opcodes.GOTO, end);
                 methodVisitor.visitLabel(label);
-                falseBranch.writeOperations(methodVisitor);
+                trueBranch.writeOperations(methodVisitor);
                 methodVisitor.visitLabel(end);
             }
 

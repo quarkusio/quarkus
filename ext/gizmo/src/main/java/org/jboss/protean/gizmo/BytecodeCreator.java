@@ -342,6 +342,13 @@ public interface BytecodeCreator {
      */
     BranchResult ifNonZero(ResultHandle resultHandle);
 
+    /**
+     * An if statement. If the value is {@code null} the {@link BranchResult#trueBranch} code will be executed, otherwise the {@link BranchResult#falseBranch} will be
+     * run.
+     *
+     * @param resultHandle
+     * @return The branch result that is used to build the if statement
+     */
     BranchResult ifNull(ResultHandle resultHandle);
 
     /**

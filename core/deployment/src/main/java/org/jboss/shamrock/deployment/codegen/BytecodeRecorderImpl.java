@@ -81,15 +81,6 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
         method = m;
     }
 
-    private String findContextName(Annotation[] annotations) {
-        for (Annotation a : annotations) {
-            if (a.annotationType() == ContextObject.class) {
-                return ((ContextObject) a).value();
-            }
-        }
-        return null;
-    }
-
     @Override
     public <F, T> void registerSubstitution(Class<F> from, Class<T> to, Class<? extends ObjectSubstitution<F, T>> substitution) {
         substitutions.put(from, new SubstitutionHolder(from, to, substitution));

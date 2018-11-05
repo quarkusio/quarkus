@@ -19,3 +19,4 @@ server.log
 dumps
 *.orig
 *.rej
+.factorypath

@@ -38,6 +38,11 @@ public class ComputingCache<K, V> {
         return value.get();
     }
 
+    public V getValueIfPresent(K key) {
+        LazyValue<V> value = map.get(key);
+        return value != null ? value.getIfPresent() :null;
+    }
+
     public V remove(K key) {
         LazyValue<V> previous = map.remove(key);
         return previous != null ? previous.get() : null;

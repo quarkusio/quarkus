@@ -24,6 +24,12 @@ public class RuntimeCompilationSetup implements ShamrockSetup {
 
     @Override
     public void setup(SetupContext context) {
+        try {
+            //don't do this if we don't have Undertow
+            Class.forName("org.jboss.shamrock.undertow.ServletResourceProcessor");
+        } catch (ClassNotFoundException e) {
+            return;
+        }
 
         String classesDir = System.getProperty("shamrock.runner.classes");
         if (classesDir != null) {

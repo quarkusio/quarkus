@@ -11,10 +11,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.enterprise.context.spi.Context;
-import javax.enterprise.context.spi.Contextual;
-import javax.enterprise.context.spi.CreationalContext;
-
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
@@ -43,8 +39,6 @@ public class ClientProxyGenerator extends AbstractGenerator {
 
     static final String CLIENT_PROXY_SUFFIX = "_ClientProxy";
 
-    static final String DEFAULT_PACKAGE = Arc.class.getPackage().getName() + ".proxies";
-
     /**
      *
      * @param bean
@@ -59,7 +53,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
         ClassInfo providerClass = bean.getDeployment().getIndex().getClassByName(providerType.name());
         String providerTypeName = providerClass.name().toString();
         String baseName = getBaseName(bean, beanClassName);
-        String targetPackage = getProxyPackageName(bean);
+        String targetPackage = getPackageName(bean);
         String generatedName = targetPackage.replace('.', '/') + "/" + baseName + CLIENT_PROXY_SUFFIX;
 
         // Foo_ClientProxy extends Foo implements ClientProxy
@@ -149,8 +143,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
                 container, scope);
         // new CreationalContextImpl<>()
         ResultHandle creationContext = creator.newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class));
-        ResultHandle result = creator.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(Context.class, "get", Object.class, Contextual.class, CreationalContext.class), context, bean, creationContext);
+        ResultHandle result = creator.invokeInterfaceMethod(MethodDescriptors.CONTEXT_GET, context, bean, creationContext);
         creator.returnValue(result);
     }
 
@@ -164,9 +157,9 @@ public class ClientProxyGenerator extends AbstractGenerator {
         Map<Methods.MethodKey, MethodInfo> methods = new HashMap<>();
 
         if (bean.isClassBean()) {
-            Methods.addDelegatingMethods(bean.getDeployment().getIndex(), bean.getTarget().asClass(), Collections.emptyMap(), methods);
+            Methods.addDelegatingMethods(bean.getDeployment().getIndex(), bean.getTarget().get().asClass(), Collections.emptyMap(), methods);
         } else if (bean.isProducerMethod()) {
-            MethodInfo producerMethod = bean.getTarget().asMethod();
+            MethodInfo producerMethod = bean.getTarget().get().asMethod();
             Map<TypeVariable, Type> resolved = Collections.emptyMap();
             ClassInfo returnTypeClass = bean.getDeployment().getIndex().getClassByName(producerMethod.returnType().name());
             if (!returnTypeClass.typeParameters().isEmpty()) {
@@ -175,7 +168,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
             }
             Methods.addDelegatingMethods(bean.getDeployment().getIndex(), returnTypeClass, resolved, methods);
         } else if (bean.isProducerField()) {
-            FieldInfo producerField = bean.getTarget().asField();
+            FieldInfo producerField = bean.getTarget().get().asField();
             Map<TypeVariable, Type> resolved = Collections.emptyMap();
             ClassInfo fieldClass = bean.getDeployment().getIndex().getClassByName(producerField.type().name());
             if (!fieldClass.typeParameters().isEmpty()) {
@@ -184,20 +177,6 @@ public class ClientProxyGenerator extends AbstractGenerator {
             Methods.addDelegatingMethods(bean.getDeployment().getIndex(), fieldClass, resolved, methods);
         }
         return methods.values();
-    }
-
-    static String getProxyPackageName(BeanInfo bean) {
-        String packageName;
-        if (bean.isProducerMethod() || bean.isProducerField()) {
-            packageName = DotNames.packageName(bean.getDeclaringBean().getProviderType().name());
-        } else {
-            packageName = DotNames.packageName(bean.getProviderType().name());
-        }
-        if (packageName.startsWith("java.")) {
-            // It is not possible to place a class in a JDK package
-            packageName = DEFAULT_PACKAGE;
-        }
-        return packageName;
     }
 
 }

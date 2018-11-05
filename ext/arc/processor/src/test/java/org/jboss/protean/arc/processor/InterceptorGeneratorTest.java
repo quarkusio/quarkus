@@ -30,7 +30,7 @@ public class InterceptorGeneratorTest {
         deployment.init();
 
         InterceptorInfo myInterceptor = deployment.getInterceptors().stream()
-                .filter(i -> i.getTarget().asClass().name().equals(DotName.createSimple(MyInterceptor.class.getName()))).findAny().orElse(null);
+                .filter(i -> i.getTarget().get().asClass().name().equals(DotName.createSimple(MyInterceptor.class.getName()))).findAny().orElse(null);
         assertNotNull(myInterceptor);
         assertEquals(10, myInterceptor.getPriority());
         assertEquals(1, myInterceptor.getBindings().size());

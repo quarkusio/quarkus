@@ -64,6 +64,7 @@ final class DotNames {
     static final DotName TYPED = create(Typed.class);
     static final DotName VETOED = create(Vetoed.class);
     static final DotName CLASS = create(Class.class);
+    static final DotName ENUM = create(Enum.class);
 
     private DotNames() {
     }

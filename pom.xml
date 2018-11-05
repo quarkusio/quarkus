@@ -63,6 +63,7 @@
         <slf4j.version>1.7.25</slf4j.version>
         <wildfly-common.version>1.5.0.Alpha1-format-002</wildfly-common.version>
         <jboss-modules.version>1.8.0.Final</jboss-modules.version>
+        <jboss-threads.version>2.3.2.Final</jboss-threads.version>
         <vertx.version>3.5.4</vertx.version>
 
         <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>
@@ -71,6 +72,7 @@
     </properties>
 
     <modules>
+        <module>builder</module>
         <module>openssl</module>
         <module>jboss-logmanager-embedded</module>
         <module>jboss-logging-embedded</module>
@@ -788,6 +790,17 @@
                 <groupId>org.jboss.spec.javax.ws.rs</groupId>
                 <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
                 <version>${jboss-jaxrs-api_2.1_spec.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.threads</groupId>
+                <artifactId>jboss-threads</artifactId>
+                <version>${jboss-threads.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.logging</groupId>
+                        <artifactId>jboss-logging</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.jboss</groupId>

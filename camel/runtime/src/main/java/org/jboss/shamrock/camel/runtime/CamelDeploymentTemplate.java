@@ -6,10 +6,6 @@ import org.jboss.shamrock.runtime.InjectionInstance;
 
 public class CamelDeploymentTemplate {
 
-    public void init() {
-        System.getProperty("CamelSimpleLRUCacheFactory", "true");
-    }
-
     public void run(InjectionInstance<? extends CamelRuntime> ii,
                     SimpleLazyRegistry registry,
                     Properties properties) throws Exception {

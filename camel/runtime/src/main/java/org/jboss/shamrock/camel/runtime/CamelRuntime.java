@@ -39,8 +39,8 @@ public abstract class CamelRuntime extends RouteBuilder {
     public CamelRuntime() {
     }
 
-    public void bind(String name, Object object) {
-        registry.put(name, object);
+    public void bind(String name, Class<?> type, Object object) {
+        registry.bind(name, type, object);
     }
 
     public void init() throws Exception {

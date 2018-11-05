@@ -28,25 +28,33 @@ import org.jboss.shamrock.runtime.InjectionInstance;
 /**
  * A {@link Map}-based registry.
  */
-public class SimpleLazyRegistry extends HashMap<String, Object> implements Registry {
+public class SimpleLazyRegistry extends HashMap<String, Map<Class<?>, Object>> implements Registry {
+
+    public void bind(String name, Class<?> clazz, Object object) {
+        this.computeIfAbsent(name, k -> new HashMap<>()).put(clazz, object);
+    }
 
     public Object lookupByName(String name) {
-        Object result = get(name);
-        if (result instanceof InjectionInstance) {
-            result = ((InjectionInstance) result).newInstance();
-            put(name, result);
-        }
-        return result;
+        return lookupByNameAndType(name, Object.class);
     }
 
     public <T> T lookupByNameAndType(String name, Class<T> type) {
-        Object answer = lookupByName(name);
-
-        // just to be safe
-        if (answer == null) {
+        Map<Class<?>, Object> map = this.get(name);
+        if (map == null) {
             return null;
         }
-
+        Object answer = map.get(type);
+        if (answer == null) {
+            for (Map.Entry<Class<?>, Object> entry : map.entrySet()) {
+                if (type.isAssignableFrom(entry.getKey())) {
+                    answer = entry.getValue();
+                    break;
+                }
+            }
+        }
+        if (answer instanceof InjectionInstance) {
+            answer = ((InjectionInstance) answer).newInstance();
+        }
         try {
             return type.cast(answer);
         } catch (Throwable e) {
@@ -58,9 +66,14 @@ public class SimpleLazyRegistry extends HashMap<String, Object> implements Regis
 
     public <T> Map<String, T> findByTypeWithName(Class<T> type) {
         Map<String, T> result = new HashMap<>();
-        for (Entry<String, Object> entry : entrySet()) {
-            if (type.isInstance(entry.getValue())) {
-                result.put(entry.getKey(), type.cast(entry.getValue()));
+        for (Entry<String, Map<Class<?>, Object>> entry : entrySet()) {
+            for (Object answer : entry.getValue().values()) {
+                if (answer instanceof InjectionInstance) {
+                    answer = ((InjectionInstance) answer).newInstance();
+                }
+                if (type.isInstance(answer)) {
+                    result.put(entry.getKey(), type.cast(answer));
+                }
             }
         }
         return result;
@@ -68,9 +81,14 @@ public class SimpleLazyRegistry extends HashMap<String, Object> implements Regis
 
     public <T> Set<T> findByType(Class<T> type) {
         Set<T> result = new HashSet<>();
-        for (Entry<String, Object> entry : entrySet()) {
-            if (type.isInstance(entry.getValue())) {
-                result.add(type.cast(entry.getValue()));
+        for (Entry<String, Map<Class<?>, Object>> entry : entrySet()) {
+            for (Object answer : entry.getValue().values()) {
+                if (answer instanceof InjectionInstance) {
+                    answer = ((InjectionInstance) answer).newInstance();
+                }
+                if (type.isInstance(answer)) {
+                    result.add(type.cast(answer));
+                }
             }
         }
         return result;

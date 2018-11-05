@@ -13,7 +13,6 @@ import org.apache.camel.spi.ManagementNameStrategy;
 import org.apache.camel.spi.Registry;
 import org.apache.camel.spi.ShutdownStrategy;
 import org.apache.camel.spi.UuidGenerator;
-import org.jboss.shamrock.runtime.InjectionInstance;
 
 public class FastCamelContext extends DefaultCamelContext {
 
@@ -64,18 +63,10 @@ public class FastCamelContext extends DefaultCamelContext {
     }
 
     protected <T> T resolve(Class<T> type, String name, CamelContext context) {
-        Object result = context.getRegistry().lookupByName(name);
-        if (result instanceof InjectionInstance) {
-            log.info("Instantiating " + type.getName());
-            result = ((InjectionInstance) result).newInstance();
+        T result = context.getRegistry().lookupByNameAndType(name, type);
+        if (result instanceof CamelContextAware) {
+            ((CamelContextAware) result).setCamelContext(context);
         }
-        if (type.isInstance(result)) {
-            if (result instanceof CamelContextAware) {
-                ((CamelContextAware) result).setCamelContext(context);
-            }
-            return (T) result;
-        } else {
-            throw new IllegalArgumentException("Unable to resolve " + type.getName() + " named " + name);
-        }
+        return (T) result;
     }
 }

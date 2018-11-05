@@ -21,17 +21,10 @@ import org.objectweb.asm.Type;
 class BytecodeCreatorImpl implements BytecodeCreator {
 
     public static final String DEBUG_HELPERS_PROPERTY = "org.jboss.protean.gizmo.DEBUG_HELPERS_ON";
-    private static final boolean DEBUG_HELPERS_ON = Boolean.getBoolean(DEBUG_HELPERS_PROPERTY);
 
     private static final AtomicInteger functionCount = new AtomicInteger();
 
     private static final String FUNCTION = "$$function$$";
-    private static final ErrorReporter PLAIN_ERROR = new ErrorReporter() {
-        @Override
-        public void reportError(final String errorPrefix) {
-            throw new IllegalStateException(errorPrefix + " To see the invoking stack, rerun this with the following system property enabled: " + DEBUG_HELPERS_PROPERTY);
-        }
-    };
 
     protected final List<Operation> operations = new ArrayList<>();
 
@@ -659,12 +652,6 @@ class BytecodeCreatorImpl implements BytecodeCreator {
         final TryBlockImpl tryBlock = new TryBlockImpl(this);
         operations.add(new BlockOperation(tryBlock));
         return tryBlock;
-    }
-
-    private ErrorReporter makeDebugHelper() {
-        return
-              DEBUG_HELPERS_ON ? new StackErrorReporter(new IllegalStateException("Complete was not called for catch block created at this point")) //we create an exception so if complete is not called we can report where
-        : PLAIN_ERROR;
     }
 
     @Override

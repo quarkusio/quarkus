@@ -39,7 +39,7 @@ At the moment is has the following features:
 *** `xcode-select --install`
 ** Linux
 *** TBD
-* Install GraalVM (minimum RC8)
+* Install GraalVM (minimum RC9)
 * set `GRAALVM_HOME` to your GraalVM Home directory e.g. `/Users/emmanuel/JDK/GraalVM/Contents/Home`
 * `mvn install`
 

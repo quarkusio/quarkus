@@ -119,7 +119,6 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql-protean</artifactId>
-            <version>42.2.5-SNAPSHOT</version>
         </dependency>
 
         <!-- test dependencies -->

@@ -66,6 +66,9 @@
         <jboss-threads.version>3.0.0.Alpha1</jboss-threads.version>
         <vertx.version>3.5.4</vertx.version>
 
+        <!-- Currently still needs a custom build: GAV is org.postgresql:postgresql-protean -->
+        <postgresql-jdbc.version>42.2.6-SNAPSHOT</postgresql-jdbc.version>
+
         <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>
 
         <postgres.url>${env.DATABASE_URL}</postgres.url>
@@ -906,6 +909,11 @@
                 <groupId>org.jsoup</groupId>
                 <artifactId>jsoup</artifactId>
                 <version>1.10.2</version>
+            </dependency>
+            <dependency>
+                <groupId>org.postgresql</groupId>
+                <artifactId>postgresql-protean</artifactId>
+                <version>${postgresql-jdbc.version}</version>
             </dependency>
 
             <dependency>

@@ -17,43 +17,58 @@
 
 package org.jboss.shamrock.camel.runtime;
 
-import java.util.Collections;
-import java.util.Map;
 import java.util.Properties;
 
 import org.apache.camel.CamelContext;
-import org.apache.camel.ProducerTemplate;
 import org.apache.camel.Route;
-import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.properties.PropertiesComponent;
 import org.apache.camel.impl.DefaultCamelContext;
-import org.apache.camel.main.MainSupport;
+import org.apache.camel.model.ModelHelper;
+import org.apache.camel.model.RouteDefinition;
 
 public abstract class CamelRuntime extends RouteBuilder {
 
-    private Main main = new Main();
     private SimpleLazyRegistry registry;
     private Properties properties;
-
-    public CamelRuntime() {
-    }
 
     public void bind(String name, Class<?> type, Object object) {
         registry.bind(name, type, object);
     }
 
     public void init() throws Exception {
-        if (main.getRouteBuilders().isEmpty()) {
-            main.init();
-            main.getRouteBuilders().add(this);
-            main.start();
-        }
+        DefaultCamelContext context = createContext();
+        context.setRegistry(registry);
+        context.setAutoStartup(false);
+
+        context.getModelJAXBContextFactory().newJAXBContext();
+
+        PropertiesComponent props = new PropertiesComponent();
+        props.setInitialProperties(properties);
+        context.addComponent("properties", props);
+
+        context.addRoutes(this);
+        context.start();
+        setContext(context);
     }
 
     public void run() throws Exception {
-        init();
-        main.run();
+        CamelContext context = getContext();
+        log.info("Apache Camel {} (CamelContext: {}) is starting", context.getVersion(), context.getName());
+        if (Boolean.parseBoolean(properties.getProperty("camel.dump", "false"))) {
+            dumpRoutes();
+        }
+        for (Route route : getContext().getRoutes()) {
+            getContext().getRouteController().startRoute(route.getId());
+        }
+        // start a non-daemon thread that waits forever
+        new Thread(() -> {
+            try {
+                Thread.sleep(Long.MAX_VALUE);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }).start();
     }
 
     protected DefaultCamelContext createContext() {
@@ -68,54 +83,24 @@ public abstract class CamelRuntime extends RouteBuilder {
         this.properties = properties;
     }
 
-    class Main extends MainSupport {
-        public Main() {
-            options.removeIf(o -> "-r".equals(o.getAbbreviation()));
-        }
-
-        @Override
-        protected void doInit() {
-            try {
-                disableHangupSupport();
-
-                DefaultCamelContext context = createContext();
-                context.setRegistry(registry);
-                context.setAutoStartup(false);
-
-                PropertiesComponent props = new PropertiesComponent();
-                props.setInitialProperties(properties);
-                context.addComponent("properties", props);
-
-                context.start();
-                setContext(context);
-            } catch (Exception e) {
-                throw RuntimeCamelException.wrapRuntimeCamelException(e);
-            }
-        }
-
-        @Override
-        protected void doStop() throws Exception {
-            getContext().stop();
-            completed();
-        }
-
-        @Override
-        protected void doStart() throws Exception {
-            postProcessContext();
+    protected void dumpRoutes() {
+        long t0 = System.nanoTime();
+        try {
             for (Route route : getContext().getRoutes()) {
-                getContext().getRouteController().startRoute(route.getId());
+                RouteDefinition def = (RouteDefinition) route.getRouteContext().getRoute();
+                System.err.println("Route: " + def);
+                String xml = ModelHelper.dumpModelAsXml(getContext(), def);
+                System.err.println("Xml: " + xml);
+            }
+        } catch (Throwable t) {
+            // ignore
+            System.err.println("Error dumping route xml: " + t.getClass().getName() + ": " + t.getMessage());
+            for (StackTraceElement e : t.getStackTrace()) {
+                System.err.println("    " + e.getClassName() + " " + e.getMethodName() + " " + e.getLineNumber());
             }
         }
-
-        @Override
-        protected ProducerTemplate findOrCreateCamelTemplate() {
-            return getContext().createProducerTemplate();
-        }
-
-        @Override
-        protected Map<String, CamelContext> getCamelContextMap() {
-            return Collections.singletonMap("camel-1", getContext());
-        }
+        long t1 = System.nanoTime();
+        System.err.println("Dump routes: " + (t1 - t0) + " ns");
     }
 
 }

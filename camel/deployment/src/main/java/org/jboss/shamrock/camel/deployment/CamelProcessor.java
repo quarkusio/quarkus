@@ -7,9 +7,43 @@ import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Stream;
+
+import javax.xml.bind.annotation.XmlAccessOrder;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlAnyAttribute;
+import javax.xml.bind.annotation.XmlAnyElement;
+import javax.xml.bind.annotation.XmlAttachmentRef;
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElementDecl;
+import javax.xml.bind.annotation.XmlElementRef;
+import javax.xml.bind.annotation.XmlElementRefs;
+import javax.xml.bind.annotation.XmlElementWrapper;
+import javax.xml.bind.annotation.XmlElements;
+import javax.xml.bind.annotation.XmlEnum;
+import javax.xml.bind.annotation.XmlEnumValue;
+import javax.xml.bind.annotation.XmlID;
+import javax.xml.bind.annotation.XmlIDREF;
+import javax.xml.bind.annotation.XmlInlineBinaryData;
+import javax.xml.bind.annotation.XmlList;
+import javax.xml.bind.annotation.XmlMimeType;
+import javax.xml.bind.annotation.XmlMixed;
+import javax.xml.bind.annotation.XmlNs;
+import javax.xml.bind.annotation.XmlRegistry;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlSchema;
+import javax.xml.bind.annotation.XmlSchemaType;
+import javax.xml.bind.annotation.XmlSchemaTypes;
+import javax.xml.bind.annotation.XmlSeeAlso;
+import javax.xml.bind.annotation.XmlTransient;
+import javax.xml.bind.annotation.XmlType;
+import javax.xml.bind.annotation.XmlValue;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapters;
 
 import org.apache.camel.Component;
 import org.apache.camel.Consumer;
@@ -17,6 +51,7 @@ import org.apache.camel.Converter;
 import org.apache.camel.Endpoint;
 import org.apache.camel.Producer;
 import org.apache.camel.TypeConverter;
+import org.apache.camel.component.file.GenericFile;
 import org.apache.camel.component.file.GenericFileProcessStrategy;
 import org.apache.camel.component.file.strategy.GenericFileProcessStrategyFactory;
 import org.apache.camel.spi.DataFormat;
@@ -26,8 +61,8 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
-import org.jboss.shamrock.camel.runtime.CamelDeploymentTemplate;
 import org.jboss.shamrock.camel.runtime.CamelRuntime;
+import org.jboss.shamrock.camel.runtime.CamelTemplate;
 import org.jboss.shamrock.camel.runtime.SimpleLazyRegistry;
 import org.jboss.shamrock.deployment.ArchiveContext;
 import org.jboss.shamrock.deployment.ProcessorContext;
@@ -52,34 +87,24 @@ public class CamelProcessor implements ResourceProcessor {
             return;
         }
 
-        try (Processor processor = new Processor(archiveContext, processorContext, index, runtimes)) {
-            processor.process();
-        }
+        new Processor(archiveContext, processorContext, index, runtimes).process();
     }
 
-    static class Processor implements AutoCloseable {
+    static class Processor {
 
         final ArchiveContext archiveContext;
         final ProcessorContext processorContext;
         final IndexView index;
         final Collection<ClassInfo> runtimes;
-        final BytecodeRecorder recorder;
-        final CamelDeploymentTemplate camelTemplate;
         final SimpleLazyRegistry registry;
+        final Map<String, Map<Class<?>, String>> components = new HashMap<>();
 
         Processor(ArchiveContext archiveContext, ProcessorContext processorContext, IndexView index, Collection<ClassInfo> runtimes) {
             this.archiveContext = archiveContext;
             this.processorContext = processorContext;
             this.index = index;
             this.runtimes = runtimes;
-            this.recorder = processorContext.addDeploymentTask(1000);
-            this.camelTemplate = recorder.getRecordingProxy(CamelDeploymentTemplate.class);
             this.registry = new SimpleLazyRegistry();
-        }
-
-        @Override
-        public void close() throws Exception {
-            recorder.close();
         }
 
         private void process() throws Exception {
@@ -87,9 +112,23 @@ public class CamelProcessor implements ResourceProcessor {
 
             // JAXB
             processorContext.addReflectiveClass(false, false, "com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl");
+            processorContext.addReflectiveClass(false, false, "com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl");
             processorContext.addReflectiveClass(true, false, "com.sun.xml.bind.v2.ContextFactory");
             processorContext.addReflectiveClass(true, false, "com.sun.xml.internal.bind.v2.ContextFactory");
+            Stream.of(XmlAccessOrder.class, XmlAccessorType.class, XmlAnyAttribute.class, XmlAnyElement.class, XmlAttachmentRef.class, XmlAttribute.class,
+                    XmlElement.class, XmlElementDecl.class, XmlElementRef.class, XmlElementRefs.class, XmlElements.class, XmlElementWrapper.class,
+                    XmlEnum.class, XmlEnumValue.class, XmlID.class, XmlIDREF.class, XmlInlineBinaryData.class, XmlList.class, XmlMimeType.class,
+                    XmlMixed.class, XmlNs.class, XmlRegistry.class, XmlRootElement.class, XmlSchema.class, XmlSchemaType.class, XmlSchemaTypes.class,
+                    XmlSeeAlso.class, XmlTransient.class, XmlType.class, XmlValue.class,
+                    XmlJavaTypeAdapter.class, XmlJavaTypeAdapters.class)
+                    .map(Class::getName)
+                    .forEach(clazz -> processorContext.addReflectiveClass(true, false, clazz));
             processorContext.addResourceBundle("javax.xml.bind.Messages");
+            processorContext.addResourceBundle("com.sun.org.apache.xml.internal.serializer.utils.SerializerMessages");
+            processorContext.addResourceBundle("com.sun.org.apache.xml.internal.res.XMLErrorResources");
+            Stream.of("html", "text", "xml", "unknown")
+                    .map(s -> "com/sun/org/apache/xml/internal/serializer/output_" + s + ".properties")
+                    .forEach(processorContext::addResource);
             iterateResources("org/apache/camel")
                     .filter(p -> p.getFileName().toString().equals("jaxb.index"))
                     .forEach(this::handleJaxbFile);
@@ -115,6 +154,7 @@ public class CamelProcessor implements ResourceProcessor {
                     .flatMap(Collection::stream)
                     .filter(this::isPublic)
                     .forEach(v -> processorContext.addReflectiveClass(true, true, v.name().toString()));
+            processorContext.addReflectiveClass(false, false, GenericFile.class.getName());
 
             // GenericFileProcessStrategyFactory is used through reflection
             processorContext.addReflectiveClass(true, false, GenericFileProcessStrategyFactory.class.getName());
@@ -135,16 +175,29 @@ public class CamelProcessor implements ResourceProcessor {
             ConfigNode config = archiveContext.getBuildConfig().getApplicationConfig();
             storeProperties(properties, config, "");
 
-            for (ClassInfo runtime : runtimes) {
-                String clazz = runtime.toString();
-                processorContext.addReflectiveClass(true, false, clazz);
-                camelTemplate.run(createRuntimeInstanceFactory(clazz), registry, properties);
+            try (BytecodeRecorder recorder = processorContext.addStaticInitTask(1000)) {
+                CamelTemplate template = recorder.getRecordingProxy(CamelTemplate.class);
+                template.createRuntimes();
             }
-        }
-
-        @SuppressWarnings("unchecked")
-        private InjectionInstance<? extends CamelRuntime> createRuntimeInstanceFactory(String clazz) {
-            return (InjectionInstance) recorder.newInstanceFactory(clazz);
+            try (BytecodeRecorder recorder = processorContext.addStaticInitTask(1001)) {
+                CamelTemplate template = recorder.getRecordingProxy(CamelTemplate.class);
+                SimpleLazyRegistry registry = new SimpleLazyRegistry();
+                for (Map.Entry<String, Map<Class<?>, String>> e1 : components.entrySet()) {
+                    for (Map.Entry<Class<?>, String> e2 : e1.getValue().entrySet()) {
+                        registry.bind(e1.getKey(), e2.getKey(), recorder.newInstanceFactory(e2.getValue()));
+                    }
+                }
+                for (ClassInfo runtime : runtimes) {
+                    String clazz = runtime.toString();
+                    processorContext.addReflectiveClass(true, false, clazz);
+                    template.init(null, (InjectionInstance) recorder.newInstanceFactory(clazz),
+                                  registry, properties);
+                }
+            }
+            try (BytecodeRecorder recorder = processorContext.addDeploymentTask(1002)) {
+                CamelTemplate template = recorder.getRecordingProxy(CamelTemplate.class);
+                template.run(null);
+            }
         }
 
         private boolean isPublic(ClassInfo ci) {
@@ -168,7 +221,8 @@ public class CamelProcessor implements ResourceProcessor {
                     String k = entry.getKey().toString();
                     if (k.equals("class")) {
                         String clazz = entry.getValue().toString();
-                        registry.bind(name, type, recorder.newInstanceFactory(clazz));
+                        components.computeIfAbsent(name, n -> new HashMap<>())
+                                .put(type, clazz);
                         processorContext.addReflectiveClass(true, false, clazz);
                     } else if (k.endsWith(".class")) {
                         // Used for strategy.factory.class
@@ -189,11 +243,16 @@ public class CamelProcessor implements ResourceProcessor {
         private void handleJaxbFile(Path p) {
             try {
                 String path = p.toAbsolutePath().toString().substring(1);
+                String pkg = p.toAbsolutePath().getParent().toString().substring(1).replace("/", ".") + ".";
                 processorContext.addResource(path);
                 for (String line : Files.readAllLines(p)) {
                     if (!line.startsWith("#")) {
-                        String clazz = path.replace("/", ".") + "." + line.trim();
-                        processorContext.addReflectiveClass(true, false, clazz);
+                        String clazz = pkg + line.trim();
+                        Class cl = Class.forName(clazz);
+                        while (cl != Object.class) {
+                            processorContext.addReflectiveClass(true, true, cl.getName());
+                            cl = cl.getSuperclass();
+                        }
                     }
                 }
             } catch (Exception e) {

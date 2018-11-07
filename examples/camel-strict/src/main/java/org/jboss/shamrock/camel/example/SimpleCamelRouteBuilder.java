@@ -16,11 +16,11 @@ import org.jboss.shamrock.runtime.RegisterForReflection;
 
 public class SimpleCamelRouteBuilder extends CamelRuntime {
 
-    public SimpleCamelRouteBuilder() {
+    static {
+        new SimpleCamelRouteBuilder();
     }
 
-    public static void main(String[] args) throws Exception {
-        new SimpleCamelRouteBuilder().run();
+    public SimpleCamelRouteBuilder() {
     }
 
     @Override

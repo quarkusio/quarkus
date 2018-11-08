@@ -24,11 +24,15 @@ import java.util.Set;
 import org.apache.camel.NoSuchBeanException;
 import org.apache.camel.spi.Registry;
 import org.jboss.shamrock.runtime.InjectionInstance;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A {@link Map}-based registry.
  */
 public class SimpleLazyRegistry extends HashMap<String, Map<Class<?>, Object>> implements Registry {
+
+    protected final Logger log = LoggerFactory.getLogger(getClass());
 
     public void bind(String name, Class<?> clazz, Object object) {
         this.computeIfAbsent(name, k -> new HashMap<>()).put(clazz, object);
@@ -53,6 +57,7 @@ public class SimpleLazyRegistry extends HashMap<String, Map<Class<?>, Object>> i
             }
         }
         if (answer instanceof InjectionInstance) {
+            log.info("Creating {} for name {}", type.toString(), name);
             answer = ((InjectionInstance) answer).newInstance();
         }
         try {

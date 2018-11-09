@@ -9,19 +9,13 @@ import org.apache.camel.AsyncCallback;
 import org.apache.camel.AsyncProcessor;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
+import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.bean.BeanProcessor;
 import org.apache.camel.support.DefaultExchange;
-import org.jboss.shamrock.camel.runtime.CamelRuntime;
 import org.jboss.shamrock.runtime.RegisterForReflection;
 
-public class SimpleCamelRouteBuilder extends CamelRuntime {
-
-    static {
-        new SimpleCamelRouteBuilder();
-    }
-
-    public SimpleCamelRouteBuilder() {
-    }
+@RegisterForReflection
+public class SimpleCamelRouteBuilder extends RouteBuilder {
 
     @Override
     public void configure() {

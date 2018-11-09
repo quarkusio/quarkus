@@ -7,9 +7,10 @@ import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.xml.bind.annotation.XmlAccessOrder;
@@ -50,10 +51,12 @@ import org.apache.camel.Consumer;
 import org.apache.camel.Converter;
 import org.apache.camel.Endpoint;
 import org.apache.camel.Producer;
+import org.apache.camel.RoutesBuilder;
 import org.apache.camel.TypeConverter;
 import org.apache.camel.component.file.GenericFile;
 import org.apache.camel.component.file.GenericFileProcessStrategy;
 import org.apache.camel.component.file.strategy.GenericFileProcessStrategyFactory;
+import org.apache.camel.impl.converter.DoubleMap;
 import org.apache.camel.spi.DataFormat;
 import org.apache.camel.spi.ExchangeFormatter;
 import org.apache.camel.spi.Language;
@@ -63,7 +66,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.shamrock.camel.runtime.CamelRuntime;
 import org.jboss.shamrock.camel.runtime.CamelTemplate;
-import org.jboss.shamrock.camel.runtime.SimpleLazyRegistry;
+import org.jboss.shamrock.camel.runtime.RuntimeRegistry;
 import org.jboss.shamrock.deployment.ArchiveContext;
 import org.jboss.shamrock.deployment.ProcessorContext;
 import org.jboss.shamrock.deployment.ResourceProcessor;
@@ -80,14 +83,7 @@ public class CamelProcessor implements ResourceProcessor {
 
     @Override
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
-        final IndexView index = archiveContext.getCombinedIndex();
-
-        Collection<ClassInfo> runtimes = index.getAllKnownSubclasses(DotName.createSimple(CamelRuntime.class.getName()));
-        if (runtimes.isEmpty()) {
-            return;
-        }
-
-        new Processor(archiveContext, processorContext, index, runtimes).process();
+        new Processor(archiveContext, processorContext).process();
     }
 
     static class Processor {
@@ -95,16 +91,14 @@ public class CamelProcessor implements ResourceProcessor {
         final ArchiveContext archiveContext;
         final ProcessorContext processorContext;
         final IndexView index;
-        final Collection<ClassInfo> runtimes;
-        final SimpleLazyRegistry registry;
-        final Map<String, Map<Class<?>, String>> components = new HashMap<>();
+        final RuntimeRegistry registry;
+        final DoubleMap<String, Class<?>, String> components = new DoubleMap<>(128);
 
-        Processor(ArchiveContext archiveContext, ProcessorContext processorContext, IndexView index, Collection<ClassInfo> runtimes) {
+        Processor(ArchiveContext archiveContext, ProcessorContext processorContext) {
             this.archiveContext = archiveContext;
             this.processorContext = processorContext;
-            this.index = index;
-            this.runtimes = runtimes;
-            this.registry = new SimpleLazyRegistry();
+            this.index = archiveContext.getCombinedIndex();
+            this.registry = new RuntimeRegistry();
         }
 
         private void process() throws Exception {
@@ -175,29 +169,33 @@ public class CamelProcessor implements ResourceProcessor {
             ConfigNode config = archiveContext.getBuildConfig().getApplicationConfig();
             storeProperties(properties, config, "");
 
+            List<String> builders = index.getAllKnownImplementors(DotName.createSimple(RoutesBuilder.class.getName()))
+                    .stream()
+                    .filter(this::isConcrete)
+                    .filter(this::isPublic)
+                    .map(ClassInfo::toString)
+                    .collect(Collectors.toList());
+
             try (BytecodeRecorder recorder = processorContext.addStaticInitTask(1000)) {
+
+                String clazz = properties.getProperty(CamelRuntime.PROP_CAMEL_RUNTIME, CamelRuntime.class.getName());
+                InjectionInstance<CamelRuntime> iruntime = (InjectionInstance) recorder.newInstanceFactory(clazz);
+                RuntimeRegistry registry = new RuntimeRegistry();
+
+                components.forEach((n, c, o) -> registry.bind(n, c, recorder.newInstanceFactory(o)));
+                List<InjectionInstance<RoutesBuilder>> ibuilders = (List) builders.stream().map(recorder::newInstanceFactory).collect(Collectors.toList());
+
                 CamelTemplate template = recorder.getRecordingProxy(CamelTemplate.class);
-                template.createRuntimes();
+                template.init(iruntime, registry, properties, ibuilders);
             }
-            try (BytecodeRecorder recorder = processorContext.addStaticInitTask(1001)) {
+            try (BytecodeRecorder recorder = processorContext.addDeploymentTask(1001)) {
                 CamelTemplate template = recorder.getRecordingProxy(CamelTemplate.class);
-                SimpleLazyRegistry registry = new SimpleLazyRegistry();
-                for (Map.Entry<String, Map<Class<?>, String>> e1 : components.entrySet()) {
-                    for (Map.Entry<Class<?>, String> e2 : e1.getValue().entrySet()) {
-                        registry.bind(e1.getKey(), e2.getKey(), recorder.newInstanceFactory(e2.getValue()));
-                    }
-                }
-                for (ClassInfo runtime : runtimes) {
-                    String clazz = runtime.toString();
-                    processorContext.addReflectiveClass(true, false, clazz);
-                    template.init(null, (InjectionInstance) recorder.newInstanceFactory(clazz),
-                                  registry, properties);
-                }
+                template.start(null);
             }
-            try (BytecodeRecorder recorder = processorContext.addDeploymentTask(1002)) {
-                CamelTemplate template = recorder.getRecordingProxy(CamelTemplate.class);
-                template.run(null);
-            }
+        }
+
+        private boolean isConcrete(ClassInfo ci) {
+            return (ci.flags() & Modifier.ABSTRACT) == 0;
         }
 
         private boolean isPublic(ClassInfo ci) {
@@ -221,8 +219,7 @@ public class CamelProcessor implements ResourceProcessor {
                     String k = entry.getKey().toString();
                     if (k.equals("class")) {
                         String clazz = entry.getValue().toString();
-                        components.computeIfAbsent(name, n -> new HashMap<>())
-                                .put(type, clazz);
+                        components.put(name, type, clazz);
                         processorContext.addReflectiveClass(true, false, clazz);
                     } else if (k.endsWith(".class")) {
                         // Used for strategy.factory.class

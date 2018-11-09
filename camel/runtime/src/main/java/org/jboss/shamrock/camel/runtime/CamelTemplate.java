@@ -1,38 +1,31 @@
 package org.jboss.shamrock.camel.runtime;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
-import javax.xml.bind.JAXBContext;
-
-import org.apache.camel.impl.DefaultModelJAXBContextFactory;
+import org.apache.camel.RoutesBuilder;
 import org.jboss.shamrock.runtime.ContextObject;
 import org.jboss.shamrock.runtime.InjectionInstance;
 
 public class CamelTemplate {
 
-    @ContextObject("camel.runtimes")
-    public List<CamelRuntime> createRuntimes() {
-        return new ArrayList<>();
-    }
-
-    public void init(@ContextObject("camel.runtimes") List<CamelRuntime> runtimes,
-                     InjectionInstance<? extends CamelRuntime> ii,
-                     SimpleLazyRegistry registry,
-                     Properties properties) throws Exception {
-        CamelRuntime runtime = ii.newInstance();
+    @ContextObject("camel.runtime")
+    public CamelRuntime init(
+                     InjectionInstance<CamelRuntime> iruntime,
+                     RuntimeRegistry registry,
+                     Properties properties,
+                     List<InjectionInstance<RoutesBuilder>> builders) throws Exception {
+        CamelRuntime runtime = iruntime.newInstance();
         runtime.setRegistry(registry);
         runtime.setProperties(properties);
+        runtime.setBuilders(builders.stream().map(InjectionInstance::newInstance).collect(Collectors.toList()));
         runtime.init();
-        runtimes.add(runtime);
+        return runtime;
     }
 
-    public void run(@ContextObject("camel.runtimes") List<CamelRuntime> runtimes) throws Exception {
-        for (CamelRuntime runtime : runtimes) {
-            runtime.run();
-        }
+    public void start(@ContextObject("camel.runtime") CamelRuntime runtime) throws Exception {
+        runtime.start();
     }
 
 }

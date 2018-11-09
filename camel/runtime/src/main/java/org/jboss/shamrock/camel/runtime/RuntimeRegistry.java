@@ -30,9 +30,13 @@ import org.slf4j.LoggerFactory;
 /**
  * A {@link Map}-based registry.
  */
-public class SimpleLazyRegistry extends HashMap<String, Map<Class<?>, Object>> implements Registry {
+public class RuntimeRegistry extends HashMap<String, Map<Class<?>, Object>> implements Registry {
 
     protected final Logger log = LoggerFactory.getLogger(getClass());
+
+    public void bind(String name, Object object) {
+        bind(name, object.getClass(), object);
+    }
 
     public void bind(String name, Class<?> clazz, Object object) {
         this.computeIfAbsent(name, k -> new HashMap<>()).put(clazz, object);

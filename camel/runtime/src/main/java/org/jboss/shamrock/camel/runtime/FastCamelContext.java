@@ -1,9 +1,12 @@
 package org.jboss.shamrock.camel.runtime;
 
+import java.util.Properties;
+
 import org.apache.camel.CamelContext;
 import org.apache.camel.CamelContextAware;
 import org.apache.camel.Component;
 import org.apache.camel.component.headersmap.FastHeadersMapFactory;
+import org.apache.camel.component.properties.PropertiesComponent;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.spi.ComponentResolver;
 import org.apache.camel.spi.DataFormat;
@@ -50,11 +53,11 @@ public class FastCamelContext extends DefaultCamelContext {
 
     @Override
     protected ComponentResolver createComponentResolver() {
-        return (name, context) -> resolve(Component.class, name, context);
+        return (name, context) -> resolve(Component.class, "component", name, context);
     }
     @Override
     protected LanguageResolver createLanguageResolver() {
-        return (name, context) -> resolve(Language.class, name, context);
+        return (name, context) -> resolve(Language.class, "language", name, context);
     }
     @Override
     protected DataFormatResolver createDataFormatResolver() {
@@ -65,15 +68,24 @@ public class FastCamelContext extends DefaultCamelContext {
             }
             @Override
             public DataFormat createDataFormat(String name, CamelContext context) {
-                return resolve(DataFormat.class, name, context);
+                return resolve(DataFormat.class, "dataformat", name, context);
             }
         };
     }
 
-    protected <T> T resolve(Class<T> type, String name, CamelContext context) {
-        T result = context.getRegistry().lookupByNameAndType(name, type);
+    protected <T> T resolve(Class<T> clazz, String type, String name, CamelContext context) {
+        T result = context.getRegistry().lookupByNameAndType(name, clazz);
         if (result instanceof CamelContextAware) {
             ((CamelContextAware) result).setCamelContext(context);
+        }
+        PropertiesComponent comp = getPropertiesComponent();
+        if (comp != null) {
+            Properties props = comp.getInitialProperties();
+            if (props != null) {
+                String pfx = CamelRuntime.PFX_CAMEL + type + "." + name;
+                log.info("Binding {} {} with prefix {}", type, name, pfx);
+                RuntimeSupport.bindProperties(props, result, pfx);
+            }
         }
         return (T) result;
     }

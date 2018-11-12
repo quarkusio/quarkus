@@ -991,6 +991,20 @@
                 <updatePolicy>daily</updatePolicy>
             </snapshots>
         </repository>
+        
+        <repository>
+            <id>apache-snapshots</id>
+            <name>Apache - Snapshots</name>
+            <url>https://repository.apache.org/snapshots/</url>
+            <layout>default</layout>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>daily</updatePolicy>
+            </snapshots>
+        </repository>
     </repositories>
 
     <distributionManagement>

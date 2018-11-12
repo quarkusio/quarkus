@@ -226,12 +226,14 @@ public final class BuildContext {
         }
         if (id.isMulti()) {
             final List<BuildItem> list = execution.getMultis().computeIfAbsent(id, x -> new ArrayList<>());
-            if (Comparable.class.isAssignableFrom(id.getType())) {
-                int pos = Collections.binarySearch((List) list, value);
-                if (pos < 0) pos = -(pos + 1);
-                list.add(pos, value);
-            } else {
-                list.add(value);
+            synchronized (list) {
+                if (Comparable.class.isAssignableFrom(id.getType())) {
+                    int pos = Collections.binarySearch((List) list, value);
+                    if (pos < 0) pos = -(pos + 1);
+                    list.add(pos, value);
+                } else {
+                    list.add(value);
+                }
             }
         } else {
             if (execution.getSingles().putIfAbsent(id, value) != null) {

@@ -81,15 +81,6 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
         method = m;
     }
 
-    private String findContextName(Annotation[] annotations) {
-        for (Annotation a : annotations) {
-            if (a.annotationType() == ContextObject.class) {
-                return ((ContextObject) a).value();
-            }
-        }
-        return null;
-    }
-
     @Override
     public <F, T> void registerSubstitution(Class<F> from, Class<T> to, Class<? extends ObjectSubstitution<F, T>> substitution) {
         substitutions.put(from, new SubstitutionHolder(from, to, substitution));
@@ -130,10 +121,10 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
 
         public <T> T getRecordingProxy(Class<T> theClass) {
             if (existingProxyClasses.containsKey(theClass)) {
-                return (T) existingProxyClasses.get(theClass);
+                return theClass.cast(existingProxyClasses.get(theClass));
             }
-            ProxyFactory<T> factory = new ProxyFactory<>(new ProxyConfiguration<T>()
-                    .setSuperClass((Class) theClass)
+            ProxyFactory<T> factory = new ProxyFactory<T>(new ProxyConfiguration<T>()
+                    .setSuperClass(theClass)
                     .setClassLoader(classLoader)
                     .setProxyName(getClass().getName() + "$$RecordingProxyProxy" + COUNT.incrementAndGet()));
             try {
@@ -194,16 +185,6 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
     public void close() {
         ClassCreator file = ClassCreator.builder().classOutput(ClassOutput.gizmoAdaptor(classOutput,  true)).className(className).superClass(Object.class).interfaces(StartupTask.class).build();
         MethodCreator method = file.getMethodCreator(this.method.getName(), this.method.getReturnType(), this.method.getParameterTypes());
-
-        //figure out where we can start using local variables
-        int localVarCounter = 1;
-        for (Class<?> t : this.method.getParameterTypes()) {
-            if (t == double.class || t == long.class) {
-                localVarCounter += 2;
-            } else {
-                localVarCounter++;
-            }
-        }
 
         //now create instances of all the classes we invoke on and store them in variables as well
         Map<Class, ResultHandle> classInstanceVariables = new HashMap<>();

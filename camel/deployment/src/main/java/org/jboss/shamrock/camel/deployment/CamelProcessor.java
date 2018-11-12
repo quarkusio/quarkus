@@ -107,6 +107,7 @@ public class CamelProcessor implements ResourceProcessor {
             // JAXB
             processorContext.addReflectiveClass(false, false, "com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl");
             processorContext.addReflectiveClass(false, false, "com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl");
+            processorContext.addReflectiveClass(false, false, "com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl");            
             processorContext.addReflectiveClass(true, false, "com.sun.xml.bind.v2.ContextFactory");
             processorContext.addReflectiveClass(true, false, "com.sun.xml.internal.bind.v2.ContextFactory");
             Stream.of(XmlAccessOrder.class, XmlAccessorType.class, XmlAnyAttribute.class, XmlAnyElement.class, XmlAttachmentRef.class, XmlAttribute.class,

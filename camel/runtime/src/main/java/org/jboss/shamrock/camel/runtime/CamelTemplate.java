@@ -12,14 +12,17 @@ public class CamelTemplate {
 
     @ContextObject("camel.runtime")
     public CamelRuntime init(
-                     InjectionInstance<CamelRuntime> iruntime,
+                     InjectionInstance<?> iruntime,
                      RuntimeRegistry registry,
                      Properties properties,
-                     List<InjectionInstance<RoutesBuilder>> builders) throws Exception {
-        CamelRuntime runtime = iruntime.newInstance();
+                     List<InjectionInstance<?>> builders) throws Exception {
+        CamelRuntime runtime = CamelRuntime.class.cast(iruntime.newInstance());
         runtime.setRegistry(registry);
         runtime.setProperties(properties);
-        runtime.setBuilders(builders.stream().map(InjectionInstance::newInstance).collect(Collectors.toList()));
+        runtime.setBuilders(builders.stream()
+                .map(InjectionInstance::newInstance)
+                .map(RoutesBuilder.class::cast)
+                .collect(Collectors.toList()));
         runtime.init();
         return runtime;
     }

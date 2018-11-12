@@ -39,7 +39,7 @@
         <javax.json.version>1.1.2</javax.json.version>
         <jboss-jaxrs-api_2.1_spec.version>1.0.0.Final</jboss-jaxrs-api_2.1_spec.version>
         <asm.version>6.2.1</asm.version>
-        <cdi-api.version>2.0</cdi-api.version>
+        <cdi-api.version>2.0.SP1</cdi-api.version>
         <fakereplace.version>1.0.0.Alpha7</fakereplace.version>
         <hibernate-orm.version>1.0.0-SNAPSHOT</hibernate-orm.version>
         <jboss-metadata-web.version>11.0.0.Final</jboss-metadata-web.version>
@@ -153,6 +153,8 @@
                                             <exclude>org.jboss.logging:jboss-logging</exclude>
                                             <!-- use our jboss-logmanager -->
                                             <exclude>org.jboss.logging:jboss-logmanager</exclude>
+                                            <!-- We don't want all the API's in one jar-->
+                                            <exclude>javax:javaee-api</exclude>
                                         </excludes>
                                     </bannedDependencies>
                                 </rules>
@@ -581,6 +583,10 @@
                     <exclusion>
                         <groupId>org.jboss.logging</groupId>
                         <artifactId>jboss-logging</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>javax</groupId>
+                        <artifactId>javaee-api</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>

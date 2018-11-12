@@ -29,6 +29,10 @@
             <groupId>io.smallrye</groupId>
             <artifactId>smallrye-opentracing</artifactId>
         </dependency>
+        <dependency>
+            <groupId>javax.enterprise</groupId>
+            <artifactId>cdi-api</artifactId>
+        </dependency>
     </dependencies>
 
 

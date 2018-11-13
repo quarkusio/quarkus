@@ -34,6 +34,7 @@ public class JPATestBootstrapEndpoint extends HttpServlet {
             testStoreLoadOnJPA();
         }
         catch (Exception e) {
+            e.printStackTrace();
            reportException("Oops, shit happened, No boot for you!", e, resp);
         }
 

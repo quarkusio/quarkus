@@ -7,7 +7,7 @@ import org.jboss.resteasy.core.InjectorFactoryImpl;
 import org.jboss.resteasy.spi.ConstructorInjector;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.jboss.resteasy.spi.metadata.ResourceConstructor;
-import org.jboss.shamrock.runtime.BeanContainer;
+import org.jboss.shamrock.runtime.cdi.BeanContainer;
 
 /**
  * Created by bob on 7/31/18.

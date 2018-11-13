@@ -19,7 +19,7 @@ public class JPAConfig {
 
     private final AtomicBoolean jtaEnabled;
 
-    private final Map<String, EntityManagerFactory> persistenceUnits;
+    private final Map<String, LazyPu> persistenceUnits;
 
     private final AtomicReference<String> defaultPersistenceUnitName;
 
@@ -37,17 +37,23 @@ public class JPAConfig {
         if (unitName == null || unitName.isEmpty()) {
             if (persistenceUnits.size() == 1) {
                 String defaultUnitName = defaultPersistenceUnitName.get();
-                return defaultUnitName != null ? persistenceUnits.get(defaultUnitName)
-                        : persistenceUnits.values().iterator().next();
+                return defaultUnitName != null ? persistenceUnits.get(defaultUnitName).get()
+                        : persistenceUnits.values().iterator().next().get();
             } else {
                 throw new IllegalStateException("Unable to identify the default PU: " + persistenceUnits);
             }
         }
-        return persistenceUnits.get(unitName);
+        return persistenceUnits.get(unitName).get();
     }
 
-    void bootstrapPersistenceUnit(String unitName) {
-        persistenceUnits.put(unitName, Persistence.createEntityManagerFactory(unitName));
+    void registerPersistenceUnit(String unitName) {
+        persistenceUnits.put(unitName, new LazyPu(unitName));
+    }
+
+    void startAll() {
+        for(Map.Entry<String, LazyPu> i : persistenceUnits.entrySet()) {
+            i.getValue().get();
+        }
     }
 
     void initDefaultPersistenceUnit() {
@@ -62,14 +68,36 @@ public class JPAConfig {
 
     @PreDestroy
     void destroy() {
-        for (EntityManagerFactory factory : persistenceUnits.values()) {
+        for (LazyPu factory : persistenceUnits.values()) {
             try {
-                factory.close();
+                factory.get().close();
             } catch (Exception e) {
                 LOGGER.warn("Unable to close the EntityManagerFactory: " + factory, e);
             }
         }
         persistenceUnits.clear();
+    }
+
+    static final class LazyPu {
+
+        private final String name;
+        private volatile EntityManagerFactory value;
+
+        LazyPu(String name) {
+            this.name = name;
+        }
+
+        EntityManagerFactory get() {
+            if(value == null) {
+                synchronized (this) {
+                    if(value == null) {
+                        value = Persistence.createEntityManagerFactory(name);
+                    }
+                }
+            }
+            return value;
+        }
+
     }
 
 }

@@ -102,6 +102,32 @@ class ArcContainerImpl implements ArcContainer {
     }
 
     @Override
+    public <T> Supplier<InstanceHandle<T>> instanceSupplier(Class<T> type, Annotation... qualifiers) {
+        requireRunning();
+
+        InjectableBean<T> bean = getBean(type, qualifiers);
+        if(bean == null) {
+            return null;
+        }
+        return new Supplier<InstanceHandle<T>>() {
+            @Override
+            public InstanceHandle<T> get() {CreationalContextImpl<T> creationalContext = new CreationalContextImpl<>();
+                InjectionPoint prev = InjectionPointProvider.CURRENT.get();
+                InjectionPointProvider.CURRENT.set(CurrentInjectionPointProvider.EMPTY);
+                try {
+                    return new InstanceHandleImpl<T>(bean, bean.get(creationalContext), creationalContext, creationalContext);
+                } finally {
+                    if (prev != null) {
+                        InjectionPointProvider.CURRENT.set(prev);
+                    } else {
+                        InjectionPointProvider.CURRENT.remove();
+                    }
+                }
+            }
+        };
+    }
+
+    @Override
     public ManagedContext requestContext() {
         requireRunning();
         return (ManagedContext) getContext(RequestScoped.class);

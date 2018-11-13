@@ -189,6 +189,7 @@
                 <artifactId>shamrock-agroal-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
             <dependency>
                 <groupId>org.jboss.shamrock</groupId>
                 <artifactId>shamrock-agroal-runtime</artifactId>
@@ -203,6 +204,22 @@
                 <groupId>org.jboss.shamrock</groupId>
                 <artifactId>shamrock-bean-validation-runtime</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-deployment-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-builder</artifactId>
+                <version>${project.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.logging</groupId>
+                        <artifactId>jboss-logging</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.jboss.shamrock</groupId>
@@ -649,6 +666,7 @@
                 <artifactId>jandex</artifactId>
                 <version>${version.org.jandex}</version>
             </dependency>
+
             <dependency>
                 <groupId>org.jboss.classfilewriter</groupId>
                 <artifactId>jboss-classfilewriter</artifactId>

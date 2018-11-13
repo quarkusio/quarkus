@@ -18,6 +18,7 @@
         <module>strict</module>
         <module>jpa-strict</module>
         <module>common-jpa-entities</module>
+        <module>undertow</module>
     </modules>
 
     <dependencies>

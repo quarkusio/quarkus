@@ -12,7 +12,7 @@ import javax.sql.DataSource;
 public class DatasourceSetup {
 
     @Inject
-    private DataSource dataSource;
+    DataSource dataSource;
 
     @PostConstruct
     public void setup() throws Exception {

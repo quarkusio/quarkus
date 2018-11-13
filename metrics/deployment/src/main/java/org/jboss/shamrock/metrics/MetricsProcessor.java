@@ -1,8 +1,10 @@
 package org.jboss.shamrock.metrics;
 
+import static org.jboss.shamrock.annotations.ExecutionTime.RUNTIME_INIT;
+import static org.jboss.shamrock.annotations.ExecutionTime.STATIC_INIT;
+
 import java.util.Collection;
 
-import javax.inject.Inject;
 import javax.interceptor.Interceptor;
 
 import org.eclipse.microprofile.metrics.annotation.Counted;
@@ -13,18 +15,18 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.shamrock.deployment.ArchiveContext;
-import org.jboss.shamrock.deployment.BeanArchiveIndex;
-import org.jboss.shamrock.deployment.BeanDeployment;
-import org.jboss.shamrock.deployment.ProcessorContext;
-import org.jboss.shamrock.deployment.ResourceProcessor;
-import org.jboss.shamrock.deployment.RuntimePriority;
+import org.jboss.shamrock.annotations.BuildProducer;
+import org.jboss.shamrock.annotations.BuildStep;
+import org.jboss.shamrock.annotations.ExecutionTime;
+import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.deployment.ShamrockConfig;
-import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
+import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
+import org.jboss.shamrock.deployment.builditem.BeanArchiveIndexBuildItem;
+import org.jboss.shamrock.deployment.builditem.BeanContainerBuildItem;
+import org.jboss.shamrock.deployment.builditem.ReflectiveClassBuildItem;
 import org.jboss.shamrock.metrics.runtime.MetricsDeploymentTemplate;
 import org.jboss.shamrock.metrics.runtime.MetricsServlet;
-import org.jboss.shamrock.undertow.ServletData;
-import org.jboss.shamrock.undertow.ServletDeployment;
+import org.jboss.shamrock.undertow.ServletBuildItem;
 
 import io.smallrye.metrics.MetricProducer;
 import io.smallrye.metrics.MetricRegistries;
@@ -36,79 +38,72 @@ import io.smallrye.metrics.interceptors.MetricsBinding;
 import io.smallrye.metrics.interceptors.MetricsInterceptor;
 import io.smallrye.metrics.interceptors.TimedInterceptor;
 
-public class MetricsProcessor implements ResourceProcessor {
+public class MetricsProcessor {
 
 
-    @Inject
-    private BeanDeployment beanDeployment;
+    @BuildStep
+    ServletBuildItem createServlet(ShamrockConfig config) {
+        ServletBuildItem servletBuildItem = new ServletBuildItem("metrics", MetricsServlet.class.getName());
+        servletBuildItem.getMappings().add(config.getConfig("metrics.path", "/metrics"));
+        return servletBuildItem;
+    }
 
-    @Inject
-    private ShamrockConfig config;
-
-    @Inject
-    private ServletDeployment servletDeployment;
-
-    @Inject
-    private BeanArchiveIndex beanArchiveIndex;
-
-    @Override
-    public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
-        ServletData servletData = new ServletData("metrics", MetricsServlet.class.getName());
-        servletData.getMapings().add(config.getConfig("metrics.path", "/metrics"));
-        servletDeployment.addServlet(servletData);
-
-        beanDeployment.addAdditionalBean(MetricProducer.class,
+    @BuildStep
+    void beans( BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        additionalBeans.produce(new AdditionalBeanBuildItem(MetricProducer.class,
                 MetricNameFactory.class,
-                MetricRegistries.class);
-
-        beanDeployment.addAdditionalBean(MetricsInterceptor.class,
+                MetricRegistries.class,
+                MetricsInterceptor.class,
                 MeteredInterceptor.class,
                 CountedInterceptor.class,
-                TimedInterceptor.class);
+                TimedInterceptor.class,
+                MetricsRequestHandler.class,
+                MetricsServlet.class));
+    }
 
-        beanDeployment.addAdditionalBean(MetricsRequestHandler.class, MetricsServlet.class);
+    @BuildStep
+    @Record(STATIC_INIT)
+    public void build(BeanContainerBuildItem beanContainerBuildItem,
+                      MetricsDeploymentTemplate metrics,
+                      BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+                      BeanArchiveIndexBuildItem beanArchiveIndex) throws Exception {
 
-        processorContext.addReflectiveClass(false, false, Counted.class.getName(), MetricsBinding.class.getName());
+
+        reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, Counted.class.getName()));
+        reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, MetricsBinding.class.getName()));
 
 
-        try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.WELD_DEPLOYMENT + 30)) {
-            MetricsDeploymentTemplate metrics = recorder.getRecordingProxy(MetricsDeploymentTemplate.class);
+        metrics.createRegistries(beanContainerBuildItem.getValue());
 
-            metrics.createRegistries(null);
+        IndexView index = beanArchiveIndex.getIndex();
+        Collection<AnnotationInstance> annos = index.getAnnotations(DotName.createSimple(Counted.class.getName()));
 
-            IndexView index = beanArchiveIndex.getIndex();
-            Collection<AnnotationInstance> annos = index.getAnnotations(DotName.createSimple(Counted.class.getName()));
+        for (AnnotationInstance anno : annos) {
+            AnnotationTarget target = anno.target();
 
-            for (AnnotationInstance anno : annos) {
-                AnnotationTarget target = anno.target();
-
-                // We need to exclude metrics interceptors
-                if (Kind.CLASS.equals(target.kind())
-                        && target.asClass().classAnnotations().stream().anyMatch(a -> a.name().equals(DotName.createSimple(Interceptor.class.getName())))) {
-                    continue;
-                }
-
-                MethodInfo methodInfo = target.asMethod();
-                String name = methodInfo.name();
-                if(anno.value("name") != null) {
-                    name = anno.value("name").asString();
-                }
-                ClassInfo classInfo = methodInfo.declaringClass();
-
-                metrics.registerCounted(classInfo.name().toString(),
-                        name);
+            // We need to exclude metrics interceptors
+            if (Kind.CLASS.equals(target.kind())
+                    && target.asClass().classAnnotations().stream().anyMatch(a -> a.name().equals(DotName.createSimple(Interceptor.class.getName())))) {
+                continue;
             }
 
-        }
-        try (BytecodeRecorder recorder = processorContext.addDeploymentTask(RuntimePriority.WELD_DEPLOYMENT + 30)) {
-            MetricsDeploymentTemplate metrics = recorder.getRecordingProxy(MetricsDeploymentTemplate.class);
-            metrics.registerBaseMetrics();
-            metrics.registerVendorMetrics();
+            MethodInfo methodInfo = target.asMethod();
+            String name = methodInfo.name();
+            if (anno.value("name") != null) {
+                name = anno.value("name").asString();
+            }
+            ClassInfo classInfo = methodInfo.declaringClass();
+
+            metrics.registerCounted(classInfo.name().toString(),
+                    name);
         }
     }
 
-    @Override
-    public int getPriority() {
-        return 1;
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    void register(MetricsDeploymentTemplate metrics) {
+        metrics.registerBaseMetrics();
+        metrics.registerVendorMetrics();
     }
+
 }

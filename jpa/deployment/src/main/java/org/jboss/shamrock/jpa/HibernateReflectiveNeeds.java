@@ -2,13 +2,13 @@ package org.jboss.shamrock.jpa;
 
 import java.util.Objects;
 
-import org.hibernate.tuple.component.PojoComponentTuplizer;
 import org.hibernate.type.EnumType;
-import org.jboss.shamrock.deployment.ProcessorContext;
+import org.jboss.shamrock.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.builditem.ReflectiveClassBuildItem;
 
 /**
  * This list of classes which any Hibernate ORM using application should register for reflective access on SubstrateVM.
- *
+ * <p>
  * FIXME Find a reliable way to identify these and maintain the list accurate: the current list
  * is likely not complete as it was identified via a dumb "trial&error" strategy.
  *
@@ -16,14 +16,14 @@ import org.jboss.shamrock.deployment.ProcessorContext;
  */
 final class HibernateReflectiveNeeds {
 
-    private final ProcessorContext processorContext;
+    private final BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
 
-    private HibernateReflectiveNeeds(final ProcessorContext processorContext) {
-        Objects.requireNonNull(processorContext);
-        this.processorContext = processorContext;
+    private HibernateReflectiveNeeds(final BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        Objects.requireNonNull(reflectiveClass);
+        this.reflectiveClass = reflectiveClass;
     }
 
-    public static void registerStaticReflectiveNeeds(final ProcessorContext processorContext) {
+    public static void registerStaticReflectiveNeeds(final BuildProducer<ReflectiveClassBuildItem> processorContext) {
         Objects.requireNonNull(processorContext);
         new HibernateReflectiveNeeds(processorContext).registerAll();
     }
@@ -40,8 +40,8 @@ final class HibernateReflectiveNeeds {
         simpleConstructor(org.hibernate.boot.model.naming.ImplicitNamingStrategyJpaCompliantImpl.class);
         simpleConstructor(org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorBuilderImpl.class);
         simpleConstructor(EnumType.class);
-        processorContext.addReflectiveClass(true, false, com.arjuna.ats.jta.UserTransaction.class.getName());
-        processorContext.addReflectiveClass(true, false, com.arjuna.ats.jta.TransactionManager.class.getName());
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, com.arjuna.ats.jta.UserTransaction.class.getName()));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, com.arjuna.ats.jta.TransactionManager.class.getName()));
 
         //FIXME following is not Hibernate specific?
         simpleConstructor("com.sun.xml.internal.stream.events.XMLEventFactoryImpl");
@@ -115,6 +115,7 @@ final class HibernateReflectiveNeeds {
 
     /**
      * Register classes which we know will only need to be created via their no-arg constructor
+     *
      * @param clazz
      */
     private void simpleConstructor(final Class clazz) {
@@ -122,7 +123,7 @@ final class HibernateReflectiveNeeds {
     }
 
     private void simpleConstructor(final String clazzName) {
-        processorContext.addReflectiveClass(false, false, clazzName);
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, clazzName));
     }
 
 }

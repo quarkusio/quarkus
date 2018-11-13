@@ -1,5 +1,8 @@
 package org.jboss.shamrock.arc.deployment;
 
+import static org.jboss.shamrock.annotations.ExecutionTime.RUNTIME_INIT;
+import static org.jboss.shamrock.annotations.ExecutionTime.STATIC_INIT;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -7,9 +10,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -33,148 +34,191 @@ import org.jboss.protean.arc.processor.BeanProcessor;
 import org.jboss.protean.arc.processor.BeanProcessor.Builder;
 import org.jboss.protean.arc.processor.ReflectionRegistration;
 import org.jboss.protean.arc.processor.ResourceOutput;
+import org.jboss.shamrock.annotations.BuildProducer;
+import org.jboss.shamrock.annotations.BuildStep;
+import org.jboss.shamrock.annotations.ExecutionTime;
+import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.arc.runtime.ArcDeploymentTemplate;
 import org.jboss.shamrock.arc.runtime.StartupEventRunner;
-import org.jboss.shamrock.deployment.ArchiveContext;
-import org.jboss.shamrock.deployment.BeanArchiveIndex;
-import org.jboss.shamrock.deployment.BeanDeployment;
-import org.jboss.shamrock.deployment.ProcessorContext;
-import org.jboss.shamrock.deployment.ResourceProcessor;
-import org.jboss.shamrock.deployment.RuntimePriority;
-import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
+import org.jboss.shamrock.deployment.cdi.AnnotationTransformerBuildItem;
+import org.jboss.shamrock.deployment.cdi.BeanContainerListenerBuildItem;
+import org.jboss.shamrock.deployment.Capabilities;
+import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
+import org.jboss.shamrock.deployment.builditem.BeanArchiveIndexBuildItem;
+import org.jboss.shamrock.deployment.builditem.BeanContainerBuildItem;
+import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.GeneratedResourceBuildItem;
+import org.jboss.shamrock.deployment.builditem.InjectionProviderBuildItem;
+import org.jboss.shamrock.deployment.builditem.ReflectiveClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.ReflectiveFieldBuildItem;
+import org.jboss.shamrock.deployment.builditem.ReflectiveMethodBuildItem;
+import org.jboss.shamrock.deployment.builditem.ServiceStartBuildItem;
+import org.jboss.shamrock.deployment.cdi.GeneratedBeanBuildItem;
+import org.jboss.shamrock.deployment.cdi.ResourceAnnotationBuildItem;
+import org.jboss.shamrock.runtime.cdi.BeanContainer;
+import org.jboss.shamrock.undertow.DeploymentInfoBuildItem;
 
 import io.smallrye.config.inject.ConfigProducer;
 
-public class ArcAnnotationProcessor implements ResourceProcessor {
+public class ArcAnnotationProcessor {
 
     private static final DotName JAVA_LANG_OBJECT = DotName.createSimple(Object.class.getName());
 
     private static final Logger log = Logger.getLogger("org.jboss.shamrock.arc.deployment.processor");
 
     @Inject
-    BeanDeployment beanDeployment;
+    BeanArchiveIndexBuildItem beanArchiveIndex;
 
     @Inject
-    BeanArchiveIndex beanArchiveIndex;
+    BuildProducer<GeneratedClassBuildItem> generatedClass;
 
-    @Override
-    public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
+    @Inject
+    BuildProducer<GeneratedResourceBuildItem> generatedResource;
 
-        beanDeployment.addAdditionalBean(StartupEventRunner.class);
+    @Inject
+    BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
 
-        try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.ARC_DEPLOYMENT)) {
+    @Inject
+    List<AdditionalBeanBuildItem> additionalBeans;
 
-            ArcDeploymentTemplate template = recorder.getRecordingProxy(ArcDeploymentTemplate.class);
-            processorContext.addReflectiveClass(true, false, Observes.class.getName()); // graal bug
 
-            List<DotName> additionalBeanDefiningAnnotations = new ArrayList<>();
-            additionalBeanDefiningAnnotations.add(DotName.createSimple("javax.servlet.annotation.WebServlet"));
-            additionalBeanDefiningAnnotations.add(DotName.createSimple("javax.ws.rs.Path"));
+    @Inject
+    BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods;
 
-            // TODO MP config
-            beanDeployment.addAdditionalBean(ConfigProducer.class);
+    @Inject
+    BuildProducer<ReflectiveFieldBuildItem> reflectiveFields;
 
-            // Index bean classes registered by shamrock
-            Indexer indexer = new Indexer();
-            Set<DotName> additionalIndex = new HashSet<>();
-            for (String beanClass : beanDeployment.getAdditionalBeans()) {
-                indexBeanClass(beanClass, indexer, beanArchiveIndex.getIndex(), additionalIndex);
-            }
-            Set<String> frameworkPackages = additionalIndex.stream().map(dotName -> {
-                String name = dotName.toString();
-                return name.substring(0, name.lastIndexOf("."));
-            }).collect(Collectors.toSet());
-            List<Predicate<String>> frameworkPredicates = new ArrayList<>();
-            frameworkPredicates.add(fqcn -> {
-                for (String frameworkPackage : frameworkPackages) {
-                    if (fqcn.startsWith(frameworkPackage)) {
-                        return true;
-                    }
+    @Inject
+    List<BeanRegistrarBuildItem> beanRegistrars;
+
+    @Inject
+    List<ResourceAnnotationBuildItem> resourceAnnotations;
+
+
+    @BuildStep(providesCapabilities = Capabilities.CDI_ARC, applicationArchiveMarkers = {"META-INF/beans.xml", "META-INF/services/javax.enterprise.inject.spi.Extension"})
+    @Record(STATIC_INIT)
+    public BeanContainerBuildItem build(ArcDeploymentTemplate arcTemplate, DeploymentInfoBuildItem deploymentInfo, BuildProducer<InjectionProviderBuildItem> injectionProvider,
+                                        List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems,
+                                        List<GeneratedBeanBuildItem> generatedBeans,
+                                        List<AnnotationTransformerBuildItem> annotationTransformers) throws Exception {
+
+        List<String> additionalBeans = new ArrayList<>();
+        for (AdditionalBeanBuildItem i : this.additionalBeans) {
+            additionalBeans.addAll(i.getBeanNames());
+        }
+        additionalBeans.add(StartupEventRunner.class.getName());
+
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, Observes.class.getName())); // graal bug
+
+        List<DotName> additionalBeanDefiningAnnotations = new ArrayList<>();
+        additionalBeanDefiningAnnotations.add(DotName.createSimple("javax.servlet.annotation.WebServlet"));
+        additionalBeanDefiningAnnotations.add(DotName.createSimple("javax.ws.rs.Path"));
+
+        // TODO MP config
+        additionalBeans.add(ConfigProducer.class.getName());
+
+        // Index bean classes registered by shamrock
+        Indexer indexer = new Indexer();
+        Set<DotName> additionalIndex = new HashSet<>();
+        for (String beanClass : additionalBeans) {
+            indexBeanClass(beanClass, indexer, beanArchiveIndex.getIndex(), additionalIndex);
+        }
+        Set<String> frameworkPackages = additionalIndex.stream().map(dotName -> {
+            String name = dotName.toString();
+            return name.substring(0, name.lastIndexOf("."));
+        }).collect(Collectors.toSet());
+        List<Predicate<String>> frameworkPredicates = new ArrayList<>();
+        frameworkPredicates.add(fqcn -> {
+            for (String frameworkPackage : frameworkPackages) {
+                if (fqcn.startsWith(frameworkPackage)) {
+                    return true;
                 }
-                return false;
-            });
-            // For some odd reason we cannot add org.jboss.protean.arc as a fwk package
-            frameworkPredicates.add(fqcn -> {
-                return fqcn.startsWith(ActivateRequestContextInterceptor.class.getName()) || fqcn.startsWith("org.jboss.protean.arc.ActivateRequestContext");
-            });
-
-            for (Map.Entry<String, byte[]> beanClass : beanDeployment.getGeneratedBeans().entrySet()) {
-                indexBeanClass(beanClass.getKey(), indexer, beanArchiveIndex.getIndex(), additionalIndex, beanClass.getValue());
             }
-            CompositeIndex index = CompositeIndex.create(indexer.complete(), beanArchiveIndex.getIndex());
-            Builder builder = BeanProcessor.builder();
-            builder.setIndex(index);
-            builder.setAdditionalBeanDefiningAnnotations(additionalBeanDefiningAnnotations);
-            builder.setSharedAnnotationLiterals(false);
-            builder.addResourceAnnotations(beanDeployment.getResourceAnnotations());
-            builder.setReflectionRegistration(new ReflectionRegistration() {
-                @Override
-                public void registerMethod(MethodInfo methodInfo) {
-                    processorContext.addReflectiveMethod(methodInfo);
-                }
+            return false;
+        });
+        // For some odd reason we cannot add org.jboss.protean.arc as a fwk package
+        frameworkPredicates.add(fqcn -> {
+            return fqcn.startsWith(ActivateRequestContextInterceptor.class.getName()) || fqcn.startsWith("org.jboss.protean.arc.ActivateRequestContext");
+        });
 
-                @Override
-                public void registerField(FieldInfo fieldInfo) {
-                    processorContext.addReflectiveField(fieldInfo);
-                }
-            });
-            for (BiFunction<AnnotationTarget, Collection<AnnotationInstance>, Collection<AnnotationInstance>> transformer : beanDeployment
-                    .getAnnotationTransformers()) {
-                // TODO make use of Arc API instead of BiFunction
-                builder.addAnnotationTransformer(new AnnotationsTransformer() {
-
-                    @Override
-                    public Collection<AnnotationInstance> transform(AnnotationTarget target, Collection<AnnotationInstance> annotations) {
-                        return transformer.apply(target, annotations);
-                    }
-                });
+        for (GeneratedBeanBuildItem beanClass : generatedBeans) {
+            indexBeanClass(beanClass.getName(), indexer, beanArchiveIndex.getIndex(), additionalIndex, beanClass.getData());
+        }
+        CompositeIndex index = CompositeIndex.create(indexer.complete(), beanArchiveIndex.getIndex());
+        Builder builder = BeanProcessor.builder();
+        builder.setIndex(index);
+        builder.setAdditionalBeanDefiningAnnotations(additionalBeanDefiningAnnotations);
+        builder.setSharedAnnotationLiterals(false);
+        builder.addResourceAnnotations(resourceAnnotations.stream().map(ResourceAnnotationBuildItem::getName).collect(Collectors.toList()));
+        builder.setReflectionRegistration(new ReflectionRegistration() {
+            @Override
+            public void registerMethod(MethodInfo methodInfo) {
+                reflectiveMethods.produce(new ReflectiveMethodBuildItem(methodInfo));
             }
 
-            builder.setOutput(new ResourceOutput() {
-                @Override
-                public void writeResource(Resource resource) throws IOException {
-                    switch (resource.getType()) {
-                        case JAVA_CLASS:
-                            // TODO a better way to identify app classes
-                            boolean isAppClass = true;
+            @Override
+            public void registerField(FieldInfo fieldInfo) {
+                reflectiveFields.produce(new ReflectiveFieldBuildItem(fieldInfo));
+            }
+        });
+        for (AnnotationTransformerBuildItem transformer : annotationTransformers) {
+            // TODO make use of Arc API instead of BiFunction
+            builder.addAnnotationTransformer(new AnnotationsTransformer() {
 
-                            if (!resource.getFullyQualifiedName().contains("$$APP$$")) {
-                                // ^ horrible hack, we really need to look into into
-                                // app vs framework classes cause big problems for the runtime runner
-                                for (Predicate<String> predicate : frameworkPredicates) {
-                                    if (predicate.test(resource.getFullyQualifiedName())) {
-                                        isAppClass = false;
-                                        break;
-                                    }
+                @Override
+                public Collection<AnnotationInstance> transform(AnnotationTarget target, Collection<AnnotationInstance> annotations) {
+                    return transformer.getTransformer().apply(target, annotations);
+                }
+            });
+        }
+
+        builder.setOutput(new ResourceOutput() {
+            @Override
+            public void writeResource(Resource resource) throws IOException {
+                switch (resource.getType()) {
+                    case JAVA_CLASS:
+                        // TODO a better way to identify app classes
+                        boolean isAppClass = true;
+
+                        if (!resource.getFullyQualifiedName().contains("$$APP$$")) {
+                            // ^ horrible hack, we really need to look into into
+                            // app vs framework classes cause big problems for the runtime runner
+                            for (Predicate<String> predicate : frameworkPredicates) {
+                                if (predicate.test(resource.getFullyQualifiedName())) {
+                                    isAppClass = false;
+                                    break;
                                 }
                             }
-                            log.debugf("Add %s class: %s", (isAppClass ? "APP" : "FWK"), resource.getFullyQualifiedName());
-                            processorContext.addGeneratedClass(isAppClass, resource.getName(), resource.getData());
-                            break;
-                        case SERVICE_PROVIDER:
-                            processorContext.createResource("META-INF/services/" + resource.getName(), resource.getData());
-                        default:
-                            break;
-                    }
+                        }
+                        log.debugf("Add %s class: %s", (isAppClass ? "APP" : "FWK"), resource.getFullyQualifiedName());
+                        generatedClass.produce(new GeneratedClassBuildItem(isAppClass, resource.getName(), resource.getData()));
+                        break;
+                    case SERVICE_PROVIDER:
+                        generatedResource.produce(new GeneratedResourceBuildItem("META-INF/services/" + resource.getName(), resource.getData()));
+                    default:
+                        break;
                 }
-            });
-            BeanProcessor beanProcessor = builder.build();
-            beanProcessor.process();
-
-            ArcContainer container = template.getContainer(null);
-            template.initBeanContainer(container);
-            template.setupInjection(null, container);
-            template.setupRequestScope(null, null);
+            }
+        });
+        for(BeanRegistrarBuildItem i : beanRegistrars) {
+            builder.addBeanRegistrar(i.getBeanRegistrar());
         }
+        BeanProcessor beanProcessor = builder.build();
+        beanProcessor.process();
 
-        try (BytecodeRecorder recorder = processorContext.addDeploymentTask(RuntimePriority.STARTUP_EVENT)) {
-            recorder.getRecordingProxy(ArcDeploymentTemplate.class).fireStartupEvent(null);
-        }
+        ArcContainer container = arcTemplate.getContainer(null);
+        BeanContainer bc = arcTemplate.initBeanContainer(container, beanContainerListenerBuildItems.stream().map(BeanContainerListenerBuildItem::getBeanContainerListener).collect(Collectors.toList()));
+        injectionProvider.produce(new InjectionProviderBuildItem());
+        arcTemplate.setupInjection(null, container);
+        arcTemplate.setupRequestScope(deploymentInfo.getValue(), container);
+
+        return new BeanContainerBuildItem(bc);
     }
 
-    @Override
-    public int getPriority() {
-        return RuntimePriority.ARC_DEPLOYMENT;
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    void startupEvent(ArcDeploymentTemplate template, List<ServiceStartBuildItem> startList, BeanContainerBuildItem beanContainer) {
+        template.fireStartupEvent(beanContainer.getValue());
     }
 
     private void indexBeanClass(String beanClass, Indexer indexer, IndexView shamrockIndex, Set<DotName> additionalIndex) {

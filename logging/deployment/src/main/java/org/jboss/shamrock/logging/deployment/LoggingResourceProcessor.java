@@ -20,13 +20,14 @@ package org.jboss.shamrock.logging.deployment;
 
 import java.io.Console;
 import java.io.File;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
 import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.Level;
+
+import javax.inject.Inject;
 
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logmanager.EmbeddedConfigurator;
@@ -42,25 +43,44 @@ import org.jboss.protean.gizmo.FieldDescriptor;
 import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
-import org.jboss.shamrock.deployment.ArchiveContext;
-import org.jboss.shamrock.deployment.ProcessorContext;
-import org.jboss.shamrock.deployment.ResourceProcessor;
+import org.jboss.shamrock.annotations.BuildProducer;
+import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.deployment.buildconfig.BuildConfig;
-import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
+import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.GeneratedResourceBuildItem;
+import org.jboss.shamrock.deployment.builditem.NativeImageSystemPropertyBuildItem;
+import org.jboss.shamrock.deployment.builditem.RuntimeInitializedClassBuildItem;
+import org.jboss.shamrock.deployment.recording.BytecodeRecorder;
 import org.jboss.shamrock.logging.runtime.LogSetupTemplate;
 import org.objectweb.asm.Opcodes;
 
 /**
  */
-public final class LoggingResourceProcessor implements ResourceProcessor {
+public final class LoggingResourceProcessor {
 
     private static final String GENERATED_CONFIGURATOR = "org/jboss/logmanager/GeneratedConfigurator";
 
-    public void process(final ArchiveContext archiveContext, final ProcessorContext processorContext) throws Exception {
-        final BuildConfig config = archiveContext.getBuildConfig();
+    @Inject
+    BuildConfig config;
+
+    @Inject
+    BuildProducer<GeneratedClassBuildItem> generatedClass;
+
+
+    @Inject
+    BuildProducer<NativeImageSystemPropertyBuildItem> systemProp;
+
+    @Inject
+    BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit;
+
+    @Inject
+    BuildProducer<GeneratedResourceBuildItem> generatedResource;
+
+    @BuildStep()
+    public void build() throws Exception {
         final BuildConfig.ConfigNode loggingNode = config.getApplicationConfig().get("logging");
         final BuildConfig.ConfigNode enableNode = loggingNode.get("enable");
-        if (! enableNode.isNull() && enableNode.asBoolean() == Boolean.FALSE) {
+        if (!enableNode.isNull() && enableNode.asBoolean() == Boolean.FALSE) {
             // forget the whole thing
             return;
         }
@@ -78,7 +98,7 @@ public final class LoggingResourceProcessor implements ResourceProcessor {
         final MethodCreator minimumLevelOf;
         final MethodCreator levelOf;
         final MethodCreator handlersOf;
-        try (ClassCreator cc = new ClassCreator(new ProcessorClassOutput(processorContext), GENERATED_CONFIGURATOR, null, "java/lang/Object", "org/jboss/logmanager/EmbeddedConfigurator")) {
+        try (ClassCreator cc = new ClassCreator(new ProcessorClassOutput(generatedClass), GENERATED_CONFIGURATOR, null, "java/lang/Object", "org/jboss/logmanager/EmbeddedConfigurator")) {
             // TODO set source file
             final MethodCreator ctor = cc.getMethodCreator("<init>", void.class);
             ctor.setModifiers(Opcodes.ACC_PUBLIC);
@@ -101,7 +121,7 @@ public final class LoggingResourceProcessor implements ResourceProcessor {
             final BuildConfig.ConfigNode consoleColorNode = consoleNode.get("color");
             consoleColor = consoleColorNode.isNull() || consoleColorNode.asBoolean().booleanValue();
             if (consoleColor) {
-                processorContext.addRuntimeInitializedClasses("org.jboss.logmanager.formatters.TrueColorHolder");
+                runtimeInit.produce(new RuntimeInitializedClassBuildItem("org.jboss.logmanager.formatters.TrueColorHolder"));
             }
 
             final BuildConfig.ConfigNode fileNode = loggingNode.get("file");
@@ -129,13 +149,13 @@ public final class LoggingResourceProcessor implements ResourceProcessor {
             // in image build phase, do a special console handler config
 
             final BytecodeCreator ifRootLogger = ifRootLogger(handlersOf, b ->
-                b.readStaticField(
-                    FieldDescriptor.of(
-                        EmbeddedConfigurator.class.getName(),
-                        "NO_HANDLERS",
-                        "[Ljava/util/logging/Handler;"
+                    b.readStaticField(
+                            FieldDescriptor.of(
+                                    EmbeddedConfigurator.class.getName(),
+                                    "NO_HANDLERS",
+                                    "[Ljava/util/logging/Handler;"
+                            )
                     )
-                )
             );
             BranchResult buildOrRunBranchResult = ifRootLogger.ifNonZero(ifRootLogger.invokeStaticMethod(MethodDescriptor.ofMethod(ImageInfo.class, "inImageBuildtimeCode", boolean.class)));
 
@@ -151,37 +171,37 @@ public final class LoggingResourceProcessor implements ResourceProcessor {
                     final ResultHandle consoleProbeResult = branch.invokeStaticMethod(MethodDescriptor.ofMethod(System.class, "console", Console.class));
                     final BranchResult consoleBranchResult = branch.ifNull(consoleProbeResult);
                     final ResultHandle noConsole = consoleBranchResult.falseBranch().newInstance(
-                        MethodDescriptor.ofConstructor(PatternFormatter.class, String.class),
-                        consoleFormatResult
+                            MethodDescriptor.ofConstructor(PatternFormatter.class, String.class),
+                            consoleFormatResult
                     );
                     final ResultHandle yesConsole = consoleBranchResult.trueBranch().newInstance(
-                        MethodDescriptor.ofConstructor(ColorPatternFormatter.class, String.class),
-                        consoleFormatResult
+                            MethodDescriptor.ofConstructor(ColorPatternFormatter.class, String.class),
+                            consoleFormatResult
                     );
                     formatter = consoleBranchResult.mergeBranches(yesConsole, noConsole, Formatter.class);
                 } else {
                     formatter = branch.newInstance(
-                        MethodDescriptor.ofConstructor(PatternFormatter.class, String.class),
-                        consoleFormatResult
+                            MethodDescriptor.ofConstructor(PatternFormatter.class, String.class),
+                            consoleFormatResult
                     );
                 }
                 console = branch.newInstance(
-                    MethodDescriptor.ofConstructor(ConsoleHandler.class, Formatter.class),
-                    formatter
+                        MethodDescriptor.ofConstructor(ConsoleHandler.class, Formatter.class),
+                        formatter
                 );
                 branch.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(ConsoleHandler.class, "setLevel", void.class, Level.class),
-                    console,
-                    getLevelFor(branch, consoleLevel)
+                        MethodDescriptor.ofMethod(ConsoleHandler.class, "setLevel", void.class, Level.class),
+                        console,
+                        getLevelFor(branch, consoleLevel)
                 );
                 consoleErrorManager = branch.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(ConsoleHandler.class, "getLocalErrorManager", ErrorManager.class),
-                    console
+                        MethodDescriptor.ofMethod(ConsoleHandler.class, "getLocalErrorManager", ErrorManager.class),
+                        console
                 );
                 branch.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(ConsoleHandler.class, "setLevel", void.class, Level.class),
-                    console,
-                    getLevelFor(branch, consoleLevel)
+                        MethodDescriptor.ofMethod(ConsoleHandler.class, "setLevel", void.class, Level.class),
+                        console,
+                        getLevelFor(branch, consoleLevel)
                 );
             } else {
                 consoleErrorManager = null;
@@ -189,28 +209,28 @@ public final class LoggingResourceProcessor implements ResourceProcessor {
             }
             if (fileEnable) {
                 ResultHandle formatter = branch.newInstance(
-                    MethodDescriptor.ofConstructor(PatternFormatter.class, String.class),
-                    branch.load(fileFormat)
+                        MethodDescriptor.ofConstructor(PatternFormatter.class, String.class),
+                        branch.load(fileFormat)
                 );
                 file = branch.newInstance(
-                    MethodDescriptor.ofConstructor(FileHandler.class, Formatter.class),
-                    formatter
+                        MethodDescriptor.ofConstructor(FileHandler.class, Formatter.class),
+                        formatter
                 );
                 branch.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(FileHandler.class, "setLevel", void.class, Level.class),
-                    file,
-                    getLevelFor(branch, fileLevel)
+                        MethodDescriptor.ofMethod(FileHandler.class, "setLevel", void.class, Level.class),
+                        file,
+                        getLevelFor(branch, fileLevel)
                 );
                 branch.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(FileHandler.class, "setFile", void.class, File.class),
-                    file,
-                    branch.newInstance(MethodDescriptor.ofConstructor(File.class, String.class), branch.load(filePath))
+                        MethodDescriptor.ofMethod(FileHandler.class, "setFile", void.class, File.class),
+                        file,
+                        branch.newInstance(MethodDescriptor.ofConstructor(File.class, String.class), branch.load(filePath))
                 );
                 if (consoleErrorManager != null) {
                     branch.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(FileHandler.class, "setErrorManager", void.class, ErrorManager.class),
-                        file,
-                        consoleErrorManager
+                            MethodDescriptor.ofMethod(FileHandler.class, "setErrorManager", void.class, ErrorManager.class),
+                            file,
+                            consoleErrorManager
                     );
                 }
             } else {
@@ -235,29 +255,29 @@ public final class LoggingResourceProcessor implements ResourceProcessor {
             // build time
             branch = buildOrRunBranchResult.trueBranch();
             ResultHandle formatter = branch.newInstance(
-                MethodDescriptor.ofConstructor(PatternFormatter.class, String.class),
-                branch.load("%d{HH:mm:ss,SSS} %-5p [%c{1.}] %s%e%n") // fixed format at build time
+                    MethodDescriptor.ofConstructor(PatternFormatter.class, String.class),
+                    branch.load("%d{HH:mm:ss,SSS} %-5p [%c{1.}] %s%e%n") // fixed format at build time
             );
             console = branch.newInstance(
-                MethodDescriptor.ofConstructor(ConsoleHandler.class, Formatter.class),
-                formatter
+                    MethodDescriptor.ofConstructor(ConsoleHandler.class, Formatter.class),
+                    formatter
             );
             branch.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(ConsoleHandler.class, "setLevel", void.class, Level.class),
-                console,
-                getLevelFor(branch, "ALL")
+                    MethodDescriptor.ofMethod(ConsoleHandler.class, "setLevel", void.class, Level.class),
+                    console,
+                    getLevelFor(branch, "ALL")
             );
             array = branch.newArray(
-                Handler[].class,
-                branch.load(1)
+                    Handler[].class,
+                    branch.load(1)
             );
             branch.writeArrayValue(
-                array,
-                branch.load(0),
-                console
+                    array,
+                    branch.load(0),
+                    console
             );
             branch.returnValue(
-                array
+                    array
             );
 
             // levels do not have the option of being reconfigured at run time
@@ -283,25 +303,18 @@ public final class LoggingResourceProcessor implements ResourceProcessor {
             minLevelOfBc.returnValue(levelOfBc.loadNull());
         }
 
-        processorContext.createResource("META-INF/services/org.jboss.logmanager.EmbeddedConfigurator", GENERATED_CONFIGURATOR.replace('/', '.').getBytes(StandardCharsets.UTF_8));
+        generatedResource.produce(new GeneratedResourceBuildItem("META-INF/services/org.jboss.logmanager.EmbeddedConfigurator", GENERATED_CONFIGURATOR.replace('/', '.').getBytes(StandardCharsets.UTF_8)));
 
         // now inject the system property setter
-
-        final LogSetupTemplate proxy;
-        try (BytecodeRecorder recorder = processorContext.addStaticInitTask(- 1000)) {
-            proxy = recorder.getRecordingProxy(LogSetupTemplate.class);
-            proxy.initializeLogManager();
-        }
-
-        processorContext.addNativeImageSystemProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
+        systemProp.produce(new NativeImageSystemPropertyBuildItem("java.util.logging.manager", "org.jboss.logmanager.LogManager"));
     }
 
     private BytecodeCreator ifRootLogger(BytecodeCreator orig, Function<BytecodeCreator, ResultHandle> returnIfNotRoot) {
         BranchResult branchResult = orig.ifNonZero(
-            orig.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(String.class, "isEmpty", boolean.class),
-                orig.getMethodParam(0) // name
-            )
+                orig.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(String.class, "isEmpty", boolean.class),
+                        orig.getMethodParam(0) // name
+                )
         );
         final BytecodeCreator falseBranch = branchResult.falseBranch();
         falseBranch.returnValue(returnIfNotRoot.apply(falseBranch));
@@ -311,10 +324,10 @@ public final class LoggingResourceProcessor implements ResourceProcessor {
 
     private BytecodeCreator ifNotRootLogger(BytecodeCreator orig, Function<BytecodeCreator, ResultHandle> returnIfRoot) {
         BranchResult branchResult = orig.ifNonZero(
-            orig.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(String.class, "isEmpty", boolean.class),
-                orig.getMethodParam(0) // name
-            )
+                orig.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(String.class, "isEmpty", boolean.class),
+                        orig.getMethodParam(0) // name
+                )
         );
         final BytecodeCreator trueBranch = branchResult.trueBranch();
         trueBranch.returnValue(returnIfRoot.apply(trueBranch));
@@ -324,11 +337,11 @@ public final class LoggingResourceProcessor implements ResourceProcessor {
 
     private BytecodeCreator ifNotLogger(BytecodeCreator orig, String category, Function<BytecodeCreator, ResultHandle> returnIfCategory) {
         BranchResult branchResult = orig.ifNonZero(
-            orig.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(String.class, "equals", boolean.class, Object.class),
-                orig.getMethodParam(0), // name
-                orig.load(category)
-            )
+                orig.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(String.class, "equals", boolean.class, Object.class),
+                        orig.getMethodParam(0), // name
+                        orig.load(category)
+                )
         );
         final BytecodeCreator trueBranch = branchResult.trueBranch();
         trueBranch.returnValue(returnIfCategory.apply(trueBranch));
@@ -350,7 +363,7 @@ public final class LoggingResourceProcessor implements ResourceProcessor {
             case "OFF":
             case "SEVERE":
             case "WARNING":
-            // case "INFO":
+                // case "INFO":
             case "CONFIG":
             case "FINE":
             case "FINER":
@@ -359,29 +372,22 @@ public final class LoggingResourceProcessor implements ResourceProcessor {
                 return bc.readStaticField(FieldDescriptor.of(Level.class, levelName, Level.class));
             default:
                 return bc.invokeStaticMethod(
-                    MethodDescriptor.ofMethod(Level.class, "parse", Level.class, String.class),
-                    bc.load(levelName)
+                        MethodDescriptor.ofMethod(Level.class, "parse", Level.class, String.class),
+                        bc.load(levelName)
                 );
         }
     }
 
-    public int getPriority() {
-        return 1;
-    }
-
     static final class ProcessorClassOutput implements ClassOutput {
-        private final ProcessorContext processorContext;
+        private final BuildProducer<GeneratedClassBuildItem> producer;
+
+        ProcessorClassOutput(BuildProducer<GeneratedClassBuildItem> producer) {
+            this.producer = producer;
+        }
 
         public void write(final String name, final byte[] data) {
-            try {
-                processorContext.addGeneratedClass(false, name, data);
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
+            producer.produce(new GeneratedClassBuildItem(false, name, data));
         }
 
-        ProcessorClassOutput(final ProcessorContext processorContext) {
-            this.processorContext = processorContext;
-        }
     }
 }

@@ -4,14 +4,15 @@ import java.lang.reflect.Field;
 import java.util.Properties;
 
 import org.jboss.logging.Logger;
+import org.jboss.shamrock.runtime.Template;
 import org.jboss.shamrock.runtime.ConfiguredValue;
 
 import com.arjuna.ats.arjuna.common.CoreEnvironmentBeanException;
 import com.arjuna.ats.arjuna.common.arjPropertyManager;
 import com.arjuna.ats.arjuna.coordinator.TxControl;
-import com.arjuna.ats.jta.UserTransaction;
 import com.arjuna.common.util.propertyservice.PropertiesFactory;
 
+@Template
 public class TransactionTemplate {
 
     private static Properties defaultProperties;

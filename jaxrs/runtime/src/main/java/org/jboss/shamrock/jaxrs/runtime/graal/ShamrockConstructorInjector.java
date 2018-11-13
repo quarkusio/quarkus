@@ -11,7 +11,7 @@ import org.jboss.resteasy.spi.ConstructorInjector;
 import org.jboss.resteasy.spi.Failure;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.jboss.resteasy.spi.HttpResponse;
-import org.jboss.shamrock.runtime.BeanContainer;
+import org.jboss.shamrock.runtime.cdi.BeanContainer;
 
 /**
  * Created by bob on 7/31/18.

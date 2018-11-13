@@ -14,13 +14,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.jboss.builder.item.SimpleBuildItem;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 /**
  * The build time configuration
  */
-public class BuildConfig {
+public final class BuildConfig extends SimpleBuildItem {
 
     private static final String META_INF_SHAMROCK_BUILD_YAML = "META-INF/shamrock-build.yaml";
 

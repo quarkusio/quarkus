@@ -32,10 +32,10 @@ public abstract class BuildItem {
     BuildItem() {
         final Class<? extends BuildItem> clazz = getClass();
         if (clazz.getTypeParameters().length != 0) {
-            throw new IllegalArgumentException("A generic type is not allowed here; try creating a subclass with concrete type arguments instead");
+            throw new IllegalArgumentException("A generic type is not allowed here; try creating a subclass with concrete type arguments instead: "+ getClass());
         }
         if (! Modifier.isFinal(clazz.getModifiers())) {
-            throw new IllegalArgumentException("Build item class must be leaf (final) types");
+            throw new IllegalArgumentException("Build item class must be leaf (final) types: " + getClass());
         }
     }
 }

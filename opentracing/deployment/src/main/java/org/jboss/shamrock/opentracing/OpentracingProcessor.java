@@ -23,6 +23,7 @@ public class OpentracingProcessor implements ResourceProcessor {
 
     @Override
     public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
+        System.err.println( "PROCESS OPENTRACING");
         this.beanDeployment.addAdditionalBean(OpenTracingInterceptor.class);
         this.beanDeployment.addAdditionalBean(TracerProducer.class);
         processorContext.addReflectiveClass(false, false, Traced.class.getName());

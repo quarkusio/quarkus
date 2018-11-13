@@ -19,37 +19,41 @@ import org.jboss.shamrock.runtime.ContextObject;
  */
 public class TracingDeploymentTemplate {
     public void registerTracer() {
-        GlobalTracer.register( new ShamrockTracer() );
-
+        System.err.println("REGISTER TRACER");
+        //this.tracer = new ShamrockTracer();
+        GlobalTracer.register(new ShamrockTracer());
     }
-    public void integrateJaxrs(@ContextObject("deploymentInfo")DeploymentInfo info) {
-        System.err.println( "adding integration " + info);
-        info.addInitParameter("resteasy.providers", SmallRyeTracingDynamicFeature.class.getName());
 
-        FilterInfo filterInfo = new FilterInfo("tracingFilter", SpanFinishingFilter.class, ()->{
+    public void integrateJaxrs(@ContextObject("deploymentInfo") DeploymentInfo info) {
+        System.err.println("adding integration " + info);
+        info.addInitParameter("resteasy.providers", ShamrockTracingDynamicFeature.class.getName());
+
+        FilterInfo filterInfo = new FilterInfo("tracingFilter", SpanFinishingFilter.class, () -> {
             SpanFinishingFilter filter = new SpanFinishingFilter(GlobalTracer.get());
             return new InstanceHandle<Filter>() {
                 @Override
                 public Filter getInstance() {
-                    System.err.println( "get instance of filter");
+                    System.err.println("get instance of filter");
                     return filter;
                 }
 
                 @Override
                 public void release() {
-                    System.err.println( "release instance of filter");
+                    System.err.println("release instance of filter");
                     // no-op
                 }
             };
         });
         filterInfo.setAsyncSupported(true);
-        info.addFilter(filterInfo );
+        info.addFilter(filterInfo);
         EnumSet<DispatcherType> enums = EnumSet.allOf(DispatcherType.class);
-        info.addFilterUrlMapping( "tracingFilter", "*",  DispatcherType.FORWARD);
-        info.addFilterUrlMapping( "tracingFilter", "*",  DispatcherType.INCLUDE);
-        info.addFilterUrlMapping( "tracingFilter", "*",  DispatcherType.REQUEST);
-        info.addFilterUrlMapping( "tracingFilter", "*",  DispatcherType.ASYNC);
-        info.addFilterUrlMapping( "tracingFilter", "*",  DispatcherType.ERROR);
+        info.addFilterUrlMapping("tracingFilter", "*", DispatcherType.FORWARD);
+        info.addFilterUrlMapping("tracingFilter", "*", DispatcherType.INCLUDE);
+        info.addFilterUrlMapping("tracingFilter", "*", DispatcherType.REQUEST);
+        info.addFilterUrlMapping("tracingFilter", "*", DispatcherType.ASYNC);
+        info.addFilterUrlMapping("tracingFilter", "*", DispatcherType.ERROR);
     }
+
+    private ShamrockTracer tracer;
 }
 

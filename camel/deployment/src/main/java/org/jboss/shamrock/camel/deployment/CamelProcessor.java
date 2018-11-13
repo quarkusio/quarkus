@@ -46,7 +46,6 @@ import javax.xml.bind.annotation.XmlValue;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapters;
 
-import org.apache.camel.Component;
 import org.apache.camel.Consumer;
 import org.apache.camel.Converter;
 import org.apache.camel.Endpoint;
@@ -57,9 +56,7 @@ import org.apache.camel.component.file.GenericFile;
 import org.apache.camel.component.file.GenericFileProcessStrategy;
 import org.apache.camel.component.file.strategy.GenericFileProcessStrategyFactory;
 import org.apache.camel.impl.converter.DoubleMap;
-import org.apache.camel.spi.DataFormat;
 import org.apache.camel.spi.ExchangeFormatter;
-import org.apache.camel.spi.Language;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -92,6 +89,7 @@ public class CamelProcessor implements ResourceProcessor {
         this.processorContext = processorContext;
         this.index = archiveContext.getCombinedIndex();
         this.registry = new RuntimeRegistry();
+        processorContext.setProperty("camel.registry", registry);
         process();
     }
 
@@ -123,7 +121,7 @@ public class CamelProcessor implements ResourceProcessor {
         InjectionInstance<?> iruntime = recorder.newInstanceFactory(clazz);
 
         RuntimeRegistry registry = new RuntimeRegistry();
-        processComponents().forEach((n, c, o) -> registry.bind(n, c, recorder.newInstanceFactory(o)));
+        processServices().forEach((n, c, o) -> registry.bind(n, c, recorder.newInstanceFactory(o)));
 
         List<InjectionInstance<?>> ibuilders = getInitRouteBuilderClasses().map(recorder::newInstanceFactory).collect(Collectors.toList());
         CamelTemplate template = recorder.getRecordingProxy(CamelTemplate.class);
@@ -178,22 +176,36 @@ public class CamelProcessor implements ResourceProcessor {
         processorContext.addReflectiveClass(true, false, GenericFileProcessStrategyFactory.class.getName());
     }
 
-    // Components, dataformats and languages
-    protected DoubleMap<String, Class<?>, String> processComponents() {
+    // Camel services files
+    protected DoubleMap<String, Class<?>, String> processServices() {
         DoubleMap<String, Class<?>, String> map = new DoubleMap<>(256);
-        iterateResources("META-INF/services/org/apache/camel/language/")
-                .forEach(p -> handleComponentDataFormatLanguage(Language.class, p, map));
-        iterateResources("META-INF/services/org/apache/camel/dataformat/")
-                .forEach(p -> handleComponentDataFormatLanguage(DataFormat.class, p, map));
-        iterateResources("META-INF/services/org/apache/camel/component/")
-                .forEach(p -> handleComponentDataFormatLanguage(Component.class, p, map));
+        iterateResources("META-INF/services/org/apache/camel")
+                .forEach(p -> addCamelService(p, map));
         return map;
     }
 
-    // Camel services files
-    protected void processServices() {
-        iterateResources("META-INF/services/org/apache/camel")
-                .forEach(this::addResource);
+    protected void addCamelService(Path p, DoubleMap<String, Class<?>, String> map) {
+        String name = p.getFileName().toString();
+        try (InputStream is = Files.newInputStream(p)) {
+            Properties props = new Properties();
+            props.load(is);
+            for (Map.Entry<Object, Object> entry : props.entrySet()) {
+                String k = entry.getKey().toString();
+                if (k.equals("class")) {
+                    String clazz = entry.getValue().toString();
+                    Class cl = Class.forName(clazz);
+                    map.put(name, cl, clazz);
+                    processorContext.addReflectiveClass(true, false, clazz);
+                } else if (k.endsWith(".class")) {
+                    // Used for strategy.factory.class
+                    String clazz = entry.getValue().toString();
+                    processorContext.addReflectiveClass(true, false, clazz);
+                    addResource(p);
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     // JAXB
@@ -235,29 +247,6 @@ public class CamelProcessor implements ResourceProcessor {
                 .filter(Files::isDirectory)
                 .flatMap(this::safeWalk)
                 .filter(Files::isRegularFile);
-    }
-
-    protected void handleComponentDataFormatLanguage(Class<?> type, Path p, DoubleMap<String, Class<?>, String> map) {
-        String name = p.getFileName().toString();
-        try (InputStream is = Files.newInputStream(p)) {
-            Properties props = new Properties();
-            props.load(is);
-            for (Map.Entry<Object, Object> entry : props.entrySet()) {
-                String k = entry.getKey().toString();
-                if (k.equals("class")) {
-                    String clazz = entry.getValue().toString();
-                    map.put(name, type, clazz);
-                    processorContext.addReflectiveClass(true, false, clazz);
-                } else if (k.endsWith(".class")) {
-                    // Used for strategy.factory.class
-                    String clazz = entry.getValue().toString();
-                    processorContext.addReflectiveClass(true, false, clazz);
-                    addResource(p);
-                }
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     protected void addResource(Path p) {

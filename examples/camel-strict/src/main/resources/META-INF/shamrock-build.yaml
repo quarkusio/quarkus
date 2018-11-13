@@ -10,6 +10,6 @@ camel:
   confd: "{{env:CAMEL_CONFD:}}"
   routesUri: ""
   dump: "false"
-  defer: "true"
+  defer: "false"
 folder: "{{sys:folder:./target/orders}}"
 

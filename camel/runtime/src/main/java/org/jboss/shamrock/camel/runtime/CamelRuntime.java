@@ -65,6 +65,7 @@ public class CamelRuntime extends ServiceSupport {
             AbstractCamelContext context = createContext();
             context.setRegistry(registry);
             context.setAutoStartup(false);
+            this.context = context;
 
             // Configure the camel context using properties in the form:
             //
@@ -82,7 +83,6 @@ public class CamelRuntime extends ServiceSupport {
             loadRoutesFromBuilders(true);
 
             context.start();
-            this.context = context;
         } catch (Exception e) {
             throw RuntimeCamelException.wrapRuntimeCamelException(e);
         }

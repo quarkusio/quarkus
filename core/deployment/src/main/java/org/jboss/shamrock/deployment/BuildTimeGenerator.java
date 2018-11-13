@@ -63,6 +63,7 @@ import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedResourceBuildItem;
 import org.jboss.shamrock.deployment.builditem.LogSetupBuildItem;
+import org.jboss.shamrock.deployment.builditem.NativeImageSystemPropertyBuildItem;
 import org.jboss.shamrock.deployment.builditem.ProxyDefinitionBuildItem;
 import org.jboss.shamrock.deployment.builditem.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.ReflectiveFieldBuildItem;
@@ -183,6 +184,7 @@ public class BuildTimeGenerator {
                         .addFinal(ReflectiveMethodBuildItem.class)
                         .addFinal(StaticBytecodeRecorderBuildItem.class)
                         .addFinal(MainBytecodeRecorderBuildItem.class)
+                        .addFinal(NativeImageSystemPropertyBuildItem.class)
                         .build();
                 BuildResult result = chain.createExecutionBuilder("main").execute();
 
@@ -221,6 +223,9 @@ public class BuildTimeGenerator {
                 }
                 for (StaticBytecodeRecorderBuildItem i : result.consumeMulti(StaticBytecodeRecorderBuildItem.class)) {
                     processorContext.addStaticInitTask(i.getBytecodeRecorder());
+                }
+                for (NativeImageSystemPropertyBuildItem i : result.consumeMulti(NativeImageSystemPropertyBuildItem.class)) {
+                    processorContext.addNativeImageSystemProperty(i.getKey(), i.getValue());
                 }
 
                 processorContext.writeProperties(root.toFile());

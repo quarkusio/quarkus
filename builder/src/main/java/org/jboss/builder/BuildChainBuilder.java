@@ -207,12 +207,33 @@ public final class BuildChainBuilder {
                 dependents.computeIfAbsent(dependency, x -> new HashSet<>()).add(dependent);
             }
         }
+        // detect cycles
+        cycleCheck(included, new HashSet<>(), new HashSet<>(), dependencies);
         // recursively build all
         List<StepInfo> endSteps = new ArrayList<>();
         for (BuildStepBuilder builder : included) {
             buildOne(builder, mappedSteps, dependents, dependencies, startSteps, endSteps);
         }
         return new BuildChain(initialSingleCount, initialMultiCount, startSteps, consumed, this, endSteps.size());
+    }
+
+    private void cycleCheck(Set<BuildStepBuilder> builders, Set<BuildStepBuilder> visited, Set<BuildStepBuilder> checked, final Map<BuildStepBuilder, Set<BuildStepBuilder>> dependencies) throws ChainBuildException {
+        for (BuildStepBuilder builder : builders) {
+            cycleCheck(builder, visited, checked, dependencies);
+        }
+    }
+
+    private void cycleCheck(BuildStepBuilder builder, Set<BuildStepBuilder> visited, Set<BuildStepBuilder> checked, final Map<BuildStepBuilder, Set<BuildStepBuilder>> dependencies) throws ChainBuildException {
+        if (checked.add(builder)) {
+            if (! visited.add(builder)) {
+                throw new ChainBuildException("Cycle detected: " + visited);
+            }
+            try {
+                cycleCheck(dependencies.getOrDefault(builder, Collections.emptySet()), visited, checked, dependencies);
+            } finally {
+                visited.remove(builder);
+            }
+        }
     }
 
     private void addOne(final Map<ItemId, List<Produce>> allProduces, final Set<BuildStepBuilder> included, final ArrayDeque<BuildStepBuilder> toAdd, final ItemId idToAdd, Set<BuildStepBuilder> dependencies) throws ChainBuildException {

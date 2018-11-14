@@ -29,7 +29,7 @@ import org.jboss.protean.gizmo.MethodCreator;
  *
  * @author Martin Kouba
  */
-class BeanInfo {
+public class BeanInfo {
 
     private final ClassInfo implClazz;
 
@@ -109,38 +109,38 @@ class BeanInfo {
         this.params = params;
     }
 
-    Optional<AnnotationTarget> getTarget() {
+    public Optional<AnnotationTarget> getTarget() {
         return target;
     }
 
-    ClassInfo getImplClazz() {
+    public ClassInfo getImplClazz() {
         return implClazz;
     }
 
-    boolean isClassBean() {
+    public boolean isClassBean() {
         return target.isPresent() && Kind.CLASS.equals(target.get().kind());
     }
 
-    boolean isProducerMethod() {
+    public boolean isProducerMethod() {
         return target.isPresent() && Kind.METHOD.equals(target.get().kind());
     }
 
-    boolean isProducerField() {
+    public boolean isProducerField() {
         return target.isPresent() && Kind.FIELD.equals(target.get().kind());
     }
 
-    boolean isSynthetic() {
+    public boolean isSynthetic() {
         return !target.isPresent();
     }
 
-    DotName getBeanClass() {
+    public DotName getBeanClass() {
         if (declaringBean != null) {
             return declaringBean.implClazz.name();
         }
         return implClazz.name();
     }
 
-    boolean isInterceptor() {
+    public boolean isInterceptor() {
         return false;
     }
 
@@ -170,19 +170,19 @@ class BeanInfo {
         throw new IllegalStateException("Cannot infer the provider type");
     }
 
-    ScopeInfo getScope() {
+    public ScopeInfo getScope() {
         return scope;
     }
 
-    Set<Type> getTypes() {
+    public Set<Type> getTypes() {
         return types;
     }
 
-    Set<AnnotationInstance> getQualifiers() {
+    public Set<AnnotationInstance> getQualifiers() {
         return qualifiers;
     }
 
-    boolean hasDefaultQualifiers() {
+    public boolean hasDefaultQualifiers() {
         return qualifiers.size() == 2 && qualifiers.contains(BuiltinQualifier.DEFAULT.getInstance())
                 && qualifiers.contains(BuiltinQualifier.DEFAULT.getInstance());
     }
@@ -191,7 +191,7 @@ class BeanInfo {
         return injections;
     }
 
-    List<InjectionPointInfo> getAllInjectionPoints() {
+    public List<InjectionPointInfo> getAllInjectionPoints() {
         if (injections.isEmpty()) {
             return Collections.emptyList();
         }
@@ -214,7 +214,7 @@ class BeanInfo {
         return lifecycleInterceptors.containsKey(interceptionType) ? lifecycleInterceptors.get(interceptionType) : InterceptionInfo.EMPTY;
     }
 
-    boolean hasLifecycleInterceptors() {
+    public boolean hasLifecycleInterceptors() {
         return !lifecycleInterceptors.isEmpty();
     }
 
@@ -249,19 +249,19 @@ class BeanInfo {
         return bound.isEmpty() ? Collections.emptyList() : bound.stream().distinct().sorted().collect(Collectors.toList());
     }
 
-    DisposerInfo getDisposer() {
+    public DisposerInfo getDisposer() {
         return disposer;
     }
 
-    boolean isAlternative() {
+    public boolean isAlternative() {
         return alternativePriority != null;
     }
 
-    Integer getAlternativePriority() {
+    public Integer getAlternativePriority() {
         return alternativePriority;
     }
 
-    List<StereotypeInfo> getStereotypes() {
+    public List<StereotypeInfo> getStereotypes() {
         return stereotypes;
     }
 

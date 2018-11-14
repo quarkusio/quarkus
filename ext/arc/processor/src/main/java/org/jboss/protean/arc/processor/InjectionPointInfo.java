@@ -19,7 +19,7 @@ import org.jboss.jandex.Type;
  *
  * @author Martin Kouba
  */
-class InjectionPointInfo {
+public class InjectionPointInfo {
 
     static InjectionPointInfo fromField(FieldInfo field, BeanDeployment beanDeployment) {
         Set<AnnotationInstance> qualifiers = new HashSet<>();
@@ -71,11 +71,11 @@ class InjectionPointInfo {
 
     private final Kind kind;
 
-    public InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers) {
+    InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers) {
         this(requiredType, requiredQualifiers, Kind.CDI);
     }
 
-    public InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, Kind kind) {
+    InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, Kind kind) {
         this.typeAndQualifiers = new TypeAndQualifiers(requiredType,
                 requiredQualifiers.isEmpty() ? Collections.singleton(AnnotationInstance.create(DotNames.DEFAULT, null, Collections.emptyList()))
                         : requiredQualifiers);
@@ -95,11 +95,11 @@ class InjectionPointInfo {
         return kind;
     }
 
-    Type getRequiredType() {
+    public Type getRequiredType() {
         return typeAndQualifiers.type;
     }
 
-    Set<AnnotationInstance> getRequiredQualifiers() {
+    public Set<AnnotationInstance> getRequiredQualifiers() {
         return typeAndQualifiers.qualifiers;
     }
 

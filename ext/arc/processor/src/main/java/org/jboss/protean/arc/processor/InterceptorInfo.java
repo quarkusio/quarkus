@@ -103,7 +103,7 @@ class InterceptorInfo extends BeanInfo implements Comparable<InterceptorInfo> {
         }
     }
 
-    boolean isInterceptor() {
+    public boolean isInterceptor() {
         return true;
     }
 

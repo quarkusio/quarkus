@@ -13,7 +13,7 @@ public interface DeploymentEnhancer extends BuildExtension {
      */
     void enhance(DeploymentContext deploymentContext);
 
-    interface DeploymentContext {
+    interface DeploymentContext extends BuildContext {
 
         /**
          *

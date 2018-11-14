@@ -51,7 +51,7 @@ public class ObserverInfo {
         this.isAsync = isAsync;
     }
 
-    BeanInfo getDeclaringBean() {
+    public BeanInfo getDeclaringBean() {
         return declaringBean;
     }
 
@@ -59,7 +59,7 @@ public class ObserverInfo {
         return observerMethod;
     }
 
-    MethodParameterInfo getEventParameter() {
+    public MethodParameterInfo getEventParameter() {
         return eventParameter;
     }
 
@@ -71,7 +71,7 @@ public class ObserverInfo {
         return injection;
     }
 
-    boolean isAsync() {
+    public boolean isAsync() {
         return isAsync;
     }
 
@@ -81,11 +81,11 @@ public class ObserverInfo {
         }
     }
 
-    Type getObservedType() {
+    public Type getObservedType() {
         return observerMethod.parameters().get(eventParameter.position());
     }
 
-    Set<AnnotationInstance> getQualifiers() {
+    public Set<AnnotationInstance> getQualifiers() {
         Set<AnnotationInstance> qualifiers = new HashSet<>();
         for (AnnotationInstance annotation : observerMethod.annotations()) {
             if (annotation.target().equals(eventParameter) && declaringBean.getDeployment().getQualifier(annotation.name()) != null) {

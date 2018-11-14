@@ -61,11 +61,12 @@ public class BeanDeployment {
     private final Set<DotName> resourceAnnotations;
 
     BeanDeployment(IndexView index, Collection<DotName> additionalBeanDefiningAnnotations, List<AnnotationsTransformer> annotationTransformers) {
-        this(index, additionalBeanDefiningAnnotations, annotationTransformers, Collections.emptyList(), Collections.emptyList(), null);
+        this(index, additionalBeanDefiningAnnotations, annotationTransformers, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null);
     }
 
     BeanDeployment(IndexView index, Collection<DotName> additionalBeanDefiningAnnotations, List<AnnotationsTransformer> annotationTransformers,
-            Collection<DotName> resourceAnnotations, List<BeanRegistrar> beanRegistrars, BuildContextImpl buildContext) {
+            Collection<DotName> resourceAnnotations, List<BeanRegistrar> beanRegistrars, List<BeanDeploymentValidator> validators,
+            BuildContextImpl buildContext) {
         long start = System.currentTimeMillis();
         this.resourceAnnotations = new HashSet<>(resourceAnnotations);
         this.index = index;
@@ -87,19 +88,38 @@ public class BeanDeployment {
 
         if (buildContext != null) {
             buildContext.putInternal(Key.INJECTION_POINTS.asString(), Collections.unmodifiableList(injectionPoints));
+            buildContext.putInternal(Key.OBSERVERS.asString(), Collections.unmodifiableList(observers));
+            buildContext.putInternal(Key.BEANS.asString(), Collections.unmodifiableList(beans));
         }
 
         // Register synthetic beans
         if (!beanRegistrars.isEmpty()) {
             RegistrationContext registrationContext = new RegistrationContext() {
+
                 @Override
-                public <T> BeanConfigurator<T> configure(Class<T> implementationClass) {
-                    return new BeanConfigurator<T>(implementationClass, BeanDeployment.this, beans::add);
+                public <T> BeanConfigurator<T> configure(Class<?> beanClass) {
+                    return new BeanConfigurator<T>(beanClass, BeanDeployment.this, beans::add);
                 }
+
+                @Override
+                public <V> V get(Key<V> key) {
+                    return buildContext.get(key);
+                }
+
+                @Override
+                public <V> V put(Key<V> key, V value) {
+                    return buildContext.put(key, value);
+                }
+
             };
             for (BeanRegistrar registrar : beanRegistrars) {
                 registrar.register(registrationContext);
             }
+        }
+
+        // Validate the bean deployment
+        for (BeanDeploymentValidator validator : validators) {
+            validator.validate();
         }
 
         this.observers = observers;

@@ -61,42 +61,28 @@ public class BeanProcessor {
     private final Collection<DotName> resourceAnnotations;
 
     private final List<AnnotationsTransformer> annotationTransformers;
-
     private final List<BeanRegistrar> beanRegistrars;
+    private final List<BeanDeploymentValidator> beanDeploymentValidators;
 
     private final BuildContextImpl buildContext;
 
     private BeanProcessor(String name, IndexView index, Collection<DotName> additionalBeanDefiningAnnotations, ResourceOutput output,
             boolean sharedAnnotationLiterals, ReflectionRegistration reflectionRegistration, List<AnnotationsTransformer> annotationTransformers,
-            Collection<DotName> resourceAnnotations, List<BeanRegistrar> beanRegistrars, List<DeploymentEnhancer> deploymentEnhancers) {
+            Collection<DotName> resourceAnnotations, List<BeanRegistrar> beanRegistrars, List<DeploymentEnhancer> deploymentEnhancers,
+            List<BeanDeploymentValidator> beanDeploymentValidators) {
         this.reflectionRegistration = reflectionRegistration;
         Objects.requireNonNull(output);
         this.name = name;
         this.additionalBeanDefiningAnnotations = additionalBeanDefiningAnnotations;
         this.output = output;
         this.sharedAnnotationLiterals = sharedAnnotationLiterals;
-        this.annotationTransformers = annotationTransformers;
         this.resourceAnnotations = resourceAnnotations;
 
         // Initialize all build processors
         buildContext = new BuildContextImpl();
         buildContext.putInternal(Key.INDEX.asString(), index);
-        for (Iterator<DeploymentEnhancer> iterator = deploymentEnhancers.iterator(); iterator.hasNext();) {
-            if (!iterator.next().initialize(buildContext)) {
-                iterator.remove();
-            }
-        }
-        for (Iterator<AnnotationsTransformer> iterator = annotationTransformers.iterator(); iterator.hasNext();) {
-            if (!iterator.next().initialize(buildContext)) {
-                iterator.remove();
-            }
-        }
-        for (Iterator<BeanRegistrar> iterator = beanRegistrars.iterator(); iterator.hasNext();) {
-            if (!iterator.next().initialize(buildContext)) {
-                iterator.remove();
-            }
-        }
 
+        initAndSort(deploymentEnhancers, buildContext);
         if (!deploymentEnhancers.isEmpty()) {
             Indexer indexer = new Indexer();
             DeploymentContext deploymentContext = new DeploymentContext() {
@@ -110,6 +96,16 @@ public class BeanProcessor {
                 public void addClass(Class<?> clazz) {
                     index(indexer, clazz.getName());
                 }
+
+                @Override
+                public <V> V get(Key<V> key) {
+                    return buildContext.get(key);
+                }
+
+                @Override
+                public <V> V put(Key<V> key, V value) {
+                    return buildContext.put(key, value);
+                }
             };
             deploymentEnhancers.sort(BuildExtension::compare);
             for (DeploymentEnhancer enhancer : deploymentEnhancers) {
@@ -120,14 +116,15 @@ public class BeanProcessor {
             this.index = index;
         }
 
-        beanRegistrars.sort(BuildExtension::compare);
-        this.beanRegistrars = beanRegistrars;
+        this.annotationTransformers = initAndSort(annotationTransformers, buildContext);
+        this.beanRegistrars = initAndSort(beanRegistrars, buildContext);
+        this.beanDeploymentValidators = initAndSort(beanDeploymentValidators, buildContext);
     }
 
     public BeanDeployment process() throws IOException {
 
         BeanDeployment beanDeployment = new BeanDeployment(new IndexWrapper(index), additionalBeanDefiningAnnotations, annotationTransformers,
-                resourceAnnotations, beanRegistrars, buildContext);
+                resourceAnnotations, beanRegistrars, beanDeploymentValidators, buildContext);
         beanDeployment.init();
 
         AnnotationLiteralProcessor annotationLiterals = new AnnotationLiteralProcessor(name, sharedAnnotationLiterals);
@@ -239,6 +236,7 @@ public class BeanProcessor {
         private final List<AnnotationsTransformer> annotationTransformers = new ArrayList<>();
         private final List<BeanRegistrar> beanRegistrars = new ArrayList<>();
         private final List<DeploymentEnhancer> deploymentEnhancers = new ArrayList<>();
+        private final List<BeanDeploymentValidator> beanDeploymentValidators = new ArrayList<>();
 
         public Builder setName(String name) {
             this.name = name;
@@ -290,11 +288,26 @@ public class BeanProcessor {
             return this;
         }
 
-        public BeanProcessor build() {
-            return new BeanProcessor(name, addBuiltinClasses(index), additionalBeanDefiningAnnotations, output, sharedAnnotationLiterals,
-                    reflectionRegistration, annotationTransformers, resourceAnnotations, beanRegistrars, deploymentEnhancers);
+        public Builder addBeanDeploymentValidator(BeanDeploymentValidator validator) {
+            this.beanDeploymentValidators.add(validator);
+            return this;
         }
 
+        public BeanProcessor build() {
+            return new BeanProcessor(name, addBuiltinClasses(index), additionalBeanDefiningAnnotations, output, sharedAnnotationLiterals,
+                    reflectionRegistration, annotationTransformers, resourceAnnotations, beanRegistrars, deploymentEnhancers, beanDeploymentValidators);
+        }
+
+    }
+
+    private static <E extends BuildExtension> List<E> initAndSort(List<E> extentions, BuildContext buildContext) {
+        for (Iterator<E> iterator = extentions.iterator(); iterator.hasNext();) {
+            if (!iterator.next().initialize(buildContext)) {
+                iterator.remove();
+            }
+        }
+        extentions.sort(BuildExtension::compare);
+        return extentions;
     }
 
     /**

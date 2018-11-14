@@ -178,7 +178,7 @@ public final class LoggingResourceProcessor {
                             MethodDescriptor.ofConstructor(ColorPatternFormatter.class, String.class),
                             consoleFormatResult
                     );
-                    formatter = consoleBranchResult.mergeBranches(yesConsole, noConsole, Formatter.class);
+                    formatter = consoleBranchResult.mergeBranches(noConsole, yesConsole, Formatter.class);
                 } else {
                     formatter = branch.newInstance(
                             MethodDescriptor.ofConstructor(PatternFormatter.class, String.class),

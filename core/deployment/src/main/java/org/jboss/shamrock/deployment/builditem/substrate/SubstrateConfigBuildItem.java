@@ -23,15 +23,15 @@ public final class SubstrateConfigBuildItem extends MultiBuildItem {
         this.nativeImageSystemProperties = Collections.unmodifiableMap(builder.nativeImageSystemProperties);
     }
 
-    public List<String> getRuntimeInitializedClasses() {
+    public Iterable<String> getRuntimeInitializedClasses() {
         return runtimeInitializedClasses;
     }
 
-    public List<String> getResourceBundles() {
+    public Iterable<String> getResourceBundles() {
         return resourceBundles;
     }
 
-    public List<List<String>> getProxyDefinitions() {
+    public Iterable<List<String>> getProxyDefinitions() {
         return proxyDefinitions;
     }
 

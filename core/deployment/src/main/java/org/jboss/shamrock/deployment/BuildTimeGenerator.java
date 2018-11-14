@@ -203,7 +203,7 @@ public class BuildTimeGenerator {
                     processorContext.addResourceBundle(i.getBundleName());
                 }
                 for (ReflectiveClassBuildItem i : result.consumeMulti(ReflectiveClassBuildItem.class)) {
-                    processorContext.addReflectiveClass(i.isMethods(), i.isFields(), i.getClassName().toArray(EMPTY_STRING_ARRAY));
+                    processorContext.addReflectiveClass(i.isMethods(), i.isFields(), i.getClassNames().toArray(EMPTY_STRING_ARRAY));
                 }
                 for (SubstrateProxyDefinitionBuildItem i : result.consumeMulti(SubstrateProxyDefinitionBuildItem.class)) {
                     processorContext.addProxyDefinition(i.getClasses().toArray(EMPTY_STRING_ARRAY));

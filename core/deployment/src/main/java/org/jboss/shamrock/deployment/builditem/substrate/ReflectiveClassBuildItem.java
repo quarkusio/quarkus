@@ -17,7 +17,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         this.fields = fields;
     }
 
-    public List<String> getClassName() {
+    public List<String> getClassNames() {
         return className;
     }
 

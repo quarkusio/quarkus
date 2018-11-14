@@ -4,7 +4,7 @@ import org.jboss.builder.item.MultiBuildItem;
 
 public final class CdiExtensionBuildItem extends MultiBuildItem {
 
-    final String name;
+    private final String name;
 
     public CdiExtensionBuildItem(String name) {
         this.name = name;

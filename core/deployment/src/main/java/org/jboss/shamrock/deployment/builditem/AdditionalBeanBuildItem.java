@@ -16,7 +16,7 @@ public final class AdditionalBeanBuildItem extends MultiBuildItem {
     }
 
     public AdditionalBeanBuildItem(Class... beanClasss) {
-        beanNames = new ArrayList<>();
+        beanNames = new ArrayList<>(beanClasss.length);
         for (Class i : beanClasss) {
             beanNames.add(i.getName());
         }

@@ -66,7 +66,6 @@ import org.jboss.metadata.web.spec.TransportGuaranteeType;
 import org.jboss.metadata.web.spec.WebMetaData;
 import org.jboss.shamrock.annotations.BuildProducer;
 import org.jboss.shamrock.annotations.BuildStep;
-import org.jboss.shamrock.annotations.ExecutionTime;
 import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.deployment.ApplicationArchive;
 import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
@@ -100,13 +99,6 @@ public class UndertowBuildStep {
     private static final DotName multipartConfig = DotName.createSimple(MultipartConfig.class.getName());
     private static final DotName servletSecurity = DotName.createSimple(ServletSecurity.class.getName());
 
-
-    @Inject
-    BuildProducer<ReflectiveClassBuildItem> reflectiveClasses;
-
-    @Inject
-    ApplicationArchivesBuildItem applicationArchivesBuildItem;
-
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
 
@@ -116,7 +108,8 @@ public class UndertowBuildStep {
 
     @BuildStep
     @Record(STATIC_INIT)
-    public DeploymentInfoBuildItem createDeploymentInfo(UndertowDeploymentTemplate template) throws Exception {
+    public DeploymentInfoBuildItem createDeploymentInfo(UndertowDeploymentTemplate template,
+                                                        ApplicationArchivesBuildItem applicationArchivesBuildItem) throws Exception {
         //we need to check for web resources in order to get welcome files to work
         //this kinda sucks
         Set<String> knownFiles = new HashSet<>();
@@ -163,13 +156,13 @@ public class UndertowBuildStep {
     @Record(STATIC_INIT)
     @BuildStep
     public ServletHandlerBuildItem build(List<ServletBuildItem> servlets,
+                                         List<FilterBuildItem> filters,
                                          List<ServletContextParamBuildItem> contextParams,
-                                         ArchiveRootBuildItem root,
-                                         UndertowDeploymentTemplate template, BytecodeRecorder context, DeploymentInfoBuildItem deployment, BeanFactory beanFactory) throws Exception {
+                                         UndertowDeploymentTemplate template, BytecodeRecorder context, DeploymentInfoBuildItem deployment,
+                                         BeanFactory beanFactory,
+                                         BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) throws Exception {
 
         reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, DefaultServlet.class.getName(), "io.undertow.server.protocol.http.HttpRequestParser$$generated"));
-
-        handleResources(root);
 
         final IndexView index = combinedIndexBuildItem.getIndex();
         WebMetaData result = processAnnotations(index);
@@ -226,11 +219,11 @@ public class UndertowBuildStep {
             for (FilterMappingMetaData mapping : result.getFilterMappings()) {
                 for (String m : mapping.getUrlPatterns()) {
                     if (mapping.getDispatchers() == null || mapping.getDispatchers().isEmpty()) {
-                        template.addFilterMapping(deployment.getValue(), mapping.getFilterName(), m, REQUEST);
+                        template.addFilterURLMapping(deployment.getValue(), mapping.getFilterName(), m, REQUEST);
                     } else {
 
                         for (DispatcherType dispatcher : mapping.getDispatchers()) {
-                            template.addFilterMapping(deployment.getValue(), mapping.getFilterName(), m, javax.servlet.DispatcherType.valueOf(dispatcher.name()));
+                            template.addFilterURLMapping(deployment.getValue(), mapping.getFilterName(), m, javax.servlet.DispatcherType.valueOf(dispatcher.name()));
                         }
                     }
                 }
@@ -251,10 +244,28 @@ public class UndertowBuildStep {
             String servletClass = servlet.getServletClass();
             InjectionInstance<? extends Servlet> injection = (InjectionInstance<? extends Servlet>) beanFactory.newInstanceFactory(servletClass);
             InstanceFactory<? extends Servlet> factory = template.createInstanceFactory(injection);
+            if(servlet.getLoadOnStartup() == 0) {
+                reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, servlet.getServletClass()));
+            }
             template.registerServlet(deployment.getValue(), servlet.getName(), context.classProxy(servletClass), servlet.isAsyncSupported(), servlet.getLoadOnStartup(), factory);
 
             for (String m : servlet.getMappings()) {
                 template.addServletMapping(deployment.getValue(), servlet.getName(), m);
+            }
+        }
+
+        for (FilterBuildItem filter : filters) {
+            String filterClass = filter.getFilterClass();
+            reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, filterClass));
+            InjectionInstance<? extends Filter> injection = (InjectionInstance<? extends Filter>) beanFactory.newInstanceFactory(filterClass);
+            InstanceFactory<? extends Filter> factory = template.createInstanceFactory(injection);
+            template.registerFilter(deployment.getValue(), filter.getName(), context.classProxy(filterClass), filter.isAsyncSupported(), factory);
+            for (FilterBuildItem.FilterMappingInfo m : filter.getMappings()) {
+                if(m.getMappingType() == FilterBuildItem.FilterMappingInfo.MappingType.URL) {
+                    template.addFilterURLMapping(deployment.getValue(), filter.getName(), m.getMapping(), m.getDispatcher());
+                } else {
+                    template.addFilterServletNameMapping(deployment.getValue(), filter.getName(), m.getMapping(), m.getDispatcher());
+                }
             }
         }
         for(ServletContextParamBuildItem i : contextParams) {
@@ -262,10 +273,12 @@ public class UndertowBuildStep {
         }
         return new ServletHandlerBuildItem(template.bootServletContainer(deployment.getValue()));
 
-
     }
 
-    private void handleResources(ArchiveRootBuildItem root) throws IOException {
+    @BuildStep
+    void registerSubstrateResources(ArchiveRootBuildItem root,
+                                    BuildProducer<ResourceBuildItem> resourceProducer,
+                                    ApplicationArchivesBuildItem applicationArchivesBuildItem) throws IOException {
         Path resources = applicationArchivesBuildItem.getRootArchive().getChildPath("META-INF/resources");
         if (resources != null) {
             Files.walk(resources).forEach(new Consumer<Path>() {

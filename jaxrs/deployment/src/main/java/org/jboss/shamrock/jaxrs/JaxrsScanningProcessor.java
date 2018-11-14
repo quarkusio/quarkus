@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.List;
 
 import javax.servlet.Servlet;
 import javax.ws.rs.container.DynamicFeature;
@@ -98,6 +99,19 @@ public class JaxrsScanningProcessor {
             DotName.createSimple("javax.ws.rs.POST"),
             DotName.createSimple("javax.ws.rs.PUT"),
     };
+
+
+    @BuildStep
+    ServletContextParamBuildItem registerProviders(List<JaxrsProviderBuildItem> providers) {
+        StringBuilder sb = new StringBuilder();
+        for(int i = 0; i < providers.size(); ++i) {
+            if(i != 0) {
+                sb.append(",");
+            }
+            sb.append(providers.get(i).getName());
+        }
+        return new ServletContextParamBuildItem("resteasy.providers", sb.toString());
+    }
 
     @BuildStep
     SubstrateConfigBuildItem config() {

@@ -129,10 +129,13 @@ public class UndertowDeploymentTemplate {
         info.get().addInitParam(name, value);
     }
 
-    public void addFilterMapping(RuntimeValue<DeploymentInfo> info, String name, String mapping, DispatcherType dispatcherType) throws Exception {
+    public void addFilterURLMapping(RuntimeValue<DeploymentInfo> info, String name, String mapping, DispatcherType dispatcherType) throws Exception {
         info.getValue().addFilterUrlMapping(name, mapping, dispatcherType);
     }
 
+    public void addFilterServletNameMapping(RuntimeValue<DeploymentInfo> info, String name, String mapping, DispatcherType dispatcherType) throws Exception {
+        info.getValue().addFilterServletNameMapping(name, mapping, dispatcherType);
+    }
 
     public void registerListener(RuntimeValue<DeploymentInfo> info, Class<?> listenerClass, InstanceFactory<? extends EventListener> factory) {
         info.getValue().addListener(new ListenerInfo((Class<? extends EventListener>) listenerClass, factory));

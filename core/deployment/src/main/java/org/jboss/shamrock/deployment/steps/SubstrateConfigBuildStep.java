@@ -31,7 +31,7 @@ class SubstrateConfigBuildStep {
             for (String i : substrateConfigBuildItem.getResourceBundles()) {
                 resourceBundle.produce(new ResourceBundleBuildItem(i));
             }
-            for (List<String> i : substrateConfigBuildItem.getProxyDefinitions()) {
+            for (String i : substrateConfigBuildItem.getProxyDefinitions()) {
                 proxy.produce(new ProxyDefinitionBuildItem(i));
             }
         }

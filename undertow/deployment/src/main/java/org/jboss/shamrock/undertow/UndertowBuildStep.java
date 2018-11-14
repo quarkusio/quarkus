@@ -102,10 +102,6 @@ public class UndertowBuildStep {
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
 
-    @Inject
-    BuildProducer<ResourceBuildItem> resourceProducer;
-
-
     @BuildStep
     @Record(STATIC_INIT)
     public DeploymentInfoBuildItem createDeploymentInfo(UndertowDeploymentTemplate template,
@@ -157,7 +153,8 @@ public class UndertowBuildStep {
     @BuildStep
     public ServletHandlerBuildItem build(List<ServletBuildItem> servlets,
                                          List<FilterBuildItem> filters,
-                                         List<ServletContextParamBuildItem> contextParams,
+                                         List<ServletInitParamBuildItem> initParams,
+                                         List<ServletContextAttributeBuildItem> contextParams,
                                          UndertowDeploymentTemplate template, BytecodeRecorder context, DeploymentInfoBuildItem deployment,
                                          BeanFactory beanFactory,
                                          BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) throws Exception {
@@ -244,7 +241,7 @@ public class UndertowBuildStep {
             String servletClass = servlet.getServletClass();
             InjectionInstance<? extends Servlet> injection = (InjectionInstance<? extends Servlet>) beanFactory.newInstanceFactory(servletClass);
             InstanceFactory<? extends Servlet> factory = template.createInstanceFactory(injection);
-            if(servlet.getLoadOnStartup() == 0) {
+            if (servlet.getLoadOnStartup() == 0) {
                 reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, servlet.getServletClass()));
             }
             template.registerServlet(deployment.getValue(), servlet.getName(), context.classProxy(servletClass), servlet.isAsyncSupported(), servlet.getLoadOnStartup(), factory);
@@ -261,15 +258,18 @@ public class UndertowBuildStep {
             InstanceFactory<? extends Filter> factory = template.createInstanceFactory(injection);
             template.registerFilter(deployment.getValue(), filter.getName(), context.classProxy(filterClass), filter.isAsyncSupported(), factory);
             for (FilterBuildItem.FilterMappingInfo m : filter.getMappings()) {
-                if(m.getMappingType() == FilterBuildItem.FilterMappingInfo.MappingType.URL) {
+                if (m.getMappingType() == FilterBuildItem.FilterMappingInfo.MappingType.URL) {
                     template.addFilterURLMapping(deployment.getValue(), filter.getName(), m.getMapping(), m.getDispatcher());
                 } else {
                     template.addFilterServletNameMapping(deployment.getValue(), filter.getName(), m.getMapping(), m.getDispatcher());
                 }
             }
         }
-        for(ServletContextParamBuildItem i : contextParams) {
-            template.addServletContextParameter(deployment.getValue(), i.getKey(), i.getValue());
+        for (ServletInitParamBuildItem i : initParams) {
+            template.addServltInitParameter(deployment.getValue(), i.getKey(), i.getValue());
+        }
+        for (ServletContextAttributeBuildItem i : contextParams) {
+            template.addServletContextAttribute(deployment.getValue(), i.getKey(), i.getValue());
         }
         return new ServletHandlerBuildItem(template.bootServletContainer(deployment.getValue()));
 

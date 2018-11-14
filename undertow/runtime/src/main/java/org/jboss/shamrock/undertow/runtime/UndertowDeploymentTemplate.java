@@ -141,7 +141,7 @@ public class UndertowDeploymentTemplate {
         info.getValue().addListener(new ListenerInfo((Class<? extends EventListener>) listenerClass, factory));
     }
 
-    public void addServletContextParameter(RuntimeValue<DeploymentInfo> info, String name, String value) {
+    public void addServltInitParameter(RuntimeValue<DeploymentInfo> info, String name, String value) {
         info.getValue().addInitParameter(name, value);
     }
 
@@ -204,6 +204,10 @@ public class UndertowDeploymentTemplate {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void addServletContextAttribute(RuntimeValue<DeploymentInfo> deployment, String key, Object value1) {
+        deployment.getValue().addServletContextAttribute(key, value1);
     }
 
     /**

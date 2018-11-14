@@ -622,6 +622,10 @@
                         <groupId>org.jboss.logging</groupId>
                         <artifactId>jboss-logging</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>javax</groupId>
+                        <artifactId>javaee-api</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
             <dependency>
@@ -632,6 +636,10 @@
                     <exclusion>
                         <groupId>org.jboss.logging</groupId>
                         <artifactId>jboss-logging</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>javax</groupId>
+                        <artifactId>javaee-api</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>

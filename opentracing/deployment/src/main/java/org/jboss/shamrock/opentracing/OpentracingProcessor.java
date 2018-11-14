@@ -1,45 +1,61 @@
 package org.jboss.shamrock.opentracing;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.enterprise.inject.spi.ObserverMethod;
-import javax.inject.Inject;
+import javax.servlet.DispatcherType;
 
-import io.opentracing.contrib.interceptors.OpenTracingInterceptor;
-import org.eclipse.microprofile.opentracing.Traced;
-import org.jboss.shamrock.deployment.ArchiveContext;
-import org.jboss.shamrock.deployment.BeanDeployment;
-import org.jboss.shamrock.deployment.ProcessorContext;
-import org.jboss.shamrock.deployment.ResourceProcessor;
-import org.jboss.shamrock.deployment.RuntimePriority;
-import org.jboss.shamrock.deployment.codegen.BytecodeRecorder;
+import org.jboss.shamrock.annotations.BuildProducer;
+import org.jboss.shamrock.annotations.BuildStep;
+import org.jboss.shamrock.annotations.ExecutionTime;
+import org.jboss.shamrock.annotations.Record;
+import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
+import org.jboss.shamrock.deployment.builditem.ReflectiveMethodBuildItem;
+import org.jboss.shamrock.jaxrs.JaxrsProviderBuildItem;
+import org.jboss.shamrock.opentracing.runtime.ShamrockTracingDynamicFeature;
 import org.jboss.shamrock.opentracing.runtime.TracerProducer;
 import org.jboss.shamrock.opentracing.runtime.TracingDeploymentTemplate;
+import org.jboss.shamrock.undertow.FilterBuildItem;
 
-public class OpentracingProcessor implements ResourceProcessor {
+import io.opentracing.contrib.interceptors.OpenTracingInterceptor;
+import io.opentracing.contrib.jaxrs2.server.SpanFinishingFilter;
 
-    @Inject
-    BeanDeployment beanDeployment;
+public class OpentracingProcessor {
 
-    @Override
-    public void process(ArchiveContext archiveContext, ProcessorContext processorContext) throws Exception {
-        System.err.println( "PROCESS OPENTRACING");
-        this.beanDeployment.addAdditionalBean(OpenTracingInterceptor.class);
-        this.beanDeployment.addAdditionalBean(TracerProducer.class);
-        processorContext.addReflectiveClass(false, false, Traced.class.getName());
+    @BuildStep
+    List<AdditionalBeanBuildItem> registerBeans() {
+        return Arrays.asList(new AdditionalBeanBuildItem(OpenTracingInterceptor.class, TracerProducer.class));
+    }
 
+    @BuildStep
+    ReflectiveMethodBuildItem registerMethod() throws Exception {
         Method isAsync = ObserverMethod.class.getMethod("isAsync");
-        processorContext.addReflectiveMethod(isAsync);
-
-        try (BytecodeRecorder recorder = processorContext.addStaticInitTask(RuntimePriority.JAXRS_DEPLOYMENT + 1)) {
-            TracingDeploymentTemplate tracing = recorder.getRecordingProxy(TracingDeploymentTemplate.class);
-            tracing.registerTracer();
-            tracing.integrateJaxrs(null);
-        }
+        return new ReflectiveMethodBuildItem(isAsync);
     }
 
-    @Override
-    public int getPriority() {
-        return 0;
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void setupFilter(BuildProducer<JaxrsProviderBuildItem> providers,
+                     BuildProducer<FilterBuildItem> filterProducer,
+                     TracingDeploymentTemplate tracing) {
+
+        //TODO: this needs to be a BuildItem so that more than one can be registered
+        providers.produce(new JaxrsProviderBuildItem(ShamrockTracingDynamicFeature.class.getName()));
+
+        FilterBuildItem filterInfo = new FilterBuildItem("tracingFilter", SpanFinishingFilter.class.getName());
+        filterInfo.setAsyncSupported(true);
+        filterInfo.addFilterUrlMapping("*", DispatcherType.FORWARD);
+        filterInfo.addFilterUrlMapping("*", DispatcherType.INCLUDE);
+        filterInfo.addFilterUrlMapping("*", DispatcherType.REQUEST);
+        filterInfo.addFilterUrlMapping("*", DispatcherType.ASYNC);
+        filterInfo.addFilterUrlMapping("*", DispatcherType.ERROR);
+        filterProducer.produce(filterInfo);
+
+        //note that we can't put this into its own method as we need this to be registered before Undertow is started
+        tracing.registerTracer();
+
     }
+
 }

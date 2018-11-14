@@ -170,11 +170,11 @@ public final class LoggingResourceProcessor {
                     // detect a console at run time
                     final ResultHandle consoleProbeResult = branch.invokeStaticMethod(MethodDescriptor.ofMethod(System.class, "console", Console.class));
                     final BranchResult consoleBranchResult = branch.ifNull(consoleProbeResult);
-                    final ResultHandle noConsole = consoleBranchResult.falseBranch().newInstance(
+                    final ResultHandle noConsole = consoleBranchResult.trueBranch().newInstance(
                             MethodDescriptor.ofConstructor(PatternFormatter.class, String.class),
                             consoleFormatResult
                     );
-                    final ResultHandle yesConsole = consoleBranchResult.trueBranch().newInstance(
+                    final ResultHandle yesConsole = consoleBranchResult.falseBranch().newInstance(
                             MethodDescriptor.ofConstructor(ColorPatternFormatter.class, String.class),
                             consoleFormatResult
                     );

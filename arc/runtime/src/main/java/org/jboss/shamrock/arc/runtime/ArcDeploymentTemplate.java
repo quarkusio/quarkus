@@ -6,6 +6,8 @@ import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.function.Supplier;
 
+import javax.servlet.ServletContext;
+
 import org.jboss.protean.arc.Arc;
 import org.jboss.protean.arc.ArcContainer;
 import org.jboss.protean.arc.InstanceHandle;
@@ -20,6 +22,7 @@ import org.jboss.shamrock.runtime.StartupContext;
 import org.jboss.shamrock.runtime.cdi.BeanContainerListener;
 
 import io.undertow.server.HttpServerExchange;
+import io.undertow.servlet.ServletExtension;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.ThreadSetupHandler;
 
@@ -63,27 +66,29 @@ public class ArcDeploymentTemplate {
         return beanContainer;
     }
 
-    public void setupRequestScope(RuntimeValue<DeploymentInfo> deploymentInfo, ArcContainer arcContainer) {
-        if (deploymentInfo == null) {
-            return;
-        }
-        deploymentInfo.getValue().addThreadSetupAction(new ThreadSetupHandler() {
+    public ServletExtension setupRequestScope(ArcContainer arcContainer) {
+        return new ServletExtension() {
             @Override
-            public <T, C> Action<T, C> create(Action<T, C> action) {
-                return new Action<T, C>() {
+            public void handleDeployment(DeploymentInfo deploymentInfo, ServletContext servletContext) {
+                deploymentInfo.addThreadSetupAction(new ThreadSetupHandler() {
                     @Override
-                    public T call(HttpServerExchange exchange, C context) throws Exception {
-                        ManagedContext requestContext = arcContainer.requestContext();
-                        requestContext.activate();
-                        try {
-                            return action.call(exchange, context);
-                        } finally {
-                            requestContext.terminate();
-                        }
+                    public <T, C> Action<T, C> create(Action<T, C> action) {
+                        return new Action<T, C>() {
+                            @Override
+                            public T call(HttpServerExchange exchange, C context) throws Exception {
+                                ManagedContext requestContext = arcContainer.requestContext();
+                                requestContext.activate();
+                                try {
+                                    return action.call(exchange, context);
+                                } finally {
+                                    requestContext.terminate();
+                                }
+                            }
+                        };
                     }
-                };
+                });
             }
-        });
+        };
     }
 
     public void setupInjection(StartupContext startupContext, ArcContainer container) {

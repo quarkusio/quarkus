@@ -102,34 +102,6 @@ public class UndertowBuildStep {
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
 
-    @BuildStep
-    @Record(STATIC_INIT)
-    public DeploymentInfoBuildItem createDeploymentInfo(UndertowDeploymentTemplate template,
-                                                        ApplicationArchivesBuildItem applicationArchivesBuildItem) throws Exception {
-        //we need to check for web resources in order to get welcome files to work
-        //this kinda sucks
-        Set<String> knownFiles = new HashSet<>();
-        Set<String> knownDirectories = new HashSet<>();
-        for (ApplicationArchive i : applicationArchivesBuildItem.getAllApplicationArchives()) {
-            Path resource = i.getChildPath("META-INF/resources");
-            if (resource != null && Files.exists(resource)) {
-                Files.walk(resource).forEach(new Consumer<Path>() {
-                    @Override
-                    public void accept(Path path) {
-                        Path rel = resource.relativize(path);
-                        if (Files.isDirectory(rel)) {
-                            knownDirectories.add(rel.toString());
-                        } else {
-                            knownFiles.add(rel.toString());
-                        }
-                    }
-                });
-            }
-        }
-
-        RuntimeValue<DeploymentInfo> info = template.createDeployment("test", knownFiles, knownDirectories);
-        return new DeploymentInfoBuildItem(info);
-    }
 
     @BuildStep
     @Record(RUNTIME_INIT)
@@ -151,15 +123,40 @@ public class UndertowBuildStep {
 
     @Record(STATIC_INIT)
     @BuildStep
-    public ServletHandlerBuildItem build(List<ServletBuildItem> servlets,
+    public ServletHandlerBuildItem build(ApplicationArchivesBuildItem applicationArchivesBuildItem,
+                                         List<ServletBuildItem> servlets,
                                          List<FilterBuildItem> filters,
                                          List<ServletInitParamBuildItem> initParams,
                                          List<ServletContextAttributeBuildItem> contextParams,
-                                         UndertowDeploymentTemplate template, BytecodeRecorder context, DeploymentInfoBuildItem deployment,
+                                         UndertowDeploymentTemplate template, BytecodeRecorder context,
+                                         List<ServletExtensionBuildItem> extensions,
                                          BeanFactory beanFactory,
                                          BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) throws Exception {
 
         reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, DefaultServlet.class.getName(), "io.undertow.server.protocol.http.HttpRequestParser$$generated"));
+
+        //we need to check for web resources in order to get welcome files to work
+        //this kinda sucks
+        Set<String> knownFiles = new HashSet<>();
+        Set<String> knownDirectories = new HashSet<>();
+        for (ApplicationArchive i : applicationArchivesBuildItem.getAllApplicationArchives()) {
+            Path resource = i.getChildPath("META-INF/resources");
+            if (resource != null && Files.exists(resource)) {
+                Files.walk(resource).forEach(new Consumer<Path>() {
+                    @Override
+                    public void accept(Path path) {
+                        Path rel = resource.relativize(path);
+                        if (Files.isDirectory(rel)) {
+                            knownDirectories.add(rel.toString());
+                        } else {
+                            knownFiles.add(rel.toString());
+                        }
+                    }
+                });
+            }
+        }
+
+        RuntimeValue<DeploymentInfo> deployment = template.createDeployment("test", knownFiles, knownDirectories);
 
         final IndexView index = combinedIndexBuildItem.getIndex();
         WebMetaData result = processAnnotations(index);
@@ -171,7 +168,7 @@ public class UndertowBuildStep {
                 reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, servlet.getServletClass()));
                 InjectionInstance<? extends Servlet> injection = (InjectionInstance<? extends Servlet>) beanFactory.newInstanceFactory(servlet.getServletClass());
                 InstanceFactory<? extends Servlet> factory = template.createInstanceFactory(injection);
-                AtomicReference<ServletInfo> sref = template.registerServlet(deployment.getValue(), servlet.getServletName(),
+                AtomicReference<ServletInfo> sref = template.registerServlet(deployment, servlet.getServletName(),
                         context.classProxy(servlet.getServletClass()),
                         servlet.isAsyncSupported(),
                         servlet.getLoadOnStartupInt(),
@@ -190,7 +187,7 @@ public class UndertowBuildStep {
         if (result.getServletMappings() != null) {
             for (ServletMappingMetaData mapping : result.getServletMappings()) {
                 for (String m : mapping.getUrlPatterns()) {
-                    template.addServletMapping(deployment.getValue(), mapping.getServletName(), m);
+                    template.addServletMapping(deployment, mapping.getServletName(), m);
                 }
             }
         }
@@ -200,7 +197,7 @@ public class UndertowBuildStep {
                 reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, filter.getFilterClass()));
                 InjectionInstance<? extends Filter> injection = (InjectionInstance<? extends Filter>) beanFactory.newInstanceFactory(filter.getFilterClass());
                 InstanceFactory<? extends Filter> factory = template.createInstanceFactory(injection);
-                AtomicReference<FilterInfo> sref = template.registerFilter(deployment.getValue(),
+                AtomicReference<FilterInfo> sref = template.registerFilter(deployment,
                         filter.getFilterName(),
                         context.classProxy(filter.getFilterClass()),
                         filter.isAsyncSupported(),
@@ -216,11 +213,11 @@ public class UndertowBuildStep {
             for (FilterMappingMetaData mapping : result.getFilterMappings()) {
                 for (String m : mapping.getUrlPatterns()) {
                     if (mapping.getDispatchers() == null || mapping.getDispatchers().isEmpty()) {
-                        template.addFilterURLMapping(deployment.getValue(), mapping.getFilterName(), m, REQUEST);
+                        template.addFilterURLMapping(deployment, mapping.getFilterName(), m, REQUEST);
                     } else {
 
                         for (DispatcherType dispatcher : mapping.getDispatchers()) {
-                            template.addFilterURLMapping(deployment.getValue(), mapping.getFilterName(), m, javax.servlet.DispatcherType.valueOf(dispatcher.name()));
+                            template.addFilterURLMapping(deployment, mapping.getFilterName(), m, javax.servlet.DispatcherType.valueOf(dispatcher.name()));
                         }
                     }
                 }
@@ -233,7 +230,7 @@ public class UndertowBuildStep {
                 reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, listener.getListenerClass()));
                 InjectionInstance<? extends EventListener> injection = (InjectionInstance<? extends EventListener>) beanFactory.newInstanceFactory(listener.getListenerClass());
                 InstanceFactory<? extends EventListener> factory = template.createInstanceFactory(injection);
-                template.registerListener(deployment.getValue(), context.classProxy(listener.getListenerClass()), factory);
+                template.registerListener(deployment, context.classProxy(listener.getListenerClass()), factory);
             }
         }
 
@@ -244,10 +241,10 @@ public class UndertowBuildStep {
             if (servlet.getLoadOnStartup() == 0) {
                 reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, servlet.getServletClass()));
             }
-            template.registerServlet(deployment.getValue(), servlet.getName(), context.classProxy(servletClass), servlet.isAsyncSupported(), servlet.getLoadOnStartup(), factory);
+            template.registerServlet(deployment, servlet.getName(), context.classProxy(servletClass), servlet.isAsyncSupported(), servlet.getLoadOnStartup(), factory);
 
             for (String m : servlet.getMappings()) {
-                template.addServletMapping(deployment.getValue(), servlet.getName(), m);
+                template.addServletMapping(deployment, servlet.getName(), m);
             }
         }
 
@@ -256,22 +253,25 @@ public class UndertowBuildStep {
             reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, filterClass));
             InjectionInstance<? extends Filter> injection = (InjectionInstance<? extends Filter>) beanFactory.newInstanceFactory(filterClass);
             InstanceFactory<? extends Filter> factory = template.createInstanceFactory(injection);
-            template.registerFilter(deployment.getValue(), filter.getName(), context.classProxy(filterClass), filter.isAsyncSupported(), factory);
+            template.registerFilter(deployment, filter.getName(), context.classProxy(filterClass), filter.isAsyncSupported(), factory);
             for (FilterBuildItem.FilterMappingInfo m : filter.getMappings()) {
                 if (m.getMappingType() == FilterBuildItem.FilterMappingInfo.MappingType.URL) {
-                    template.addFilterURLMapping(deployment.getValue(), filter.getName(), m.getMapping(), m.getDispatcher());
+                    template.addFilterURLMapping(deployment, filter.getName(), m.getMapping(), m.getDispatcher());
                 } else {
-                    template.addFilterServletNameMapping(deployment.getValue(), filter.getName(), m.getMapping(), m.getDispatcher());
+                    template.addFilterServletNameMapping(deployment, filter.getName(), m.getMapping(), m.getDispatcher());
                 }
             }
         }
         for (ServletInitParamBuildItem i : initParams) {
-            template.addServltInitParameter(deployment.getValue(), i.getKey(), i.getValue());
+            template.addServltInitParameter(deployment, i.getKey(), i.getValue());
         }
         for (ServletContextAttributeBuildItem i : contextParams) {
-            template.addServletContextAttribute(deployment.getValue(), i.getKey(), i.getValue());
+            template.addServletContextAttribute(deployment, i.getKey(), i.getValue());
         }
-        return new ServletHandlerBuildItem(template.bootServletContainer(deployment.getValue()));
+        for(ServletExtensionBuildItem i : extensions) {
+            template.addServletExtension(deployment, i.getValue());
+        }
+        return new ServletHandlerBuildItem(template.bootServletContainer(deployment));
 
     }
 

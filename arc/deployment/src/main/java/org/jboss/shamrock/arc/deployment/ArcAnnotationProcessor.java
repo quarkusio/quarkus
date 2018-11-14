@@ -36,7 +36,6 @@ import org.jboss.protean.arc.processor.ReflectionRegistration;
 import org.jboss.protean.arc.processor.ResourceOutput;
 import org.jboss.shamrock.annotations.BuildProducer;
 import org.jboss.shamrock.annotations.BuildStep;
-import org.jboss.shamrock.annotations.ExecutionTime;
 import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.arc.runtime.ArcDeploymentTemplate;
 import org.jboss.shamrock.arc.runtime.StartupEventRunner;
@@ -56,7 +55,7 @@ import org.jboss.shamrock.deployment.builditem.ServiceStartBuildItem;
 import org.jboss.shamrock.deployment.cdi.GeneratedBeanBuildItem;
 import org.jboss.shamrock.deployment.cdi.ResourceAnnotationBuildItem;
 import org.jboss.shamrock.runtime.cdi.BeanContainer;
-import org.jboss.shamrock.undertow.DeploymentInfoBuildItem;
+import org.jboss.shamrock.undertow.ServletExtensionBuildItem;
 
 import io.smallrye.config.inject.ConfigProducer;
 
@@ -97,7 +96,7 @@ public class ArcAnnotationProcessor {
 
     @BuildStep(providesCapabilities = Capabilities.CDI_ARC, applicationArchiveMarkers = {"META-INF/beans.xml", "META-INF/services/javax.enterprise.inject.spi.Extension"})
     @Record(STATIC_INIT)
-    public BeanContainerBuildItem build(ArcDeploymentTemplate arcTemplate, DeploymentInfoBuildItem deploymentInfo, BuildProducer<InjectionProviderBuildItem> injectionProvider,
+    public BeanContainerBuildItem build(ArcDeploymentTemplate arcTemplate, BuildProducer<ServletExtensionBuildItem> extensions, BuildProducer<InjectionProviderBuildItem> injectionProvider,
                                         List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems,
                                         List<GeneratedBeanBuildItem> generatedBeans,
                                         List<AnnotationTransformerBuildItem> annotationTransformers) throws Exception {
@@ -210,7 +209,7 @@ public class ArcAnnotationProcessor {
         BeanContainer bc = arcTemplate.initBeanContainer(container, beanContainerListenerBuildItems.stream().map(BeanContainerListenerBuildItem::getBeanContainerListener).collect(Collectors.toList()));
         injectionProvider.produce(new InjectionProviderBuildItem());
         arcTemplate.setupInjection(null, container);
-        arcTemplate.setupRequestScope(deploymentInfo.getValue(), container);
+        extensions.produce(new ServletExtensionBuildItem(arcTemplate.setupRequestScope(container)));
 
         return new BeanContainerBuildItem(bc);
     }

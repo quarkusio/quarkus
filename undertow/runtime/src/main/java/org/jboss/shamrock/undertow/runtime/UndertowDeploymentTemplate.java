@@ -30,6 +30,7 @@ import io.undertow.server.handlers.CanonicalPathHandler;
 import io.undertow.server.handlers.resource.ClassPathResourceManager;
 import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.session.SessionIdGenerator;
+import io.undertow.servlet.ServletExtension;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
@@ -210,6 +211,9 @@ public class UndertowDeploymentTemplate {
         deployment.getValue().addServletContextAttribute(key, value1);
     }
 
+    public void addServletExtension(RuntimeValue<DeploymentInfo> deployment, ServletExtension extension) {
+        deployment.getValue().addServletExtension(extension);
+    }
     /**
      * we can't have SecureRandom in the native image heap, so we need to lazy init
      */

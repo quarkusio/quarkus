@@ -25,12 +25,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,12 +40,8 @@ import org.jboss.builder.BuildChain;
 import org.jboss.builder.BuildContext;
 import org.jboss.builder.BuildResult;
 import org.jboss.builder.BuildStep;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
-import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.Type;
 import org.jboss.protean.gizmo.CatchBlockCreator;
 import org.jboss.protean.gizmo.ClassCreator;
 import org.jboss.protean.gizmo.FieldCreator;
@@ -63,14 +57,14 @@ import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedResourceBuildItem;
 import org.jboss.shamrock.deployment.builditem.LogSetupBuildItem;
-import org.jboss.shamrock.deployment.builditem.NativeImageSystemPropertyBuildItem;
-import org.jboss.shamrock.deployment.builditem.ProxyDefinitionBuildItem;
-import org.jboss.shamrock.deployment.builditem.ReflectiveClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.ReflectiveFieldBuildItem;
-import org.jboss.shamrock.deployment.builditem.ReflectiveMethodBuildItem;
-import org.jboss.shamrock.deployment.builditem.ResourceBuildItem;
-import org.jboss.shamrock.deployment.builditem.ResourceBundleBuildItem;
-import org.jboss.shamrock.deployment.builditem.RuntimeInitializedClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveFieldBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveMethodBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBundleBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
 import org.jboss.shamrock.deployment.index.ApplicationArchiveLoader;
 import org.jboss.shamrock.deployment.recording.BytecodeRecorderImpl;
 import org.jboss.shamrock.deployment.recording.MainBytecodeRecorderBuildItem;
@@ -178,13 +172,13 @@ public class BuildTimeGenerator {
                         .addFinal(GeneratedClassBuildItem.class)
                         .addFinal(GeneratedResourceBuildItem.class)
                         .addFinal(BytecodeTransformerBuildItem.class)
-                        .addFinal(ResourceBuildItem.class)
-                        .addFinal(ResourceBundleBuildItem.class)
+                        .addFinal(SubstrateResourceBuildItem.class)
+                        .addFinal(SubstrateResourceBundleBuildItem.class)
                         .addFinal(ReflectiveFieldBuildItem.class)
                         .addFinal(ReflectiveMethodBuildItem.class)
                         .addFinal(StaticBytecodeRecorderBuildItem.class)
                         .addFinal(MainBytecodeRecorderBuildItem.class)
-                        .addFinal(NativeImageSystemPropertyBuildItem.class)
+                        .addFinal(SubstrateSystemPropertyBuildItem.class)
                         .build();
                 BuildResult result = chain.createExecutionBuilder("main").execute();
 
@@ -200,16 +194,18 @@ public class BuildTimeGenerator {
                 for (RuntimeInitializedClassBuildItem i : result.consumeMulti(RuntimeInitializedClassBuildItem.class)) {
                     processorContext.addRuntimeInitializedClasses(i.getClassName());
                 }
-                for (ResourceBuildItem i : result.consumeMulti(ResourceBuildItem.class)) {
-                    processorContext.addResource(i.getName());
+                for (SubstrateResourceBuildItem i : result.consumeMulti(SubstrateResourceBuildItem.class)) {
+                    for(String j : i.getResources()) {
+                        processorContext.addResource(j);
+                    }
                 }
-                for (ResourceBundleBuildItem i : result.consumeMulti(ResourceBundleBuildItem.class)) {
+                for (SubstrateResourceBundleBuildItem i : result.consumeMulti(SubstrateResourceBundleBuildItem.class)) {
                     processorContext.addResourceBundle(i.getBundleName());
                 }
                 for (ReflectiveClassBuildItem i : result.consumeMulti(ReflectiveClassBuildItem.class)) {
                     processorContext.addReflectiveClass(i.isMethods(), i.isFields(), i.getClassName().toArray(EMPTY_STRING_ARRAY));
                 }
-                for (ProxyDefinitionBuildItem i : result.consumeMulti(ProxyDefinitionBuildItem.class)) {
+                for (SubstrateProxyDefinitionBuildItem i : result.consumeMulti(SubstrateProxyDefinitionBuildItem.class)) {
                     processorContext.addProxyDefinition(i.getClasses().toArray(EMPTY_STRING_ARRAY));
                 }
                 for (ReflectiveMethodBuildItem i : result.consumeMulti(ReflectiveMethodBuildItem.class)) {
@@ -224,7 +220,7 @@ public class BuildTimeGenerator {
                 for (StaticBytecodeRecorderBuildItem i : result.consumeMulti(StaticBytecodeRecorderBuildItem.class)) {
                     processorContext.addStaticInitTask(i.getBytecodeRecorder());
                 }
-                for (NativeImageSystemPropertyBuildItem i : result.consumeMulti(NativeImageSystemPropertyBuildItem.class)) {
+                for (SubstrateSystemPropertyBuildItem i : result.consumeMulti(SubstrateSystemPropertyBuildItem.class)) {
                     processorContext.addNativeImageSystemProperty(i.getKey(), i.getValue());
                 }
 

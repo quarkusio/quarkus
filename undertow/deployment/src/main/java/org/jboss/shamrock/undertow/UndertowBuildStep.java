@@ -71,10 +71,10 @@ import org.jboss.shamrock.deployment.ApplicationArchive;
 import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
 import org.jboss.shamrock.deployment.builditem.ArchiveRootBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
-import org.jboss.shamrock.deployment.builditem.ReflectiveClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.ResourceBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import org.jboss.shamrock.deployment.builditem.ServiceStartBuildItem;
-import org.jboss.shamrock.deployment.builditem.SubstrateConfigBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import org.jboss.shamrock.deployment.recording.BeanFactory;
 import org.jboss.shamrock.deployment.recording.BytecodeRecorder;
 import org.jboss.shamrock.runtime.ConfiguredValue;
@@ -276,20 +276,21 @@ public class UndertowBuildStep {
     }
 
     @BuildStep
-    void registerSubstrateResources(ArchiveRootBuildItem root,
-                                    BuildProducer<ResourceBuildItem> resourceProducer,
+    SubstrateResourceBuildItem registerSubstrateResources(ArchiveRootBuildItem root,
                                     ApplicationArchivesBuildItem applicationArchivesBuildItem) throws IOException {
+        List<String> res = new ArrayList<>();
         Path resources = applicationArchivesBuildItem.getRootArchive().getChildPath("META-INF/resources");
         if (resources != null) {
             Files.walk(resources).forEach(new Consumer<Path>() {
                 @Override
                 public void accept(Path path) {
                     if (!Files.isDirectory(path)) {
-                        resourceProducer.produce(new ResourceBuildItem(root.getPath().relativize(path).toString()));
+                        res.add(root.getPath().relativize(path).toString());
                     }
                 }
             });
         }
+        return new SubstrateResourceBuildItem(res);
     }
 
     /**

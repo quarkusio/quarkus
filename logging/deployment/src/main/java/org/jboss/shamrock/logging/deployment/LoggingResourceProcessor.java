@@ -48,10 +48,8 @@ import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.deployment.buildconfig.BuildConfig;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedResourceBuildItem;
-import org.jboss.shamrock.deployment.builditem.NativeImageSystemPropertyBuildItem;
-import org.jboss.shamrock.deployment.builditem.RuntimeInitializedClassBuildItem;
-import org.jboss.shamrock.deployment.recording.BytecodeRecorder;
-import org.jboss.shamrock.logging.runtime.LogSetupTemplate;
+import org.jboss.shamrock.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
 import org.objectweb.asm.Opcodes;
 
 /**
@@ -68,7 +66,7 @@ public final class LoggingResourceProcessor {
 
 
     @Inject
-    BuildProducer<NativeImageSystemPropertyBuildItem> systemProp;
+    BuildProducer<SubstrateSystemPropertyBuildItem> systemProp;
 
     @Inject
     BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit;
@@ -306,7 +304,7 @@ public final class LoggingResourceProcessor {
         generatedResource.produce(new GeneratedResourceBuildItem("META-INF/services/org.jboss.logmanager.EmbeddedConfigurator", GENERATED_CONFIGURATOR.replace('/', '.').getBytes(StandardCharsets.UTF_8)));
 
         // now inject the system property setter
-        systemProp.produce(new NativeImageSystemPropertyBuildItem("java.util.logging.manager", "org.jboss.logmanager.LogManager"));
+        systemProp.produce(new SubstrateSystemPropertyBuildItem("java.util.logging.manager", "org.jboss.logmanager.LogManager"));
     }
 
     private BytecodeCreator ifRootLogger(BytecodeCreator orig, Function<BytecodeCreator, ResultHandle> returnIfNotRoot) {

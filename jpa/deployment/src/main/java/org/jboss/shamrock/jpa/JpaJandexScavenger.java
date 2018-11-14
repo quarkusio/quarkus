@@ -23,7 +23,7 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 import org.jboss.shamrock.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.builditem.ReflectiveClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.jpa.runtime.JPADeploymentTemplate;
 
 /**

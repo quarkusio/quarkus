@@ -19,7 +19,7 @@ import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.annotations.ExecutionTime;
 import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
-import org.jboss.shamrock.deployment.builditem.ReflectiveClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.undertow.ServletContextAttributeBuildItem;
 import org.jboss.shamrock.websockets.runtime.WebsocketTemplate;
 

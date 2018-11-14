@@ -1,4 +1,4 @@
-package org.jboss.shamrock.deployment.builditem;
+package org.jboss.shamrock.deployment.builditem.substrate;
 
 import org.jboss.builder.item.MultiBuildItem;
 

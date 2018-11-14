@@ -4,7 +4,7 @@ import java.util.Objects;
 
 import org.hibernate.type.EnumType;
 import org.jboss.shamrock.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.builditem.ReflectiveClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 
 /**
  * This list of classes which any Hibernate ORM using application should register for reflective access on SubstrateVM.

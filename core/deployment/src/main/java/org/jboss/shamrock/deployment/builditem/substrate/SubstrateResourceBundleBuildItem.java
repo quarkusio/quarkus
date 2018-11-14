@@ -1,12 +1,12 @@
-package org.jboss.shamrock.deployment.builditem;
+package org.jboss.shamrock.deployment.builditem.substrate;
 
 import org.jboss.builder.item.MultiBuildItem;
 
-public final class ResourceBundleBuildItem extends MultiBuildItem {
+public final class SubstrateResourceBundleBuildItem extends MultiBuildItem {
 
     private final String bundleName;
 
-    public ResourceBundleBuildItem(String bundleName) {
+    public SubstrateResourceBundleBuildItem(String bundleName) {
         this.bundleName = bundleName;
     }
 

@@ -29,8 +29,8 @@ import org.jboss.shamrock.deployment.cdi.AnnotationTransformerBuildItem;
 import org.jboss.shamrock.deployment.Capabilities;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
-import org.jboss.shamrock.deployment.builditem.NativeImageSystemPropertyBuildItem;
-import org.jboss.shamrock.deployment.builditem.ReflectiveClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.cdi.CdiExtensionBuildItem;
 import org.jboss.shamrock.faulttolerance.runtime.ShamrockFallbackHandlerProvider;
 import org.jboss.shamrock.faulttolerance.runtime.ShamrockFaultToleranceOperationProvider;
@@ -54,7 +54,7 @@ public class FaultToleranceAnnotationProcessor {
     BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
 
     @Inject
-    BuildProducer<NativeImageSystemPropertyBuildItem> nativeImageSystemProperty;
+    BuildProducer<SubstrateSystemPropertyBuildItem> nativeImageSystemProperty;
 
     @Inject
     BuildProducer<AdditionalBeanBuildItem> additionalBean;
@@ -72,7 +72,7 @@ public class FaultToleranceAnnotationProcessor {
         IndexView index = combinedIndexBuildItem.getIndex();
 
         // Make sure rx.internal.util.unsafe.UnsafeAccess.DISABLED_BY_USER is set.
-        nativeImageSystemProperty.produce(new NativeImageSystemPropertyBuildItem("rx.unsafe-disable", "true"));
+        nativeImageSystemProperty.produce(new SubstrateSystemPropertyBuildItem("rx.unsafe-disable", "true"));
 
         // Add reflective acccess to fallback handlers
         Collection<ClassInfo> fallbackHandlers = index.getAllKnownImplementors(DotName.createSimple(FallbackHandler.class.getName()));

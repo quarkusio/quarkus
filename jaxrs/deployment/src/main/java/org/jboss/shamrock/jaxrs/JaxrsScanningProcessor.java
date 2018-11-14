@@ -53,11 +53,11 @@ import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.deployment.builditem.BeanContainerBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
-import org.jboss.shamrock.deployment.builditem.ProxyDefinitionBuildItem;
-import org.jboss.shamrock.deployment.builditem.ReflectiveClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.ReflectiveHierarchyBuildItem;
-import org.jboss.shamrock.deployment.builditem.ResourceBuildItem;
-import org.jboss.shamrock.deployment.builditem.SubstrateConfigBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import org.jboss.shamrock.jaxrs.runtime.graal.JaxrsTemplate;
 import org.jboss.shamrock.jaxrs.runtime.graal.ShamrockInjectorFactory;
 import org.jboss.shamrock.undertow.ServletBuildItem;
@@ -113,9 +113,9 @@ public class JaxrsScanningProcessor {
 
     @BuildStep
     public void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-                      BuildProducer<ProxyDefinitionBuildItem> proxyDefinition,
+                      BuildProducer<SubstrateProxyDefinitionBuildItem> proxyDefinition,
                       BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
-                      BuildProducer<ResourceBuildItem> resource,
+                      BuildProducer<SubstrateResourceBuildItem> resource,
                       BuildProducer<ServletBuildItem> servletProducer,
                       CombinedIndexBuildItem combinedIndexBuildItem,
                       BuildProducer<ServletInitParamBuildItem> servletContextParams
@@ -126,7 +126,7 @@ public class JaxrsScanningProcessor {
                 "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector",
                 "com.fasterxml.jackson.databind.ser.std.SqlDateSerializer"));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ArrayList.class.getName()));
-        resource.produce(new ResourceBuildItem("META-INF/services/javax.ws.rs.client.ClientBuilder"));
+        resource.produce(new SubstrateResourceBuildItem("META-INF/services/javax.ws.rs.client.ClientBuilder"));
         IndexView index = combinedIndexBuildItem.getIndex();
 
         Collection<AnnotationInstance> app = index.getAnnotations(APPLICATION_PATH);
@@ -163,14 +163,14 @@ public class JaxrsScanningProcessor {
                 ClassInfo type = index.getClassByName(typeName);
                 if (type != null) {
                     if (Modifier.isInterface(type.flags())) {
-                        proxyDefinition.produce(new ProxyDefinitionBuildItem(type.toString()));
+                        proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem(type.toString()));
                     }
                 } else {
                     //might be a framework class, which should be loadable
                     try {
                         Class<?> typeClass = Class.forName(typeName.toString());
                         if (typeClass.isInterface()) {
-                            proxyDefinition.produce(new ProxyDefinitionBuildItem(typeName.toString()));
+                            proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem(typeName.toString()));
                         }
                     } catch (Exception e) {
                         //ignore

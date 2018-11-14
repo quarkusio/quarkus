@@ -11,7 +11,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.enterprise.inject.Produces;
-import javax.inject.Inject;
 import javax.persistence.PersistenceContext;
 import javax.persistence.PersistenceUnit;
 
@@ -24,7 +23,6 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.shamrock.annotations.BuildProducer;
 import org.jboss.shamrock.annotations.BuildStep;
-import org.jboss.shamrock.annotations.ExecutionTime;
 import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.deployment.Capabilities;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
@@ -32,8 +30,8 @@ import org.jboss.shamrock.deployment.builditem.BeanContainerBuildItem;
 import org.jboss.shamrock.deployment.builditem.BytecodeTransformerBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedResourceBuildItem;
-import org.jboss.shamrock.deployment.builditem.ReflectiveClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.ResourceBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import org.jboss.shamrock.deployment.cdi.BeanContainerListenerBuildItem;
 import org.jboss.shamrock.deployment.cdi.ResourceAnnotationBuildItem;
 import org.jboss.shamrock.deployment.recording.BytecodeRecorder;
@@ -68,13 +66,13 @@ public final class HibernateResourceProcessor {
     }
 
     @BuildStep
-    void handleNativeImageImportSql(BuildProducer<ResourceBuildItem> resources, List<PersistenceUnitDescriptorBuildItem> descriptors) {
+    void handleNativeImageImportSql(BuildProducer<SubstrateResourceBuildItem> resources, List<PersistenceUnitDescriptorBuildItem> descriptors) {
         for (PersistenceUnitDescriptorBuildItem i : descriptors) {
             //add resources
             if (i.getDescriptor().getProperties().containsKey("javax.persistence.sql-load-script-source")) {
-                resources.produce(new ResourceBuildItem((String) i.getDescriptor().getProperties().get("javax.persistence.sql-load-script-source")));
+                resources.produce(new SubstrateResourceBuildItem((String) i.getDescriptor().getProperties().get("javax.persistence.sql-load-script-source")));
             } else {
-                resources.produce(new ResourceBuildItem("import.sql"));
+                resources.produce(new SubstrateResourceBuildItem("import.sql"));
             }
         }
     }

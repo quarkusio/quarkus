@@ -1,4 +1,4 @@
-package org.jboss.shamrock.deployment.builditem;
+package org.jboss.shamrock.deployment.builditem.substrate;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.jboss.builder.item.MultiBuildItem;
-import org.jboss.builder.item.SimpleBuildItem;
 
 public final class SubstrateConfigBuildItem extends MultiBuildItem {
 

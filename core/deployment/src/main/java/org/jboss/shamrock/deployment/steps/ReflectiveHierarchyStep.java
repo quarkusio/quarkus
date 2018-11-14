@@ -21,8 +21,8 @@ import org.jboss.shamrock.annotations.BuildProducer;
 import javax.inject.Inject;
 
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
-import org.jboss.shamrock.deployment.builditem.ReflectiveClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.ReflectiveHierarchyBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
 
 public class ReflectiveHierarchyStep {
 

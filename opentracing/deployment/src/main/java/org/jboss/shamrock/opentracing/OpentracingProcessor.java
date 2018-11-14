@@ -12,7 +12,7 @@ import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.annotations.ExecutionTime;
 import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
-import org.jboss.shamrock.deployment.builditem.ReflectiveMethodBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveMethodBuildItem;
 import org.jboss.shamrock.jaxrs.JaxrsProviderBuildItem;
 import org.jboss.shamrock.opentracing.runtime.ShamrockTracingDynamicFeature;
 import org.jboss.shamrock.opentracing.runtime.TracerProducer;

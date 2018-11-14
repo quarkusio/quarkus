@@ -19,7 +19,7 @@
 package org.jboss.shamrock.deployment.steps;
 
 import org.jboss.shamrock.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.RuntimeInitializedClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
 import org.jboss.shamrock.runtime.graal.ShutdownThread;
 
 /**

@@ -34,9 +34,9 @@ import javax.inject.Inject;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.ProxyDefinitionBuildItem;
-import org.jboss.shamrock.deployment.builditem.ReflectiveClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.ResourceBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import org.jboss.shamrock.deployment.cdi.GeneratedBeanBuildItem;
 import org.jboss.shamrock.restclient.runtime.DefaultResponseExceptionMapper;
 import org.jboss.shamrock.restclient.runtime.RestClientBase;
@@ -67,10 +67,10 @@ class RestClientProcessor {
     BuildProducer<AdditionalBeanBuildItem> additionalBeans;
 
     @Inject
-    BuildProducer<ProxyDefinitionBuildItem> proxyDefinition;
+    BuildProducer<SubstrateProxyDefinitionBuildItem> proxyDefinition;
 
     @Inject
-    BuildProducer<ResourceBuildItem> resources;
+    BuildProducer<SubstrateResourceBuildItem> resources;
 
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
@@ -83,14 +83,14 @@ class RestClientProcessor {
                 Jdk14Logger.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ClientRequestFilter[].class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ClientResponseFilter[].class.getName()));
-        proxyDefinition.produce(new ProxyDefinitionBuildItem("javax.ws.rs.ext.Providers"));
+        proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem("javax.ws.rs.ext.Providers"));
         additionalBeans.produce(new AdditionalBeanBuildItem(RestClient.class));
-        resources.produce(new ResourceBuildItem("META-INF/services/javax.ws.rs.ext.Providers"));
+        resources.produce(new SubstrateResourceBuildItem("META-INF/services/javax.ws.rs.ext.Providers"));
         //TODO: fix this, we don't want to just add all the providers
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl"));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl"));
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, "org.jboss.resteasy.plugins.providers.jsonb.JsonBindingProvider", "org.jboss.resteasy.plugins.providers.jsonb.AbstractJsonBindingProvider"));
-        proxyDefinition.produce(new ProxyDefinitionBuildItem(ResteasyConfiguration.class.getName()));
+        proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem(ResteasyConfiguration.class.getName()));
         Map<DotName, ClassInfo> interfaces = new HashMap<>();
         for (DotName type : CLIENT_ANNOTATIONS) {
             for (AnnotationInstance annotation : combinedIndexBuildItem.getIndex().getAnnotations(type)) {
@@ -112,8 +112,8 @@ class RestClientProcessor {
 
         for (Map.Entry<DotName, ClassInfo> entry : interfaces.entrySet()) {
             String iName = entry.getKey().toString();
-            proxyDefinition.produce(new ProxyDefinitionBuildItem(iName, ResteasyClientProxy.class.getName()));
-            proxyDefinition.produce(new ProxyDefinitionBuildItem(iName, RestClientProxy.class.getName()));
+            proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem(iName, ResteasyClientProxy.class.getName()));
+            proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem(iName, RestClientProxy.class.getName()));
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, iName));
 
             //now generate CDI beans

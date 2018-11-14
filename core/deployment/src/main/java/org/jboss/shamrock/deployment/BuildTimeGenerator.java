@@ -147,7 +147,7 @@ public class BuildTimeGenerator {
 
             ArchiveContextImpl archiveContext = new ArchiveContextImpl(new ApplicationArchiveImpl(appIndex, root, null), applicationArchives, config);
 
-            ProcessorContextImpl processorContext = new ProcessorContextImpl(archiveContext);
+            ProcessorContextImpl processorContext = new ProcessorContextImpl();
             processorContext.addResource("META-INF/microprofile-config.properties");
 
 
@@ -213,10 +213,10 @@ public class BuildTimeGenerator {
                     processorContext.addProxyDefinition(i.getClasses().toArray(EMPTY_STRING_ARRAY));
                 }
                 for (ReflectiveMethodBuildItem i : result.consumeMulti(ReflectiveMethodBuildItem.class)) {
-                    processorContext.addReflectiveMethod(i.getMethod());
+                    processorContext.addReflectiveMethod(i);
                 }
                 for (ReflectiveFieldBuildItem i : result.consumeMulti(ReflectiveFieldBuildItem.class)) {
-                    processorContext.addReflectiveField(i.getField());
+                    processorContext.addReflectiveField(i);
                 }
                 for (MainBytecodeRecorderBuildItem i : result.consumeMulti(MainBytecodeRecorderBuildItem.class)) {
                     processorContext.addDeploymentTask(i.getBytecodeRecorder());
@@ -249,24 +249,17 @@ public class BuildTimeGenerator {
     }
 
 
-    private final class ProcessorContextImpl implements ProcessorContext {
+    private final class ProcessorContextImpl {
 
 
         private final List<BytecodeRecorderImpl> tasks = new CopyOnWriteArrayList<>();
         private final List<BytecodeRecorderImpl> staticInitTasks = new CopyOnWriteArrayList<>();
         private final Map<String, ReflectionInfo> reflectiveClasses = new LinkedHashMap<>();
-        private final Set<DotName> processedReflectiveHierarchies = new HashSet<>();
         private final Set<String> resources = new HashSet<>();
         private final Set<String> resourceBundles = new HashSet<>();
         private final Set<String> runtimeInitializedClasses = new HashSet<>();
         private final Set<List<String>> proxyClasses = new HashSet<>();
-        private final Map<String, Object> properties = new HashMap<>();
         private final Map<String, String> systemProperties = new HashMap<>();
-        private final ArchiveContextImpl archiveContext;
-
-        private ProcessorContextImpl(ArchiveContextImpl archiveContext) {
-            this.archiveContext = archiveContext;
-        }
 
         public void addStaticInitTask(BytecodeRecorderImpl recorder) {
             staticInitTasks.add(recorder);
@@ -276,7 +269,6 @@ public class BuildTimeGenerator {
             tasks.add(recorder);
         }
 
-        @Override
         public void addReflectiveClass(boolean method, boolean fields, String... className) {
             for (String cl : className) {
                 ReflectionInfo existing = reflectiveClasses.get(cl);
@@ -294,19 +286,8 @@ public class BuildTimeGenerator {
             }
         }
 
-        @Override
-        public void addReflectiveField(FieldInfo fieldInfo) {
-            String cl = fieldInfo.declaringClass().name().toString();
-            ReflectionInfo existing = reflectiveClasses.get(cl);
-            if (existing == null) {
-                reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false));
-            }
-            existing.fieldSet.add(fieldInfo.name());
-        }
-
-        @Override
-        public void addReflectiveField(Field fieldInfo) {
-            String cl = fieldInfo.getDeclaringClass().getName();
+        public void addReflectiveField(ReflectiveFieldBuildItem fieldInfo) {
+            String cl = fieldInfo.getDeclaringClass();
             ReflectionInfo existing = reflectiveClasses.get(cl);
             if (existing == null) {
                 reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false));
@@ -314,93 +295,49 @@ public class BuildTimeGenerator {
             existing.fieldSet.add(fieldInfo.getName());
         }
 
-        @Override
-        public void addReflectiveMethod(MethodInfo methodInfo) {
-            String cl = methodInfo.declaringClass().name().toString();
+        public void addReflectiveMethod(ReflectiveMethodBuildItem methodInfo) {
+            String cl = methodInfo.getDeclaringClass();
             ReflectionInfo existing = reflectiveClasses.get(cl);
             if (existing == null) {
                 reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false));
             }
-            if (methodInfo.name().equals("<init>")) {
+            if (methodInfo.getName().equals("<init>")) {
                 existing.ctorSet.add(methodInfo);
             } else {
-                String[] params = new String[methodInfo.parameters().size()];
-                for (int i = 0; i < params.length; ++i) {
-                    params[i] = methodInfo.parameters().get(i).name().toString();
-                }
-                existing.methodSet.add(new MethodData(methodInfo.name(), params));
+                existing.methodSet.add(methodInfo);
             }
         }
 
-        @Override
-        public void addReflectiveMethod(Method methodInfo) {
-            String cl = methodInfo.getDeclaringClass().getName();
-            ReflectionInfo existing = reflectiveClasses.get(cl);
-            if (existing == null) {
-                reflectiveClasses.put(cl, existing = new ReflectionInfo(false, false, false));
-            }
-            String[] params = new String[methodInfo.getParameterTypes().length];
-            for (int i = 0; i < params.length; ++i) {
-                params[i] = methodInfo.getParameterTypes()[i].getName();
-            }
-            existing.methodSet.add(new MethodData(methodInfo.getName(), params));
-
-        }
-
-        @Override
-        public void addReflectiveHierarchy(Type type) {
-
-        }
-
-
-        @Override
         public void addGeneratedClass(boolean applicationClass, String name, byte[] classData) throws IOException {
             output.writeClass(applicationClass, name, classData);
         }
 
-        @Override
         public void createResource(String name, byte[] data) throws IOException {
             output.writeResource(name, data);
         }
 
-        @Override
         public void addByteCodeTransformer(String className, BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction) {
             byteCodeTransformers.computeIfAbsent(className, (e) -> new ArrayList<>()).add(visitorFunction);
         }
 
-        @Override
         public void addResource(String name) {
             resources.add(name);
         }
 
-        @Override
         public void addResourceBundle(String bundle) {
             resourceBundles.add(bundle);
         }
 
-        @Override
         public void addRuntimeInitializedClasses(String... classes) {
             runtimeInitializedClasses.addAll(Arrays.asList(classes));
         }
 
-        @Override
         public void addProxyDefinition(String... proxyClasses) {
             this.proxyClasses.add(Arrays.asList(proxyClasses));
         }
 
-        @Override
         public void addNativeImageSystemProperty(final String name, final String value) {
             systemProperties.put(name, value);
-        }
-
-        @Override
-        public <T> void setProperty(String key, T value) {
-            properties.put(key, value);
-        }
-
-        @Override
-        public <T> T getProperty(String key) {
-            return (T) properties.get(key);
         }
 
         void writeProperties(File output) throws IOException {
@@ -582,11 +519,11 @@ public class BuildTimeGenerator {
                     tc.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Executable[].class), constructors);
                 } else if (!entry.getValue().ctorSet.isEmpty()) {
                     ResultHandle farray = tc.newArray(Constructor.class, tc.load(1));
-                    for (MethodInfo ctor : entry.getValue().ctorSet) {
-                        ResultHandle paramArray = tc.newArray(Class.class, tc.load(ctor.parameters().size()));
-                        for (int i = 0; i < ctor.parameters().size(); ++i) {
-                            Type type = ctor.parameters().get(i);
-                            tc.writeArrayValue(paramArray, i, tc.loadClass(type.name().toString()));
+                    for (ReflectiveMethodBuildItem ctor : entry.getValue().ctorSet) {
+                        ResultHandle paramArray = tc.newArray(Class.class, tc.load(ctor.getParams().length));
+                        for (int i = 0; i < ctor.getParams().length; ++i) {
+                            String type = ctor.getParams()[i];
+                            tc.writeArrayValue(paramArray, i, tc.loadClass(type));
                         }
                         ResultHandle fhandle = tc.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredConstructor", Constructor.class, Class[].class), clazz, paramArray);
                         tc.writeArrayValue(farray, 0, fhandle);
@@ -597,13 +534,13 @@ public class BuildTimeGenerator {
                     tc.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Executable[].class), methods);
                 } else if (!entry.getValue().methodSet.isEmpty()) {
                     ResultHandle farray = tc.newArray(Method.class, tc.load(1));
-                    for (MethodData method : entry.getValue().methodSet) {
-                        ResultHandle paramArray = tc.newArray(Class.class, tc.load(method.params.length));
-                        for (int i = 0; i < method.params.length; ++i) {
-                            String type = method.params[i];
+                    for (ReflectiveMethodBuildItem method : entry.getValue().methodSet) {
+                        ResultHandle paramArray = tc.newArray(Class.class, tc.load(method.getParams().length));
+                        for (int i = 0; i < method.getParams().length; ++i) {
+                            String type = method.getParams()[i];
                             tc.writeArrayValue(paramArray, i, tc.loadClass(type));
                         }
-                        ResultHandle fhandle = tc.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), clazz, tc.load(method.name), paramArray);
+                        ResultHandle fhandle = tc.invokeVirtualMethod(ofMethod(Class.class, "getDeclaredMethod", Method.class, String.class, Class[].class), clazz, tc.load(method.getName()), paramArray);
                         tc.writeArrayValue(farray, 0, fhandle);
                         tc.invokeStaticMethod(ofMethod("org/graalvm/nativeimage/RuntimeReflection", "register", void.class, Executable[].class), farray);
                     }
@@ -632,43 +569,13 @@ public class BuildTimeGenerator {
 
     }
 
-    private static final class DeploymentTaskHolder implements Comparable<DeploymentTaskHolder> {
-        private final String className;
-        private final int priority;
-
-        private DeploymentTaskHolder(String className, int priority) {
-            this.className = className;
-            this.priority = priority;
-        }
-
-        @Override
-        public int compareTo(DeploymentTaskHolder o) {
-            int val = Integer.compare(priority, o.priority);
-            if (val != 0) {
-                return val;
-            }
-            return className.compareTo(o.className);
-        }
-    }
-
-    static final class MethodData {
-
-        final String name;
-        final String[] params;
-
-        MethodData(String name, String[] params) {
-            this.name = name;
-            this.params = params;
-        }
-    }
-
     static final class ReflectionInfo {
         boolean constructors;
         boolean methods;
         boolean fields;
         Set<String> fieldSet = new HashSet<>();
-        Set<MethodData> methodSet = new HashSet<>();
-        Set<MethodInfo> ctorSet = new HashSet<>();
+        Set<ReflectiveMethodBuildItem> methodSet = new HashSet<>();
+        Set<ReflectiveMethodBuildItem> ctorSet = new HashSet<>();
 
         private ReflectionInfo(boolean constructors, boolean methods, boolean fields) {
             this.methods = methods;

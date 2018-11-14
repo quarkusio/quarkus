@@ -129,16 +129,19 @@ public class UndertowDeploymentTemplate {
         info.get().addInitParam(name, value);
     }
 
-    public void addFilterMapping(RuntimeValue<DeploymentInfo> info, String name, String mapping, DispatcherType dispatcherType) throws Exception {
+    public void addFilterURLMapping(RuntimeValue<DeploymentInfo> info, String name, String mapping, DispatcherType dispatcherType) throws Exception {
         info.getValue().addFilterUrlMapping(name, mapping, dispatcherType);
     }
 
+    public void addFilterServletNameMapping(RuntimeValue<DeploymentInfo> info, String name, String mapping, DispatcherType dispatcherType) throws Exception {
+        info.getValue().addFilterServletNameMapping(name, mapping, dispatcherType);
+    }
 
     public void registerListener(RuntimeValue<DeploymentInfo> info, Class<?> listenerClass, InstanceFactory<? extends EventListener> factory) {
         info.getValue().addListener(new ListenerInfo((Class<? extends EventListener>) listenerClass, factory));
     }
 
-    public void addServletContextParameter(RuntimeValue<DeploymentInfo> info, String name, String value) {
+    public void addServltInitParameter(RuntimeValue<DeploymentInfo> info, String name, String value) {
         info.getValue().addInitParameter(name, value);
     }
 
@@ -201,6 +204,10 @@ public class UndertowDeploymentTemplate {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void addServletContextAttribute(RuntimeValue<DeploymentInfo> deployment, String key, Object value1) {
+        deployment.getValue().addServletContextAttribute(key, value1);
     }
 
     /**

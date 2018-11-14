@@ -2,12 +2,12 @@ package org.jboss.shamrock.undertow;
 
 import org.jboss.builder.item.MultiBuildItem;
 
-public final class ServletContextParamBuildItem extends MultiBuildItem {
+public final class ServletContextAttributeBuildItem extends MultiBuildItem {
 
     final String key;
-    final String value;
+    final Object value;
 
-    public ServletContextParamBuildItem(String key, String value) {
+    public ServletContextAttributeBuildItem(String key, Object value) {
         this.key = key;
         this.value = value;
     }
@@ -16,7 +16,7 @@ public final class ServletContextParamBuildItem extends MultiBuildItem {
         return key;
     }
 
-    public String getValue() {
+    public Object getValue() {
         return value;
     }
 }

@@ -33,8 +33,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.List;
 
-import javax.servlet.Servlet;
 import javax.ws.rs.container.DynamicFeature;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.ext.Providers;
@@ -50,7 +50,6 @@ import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 import org.jboss.shamrock.annotations.BuildProducer;
 import org.jboss.shamrock.annotations.BuildStep;
-import org.jboss.shamrock.annotations.ExecutionTime;
 import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.deployment.builditem.BeanContainerBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
@@ -59,17 +58,10 @@ import org.jboss.shamrock.deployment.builditem.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.ReflectiveHierarchyBuildItem;
 import org.jboss.shamrock.deployment.builditem.ResourceBuildItem;
 import org.jboss.shamrock.deployment.builditem.SubstrateConfigBuildItem;
-import org.jboss.shamrock.deployment.recording.BeanFactory;
-import org.jboss.shamrock.deployment.recording.BytecodeRecorder;
 import org.jboss.shamrock.jaxrs.runtime.graal.JaxrsTemplate;
 import org.jboss.shamrock.jaxrs.runtime.graal.ShamrockInjectorFactory;
-import org.jboss.shamrock.runtime.InjectionInstance;
-import org.jboss.shamrock.undertow.DeploymentInfoBuildItem;
 import org.jboss.shamrock.undertow.ServletBuildItem;
-import org.jboss.shamrock.undertow.ServletContextParamBuildItem;
-import org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate;
-
-import io.undertow.servlet.api.InstanceFactory;
+import org.jboss.shamrock.undertow.ServletInitParamBuildItem;
 
 /**
  * Processor that finds jax-rs classes in the deployment
@@ -99,6 +91,19 @@ public class JaxrsScanningProcessor {
             DotName.createSimple("javax.ws.rs.PUT"),
     };
 
+
+    @BuildStep
+    ServletInitParamBuildItem registerProviders(List<JaxrsProviderBuildItem> providers) {
+        StringBuilder sb = new StringBuilder();
+        for(int i = 0; i < providers.size(); ++i) {
+            if(i != 0) {
+                sb.append(",");
+            }
+            sb.append(providers.get(i).getName());
+        }
+        return new ServletInitParamBuildItem("resteasy.providers", sb.toString());
+    }
+
     @BuildStep
     SubstrateConfigBuildItem config() {
         return SubstrateConfigBuildItem.builder()
@@ -113,7 +118,7 @@ public class JaxrsScanningProcessor {
                       BuildProducer<ResourceBuildItem> resource,
                       BuildProducer<ServletBuildItem> servletProducer,
                       CombinedIndexBuildItem combinedIndexBuildItem,
-                      BuildProducer<ServletContextParamBuildItem> servletContextParams
+                      BuildProducer<ServletInitParamBuildItem> servletContextParams
     ) throws Exception {
         //this is pretty yuck, and does not really belong here, but it is needed to get the json-p
         //provider to work
@@ -210,11 +215,11 @@ public class JaxrsScanningProcessor {
             }
 
             if (sb.length() > 0) {
-                servletContextParams.produce(new ServletContextParamBuildItem(ResteasyContextParameters.RESTEASY_SCANNED_RESOURCES, sb.toString()));
+                servletContextParams.produce(new ServletInitParamBuildItem(ResteasyContextParameters.RESTEASY_SCANNED_RESOURCES, sb.toString()));
             }
-            servletContextParams.produce(new ServletContextParamBuildItem("resteasy.servlet.mapping.prefix", path));
-            servletContextParams.produce(new ServletContextParamBuildItem("resteasy.injector.factory", ShamrockInjectorFactory.class.getName()));
-            servletContextParams.produce(new ServletContextParamBuildItem(Application.class.getName(), appClass));
+            servletContextParams.produce(new ServletInitParamBuildItem("resteasy.servlet.mapping.prefix", path));
+            servletContextParams.produce(new ServletInitParamBuildItem("resteasy.injector.factory", ShamrockInjectorFactory.class.getName()));
+            servletContextParams.produce(new ServletInitParamBuildItem(Application.class.getName(), appClass));
 
         }
         for (DotName annotationType : METHOD_ANNOTATIONS) {

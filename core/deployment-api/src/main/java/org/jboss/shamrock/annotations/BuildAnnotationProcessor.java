@@ -356,14 +356,19 @@ public class BuildAnnotationProcessor extends AbstractProcessor {
         if (!serviceNames.isEmpty()) {
             //we read them first, as if an IDE has processed this we may not have seen the full set of names
             try {
-
-                FileObject res = processingEnv.getFiler().createResource(StandardLocation.CLASS_OUTPUT, "", "META-INF/services/" + BuildProvider.class.getName(), processorElements.toArray(new Element[0]));
-
-                try (BufferedReader reader = new BufferedReader(res.openReader(true))) {
-                    serviceNames.add(reader.readLine().trim());
-                } catch (Exception ignored) {
-
+                String relativeName = "META-INF/services/" + BuildProvider.class.getName();
+                try {
+                    FileObject res = processingEnv.getFiler().getResource(StandardLocation.CLASS_OUTPUT, "", relativeName);
+                    try (BufferedReader reader = new BufferedReader(res.openReader(true))) {
+                        String r;
+                        while ((r = reader.readLine()) != null) {
+                            serviceNames.add(r.trim());
+                        }
+                    }
+                } catch (IOException ignore) {
                 }
+
+                FileObject res = processingEnv.getFiler().createResource(StandardLocation.CLASS_OUTPUT, "", relativeName, processorElements.toArray(new Element[0]));
 
                 try (Writer out = res.openWriter()) {
                     for (String service : serviceNames) {

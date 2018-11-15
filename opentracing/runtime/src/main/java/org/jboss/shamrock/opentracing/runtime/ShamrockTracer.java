@@ -31,8 +31,6 @@ public class ShamrockTracer implements Tracer {
     }
 
     Tracer tracer() {
-        System.err.println( "ASK FOR TRACER" );
-        new Exception().printStackTrace();
         return REF.updateAndGet((orig) -> {
             if (orig != null) {
                 return orig;
@@ -42,8 +40,6 @@ public class ShamrockTracer implements Tracer {
             if (serviceName == null) {
                 return NoopTracerFactory.create();
             }
-
-            System.err.println("TRACER SERVICE_NAME: " + serviceName);
 
             Configuration.ReporterConfiguration reporter = new Configuration.ReporterConfiguration(
                     new UdpSender(
@@ -59,9 +55,7 @@ public class ShamrockTracer implements Tracer {
                     reporter
             );
 
-            System.err.println("ABOUT TO BREAK");
             com.uber.jaeger.Tracer t = config.getTracerBuilder().build();
-            System.err.println("init tracer: " + t);
             return t;
             //System.err.println( "config: " + config );
             //Builder builder = config.getTracerBuilder();
@@ -84,32 +78,26 @@ public class ShamrockTracer implements Tracer {
 
     @Override
     public SpanBuilder buildSpan(String operationName) {
-        System.err.println("** build span: " + operationName);
-        new Exception().printStackTrace();
         return tracer().buildSpan(operationName);
     }
 
     @Override
     public <C> void inject(SpanContext spanContext, Format<C> format, C carrier) {
-        System.err.println("** inject");
         tracer().inject(spanContext, format, carrier);
     }
 
     @Override
     public <C> SpanContext extract(Format<C> format, C carrier) {
-        System.err.println("** extract");
         return tracer().extract(format, carrier);
     }
 
     @Override
     public ActiveSpan activeSpan() {
-        System.err.println("** activeSpan");
         return tracer().activeSpan();
     }
 
     @Override
     public ActiveSpan makeActive(Span span) {
-        System.err.println("** makeActive");
         return tracer().makeActive(span);
     }
 }

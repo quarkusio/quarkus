@@ -81,6 +81,10 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-reactive-streams-operators-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-bean-validation-deployment</artifactId>
             <scope>provided</scope>
         </dependency>

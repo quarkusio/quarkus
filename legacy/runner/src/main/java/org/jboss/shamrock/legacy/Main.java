@@ -17,7 +17,6 @@ import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import org.jboss.shamrock.deployment.ArchiveContextBuilder;
 import org.jboss.shamrock.runner.RuntimeRunner;
 
 public class Main {
@@ -80,19 +79,19 @@ public class Main {
                 }
             }
 
-            ArchiveContextBuilder archiveContextBuilder = new ArchiveContextBuilder();
             List<URL> urls = new ArrayList<>();
+            List<Path> paths = new ArrayList<>();
             urls.add(archive.toUri().toURL());
             for (Path l : libraries) {
                 urls.add(l.toUri().toURL());
-                archiveContextBuilder.addAdditionalApplicationArchive(l);
+                paths.add(l);
             }
 
             URLClassLoader ucl = new URLClassLoader(urls.toArray(new URL[urls.size()]), Main.class.getClassLoader());
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             try {
                 Thread.currentThread().setContextClassLoader(ucl);
-                RuntimeRunner runner = new RuntimeRunner(ucl, archive, archive, null, archiveContextBuilder);
+                RuntimeRunner runner = new RuntimeRunner(ucl, archive, archive, null, paths);
                 runner.run();
             } finally {
                 Thread.currentThread().setContextClassLoader(old);

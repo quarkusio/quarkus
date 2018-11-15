@@ -5,9 +5,10 @@ import org.jboss.builder.item.BuildItem;
 import org.jboss.shamrock.annotations.BuildProducer;
 
 /**
- *
+ * Producer class used by the source generated from the annotation processor
  * @param <T>
  */
+@SuppressWarnings("unused")
 public class BuildProducerImpl<T extends BuildItem> implements BuildProducer<T> {
 
     private final Class<T> type;

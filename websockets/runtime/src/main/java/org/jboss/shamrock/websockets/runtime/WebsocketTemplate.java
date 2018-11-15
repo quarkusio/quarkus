@@ -22,7 +22,7 @@ public class WebsocketTemplate {
         Set<Class<? extends Endpoint>> allScannedEndpointImplementations = new HashSet<>();
         for (String i : endpoints) {
             try {
-                allScannedEndpointImplementations.add((Class<? extends Endpoint>) Class.forName(i));
+                allScannedEndpointImplementations.add((Class<? extends Endpoint>) Class.forName(i, true, Thread.currentThread().getContextClassLoader()));
             } catch (Exception e) {
                 log.error("Could not initialize websocket class " + i, e);
             }
@@ -30,7 +30,7 @@ public class WebsocketTemplate {
         Set<Class<?>> allScannedAnnotatedEndpoints = new HashSet<>();
         for (String i : annotatedEndpoints) {
             try {
-                allScannedAnnotatedEndpoints.add(Class.forName(i));
+                allScannedAnnotatedEndpoints.add(Class.forName(i, true, Thread.currentThread().getContextClassLoader()));
             } catch (Exception e) {
                 log.error("Could not initialize websocket class " + i, e);
             }
@@ -42,7 +42,7 @@ public class WebsocketTemplate {
         final Set<ServerApplicationConfig> configInstances = new HashSet<>();
         for (String clazzName : serverApplicationConfigClasses) {
             try {
-                configInstances.add((ServerApplicationConfig) Class.forName(clazzName).newInstance());
+                configInstances.add((ServerApplicationConfig) Class.forName(clazzName, true, Thread.currentThread().getContextClassLoader()).newInstance());
             } catch (Exception e) {
                 log.error("Could not initialize websocket config class " + clazzName, e);
             }

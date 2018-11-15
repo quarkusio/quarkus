@@ -11,8 +11,6 @@ import javax.servlet.http.HttpServletResponse;
 @WebServlet(name = "MyServlet", urlPatterns = "/test", initParams = {@WebInitParam(name = "message", value = "A message")})
 public class TestServlet extends HttpServlet {
 
-
-
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         resp.getWriter().write(getInitParameter("message"));

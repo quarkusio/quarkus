@@ -9,10 +9,15 @@ import io.opentracing.util.GlobalTracer;
  */
 @Template
 public class TracingDeploymentTemplate {
+    private static volatile boolean registered;
+
     public void registerTracer() {
-        System.err.println("REGISTER TRACER");
-        //this.tracer = new ShamrockTracer();
-        GlobalTracer.register(new ShamrockTracer());
+        if (!registered) {
+            System.err.println("REGISTER TRACER");
+            //this.tracer = new ShamrockTracer();
+            GlobalTracer.register(new ShamrockTracer());
+            registered = true;
+        }
     }
 
 }

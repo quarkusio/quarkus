@@ -55,6 +55,8 @@ import org.jboss.protean.gizmo.TryBlock;
 public class BuildAnnotationProcessor extends AbstractProcessor {
 
     private static final String BUILD_PRODUCER = "org.jboss.shamrock.deployment.BuildProducerImpl";
+    private static final String STATIC_RECORDER = "org.jboss.shamrock.deployment.builditem.StaticBytecodeRecorderBuildItem";
+    private static final String MAIN_RECORDER = "org.jboss.shamrock.deployment.builditem.MainBytecodeRecorderBuildItem";
 
     @Override
     public Set<String> getSupportedOptions() {
@@ -230,9 +232,9 @@ public class BuildAnnotationProcessor extends AbstractProcessor {
                     //if it is using bytecode recording register the production of a new recorder
                     if (templatePresent) {
                         if (recordAnnotation.value() == ExecutionTime.STATIC_INIT) {
-                            mc.invokeVirtualMethod(ofMethod(BuildStepBuilder.class, "produces", BuildStepBuilder.class, Class.class), builder, mc.loadClass("org.jboss.shamrock.deployment.recording.StaticBytecodeRecorderBuildItem"));
+                            mc.invokeVirtualMethod(ofMethod(BuildStepBuilder.class, "produces", BuildStepBuilder.class, Class.class), builder, mc.loadClass(STATIC_RECORDER));
                         } else {
-                            mc.invokeVirtualMethod(ofMethod(BuildStepBuilder.class, "produces", BuildStepBuilder.class, Class.class), builder, mc.loadClass("org.jboss.shamrock.deployment.recording.MainBytecodeRecorderBuildItem"));
+                            mc.invokeVirtualMethod(ofMethod(BuildStepBuilder.class, "produces", BuildStepBuilder.class, Class.class), builder, mc.loadClass(MAIN_RECORDER));
                         }
                     }
                     //register parameter injection
@@ -318,10 +320,10 @@ public class BuildAnnotationProcessor extends AbstractProcessor {
                         if (bytecodeRecorder != null) {
                             ResultHandle buildItem;
                             if (recordAnnotation.value() == ExecutionTime.STATIC_INIT) {
-                                buildItem = buildStepMc.newInstance(ofConstructor("org.jboss.shamrock.deployment.recording.StaticBytecodeRecorderBuildItem",
+                                buildItem = buildStepMc.newInstance(ofConstructor(STATIC_RECORDER,
                                         "org.jboss.shamrock.deployment.recording.BytecodeRecorderImpl"), bytecodeRecorder);
                             } else {
-                                buildItem = buildStepMc.newInstance(ofConstructor("org.jboss.shamrock.deployment.recording.MainBytecodeRecorderBuildItem",
+                                buildItem = buildStepMc.newInstance(ofConstructor(MAIN_RECORDER,
                                         "org.jboss.shamrock.deployment.recording.BytecodeRecorderImpl"), bytecodeRecorder);
                             }
                             buildStepMc.invokeVirtualMethod(ofMethod(BuildContext.class, "produce", void.class, BuildItem.class), buildStepMc.getMethodParam(0), buildItem);

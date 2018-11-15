@@ -29,7 +29,9 @@ import java.util.ServiceLoader;
 import java.util.Set;
 
 import org.jboss.builder.item.BuildItem;
+import org.jboss.builder.item.NamedBuildItem;
 import org.jboss.builder.item.SymbolicBuildItem;
+import org.wildfly.common.Assert;
 
 /**
  * A build chain builder.
@@ -100,12 +102,24 @@ public final class BuildChainBuilder {
      * @throws IllegalArgumentException if the item type is {@code null}
      */
     public BuildChainBuilder addInitial(Class<? extends BuildItem> type) {
+        Assert.checkNotNullParam("type", type);
+        if (NamedBuildItem.class.isAssignableFrom(type)) {
+            throw new IllegalArgumentException("Cannot produce a named build item without a name");
+        }
         initialIds.add(new ItemId(type, null));
         return this;
     }
 
     public BuildChainBuilder addInitial(Enum<?> symbolic) {
+        Assert.checkNotNullParam("symbolic", symbolic);
         initialIds.add(new ItemId(SymbolicBuildItem.class, symbolic));
+        return this;
+    }
+
+    public <N> BuildChainBuilder addInitial(Class<? extends NamedBuildItem<N>> type, N name) {
+        Assert.checkNotNullParam("type", type);
+        Assert.checkNotNullParam("name", name);
+        initialIds.add(new ItemId(type, name));
         return this;
     }
 
@@ -117,6 +131,7 @@ public final class BuildChainBuilder {
         }
         return this;
     }
+
     /**
      * Declare a final item that will be consumable after the build step chain completes.  This may be any item
      * that is produced in the chain.
@@ -126,12 +141,24 @@ public final class BuildChainBuilder {
      * @throws IllegalArgumentException if the item type is {@code null}
      */
     public BuildChainBuilder addFinal(Class<? extends BuildItem> type) {
+        Assert.checkNotNullParam("type", type);
+        if (NamedBuildItem.class.isAssignableFrom(type)) {
+            throw new IllegalArgumentException("Cannot consume a named build item without a name");
+        }
         finalIds.add(new ItemId(type, null));
         return this;
     }
 
     public BuildChainBuilder addFinal(Enum<?> symbolic) {
+        Assert.checkNotNullParam("symbolic", symbolic);
         finalIds.add(new ItemId(SymbolicBuildItem.class, symbolic));
+        return this;
+    }
+
+    public <N> BuildChainBuilder addFinal(Class<? extends NamedBuildItem<N>> type, N name) {
+        Assert.checkNotNullParam("type", type);
+        Assert.checkNotNullParam("name", name);
+        finalIds.add(new ItemId(type, name));
         return this;
     }
 

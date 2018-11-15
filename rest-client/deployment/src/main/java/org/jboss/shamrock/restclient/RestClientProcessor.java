@@ -87,6 +87,7 @@ class RestClientProcessor {
         additionalBeans.produce(new AdditionalBeanBuildItem(RestClient.class));
         resources.produce(new SubstrateResourceBuildItem("META-INF/services/javax.ws.rs.ext.Providers"));
         //TODO: fix this, we don't want to just add all the providers
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "org.jboss.resteasy.core.ResteasyProviderFactoryImpl", "org.jboss.resteasy.client.jaxrs.internal.proxy.ProxyBuilderImpl"));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl"));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl"));
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, "org.jboss.resteasy.plugins.providers.jsonb.JsonBindingProvider", "org.jboss.resteasy.plugins.providers.jsonb.AbstractJsonBindingProvider"));

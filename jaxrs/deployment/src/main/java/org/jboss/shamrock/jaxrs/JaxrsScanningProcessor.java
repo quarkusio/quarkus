@@ -53,11 +53,12 @@ import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.deployment.builditem.BeanContainerBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import org.jboss.shamrock.jaxrs.runtime.graal.JaxrsTemplate;
 import org.jboss.shamrock.jaxrs.runtime.graal.ShamrockInjectorFactory;
 import org.jboss.shamrock.undertow.ServletBuildItem;
@@ -95,8 +96,8 @@ public class JaxrsScanningProcessor {
     @BuildStep
     ServletInitParamBuildItem registerProviders(List<JaxrsProviderBuildItem> providers) {
         StringBuilder sb = new StringBuilder();
-        for(int i = 0; i < providers.size(); ++i) {
-            if(i != 0) {
+        for (int i = 0; i < providers.size(); ++i) {
+            if (i != 0) {
                 sb.append(",");
             }
             sb.append(providers.get(i).getName());
@@ -108,6 +109,7 @@ public class JaxrsScanningProcessor {
     SubstrateConfigBuildItem config() {
         return SubstrateConfigBuildItem.builder()
                 .addResourceBundle("messages")
+                .addNativeImageSystemProperty("com.sun.xml.internal.bind.v2.bytecode.ClassTailor.noOptimize", "true") //com.sun.xml.internal.bind.v2.runtime.reflect.opt.AccessorInjector will attempt to use code that does not work if this is not set
                 .build();
     }
 
@@ -116,10 +118,13 @@ public class JaxrsScanningProcessor {
                       BuildProducer<SubstrateProxyDefinitionBuildItem> proxyDefinition,
                       BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
                       BuildProducer<SubstrateResourceBuildItem> resource,
+                      BuildProducer<RuntimeInitializedClassBuildItem> runtimeClasses,
                       BuildProducer<ServletBuildItem> servletProducer,
                       CombinedIndexBuildItem combinedIndexBuildItem,
                       BuildProducer<ServletInitParamBuildItem> servletContextParams
     ) throws Exception {
+
+
         //this is pretty yuck, and does not really belong here, but it is needed to get the json-p
         //provider to work
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "org.glassfish.json.JsonProviderImpl",
@@ -135,8 +140,10 @@ public class JaxrsScanningProcessor {
         }
         Collection<AnnotationInstance> xmlRoot = index.getAnnotations(XML_ROOT);
         if (!xmlRoot.isEmpty()) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "com.sun.xml.bind.v2.ContextFactory", "com.sun.xml.internal.bind.v2.ContextFactory"));
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "com.sun.xml.bind.v2.ContextFactory",
+                    "com.sun.xml.internal.bind.v2.ContextFactory"));
         }
+        runtimeClasses.produce(new RuntimeInitializedClassBuildItem("com.sun.xml.internal.bind.v2.runtime.reflect.opt.Injector"));
         for (DotName i : Arrays.asList(XML_ROOT, JSONB_ANNOTATION)) {
             for (AnnotationInstance anno : index.getAnnotations(i)) {
                 if (anno.target().kind() == AnnotationTarget.Kind.CLASS) {

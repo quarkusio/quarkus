@@ -1,25 +1,26 @@
 package org.jboss.shamrock.deployment.builditem.substrate;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.jboss.builder.item.MultiBuildItem;
 
 public final class SubstrateConfigBuildItem extends MultiBuildItem {
 
-    private final List<String> runtimeInitializedClasses;
-    private final List<String> resourceBundles;
-    private final List<List<String>> proxyDefinitions;
+    private final Set<String> runtimeInitializedClasses;
+    private final Set<String> resourceBundles;
+    private final Set<List<String>> proxyDefinitions;
     private final Map<String, String> nativeImageSystemProperties;
 
     public SubstrateConfigBuildItem(Builder builder) {
-        this.runtimeInitializedClasses = Collections.unmodifiableList(builder.runtimeInitializedClasses);
-        this.resourceBundles = Collections.unmodifiableList(builder.resourceBundles);
-        this.proxyDefinitions = Collections.unmodifiableList(builder.proxyDefinitions);
+        this.runtimeInitializedClasses = Collections.unmodifiableSet(builder.runtimeInitializedClasses);
+        this.resourceBundles = Collections.unmodifiableSet(builder.resourceBundles);
+        this.proxyDefinitions = Collections.unmodifiableSet(builder.proxyDefinitions);
         this.nativeImageSystemProperties = Collections.unmodifiableMap(builder.nativeImageSystemProperties);
     }
 
@@ -45,9 +46,9 @@ public final class SubstrateConfigBuildItem extends MultiBuildItem {
 
     public static class Builder {
 
-        final List<String> runtimeInitializedClasses = new ArrayList<>();
-        final List<String> resourceBundles = new ArrayList<>();
-        final List<List<String>> proxyDefinitions = new ArrayList<>();
+        final Set<String> runtimeInitializedClasses = new HashSet<>();
+        final Set<String> resourceBundles = new HashSet<>();
+        final Set<List<String>> proxyDefinitions = new HashSet<>();
         final Map<String, String> nativeImageSystemProperties = new HashMap<>();
 
         public Builder addRuntimeInitializedClass(String className) {
@@ -69,6 +70,7 @@ public final class SubstrateConfigBuildItem extends MultiBuildItem {
             nativeImageSystemProperties.put(key, value);
             return this;
         }
+
         public SubstrateConfigBuildItem build() {
             return new SubstrateConfigBuildItem(this);
         }

@@ -1,7 +1,9 @@
 package org.jboss.shamrock.beanvalidation.runtime;
 
 import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
 
+import org.jboss.shamrock.runtime.InjectionFactory;
 import org.jboss.shamrock.runtime.Template;
 import org.jboss.shamrock.runtime.InjectionInstance;
 
@@ -16,9 +18,10 @@ public class ValidatorTemplate {
      *
      * @param provider
      */
-    public void forceInit(InjectionInstance<ValidatorProvider> provider, Class<?>... classesToValidate) {
-        provider.newInstance().forceInit();
-        Validator validator = provider.newInstance().factory().getValidator();
+    public void forceInit(InjectionFactory provider, Class<?>... classesToValidate) {
+        ValidatorProvider validatorProvider = provider.create(ValidatorProvider.class).newInstance();
+        validatorProvider.forceInit();
+        Validator validator = validatorProvider.factory().getValidator();
         for (Class<?> i : classesToValidate) {
             validator.getConstraintsForClass(i);
         }

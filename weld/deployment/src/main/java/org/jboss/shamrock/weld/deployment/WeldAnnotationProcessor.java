@@ -15,16 +15,16 @@ import org.jboss.jandex.IndexView;
 import org.jboss.shamrock.annotations.BuildProducer;
 import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.annotations.Record;
-import org.jboss.shamrock.deployment.cdi.BeanContainerListenerBuildItem;
 import org.jboss.shamrock.deployment.Capabilities;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.BeanArchiveIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.BeanContainerBuildItem;
 import org.jboss.shamrock.deployment.builditem.InjectionProviderBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import org.jboss.shamrock.deployment.cdi.BeanContainerListenerBuildItem;
 import org.jboss.shamrock.deployment.cdi.CdiExtensionBuildItem;
 import org.jboss.shamrock.deployment.cdi.GeneratedBeanBuildItem;
-import org.jboss.shamrock.deployment.recording.BytecodeRecorder;
+import org.jboss.shamrock.deployment.recording.RecorderContext;
 import org.jboss.shamrock.runtime.cdi.BeanContainer;
 import org.jboss.shamrock.weld.runtime.WeldDeploymentTemplate;
 
@@ -43,7 +43,7 @@ public class WeldAnnotationProcessor {
 
     @Record(STATIC_INIT)
     @BuildStep(providesCapabilities = Capabilities.CDI_WELD, applicationArchiveMarkers = {"META-INF/beans.xml", "META-INF/services/javax.enterprise.inject.spi.Extension"})
-    public BeanContainerBuildItem build(WeldDeploymentTemplate template, BytecodeRecorder recorder,
+    public BeanContainerBuildItem build(WeldDeploymentTemplate template, RecorderContext recorder,
                                         BuildProducer<InjectionProviderBuildItem> injectionProvider,
                                         List<BeanContainerListenerBuildItem> beanConfig,
                                         List<GeneratedBeanBuildItem> generatedBeans,
@@ -72,8 +72,7 @@ public class WeldAnnotationProcessor {
         }
         SeContainer weld = template.doBoot(null, init);
         BeanContainer container = template.initBeanContainer(weld, beanConfig.stream().map(BeanContainerListenerBuildItem::getBeanContainerListener).collect(Collectors.toList()));
-        injectionProvider.produce(new InjectionProviderBuildItem());
-        template.setupInjection(null, weld);
+        injectionProvider.produce(new InjectionProviderBuildItem(template.setupInjection(weld)));
         return new BeanContainerBuildItem(container);
     }
 }

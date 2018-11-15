@@ -34,7 +34,7 @@ import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildIte
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import org.jboss.shamrock.deployment.cdi.BeanContainerListenerBuildItem;
 import org.jboss.shamrock.deployment.cdi.ResourceAnnotationBuildItem;
-import org.jboss.shamrock.deployment.recording.BytecodeRecorder;
+import org.jboss.shamrock.deployment.recording.RecorderContext;
 import org.jboss.shamrock.jpa.runtime.DefaultEntityManagerFactoryProducer;
 import org.jboss.shamrock.jpa.runtime.DefaultEntityManagerProducer;
 import org.jboss.shamrock.jpa.runtime.JPAConfig;
@@ -80,7 +80,7 @@ public final class HibernateResourceProcessor {
 
     @BuildStep
     @Record(STATIC_INIT)
-    public BeanContainerListenerBuildItem build(BytecodeRecorder recorder, JPADeploymentTemplate template,
+    public BeanContainerListenerBuildItem build(RecorderContext recorder, JPADeploymentTemplate template,
                                                 List<PersistenceUnitDescriptorBuildItem> descItems, CombinedIndexBuildItem index,
                                                 BuildProducer<BytecodeTransformerBuildItem> transformers,
                                                 BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws Exception {
@@ -142,8 +142,8 @@ public final class HibernateResourceProcessor {
     @BuildStep
     @Record(STATIC_INIT)
     public void build(JPADeploymentTemplate template,
-                                      Capabilities capabilities, BuildProducer<BeanContainerListenerBuildItem> buildProducer,
-                                      List<PersistenceUnitDescriptorBuildItem> descriptors) throws Exception {
+                      Capabilities capabilities, BuildProducer<BeanContainerListenerBuildItem> buildProducer,
+                      List<PersistenceUnitDescriptorBuildItem> descriptors) throws Exception {
 
         buildProducer.produce(new BeanContainerListenerBuildItem(template.initializeJpa(capabilities.isCapabilityPresent(Capabilities.TRANSACTIONS))));
         // Bootstrap all persistence units

@@ -28,12 +28,12 @@ import org.jboss.shamrock.beanvalidation.runtime.ValidatorTemplate;
 import org.jboss.shamrock.beanvalidation.runtime.graal.ConstraintHelperSubstitution;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
+import org.jboss.shamrock.deployment.builditem.InjectionFactoryBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveFieldBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveMethodBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildItem;
-import org.jboss.shamrock.deployment.recording.BeanFactory;
-import org.jboss.shamrock.deployment.recording.BytecodeRecorder;
+import org.jboss.shamrock.deployment.recording.RecorderContext;
 import org.jboss.shamrock.runtime.InjectionInstance;
 
 class BeanValidationProcessor {
@@ -47,7 +47,7 @@ class BeanValidationProcessor {
 
     @BuildStep
     @Record(STATIC_INIT)
-    public void build(ValidatorTemplate template, BytecodeRecorder recorder, BeanFactory beanFactory,
+    public void build(ValidatorTemplate template, RecorderContext recorder, InjectionFactoryBuildItem factory,
                       BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
                       BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
                       CombinedIndexBuildItem combinedIndexBuildItem,
@@ -131,7 +131,7 @@ class BeanValidationProcessor {
         for (String c : classesToBeValidated) {
             classes[j++] = recorder.classProxy(c);
         }
-        template.forceInit((InjectionInstance<ValidatorProvider>) beanFactory.newInstanceFactory(ValidatorProvider.class.getName()), classes);
+        template.forceInit(factory.getFactory(), classes);
     }
 
     @BuildStep

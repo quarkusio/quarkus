@@ -80,7 +80,7 @@ public class BytecodeRecorderTestCase {
         }, new NonSerializable("A string", 99));
     }
 
-    void runTest(Consumer<BytecodeRecorder> generator, Object... expected) throws Exception {
+    void runTest(Consumer<BytecodeRecorderImpl> generator, Object... expected) throws Exception {
         TestTemplate.RESULT.clear();
         TestClassLoader tcl = new TestClassLoader(getClass().getClassLoader());
         BytecodeRecorderImpl recorder = new BytecodeRecorderImpl(tcl, false);

@@ -37,12 +37,10 @@ import org.jboss.protean.gizmo.TryBlock;
 import org.jboss.shamrock.deployment.ClassOutput;
 import org.jboss.shamrock.deployment.ShamrockConfig;
 import org.jboss.shamrock.runtime.ConfiguredValue;
-import org.jboss.shamrock.runtime.InjectionInstance;
-import org.jboss.shamrock.runtime.RuntimeInjector;
 import org.jboss.shamrock.runtime.StartupContext;
 import org.jboss.shamrock.runtime.StartupTask;
 
-public class BytecodeRecorderImpl implements BytecodeRecorder {
+public class BytecodeRecorderImpl implements RecorderContext {
 
     private static final AtomicInteger COUNT = new AtomicInteger();
 
@@ -85,13 +83,6 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
         nonDefaulConstructors.put(constructor.getDeclaringClass(), new NonDefaultConstructorHolder(constructor, (Function<Object, List<Object>>) parameters));
     }
 
-    public InjectionInstance<?> newInstanceFactory(String className) {
-        NewInstance instance = new NewInstance(className);
-        methodRecorder.storedMethodCalls.add(instance);
-        return instance;
-    }
-
-    @Override
     public <T> T getRecordingProxy(Class<T> theClass) {
         return methodRecorder.getRecordingProxy(theClass);
     }
@@ -161,7 +152,7 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
                                 if (method.getName().equals("__returned$proxy$key")) {
                                     return key;
                                 }
-                                if(method.getName().equals("__static$$init")) {
+                                if (method.getName().equals("__static$$init")) {
                                     return staticInit;
                                 }
                                 throw new RuntimeException("You cannot invoke directly on an object returned from the bytecode recorded, you can only pass is back into the recorder as a parameter");
@@ -215,7 +206,7 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
                         params[i] = out;
                     } else if (targetType == StartupContext.class) { //hack, as this is tied to StartupTask
                         params[i] = method.getMethodParam(0);
-                    }else {
+                    } else {
                         params[i] = method.loadNull();
                     }
                 }
@@ -227,9 +218,6 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
                         method.invokeVirtualMethod(ofMethod(StartupContext.class, "putValue", void.class, String.class, Object.class), method.getMethodParam(0), method.load(call.proxyId), callResult);
                     }
                 }
-            } else if (set instanceof NewInstance) {
-                NewInstance ni = (NewInstance) set;
-                ni.resultHandle = method.invokeStaticMethod(ofMethod(RuntimeInjector.class, "newFactory", InjectionInstance.class, Class.class), method.loadClass(ni.className));
             } else {
                 throw new RuntimeException("unkown type " + set);
             }
@@ -292,12 +280,10 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
             Enum e = (Enum) param;
             ResultHandle nm = method.load(e.name());
             out = method.invokeStaticMethod(ofMethod(e.getDeclaringClass(), "valueOf", e.getDeclaringClass(), String.class), nm);
-        } else if (param instanceof NewInstance) {
-            out = ((NewInstance) param).resultHandle;
         } else if (param instanceof ReturnedProxy) {
 
             ReturnedProxy rp = (ReturnedProxy) param;
-            if(!rp.__static$$init() && staticInit) {
+            if (!rp.__static$$init() && staticInit) {
                 throw new RuntimeException("Invalid proxy passed to template. " + rp + " was created in a runtime recorder method, while this recorder is for a static init method. The object will not have been created at the time this method is run.");
             }
             String proxyId = rp.__returned$proxy$key();
@@ -461,6 +447,7 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
 
     public interface ReturnedProxy {
         String __returned$proxy$key();
+
         boolean __static$$init();
     }
 
@@ -475,20 +462,6 @@ public class BytecodeRecorderImpl implements BytecodeRecorder {
             this.theClass = theClass;
             this.method = method;
             this.parameters = parameters;
-        }
-    }
-
-    static final class NewInstance implements BytecodeInstruction, InjectionInstance {
-        final String className;
-        ResultHandle resultHandle;
-
-        NewInstance(String className) {
-            this.className = className;
-        }
-
-        @Override
-        public Object newInstance() {
-            throw new RuntimeException();
         }
     }
 

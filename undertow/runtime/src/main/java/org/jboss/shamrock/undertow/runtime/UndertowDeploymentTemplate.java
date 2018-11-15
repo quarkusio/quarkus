@@ -16,11 +16,12 @@ import javax.servlet.MultipartConfigElement;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 
-import org.jboss.shamrock.runtime.Template;
 import org.jboss.shamrock.runtime.ConfiguredValue;
+import org.jboss.shamrock.runtime.InjectionFactory;
 import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.runtime.StartupContext;
+import org.jboss.shamrock.runtime.Template;
 
 import io.undertow.Undertow;
 import io.undertow.server.HandlerWrapper;
@@ -92,8 +93,8 @@ public class UndertowDeploymentTemplate {
                                                         Class<?> servletClass,
                                                         boolean asyncSupported,
                                                         int loadOnStartup,
-                                                        InstanceFactory<? extends Servlet> instanceFactory) throws Exception {
-        ServletInfo servletInfo = new ServletInfo(name, (Class<? extends Servlet>) servletClass, instanceFactory);
+                                                        InjectionFactory instanceFactory) throws Exception {
+        ServletInfo servletInfo = new ServletInfo(name, (Class<? extends Servlet>) servletClass, new ShamrockInstanceFactory(instanceFactory.create(servletClass)));
         deploymentInfo.getValue().addServlet(servletInfo);
         servletInfo.setAsyncSupported(asyncSupported);
         if (loadOnStartup > 0) {
@@ -119,8 +120,8 @@ public class UndertowDeploymentTemplate {
     public AtomicReference<FilterInfo> registerFilter(RuntimeValue<DeploymentInfo> info,
                                                       String name, Class<?> filterClass,
                                                       boolean asyncSupported,
-                                                      InstanceFactory<? extends Filter> instanceFactory) throws Exception {
-        FilterInfo filterInfo = new FilterInfo(name, (Class<? extends Filter>) filterClass, instanceFactory);
+                                                      InjectionFactory instanceFactory) throws Exception {
+        FilterInfo filterInfo = new FilterInfo(name, (Class<? extends Filter>) filterClass, new ShamrockInstanceFactory(instanceFactory.create(filterClass)));
         info.getValue().addFilter(filterInfo);
         filterInfo.setAsyncSupported(asyncSupported);
         return new AtomicReference<>(filterInfo);
@@ -138,8 +139,8 @@ public class UndertowDeploymentTemplate {
         info.getValue().addFilterServletNameMapping(name, mapping, dispatcherType);
     }
 
-    public void registerListener(RuntimeValue<DeploymentInfo> info, Class<?> listenerClass, InstanceFactory<? extends EventListener> factory) {
-        info.getValue().addListener(new ListenerInfo((Class<? extends EventListener>) listenerClass, factory));
+    public void registerListener(RuntimeValue<DeploymentInfo> info, Class<?> listenerClass, InjectionFactory factory) {
+        info.getValue().addListener(new ListenerInfo((Class<? extends EventListener>) listenerClass, (InstanceFactory<? extends EventListener>) new ShamrockInstanceFactory<>(factory.create(listenerClass))));
     }
 
     public void addServltInitParameter(RuntimeValue<DeploymentInfo> info, String name, String value) {
@@ -214,6 +215,7 @@ public class UndertowDeploymentTemplate {
     public void addServletExtension(RuntimeValue<DeploymentInfo> deployment, ServletExtension extension) {
         deployment.getValue().addServletExtension(extension);
     }
+
     /**
      * we can't have SecureRandom in the native image heap, so we need to lazy init
      */

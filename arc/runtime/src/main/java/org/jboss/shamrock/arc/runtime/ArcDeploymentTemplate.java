@@ -16,8 +16,6 @@ import org.jboss.shamrock.runtime.Template;
 import org.jboss.shamrock.runtime.cdi.BeanContainer;
 import org.jboss.shamrock.runtime.InjectionFactory;
 import org.jboss.shamrock.runtime.InjectionInstance;
-import org.jboss.shamrock.runtime.RuntimeInjector;
-import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.runtime.StartupContext;
 import org.jboss.shamrock.runtime.cdi.BeanContainerListener;
 
@@ -91,8 +89,8 @@ public class ArcDeploymentTemplate {
         };
     }
 
-    public void setupInjection(StartupContext startupContext, ArcContainer container) {
-        InjectionFactory old = RuntimeInjector.setFactory(new InjectionFactory() {
+    public InjectionFactory setupInjection(ArcContainer container) {
+        return new InjectionFactory() {
             @Override
             public <T> InjectionInstance<T> create(Class<T> type) {
                 Supplier<InstanceHandle<T>> instance = container.instanceSupplier(type);
@@ -116,14 +114,7 @@ public class ArcDeploymentTemplate {
                     };
                 }
             }
-        });
-        startupContext.addCloseable(new Closeable() {
-            @Override
-            public void close() throws IOException {
-                RuntimeInjector.setFactory(old);
-            }
-        });
-
+        };
     }
 
     public void fireStartupEvent(BeanContainer beanContainer) {

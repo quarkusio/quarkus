@@ -11,7 +11,7 @@ import org.jboss.shamrock.deployment.buildconfig.BuildConfig;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.cdi.BeanContainerListenerBuildItem;
-import org.jboss.shamrock.deployment.recording.BytecodeRecorder;
+import org.jboss.shamrock.deployment.recording.RecorderContext;
 import org.jboss.shamrock.runtime.ConfiguredValue;
 
 class AgroalProcessor {
@@ -25,7 +25,7 @@ class AgroalProcessor {
     @Record(STATIC_INIT)
     @BuildStep
     BeanContainerListenerBuildItem build(BuildConfig config,
-                                         BuildProducer<ReflectiveClassBuildItem> reflectiveClass, DataSourceTemplate template, BytecodeRecorder bc) throws Exception {
+                                         BuildProducer<ReflectiveClassBuildItem> reflectiveClass, DataSourceTemplate template, RecorderContext bc) throws Exception {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
                 io.agroal.pool.ConnectionHandler[].class.getName(),
                 io.agroal.pool.ConnectionHandler.class.getName(),

@@ -22,7 +22,6 @@ import org.jboss.shamrock.runtime.Template;
 import org.jboss.shamrock.runtime.cdi.BeanContainer;
 import org.jboss.shamrock.runtime.InjectionFactory;
 import org.jboss.shamrock.runtime.InjectionInstance;
-import org.jboss.shamrock.runtime.RuntimeInjector;
 import org.jboss.shamrock.runtime.StartupContext;
 import org.jboss.shamrock.runtime.cdi.BeanContainerListener;
 import org.jboss.weld.config.ConfigurationKey;
@@ -98,8 +97,8 @@ public class WeldDeploymentTemplate {
         return container;
     }
 
-    public void setupInjection(StartupContext context, SeContainer container) {
-        InjectionFactory old = RuntimeInjector.setFactory(new InjectionFactory() {
+    public InjectionFactory setupInjection(SeContainer container) {
+        return new InjectionFactory() {
             @Override
             public <T> InjectionInstance<T> create(Class<T> type) {
                 Instance<T> instance = container.select(type);
@@ -123,13 +122,7 @@ public class WeldDeploymentTemplate {
                     };
                 }
             }
-        });
-        context.addCloseable(new Closeable() {
-            @Override
-            public void close() throws IOException {
-                RuntimeInjector.setFactory(old);
-            }
-        });
+        };
     }
 
     public BeanContainer initBeanContainer(SeContainer container, List<BeanContainerListener> beanConfigurators) throws Exception {

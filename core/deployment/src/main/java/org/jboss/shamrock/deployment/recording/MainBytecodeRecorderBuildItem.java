@@ -13,4 +13,6 @@ public final class MainBytecodeRecorderBuildItem extends MultiBuildItem {
     public BytecodeRecorderImpl getBytecodeRecorder() {
         return bytecodeRecorder;
     }
+
+
 }

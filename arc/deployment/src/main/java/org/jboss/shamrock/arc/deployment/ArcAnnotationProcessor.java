@@ -39,8 +39,6 @@ import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.arc.runtime.ArcDeploymentTemplate;
 import org.jboss.shamrock.arc.runtime.StartupEventRunner;
-import org.jboss.shamrock.deployment.cdi.AnnotationTransformerBuildItem;
-import org.jboss.shamrock.deployment.cdi.BeanContainerListenerBuildItem;
 import org.jboss.shamrock.deployment.Capabilities;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.BeanArchiveIndexBuildItem;
@@ -48,10 +46,12 @@ import org.jboss.shamrock.deployment.builditem.BeanContainerBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedResourceBuildItem;
 import org.jboss.shamrock.deployment.builditem.InjectionProviderBuildItem;
+import org.jboss.shamrock.deployment.builditem.ServiceStartBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveFieldBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveMethodBuildItem;
-import org.jboss.shamrock.deployment.builditem.ServiceStartBuildItem;
+import org.jboss.shamrock.deployment.cdi.AnnotationTransformerBuildItem;
+import org.jboss.shamrock.deployment.cdi.BeanContainerListenerBuildItem;
 import org.jboss.shamrock.deployment.cdi.GeneratedBeanBuildItem;
 import org.jboss.shamrock.deployment.cdi.ResourceAnnotationBuildItem;
 import org.jboss.shamrock.runtime.cdi.BeanContainer;
@@ -199,7 +199,7 @@ public class ArcAnnotationProcessor {
                 }
             }
         });
-        for(BeanRegistrarBuildItem i : beanRegistrars) {
+        for (BeanRegistrarBuildItem i : beanRegistrars) {
             builder.addBeanRegistrar(i.getBeanRegistrar());
         }
         BeanProcessor beanProcessor = builder.build();
@@ -207,8 +207,7 @@ public class ArcAnnotationProcessor {
 
         ArcContainer container = arcTemplate.getContainer(null);
         BeanContainer bc = arcTemplate.initBeanContainer(container, beanContainerListenerBuildItems.stream().map(BeanContainerListenerBuildItem::getBeanContainerListener).collect(Collectors.toList()));
-        injectionProvider.produce(new InjectionProviderBuildItem());
-        arcTemplate.setupInjection(null, container);
+        injectionProvider.produce(new InjectionProviderBuildItem(arcTemplate.setupInjection(container)));
         extensions.produce(new ServletExtensionBuildItem(arcTemplate.setupRequestScope(container)));
 
         return new BeanContainerBuildItem(bc);

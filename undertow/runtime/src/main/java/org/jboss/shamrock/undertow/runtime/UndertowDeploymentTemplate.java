@@ -174,7 +174,7 @@ public class UndertowDeploymentTemplate {
      * be no chance to use hot deployment to fix the error. In development mode we start Undertow early, so any error
      * on boot can be corrected via the hot deployment handler
      */
-    public void startUndertowEagerly(ConfiguredValue port, ConfiguredValue host, ConfiguredValue ioThreads, ConfiguredValue workerThreads, HandlerWrapper hotDeploymentWrapper) throws ServletException {
+    public static void startUndertowEagerly(ConfiguredValue port, ConfiguredValue host, ConfiguredValue ioThreads, ConfiguredValue workerThreads, HandlerWrapper hotDeploymentWrapper) throws ServletException {
         if (undertow == null) {
             log.log(Level.INFO, "Starting Undertow on port " + port.getValue());
             HttpHandler rootHandler = new CanonicalPathHandler(ROOT_HANDLER);

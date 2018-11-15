@@ -21,6 +21,7 @@ import org.jboss.builder.BuildStep;
 import org.jboss.builder.item.BuildItem;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
+import org.jboss.logging.Logger;
 import org.jboss.shamrock.deployment.buildconfig.BuildConfig;
 import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
 import org.jboss.shamrock.deployment.builditem.ArchiveRootBuildItem;
@@ -32,6 +33,8 @@ import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildI
 import org.jboss.shamrock.deployment.index.ApplicationArchiveLoader;
 
 public class ShamrockAugumentor {
+
+    private static final Logger log = Logger.getLogger(ShamrockAugumentor.class);
 
     private final List<Path> additionalApplicationArchives;
     private final ClassOutput output;
@@ -48,6 +51,8 @@ public class ShamrockAugumentor {
     }
 
     public BuildResult run() throws Exception {
+        long time = System.currentTimeMillis();
+        log.info("Beginning shamrock augmentation");
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(classLoader);
 
@@ -125,7 +130,7 @@ public class ShamrockAugumentor {
         for (GeneratedResourceBuildItem i : buildResult.consumeMulti(GeneratedResourceBuildItem.class)) {
             output.writeResource(i.getName(), i.getClassData());
         }
-
+        log.info("Shamrock augmentation completed in " + (System.currentTimeMillis() - time) + "ms");
         return buildResult;
     }
 

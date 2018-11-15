@@ -293,7 +293,9 @@ public class BytecodeRecorderImpl implements RecorderContext {
             if (name == null) {
                 name = ((Class) param).getName();
             }
-            out = method.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class), method.load(name));
+            ResultHandle currentThread = method.invokeStaticMethod(ofMethod(Thread.class, "currentThread", Thread.class));
+            ResultHandle tccl = method.invokeVirtualMethod(ofMethod(Thread.class, "getContextClassLoader", ClassLoader.class), currentThread);
+            out = method.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class), method.load(name), method.load(true), tccl);
         } else if (expectedType == boolean.class) {
             out = method.load((boolean) param);
         } else if (expectedType == Boolean.class) {

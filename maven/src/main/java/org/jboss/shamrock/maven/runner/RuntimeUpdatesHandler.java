@@ -42,9 +42,12 @@ public class RuntimeUpdatesHandler implements HttpHandler {
     static {
         UpdateHandler fr;
         try {
-            Class.forName("org.fakereplace.core.Fakereplace");
-            fr = new FakereplaceHandler();
-        } catch (Exception e) {
+            if(Boolean.getBoolean("shamrock.fakereplace")) {
+                fr = new FakereplaceHandler();
+            } else {
+                fr = null;
+            }
+        } catch (Throwable e) {
             fr = null;
         }
         FAKEREPLACE_HANDLER = fr;
@@ -62,6 +65,7 @@ public class RuntimeUpdatesHandler implements HttpHandler {
 
         if (exchange.isInIoThread()) {
             exchange.dispatch(this);
+            return;
         }
         if (nextUpdate > System.currentTimeMillis()) {
             if (RunMojoMain.deploymentProblem != null) {

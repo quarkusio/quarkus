@@ -32,6 +32,7 @@ public class RunMojoMain {
 
     public static void main(String... args) throws Exception {
         Timing.staticInitStarted();
+        RuntimeCompilationSetup.setup();
         //the path that contains the compiled classes
         classesRoot = new File(args[0]);
         wiringDir = new File(args[1]);

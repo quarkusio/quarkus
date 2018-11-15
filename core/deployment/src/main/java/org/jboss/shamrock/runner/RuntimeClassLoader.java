@@ -48,7 +48,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
     private final Path frameworkClassesPath;
     private final Path transformerCache;
 
-    private static final ConcurrentHashMap<String, Future<Class<?>>> loadingClasses = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Future<Class<?>>> loadingClasses = new ConcurrentHashMap<>();
 
     static {
         registerAsParallelCapable();

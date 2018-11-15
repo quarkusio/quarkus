@@ -241,7 +241,7 @@ public class BuildMojo extends AbstractMojo {
                 List<BytecodeTransformerBuildItem> bytecodeTransformerBuildItems = result.consumeMulti(BytecodeTransformerBuildItem.class);
                 if (!bytecodeTransformerBuildItems.isEmpty()) {
                     for (BytecodeTransformerBuildItem i : bytecodeTransformerBuildItems) {
-                        bytecodeTransformers.getOrDefault(i.getClassToTransform(), new ArrayList<>()).add(i.getVisitorFunction());
+                        bytecodeTransformers.computeIfAbsent(i.getClassToTransform(), (h) -> new ArrayList<>()).add(i.getVisitorFunction());
                     }
                 }
 

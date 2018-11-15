@@ -45,6 +45,7 @@ public class RuntimeRunner implements Runnable, Closeable {
 
     @Override
     public void run() {
+        Thread.currentThread().setContextClassLoader(loader);
         try {
             ShamrockAugumentor.Builder builder = ShamrockAugumentor.builder();
             builder.setRoot(target);

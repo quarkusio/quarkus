@@ -28,4 +28,11 @@ public class ServletTestCase {
     public void testWelcomeFile() {
         Assert.assertTrue(URLTester.relative("/").invokeURL().asString().contains("A HTML page"));
     }
+
+    // Basic @ServletSecurity test
+    @Test(expected = Exception.class)
+    public void testSecureAccessFailure() {
+        String msg = URLTester.relative("secure-test").invokeURL().asString();
+        Assert.assertEquals("A secured message", msg);
+    }
 }

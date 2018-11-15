@@ -10,6 +10,7 @@ import java.util.function.Consumer;
 
 import org.jboss.protean.gizmo.TestClassLoader;
 import org.jboss.shamrock.deployment.ClassOutput;
+import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.runtime.StartupContext;
 import org.jboss.shamrock.runtime.StartupTask;
 import org.junit.Assert;
@@ -78,6 +79,17 @@ public class BytecodeRecorderTestCase {
             TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
             template.bean(new NonSerializable("A string", 99));
         }, new NonSerializable("A string", 99));
+    }
+
+    @Test
+    public void testNewInstance() throws Exception {
+        runTest(recorder -> {
+            RuntimeValue<TestJavaBean> instance = recorder.newInstance(TestJavaBean.class.getName());
+            TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
+            template.add(instance);
+            template.add(instance);
+            template.result(instance);
+        }, new TestJavaBean(null, 2));
     }
 
     void runTest(Consumer<BytecodeRecorderImpl> generator, Object... expected) throws Exception {

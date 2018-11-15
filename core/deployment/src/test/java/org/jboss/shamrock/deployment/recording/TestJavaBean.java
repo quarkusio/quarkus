@@ -45,4 +45,12 @@ public class TestJavaBean {
 
         return Objects.hash(sval, ival);
     }
+
+    @Override
+    public String toString() {
+        return "TestJavaBean{" +
+                "sval='" + sval + '\'' +
+                ", ival=" + ival +
+                '}';
+    }
 }

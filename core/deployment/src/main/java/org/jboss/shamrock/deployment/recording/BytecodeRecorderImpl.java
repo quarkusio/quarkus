@@ -37,6 +37,7 @@ import org.jboss.protean.gizmo.TryBlock;
 import org.jboss.shamrock.deployment.ClassOutput;
 import org.jboss.shamrock.deployment.ShamrockConfig;
 import org.jboss.shamrock.runtime.ConfiguredValue;
+import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.runtime.StartupContext;
 import org.jboss.shamrock.runtime.StartupTask;
 
@@ -98,6 +99,18 @@ public class BytecodeRecorderImpl implements RecorderContext {
         return theClass;
     }
 
+    @Override
+    public <T> RuntimeValue<T> newInstance(String name) {
+        try {
+            ProxyInstance ret = methodRecorder.getProxyInstance(RuntimeValue.class);
+            NewInstance instance = new NewInstance(name, ret.proxy, ret.key);
+            methodRecorder.storedMethodCalls.add(instance);
+            return (RuntimeValue<T>) ret.proxy;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private class MethodRecorder {
 
         private final Map<Class<?>, Object> existingProxyClasses = new HashMap<>();
@@ -117,52 +130,21 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
                         StoredMethodCall storedMethodCall = new StoredMethodCall(theClass, method, args);
                         storedMethodCalls.add(storedMethodCall);
-                        if (method.getReturnType().isPrimitive()) {
+                        Class<?> returnType = method.getReturnType();
+                        if (returnType.isPrimitive()) {
                             return 0;
                         }
-                        if (Modifier.isFinal(method.getReturnType().getModifiers())) {
+                        if (Modifier.isFinal(returnType.getModifiers())) {
                             return null;
                         }
-                        boolean returnInterface = method.getReturnType().isInterface();
-                        if (!returnInterface) {
-                            try {
-                                method.getReturnType().getConstructor();
-                            } catch (NoSuchMethodException e) {
-                                return null;
-                            }
-                        }
-                        ProxyFactory<?> proxyFactory = returnValueProxy.get(method.getReturnType());
-                        if (proxyFactory == null) {
-                            ProxyConfiguration<Object> proxyConfiguration = new ProxyConfiguration<Object>()
-                                    .setSuperClass(returnInterface ? Object.class : (Class) method.getReturnType())
-                                    .setClassLoader(classLoader)
-                                    .addAdditionalInterface(ReturnedProxy.class)
-                                    .setProxyName(getClass().getName() + "$$ReturnValueProxy" + COUNT.incrementAndGet());
+                        ProxyInstance instance = getProxyInstance(returnType);
+                        if (instance == null) return null;
 
-                            if (returnInterface) {
-                                proxyConfiguration.addAdditionalInterface(method.getReturnType());
-                            }
-                            returnValueProxy.put(method.getReturnType(), proxyFactory = new ProxyFactory<>(proxyConfiguration));
-                        }
-
-                        String key = PROXY_KEY + COUNT.incrementAndGet();
-                        Object proxyInstance = proxyFactory.newInstance(new InvocationHandler() {
-                            @Override
-                            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                                if (method.getName().equals("__returned$proxy$key")) {
-                                    return key;
-                                }
-                                if (method.getName().equals("__static$$init")) {
-                                    return staticInit;
-                                }
-                                throw new RuntimeException("You cannot invoke directly on an object returned from the bytecode recorded, you can only pass is back into the recorder as a parameter");
-                            }
-                        });
-
-                        storedMethodCall.returnedProxy = proxyInstance;
-                        storedMethodCall.proxyId = key;
-                        return proxyInstance;
+                        storedMethodCall.returnedProxy = instance.proxy;
+                        storedMethodCall.proxyId = instance.key;
+                        return instance.proxy;
                     }
+
                 });
                 existingProxyClasses.put(theClass, recordingProxy);
                 return recordingProxy;
@@ -171,6 +153,45 @@ public class BytecodeRecorderImpl implements RecorderContext {
             }
         }
 
+        private ProxyInstance getProxyInstance(Class<?> returnType) throws InstantiationException, IllegalAccessException {
+            boolean returnInterface = returnType.isInterface();
+            if (!returnInterface) {
+                try {
+                    returnType.getConstructor();
+                } catch (NoSuchMethodException e) {
+                    return null;
+                }
+            }
+            ProxyFactory<?> proxyFactory = returnValueProxy.get(returnType);
+            if (proxyFactory == null) {
+                ProxyConfiguration<Object> proxyConfiguration = new ProxyConfiguration<Object>()
+                        .setSuperClass(returnInterface ? Object.class : (Class) returnType)
+                        .setClassLoader(classLoader)
+                        .addAdditionalInterface(ReturnedProxy.class)
+                        .setProxyName(getClass().getName() + "$$ReturnValueProxy" + COUNT.incrementAndGet());
+
+                if (returnInterface) {
+                    proxyConfiguration.addAdditionalInterface(returnType);
+                }
+                returnValueProxy.put(returnType, proxyFactory = new ProxyFactory<>(proxyConfiguration));
+            }
+
+            String key = PROXY_KEY + COUNT.incrementAndGet();
+            Object proxyInstance = proxyFactory.newInstance(new InvocationHandler() {
+                @Override
+                public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                    if (method.getName().equals("__returned$proxy$key")) {
+                        return key;
+                    }
+                    if (method.getName().equals("__static$$init")) {
+                        return staticInit;
+                    }
+                    throw new RuntimeException("You cannot invoke directly on an object returned from the bytecode recorded, you can only pass is back into the recorder as a parameter");
+                }
+            });
+            ProxyInstance instance = new ProxyInstance(proxyInstance, key);
+            return instance;
+        }
     }
 
     public void writeBytecode(ClassOutput classOutput, String className) {
@@ -218,6 +239,11 @@ public class BytecodeRecorderImpl implements RecorderContext {
                         method.invokeVirtualMethod(ofMethod(StartupContext.class, "putValue", void.class, String.class, Object.class), method.getMethodParam(0), method.load(call.proxyId), callResult);
                     }
                 }
+            } else if (set instanceof NewInstance) {
+                NewInstance ni = (NewInstance) set;
+                ResultHandle val = method.newInstance(ofConstructor(ni.theClass));
+                ResultHandle rv = method.newInstance(ofConstructor(RuntimeValue.class, Object.class), val);
+                method.invokeVirtualMethod(ofMethod(StartupContext.class, "putValue", void.class, String.class, Object.class), method.getMethodParam(0), method.load(ni.proxyId), rv);
             } else {
                 throw new RuntimeException("unkown type " + set);
             }
@@ -442,7 +468,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
         return out;
     }
 
-    public interface BytecodeInstruction {
+    interface BytecodeInstruction {
 
     }
 
@@ -467,6 +493,19 @@ public class BytecodeRecorderImpl implements RecorderContext {
         }
     }
 
+
+    static final class NewInstance implements BytecodeInstruction {
+        final String theClass;
+        final Object returnedProxy;
+        final String proxyId;
+
+        NewInstance(String theClass, Object returnedProxy, String proxyId) {
+            this.theClass = theClass;
+            this.returnedProxy = returnedProxy;
+            this.proxyId = proxyId;
+        }
+    }
+
     static final class SubstitutionHolder {
         final Class<?> from;
         final Class<?> to;
@@ -486,6 +525,24 @@ public class BytecodeRecorderImpl implements RecorderContext {
         NonDefaultConstructorHolder(Constructor<?> constructor, Function<Object, List<Object>> paramGenerator) {
             this.constructor = constructor;
             this.paramGenerator = paramGenerator;
+        }
+    }
+
+    class ProxyInstance {
+        final Object proxy;
+        final String key;
+
+        ProxyInstance(Object proxy, String key) {
+            this.proxy = proxy;
+            this.key = key;
+        }
+
+        public Object getProxy() {
+            return proxy;
+        }
+
+        public String getKey() {
+            return key;
         }
     }
 

@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.jboss.shamrock.runtime.RuntimeValue;
+
 public class TestTemplate {
 
     public static final ArrayDeque<Object> RESULT = new ArrayDeque<Object>();
@@ -55,7 +57,16 @@ public class TestTemplate {
     public void bean(TestJavaBean bean) {
         RESULT.add(bean);
     }
+
     public void bean(NonSerializable bean) {
         RESULT.add(bean);
+    }
+
+    public void add(RuntimeValue<TestJavaBean> bean) {
+        bean.getValue().setIval(bean.getValue().getIval() + 1);
+    }
+
+    public void result(RuntimeValue<TestJavaBean> bean) {
+        RESULT.add(bean.getValue());
     }
 }

@@ -48,6 +48,7 @@ import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.deployment.buildconfig.BuildConfig;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedResourceBuildItem;
+import org.jboss.shamrock.deployment.builditem.SystemPropertyBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
 import org.objectweb.asm.Opcodes;
@@ -64,7 +65,6 @@ public final class LoggingResourceProcessor {
     @Inject
     BuildProducer<GeneratedClassBuildItem> generatedClass;
 
-
     @Inject
     BuildProducer<SubstrateSystemPropertyBuildItem> systemProp;
 
@@ -73,6 +73,11 @@ public final class LoggingResourceProcessor {
 
     @Inject
     BuildProducer<GeneratedResourceBuildItem> generatedResource;
+
+    @BuildStep
+    SystemPropertyBuildItem setpProperty() {
+        return new SystemPropertyBuildItem("java.util.logging.manager", "org.jboss.logmanager.LogManager");
+    }
 
     @BuildStep()
     public void build() throws Exception {

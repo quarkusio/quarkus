@@ -17,9 +17,10 @@ import org.jboss.protean.gizmo.TryBlock;
 import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.deployment.ClassOutput;
 import org.jboss.shamrock.deployment.builditem.ClassOutputBuildItem;
-import org.jboss.shamrock.deployment.builditem.MainClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.MainBytecodeRecorderBuildItem;
+import org.jboss.shamrock.deployment.builditem.MainClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.StaticBytecodeRecorderBuildItem;
+import org.jboss.shamrock.deployment.builditem.SystemPropertyBuildItem;
 import org.jboss.shamrock.runtime.StartupContext;
 import org.jboss.shamrock.runtime.StartupTask;
 import org.jboss.shamrock.runtime.Timing;
@@ -30,11 +31,11 @@ class MainClassBuildStep {
     private static final String MAIN_CLASS_INTERNAL = "org/jboss/shamrock/runner/GeneratedMain";
     private static final String MAIN_CLASS = MAIN_CLASS_INTERNAL.replace('/', '.');
     private static final String STARTUP_CONTEXT = "STARTUP_CONTEXT";
-    private static final String[] EMPTY_STRING_ARRAY = new String[0];
 
     @BuildStep
     MainClassBuildItem build(List<StaticBytecodeRecorderBuildItem> staticInitTasks,
                              List<MainBytecodeRecorderBuildItem> mainMethod,
+                             List<SystemPropertyBuildItem> properties,
                              ClassOutputBuildItem classOutput) {
 
         ClassCreator file = new ClassCreator(ClassOutput.gizmoAdaptor(classOutput.getClassOutput(), true), MAIN_CLASS, null, Object.class.getName());
@@ -44,6 +45,12 @@ class MainClassBuildStep {
 
         MethodCreator mv = file.getMethodCreator("<clinit>", void.class);
         mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
+
+        //very first thing is to set system props
+        for (SystemPropertyBuildItem i : properties) {
+            mv.invokeStaticMethod(ofMethod(System.class, "setProperty", String.class, String.class, String.class), mv.load(i.getKey()), mv.load(i.getValue()));
+        }
+
         mv.invokeStaticMethod(MethodDescriptor.ofMethod(Timing.class, "staticInitStarted", void.class));
         ResultHandle startupContext = mv.newInstance(ofConstructor(StartupContext.class));
         mv.writeStaticField(scField.getFieldDescriptor(), startupContext);

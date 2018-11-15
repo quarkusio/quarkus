@@ -28,7 +28,6 @@ import org.jboss.shamrock.deployment.builditem.ArchiveRootBuildItem;
 import org.jboss.shamrock.deployment.builditem.ClassOutputBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedResourceBuildItem;
-import org.jboss.shamrock.deployment.builditem.LogSetupBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import org.jboss.shamrock.deployment.index.ApplicationArchiveLoader;
 
@@ -111,7 +110,6 @@ public class ShamrockAugumentor {
                 .produces(ArchiveRootBuildItem.class)
                 .produces(BuildConfig.class)
                 .produces(ClassOutputBuildItem.class)
-                .consumes(LogSetupBuildItem.class)
                 .build();
         for (Class<? extends BuildItem> i : finalResults) {
             chainBuilder.addFinal(i);

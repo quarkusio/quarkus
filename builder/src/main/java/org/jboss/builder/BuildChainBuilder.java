@@ -233,7 +233,7 @@ public final class BuildChainBuilder {
     }
 
     private void cycleCheck(BuildStepBuilder builder, Set<BuildStepBuilder> visited, Set<BuildStepBuilder> checked, final Map<BuildStepBuilder, Set<BuildStepBuilder>> dependencies) throws ChainBuildException {
-        if (checked.add(builder)) {
+        if (! checked.contains(builder)) {
             if (! visited.add(builder)) {
                 throw new ChainBuildException("Cycle detected: " + visited);
             }
@@ -243,6 +243,7 @@ public final class BuildChainBuilder {
                 visited.remove(builder);
             }
         }
+        checked.add(builder);
     }
 
     private void addOne(final Map<ItemId, List<Produce>> allProduces, final Set<BuildStepBuilder> included, final ArrayDeque<BuildStepBuilder> toAdd, final ItemId idToAdd, Set<BuildStepBuilder> dependencies) throws ChainBuildException {

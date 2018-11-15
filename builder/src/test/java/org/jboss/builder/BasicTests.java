@@ -125,4 +125,35 @@ public class BasicTests {
         assertNotNull(result.consume(DummyItem.class));
         assertFalse(ran.get());
     }
+
+    @Test
+    public void testCircular() {
+        final BuildChainBuilder builder = BuildChain.builder();
+        builder.addFinal(DummyItem.class);
+        BuildStepBuilder stepBuilder = builder.addBuildStep(new BuildStep() {
+            public void execute(final BuildContext context) {
+                context.consume(DummyItem2.class);
+                context.produce(new DummyItem());
+            }
+        });
+        stepBuilder.produces(DummyItem.class);
+        stepBuilder.consumes(DummyItem2.class);
+        stepBuilder.build();
+        stepBuilder = builder.addBuildStep(new BuildStep() {
+            public void execute(final BuildContext context) {
+                context.consume(DummyItem.class);
+                context.produce(new DummyItem2());
+            }
+        });
+        stepBuilder.produces(DummyItem2.class);
+        stepBuilder.consumes(DummyItem.class);
+        stepBuilder.build();
+        try {
+            builder.build();
+            fail("Expected exception");
+        } catch (ChainBuildException expected) {
+            // ok
+        }
+    }
+
 }

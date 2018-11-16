@@ -24,14 +24,7 @@ import org.jboss.protean.gizmo.TryBlock;
 import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.deployment.ClassOutput;
 import org.jboss.shamrock.deployment.builditem.ClassOutputBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveFieldBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveMethodBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateOutputBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBundleBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.*;
 import org.jboss.shamrock.runtime.ResourceHelper;
 
 public class SubstrateAutoFeatureStep {
@@ -46,7 +39,8 @@ public class SubstrateAutoFeatureStep {
                                              List<SubstrateResourceBundleBuildItem> resourceBundles,
                                              List<ReflectiveMethodBuildItem> reflectiveMethods,
                                              List<ReflectiveFieldBuildItem> reflectiveFields,
-                                             List<ReflectiveClassBuildItem> reflectiveClassBuildItems) {
+                                             List<ReflectiveClassBuildItem> reflectiveClassBuildItems,
+                                             List<ServiceProviderBuildItem> serviceProviderBuildItems) {
         ClassCreator file = new ClassCreator(ClassOutput.gizmoAdaptor(output.getClassOutput(), true), GRAAL_AUTOFEATURE, null, Object.class.getName(), "org/graalvm/nativeimage/Feature");
         file.addAnnotation("com/oracle/svm/core/annotate/AutomaticFeature");
 
@@ -116,6 +110,11 @@ public class SubstrateAutoFeatureStep {
                 overallCatch.invokeStaticMethod(ofMethod(ResourceHelper.class, "registerResources", void.class, String.class), overallCatch.load(j));
             }
         }
+
+        for (ServiceProviderBuildItem i : serviceProviderBuildItems) {
+            overallCatch.invokeStaticMethod(ofMethod(ResourceHelper.class, "registerResources", void.class, String.class), overallCatch.load(i.serviceDescriptorFile()));
+        }
+
         if (!resourceBundles.isEmpty()) {
             ResultHandle locClass = overallCatch.loadClass("com.oracle.svm.core.jdk.LocalizationSupport");
 
@@ -144,6 +143,10 @@ public class SubstrateAutoFeatureStep {
         }
         for (ReflectiveMethodBuildItem i : reflectiveMethods) {
             addReflectiveMethod(reflectiveClasses, i);
+        }
+
+        for (ServiceProviderBuildItem i : serviceProviderBuildItems) {
+            addReflectiveClass(reflectiveClasses, false, false, i.providers().toArray(new String[] {}));
         }
 
         for (Map.Entry<String, ReflectionInfo> entry : reflectiveClasses.entrySet()) {

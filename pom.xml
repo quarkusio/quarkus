@@ -1190,6 +1190,22 @@
                 <updatePolicy>daily</updatePolicy>
             </snapshots>
         </repository>
+
+        <repository>
+            <id>apache-snapshot</id>
+            <url>https://repository.apache.org/snapshots/</url>
+            <layout>default</layout>
+            <releases>
+                <enabled>false</enabled>
+                <updatePolicy>never</updatePolicy>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <!-- 10 minutes. Or enforce refresh by using -U option to Maven -->
+                <updatePolicy>daily</updatePolicy>
+            </snapshots>
+        </repository>
+
     </repositories>
 
     <distributionManagement>

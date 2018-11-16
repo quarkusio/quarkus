@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- ~ Copyright 2018 Red Hat, Inc. ~ ~ Licensed under the Apache License, 
-   Version 2.0 (the "License"); ~ you may not use this file except in compliance 
-   with the License. ~ You may obtain a copy of the License at ~ ~ http://www.apache.org/licenses/LICENSE-2.0 
-   ~ ~ Unless required by applicable law or agreed to in writing, software ~ 
-   distributed under the License is distributed on an "AS IS" BASIS, ~ WITHOUT 
-   WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. ~ See the 
-   License for the specific language governing permissions and ~ limitations 
+<!-- ~ Copyright 2018 Red Hat, Inc. ~ ~ Licensed under the Apache License,
+   Version 2.0 (the "License"); ~ you may not use this file except in compliance
+   with the License. ~ You may obtain a copy of the License at ~ ~ http://www.apache.org/licenses/LICENSE-2.0
+   ~ ~ Unless required by applicable law or agreed to in writing, software ~
+   distributed under the License is distributed on an "AS IS" BASIS, ~ WITHOUT
+   WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. ~ See the
+   License for the specific language governing permissions and ~ limitations
    under the License. -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -26,7 +26,7 @@
    <properties>
       <!-- Enable APT by default for Eclipse -->
       <m2e.apt.activation>jdt_apt</m2e.apt.activation>
-      
+
       <aesh.version>1.11</aesh.version>
       <jandex.version>2.1.1.Final</jandex.version>
       <resteasy.version>4.0.0.Beta8</resteasy.version>
@@ -67,10 +67,10 @@
       <plexus-utils.version>3.0.24</plexus-utils.version>
       <maven-plugin-annotations.version>3.5.2</maven-plugin-annotations.version>
       <plexus-component-annotations.version>1.7.1</plexus-component-annotations.version>
-      <!-- What we actually depend on for the annotations, as latest Graal 
+      <!-- What we actually depend on for the annotations, as latest Graal
          is not available in Maven fast enough: -->
       <graal-sdk.version>1.0.0-rc12</graal-sdk.version>
-      <!-- The Graal version we suggest using in documentation - as that's 
+      <!-- The Graal version we suggest using in documentation - as that's
          what we work with by self downloading it: -->
       <graal-sdk.version-for-documentation>1.0.0-rc12</graal-sdk.version-for-documentation>
       <gizmo.version>1.0.0.Alpha1</gizmo.version>
@@ -169,6 +169,7 @@
              <artifactId>shamrock-caffeine-runtime</artifactId>
              <version>${project.version}</version>
          </dependency>
+
          <dependency>
              <groupId>org.jboss.shamrock</groupId>
              <artifactId>shamrock-devtools-common</artifactId>
@@ -401,6 +402,16 @@
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-openssl-runtime</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-jaxb-deployment</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-jaxb-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
@@ -958,7 +969,7 @@
             <artifactId>maven-settings-builder</artifactId>
             <version>${maven-core.version}</version>
          </dependency>
-         
+
          <dependency>
             <groupId>org.apache.maven.plugin-tools</groupId>
             <artifactId>maven-plugin-annotations</artifactId>
@@ -997,7 +1008,7 @@
             <version>${test-containers.version}</version>
             <scope>test</scope>
          </dependency>
-         
+
          <dependency>
             <groupId>org.codehaus.plexus</groupId>
             <artifactId>plexus-utils</artifactId>
@@ -1366,6 +1377,11 @@
          <dependency>
             <groupId>org.infinispan</groupId>
             <artifactId>infinispan-query-dsl</artifactId>
+            <version>${infinispan.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.infinispan</groupId>
+            <artifactId>infinispan-commons</artifactId>
             <version>${infinispan.version}</version>
          </dependency>
 

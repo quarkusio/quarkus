@@ -37,6 +37,8 @@ import io.netty.bootstrap.ChannelFactory;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.DefaultChannelPromise;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.handler.ssl.ApplicationProtocolConfig;
 import io.netty.handler.ssl.ApplicationProtocolConfig.SelectorFailureBehavior;
 import io.netty.handler.ssl.CipherSuiteFilter;
@@ -298,7 +300,11 @@ final class Target_io_netty_bootstrap_AbstractBootstrap {
 
     }
 }
+@TargetClass(className="io.netty.channel.epoll.Native")
+@Delete
+final class Target_io_netty_channel_epoll_Native {
 
+}
 class NettySubstitutions {
 
 }

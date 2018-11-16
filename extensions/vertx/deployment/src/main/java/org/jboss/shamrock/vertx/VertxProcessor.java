@@ -86,21 +86,8 @@ class VertxProcessor {
 
     @BuildStep
     SubstrateConfigBuildItem build() {
-        // This one may not be required after Vert.x 3.6.0 lands
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "io.netty.channel.socket.nio.NioSocketChannel"));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "java.util.LinkedHashMap"));
-
         return SubstrateConfigBuildItem.builder()
-                .addNativeImageSystemProperty("io.netty.noUnsafe", "true")
                 .addNativeImageSystemProperty("vertx.disableDnsResolver", "true")
-                .addRuntimeReinitializedClass("io.netty.handler.codec.http2.Http2CodecUtil")
-                .addRuntimeInitializedClass("io.netty.handler.codec.http.HttpObjectEncoder")
-                .addRuntimeInitializedClass("io.netty.handler.codec.http2.DefaultHttp2FrameWriter")
-                .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.WebSocket00FrameEncoder")
-                .addRuntimeInitializedClass("io.netty.handler.ssl.JdkNpnApplicationProtocolNegotiator")
-                .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslEngine")
-                .addRuntimeInitializedClass("io.netty.handler.ssl.util.ThreadLocalInsecureRandom")
-                .addNativeImageSystemProperty("io.netty.leakDetection.level", "DISABLED") //TODO: make configurable
                 .build();
     }
 
@@ -117,7 +104,7 @@ class VertxProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void build(VertxTemplate template, BeanContainerBuildItem beanContainer, BuildProducer<FeatureBuildItem> feature,
-            List<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods, BuildProducer<GeneratedClassBuildItem> generatedClass) {
+               List<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods, BuildProducer<GeneratedClassBuildItem> generatedClass) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.VERTX));
         List<Map<String, String>> messageConsumerConfigurations = new ArrayList<>();
         ClassOutput classOutput = new ClassOutput() {

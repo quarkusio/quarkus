@@ -34,8 +34,80 @@ import java.util.stream.Collectors;
 
 public class ReportAnalyzer {
 
+    final List<Node> parents = new ArrayList<>();
+    final Map<String, List<Node>> byClassMap = new HashMap<>();
+    final Map<String, List<Node>> constructors = new HashMap<>();
 
     static Pattern PATTERN = Pattern.compile("(.*?)([^\\s(]+)\\.([^.]+\\(.*?\\):[^\\s])");
+
+    public ReportAnalyzer(String report) {
+        try {
+            Deque<String> lines = new ArrayDeque<>();
+            try (BufferedReader in = Files.newBufferedReader(Paths.get(report))) {
+                for (String re = in.readLine(); re != null; re = in.readLine()) {
+                    lines.add(re);
+                }
+            }
+
+            String first = lines.pop();
+            if (!first.equals("VM Entry Points")) {
+                throw new IllegalArgumentException("Unexpected first line in file " + first);
+            }
+            Node last = null;
+            for (String line : lines) {
+                if (line.trim().isEmpty()) {
+                    continue;
+                }
+                int start = 0;
+                int lc = 0;
+                for (; start < line.length(); ++start) {
+                    char c = line.charAt(start);
+                    if (c == '├' || c == '└') {
+                        break;
+                    } else {
+                        lc++;
+                    }
+                }
+                if (line.length() < start + 3) {
+                    continue;
+                }
+                Matcher matcher = PATTERN.matcher(line.substring(start + 3));
+                if (!matcher.find()) {
+                    throw new RuntimeException("Failed " + line);
+                }
+                String type = matcher.group(1).trim();
+                String clz = matcher.group(2);
+                String method = matcher.group(3);
+                Node parent;
+                if (last == null) {
+                    parent = null;
+                } else if (last.indent < lc) {
+                    parent = last;
+                } else {
+                    parent = last;
+                    while (parent != null) {
+                        parent = parent.parent;
+                        if (parent == null || parent.indent < lc) {
+                            break;
+                        }
+                    }
+                }
+                Node n = new Node(lc, type, clz, method, parent);
+                if (parent == null) {
+                    parents.add(n);
+                } else {
+                    n.parent.children.add(n);
+                }
+                byClassMap.computeIfAbsent(clz, (k) -> new ArrayList<>()).add(n);
+                if (method.startsWith("<init>")) {
+                    constructors.computeIfAbsent(clz, (k) -> new ArrayList<>()).add(n);
+                }
+                last = n;
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     /**
      * Analyze the contents of the call tree report produced by Substrate when using -H:+PrintAnalysisCallTree,
@@ -50,72 +122,8 @@ public class ReportAnalyzer {
      * is abandoned, and instead the call flow for the constructor of the current object is printed instead.
      *
      */
-    public static String analyse(String report, String className, String methodName) throws Exception {
-        Deque<String> lines = new ArrayDeque<>();
-        try (BufferedReader in = Files.newBufferedReader(Paths.get(report))) {
-            for (String re = in.readLine(); re != null; re = in.readLine()) {
-                lines.add(re);
-            }
-        }
+    public String analyse(String className, String methodName) throws Exception {
 
-        String first = lines.pop();
-        if (!first.equals("VM Entry Points")) {
-            throw new IllegalArgumentException("Unexpected first line in file " + first);
-        }
-        List<Node> parents = new ArrayList<>();
-        Map<String, List<Node>> byClassMap = new HashMap<>();
-        Map<String, List<Node>> constructors = new HashMap<>();
-        Node last = null;
-        for (String line : lines) {
-            if (line.trim().isEmpty()) {
-                continue;
-            }
-            int start = 0;
-            int lc = 0;
-            for (; start < line.length(); ++start) {
-                char c = line.charAt(start);
-                if (c == '├' || c == '└') {
-                    break;
-                } else {
-                    lc++;
-                }
-            }
-            if (line.length() < start + 3) {
-                continue;
-            }
-            Matcher matcher = PATTERN.matcher(line.substring(start + 3));
-            if (!matcher.find()) {
-                throw new RuntimeException("Failed " + line);
-            }
-            String type = matcher.group(1).trim();
-            String clz = matcher.group(2);
-            String method = matcher.group(3);
-            Node parent;
-            if (last == null) {
-                parent = null;
-            } else if (last.indent < lc) {
-                parent = last;
-            } else {
-                parent = last;
-                while (parent != null) {
-                    parent = parent.parent;
-                    if (parent == null || parent.indent < lc) {
-                        break;
-                    }
-                }
-            }
-            Node n = new Node(lc, type, clz, method, parent);
-            if (parent == null) {
-                parents.add(n);
-            } else {
-                n.parent.children.add(n);
-            }
-            byClassMap.computeIfAbsent(clz, (k) -> new ArrayList<>()).add(n);
-            if (method.startsWith("<init>")) {
-                constructors.computeIfAbsent(clz, (k) -> new ArrayList<>()).add(n);
-            }
-            last = n;
-        }
 
         List<Node> dm = byClassMap.getOrDefault(className, new ArrayList<>()).stream().filter((s) -> s.method.startsWith(methodName + "(")).collect(Collectors.toList());
 
@@ -129,16 +137,16 @@ public class ReportAnalyzer {
         StringBuilder sb = new StringBuilder();
         while (!runQueue.isEmpty()) {
             Node current = runQueue.pop();
-            sb.append("Possible path to " + current.className + "." + current.method);
+            sb.append("Possible path to " + current.className + "." + current.method +"\n");
             while (current != null) {
                 sb.append("\t" + current.className + "." + current.method + '\n');
 
                 String reason = null;
                 if(current.parent == null || current.parent.children.size() > 1) {
                     if (current.type.equals("is overridden by")) {
-                        reason = "This is an implementation of " + current.parent.className + " printing path to constructors of " + current.className;
+                        reason = "This is an implementation of " + current.parent.className + " printing path to constructors of " + current.className+"\n";
                     } else if (current.type.equals("is implemented by")) {
-                        reason = "This is an implementation of " + current.parent.className + " printing path to constructors of " + current.className;
+                        reason = "This is an implementation of " + current.parent.className + " printing path to constructors of " + current.className+"\n";
                     }
                 }
                 if (reason != null) {

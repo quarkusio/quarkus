@@ -122,7 +122,6 @@ public class ResteasyScanningProcessor {
     private static final DotName RESTEASY_HEADER_PARAM = DotName.createSimple(org.jboss.resteasy.annotations.jaxrs.HeaderParam.class.getName());
     private static final DotName RESTEASY_MATRIX_PARAM = DotName.createSimple(org.jboss.resteasy.annotations.jaxrs.MatrixParam.class.getName());
 
-    private static final DotName XML_ROOT = DotName.createSimple("javax.xml.bind.annotation.XmlRootElement");
     private static final DotName JSONB_ANNOTATION = DotName.createSimple("javax.json.bind.annotation.JsonbAnnotation");
 
     private static final Set<DotName> TYPES_IGNORED_FOR_REFLECTION = new HashSet<>(Arrays.asList(
@@ -211,7 +210,6 @@ public class ResteasyScanningProcessor {
     SubstrateConfigBuildItem config() {
         return SubstrateConfigBuildItem.builder()
                 .addResourceBundle("messages")
-                .addNativeImageSystemProperty("com.sun.xml.internal.bind.v2.bytecode.ClassTailor.noOptimize", "true") //com.sun.xml.internal.bind.v2.runtime.reflect.opt.AccessorInjector will attempt to use code that does not work if this is not set
                 .build();
     }
 
@@ -244,13 +242,6 @@ public class ResteasyScanningProcessor {
         resource.produce(new SubstrateResourceBuildItem("META-INF/services/javax.ws.rs.client.ClientBuilder"));
 
         Collection<AnnotationInstance> app = index.getAnnotations(APPLICATION_PATH);
-        Collection<AnnotationInstance> xmlRoot = index.getAnnotations(XML_ROOT);
-        if (!xmlRoot.isEmpty()) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "com.sun.xml.bind.v2.ContextFactory",
-                    "com.sun.xml.internal.bind.v2.ContextFactory"));
-        }
-        runtimeClasses.produce(new RuntimeInitializedClassBuildItem("com.sun.xml.internal.bind.v2.runtime.reflect.opt.Injector"));
-
         //@Context uses proxies for interface injection
         for (AnnotationInstance annotation : index.getAnnotations(CONTEXT)) {
             DotName typeName = null;
@@ -484,11 +475,9 @@ public class ResteasyScanningProcessor {
                 "com.fasterxml.jackson.databind.ser.std.SqlDateSerializer"));
 
         // This is probably redundant with the automatic resolution we do just below but better be safe
-        for (DotName i : Arrays.asList(XML_ROOT, JSONB_ANNOTATION)) {
-            for (AnnotationInstance annotation : index.getAnnotations(i)) {
-                if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
-                    reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, annotation.target().asClass().name().toString()));
-                }
+        for (AnnotationInstance annotation : index.getAnnotations(JSONB_ANNOTATION)) {
+            if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
+                reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, annotation.target().asClass().name().toString()));
             }
         }
 

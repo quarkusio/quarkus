@@ -1,0 +1,15 @@
+index-dependencies:
+  - "org.apache.camel:camel-core"
+camel:
+  context:
+    name: "shamrock-camel-example"
+  properties:
+    prefixToken: "{{"
+    suffixToken: "}}"
+  conf: "{{env:CAMEL_CONF:}}"
+  confd: "{{env:CAMEL_CONFD:}}"
+  routesUri: ""
+  dump: "false"
+  defer: "false"
+folder: "{{sys:folder:./target/orders}}"
+

@@ -114,8 +114,9 @@
         <module>fault-tolerance</module>
         <module>vertx</module>
         <module>reactive-streams-operators</module>
-        <module>examples</module>
         <module>websockets</module>
+        <module>jdbc</module>
+        <module>examples</module>
 
         <!-- Do not add modules after legacy. JVM state will fail CI -->
         <module>legacy</module>

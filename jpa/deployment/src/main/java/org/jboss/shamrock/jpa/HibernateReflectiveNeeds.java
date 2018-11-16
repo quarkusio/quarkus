@@ -105,7 +105,6 @@ final class HibernateReflectiveNeeds {
 
         //PostgreSQL specific (move to its own home?) FIXME
         simpleConstructor(org.hibernate.dialect.PostgreSQL95Dialect.class);
-        simpleConstructor("org.postgresql.Driver");
     }
 
     private void allConstructors(final Class clazz) {

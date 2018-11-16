@@ -114,10 +114,10 @@
         <module>vertx</module>
         <module>reactive-streams-operators</module>
         <module>examples</module>
-        <module>legacy</module>
         <module>websockets</module>
-        <!-- Do not add modules after legacy. JVM state will fail CI -->
 
+        <!-- Do not add modules after legacy. JVM state will fail CI -->
+        <module>legacy</module>
     </modules>
     <build>
         <pluginManagement>

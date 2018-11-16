@@ -14,7 +14,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -27,8 +26,6 @@ import javax.servlet.annotation.WebFilter;
 import javax.servlet.annotation.WebListener;
 import javax.servlet.annotation.WebServlet;
 
-import io.undertow.servlet.api.HttpMethodSecurityInfo;
-import io.undertow.servlet.api.ServletSecurityInfo;
 import org.jboss.annotation.javaee.Descriptions;
 import org.jboss.annotation.javaee.DisplayNames;
 import org.jboss.annotation.javaee.Icons;
@@ -85,7 +82,9 @@ import org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate;
 
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.FilterInfo;
+import io.undertow.servlet.api.HttpMethodSecurityInfo;
 import io.undertow.servlet.api.ServletInfo;
+import io.undertow.servlet.api.ServletSecurityInfo;
 import io.undertow.servlet.handlers.DefaultServlet;
 
 public class UndertowBuildStep {
@@ -101,7 +100,6 @@ public class UndertowBuildStep {
 
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
-
 
     @BuildStep
     @Record(RUNTIME_INIT)
@@ -167,7 +165,7 @@ public class UndertowBuildStep {
         if (result.getServlets() != null) {
             for (ServletMetaData servlet : result.getServlets()) {
                 reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, servlet.getServletClass()));
-                AtomicReference<ServletInfo> sref = template.registerServlet(deployment, servlet.getServletName(),
+                RuntimeValue<ServletInfo> sref = template.registerServlet(deployment, servlet.getServletName(),
                         context.classProxy(servlet.getServletClass()),
                         servlet.isAsyncSupported(),
                         servlet.getLoadOnStartupInt(),
@@ -223,7 +221,7 @@ public class UndertowBuildStep {
         if (result.getFilters() != null) {
             for (FilterMetaData filter : result.getFilters()) {
                 reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, filter.getFilterClass()));
-                AtomicReference<FilterInfo> sref = template.registerFilter(deployment,
+                RuntimeValue<FilterInfo> sref = template.registerFilter(deployment,
                         filter.getFilterName(),
                         context.classProxy(filter.getFilterClass()),
                         filter.isAsyncSupported(),
@@ -680,6 +678,7 @@ public class UndertowBuildStep {
 
     /**
      * Map web metadata type to undertow type
+     *
      * @param type web metadata TransportGuaranteeType
      * @return undertow TransportGuaranteeType
      */

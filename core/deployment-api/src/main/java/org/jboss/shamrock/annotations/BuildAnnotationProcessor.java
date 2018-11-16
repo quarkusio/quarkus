@@ -141,7 +141,7 @@ public class BuildAnnotationProcessor extends AbstractProcessor {
             //now lets generate some stuff
             //first we create a build provider, this registers the producers and consumers
             //we only create a single one for the the class, even if there are multiple steps
-            String processorClassName = processor.getQualifiedName().toString();
+            String processorClassName = processingEnv.getElementUtils().getBinaryName(processor).toString();
             final String buildProviderName = processorClassName + "BuildProvider";
             serviceNames.add(buildProviderName);
             processorElements.add(processor);
@@ -179,7 +179,7 @@ public class BuildAnnotationProcessor extends AbstractProcessor {
                         methodInjection.add(injection);
 
                         DeclaredType type = (DeclaredType) i.asType();
-                        String simpleType = ((TypeElement) type.asElement()).getQualifiedName().toString();
+                        String simpleType = processingEnv.getElementUtils().getBinaryName(((TypeElement) type.asElement())).toString();
                         methodParamTypes.add(simpleType);
                     }
 
@@ -198,7 +198,7 @@ public class BuildAnnotationProcessor extends AbstractProcessor {
                             throw new RuntimeException("@BuildStep method return type cannot be primitive: " + method);
                         }
                         DeclaredType returnTypeElement = (DeclaredType) method.getReturnType();
-                        String returnType = ((TypeElement) returnTypeElement.asElement()).getQualifiedName().toString();
+                        String returnType = processingEnv.getElementUtils().getBinaryName(((TypeElement) returnTypeElement.asElement())).toString();
 
                         if (returnType.equals(List.class.getName())) {
                             listReturn = true;
@@ -209,7 +209,7 @@ public class BuildAnnotationProcessor extends AbstractProcessor {
                             TypeMirror typeMirror = returnTypeElement.getTypeArguments().get(0);
 
                             verifyType(typeMirror, MultiBuildItem.class);
-                            producedType = ((TypeElement) ((DeclaredType) typeMirror).asElement()).getQualifiedName().toString();
+                            producedType = processingEnv.getElementUtils().getBinaryName(((TypeElement) ((DeclaredType) typeMirror).asElement())).toString();
                             rawReturnType = returnType;
                         } else {
                             verifyType(returnTypeElement, BuildItem.class);
@@ -396,7 +396,7 @@ public class BuildAnnotationProcessor extends AbstractProcessor {
 
     private InjectedBuildResource createInjectionResource(Element element, DeclaredType elementType) {
         DeclaredType type = elementType;
-        String simpleType = ((TypeElement) type.asElement()).getQualifiedName().toString();
+        String simpleType = processingEnv.getElementUtils().getBinaryName(((TypeElement) type.asElement())).toString();
         InjectionType ft;
         String producedTypeName = null;
         String consumedTypeName = null;
@@ -409,7 +409,7 @@ public class BuildAnnotationProcessor extends AbstractProcessor {
             TypeMirror typeMirror = type.getTypeArguments().get(0);
 
             verifyType(typeMirror, MultiBuildItem.class);
-            consumedTypeName = ((TypeElement) ((DeclaredType) typeMirror).asElement()).getQualifiedName().toString();
+            consumedTypeName = processingEnv.getElementUtils().getBinaryName(((TypeElement) ((DeclaredType) typeMirror).asElement())).toString();
 
         } else if (simpleType.equals(BuildProducer.class.getName())) {
             ft = InjectionType.PRODUCER;
@@ -418,7 +418,7 @@ public class BuildAnnotationProcessor extends AbstractProcessor {
             }
             TypeMirror typeMirror = type.getTypeArguments().get(0);
             verifyType(typeMirror, BuildItem.class);
-            producedTypeName = ((TypeElement) ((DeclaredType) typeMirror).asElement()).getQualifiedName().toString();
+            producedTypeName = processingEnv.getElementUtils().getBinaryName(((TypeElement) ((DeclaredType) typeMirror).asElement())).toString();
         } else {
             consumedTypeName = simpleType;
             if (isTemplate(processingEnv.getTypeUtils().asElement(type))) {

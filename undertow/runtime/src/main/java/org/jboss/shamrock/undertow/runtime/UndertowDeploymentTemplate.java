@@ -16,6 +16,7 @@ import javax.servlet.MultipartConfigElement;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 
+import io.undertow.servlet.api.ServletSecurityInfo;
 import org.jboss.shamrock.runtime.ConfiguredValue;
 import org.jboss.shamrock.runtime.InjectionFactory;
 import org.jboss.shamrock.runtime.InjectionInstance;
@@ -115,6 +116,25 @@ public class UndertowDeploymentTemplate {
     public void setMultipartConfig(AtomicReference<ServletInfo> sref, String location, long fileSize, long maxRequestSize, int fileSizeThreshold) {
         MultipartConfigElement mp = new MultipartConfigElement(location, fileSize, maxRequestSize, fileSizeThreshold);
         sref.get().setMultipartConfig(mp);
+    }
+
+    /**
+     *
+     * @param sref
+     * @param securityInfo
+     */
+    public void setSecurityInfo(AtomicReference<ServletInfo> sref, ServletSecurityInfo securityInfo) {
+        sref.get().setServletSecurityInfo(securityInfo);
+    }
+
+    /**
+     *
+     * @param sref
+     * @param roleName
+     * @param roleLink
+     */
+    public void addSecurityRoleRef(AtomicReference<ServletInfo> sref, String roleName, String roleLink) {
+        sref.get().addSecurityRoleRef(roleName, roleLink);
     }
 
     public AtomicReference<FilterInfo> registerFilter(RuntimeValue<DeploymentInfo> info,

@@ -1,5 +1,7 @@
 package org.jboss.shamrock.undertow;
 
+import static io.undertow.servlet.api.SecurityInfo.EmptyRoleSemantic.DENY;
+import static io.undertow.servlet.api.SecurityInfo.EmptyRoleSemantic.PERMIT;
 import static javax.servlet.DispatcherType.REQUEST;
 import static org.jboss.shamrock.annotations.ExecutionTime.RUNTIME_INIT;
 import static org.jboss.shamrock.annotations.ExecutionTime.STATIC_INIT;
@@ -25,6 +27,8 @@ import javax.servlet.annotation.WebFilter;
 import javax.servlet.annotation.WebListener;
 import javax.servlet.annotation.WebServlet;
 
+import io.undertow.servlet.api.HttpMethodSecurityInfo;
+import io.undertow.servlet.api.ServletSecurityInfo;
 import org.jboss.annotation.javaee.Descriptions;
 import org.jboss.annotation.javaee.DisplayNames;
 import org.jboss.annotation.javaee.Icons;
@@ -44,6 +48,7 @@ import org.jboss.metadata.javaee.spec.IconsImpl;
 import org.jboss.metadata.javaee.spec.ParamValueMetaData;
 import org.jboss.metadata.javaee.spec.RunAsMetaData;
 import org.jboss.metadata.javaee.spec.SecurityRoleMetaData;
+import org.jboss.metadata.javaee.spec.SecurityRoleRefMetaData;
 import org.jboss.metadata.javaee.spec.SecurityRolesMetaData;
 import org.jboss.metadata.web.spec.AnnotationMetaData;
 import org.jboss.metadata.web.spec.AnnotationsMetaData;
@@ -174,6 +179,35 @@ public class UndertowBuildStep {
                 }
                 if (servlet.getMultipartConfig() != null) {
                     template.setMultipartConfig(sref, servlet.getMultipartConfig().getLocation(), servlet.getMultipartConfig().getMaxFileSize(), servlet.getMultipartConfig().getMaxRequestSize(), servlet.getMultipartConfig().getFileSizeThreshold());
+                }
+                // Map the @ServletSecurity annotations
+                if (result.getAnnotations() != null) {
+                    for (AnnotationMetaData amd : result.getAnnotations()) {
+                        if (amd.getClassName().equals(servlet.getServletClass())) {
+                            // Process the @ServletSecurity into metadata
+                            ServletSecurityMetaData ssmd = amd.getServletSecurity();
+                            ServletSecurityInfo securityInfo = new ServletSecurityInfo();
+                            securityInfo.setEmptyRoleSemantic(ssmd.getEmptyRoleSemantic() == EmptyRoleSemanticType.DENY ? DENY : PERMIT);
+                            securityInfo.setTransportGuaranteeType(transportGuaranteeType(ssmd.getTransportGuarantee()))
+                                    .addRolesAllowed(ssmd.getRolesAllowed());
+                            if (ssmd.getHttpMethodConstraints() != null) {
+                                for (HttpMethodConstraintMetaData method : ssmd.getHttpMethodConstraints()) {
+                                    securityInfo.addHttpMethodSecurityInfo(
+                                            new HttpMethodSecurityInfo()
+                                                    .setEmptyRoleSemantic(method.getEmptyRoleSemantic() == EmptyRoleSemanticType.DENY ? DENY : PERMIT)
+                                                    .setTransportGuaranteeType(transportGuaranteeType(method.getTransportGuarantee()))
+                                                    .addRolesAllowed(method.getRolesAllowed())
+                                                    .setMethod(method.getMethod()));
+                                }
+                            }
+                            template.setSecurityInfo(sref, securityInfo);
+                        }
+                        if (servlet.getSecurityRoleRefs() != null) {
+                            for (final SecurityRoleRefMetaData ref : servlet.getSecurityRoleRefs()) {
+                                template.addSecurityRoleRef(sref, ref.getRoleName(), ref.getRoleLink());
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -642,6 +676,26 @@ public class UndertowBuildStep {
             }
         }
         return metaData;
+    }
+
+    /**
+     * Map web metadata type to undertow type
+     * @param type web metadata TransportGuaranteeType
+     * @return undertow TransportGuaranteeType
+     */
+    private static io.undertow.servlet.api.TransportGuaranteeType transportGuaranteeType(final TransportGuaranteeType type) {
+        if (type == null) {
+            return io.undertow.servlet.api.TransportGuaranteeType.NONE;
+        }
+        switch (type) {
+            case CONFIDENTIAL:
+                return io.undertow.servlet.api.TransportGuaranteeType.CONFIDENTIAL;
+            case INTEGRAL:
+                return io.undertow.servlet.api.TransportGuaranteeType.INTEGRAL;
+            case NONE:
+                return io.undertow.servlet.api.TransportGuaranteeType.NONE;
+        }
+        throw new RuntimeException("UNREACHABLE");
     }
 
     protected Descriptions getDescription(String description) {

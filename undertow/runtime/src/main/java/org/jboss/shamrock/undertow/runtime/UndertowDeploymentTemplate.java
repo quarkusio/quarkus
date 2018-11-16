@@ -6,7 +6,6 @@ import java.security.SecureRandom;
 import java.util.EventListener;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -89,7 +88,7 @@ public class UndertowDeploymentTemplate {
         return new ShamrockInstanceFactory<T>(injectionInstance);
     }
 
-    public AtomicReference<ServletInfo> registerServlet(RuntimeValue<DeploymentInfo> deploymentInfo,
+    public RuntimeValue<ServletInfo> registerServlet(RuntimeValue<DeploymentInfo> deploymentInfo,
                                                         String name,
                                                         Class<?> servletClass,
                                                         boolean asyncSupported,
@@ -101,11 +100,11 @@ public class UndertowDeploymentTemplate {
         if (loadOnStartup > 0) {
             servletInfo.setLoadOnStartup(loadOnStartup);
         }
-        return new AtomicReference<>(servletInfo);
+        return new RuntimeValue<>(servletInfo);
     }
 
-    public void addServletInitParam(AtomicReference<ServletInfo> info, String name, String value) {
-        info.get().addInitParam(name, value);
+    public void addServletInitParam(RuntimeValue<ServletInfo> info, String name, String value) {
+        info.getValue().addInitParam(name, value);
     }
 
     public void addServletMapping(RuntimeValue<DeploymentInfo> info, String name, String mapping) throws Exception {
@@ -113,9 +112,9 @@ public class UndertowDeploymentTemplate {
         sv.addMapping(mapping);
     }
 
-    public void setMultipartConfig(AtomicReference<ServletInfo> sref, String location, long fileSize, long maxRequestSize, int fileSizeThreshold) {
+    public void setMultipartConfig(RuntimeValue<ServletInfo> sref, String location, long fileSize, long maxRequestSize, int fileSizeThreshold) {
         MultipartConfigElement mp = new MultipartConfigElement(location, fileSize, maxRequestSize, fileSizeThreshold);
-        sref.get().setMultipartConfig(mp);
+        sref.getValue().setMultipartConfig(mp);
     }
 
     /**
@@ -123,8 +122,8 @@ public class UndertowDeploymentTemplate {
      * @param sref
      * @param securityInfo
      */
-    public void setSecurityInfo(AtomicReference<ServletInfo> sref, ServletSecurityInfo securityInfo) {
-        sref.get().setServletSecurityInfo(securityInfo);
+    public void setSecurityInfo(RuntimeValue<ServletInfo> sref, ServletSecurityInfo securityInfo) {
+        sref.getValue().setServletSecurityInfo(securityInfo);
     }
 
     /**
@@ -133,22 +132,22 @@ public class UndertowDeploymentTemplate {
      * @param roleName
      * @param roleLink
      */
-    public void addSecurityRoleRef(AtomicReference<ServletInfo> sref, String roleName, String roleLink) {
-        sref.get().addSecurityRoleRef(roleName, roleLink);
+    public void addSecurityRoleRef(RuntimeValue<ServletInfo> sref, String roleName, String roleLink) {
+        sref.getValue().addSecurityRoleRef(roleName, roleLink);
     }
 
-    public AtomicReference<FilterInfo> registerFilter(RuntimeValue<DeploymentInfo> info,
+    public RuntimeValue<FilterInfo> registerFilter(RuntimeValue<DeploymentInfo> info,
                                                       String name, Class<?> filterClass,
                                                       boolean asyncSupported,
                                                       InjectionFactory instanceFactory) throws Exception {
         FilterInfo filterInfo = new FilterInfo(name, (Class<? extends Filter>) filterClass, new ShamrockInstanceFactory(instanceFactory.create(filterClass)));
         info.getValue().addFilter(filterInfo);
         filterInfo.setAsyncSupported(asyncSupported);
-        return new AtomicReference<>(filterInfo);
+        return new RuntimeValue<>(filterInfo);
     }
 
-    public void addFilterInitParam(AtomicReference<FilterInfo> info, String name, String value) {
-        info.get().addInitParam(name, value);
+    public void addFilterInitParam(RuntimeValue<FilterInfo> info, String name, String value) {
+        info.getValue().addInitParam(name, value);
     }
 
     public void addFilterURLMapping(RuntimeValue<DeploymentInfo> info, String name, String mapping, DispatcherType dispatcherType) throws Exception {

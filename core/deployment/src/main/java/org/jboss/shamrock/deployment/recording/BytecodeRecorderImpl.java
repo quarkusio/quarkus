@@ -41,6 +41,26 @@ import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.runtime.StartupContext;
 import org.jboss.shamrock.runtime.StartupTask;
 
+/**
+ * A class that can be used to record invocations to bytecode so they can be replayed later. This is done through the
+ * use of class templates and recording proxies.
+ * <p>
+ * A class template is simple a stateless class with a no arg constructor. This template will contain the runtime logic
+ * used to bootstrap the various frameworks.
+ * <p>
+ * A recording proxy is a proxy of a template that records all invocations on the template, and then writes out a sequence
+ * of java bytecode that performs the same invocations.
+ * <p>
+ * There are some limitations on what can be recorded. Only the following objects are allowed as parameters to
+ * recording proxies:
+ * <p>
+ * - primitives
+ * - String
+ * - Class (see {@link #classProxy(String)} to handle classes that are not loadable at generation time)
+ * - Objects with a no-arg constructor and getter/setters for all properties
+ * - Any arbitrary object via the {@link #registerSubstitution(Class, Class, Class)} mechanism
+ * - arrays, lists and maps of the above
+ */
 public class BytecodeRecorderImpl implements RecorderContext {
 
     private static final AtomicInteger COUNT = new AtomicInteger();

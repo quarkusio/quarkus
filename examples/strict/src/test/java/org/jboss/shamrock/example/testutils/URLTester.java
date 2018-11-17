@@ -35,14 +35,19 @@ public final class URLTester {
 
     private URLResponse privateInvokeURL() throws IOException {
         HttpURLConnection connection = (HttpURLConnection)fullURL.openConnection();
-        InputStream in = connection.getInputStream();
-        byte[] buf = new byte[100];
-        int r;
+        int responseCode = connection.getResponseCode();
+        IOException ex = null;
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        while ((r = in.read(buf)) > 0) {
-            out.write(buf, 0, r);
+        try(InputStream in = connection.getInputStream()) {
+            byte[] buf = new byte[100];
+            int r;
+            while ((r = in.read(buf)) > 0) {
+                out.write(buf, 0, r);
+            }
+        } catch (IOException e) {
+            ex = e;
         }
-        return new URLResponseAdapter(out, connection.getResponseCode());
+        return new URLResponseAdapter(out, responseCode, ex);
     }
 
     public URLResponse invokeURL() {
@@ -57,10 +62,12 @@ public final class URLTester {
 
         private final ByteArrayOutputStream buffer;
         private final int statusCode;
+        private final IOException ex;
 
-        public URLResponseAdapter(final ByteArrayOutputStream buffer, int statusCode) {
+        public URLResponseAdapter(final ByteArrayOutputStream buffer, int statusCode, IOException ex) {
             this.buffer = buffer;
             this.statusCode = statusCode;
+            this.ex = ex;
         }
 
         @Override
@@ -70,7 +77,12 @@ public final class URLTester {
 
         @Override
         public int statusCode() {
-            return 0;
+            return statusCode;
+        }
+
+        @Override
+        public IOException exception() {
+            return ex;
         }
 
         @Override

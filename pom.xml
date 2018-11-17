@@ -206,7 +206,6 @@
                 <artifactId>shamrock-agroal-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>org.jboss.shamrock</groupId>
                 <artifactId>shamrock-agroal-runtime</artifactId>
@@ -251,6 +250,16 @@
             <dependency>
                 <groupId>org.jboss.shamrock</groupId>
                 <artifactId>shamrock-class-transformer-example</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>jdbc-postgresql-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>jdbc-postgresql-runtime</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

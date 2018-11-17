@@ -209,6 +209,9 @@ class BeanResolver {
     }
 
     boolean isAssignableFrom(Type type1, Type type2) {
+        if(type1.name().toString().equals(Object.class.getName())) {
+            return true;
+        }
         return assignableFromMap.computeIfAbsent(type1.name(), assignableFromMapFunction).contains(type2.name());
     }
 

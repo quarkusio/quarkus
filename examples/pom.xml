@@ -21,13 +21,4 @@
         <module>undertow</module>
     </modules>
 
-    <dependencies>
-        <!-- Apparently maven is not smart enough to realize it needs to build this first-->
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-maven-plugin</artifactId>
-            <version>${project.version}</version>
-            <scope>provided</scope>
-        </dependency>
-    </dependencies>
 </project>

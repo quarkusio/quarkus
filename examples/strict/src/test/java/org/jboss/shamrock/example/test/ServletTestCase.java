@@ -1,10 +1,8 @@
 package org.jboss.shamrock.example.test;
 
-import java.io.IOException;
-
 import org.jboss.shamrock.example.testutils.URLResponse;
 import org.jboss.shamrock.example.testutils.URLTester;
-import org.jboss.shamrock.junit.ShamrockTest;
+import org.jboss.shamrock.test.ShamrockTest;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;

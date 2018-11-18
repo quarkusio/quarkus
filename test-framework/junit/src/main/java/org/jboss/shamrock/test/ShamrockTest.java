@@ -1,4 +1,4 @@
-package org.jboss.shamrock.junit;
+package org.jboss.shamrock.test;
 
 import java.net.URL;
 import java.nio.file.Path;

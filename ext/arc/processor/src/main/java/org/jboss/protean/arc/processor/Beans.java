@@ -317,6 +317,34 @@ final class Beans {
         return callbacks;
     }
 
+
+    static void analyzeType(Type type, BeanDeployment beanDeployment) {
+        if (type.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+            for (Type argument : type.asParameterizedType().arguments()) {
+                fetchType(argument, beanDeployment);
+            }
+        } else if (type.kind() == Type.Kind.TYPE_VARIABLE) {
+            for (Type bound : type.asTypeVariable().bounds()) {
+                fetchType(bound, beanDeployment);
+            }
+        } else if (type.kind() == Type.Kind.WILDCARD_TYPE) {
+            fetchType(type.asWildcardType().extendsBound(), beanDeployment);
+            fetchType(type.asWildcardType().superBound(), beanDeployment);
+        }
+    }
+
+    private static void fetchType(Type type, BeanDeployment beanDeployment) {
+        if (type == null) {
+            return;
+        }
+        if (type.kind() == Type.Kind.CLASS) {
+            // Index the class additionally if needed
+            beanDeployment.getIndex().getClassByName(type.name());
+        } else {
+            analyzeType(type, beanDeployment);
+        }
+    }
+
     private static void collectCallbacks(ClassInfo clazz, List<MethodInfo> callbacks, DotName annotation, IndexView index) {
         for (MethodInfo method : clazz.methods()) {
             if (method.hasAnnotation(annotation) && method.returnType().kind() == Kind.VOID && method.parameters().isEmpty()) {

@@ -8,6 +8,7 @@ import static org.jboss.jandex.Type.Kind.TYPE_VARIABLE;
 import static org.jboss.jandex.Type.Kind.WILDCARD_TYPE;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -16,8 +17,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
@@ -45,8 +46,14 @@ class BeanResolver {
         this.assignableFromMap = new ConcurrentHashMap<>();
         this.assignableFromMapFunction = name -> {
             Set<DotName> assignables = new HashSet<>();
-            assignables.addAll(beanDeployment.getIndex().getAllKnownSubclasses(name).stream().map(c -> c.name()).collect(Collectors.toSet()));
-            assignables.addAll(beanDeployment.getIndex().getAllKnownImplementors(name).stream().map(c -> c.name()).collect(Collectors.toSet()));
+            Collection<ClassInfo> subclasses = beanDeployment.getIndex().getAllKnownSubclasses(name);
+            for (ClassInfo subclass : subclasses) {
+                assignables.add(subclass.name());
+            }
+            Collection<ClassInfo> implementors = beanDeployment.getIndex().getAllKnownImplementors(name);
+            for (ClassInfo implementor : implementors) {
+                assignables.add(implementor.name());
+            }
             return assignables;
         };
         this.resolved = new ConcurrentHashMap<>();
@@ -209,9 +216,15 @@ class BeanResolver {
     }
 
     boolean isAssignableFrom(Type type1, Type type2) {
-        if(type1.name().toString().equals(Object.class.getName())) {
+        // java.lang.Object is assignable from any type
+        if (type1.name().equals(DotNames.OBJECT)) {
             return true;
         }
+        // type1 is the same as type2
+        if (type1.name().equals(type2.name())) {
+            return true;
+        }
+        // type1 is a superclass
         return assignableFromMap.computeIfAbsent(type1.name(), assignableFromMapFunction).contains(type2.name());
     }
 
@@ -229,7 +242,7 @@ class BeanResolver {
     }
 
     boolean upperBoundsOfWildcardMatch(WildcardType requiredParameter, Type parameter) {
-        return boundsMatch(singletonList(requiredParameter.superBound()), singletonList(parameter));
+        return boundsMatch(singletonList(requiredParameter.extendsBound()), singletonList(parameter));
     }
 
     /*

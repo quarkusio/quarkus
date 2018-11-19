@@ -94,6 +94,9 @@ public class BeanInfo {
         this.beanDeployment = beanDeployment;
         this.scope = scope != null ? scope : ScopeInfo.DEPENDENT;
         this.types = types;
+        for (Type type : types) {
+            Beans.analyzeType(type, beanDeployment);
+        }
         if (qualifiers.isEmpty()) {
             qualifiers.add(BuiltinQualifier.DEFAULT.getInstance());
         }

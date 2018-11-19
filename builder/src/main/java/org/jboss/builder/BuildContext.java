@@ -18,6 +18,8 @@
 
 package org.jboss.builder;
 
+import static org.jboss.builder.Execution.*;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -383,7 +385,9 @@ public final class BuildContext {
     }
 
     void depFinished() {
-        if (dependencies.decrementAndGet() == 0) {
+        final int remaining = dependencies.decrementAndGet();
+        log.tracef("Dependency of \"%2$s\" finished; %1$d remaining", remaining, stepInfo.getBuildStep());
+        if (remaining == 0) {
             execution.getExecutor().execute(this::run);
         }
     }
@@ -391,9 +395,10 @@ public final class BuildContext {
     void run() {
         final Execution execution = this.execution;
         final StepInfo stepInfo = this.stepInfo;
+        final BuildStep buildStep = stepInfo.getBuildStep();
+        log.tracef("Starting step \"%s\"", buildStep);
         try {
             if (! execution.isErrorReported()) {
-                final BuildStep buildStep = stepInfo.getBuildStep();
                 try {
                     buildStep.execute(this);
                 } catch (Throwable t) {
@@ -405,6 +410,7 @@ public final class BuildContext {
                 }
             }
         } finally {
+            log.tracef("Finished step \"%s\"", buildStep);
             execution.removeBuildContext(stepInfo, this);
         }
         final Set<StepInfo> dependents = stepInfo.getDependents();

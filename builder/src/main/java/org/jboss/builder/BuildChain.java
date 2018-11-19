@@ -41,13 +41,13 @@ public final class BuildChain {
     private final List<BuildProvider> providers;
     private final int endStepCount;
 
-    BuildChain(final int initialSingleCount, final int initialMultiCount, final List<StepInfo> startSteps, final Set<ItemId> consumed, BuildChainBuilder builder, final int endStepCount) {
+    BuildChain(final int initialSingleCount, final int initialMultiCount, final Set<StepInfo> startSteps, final Set<ItemId> consumed, BuildChainBuilder builder, final int endStepCount) {
         providers = builder.getProviders();
         initialIds = builder.getInitialIds();
         finalIds = builder.getFinalIds();
         this.initialSingleCount = initialSingleCount;
         this.initialMultiCount = initialMultiCount;
-        this.startSteps = startSteps;
+        this.startSteps = new ArrayList<>(startSteps);
         this.consumed = consumed;
         this.endStepCount = endStepCount;
     }

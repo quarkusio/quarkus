@@ -54,16 +54,6 @@ public final class BuildStepBuilder {
     }
 
     /**
-     * Set to include this build step even if it would normally be excluded due to producing nothing of ultimate use.
-     *
-     * @param include {@code true} to include the build step, {@code false} to exclude it in this situation
-     * @return this builder
-     */
-    public BuildStepBuilder includeIfNoDependents(boolean include) {
-        return this;
-    }
-
-    /**
      * This build step should complete before any build steps which consume the given item {@code type} are initiated.
      * If no such build steps exist, no ordering constraint is enacted.
      *
@@ -75,7 +65,25 @@ public final class BuildStepBuilder {
         if (NamedBuildItem.class.isAssignableFrom(type)) {
             throw new IllegalArgumentException("Cannot consume a named build item without a name");
         }
-        addProduces(new ItemId(type, null), Constraint.ORDER_ONLY);
+        addProduces(new ItemId(type, null), Constraint.ORDER_ONLY, ProduceFlags.NONE);
+        return this;
+    }
+
+    /**
+     * This build step should complete before any build steps which consume the given item {@code type} are initiated.
+     * If no such build steps exist, no ordering constraint is enacted.
+     *
+     * @param type the item type (must not be {@code null})
+     * @param flag the producer flag to apply (must not be {@code null})
+     * @return this builder
+     */
+    public BuildStepBuilder beforeConsume(Class<? extends BuildItem> type, ProduceFlag flag) {
+        Assert.checkNotNullParam("type", type);
+        Assert.checkNotNullParam("flag", flag);
+        if (NamedBuildItem.class.isAssignableFrom(type)) {
+            throw new IllegalArgumentException("Cannot consume a named build item without a name");
+        }
+        addProduces(new ItemId(type, null), Constraint.ORDER_ONLY, ProduceFlags.of(flag));
         return this;
     }
 
@@ -90,7 +98,24 @@ public final class BuildStepBuilder {
     public <N> BuildStepBuilder beforeConsume(Class<? extends NamedBuildItem<N>> type, N name) {
         Assert.checkNotNullParam("type", type);
         Assert.checkNotNullParam("name", name);
-        addProduces(new ItemId(type, name), Constraint.ORDER_ONLY);
+        addProduces(new ItemId(type, name), Constraint.ORDER_ONLY, ProduceFlags.NONE);
+        return this;
+    }
+
+    /**
+     * This build step should complete before any build steps which consume the given item {@code type} are initiated.
+     * If no such build steps exist, no ordering constraint is enacted.
+     *
+     * @param type the item type (must not be {@code null})
+     * @param name the build item name (must not be {@code null})
+     * @param flag the producer flag to apply (must not be {@code null})
+     * @return this builder
+     */
+    public <N> BuildStepBuilder beforeConsume(Class<? extends NamedBuildItem<N>> type, N name, ProduceFlag flag) {
+        Assert.checkNotNullParam("type", type);
+        Assert.checkNotNullParam("name", name);
+        Assert.checkNotNullParam("flag", flag);
+        addProduces(new ItemId(type, name), Constraint.ORDER_ONLY, ProduceFlags.of(flag));
         return this;
     }
 
@@ -106,7 +131,7 @@ public final class BuildStepBuilder {
         if (NamedBuildItem.class.isAssignableFrom(type)) {
             throw new IllegalArgumentException("Cannot produce a named build item without a name");
         }
-        addConsumes(new ItemId(type, null), Constraint.ORDER_ONLY, ConsumeFlags.OPTIONAL);
+        addConsumes(new ItemId(type, null), Constraint.ORDER_ONLY, ConsumeFlags.of(ConsumeFlag.OPTIONAL));
         return this;
     }
 
@@ -121,7 +146,7 @@ public final class BuildStepBuilder {
     public <N> BuildStepBuilder afterProduce(Class<? extends NamedBuildItem<N>> type, N name) {
         Assert.checkNotNullParam("type", type);
         Assert.checkNotNullParam("name", name);
-        addConsumes(new ItemId(type, name), Constraint.ORDER_ONLY, ConsumeFlags.OPTIONAL);
+        addConsumes(new ItemId(type, name), Constraint.ORDER_ONLY, ConsumeFlags.of(ConsumeFlag.OPTIONAL));
         return this;
     }
 
@@ -138,7 +163,26 @@ public final class BuildStepBuilder {
         if (NamedBuildItem.class.isAssignableFrom(type)) {
             throw new IllegalArgumentException("Cannot produce a named build item without a name");
         }
-        addProduces(new ItemId(type, null), Constraint.REAL);
+        addProduces(new ItemId(type, null), Constraint.REAL, ProduceFlags.NONE);
+        return this;
+    }
+
+    /**
+     * Similarly to {@link #beforeConsume(Class)}, establish that this build step must come before the consumer(s) of the
+     * given item {@code type}; however, only one {@code producer} may exist for the given item.  In addition, the
+     * build step may produce an actual value for this item, which will be shared to all consumers during deployment.
+     *
+     * @param type the item type (must not be {@code null})
+     * @param flag the producer flag to apply (must not be {@code null})
+     * @return this builder
+     */
+    public BuildStepBuilder produces(Class<? extends BuildItem> type, ProduceFlag flag) {
+        Assert.checkNotNullParam("type", type);
+        Assert.checkNotNullParam("flag", flag);
+        if (NamedBuildItem.class.isAssignableFrom(type)) {
+            throw new IllegalArgumentException("Cannot produce a named build item without a name");
+        }
+        addProduces(new ItemId(type, null), Constraint.REAL, ProduceFlags.of(flag));
         return this;
     }
 
@@ -154,7 +198,25 @@ public final class BuildStepBuilder {
     public <N> BuildStepBuilder produces(Class<? extends NamedBuildItem<N>> type, N name) {
         Assert.checkNotNullParam("type", type);
         Assert.checkNotNullParam("name", name);
-        addProduces(new ItemId(type, name), Constraint.REAL);
+        addProduces(new ItemId(type, name), Constraint.REAL, ProduceFlags.NONE);
+        return this;
+    }
+
+    /**
+     * Similarly to {@link #beforeConsume(Class)}, establish that this build step must come before the consumer(s) of the
+     * given item {@code type}; however, only one {@code producer} may exist for the given item.  In addition, the
+     * build step may produce an actual value for this item, which will be shared to all consumers during deployment.
+     *
+     * @param type the item type (must not be {@code null})
+     * @param name the build item name (must not be {@code null})
+     * @param flag the producer flag to apply (must not be {@code null})
+     * @return this builder
+     */
+    public <N> BuildStepBuilder produces(Class<? extends NamedBuildItem<N>> type, N name, ProduceFlag flag) {
+        Assert.checkNotNullParam("type", type);
+        Assert.checkNotNullParam("name", name);
+        Assert.checkNotNullParam("flag", flag);
+        addProduces(new ItemId(type, name), Constraint.REAL, ProduceFlags.of(flag));
         return this;
     }
 
@@ -166,7 +228,21 @@ public final class BuildStepBuilder {
      */
     public BuildStepBuilder beforeVirtual(Enum<?> symbolic) {
         Assert.checkNotNullParam("symbolic", symbolic);
-        addProduces(new ItemId(SymbolicBuildItem.class, symbolic), Constraint.ORDER_ONLY);
+        addProduces(new ItemId(SymbolicBuildItem.class, symbolic), Constraint.ORDER_ONLY, ProduceFlags.NONE);
+        return this;
+    }
+
+    /**
+     * Declare that the build step "produces" a virtual item with the given identifier.
+     *
+     * @param symbolic the item identifier (must not be {@code null})
+     * @param flag the producer flag to apply (must not be {@code null})
+     * @return this builder
+     */
+    public BuildStepBuilder beforeVirtual(Enum<?> symbolic, ProduceFlag flag) {
+        Assert.checkNotNullParam("symbolic", symbolic);
+        Assert.checkNotNullParam("flag", flag);
+        addProduces(new ItemId(SymbolicBuildItem.class, symbolic), Constraint.ORDER_ONLY, ProduceFlags.of(flag));
         return this;
     }
 
@@ -278,8 +354,8 @@ public final class BuildStepBuilder {
         consumes.compute(itemId, (id, c) -> c == null ? new Consume(this, itemId, constraint, flags) : c.combine(constraint, flags));
     }
 
-    private void addProduces(final ItemId itemId, final Constraint constraint) {
-        produces.compute(itemId, (id, p) -> p == null ? new Produce(this, itemId, constraint) : p.combine(constraint));
+    private void addProduces(final ItemId itemId, final Constraint constraint, final ProduceFlags flags) {
+        produces.compute(itemId, (id, p) -> p == null ? new Produce(this, itemId, constraint, flags) : p.combine(constraint, flags));
     }
 
     Map<ItemId, Consume> getConsumes() {

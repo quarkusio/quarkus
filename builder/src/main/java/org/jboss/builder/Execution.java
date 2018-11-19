@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.builder.diag.Diagnostic;
 import org.jboss.builder.item.BuildItem;
+import org.jboss.logging.Logger;
 import org.jboss.threads.EnhancedQueueExecutor;
 import org.jboss.threads.JBossExecutors;
 import org.jboss.threads.JBossThreadFactory;
@@ -39,6 +40,8 @@ import org.jboss.threads.JBossThreadFactory;
 /**
  */
 final class Execution {
+
+    static final Logger log = Logger.getLogger("org.jboss.builder");
 
     private final BuildChain chain;
     private final ConcurrentHashMap<ItemId, BuildItem> singles;
@@ -146,7 +149,9 @@ final class Execution {
     }
 
     void depFinished() {
-        if (lastStepCount.decrementAndGet() == 0) {
+        final int count = lastStepCount.decrementAndGet();
+        log.tracef("End step completed; %d remaining", count);
+        if (count == 0) {
             done = true;
             unpark(runningThread);
         }

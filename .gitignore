@@ -20,3 +20,5 @@ dumps
 *.orig
 *.rej
 .factorypath
+graph-output.dot
+

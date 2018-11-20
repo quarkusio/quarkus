@@ -20,6 +20,7 @@ import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.BeanArchiveIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.BeanContainerBuildItem;
 import org.jboss.shamrock.deployment.builditem.InjectionProviderBuildItem;
+import org.jboss.shamrock.deployment.builditem.ShutdownContextBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.cdi.BeanContainerListenerBuildItem;
 import org.jboss.shamrock.deployment.cdi.CdiExtensionBuildItem;
@@ -47,7 +48,8 @@ public class WeldAnnotationProcessor {
                                         BuildProducer<InjectionProviderBuildItem> injectionProvider,
                                         List<BeanContainerListenerBuildItem> beanConfig,
                                         List<GeneratedBeanBuildItem> generatedBeans,
-                                        List<CdiExtensionBuildItem> extensions) throws Exception {
+                                        List<CdiExtensionBuildItem> extensions,
+                                        ShutdownContextBuildItem shutdown) throws Exception {
         IndexView index = beanArchiveIndex.getIndex();
         List<String> additionalBeans = new ArrayList<>();
         for (AdditionalBeanBuildItem i : this.additionalBeans) {
@@ -70,7 +72,7 @@ public class WeldAnnotationProcessor {
         for (CdiExtensionBuildItem extensionClazz : extensions) {
             template.addExtension(init, recorder.classProxy(extensionClazz.getName()));
         }
-        SeContainer weld = template.doBoot(null, init);
+        SeContainer weld = template.doBoot(shutdown, init);
         BeanContainer container = template.initBeanContainer(weld, beanConfig.stream().map(BeanContainerListenerBuildItem::getBeanContainerListener).collect(Collectors.toList()));
         injectionProvider.produce(new InjectionProviderBuildItem(template.setupInjection(weld)));
         return new BeanContainerBuildItem(container);

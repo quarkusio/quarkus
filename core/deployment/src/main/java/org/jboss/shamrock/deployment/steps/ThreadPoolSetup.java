@@ -22,6 +22,7 @@ import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.annotations.ExecutionTime;
 import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.deployment.builditem.ExecutorBuildItem;
+import org.jboss.shamrock.deployment.builditem.ShutdownContextBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
 import org.jboss.shamrock.runtime.ExecutorTemplate;
 
@@ -31,8 +32,9 @@ public class ThreadPoolSetup {
 
     @BuildStep
     @Record(value = ExecutionTime.RUNTIME_INIT, optional = true)
-    public ExecutorBuildItem createExecutor(ExecutorTemplate setupTemplate) {
+    public ExecutorBuildItem createExecutor(ExecutorTemplate setupTemplate, ShutdownContextBuildItem shutdownContextBuildItem) {
         return new ExecutorBuildItem(setupTemplate.setupRunTime(
+            shutdownContextBuildItem,
             // build time default config constants - static method calls are not proxied
             ExecutorTemplate.getIntConfigVal(ExecutorTemplate.CORE_POOL_SIZE, -1),
             ExecutorTemplate.getIntConfigVal(ExecutorTemplate.MAX_POOL_SIZE, -1),

@@ -24,47 +24,47 @@ import org.wildfly.common.flags.Flags;
 /**
  * Flags which can be set on consume declarations.
  */
-public final class ConsumeFlags extends Flags<ConsumeFlag, ConsumeFlags> {
+public final class ProduceFlags extends Flags<ProduceFlag, ProduceFlags> {
 
-    protected ConsumeFlags value(final int bits) {
+    protected ProduceFlags value(final int bits) {
         return values[bits & enumValues.length - 1];
     }
 
-    protected ConsumeFlags this_() {
+    protected ProduceFlags this_() {
         return this;
     }
 
-    protected ConsumeFlag itemOf(final int index) {
+    protected ProduceFlag itemOf(final int index) {
         return enumValues[index];
     }
 
-    protected ConsumeFlag castItemOrNull(final Object obj) {
-        return obj instanceof ConsumeFlag ? (ConsumeFlag) obj : null;
+    protected ProduceFlag castItemOrNull(final Object obj) {
+        return obj instanceof ProduceFlag ? (ProduceFlag) obj : null;
     }
 
-    protected ConsumeFlags castThis(final Object obj) {
-        return (ConsumeFlags) obj;
+    protected ProduceFlags castThis(final Object obj) {
+        return (ProduceFlags) obj;
     }
 
-    private ConsumeFlags(int val) {
+    private ProduceFlags(int val) {
         super(val);
     }
 
-    private static final ConsumeFlag[] enumValues = ConsumeFlag.values();
-    private static final ConsumeFlags[] values;
+    private static final ProduceFlag[] enumValues = ProduceFlag.values();
+    private static final ProduceFlags[] values;
 
     static {
-        final ConsumeFlags[] flags = new ConsumeFlags[1 << ConsumeFlag.values().length];
+        final ProduceFlags[] flags = new ProduceFlags[1 << ProduceFlag.values().length];
         for (int i = 0; i < flags.length; i++) {
-            flags[i] = new ConsumeFlags(i);
+            flags[i] = new ProduceFlags(i);
         }
         values = flags;
     }
 
-    public static ConsumeFlags of(ConsumeFlag flag) {
+    public static ProduceFlags of(ProduceFlag flag) {
         Assert.checkNotNullParam("flag", flag);
         return values[1 << flag.ordinal()];
     }
 
-    public static final ConsumeFlags NONE = values[0];
+    public static final ProduceFlags NONE = values[0];
 }

@@ -30,7 +30,7 @@ import org.jboss.shamrock.runtime.ExecutorTemplate;
 public class ThreadPoolSetup {
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
+    @Record(value = ExecutionTime.RUNTIME_INIT, optional = true)
     public ExecutorBuildItem createExecutor(ExecutorTemplate setupTemplate) {
         return new ExecutorBuildItem(setupTemplate.setupRunTime(
             // build time default config constants - static method calls are not proxied

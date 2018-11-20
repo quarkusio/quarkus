@@ -23,6 +23,19 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.SOURCE)
 public @interface Record {
 
+    /**
+     * The time to execute the recorded bytecode
+     */
     ExecutionTime value();
+
+    /**
+     * If this is true then the bytecode produced by this method will be considered to be optional,
+     * and will only be created if this build step also produces another {@link org.jboss.builder.item.BuildItem}
+     * that is consumed by the build.
+     *
+     * If a method is optional it must be capable of producing at least one other item
+     *
+     */
+    boolean optional() default false;
 
 }

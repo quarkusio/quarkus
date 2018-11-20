@@ -39,6 +39,7 @@ import org.jboss.builder.BuildChainBuilder;
 import org.jboss.builder.BuildContext;
 import org.jboss.builder.BuildProvider;
 import org.jboss.builder.BuildStepBuilder;
+import org.jboss.builder.ProduceFlag;
 import org.jboss.builder.item.BuildItem;
 import org.jboss.builder.item.MultiBuildItem;
 import org.jboss.builder.item.SimpleBuildItem;
@@ -166,6 +167,7 @@ public class BuildAnnotationProcessor extends AbstractProcessor {
                     boolean listReturn = false;
                     boolean templatePresent = false;
                     boolean recorderContextPresent = false;
+                    boolean optionalBytecode = false;
                     Record recordAnnotation = method.getAnnotation(Record.class);
 
                     //resolve method injection
@@ -231,11 +233,18 @@ public class BuildAnnotationProcessor extends AbstractProcessor {
                     }
                     //if it is using bytecode recording register the production of a new recorder
                     if (templatePresent) {
+                        ResultHandle type;
                         if (recordAnnotation.value() == ExecutionTime.STATIC_INIT) {
-                            mc.invokeVirtualMethod(ofMethod(BuildStepBuilder.class, "produces", BuildStepBuilder.class, Class.class), builder, mc.loadClass(STATIC_RECORDER));
+                            type = mc.loadClass(STATIC_RECORDER);
                         } else {
-                            mc.invokeVirtualMethod(ofMethod(BuildStepBuilder.class, "produces", BuildStepBuilder.class, Class.class), builder, mc.loadClass(MAIN_RECORDER));
+                            type = mc.loadClass(MAIN_RECORDER);
                         }
+                        if(recordAnnotation.optional()) {
+                            mc.invokeVirtualMethod(ofMethod(BuildStepBuilder.class, "produces", BuildStepBuilder.class, Class.class, ProduceFlag.class), builder, type, mc.readStaticField(FieldDescriptor.of(ProduceFlag.class, "WEAK", ProduceFlag.class)));
+                        } else {
+                            mc.invokeVirtualMethod(ofMethod(BuildStepBuilder.class, "produces", BuildStepBuilder.class, Class.class), builder, type);
+                        }
+
                     }
                     //register parameter injection
                     for (InjectedBuildResource injection : methodInjection) {

@@ -1,6 +1,5 @@
 package org.jboss.shamrock.undertow.runtime;
 
-import java.io.Closeable;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.util.EventListener;
@@ -15,12 +14,11 @@ import javax.servlet.MultipartConfigElement;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 
-import io.undertow.servlet.api.ServletSecurityInfo;
 import org.jboss.shamrock.runtime.ConfiguredValue;
 import org.jboss.shamrock.runtime.InjectionFactory;
 import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.runtime.RuntimeValue;
-import org.jboss.shamrock.runtime.StartupContext;
+import org.jboss.shamrock.runtime.ShutdownContext;
 import org.jboss.shamrock.runtime.Template;
 
 import io.undertow.Undertow;
@@ -40,6 +38,7 @@ import io.undertow.servlet.api.InstanceFactory;
 import io.undertow.servlet.api.ListenerInfo;
 import io.undertow.servlet.api.ServletContainer;
 import io.undertow.servlet.api.ServletInfo;
+import io.undertow.servlet.api.ServletSecurityInfo;
 
 /**
  * Provides the runtime methods to bootstrap Undertow. This class is present in the final uber-jar,
@@ -89,11 +88,11 @@ public class UndertowDeploymentTemplate {
     }
 
     public RuntimeValue<ServletInfo> registerServlet(RuntimeValue<DeploymentInfo> deploymentInfo,
-                                                        String name,
-                                                        Class<?> servletClass,
-                                                        boolean asyncSupported,
-                                                        int loadOnStartup,
-                                                        InjectionFactory instanceFactory) throws Exception {
+                                                     String name,
+                                                     Class<?> servletClass,
+                                                     boolean asyncSupported,
+                                                     int loadOnStartup,
+                                                     InjectionFactory instanceFactory) throws Exception {
         ServletInfo servletInfo = new ServletInfo(name, (Class<? extends Servlet>) servletClass, new ShamrockInstanceFactory(instanceFactory.create(servletClass)));
         deploymentInfo.getValue().addServlet(servletInfo);
         servletInfo.setAsyncSupported(asyncSupported);
@@ -118,7 +117,6 @@ public class UndertowDeploymentTemplate {
     }
 
     /**
-     *
      * @param sref
      * @param securityInfo
      */
@@ -127,7 +125,6 @@ public class UndertowDeploymentTemplate {
     }
 
     /**
-     *
      * @param sref
      * @param roleName
      * @param roleLink
@@ -137,9 +134,9 @@ public class UndertowDeploymentTemplate {
     }
 
     public RuntimeValue<FilterInfo> registerFilter(RuntimeValue<DeploymentInfo> info,
-                                                      String name, Class<?> filterClass,
-                                                      boolean asyncSupported,
-                                                      InjectionFactory instanceFactory) throws Exception {
+                                                   String name, Class<?> filterClass,
+                                                   boolean asyncSupported,
+                                                   InjectionFactory instanceFactory) throws Exception {
         FilterInfo filterInfo = new FilterInfo(name, (Class<? extends Filter>) filterClass, new ShamrockInstanceFactory(instanceFactory.create(filterClass)));
         info.getValue().addFilter(filterInfo);
         filterInfo.setAsyncSupported(asyncSupported);
@@ -166,14 +163,14 @@ public class UndertowDeploymentTemplate {
         info.getValue().addInitParameter(name, value);
     }
 
-    public void startUndertow(StartupContext startupContext, HttpHandler handler, ConfiguredValue port, ConfiguredValue host, ConfiguredValue ioThreads, ConfiguredValue workerThreads, List<HandlerWrapper> wrappers) throws ServletException {
+    public void startUndertow(ShutdownContext shutdown, HttpHandler handler, ConfiguredValue port, ConfiguredValue host, ConfiguredValue ioThreads, ConfiguredValue workerThreads, List<HandlerWrapper> wrappers) throws ServletException {
         if (undertow == null) {
             startUndertowEagerly(port, host, ioThreads, workerThreads, null);
 
             //in development mode undertow is started eagerly
-            startupContext.addCloseable(new Closeable() {
+            shutdown.addShutdownTask(new Runnable() {
                 @Override
-                public void close() {
+                public void run() {
                     undertow.stop();
                     undertow = null;
                 }

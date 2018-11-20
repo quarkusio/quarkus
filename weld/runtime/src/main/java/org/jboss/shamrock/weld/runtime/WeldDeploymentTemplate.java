@@ -1,6 +1,5 @@
 package org.jboss.shamrock.weld.runtime;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -18,11 +17,11 @@ import javax.enterprise.inject.se.SeContainerInitializer;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.Extension;
 
-import org.jboss.shamrock.runtime.Template;
-import org.jboss.shamrock.runtime.cdi.BeanContainer;
 import org.jboss.shamrock.runtime.InjectionFactory;
 import org.jboss.shamrock.runtime.InjectionInstance;
-import org.jboss.shamrock.runtime.StartupContext;
+import org.jboss.shamrock.runtime.ShutdownContext;
+import org.jboss.shamrock.runtime.Template;
+import org.jboss.shamrock.runtime.cdi.BeanContainer;
 import org.jboss.shamrock.runtime.cdi.BeanContainerListener;
 import org.jboss.weld.config.ConfigurationKey;
 import org.jboss.weld.config.ConfigurationKey.UnusedBeans;
@@ -79,7 +78,7 @@ public class WeldDeploymentTemplate {
         initializer.addExtensions((Class<? extends Extension>) extensionClazz);
     }
 
-    public SeContainer doBoot(StartupContext startupContext, SeContainerInitializer initializer) throws Exception {
+    public SeContainer doBoot(ShutdownContext startupContext, SeContainerInitializer initializer) throws Exception {
         SeContainer container = initializer.initialize();
         // Force client proxy init to run
         Set<Bean<?>> instance = container.getBeanManager().getBeans(Object.class);
@@ -88,9 +87,9 @@ public class WeldDeploymentTemplate {
                 container.getBeanManager().getReference(bean, Object.class, container.getBeanManager().createCreationalContext(bean));
             }
         }
-        startupContext.addCloseable(new Closeable() {
+        startupContext.addShutdownTask(new Runnable() {
             @Override
-            public void close() throws IOException {
+            public void run() {
                 container.close();
             }
         });
@@ -142,7 +141,7 @@ public class WeldDeploymentTemplate {
                 };
             }
         };
-        for(BeanContainerListener i : beanConfigurators) {
+        for (BeanContainerListener i : beanConfigurators) {
             i.created(beanContainer);
         }
         return beanContainer;

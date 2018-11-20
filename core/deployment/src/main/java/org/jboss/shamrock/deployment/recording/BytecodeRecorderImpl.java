@@ -239,14 +239,11 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
                 for (int i = 0; i < call.parameters.length; ++i) {
                     Class<?> targetType = call.method.getParameterTypes()[i];
-                    Annotation[] annotations = call.method.getParameterAnnotations()[i];
                     if (call.parameters[i] != null) {
                         Object param = call.parameters[i];
                         ResultHandle out;
                         out = loadObjectInstance(method, param, returnValueResults, targetType);
                         params[i] = out;
-                    } else if (targetType == StartupContext.class) { //hack, as this is tied to StartupTask
-                        params[i] = method.getMethodParam(0);
                     } else {
                         params[i] = method.loadNull();
                     }

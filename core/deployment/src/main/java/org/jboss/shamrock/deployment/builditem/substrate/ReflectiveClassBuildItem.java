@@ -12,6 +12,11 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
     private final boolean fields;
 
     public ReflectiveClassBuildItem(boolean methods, boolean fields, String... className) {
+        for(String i : className) {
+            if(i == null) {
+                throw new NullPointerException();
+            }
+        }
         this.className = Arrays.asList(className);
         this.methods = methods;
         this.fields = fields;

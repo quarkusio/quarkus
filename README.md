@@ -366,29 +366,5 @@ however this will probably be expanded over time.
 Shamrock has the concept of 'application classes'. These are classes that should be indexed via jandex, and acted on
 via deployment processors.
 
-By default only the classes in the current application are indexed, however it is possible to include additional classes.
-
-Note that at the moment loading pre-computed indexes is not supported, and likely is out of scope of the PoC.
-
-Three different mechanisms are provided to do this. The most common one will be to define application marker files.
-If any of these files are discovered on the class path then the archive that contains these files will be considered
-an application class. The most common of these marker files will be `META-INF/beans.xml`. 
- 
-There are two different configuration based approaches both of them configured in `shamrock-build.yaml`. 
-
-*   `index-dependencies`
-    This key must contain a list of maven artifacts, in either group:artifact or group:artifact:classifier format. If an 
-    artifact is listed under this key it will be indexed. Note that this should not be used for artifacts that are part 
-    of the current project, as when running from an IDE it is not possible to reliably determine the artifactId. In this 
-    case you should use the `index-jar` method.
-    
-    An example of this index config is:
-    
-    ```
-    index-dependencies:
-         - "io.smallrye:smallrye-health"
-
-    ```
-
-*   `index-jar`
-    If this key is present and set to `true` then the contents of this jar will be indexed.
+By default only the classes in the current application are indexed, however it is possible to include additional classes
+by pre-indexing with the Jandex maven plugin.

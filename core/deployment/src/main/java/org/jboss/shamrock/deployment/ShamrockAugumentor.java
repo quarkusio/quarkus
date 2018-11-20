@@ -22,7 +22,6 @@ import org.jboss.builder.item.BuildItem;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.deployment.buildconfig.BuildConfig;
 import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
 import org.jboss.shamrock.deployment.builditem.ArchiveRootBuildItem;
 import org.jboss.shamrock.deployment.builditem.ClassOutputBuildItem;
@@ -56,9 +55,6 @@ public class ShamrockAugumentor {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(classLoader);
 
-        //TODO: this needs to go away
-        BuildConfig config = BuildConfig.readConfig(classLoader, root.toFile());
-
         Indexer indexer = new Indexer();
         Files.walkFileTree(root, new FileVisitor<Path>() {
             @Override
@@ -87,7 +83,7 @@ public class ShamrockAugumentor {
             }
         });
         Index appIndex = indexer.complete();
-        List<ApplicationArchive> applicationArchives = ApplicationArchiveLoader.scanForOtherIndexes(classLoader, config, Collections.emptySet(), root, additionalApplicationArchives);
+        List<ApplicationArchive> applicationArchives = ApplicationArchiveLoader.scanForOtherIndexes(classLoader, Collections.emptySet(), root, additionalApplicationArchives);
 
 
         BuildChainBuilder chainBuilder = BuildChain.builder()
@@ -101,7 +97,6 @@ public class ShamrockAugumentor {
                         context.produce(ShamrockConfig.INSTANCE);
                         context.produce(new ApplicationArchivesBuildItem(new ApplicationArchiveImpl(appIndex, root, null), applicationArchives));
                         context.produce(new ArchiveRootBuildItem(root));
-                        context.produce(config);
                         context.produce(new ClassOutputBuildItem(output));
                         context.produce(new ShutdownContextBuildItem());
                     }
@@ -110,7 +105,6 @@ public class ShamrockAugumentor {
                 .produces(ApplicationArchivesBuildItem.class)
                 .produces(SubstrateResourceBuildItem.class)
                 .produces(ArchiveRootBuildItem.class)
-                .produces(BuildConfig.class)
                 .produces(ShutdownContextBuildItem.class)
                 .produces(ClassOutputBuildItem.class)
                 .build();

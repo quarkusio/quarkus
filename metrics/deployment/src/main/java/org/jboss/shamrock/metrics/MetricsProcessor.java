@@ -7,6 +7,7 @@ import java.util.Collection;
 
 import javax.interceptor.Interceptor;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.metrics.annotation.Counted;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -18,7 +19,6 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.shamrock.annotations.BuildProducer;
 import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.annotations.Record;
-import org.jboss.shamrock.deployment.ShamrockConfig;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.BeanArchiveIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.BeanContainerBuildItem;
@@ -39,11 +39,16 @@ import io.smallrye.metrics.interceptors.TimedInterceptor;
 
 public class MetricsProcessor {
 
+    /**
+     * The path to the metrics Servlet
+     */
+    @ConfigProperty(name = "shamrock.metrics.path", defaultValue = "/metrics")
+    String path;
 
     @BuildStep
-    ServletBuildItem createServlet(ShamrockConfig config) {
+    ServletBuildItem createServlet() {
         ServletBuildItem servletBuildItem = new ServletBuildItem("metrics", MetricsServlet.class.getName());
-        servletBuildItem.getMappings().add(config.getConfig("metrics.path", "/metrics"));
+        servletBuildItem.getMappings().add(path);
         return servletBuildItem;
     }
 

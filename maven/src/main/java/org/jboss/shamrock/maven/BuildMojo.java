@@ -45,6 +45,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.eclipse.microprofile.config.Config;
 import org.jboss.builder.BuildResult;
 import org.jboss.shamrock.deployment.ClassOutput;
 import org.jboss.shamrock.deployment.ShamrockAugumentor;
@@ -55,6 +56,11 @@ import org.jboss.shamrock.deployment.index.ResolvedArtifact;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+
+import io.smallrye.config.PropertiesConfigSource;
+import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 @Mojo(name = "build", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class BuildMojo extends AbstractMojo {
@@ -99,6 +105,23 @@ public class BuildMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
+        //first lets look for some config, as it is not on the current class path
+        //and we need to load it to run the build process
+        File config = new File(outputDirectory, "META-INF/microprofile-config.properties");
+        if(config.exists()) {
+            try {
+                Config built = SmallRyeConfigProviderResolver.instance().getBuilder()
+                        .addDefaultSources()
+                        .addDiscoveredConverters()
+                        .addDiscoveredSources()
+                        .withSources(new PropertiesConfigSource(config.toURL())).build();
+                SmallRyeConfigProviderResolver.instance().registerConfig(built, Thread.currentThread().getContextClassLoader());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+
         libDir.mkdirs();
         wiringClassesDirectory.mkdirs();
         try {

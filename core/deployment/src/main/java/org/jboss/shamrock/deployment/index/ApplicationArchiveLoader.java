@@ -14,7 +14,6 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.jar.JarEntry;
@@ -27,7 +26,6 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.shamrock.deployment.ApplicationArchive;
 import org.jboss.shamrock.deployment.ApplicationArchiveImpl;
-import org.jboss.shamrock.deployment.buildconfig.BuildConfig;
 
 /**
  * Class that is responsible for loading application archives from outside the deployment
@@ -39,14 +37,11 @@ public class ApplicationArchiveLoader {
 
     private static final String JANDEX_INDEX = "META-INF/jandex.idx";
 
-    public static List<ApplicationArchive> scanForOtherIndexes(ClassLoader classLoader, BuildConfig config, Set<String> applicationArchiveFiles, Path appRoot, List<Path> additionalApplicationArchives) throws IOException {
+    public static List<ApplicationArchive> scanForOtherIndexes(ClassLoader classLoader, Set<String> applicationArchiveFiles, Path appRoot, List<Path> additionalApplicationArchives) throws IOException {
+
 
         Set<Path> dependenciesToIndex = new HashSet<>();
 
-        //get paths that have index-jar: true
-        dependenciesToIndex.addAll(getIndexJarPaths(config));
-        //get paths that are included via index-dependencies
-        dependenciesToIndex.addAll(getIndexDependencyPaths(config, classLoader));
         //get paths that are included via marker files
         Set<String> markers = new HashSet<>(applicationArchiveFiles);
         markers.add(JANDEX_INDEX);
@@ -91,21 +86,6 @@ public class ApplicationArchiveLoader {
         return ret;
     }
 
-    public static List<Path> getIndexJarPaths(BuildConfig config) {
-        try {
-            List<Path> ret = new ArrayList<>();
-            for (Map.Entry<URL, BuildConfig.ConfigNode> dep : config.getDependencyConfig().entrySet()) {
-                Boolean node = dep.getValue().get(INDEX_JAR).asBoolean();
-                if (node != null && node) {
-                    URL url = dep.getKey();
-                    ret.add(urlToPath(url));
-                }
-            }
-            return ret;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     private static Path urlToPath(URL url) {
         if (url.getProtocol().equals("jar")) {
@@ -120,36 +100,6 @@ public class ApplicationArchiveLoader {
         throw new RuntimeException("Unkown URL type " + url.getProtocol());
     }
 
-    public static List<Path> getIndexDependencyPaths(BuildConfig config, ClassLoader classLoader) {
-        ArtifactIndex artifactIndex = new ArtifactIndex(new ClassPathArtifactResolver(classLoader));
-        try {
-            List<Path> ret = new ArrayList<>();
-            List<BuildConfig.ConfigNode> depList = config.getAll(INDEX_DEPENDENCIES);
-            Set<String> depsToIndex = new HashSet<>();
-            for (BuildConfig.ConfigNode i : depList) {
-                depsToIndex.addAll(i.asStringList());
-            }
-            for (String line : depsToIndex) {
-                line = line.trim();
-                if (line.isEmpty()) {
-                    continue;
-                }
-                String[] parts = line.split(":");
-                Path path;
-                if (parts.length == 2) {
-                    path = artifactIndex.getPath(parts[0], parts[1], null);
-                } else if (parts.length == 3) {
-                    path = artifactIndex.getPath(parts[0], parts[1], parts[2]);
-                } else {
-                    throw new RuntimeException("Invalid dependencies to index " + line);
-                }
-                ret.add(path);
-            }
-            return ret;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     private static Index handleFilePath(Path path) throws IOException {
         Path existing = path.resolve(JANDEX_INDEX);

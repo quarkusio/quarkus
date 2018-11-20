@@ -1,7 +1,0 @@
-datasource:
-  url: ${postgres.url}
-  driver: "org.postgresql.Driver"
-  username: "hibernate_orm_test"
-  password: "hibernate_orm_test"
-  minSize: 2
-  maxSize: 8

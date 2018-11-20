@@ -11,12 +11,11 @@ import java.util.List;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.jboss.jandex.IndexView;
 import org.jboss.shamrock.annotations.BuildStep;
-import org.jboss.shamrock.annotations.ExecutionTime;
 import org.jboss.shamrock.annotations.Record;
-import org.jboss.shamrock.deployment.ShamrockConfig;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
@@ -37,10 +36,16 @@ import io.smallrye.openapi.runtime.scanner.OpenApiAnnotationScanner;
  */
 public class OpenApiProcessor {
 
+    /**
+     * The path to register the OpenAPI Servlet
+     */
+    @ConfigProperty(name = "shamrock.openapi.path", defaultValue = "/openapi")
+    String path;
+
     @BuildStep
-    ServletBuildItem servlet(ShamrockConfig config) {
+    ServletBuildItem servlet() {
         ServletBuildItem servletBuildItem = new ServletBuildItem("openapi", OpenApiServlet.class.getName());
-        servletBuildItem.getMappings().add(config.getConfig("openapi.path", "/openapi"));
+        servletBuildItem.getMappings().add(path);
         return servletBuildItem;
     }
 

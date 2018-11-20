@@ -7,6 +7,7 @@ import java.beans.PropertyDescriptor;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -15,10 +16,12 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -30,6 +33,7 @@ import org.jboss.invocation.proxy.ProxyFactory;
 import org.jboss.protean.gizmo.BranchResult;
 import org.jboss.protean.gizmo.CatchBlockCreator;
 import org.jboss.protean.gizmo.ClassCreator;
+import org.jboss.protean.gizmo.FieldDescriptor;
 import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
@@ -296,6 +300,14 @@ public class BytecodeRecorderImpl implements RecorderContext {
             String value = val.getValue();
             String key = val.getKey();
             out = method.newInstance(ofConstructor(ConfiguredValue.class, String.class, String.class), method.load(key), method.load(value));
+        } else if (param instanceof Optional) {
+            Optional val = (Optional) param;
+            if(val.isPresent()) {
+                ResultHandle res = loadObjectInstance(method, val.get(), returnValueResults, Object.class);
+                return method.invokeStaticMethod(ofMethod(Optional.class, "of", Optional.class, Object.class), res);
+            } else {
+                return method.invokeStaticMethod(ofMethod(Optional.class, "empty", Optional.class));
+            }
         } else if (param instanceof String) {
             String configParam = ShamrockConfig.getConfigKey((String) param);
             if (configParam != null) {
@@ -414,6 +426,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     method.invokeInterfaceMethod(MAP_PUT, out, key, val);
                 }
             }
+            Set<String> handledProperties = new HashSet<>();
             PropertyDescriptor[] desc = PropertyUtils.getPropertyDescriptors(param);
             for (PropertyDescriptor i : desc) {
                 if (i.getReadMethod() != null && i.getWriteMethod() == null) {
@@ -422,6 +435,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                         if (Collection.class.isAssignableFrom(i.getPropertyType())) {
                             //special case, a collection with only a read method
                             //we assume we can just add to the connection
+                            handledProperties.add(i.getName());
 
                             Collection propertyValue = (Collection) PropertyUtils.getProperty(param, i.getName());
                             if (!propertyValue.isEmpty()) {
@@ -436,6 +450,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                             //special case, a map with only a read method
                             //we assume we can just add to the map
 
+                            handledProperties.add(i.getName());
                             Map<Object, Object> propertyValue = (Map<Object, Object>) PropertyUtils.getProperty(param, i.getName());
                             if (!propertyValue.isEmpty()) {
                                 ResultHandle prop = method.invokeVirtualMethod(MethodDescriptor.ofMethod(i.getReadMethod()), out);
@@ -452,6 +467,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     }
                 } else if (i.getReadMethod() != null && i.getWriteMethod() != null) {
                     try {
+                        handledProperties.add(i.getName());
                         Object propertyValue = PropertyUtils.getProperty(param, i.getName());
                         if (propertyValue == null) {
                             //we just assume properties are null by default
@@ -475,6 +491,18 @@ public class BytecodeRecorderImpl implements RecorderContext {
                         }
                         ResultHandle val = loadObjectInstance(method, propertyValue, returnValueResults, i.getPropertyType());
                         method.invokeVirtualMethod(ofMethod(param.getClass(), i.getWriteMethod().getName(), void.class, propertyType), out, val);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+
+            //now handle accessible fields
+            for(Field field : param.getClass().getFields()) {
+                if(!Modifier.isFinal(field.getModifiers()) && ! Modifier.isStatic(field.getModifiers()) && !handledProperties.contains(field.getName())) {
+                    try {
+                        ResultHandle val = loadObjectInstance(method, field.get(param), returnValueResults, field.getType());
+                        method.writeInstanceField(FieldDescriptor.of(param.getClass(), field.getName(), field.getType()), out, val);
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }

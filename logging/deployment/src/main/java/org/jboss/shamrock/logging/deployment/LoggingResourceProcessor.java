@@ -21,6 +21,8 @@ package org.jboss.shamrock.logging.deployment;
 import java.io.Console;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
@@ -29,6 +31,7 @@ import java.util.logging.Level;
 
 import javax.inject.Inject;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logmanager.EmbeddedConfigurator;
 import org.jboss.logmanager.formatters.ColorPatternFormatter;
@@ -45,12 +48,11 @@ import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
 import org.jboss.shamrock.annotations.BuildProducer;
 import org.jboss.shamrock.annotations.BuildStep;
-import org.jboss.shamrock.deployment.buildconfig.BuildConfig;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedResourceBuildItem;
 import org.jboss.shamrock.deployment.builditem.SystemPropertyBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
 import org.objectweb.asm.Opcodes;
 
 /**
@@ -58,9 +60,6 @@ import org.objectweb.asm.Opcodes;
 public final class LoggingResourceProcessor {
 
     private static final String GENERATED_CONFIGURATOR = "org/jboss/logmanager/GeneratedConfigurator";
-
-    @Inject
-    BuildConfig config;
 
     @Inject
     BuildProducer<GeneratedClassBuildItem> generatedClass;
@@ -74,6 +73,36 @@ public final class LoggingResourceProcessor {
     @Inject
     BuildProducer<GeneratedResourceBuildItem> generatedResource;
 
+    /**
+     * The log category config
+     */
+    @ConfigProperty(name = "shamrock.log.category")
+    Map<String, CategoryConfig> categories;
+
+    /**
+     * The default log level
+     */
+    @ConfigProperty(name = "shamrock.log.level")
+    Optional<String> level;
+
+    /**
+     * The default minimum log level
+     */
+    @ConfigProperty(name = "shamrock.log.min-level",  defaultValue = "INFO")
+    String rootMinLevel;
+
+    /**
+     * Console logging config
+     */
+    @ConfigProperty(name = "shamrock.log.console")
+    ConsoleConfig console;
+
+    /**
+     * File logging config
+     */
+    @ConfigProperty(name = "shamrock.log.file")
+    FileConfig file;
+
     @BuildStep
     SystemPropertyBuildItem setpProperty() {
         return new SystemPropertyBuildItem("java.util.logging.manager", "org.jboss.logmanager.LogManager");
@@ -81,14 +110,7 @@ public final class LoggingResourceProcessor {
 
     @BuildStep()
     public void build() throws Exception {
-        final BuildConfig.ConfigNode loggingNode = config.getApplicationConfig().get("logging");
-        final BuildConfig.ConfigNode enableNode = loggingNode.get("enable");
-        if (!enableNode.isNull() && enableNode.asBoolean() == Boolean.FALSE) {
-            // forget the whole thing
-            return;
-        }
 
-        final String rootMinLevel;
         final String rootLevel;
         final boolean consoleEnable;
         final String consoleFormat;
@@ -107,35 +129,20 @@ public final class LoggingResourceProcessor {
             ctor.setModifiers(Opcodes.ACC_PUBLIC);
             ctor.invokeSpecialMethod(MethodDescriptor.ofConstructor(Object.class), ctor.getThis());
             ctor.returnValue(null);
+            rootLevel = level.orElse(rootMinLevel);
 
-            final BuildConfig.ConfigNode rootLoggerNode = loggingNode.get("root");
-            final BuildConfig.ConfigNode rootMinLevelNode = rootLoggerNode.get("min-level");
-            rootMinLevel = rootMinLevelNode.isNull() ? "INFO" : rootMinLevelNode.asString();
-            final BuildConfig.ConfigNode rootLevelNode = rootLoggerNode.get("level");
-            rootLevel = rootLevelNode.isNull() ? rootMinLevel : rootLevelNode.asString();
-
-            final BuildConfig.ConfigNode consoleNode = loggingNode.get("console");
-            final BuildConfig.ConfigNode consoleEnableNode = consoleNode.get("enable");
-            consoleEnable = consoleEnableNode.isNull() || consoleEnableNode.asBoolean().booleanValue();
-            final BuildConfig.ConfigNode consoleFormatNode = consoleNode.get("format");
-            consoleFormat = consoleFormatNode.isNull() ? "%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c{1.}] (%t) %s%e%n" : consoleFormatNode.asString();
-            final BuildConfig.ConfigNode consoleLevelNode = consoleNode.get("level");
-            consoleLevel = consoleLevelNode.isNull() ? "INFO" : consoleLevelNode.asString();
-            final BuildConfig.ConfigNode consoleColorNode = consoleNode.get("color");
-            consoleColor = consoleColorNode.isNull() || consoleColorNode.asBoolean().booleanValue();
+            consoleEnable = this.console.enable;
+            consoleFormat = console.format;
+            consoleLevel = console.level;
+            consoleColor = console.color;
             if (consoleColor) {
                 runtimeInit.produce(new RuntimeInitializedClassBuildItem("org.jboss.logmanager.formatters.TrueColorHolder"));
             }
 
-            final BuildConfig.ConfigNode fileNode = loggingNode.get("file");
-            final BuildConfig.ConfigNode fileEnableNode = fileNode.get("enable");
-            fileEnable = fileEnableNode.isNull() || fileEnableNode.asBoolean().booleanValue();
-            final BuildConfig.ConfigNode fileFormatNode = fileNode.get("format");
-            fileFormat = fileFormatNode.isNull() ? "%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c] (%t) %s%e%n" : fileFormatNode.asString();
-            final BuildConfig.ConfigNode fileLevelNode = fileNode.get("level");
-            fileLevel = fileLevelNode.isNull() ? "ALL" : fileLevelNode.asString();
-            final BuildConfig.ConfigNode filePathNode = fileNode.get("path");
-            filePath = filePathNode.isNull() ? "server.log" : filePathNode.asString();
+            fileEnable = file.enable;
+            fileFormat = file.format;
+            fileLevel = file.level;
+            filePath = file.path;
 
             minimumLevelOf = cc.getMethodCreator("getMinimumLevelOf", Level.class, String.class);
             minimumLevelOf.setModifiers(Opcodes.ACC_PUBLIC);
@@ -287,17 +294,11 @@ public final class LoggingResourceProcessor {
             BytecodeCreator levelOfBc = ifNotRootLogger(levelOf, b -> getLevelFor(b, rootLevel));
             BytecodeCreator minLevelOfBc = ifNotRootLogger(minimumLevelOf, b -> getLevelFor(b, rootMinLevel));
 
-            final BuildConfig.ConfigNode categoryNode = loggingNode.get("category");
-            for (String category : categoryNode.getChildKeys()) {
+            for (Map.Entry<String, CategoryConfig> category : categories.entrySet()) {
                 // configure category
-                final BuildConfig.ConfigNode baseNode = categoryNode.get(category);
-                final BuildConfig.ConfigNode minLevelNode = baseNode.get("min-level");
-                final String minLevel = minLevelNode.isNull() ? "inherit" : minLevelNode.asString();
-                final BuildConfig.ConfigNode levelNode = baseNode.get("level");
-                final String level = levelNode.isNull() ? "inherit" : levelNode.asString();
 
-                levelOfBc = ifNotLogger(levelOfBc, category, b -> getLevelFor(b, level));
-                minLevelOfBc = ifNotLogger(minLevelOfBc, category, b -> getLevelFor(b, minLevel));
+                levelOfBc = ifNotLogger(levelOfBc, category.getKey(), b -> getLevelFor(b, category.getValue().level));
+                minLevelOfBc = ifNotLogger(minLevelOfBc, category.getKey(), b -> getLevelFor(b, category.getValue().minLevel));
             }
 
             // epilogues
@@ -393,4 +394,5 @@ public final class LoggingResourceProcessor {
         }
 
     }
+
 }

@@ -28,15 +28,15 @@ import sun.misc.SignalHandler;
  * @see RuntimeClassInitialization#delayClassInitialization(java.lang.Class[])
  */
 @SuppressWarnings("unused")
-public final class ShutdownThread extends Thread {
-    private static final ShutdownThread instance;
+public final class SignalHandlerThread extends Thread {
+    private static final SignalHandlerThread instance;
 
     static {
-        instance = new ShutdownThread(currentThread().getThreadGroup());
+        instance = new SignalHandlerThread(currentThread().getThreadGroup());
         instance.start();
     }
 
-    private ShutdownThread(final ThreadGroup group) {
+    private SignalHandlerThread(final ThreadGroup group) {
         // use a small stack
         super(group, null, "Signal Listener", 0x10000L);
         setDaemon(true);

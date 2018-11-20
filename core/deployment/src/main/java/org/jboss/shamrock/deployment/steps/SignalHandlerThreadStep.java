@@ -20,13 +20,13 @@ package org.jboss.shamrock.deployment.steps;
 
 import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
-import org.jboss.shamrock.runtime.graal.ShutdownThread;
+import org.jboss.shamrock.runtime.graal.SignalHandlerThread;
 
 /**
  * Shutdown hook processor for native environments.  Such environments do not install signal handlers, so in order
  * to correctly run shutdown hooks on {@code SIGINT}, a handler and thread must be installed.
  */
-public class ShutdownHook {
+public class SignalHandlerThreadStep {
 
     /**
      * Build step to cause the shutdown thread to be started during init.  This also suffices to ensure that the
@@ -36,6 +36,6 @@ public class ShutdownHook {
      */
     @BuildStep
     public RuntimeInitializedClassBuildItem installHook() {
-         return new RuntimeInitializedClassBuildItem(ShutdownThread.class.getName());
+         return new RuntimeInitializedClassBuildItem(SignalHandlerThread.class.getName());
     }
 }

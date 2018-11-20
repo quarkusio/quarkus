@@ -83,6 +83,7 @@
         <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>
 
         <postgres.url>${env.DATABASE_URL}</postgres.url>
+        <shrinkwrap.version>1.2.6</shrinkwrap.version>
     </properties>
 
     <modules>
@@ -253,11 +254,6 @@
             </dependency>
             <dependency>
                 <groupId>org.jboss.shamrock</groupId>
-                <artifactId>shamrock-graal</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jboss.shamrock</groupId>
                 <artifactId>shamrock-health-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -315,6 +311,7 @@
                 <groupId>org.jboss.shamrock</groupId>
                 <artifactId>shamrock-junit</artifactId>
                 <version>${project.version}</version>
+                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.jboss.shamrock</groupId>
@@ -944,6 +941,14 @@
                     </exclusion>
                 </exclusions>
             </dependency>
+
+            <dependency>
+                <groupId>org.jboss.shrinkwrap</groupId>
+                <artifactId>shrinkwrap-depchain</artifactId>
+                <version>${shrinkwrap.version}</version>
+                <type>pom</type>
+            </dependency>
+
             <dependency>
                 <groupId>org.jboss.spec.javax.servlet</groupId>
                 <artifactId>jboss-servlet-api_4.0_spec</artifactId>

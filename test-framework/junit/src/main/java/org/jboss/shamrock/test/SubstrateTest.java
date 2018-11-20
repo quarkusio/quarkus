@@ -1,10 +1,8 @@
-package org.jboss.shamrock.junit;
+package org.jboss.shamrock.test;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URL;
@@ -22,7 +20,7 @@ import org.junit.runners.model.InitializationError;
  * A test runner for Graal native images
  * basically just a big pile of hacks
  */
-public class GraalTest extends BlockJUnit4ClassRunner {
+public class SubstrateTest extends BlockJUnit4ClassRunner {
 
     private static final long IMAGE_WAIT_TIME = 60000;
 
@@ -34,7 +32,7 @@ public class GraalTest extends BlockJUnit4ClassRunner {
      * @param klass
      * @throws InitializationError if the test class is malformed.
      */
-    public GraalTest(Class<?> klass) throws InitializationError {
+    public SubstrateTest(Class<?> klass) throws InitializationError {
         super(klass);
     }
 
@@ -75,7 +73,7 @@ public class GraalTest extends BlockJUnit4ClassRunner {
                 }
 
                 if (guessedPath == null) {
-                    notifier.fireTestFailure(new Failure(Description.createSuiteDescription(GraalTest.class), new RuntimeException("Unable to find native image, make sure native.image.path is set")));
+                    notifier.fireTestFailure(new Failure(Description.createSuiteDescription(SubstrateTest.class), new RuntimeException("Unable to find native image, make sure native.image.path is set")));
                     return;
                 } else {
                     String errorString = "\n=native.image.path was not set, making a guess that  " + guessedPath + " is the correct native image=";
@@ -123,7 +121,7 @@ public class GraalTest extends BlockJUnit4ClassRunner {
 
 
             } catch (Exception e) {
-                notifier.fireTestFailure(new Failure(Description.createSuiteDescription(GraalTest.class), e));
+                notifier.fireTestFailure(new Failure(Description.createSuiteDescription(SubstrateTest.class), e));
             }
 
         }

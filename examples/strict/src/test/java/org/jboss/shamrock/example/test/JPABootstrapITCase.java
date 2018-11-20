@@ -1,10 +1,10 @@
 package org.jboss.shamrock.example.test;
 
-import org.jboss.shamrock.junit.GraalTest;
+import org.jboss.shamrock.test.SubstrateTest;
 import org.junit.runner.RunWith;
 
 
-@RunWith(GraalTest.class)
+@RunWith(SubstrateTest.class)
 public class JPABootstrapITCase extends JPABootstrapTestCase {
 
 }

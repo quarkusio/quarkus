@@ -175,6 +175,7 @@ public class UndertowDeploymentTemplate {
                 @Override
                 public void close() {
                     undertow.stop();
+                    undertow = null;
                 }
             });
         }

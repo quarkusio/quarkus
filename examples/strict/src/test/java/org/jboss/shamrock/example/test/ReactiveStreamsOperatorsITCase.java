@@ -1,15 +1,9 @@
 package org.jboss.shamrock.example.test;
 
-import io.reactivex.Flowable;
-import org.eclipse.microprofile.reactive.streams.ReactiveStreams;
-import org.jboss.shamrock.junit.GraalTest;
-import org.junit.Assert;
-import org.junit.Test;
+import org.jboss.shamrock.test.SubstrateTest;
 import org.junit.runner.RunWith;
 
-import java.util.List;
-
-@RunWith(GraalTest.class)
+@RunWith(SubstrateTest.class)
 public class ReactiveStreamsOperatorsITCase extends ReactiveStreamsOperatorsTestCase {
 
 

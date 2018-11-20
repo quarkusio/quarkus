@@ -1,4 +1,4 @@
-package org.jboss.shamrock.example.testutils;
+package org.jboss.shamrock.test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -7,7 +7,6 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
 
 import javax.json.Json;
 import javax.json.JsonReader;
@@ -34,11 +33,11 @@ public final class URLTester {
     }
 
     private URLResponse privateInvokeURL() throws IOException {
-        HttpURLConnection connection = (HttpURLConnection)fullURL.openConnection();
+        HttpURLConnection connection = (HttpURLConnection) fullURL.openConnection();
         int responseCode = connection.getResponseCode();
         IOException ex = null;
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        try(InputStream in = connection.getInputStream()) {
+        try (InputStream in = connection.getInputStream()) {
             byte[] buf = new byte[100];
             int r;
             while ((r = in.read(buf)) > 0) {

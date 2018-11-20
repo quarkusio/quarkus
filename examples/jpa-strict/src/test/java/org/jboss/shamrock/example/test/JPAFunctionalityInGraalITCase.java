@@ -1,12 +1,12 @@
 package org.jboss.shamrock.example.test;
 
-import org.jboss.shamrock.junit.GraalTest;
+import org.jboss.shamrock.test.SubstrateTest;
 import org.junit.runner.RunWith;
 
 /**
  * Test various JPA operations running in SubstrateVM
  */
-@RunWith(GraalTest.class)
+@RunWith(SubstrateTest.class)
 public class JPAFunctionalityInGraalITCase extends JPAFunctionalityTest {
 
 }

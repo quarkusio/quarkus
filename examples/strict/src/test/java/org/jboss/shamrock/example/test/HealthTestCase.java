@@ -4,8 +4,8 @@ import javax.json.JsonArray;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 
-import org.jboss.shamrock.example.testutils.URLTester;
-import org.jboss.shamrock.junit.ShamrockTest;
+import org.jboss.shamrock.test.URLTester;
+import org.jboss.shamrock.test.ShamrockTest;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;

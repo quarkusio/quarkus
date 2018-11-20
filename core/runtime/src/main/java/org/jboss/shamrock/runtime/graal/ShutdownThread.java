@@ -53,6 +53,7 @@ public final class ShutdownThread extends Thread {
             }
         };
         Signal.handle(new Signal("INT"), handler);
+        Signal.handle(new Signal("TERM"), handler);
         for (;;) {
             Thread.interrupted();
             LockSupport.park();

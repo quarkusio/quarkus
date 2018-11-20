@@ -11,7 +11,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
@@ -20,7 +19,10 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.zip.ZipEntry;
 
+import org.jboss.jandex.Index;
+import org.jboss.jandex.IndexReader;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.shamrock.deployment.ApplicationArchive;
@@ -35,6 +37,8 @@ public class ApplicationArchiveLoader {
     private static final String INDEX_DEPENDENCIES = "index-dependencies";
     private static final String INDEX_JAR = "index-jar";
 
+    private static final String JANDEX_INDEX = "META-INF/jandex.idx";
+
     public static List<ApplicationArchive> scanForOtherIndexes(ClassLoader classLoader, BuildConfig config, Set<String> applicationArchiveFiles, Path appRoot, List<Path> additionalApplicationArchives) throws IOException {
 
         Set<Path> dependenciesToIndex = new HashSet<>();
@@ -44,7 +48,9 @@ public class ApplicationArchiveLoader {
         //get paths that are included via index-dependencies
         dependenciesToIndex.addAll(getIndexDependencyPaths(config, classLoader));
         //get paths that are included via marker files
-        dependenciesToIndex.addAll(getMarkerFilePaths(classLoader, applicationArchiveFiles));
+        Set<String> markers = new HashSet<>(applicationArchiveFiles);
+        markers.add(JANDEX_INDEX);
+        dependenciesToIndex.addAll(getMarkerFilePaths(classLoader, markers));
 
         //we don't index the application root, this is handled elsewhere
         dependenciesToIndex.remove(appRoot);
@@ -59,18 +65,15 @@ public class ApplicationArchiveLoader {
 
         for (final Path dep : dependenciesToIndex) {
             if (Files.isDirectory(dep)) {
-                Indexer indexer = new Indexer();
-                handleFilePath(dep, indexer);
-                IndexView indexView = indexer.complete();
+                IndexView indexView = handleFilePath(dep);
                 ret.add(new ApplicationArchiveImpl(indexView, dep, null));
             } else {
-                Indexer indexer = new Indexer();
-                handleJarPath(dep, indexer);
-                IndexView index = indexer.complete();
+                IndexView index = handleJarPath(dep);
                 FileSystem fs = FileSystems.newFileSystem(dep, classLoader);
                 ret.add(new ApplicationArchiveImpl(index, fs.getRootDirectories().iterator().next(), fs));
             }
         }
+
 
         return ret;
     }
@@ -148,7 +151,16 @@ public class ApplicationArchiveLoader {
         }
     }
 
-    private static void handleFilePath(Path path, Indexer indexer) throws IOException {
+    private static Index handleFilePath(Path path) throws IOException {
+        Path existing = path.resolve(JANDEX_INDEX);
+        if (Files.exists(existing)) {
+            try (FileInputStream in = new FileInputStream(existing.toFile())) {
+                IndexReader r = new IndexReader(in);
+                return r.read();
+            }
+        }
+
+        Indexer indexer = new Indexer();
         Files.walk(path).forEach(new Consumer<Path>() {
             @Override
             public void accept(Path path) {
@@ -161,10 +173,20 @@ public class ApplicationArchiveLoader {
                 }
             }
         });
+        return indexer.complete();
     }
 
-    private static void handleJarPath(Path path, Indexer indexer) throws IOException {
+    private static Index handleJarPath(Path path) throws IOException {
+        Indexer indexer = new Indexer();
         try (JarFile file = new JarFile(path.toFile())) {
+            ZipEntry existing = file.getEntry(JANDEX_INDEX);
+            if (existing != null) {
+                try (InputStream in = file.getInputStream(existing)) {
+                    IndexReader r = new IndexReader(in);
+                    return r.read();
+                }
+            }
+
             Enumeration<JarEntry> e = file.entries();
             while (e.hasMoreElements()) {
                 JarEntry entry = e.nextElement();
@@ -175,5 +197,6 @@ public class ApplicationArchiveLoader {
                 }
             }
         }
+        return indexer.complete();
     }
 }

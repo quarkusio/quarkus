@@ -22,7 +22,11 @@ import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,7 +38,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import javax.enterprise.context.spi.Contextual;
@@ -89,8 +92,6 @@ public class BeanGenerator extends AbstractGenerator {
     static final String SYNTHETIC_SUFFIX = "_Synthetic";
 
     private static final Logger LOGGER = Logger.getLogger(BeanGenerator.class);
-
-    private static final AtomicInteger PRODUCER_INDEX = new AtomicInteger();
 
     protected static final String FIELD_NAME_DECLARING_PROVIDER = "declaringProvider";
     protected static final String FIELD_NAME_BEAN_TYPES = "types";
@@ -298,7 +299,16 @@ public class BeanGenerator extends AbstractGenerator {
         }
 
         Type providerType = bean.getProviderType();
-        String baseName = declaringClassBase + PRODUCER_METHOD_SUFFIX + PRODUCER_INDEX.incrementAndGet();
+        StringBuilder sigBuilder = new StringBuilder();
+        sigBuilder.append(producerMethod.name())
+                .append("_")
+                .append(producerMethod.returnType().name().toString());
+
+        for(Type i : producerMethod.parameters()) {
+            sigBuilder.append(i.name().toString());
+        }
+
+        String baseName = declaringClassBase + PRODUCER_METHOD_SUFFIX + producerMethod.name() + Hashes.sha1(sigBuilder.toString());
         String providerTypeName = providerType.name().toString();
         String targetPackage = DotNames.packageName(declaringClass.name());
         String generatedName = targetPackage.replace('.', '/') + "/" + baseName + BEAN_SUFFIX;
@@ -355,6 +365,7 @@ public class BeanGenerator extends AbstractGenerator {
         return classOutput.getResources();
     }
 
+
     Collection<Resource> generateProducerFieldBean(BeanInfo bean, FieldInfo producerField, ReflectionRegistration reflectionRegistration) {
 
         ClassInfo declaringClass = producerField.declaringClass();
@@ -366,7 +377,7 @@ public class BeanGenerator extends AbstractGenerator {
         }
 
         Type providerType = bean.getProviderType();
-        String baseName = declaringClassBase + PRODUCER_FIELD_SUFFIX + PRODUCER_INDEX.incrementAndGet();
+        String baseName = declaringClassBase + PRODUCER_FIELD_SUFFIX + producerField.name();
         String providerTypeName = providerType.name().toString();
         String targetPackage = DotNames.packageName(declaringClass.name());
         String generatedName = targetPackage.replace('.', '/') + "/" + baseName + BEAN_SUFFIX;

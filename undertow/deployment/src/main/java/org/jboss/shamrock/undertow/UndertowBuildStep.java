@@ -6,6 +6,7 @@ import static javax.servlet.DispatcherType.REQUEST;
 import static org.jboss.shamrock.annotations.ExecutionTime.RUNTIME_INIT;
 import static org.jboss.shamrock.annotations.ExecutionTime.STATIC_INIT;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,6 +26,8 @@ import javax.servlet.annotation.ServletSecurity;
 import javax.servlet.annotation.WebFilter;
 import javax.servlet.annotation.WebListener;
 import javax.servlet.annotation.WebServlet;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamReader;
 
 import org.jboss.annotation.javaee.Descriptions;
 import org.jboss.annotation.javaee.DisplayNames;
@@ -47,6 +50,9 @@ import org.jboss.metadata.javaee.spec.RunAsMetaData;
 import org.jboss.metadata.javaee.spec.SecurityRoleMetaData;
 import org.jboss.metadata.javaee.spec.SecurityRoleRefMetaData;
 import org.jboss.metadata.javaee.spec.SecurityRolesMetaData;
+import org.jboss.metadata.parser.servlet.WebMetaDataParser;
+import org.jboss.metadata.parser.util.MetaDataElementParser;
+import org.jboss.metadata.property.PropertyReplacers;
 import org.jboss.metadata.web.spec.AnnotationMetaData;
 import org.jboss.metadata.web.spec.AnnotationsMetaData;
 import org.jboss.metadata.web.spec.DispatcherType;
@@ -128,7 +134,6 @@ public class UndertowBuildStep {
                                          List<ServletContextAttributeBuildItem> contextParams,
                                          UndertowDeploymentTemplate template, RecorderContext context,
                                          List<ServletExtensionBuildItem> extensions,
-                                         RecorderContext recorderContext,
                                          InjectionFactoryBuildItem injectionFactory,
                                          BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) throws Exception {
 
@@ -157,10 +162,23 @@ public class UndertowBuildStep {
 
         RuntimeValue<DeploymentInfo> deployment = template.createDeployment("test", knownFiles, knownDirectories);
 
+        WebMetaData result;
+        Path webXml = applicationArchivesBuildItem.getRootArchive().getChildPath("META-INF/web.xml");
+        if (webXml != null) {
+
+            final XMLInputFactory inputFactory = XMLInputFactory.newInstance();
+            MetaDataElementParser.DTDInfo dtdInfo = new MetaDataElementParser.DTDInfo();
+            inputFactory.setXMLResolver(dtdInfo);
+            try (FileInputStream in = new FileInputStream(webXml.toFile())) {
+                final XMLStreamReader xmlReader = inputFactory.createXMLStreamReader(in);
+                result = WebMetaDataParser.parse(xmlReader, dtdInfo, PropertyReplacers.noop());
+            }
+        } else {
+            result = new WebMetaData();
+        }
+
         final IndexView index = combinedIndexBuildItem.getIndex();
-        WebMetaData result = processAnnotations(index);
-
-
+        processAnnotations(index, result);
         //add servlets
         if (result.getServlets() != null) {
             for (ServletMetaData servlet : result.getServlets()) {
@@ -316,8 +334,7 @@ public class UndertowBuildStep {
      *
      * @param index the annotation index
      */
-    private WebMetaData processAnnotations(IndexView index) {
-        WebMetaData metaData = new WebMetaData();
+    private void processAnnotations(IndexView index, WebMetaData metaData) {
         // @WebServlet
         final Collection<AnnotationInstance> webServletAnnotations = index.getAnnotations(webServlet);
         if (webServletAnnotations != null && webServletAnnotations.size() > 0) {
@@ -673,7 +690,6 @@ public class UndertowBuildStep {
                 annotationMD.setServletSecurity(servletSecurity);
             }
         }
-        return metaData;
     }
 
     /**

@@ -60,7 +60,7 @@ public class ShamrockUnitTest extends BlockJUnit4ClassRunner {
                 JavaArchive archive = (JavaArchive) deploymentMethod.invoke(null);
                 deploymentDir = Files.createTempDirectory("shamrock-unit-test");
 
-                archive.as(ExplodedExporter.class).exportExploded(deploymentDir.toFile());
+                archive.as(ExplodedExporter.class).exportExplodedInto(deploymentDir.toFile());
 
                 runtimeRunner = new RuntimeRunner(getClass().getClassLoader(), deploymentDir, deploymentDir, null, new ArrayList<>());
                 runtimeRunner.run();

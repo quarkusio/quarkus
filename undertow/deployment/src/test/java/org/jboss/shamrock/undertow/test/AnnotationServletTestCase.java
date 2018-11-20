@@ -11,7 +11,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(ShamrockUnitTest.class)
-public class ServletTestCase {
+public class AnnotationServletTestCase {
 
     @Deployment
     public static JavaArchive deploy() {

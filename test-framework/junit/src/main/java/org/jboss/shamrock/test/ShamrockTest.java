@@ -16,9 +16,9 @@ import org.junit.runners.model.InitializationError;
 
 public class ShamrockTest extends BlockJUnit4ClassRunner {
 
-    private static boolean first = true;
-    private static boolean started = false;
-    private static boolean failed = false;
+    static boolean first = true;
+    static boolean started = false;
+    static boolean failed = false;
 
     /**
      * Creates a BlockJUnit4ClassRunner to run {@code klass}
@@ -55,6 +55,10 @@ public class ShamrockTest extends BlockJUnit4ClassRunner {
 
                     @Override
                     public void testStarted(Description description) {
+                        if(ShamrockUnitTest.started) {
+                            notifier.fireTestFailure(new Failure(Description.createSuiteDescription(ShamrockTest.class), new RuntimeException("Cannot mix ShamrockTest and ShamrockUnitTest in the same test suite")));
+                            return;
+                        }
                         if (!started) {
                             started = true;
                             //TODO: so much hacks...

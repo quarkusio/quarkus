@@ -7,7 +7,7 @@ import javax.json.JsonObject;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.jboss.shamrock.example.testutils.URLTester;
+import org.jboss.shamrock.test.URLTester;
 import org.jboss.shamrock.test.ShamrockTest;
 import org.junit.Assert;
 import org.junit.Test;

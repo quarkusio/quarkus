@@ -118,8 +118,15 @@ public class ArcDeploymentTemplate {
         };
     }
 
-    public void fireStartupEvent(BeanContainer beanContainer) {
-        beanContainer.instance(StartupEventRunner.class).fireEvent();
+    public void handleLifecycleEvents(ShutdownContext context, BeanContainer beanContainer) {
+        LifecycleEventRunner instance = beanContainer.instance(LifecycleEventRunner.class);
+        instance.fireStartupEvent();
+        context.addShutdownTask(new Runnable() {
+            @Override
+            public void run() {
+                instance.fireShutdownEvent();
+            }
+        });
     }
 
 }

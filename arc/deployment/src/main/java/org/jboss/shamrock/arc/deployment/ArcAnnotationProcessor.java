@@ -38,7 +38,7 @@ import org.jboss.shamrock.annotations.BuildProducer;
 import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.arc.runtime.ArcDeploymentTemplate;
-import org.jboss.shamrock.arc.runtime.StartupEventRunner;
+import org.jboss.shamrock.arc.runtime.LifecycleEventRunner;
 import org.jboss.shamrock.deployment.Capabilities;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.BeanArchiveIndexBuildItem;
@@ -107,7 +107,7 @@ public class ArcAnnotationProcessor {
         for (AdditionalBeanBuildItem i : this.additionalBeans) {
             additionalBeans.addAll(i.getBeanNames());
         }
-        additionalBeans.add(StartupEventRunner.class.getName());
+        additionalBeans.add(LifecycleEventRunner.class.getName());
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, Observes.class.getName())); // graal bug
 
@@ -217,8 +217,8 @@ public class ArcAnnotationProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    void startupEvent(ArcDeploymentTemplate template, List<ServiceStartBuildItem> startList, BeanContainerBuildItem beanContainer) {
-        template.fireStartupEvent(beanContainer.getValue());
+    void startupEvent(ArcDeploymentTemplate template, List<ServiceStartBuildItem> startList, BeanContainerBuildItem beanContainer, ShutdownContextBuildItem shutdown) {
+        template.handleLifecycleEvents(shutdown, beanContainer.getValue());
     }
 
     private void indexBeanClass(String beanClass, Indexer indexer, IndexView shamrockIndex, Set<DotName> additionalIndex) {

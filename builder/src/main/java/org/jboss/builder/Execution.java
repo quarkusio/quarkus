@@ -113,7 +113,13 @@ final class Execution {
         }
         for (Diagnostic diagnostic : diagnostics) {
             if (diagnostic.getLevel() == Diagnostic.Level.ERROR) {
-                throw new BuildException("Build failed due to errors", Collections.unmodifiableList(diagnostics));
+                BuildException failed = new BuildException("Build failed due to errors",diagnostic.getThrown(),  Collections.unmodifiableList(diagnostics));
+                for(Diagnostic i : diagnostics) {
+                    if(i.getThrown() != null && i.getThrown() != diagnostic.getThrown()) {
+                        failed.addSuppressed(i.getThrown());
+                    }
+                }
+                throw failed;
             }
         }
         if (lastStepCount.get() > 0) throw new BuildException("Extra steps left over", Collections.emptyList());

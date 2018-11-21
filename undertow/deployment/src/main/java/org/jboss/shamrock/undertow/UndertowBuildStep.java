@@ -29,6 +29,7 @@ import javax.servlet.annotation.WebServlet;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.annotation.javaee.Descriptions;
 import org.jboss.annotation.javaee.DisplayNames;
 import org.jboss.annotation.javaee.Icons;
@@ -83,8 +84,8 @@ import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildIte
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import org.jboss.shamrock.deployment.recording.RecorderContext;
-import org.jboss.shamrock.runtime.ConfiguredValue;
 import org.jboss.shamrock.runtime.RuntimeValue;
+import org.jboss.shamrock.undertow.runtime.HttpConfig;
 import org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate;
 
 import io.undertow.servlet.api.DeploymentInfo;
@@ -108,13 +109,16 @@ public class UndertowBuildStep {
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
 
+    @ConfigProperty(name = "http.config")
+    HttpConfig config;
+
     @BuildStep
     @Record(RUNTIME_INIT)
     public ServiceStartBuildItem boot(UndertowDeploymentTemplate template,
                                       ServletHandlerBuildItem servletHandlerBuildItem,
                                       List<HttpHandlerWrapperBuildItem> wrappers,
                                       ShutdownContextBuildItem shutdown) throws Exception {
-        template.startUndertow(shutdown, servletHandlerBuildItem.getHandler(), new ConfiguredValue("http.port", "8080"), new ConfiguredValue("http.host", "localhost"), new ConfiguredValue("http.io-threads", ""), new ConfiguredValue("http.worker-threads", ""), wrappers.stream().map(HttpHandlerWrapperBuildItem::getValue).collect(Collectors.toList()));
+        template.startUndertow(shutdown, servletHandlerBuildItem.getHandler(), config, wrappers.stream().map(HttpHandlerWrapperBuildItem::getValue).collect(Collectors.toList()));
         return new ServiceStartBuildItem("undertow");
     }
 

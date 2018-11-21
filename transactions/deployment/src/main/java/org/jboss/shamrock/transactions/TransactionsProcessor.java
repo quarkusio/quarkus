@@ -6,6 +6,7 @@ import java.util.Properties;
 
 import javax.inject.Inject;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.shamrock.annotations.BuildProducer;
 import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.annotations.Record;
@@ -13,7 +14,6 @@ import org.jboss.shamrock.deployment.Capabilities;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
-import org.jboss.shamrock.runtime.ConfiguredValue;
 import org.jboss.shamrock.transactions.runtime.TransactionProducers;
 import org.jboss.shamrock.transactions.runtime.TransactionTemplate;
 import org.jboss.shamrock.transactions.runtime.interceptor.TransactionalInterceptorMandatory;
@@ -41,9 +41,15 @@ class TransactionsProcessor {
     @Inject
     BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit;
 
+    /**
+     * The node name used by the transaction manager
+     */
+    @ConfigProperty(name = "shamrock.transactions.node-name", defaultValue = "shamrock")
+    String nodeName;
+
     @BuildStep(providesCapabilities = Capabilities.TRANSACTIONS)
     @Record(STATIC_INIT)
-    public void build(TransactionTemplate tt) throws Exception {
+    public void build(TransactionTemplate tt) {
         additionalBeans.produce(new AdditionalBeanBuildItem(TransactionProducers.class));
         runtimeInit.produce(new RuntimeInitializedClassBuildItem("com.arjuna.ats.internal.jta.resources.arjunacore.CommitMarkableResourceRecord"));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, JTAEnvironmentBean.class.getName(),
@@ -62,7 +68,7 @@ class TransactionsProcessor {
         //we want to force Arjuna to init at static init time
         Properties defaultProperties = PropertiesFactory.getDefaultProperties();
         tt.setDefaultProperties(defaultProperties);
-        tt.setNodeName(new ConfiguredValue("transactions.node-name", "shamrock"));
+        tt.setNodeName(nodeName);
 
     }
 }

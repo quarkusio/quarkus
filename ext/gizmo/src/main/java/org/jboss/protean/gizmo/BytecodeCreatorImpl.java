@@ -550,7 +550,7 @@ class BytecodeCreatorImpl implements BytecodeCreator {
     }
 
     public boolean isScopedWithin(final BytecodeCreator other) {
-        return other == this || other instanceof BytecodeCreatorImpl && isScopedWithin(((BytecodeCreatorImpl) other).owner);
+        return other == this || owner.isScopedWithin(other);
     }
 
     public void continueScope(final BytecodeCreator scope) {
@@ -675,7 +675,7 @@ class BytecodeCreatorImpl implements BytecodeCreator {
 
     @Override
     public ResultHandle getMethodParam(int methodNo) {
-        int count = 1;
+        int count = (method.getModifiers() & Modifier.STATIC) != 0 ? 0 : 1;
         for (int i = 0; i < methodNo; ++i) {
             String s = getMethod().getMethodDescriptor().getParameterTypes()[i];
             if (s.equals("J") || s.equals("D")) {

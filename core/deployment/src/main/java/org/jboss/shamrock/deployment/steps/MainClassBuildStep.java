@@ -21,6 +21,7 @@ import org.jboss.shamrock.deployment.builditem.MainBytecodeRecorderBuildItem;
 import org.jboss.shamrock.deployment.builditem.MainClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import org.jboss.shamrock.deployment.builditem.SystemPropertyBuildItem;
+import org.jboss.shamrock.runtime.Application;
 import org.jboss.shamrock.runtime.StartupContext;
 import org.jboss.shamrock.runtime.StartupTask;
 import org.jboss.shamrock.runtime.Timing;
@@ -28,8 +29,8 @@ import org.jboss.shamrock.runtime.Timing;
 class MainClassBuildStep {
 
     private static final AtomicInteger COUNT = new AtomicInteger();
-    private static final String MAIN_CLASS_INTERNAL = "org/jboss/shamrock/runner/GeneratedMain";
-    private static final String MAIN_CLASS = MAIN_CLASS_INTERNAL.replace('/', '.');
+    private static final String APP_CLASS = "org.jboss.shamrock.runner.ApplicationImpl";
+    private static final String MAIN_CLASS = "org.jboss.shamrock.runner.GeneratedMain";
     private static final String STARTUP_CONTEXT = "STARTUP_CONTEXT";
 
     @BuildStep
@@ -38,7 +39,10 @@ class MainClassBuildStep {
                              List<SystemPropertyBuildItem> properties,
                              ClassOutputBuildItem classOutput) {
 
-        ClassCreator file = new ClassCreator(ClassOutput.gizmoAdaptor(classOutput.getClassOutput(), true), MAIN_CLASS, null, Object.class.getName());
+        // Application class
+        ClassCreator file = new ClassCreator(ClassOutput.gizmoAdaptor(classOutput.getClassOutput(), true), APP_CLASS, null, Application.class.getName());
+
+        // Application class: static init
 
         FieldCreator scField = file.getFieldCreator(STARTUP_CONTEXT, StartupContext.class);
         scField.setModifiers(Modifier.STATIC);
@@ -54,48 +58,70 @@ class MainClassBuildStep {
         mv.invokeStaticMethod(MethodDescriptor.ofMethod(Timing.class, "staticInitStarted", void.class));
         ResultHandle startupContext = mv.newInstance(ofConstructor(StartupContext.class));
         mv.writeStaticField(scField.getFieldDescriptor(), startupContext);
-        TryBlock catchBlock = mv.tryBlock();
+        TryBlock tryBlock = mv.tryBlock();
         for (StaticBytecodeRecorderBuildItem holder : staticInitTasks) {
             if (!holder.getBytecodeRecorder().isEmpty()) {
                 String className = getClass().getName() + "$$Proxy" + COUNT.incrementAndGet();
                 holder.getBytecodeRecorder().writeBytecode(classOutput.getClassOutput(), className);
 
-                ResultHandle dup = catchBlock.newInstance(ofConstructor(className));
-                catchBlock.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup, startupContext);
+                ResultHandle dup = tryBlock.newInstance(ofConstructor(className));
+                tryBlock.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup, startupContext);
             }
         }
-        catchBlock.returnValue(null);
+        tryBlock.returnValue(null);
 
-        CatchBlockCreator cb = catchBlock.addCatch(Throwable.class);
+        CatchBlockCreator cb = tryBlock.addCatch(Throwable.class);
         cb.invokeVirtualMethod(ofMethod(StartupContext.class, "close", void.class), startupContext);
         cb.throwException(RuntimeException.class, "Failed to start shamrock", cb.getCaughtException());
 
-        mv = file.getMethodCreator("main", void.class, String[].class);
-        mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
+        // Application class: start method
+
+        mv = file.getMethodCreator("doStart", void.class, String[].class);
+        mv.setModifiers(Modifier.PROTECTED | Modifier.FINAL);
+
         mv.invokeStaticMethod(ofMethod(Timing.class, "mainStarted", void.class));
         startupContext = mv.readStaticField(scField.getFieldDescriptor());
-        catchBlock = mv.tryBlock();
+        tryBlock = mv.tryBlock();
         for (MainBytecodeRecorderBuildItem holder : mainMethod) {
             if (!holder.getBytecodeRecorder().isEmpty()) {
                 String className = getClass().getName() + "$$Proxy" + COUNT.incrementAndGet();
                 holder.getBytecodeRecorder().writeBytecode(classOutput.getClassOutput(), className);
-                ResultHandle dup = catchBlock.newInstance(ofConstructor(className));
-                catchBlock.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup, startupContext);
+                ResultHandle dup = tryBlock.newInstance(ofConstructor(className));
+                tryBlock.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup, startupContext);
             }
         }
-        catchBlock.invokeStaticMethod(ofMethod(Timing.class, "printStartupTime", void.class));
-        mv.returnValue(null);
+        tryBlock.invokeStaticMethod(ofMethod(Timing.class, "printStartupTime", void.class));
 
-        cb = catchBlock.addCatch(Throwable.class);
+        cb = tryBlock.addCatch(Throwable.class);
         cb.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cb.getCaughtException());
         cb.invokeVirtualMethod(ofMethod(StartupContext.class, "close", void.class), startupContext);
         cb.throwException(RuntimeException.class, "Failed to start shamrock", cb.getCaughtException());
+        mv.returnValue(null);
 
-        mv = file.getMethodCreator("close", void.class);
-        mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
+        // Application class: stop method
+
+        mv = file.getMethodCreator("doStop", void.class);
+        mv.setModifiers(Modifier.PROTECTED | Modifier.FINAL);
         startupContext = mv.readStaticField(scField.getFieldDescriptor());
         mv.invokeVirtualMethod(ofMethod(StartupContext.class, "close", void.class), startupContext);
         mv.returnValue(null);
+
+        // Finish application class
+        file.close();
+
+        // Main class
+
+        file = new ClassCreator(ClassOutput.gizmoAdaptor(classOutput.getClassOutput(), true), MAIN_CLASS, null, Object.class.getName());
+
+        mv = file.getMethodCreator("main", void.class, String[].class);
+        mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
+
+        final ResultHandle appClassInstance = mv.newInstance(ofConstructor(APP_CLASS));
+        // run the app
+        mv.invokeVirtualMethod(ofMethod(Application.class, "run", void.class, String[].class), appClassInstance, mv.getMethodParam(0));
+
+        mv.returnValue(null);
+
         file.close();
         return new MainClassBuildItem(MAIN_CLASS);
     }

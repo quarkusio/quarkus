@@ -26,7 +26,7 @@ public class ExecutorTemplate {
     public ExecutorTemplate() {
     }
 
-    public Executor setupRunTime(int defaultCoreSize, int defaultMaxSize, int defaultQueueSize, float defaultGrowthResistance, int defaultKeepAliveMillis) {
+    public Executor setupRunTime(ShutdownContext shutdownContext, int defaultCoreSize, int defaultMaxSize, int defaultQueueSize, float defaultGrowthResistance, int defaultKeepAliveMillis) {
         final JBossThreadFactory threadFactory = new JBossThreadFactory(new ThreadGroup("executor"), Boolean.TRUE, null, "executor-thread-%t", JBossExecutors.loggingExceptionHandler("org.jboss.executor.uncaught"), null);
         final EnhancedQueueExecutor.Builder builder = new EnhancedQueueExecutor.Builder()
             .setRegisterMBean(false)
@@ -39,7 +39,18 @@ public class ExecutorTemplate {
         builder.setMaximumQueueSize(getIntConfigVal(QUEUE_SIZE, defaultQueueSize));
         builder.setGrowthResistance(getFloatConfigVal(GROWTH_RESISTANCE, defaultGrowthResistance));
         builder.setKeepAliveTime(getIntConfigVal("executor.keep-alive-millis", defaultKeepAliveMillis), TimeUnit.MILLISECONDS);
-        return builder.build();
+        final EnhancedQueueExecutor executor = builder.build();
+        shutdownContext.addShutdownTask(new Runnable() {
+            public void run() {
+                executor.shutdown();
+                for (;;) try {
+                    executor.awaitTermination(Long.MAX_VALUE, TimeUnit.HOURS);
+                    return;
+                } catch (InterruptedException ignored) {
+                }
+            }
+        });
+        return executor;
     }
 
     public static float getFloatConfigVal(final String key, final float defVal) {

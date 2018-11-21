@@ -27,7 +27,7 @@ public class FileConfig {
     /**
      * The file logging log level
      */
-    @ConfigProperty(name = "path", defaultValue = "true")
+    @ConfigProperty(name = "path", defaultValue = "shamrock.log")
     String path;
 
 }

@@ -107,15 +107,6 @@ public class CamelRuntime extends ServiceSupport {
         for (Route route : getContext().getRoutes()) {
             getContext().getRouteController().startRoute(route.getId());
         }
-
-        // start a non-daemon thread that waits forever
-        new Thread(() -> {
-            try {
-                Thread.sleep(Long.MAX_VALUE);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }).start();
     }
 
     @Override

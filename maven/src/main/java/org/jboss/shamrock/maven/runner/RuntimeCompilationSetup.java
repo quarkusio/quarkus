@@ -2,6 +2,7 @@ package org.jboss.shamrock.maven.runner;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -29,6 +30,8 @@ public class RuntimeCompilationSetup {
             HttpConfig config = new HttpConfig();
             config.port = 8080;
             config.host = "localhost";
+            config.ioThreads = Optional.empty();
+            config.workerThreads = Optional.empty();
 
             UndertowDeploymentTemplate.startUndertowEagerly(config, wrapper);
         }

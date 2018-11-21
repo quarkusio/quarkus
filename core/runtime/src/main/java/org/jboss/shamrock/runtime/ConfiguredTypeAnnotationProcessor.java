@@ -42,9 +42,7 @@ public class ConfiguredTypeAnnotationProcessor extends AbstractProcessor {
 
     @Override
     public Set<String> getSupportedAnnotationTypes() {
-        Set<String> ret = new HashSet<>();
-        ret.add(ConfiguredType.class.getName());
-        return ret;
+        return Collections.singleton(ConfiguredType.class.getName());
     }
 
     @Override

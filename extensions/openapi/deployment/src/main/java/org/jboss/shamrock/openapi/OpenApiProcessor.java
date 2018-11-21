@@ -118,7 +118,7 @@ public class OpenApiProcessor {
     public OpenAPI generateAnnotationModel(IndexView indexView) {
         Config config = ConfigProvider.getConfig();
         OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
-        return new OpenApiAnnotationScanner(openApiConfig, indexView).scan();
+        return new OpenApiAnnotationScanner(openApiConfig, indexView, Arrays.asList(new RESTEasyExtension(indexView))).scan();
     }
 
     private Result findStaticModel(ApplicationArchivesBuildItem archivesBuildItem) {

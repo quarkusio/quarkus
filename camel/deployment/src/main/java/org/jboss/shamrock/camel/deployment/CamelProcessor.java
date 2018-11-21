@@ -72,6 +72,7 @@ import org.jboss.shamrock.deployment.buildconfig.BuildConfig;
 import org.jboss.shamrock.deployment.buildconfig.BuildConfig.ConfigNode;
 import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
+import org.jboss.shamrock.deployment.builditem.ShutdownContextBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveMethodBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildItem;
@@ -79,6 +80,8 @@ import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildI
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBundleBuildItem;
 import org.jboss.shamrock.deployment.recording.RecorderContext;
 import org.jboss.shamrock.runtime.RuntimeValue;
+
+
 
 import static org.jboss.shamrock.annotations.ExecutionTime.RUNTIME_INIT;
 import static org.jboss.shamrock.annotations.ExecutionTime.STATIC_INIT;
@@ -194,8 +197,8 @@ class CamelProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    void createDeploymentTask(CamelTemplate template, CamelRuntimeBuildItem runtime) throws Exception {
-        template.start(runtime.getRuntime());
+    void createDeploymentTask(CamelTemplate template, CamelRuntimeBuildItem runtime, ShutdownContextBuildItem shutdown) throws Exception {
+        template.start(shutdown, runtime.getRuntime());
     }
 
     protected Stream<String> getInitRouteBuilderClasses() {

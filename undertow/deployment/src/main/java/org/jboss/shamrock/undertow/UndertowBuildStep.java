@@ -109,7 +109,7 @@ public class UndertowBuildStep {
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
 
-    @ConfigProperty(name = "http.config")
+    @ConfigProperty(name = "shamrock.http")
     HttpConfig config;
 
     @BuildStep

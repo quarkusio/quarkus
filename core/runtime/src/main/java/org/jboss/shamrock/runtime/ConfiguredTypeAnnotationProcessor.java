@@ -22,6 +22,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
+import javax.tools.Diagnostic;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
 
@@ -75,7 +76,12 @@ public class ConfiguredTypeAnnotationProcessor extends AbstractProcessor {
                     Properties properties = new Properties();
                     for (VariableElement field : fieldsIn(i.getEnclosedElements())) {
                         if (field.getAnnotation(ConfigProperty.class) != null) {
-                            properties.put(field.getSimpleName().toString(), processingEnv.getElementUtils().getDocComment(field));
+                            String docComment = processingEnv.getElementUtils().getDocComment(field);
+                            if(docComment == null) {
+                                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Unable to find javadoc for config property " + field);
+                                throw new RuntimeException("Unable to find javadoc for config property " + field);
+                            }
+                            properties.put(field.getSimpleName().toString(), docComment);
                         }
                     }
                     if (!properties.isEmpty()) {

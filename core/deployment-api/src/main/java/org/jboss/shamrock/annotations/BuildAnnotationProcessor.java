@@ -188,106 +188,111 @@ public class BuildAnnotationProcessor extends AbstractProcessor {
 
 
                 for (ExecutableElement method : methodMap.get(processor)) {
-                    if (method.getModifiers().contains(Modifier.PRIVATE)) {
-                        throw new RuntimeException("@BuildStep methods cannot be private: " + processorClassName + ":" + method);
-                    }
-                    List<InjectedBuildResource> methodInjection = new ArrayList<>();
-                    List<String> methodParamTypes = new ArrayList<>();
-                    boolean templatePresent = false;
-                    boolean recorderContextPresent = false;
-                    Record recordAnnotation = method.getAnnotation(Record.class);
-
-                    //resolve method injection
-                    for (VariableElement i : method.getParameters()) {
-                        InjectedBuildResource injection = createInjectionResource(i);
-                        if (injection.injectionType == InjectionType.TEMPLATE) {
-                            templatePresent = true;
-                        } else if (injection.injectionType == InjectionType.RECORDER_CONTEXT) {
-                            recorderContextPresent = true;
+                    try {
+                        if (method.getModifiers().contains(Modifier.PRIVATE)) {
+                            throw new RuntimeException("@BuildStep methods cannot be private: " + processorClassName + ":" + method);
                         }
-                        methodInjection.add(injection);
+                        List<InjectedBuildResource> methodInjection = new ArrayList<>();
+                        List<String> methodParamTypes = new ArrayList<>();
+                        boolean templatePresent = false;
+                        boolean recorderContextPresent = false;
+                        Record recordAnnotation = method.getAnnotation(Record.class);
 
-                        DeclaredType type = (DeclaredType) i.asType();
-                        String simpleType = processingEnv.getElementUtils().getBinaryName(((TypeElement) type.asElement())).toString();
-                        methodParamTypes.add(simpleType);
-                    }
-
-                    //make sure that this is annotated with @Record if it is using templates
-                    if (recordAnnotation == null && templatePresent) {
-                        throw new RuntimeException("Cannot inject @Template classes into methods that are not annotated @Record: " + method);
-                    } else if (recordAnnotation != null && !templatePresent) {
-                        throw new RuntimeException("@Record method does not inject any template classes " + method);
-                    } else if (recorderContextPresent && !templatePresent) {
-                        throw new RuntimeException("Cannot inject bean factory into a non @Record method");
-                    }
-                    MethodReturnInfo returnInfo = processMethodReturnType(method);
-
-                    final String buildStepName = registerBuildStep(fieldList, processorClassName, mc, returnInfo.producedReturnType, methodInjection, templatePresent, recordAnnotation, theInstance);
-
-
-                    //now generate the actual invoker class that runs the build step
-                    try (ClassCreator buildStepCreator = new ClassCreator(new ProcessorClassOutput(processor), buildStepName, null, Object.class.getName(), org.jboss.builder.BuildStep.class.getName())) {
-
-                        //the constructor, just sets the instance field
-                        MethodCreator ctor = buildStepCreator.getMethodCreator(ofConstructor(buildStepName, processorClassName));
-                        ctor.invokeSpecialMethod(ofConstructor(Object.class), ctor.getThis());
-                        FieldCreator ifield = buildStepCreator.getFieldCreator("instance", processorClassName);
-                        ctor.writeInstanceField(ifield.getFieldDescriptor(), ctor.getThis(), ctor.getMethodParam(0));
-                        ctor.returnValue(null);
-
-                        //toString
-                        MethodCreator toString = buildStepCreator.getMethodCreator("toString", String.class);
-                        toString.returnValue(toString.load(processorClassName + "." + method.getSimpleName()));
-
-                        MethodCreator buildStepMc = buildStepCreator.getMethodCreator("execute", void.class, BuildContext.class);
-                        ResultHandle p = buildStepMc.readInstanceField(ifield.getFieldDescriptor(), buildStepMc.getThis());
-
-                        //do the field injection
-                        for (InjectedBuildResource field : fieldList) {
-                            generateFieldInjection(processorClassName, buildStepMc, p, field);
-                        }
-                        TryBlock table = buildStepMc.tryBlock();
-                        List<ResultHandle> args = new ArrayList<>();
-                        ResultHandle bytecodeRecorder = null;
-                        if (templatePresent) {
-                            bytecodeRecorder = buildStepMc.newInstance(ofConstructor("org.jboss.shamrock.deployment.recording.BytecodeRecorderImpl", boolean.class), buildStepMc.load(recordAnnotation.value() == ExecutionTime.STATIC_INIT));
-                        }
-
-                        for (InjectedBuildResource i : methodInjection) {
-                            ResultHandle val = generateMethodInjection(buildStepMc, bytecodeRecorder, i);
-                            args.add(val);
-                        }
-
-
-                        ResultHandle handle = buildStepMc.invokeVirtualMethod(ofMethod(processorClassName, method.getSimpleName().toString(), returnInfo.rawReturnType, methodParamTypes.toArray(new String[0])), p, args.toArray(new ResultHandle[0]));
-                        if (returnInfo.producedReturnType != null) {
-                            BranchResult ifstm = buildStepMc.ifNull(handle);
-                            if (returnInfo.list) {
-                                ifstm.falseBranch().invokeVirtualMethod(ofMethod(BuildContext.class, "produce", void.class, List.class), buildStepMc.getMethodParam(0), handle);
-                            } else {
-                                ifstm.falseBranch().invokeVirtualMethod(ofMethod(BuildContext.class, "produce", void.class, BuildItem.class), buildStepMc.getMethodParam(0), handle);
+                        //resolve method injection
+                        for (VariableElement i : method.getParameters()) {
+                            InjectedBuildResource injection = createInjectionResource(i);
+                            if (injection.injectionType == InjectionType.TEMPLATE) {
+                                templatePresent = true;
+                            } else if (injection.injectionType == InjectionType.RECORDER_CONTEXT) {
+                                recorderContextPresent = true;
                             }
+                            methodInjection.add(injection);
+
+                            DeclaredType type = (DeclaredType) i.asType();
+                            String simpleType = processingEnv.getElementUtils().getBinaryName(((TypeElement) type.asElement())).toString();
+                            methodParamTypes.add(simpleType);
                         }
-                        if (bytecodeRecorder != null) {
-                            ResultHandle buildItem;
-                            if (recordAnnotation.value() == ExecutionTime.STATIC_INIT) {
-                                buildItem = buildStepMc.newInstance(ofConstructor(STATIC_RECORDER,
-                                        "org.jboss.shamrock.deployment.recording.BytecodeRecorderImpl"), bytecodeRecorder);
-                            } else {
-                                buildItem = buildStepMc.newInstance(ofConstructor(MAIN_RECORDER,
-                                        "org.jboss.shamrock.deployment.recording.BytecodeRecorderImpl"), bytecodeRecorder);
+
+                        //make sure that this is annotated with @Record if it is using templates
+                        if (recordAnnotation == null && templatePresent) {
+                            throw new RuntimeException("Cannot inject @Template classes into methods that are not annotated @Record: " + method);
+                        } else if (recordAnnotation != null && !templatePresent) {
+                            throw new RuntimeException("@Record method does not inject any template classes " + method);
+                        } else if (recorderContextPresent && !templatePresent) {
+                            throw new RuntimeException("Cannot inject bean factory into a non @Record method");
+                        }
+                        MethodReturnInfo returnInfo = processMethodReturnType(method);
+
+                        final String buildStepName = registerBuildStep(fieldList, processorClassName, mc, returnInfo.producedReturnType, methodInjection, templatePresent, recordAnnotation, theInstance);
+
+
+                        //now generate the actual invoker class that runs the build step
+                        try (ClassCreator buildStepCreator = new ClassCreator(new ProcessorClassOutput(processor), buildStepName, null, Object.class.getName(), org.jboss.builder.BuildStep.class.getName())) {
+
+                            //the constructor, just sets the instance field
+                            MethodCreator ctor = buildStepCreator.getMethodCreator(ofConstructor(buildStepName, processorClassName));
+                            ctor.invokeSpecialMethod(ofConstructor(Object.class), ctor.getThis());
+                            FieldCreator ifield = buildStepCreator.getFieldCreator("instance", processorClassName);
+                            ctor.writeInstanceField(ifield.getFieldDescriptor(), ctor.getThis(), ctor.getMethodParam(0));
+                            ctor.returnValue(null);
+
+                            //toString
+                            MethodCreator toString = buildStepCreator.getMethodCreator("toString", String.class);
+                            toString.returnValue(toString.load(processorClassName + "." + method.getSimpleName()));
+
+                            MethodCreator buildStepMc = buildStepCreator.getMethodCreator("execute", void.class, BuildContext.class);
+                            ResultHandle p = buildStepMc.readInstanceField(ifield.getFieldDescriptor(), buildStepMc.getThis());
+
+                            //do the field injection
+                            for (InjectedBuildResource field : fieldList) {
+                                generateFieldInjection(processorClassName, buildStepMc, p, field);
                             }
-                            buildStepMc.invokeVirtualMethod(ofMethod(BuildContext.class, "produce", void.class, BuildItem.class), buildStepMc.getMethodParam(0), buildItem);
+                            TryBlock table = buildStepMc.tryBlock();
+                            List<ResultHandle> args = new ArrayList<>();
+                            ResultHandle bytecodeRecorder = null;
+                            if (templatePresent) {
+                                bytecodeRecorder = buildStepMc.newInstance(ofConstructor("org.jboss.shamrock.deployment.recording.BytecodeRecorderImpl", boolean.class), buildStepMc.load(recordAnnotation.value() == ExecutionTime.STATIC_INIT));
+                            }
+
+                            for (InjectedBuildResource i : methodInjection) {
+                                ResultHandle val = generateMethodInjection(buildStepMc, bytecodeRecorder, i);
+                                args.add(val);
+                            }
+
+
+                            ResultHandle handle = buildStepMc.invokeVirtualMethod(ofMethod(processorClassName, method.getSimpleName().toString(), returnInfo.rawReturnType, methodParamTypes.toArray(new String[0])), p, args.toArray(new ResultHandle[0]));
+                            if (returnInfo.producedReturnType != null) {
+                                BranchResult ifstm = buildStepMc.ifNull(handle);
+                                if (returnInfo.list) {
+                                    ifstm.falseBranch().invokeVirtualMethod(ofMethod(BuildContext.class, "produce", void.class, List.class), buildStepMc.getMethodParam(0), handle);
+                                } else {
+                                    ifstm.falseBranch().invokeVirtualMethod(ofMethod(BuildContext.class, "produce", void.class, BuildItem.class), buildStepMc.getMethodParam(0), handle);
+                                }
+                            }
+                            if (bytecodeRecorder != null) {
+                                ResultHandle buildItem;
+                                if (recordAnnotation.value() == ExecutionTime.STATIC_INIT) {
+                                    buildItem = buildStepMc.newInstance(ofConstructor(STATIC_RECORDER,
+                                            "org.jboss.shamrock.deployment.recording.BytecodeRecorderImpl"), bytecodeRecorder);
+                                } else {
+                                    buildItem = buildStepMc.newInstance(ofConstructor(MAIN_RECORDER,
+                                            "org.jboss.shamrock.deployment.recording.BytecodeRecorderImpl"), bytecodeRecorder);
+                                }
+                                buildStepMc.invokeVirtualMethod(ofMethod(BuildContext.class, "produce", void.class, BuildItem.class), buildStepMc.getMethodParam(0), buildItem);
+                            }
+
+
+                            CatchBlockCreator catchBlockCreator = table.addCatch(Exception.class);
+                            catchBlockCreator.throwException(RuntimeException.class, "Failed to process build step", catchBlockCreator.getCaughtException());
+                            buildStepMc.returnValue(null);
                         }
 
 
-                        CatchBlockCreator catchBlockCreator = table.addCatch(Exception.class);
-                        catchBlockCreator.throwException(RuntimeException.class, "Failed to process build step", catchBlockCreator.getCaughtException());
-                        buildStepMc.returnValue(null);
+                        registerCapabilities(mc, method);
+                    } catch (Exception e) {
+
+                        throw new RuntimeException("Failed to process " + processorClassName + "." + method.getSimpleName(), e);
                     }
-
-
-                    registerCapabilities(mc, method);
                 }
 
                 mc.returnValue(null);
@@ -454,13 +459,6 @@ public class BuildAnnotationProcessor extends AbstractProcessor {
                             throw new RuntimeException("Unknown annotation value " + elem.getKey());
                     }
                 }
-                ret.javadoc = processingEnv.getElementUtils().getDocComment(field);
-                if (ret.javadoc == null) {
-                    ret.javadoc = tryLoadJavadocFromFile(field);
-                    if (ret.javadoc == null) {
-                        throw new RuntimeException("Field must include a javadoc description " + field);
-                    }
-                }
                 if (field.asType() instanceof PrimitiveType) {
                     PrimitiveType type = (PrimitiveType) field.asType();
                     switch (type.getKind()) {
@@ -495,9 +493,9 @@ public class BuildAnnotationProcessor extends AbstractProcessor {
                         if (typeName.equals(String.class.getName())) {
                             ret.type = ConfigType.STRING;
                         } else if (typeName.equals(Integer.class.getName())) {
-                            ret.type = ConfigType.PRIMITIVE_INT;
+                            ret.type = ConfigType.INTEGER;
                         } else if (typeName.equals(Boolean.class.getName())) {
-                            ret.type = ConfigType.PRIMITIVE_BOOLEAN;
+                            ret.type = ConfigType.BOOLEAN;
                         } else {
                             if (!isAnnotationPresent(processingEnv.getTypeUtils().asElement(typeMirror), CONFIGURED_TYPE_ANNOTATION)) {
                                 throw new RuntimeException("Cannot inject a configured instance of " + typeName + " as it is not annotated with " + CONFIGURED_TYPE_ANNOTATION + " into " + field);
@@ -523,6 +521,16 @@ public class BuildAnnotationProcessor extends AbstractProcessor {
                 }
                 if (ret.optional && ret.defaultValue != null) {
                     throw new RuntimeException(field + " is optional but has a default value. Default values must not be set for optional elements");
+                }
+
+                if(ret.type != ConfigType.MAP && ret.type != ConfigType.CUSTOM_TYPE) {
+                    ret.javadoc = processingEnv.getElementUtils().getDocComment(field);
+                    if (ret.javadoc == null) {
+                        ret.javadoc = tryLoadJavadocFromFile(field);
+                        if (ret.javadoc == null) {
+                            throw new RuntimeException("Field must include a javadoc description "  + field.getEnclosingElement() + "." + field);
+                        }
+                    }
                 }
                 return ret;
             }

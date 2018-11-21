@@ -5,7 +5,6 @@ import java.util.Properties;
 
 import org.jboss.logging.Logger;
 import org.jboss.shamrock.runtime.Template;
-import org.jboss.shamrock.runtime.ConfiguredValue;
 
 import com.arjuna.ats.arjuna.common.CoreEnvironmentBeanException;
 import com.arjuna.ats.arjuna.common.arjPropertyManager;
@@ -19,10 +18,10 @@ public class TransactionTemplate {
 
     private static final Logger log = Logger.getLogger(TransactionTemplate.class);
 
-    public void setNodeName(ConfiguredValue name) {
+    public void setNodeName(String name) {
 
         try {
-            arjPropertyManager.getCoreEnvironmentBean().setNodeIdentifier(name.getValue());
+            arjPropertyManager.getCoreEnvironmentBean().setNodeIdentifier(name);
             TxControl.setXANodeName("shamrock");
         } catch (CoreEnvironmentBeanException e) {
             e.printStackTrace();

@@ -60,7 +60,7 @@ public final class ShamrockConfig extends SimpleBuildItem {
         return Boolean.parseBoolean(val);
     }
 
-    public static boolean getBoxedBoolean(String configKey, String defaultValue, boolean allowNull) {
+    public static Boolean getBoxedBoolean(String configKey, String defaultValue, boolean allowNull) {
         Optional<String> res = ConfigProvider.getConfig().getOptionalValue(configKey, String.class);
         String val = res.orElse(defaultValue);
         Boolean result;
@@ -68,7 +68,7 @@ public final class ShamrockConfig extends SimpleBuildItem {
             if (!allowNull) {
                 throw new IllegalStateException("Excepted config property " + configKey + " was not found");
             }
-            result = false;
+            return null;
         } else {
             result = Boolean.parseBoolean(val);
         }
@@ -94,7 +94,7 @@ public final class ShamrockConfig extends SimpleBuildItem {
             if (!allowNull) {
                 throw new IllegalStateException("Excepted config property " + configKey + " was not found");
             }
-            result = 0;
+            return null;
         } else {
             result = Integer.parseInt(val);
         }

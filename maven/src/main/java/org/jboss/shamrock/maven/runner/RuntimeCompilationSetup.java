@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.jboss.shamrock.deployment.ShamrockConfig;
 import org.jboss.shamrock.undertow.runtime.HttpConfig;
 import org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate;
 
@@ -28,8 +29,8 @@ public class RuntimeCompilationSetup {
             HandlerWrapper wrapper = createHandlerWrapper();
             //TODO: we need to get these values from the config in runtime mode
             HttpConfig config = new HttpConfig();
-            config.port = 8080;
-            config.host = "localhost";
+            config.port = ShamrockConfig.getInt("shamrock.http.port", "8080");
+            config.host = ShamrockConfig.getString("shamrock.http.host", "localhost", true);
             config.ioThreads = Optional.empty();
             config.workerThreads = Optional.empty();
 

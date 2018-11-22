@@ -12,7 +12,7 @@ public class HttpConfig {
      * The HTTP port
      */
     @ConfigProperty(name = "port", defaultValue = "8080")
-    public int port;
+    public Integer port;
 
     /**
      * The HTTP host

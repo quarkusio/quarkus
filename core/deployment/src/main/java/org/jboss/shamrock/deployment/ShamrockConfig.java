@@ -29,6 +29,9 @@ public final class ShamrockConfig extends SimpleBuildItem {
             }
             return null;
         }
+        //this is deliberate, we need to make sure the returned value
+        //has a unique identity, so if it is passed into the bytecode recorder
+        //we know that it is a configured value
         String retVal = new String(opt);
         reverseMap.put(retVal, configKey);
         return retVal;
@@ -49,7 +52,7 @@ public final class ShamrockConfig extends SimpleBuildItem {
         return props;
     }
 
-    public static String getConfigKey(String val) {
+    public static String getConfigKey(Object val) {
         return reverseMap.get(val);
     }
 
@@ -74,7 +77,10 @@ public final class ShamrockConfig extends SimpleBuildItem {
         } else {
             result = asBoolean(val, configKey);
         }
-        result = Boolean.valueOf(result);
+        //this is deliberate, we need to make sure the returned value
+        //has a unique identity, so if it is passed into the bytecode recorder
+        //we know that it is a configured value
+        result = new Boolean(result);
         reverseMap.put(result, configKey);
         return result;
     }
@@ -100,7 +106,10 @@ public final class ShamrockConfig extends SimpleBuildItem {
         } else {
             result = asInteger(val, configKey);
         }
-        result = Integer.valueOf(result);
+        //this is deliberate, we need to make sure the returned value
+        //has a unique identity, so if it is passed into the bytecode recorder
+        //we know that it is a configured value
+        result = new Integer(result);
         reverseMap.put(result, configKey);
         return result;
     }

@@ -40,6 +40,7 @@ import org.jboss.protean.gizmo.ResultHandle;
 import org.jboss.protean.gizmo.TryBlock;
 import org.jboss.shamrock.deployment.ClassOutput;
 import org.jboss.shamrock.deployment.ShamrockConfig;
+import org.jboss.shamrock.runtime.ConfigHelper;
 import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.runtime.StartupContext;
 import org.jboss.shamrock.runtime.StartupTask;
@@ -303,22 +304,36 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 return method.invokeStaticMethod(ofMethod(Optional.class, "empty", Optional.class));
             }
         } else if (param instanceof String) {
-            String configParam = ShamrockConfig.getConfigKey((String) param);
+            //this allows for runtime config to automatically work
+            //if a string is passed into the template that was obtained from config the config key used to obtain it is recorded
+            //and used to make this value runtime configurable
+            String configParam = ShamrockConfig.getConfigKey(param);
             if (configParam != null) {
-                ResultHandle config = method.invokeStaticMethod(ofMethod(ConfigProvider.class, "getConfig", Config.class));
-                ResultHandle propName = method.load(configParam);
-                ResultHandle configOptional = method.invokeInterfaceMethod(ofMethod(Config.class, "getOptionalValue", Optional.class, String.class, Class.class), config, propName, method.loadClass(String.class));
-                ResultHandle result = method.invokeVirtualMethod(ofMethod(Optional.class, "isPresent", boolean.class), configOptional);
-
-                BranchResult ifResult = method.ifNonZero(result);
-                ResultHandle tr = ifResult.trueBranch().invokeVirtualMethod(ofMethod(Optional.class, "get", Object.class), configOptional);
-                ResultHandle trs = ifResult.trueBranch().invokeVirtualMethod(ofMethod(Object.class, "toString", String.class), tr);
-                ResultHandle fr = ifResult.falseBranch().load((String) param);
-                out = ifResult.mergeBranches(trs, fr);
+                out = method.invokeStaticMethod(ofMethod(ConfigHelper.class, "getString", String.class, String.class, String.class), method.load(configParam), method.load((String)param));
             } else {
                 out = method.load((String) param);
             }
-        } else if (param instanceof URL) {
+        }else if (param instanceof Integer) {
+            //this allows for runtime config to automatically work
+            //if a string is passed into the template that was obtained from config the config key used to obtain it is recorded
+            //and used to make this value runtime configurable
+            String configParam = ShamrockConfig.getConfigKey(param);
+            if (configParam != null) {
+                out = method.invokeStaticMethod(ofMethod(ConfigHelper.class, "getInteger", Integer.class, String.class, int.class), method.load(configParam), method.load((Integer)param));
+            } else {
+                out = method.invokeStaticMethod(ofMethod(Integer.class, "valueOf", Integer.class, int.class), method.load((Integer) param));
+            }
+        } else if (param instanceof Boolean) {
+            //this allows for runtime config to automatically work
+            //if a string is passed into the template that was obtained from config the config key used to obtain it is recorded
+            //and used to make this value runtime configurable
+            String configParam = ShamrockConfig.getConfigKey(param);
+            if (configParam != null) {
+                out = method.invokeStaticMethod(ofMethod(ConfigHelper.class, "getBoolean", Boolean.class, String.class, boolean.class), method.load(configParam), method.load((Boolean) param));
+            } else {
+                out = method.invokeStaticMethod(ofMethod(Boolean.class, "valueOf", Boolean.class, boolean.class), method.load((Boolean) param));
+            }
+        }   else if (param instanceof URL) {
             String url = ((URL) param).toExternalForm();
             TryBlock et = method.tryBlock();
             out = et.newInstance(MethodDescriptor.ofConstructor(URL.class, String.class), et.load(url));
@@ -347,11 +362,11 @@ public class BytecodeRecorderImpl implements RecorderContext {
             out = method.invokeStaticMethod(ofMethod(Class.class, "forName", Class.class, String.class, boolean.class, ClassLoader.class), method.load(name), method.load(true), tccl);
         } else if (expectedType == boolean.class) {
             out = method.load((boolean) param);
-        } else if (expectedType == Boolean.class || param instanceof Boolean) {
+        } else if (expectedType == Boolean.class) {
             out = method.invokeStaticMethod(ofMethod(Boolean.class, "valueOf", Boolean.class, boolean.class), method.load((boolean) param));
         } else if (expectedType == int.class) {
             out = method.load((int) param);
-        } else if (expectedType == Integer.class || param instanceof Integer) {
+        } else if (expectedType == Integer.class) {
             out = method.invokeStaticMethod(ofMethod(Integer.class, "valueOf", Integer.class, int.class), method.load((int) param));
         } else if (expectedType == short.class) {
             out = method.load((short) param);
@@ -494,6 +509,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
             //now handle accessible fields
             for(Field field : param.getClass().getFields()) {
                 if(!Modifier.isFinal(field.getModifiers()) && ! Modifier.isStatic(field.getModifiers()) && !handledProperties.contains(field.getName())) {
+
                     try {
                         ResultHandle val = loadObjectInstance(method, field.get(param), returnValueResults, field.getType());
                         method.writeInstanceField(FieldDescriptor.of(param.getClass(), field.getName(), field.getType()), out, val);

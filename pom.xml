@@ -108,8 +108,6 @@
         <quartz.version>2.3.0</quartz.version>
         <jakarta-activation.version>1.2.1</jakarta-activation.version>
         <h2.version>1.4.197</h2.version>
-
-        <!-- Currently still needs a custom build: GAV is org.postgresql:postgresql-protean -->
         <postgresql-jdbc.version>42.2.6-SNAPSHOT</postgresql-jdbc.version>
 
         <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>
@@ -1248,7 +1246,7 @@
             </dependency>
             <dependency>
                 <groupId>org.postgresql</groupId>
-                <artifactId>postgresql-protean</artifactId>
+                <artifactId>postgresql</artifactId>
                 <version>${postgresql-jdbc.version}</version>
             </dependency>
 

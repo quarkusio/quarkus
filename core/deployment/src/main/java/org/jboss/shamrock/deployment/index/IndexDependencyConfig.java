@@ -14,23 +14,30 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.logging.deployment;
+package org.jboss.shamrock.deployment.index;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.shamrock.runtime.ConfigGroup;
 
 @ConfigGroup
-public class CategoryConfig {
+public class IndexDependencyConfig {
 
     /**
-     * The minimum level that this category can be set to
+     * The maven groupId of the artifact to index
      */
-    @ConfigProperty(name = "min-level", defaultValue = "inherit")
-    String minLevel;
+    @ConfigProperty(name = "groupId")
+    String groupId;
 
     /**
-     * The log level level for this category
+     * The maven artifactId of the artifact to index
      */
-    @ConfigProperty(name = "level", defaultValue = "inherit")
-    String level;
+    @ConfigProperty(name = "artifactId")
+    String artifactId;
+
+    /**
+     * The maven classifier of the artifact to index
+     */
+    @ConfigProperty(name = "classifier", defaultValue = "")
+    String classifier;
+
 }

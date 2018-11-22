@@ -26,5 +26,5 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.TYPE)
-public @interface ConfiguredType {
+public @interface ConfigGroup {
 }

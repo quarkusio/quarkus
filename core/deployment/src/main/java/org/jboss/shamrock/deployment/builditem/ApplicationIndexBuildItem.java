@@ -14,23 +14,24 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.logging.deployment;
+package org.jboss.shamrock.deployment.builditem;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shamrock.runtime.ConfigGroup;
+import org.jboss.builder.item.SimpleBuildItem;
+import org.jboss.jandex.Index;
 
-@ConfigGroup
-public class CategoryConfig {
+/**
+ * The Jandex index of the application root
+ */
+public final class ApplicationIndexBuildItem extends SimpleBuildItem {
 
-    /**
-     * The minimum level that this category can be set to
-     */
-    @ConfigProperty(name = "min-level", defaultValue = "inherit")
-    String minLevel;
+    private final Index index;
 
-    /**
-     * The log level level for this category
-     */
-    @ConfigProperty(name = "level", defaultValue = "inherit")
-    String level;
+
+    public ApplicationIndexBuildItem(Index index) {
+        this.index = index;
+    }
+
+    public Index getIndex() {
+        return index;
+    }
 }

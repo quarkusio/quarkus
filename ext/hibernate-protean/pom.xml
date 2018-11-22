@@ -32,8 +32,7 @@
 
         <!-- Dependency versions -->
 
-        <!-- Requires postgresql v. 42.2.6-SNAPSHOT so to include 7a0b7d65582a21376fc114eb197b5bae1fe1ea00 -->
-        <version.org.postgresql.jdbc>42.2.6-SNAPSHOT</version.org.postgresql.jdbc>
+        <version.org.postgresql.jdbc>42.2.5</version.org.postgresql.jdbc>
         <version.junit>4.12</version.junit>
         <version.org.hibernate>5.4.0-protean-0.0.1</version.org.hibernate>
         <version.org.hibernate.tooling>5.3.6.Final</version.org.hibernate.tooling>

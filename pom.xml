@@ -108,7 +108,7 @@
         <quartz.version>2.3.0</quartz.version>
         <jakarta-activation.version>1.2.1</jakarta-activation.version>
         <h2.version>1.4.197</h2.version>
-        <postgresql-jdbc.version>42.2.6-SNAPSHOT</postgresql-jdbc.version>
+        <postgresql-jdbc.version>42.2.5</postgresql-jdbc.version>
 
         <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>
 

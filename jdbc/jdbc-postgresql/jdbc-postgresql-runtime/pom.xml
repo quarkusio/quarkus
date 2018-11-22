@@ -27,16 +27,14 @@
 
     <artifactId>jdbc-postgresql-runtime</artifactId>
 
-    <!--
-    There's no code here, we just want precise control on which version
-    of this driver to use - hopefully this will improve when upstream patches
-    get accepted ?
-    -->
-
     <dependencies>
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.oracle.substratevm</groupId>
+            <artifactId>svm</artifactId>
         </dependency>
     </dependencies>
 

@@ -40,6 +40,7 @@ import javax.enterprise.inject.AmbiguousResolutionException;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Default;
 import javax.enterprise.inject.spi.Bean;
+import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.util.TypeLiteral;
 import javax.inject.Singleton;
@@ -183,6 +184,11 @@ class ArcContainerImpl implements ArcContainer {
                 }
             }
         };
+    }
+
+    @Override
+    public BeanManager beanManager() {
+        return BeanManagerImpl.INSTANCE.get();
     }
 
     @Override

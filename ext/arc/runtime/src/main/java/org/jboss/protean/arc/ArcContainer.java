@@ -19,6 +19,7 @@ package org.jboss.protean.arc;
 import java.lang.annotation.Annotation;
 import java.util.function.Supplier;
 
+import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.util.TypeLiteral;
 
 /**
@@ -70,5 +71,7 @@ public interface ArcContainer {
      * @param action
      */
     <T> Supplier<T> withinRequest(Supplier<T> action);
+
+    BeanManager beanManager();
 
 }

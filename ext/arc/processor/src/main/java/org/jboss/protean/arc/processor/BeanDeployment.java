@@ -290,36 +290,51 @@ public class BeanDeployment {
                 continue;
             }
 
+            boolean hasBeanDefiningAnnotation = false;
             if (annotationStore.hasAnyAnnotation(beanClass, beanDefiningAnnotations)) {
-
+                hasBeanDefiningAnnotation = true;
                 beanClasses.add(beanClass);
+            }
 
-                for (MethodInfo method : beanClass.methods()) {
-                    if (annotationStore.getAnnotations(method).isEmpty()) {
-                        continue;
-                    }
-                    if (annotationStore.hasAnnotation(method, DotNames.PRODUCES)) {
-                        // Producers are not inherited
-                        producerMethods.add(method);
-                    } else if (annotationStore.hasAnnotation(method, DotNames.DISPOSES)) {
-                        // Disposers are not inherited
-                        disposerMethods.add(method);
-                    } else if (annotationStore.hasAnnotation(method, DotNames.OBSERVES)) {
-                        // TODO observers are inherited
-                        syncObserverMethods.add(method);
-                    } else if (annotationStore.hasAnnotation(method, DotNames.OBSERVES_ASYNC)) {
-                        // TODO observers are inherited
-                        asyncObserverMethods.add(method);
-                    }
+            for (MethodInfo method : beanClass.methods()) {
+                if (annotationStore.getAnnotations(method).isEmpty()) {
+                    continue;
                 }
-                for (FieldInfo field : beanClass.fields()) {
-                    if (annotationStore.hasAnnotation(field, DotNames.PRODUCES)) {
-                        // Producer fields are not inherited
-                        producerFields.add(field);
+                if (annotationStore.hasAnnotation(method, DotNames.PRODUCES)) {
+                    // Producers are not inherited
+                    producerMethods.add(method);
+                    if (!hasBeanDefiningAnnotation) {
+                        beanClasses.add(beanClass);
+                    }
+                } else if (annotationStore.hasAnnotation(method, DotNames.DISPOSES)) {
+                    // Disposers are not inherited
+                    disposerMethods.add(method);
+                } else if (annotationStore.hasAnnotation(method, DotNames.OBSERVES)) {
+                    // TODO observers are inherited
+                    syncObserverMethods.add(method);
+                    if (!hasBeanDefiningAnnotation) {
+                        LOGGER.info("Observer method found but the declaring class has no bean defining annotation - using @Dependent");
+                        beanClasses.add(beanClass);
+                    }
+                } else if (annotationStore.hasAnnotation(method, DotNames.OBSERVES_ASYNC)) {
+                    // TODO observers are inherited
+                    asyncObserverMethods.add(method);
+                    if (!hasBeanDefiningAnnotation) {
+                        LOGGER.info("Observer method found but the declaring class has no bean defining annotation - using @Dependent");
+                        beanClasses.add(beanClass);
                     }
                 }
             }
-
+            for (FieldInfo field : beanClass.fields()) {
+                if (annotationStore.hasAnnotation(field, DotNames.PRODUCES)) {
+                    // Producer fields are not inherited
+                    producerFields.add(field);
+                    if (!hasBeanDefiningAnnotation) {
+                        LOGGER.info("Producer field found but the declaring class has no bean defining annotation - using @Dependent");
+                        beanClasses.add(beanClass);
+                    }
+                }
+            }
         }
 
         // Build metadata for typesafe resolution

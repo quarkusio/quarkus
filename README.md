@@ -37,7 +37,9 @@ At the moment is has the following features:
     * OSX
         * `xcode-select --install`
     * Linux
-        * TBD
+        * Make sure headers are available on your system (you'll hit 'Basic header file missing (<zlib.h>)' error if they aren't).
+            * On Fedora `sudo dnf install zlib-devel`
+            * Otherwise `sudo apt-get install libz-dev`
 * Install GraalVM (minimum RC9)
 * Set `GRAALVM_HOME` to your GraalVM Home directory e.g. `/Users/emmanuel/JDK/GraalVM/Contents/Home`
 * `mvn install`

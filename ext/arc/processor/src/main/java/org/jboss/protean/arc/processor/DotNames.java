@@ -49,7 +49,7 @@ import javax.interceptor.InterceptorBinding;
 
 import org.jboss.jandex.DotName;
 
-final class DotNames {
+public final class DotNames {
 
     private static final Map<String, DotName> NAMES = new ConcurrentHashMap<>();
 
@@ -101,12 +101,12 @@ final class DotNames {
         return DotName.createComponentized(prefixName, local);
     }
 
-    static String simpleName(DotName dotName) {
+    public static String simpleName(DotName dotName) {
         String local = dotName.local();
         return local.contains(".") ? Types.convertNested(local.substring(local.lastIndexOf("."), local.length())) : Types.convertNested(local);
     }
 
-    static String packageName(DotName dotName) {
+    public static String packageName(DotName dotName) {
         String name = dotName.toString();
         int index = name.lastIndexOf('.');
         if (index == -1) {

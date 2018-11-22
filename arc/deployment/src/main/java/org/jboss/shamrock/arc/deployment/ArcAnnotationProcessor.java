@@ -97,7 +97,6 @@ public class ArcAnnotationProcessor {
     @Inject
     List<AdditionalBeanBuildItem> additionalBeans;
 
-
     @Inject
     BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods;
 
@@ -108,16 +107,18 @@ public class ArcAnnotationProcessor {
     List<BeanRegistrarBuildItem> beanRegistrars;
 
     @Inject
+    List<BeanDeploymentValidatorBuildItem> beanDeploymentValidators;
+
+    @Inject
     List<ResourceAnnotationBuildItem> resourceAnnotations;
 
-
-    @BuildStep(providesCapabilities = Capabilities.CDI_ARC, applicationArchiveMarkers = {"META-INF/beans.xml", "META-INF/services/javax.enterprise.inject.spi.Extension"})
+    @BuildStep(providesCapabilities = Capabilities.CDI_ARC, applicationArchiveMarkers = { "META-INF/beans.xml",
+            "META-INF/services/javax.enterprise.inject.spi.Extension" })
     @Record(STATIC_INIT)
-    public BeanContainerBuildItem build(ArcDeploymentTemplate arcTemplate, BuildProducer<ServletExtensionBuildItem> extensions, BuildProducer<InjectionProviderBuildItem> injectionProvider,
-                                        List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems,
-                                        List<GeneratedBeanBuildItem> generatedBeans,
-                                        List<AnnotationTransformerBuildItem> annotationTransformers,
-                                        ShutdownContextBuildItem shutdown) throws Exception {
+    public BeanContainerBuildItem build(ArcDeploymentTemplate arcTemplate, BuildProducer<ServletExtensionBuildItem> extensions,
+            BuildProducer<InjectionProviderBuildItem> injectionProvider, List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems,
+            List<GeneratedBeanBuildItem> generatedBeans, List<AnnotationTransformerBuildItem> annotationTransformerAdapters,
+            List<org.jboss.shamrock.arc.deployment.AnnotationTransformerBuildItem> annotationTransformers, ShutdownContextBuildItem shutdown) throws Exception {
 
         List<String> additionalBeans = new ArrayList<>();
         for (AdditionalBeanBuildItem i : this.additionalBeans) {
@@ -178,15 +179,18 @@ public class ArcAnnotationProcessor {
                 reflectiveFields.produce(new ReflectiveFieldBuildItem(fieldInfo));
             }
         });
-        for (AnnotationTransformerBuildItem transformer : annotationTransformers) {
+        for (AnnotationTransformerBuildItem adapterItem : annotationTransformerAdapters) {
             // TODO make use of Arc API instead of BiFunction
             builder.addAnnotationTransformer(new AnnotationsTransformer() {
 
                 @Override
                 public Collection<AnnotationInstance> transform(AnnotationTarget target, Collection<AnnotationInstance> annotations) {
-                    return transformer.getTransformer().apply(target, annotations);
+                    return adapterItem.getTransformer().apply(target, annotations);
                 }
             });
+        }
+        for (org.jboss.shamrock.arc.deployment.AnnotationTransformerBuildItem transformerItem : annotationTransformers) {
+            builder.addAnnotationTransformer(transformerItem.getAnnotationsTransformer());
         }
 
         builder.setOutput(new ResourceOutput() {
@@ -217,14 +221,18 @@ public class ArcAnnotationProcessor {
                 }
             }
         });
-        for (BeanRegistrarBuildItem i : beanRegistrars) {
-            builder.addBeanRegistrar(i.getBeanRegistrar());
+        for (BeanRegistrarBuildItem item : beanRegistrars) {
+            builder.addBeanRegistrar(item.getBeanRegistrar());
+        }
+        for (BeanDeploymentValidatorBuildItem item : beanDeploymentValidators) {
+            builder.addBeanDeploymentValidator(item.getBeanDeploymentValidator());
         }
         BeanProcessor beanProcessor = builder.build();
         beanProcessor.process();
 
         ArcContainer container = arcTemplate.getContainer(shutdown);
-        BeanContainer bc = arcTemplate.initBeanContainer(container, beanContainerListenerBuildItems.stream().map(BeanContainerListenerBuildItem::getBeanContainerListener).collect(Collectors.toList()));
+        BeanContainer bc = arcTemplate.initBeanContainer(container,
+                beanContainerListenerBuildItems.stream().map(BeanContainerListenerBuildItem::getBeanContainerListener).collect(Collectors.toList()));
         injectionProvider.produce(new InjectionProviderBuildItem(arcTemplate.setupInjection(container)));
         extensions.produce(new ServletExtensionBuildItem(arcTemplate.setupRequestScope(container)));
 
@@ -233,7 +241,8 @@ public class ArcAnnotationProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    void startupEvent(ArcDeploymentTemplate template, List<ServiceStartBuildItem> startList, BeanContainerBuildItem beanContainer, ShutdownContextBuildItem shutdown) {
+    void startupEvent(ArcDeploymentTemplate template, List<ServiceStartBuildItem> startList, BeanContainerBuildItem beanContainer,
+            ShutdownContextBuildItem shutdown) {
         template.handleLifecycleEvents(shutdown, beanContainer.getValue());
     }
 

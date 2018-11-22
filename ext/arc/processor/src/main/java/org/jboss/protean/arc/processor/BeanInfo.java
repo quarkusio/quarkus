@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -46,6 +47,10 @@ import org.jboss.protean.gizmo.MethodCreator;
  * @author Martin Kouba
  */
 public class BeanInfo {
+
+    private static final AtomicInteger ID_GENERATOR = new AtomicInteger();
+
+    private final String identifier;
 
     private final ClassInfo implClazz;
 
@@ -132,6 +137,13 @@ public class BeanInfo {
         this.creatorConsumer = creatorConsumer;
         this.destroyerConsumer = destroyerConsumer;
         this.params = params;
+        // Identifier is generated and unique for a specific deployment
+        // TODO: I am not quite sure if a simple idx is the best id
+        this.identifier = "" + ID_GENERATOR.incrementAndGet();
+    }
+
+    public String getIdentifier() {
+        return identifier;
     }
 
     public Optional<AnnotationTarget> getTarget() {

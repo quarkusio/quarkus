@@ -39,7 +39,7 @@ public class AnnotationStore {
 
     private final EnumMap<Kind, List<AnnotationsTransformer>> transformersMap;
 
-    public AnnotationStore(Collection<AnnotationsTransformer> transformers) {
+    AnnotationStore(Collection<AnnotationsTransformer> transformers) {
         if (transformers == null || transformers.isEmpty()) {
             this.transformed = null;
             this.transformersMap = null;
@@ -52,22 +52,22 @@ public class AnnotationStore {
         }
     }
 
-    Collection<AnnotationInstance> getAnnotations(AnnotationTarget target) {
+    public Collection<AnnotationInstance> getAnnotations(AnnotationTarget target) {
         if (transformed != null) {
             return transformed.computeIfAbsent(target, this::transform);
         }
         return getOriginalAnnotations(target);
     }
 
-    AnnotationInstance getAnnotation(AnnotationTarget target, DotName name) {
+    public AnnotationInstance getAnnotation(AnnotationTarget target, DotName name) {
         return Annotations.find(getAnnotations(target), name);
     }
 
-    boolean hasAnnotation(AnnotationTarget target, DotName name) {
+    public boolean hasAnnotation(AnnotationTarget target, DotName name) {
         return Annotations.contains(getAnnotations(target), name);
     }
 
-    boolean hasAnyAnnotation(AnnotationTarget target, Iterable<DotName> names) {
+    public boolean hasAnyAnnotation(AnnotationTarget target, Iterable<DotName> names) {
         return Annotations.containsAny(getAnnotations(target), names);
     }
 

@@ -45,7 +45,7 @@
         <opentracing.version>0.30.0</opentracing.version>
         <opentracing-jaxrs.version>0.0.12</opentracing-jaxrs.version>
         <opentracing-tracerresolver.version>0.1.4</opentracing-tracerresolver.version>
-        <jaeger.version>0.21.0</jaeger.version>	
+        <jaeger.version>0.21.0</jaeger.version>
         <undertow.version>2.0.16.Final</undertow.version>
         <xnio.version>3.3.8.Final</xnio.version>
         <jboss-servlet-api_4.0_spec.version>1.0.0.Final</jboss-servlet-api_4.0_spec.version>
@@ -100,6 +100,7 @@
         <vertx.version>3.5.4</vertx.version>
         <httpclient.version>4.5.4</httpclient.version>
         <httpcore.version>4.4.7</httpcore.version>
+        <quartz.version>2.3.0</quartz.version>
 
         <!-- Currently still needs a custom build: GAV is org.postgresql:postgresql-protean -->
         <postgresql-jdbc.version>42.2.6-SNAPSHOT</postgresql-jdbc.version>
@@ -138,6 +139,7 @@
         <module>fault-tolerance</module>
         <module>vertx</module>
         <module>reactive-streams-operators</module>
+        <module>scheduler</module>
         <module>websockets</module>
         <module>jdbc</module>
         <module>examples</module>
@@ -472,6 +474,17 @@
                 <artifactId>shamrock-websockets-runtime</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-scheduler-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-scheduler-runtime</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
 
             <dependency>
                 <groupId>org.jboss.logging</groupId>
@@ -1131,6 +1144,12 @@
                 <groupId>io.vertx</groupId>
                 <artifactId>vertx-core</artifactId>
                 <version>${vertx.version}</version>
+            </dependency>
+
+            <dependency>
+              <groupId>org.quartz-scheduler</groupId>
+              <artifactId>quartz</artifactId>
+              <version>${quartz.version}</version>
             </dependency>
 
         </dependencies>

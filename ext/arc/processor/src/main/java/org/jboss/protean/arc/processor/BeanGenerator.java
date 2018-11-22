@@ -192,6 +192,7 @@ public class BeanGenerator extends AbstractGenerator {
         constructor.writeInstanceField(params.getFieldDescriptor(), constructor.getThis(), paramsHandle);
         constructor.returnValue(null);
 
+        implementGetIdentifier(bean, beanCreator);
         if (!bean.hasDefaultDestroy()) {
             implementDestroy(bean, beanCreator, providerTypeName, Collections.emptyMap(), reflectionRegistration);
         }
@@ -259,6 +260,7 @@ public class BeanGenerator extends AbstractGenerator {
         createProviderFields(beanCreator, bean, injectionPointToProviderField, interceptorToProviderField);
         createConstructor(classOutput, beanCreator, bean, baseName, injectionPointToProviderField, interceptorToProviderField, annotationLiterals);
 
+        implementGetIdentifier(bean, beanCreator);
         if (!bean.hasDefaultDestroy()) {
             implementDestroy(bean, beanCreator, providerTypeName, injectionPointToProviderField, reflectionRegistration);
         }
@@ -328,6 +330,7 @@ public class BeanGenerator extends AbstractGenerator {
         createProviderFields(beanCreator, bean, injectionPointToProviderField, Collections.emptyMap());
         createConstructor(classOutput, beanCreator, bean, baseName, injectionPointToProviderField, Collections.emptyMap(), annotationLiterals);
 
+        implementGetIdentifier(bean, beanCreator);
         if (!bean.hasDefaultDestroy()) {
             implementDestroy(bean, beanCreator, providerTypeName, injectionPointToProviderField, reflectionRegistration);
         }
@@ -391,6 +394,7 @@ public class BeanGenerator extends AbstractGenerator {
         createProviderFields(beanCreator, bean, Collections.emptyMap(), Collections.emptyMap());
         createConstructor(classOutput, beanCreator, bean, baseName, Collections.emptyMap(), Collections.emptyMap(), annotationLiterals);
 
+        implementGetIdentifier(bean, beanCreator);
         if (!bean.hasDefaultDestroy()) {
             implementDestroy(bean, beanCreator, providerTypeName, null, reflectionRegistration);
         }
@@ -1214,6 +1218,17 @@ public class BeanGenerator extends AbstractGenerator {
     protected void implementGetScope(BeanInfo bean, ClassCreator beanCreator) {
         MethodCreator getScope = beanCreator.getMethodCreator("getScope", Class.class).setModifiers(ACC_PUBLIC);
         getScope.returnValue(getScope.loadClass(bean.getScope().getClazz()));
+    }
+
+    /**
+     *
+     * @param bean
+     * @param beanCreator
+     * @see InjectableBean#getIdentifier()
+     */
+    protected void implementGetIdentifier(BeanInfo bean, ClassCreator beanCreator) {
+        MethodCreator getScope = beanCreator.getMethodCreator("getIdentifier", String.class).setModifiers(ACC_PUBLIC);
+        getScope.returnValue(getScope.load(bean.getIdentifier()));
     }
 
     /**

@@ -1,7 +1,5 @@
 /*
- * JBoss, Home of Professional Open Source.
- *
- * Copyright 2011 Red Hat, Inc.
+ * Copyright 2018 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.

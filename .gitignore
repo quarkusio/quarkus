@@ -16,6 +16,7 @@ hotspot.log
 .graal-install
 hs_err_pid*.log
 server.log
+shamrock.log
 dumps
 *.orig
 *.rej

@@ -1,0 +1,127 @@
+// tag::main[]
+
+== Extension Authors Guide
+
+Shamrock extensions consist of two distinct parts, augmentation and runtime. The augmentation part is responsible for
+all metadata processing, such as reading annotation, XML descriptors etc. The output of this this augmentation phase
+is recorded bytecode which is responsible for directly instantiating the relevant runtime services.
+
+This means that metadata is only processed once at build time, which both saves on startup time, but also on memory
+usage as the classes etc that are used for processing are not loaded (or even present) in the runtime JVM.
+
+=== Maven setup
+
+Your runtime artifact should depend on shamrock-core-runtime, and possibly the runtime artifacts of other Shamrock
+modules if you want to use functionality provided by them. You will also need to include the `maven-dependency-plugin`
+to write out the needed runtime dependencies, if you are using the shamrock parent pom it will automatically
+inherit the correct configuration.
+
+[source%nowrap,xml]
+----
+
+<dependencies>
+    <dependency>
+      <groupId>org.jboss.shamrock</groupId>
+      <artifactId>shamrock-core-runtime</artifactId>
+    </dependency>
+</dependencies>
+
+<build>
+    <plugins>
+        <plugin>
+            <artifactId>maven-dependency-plugin</artifactId>
+        </plugin>
+    </plugins>
+</build>
+----
+
+WARNING: Under no circumstances can you runtime module depend on a deployment artifact. This would result
+in pulling all the deployment time code into runtime scope, which defeats the purpose of having the split.
+
+
+Your deployment time module should depend on shamrock-core-deployment, your runtime artifact,
+and possibly the deployment artifacts of other Shamrock modules if you want to use functionality provided by them.
+
+
+[source%nowrap,xml]
+----
+<dependency>
+  <groupId>org.jboss.shamrock</groupId>
+  <artifactId>shamrock-core-deployment</artifactId>
+</dependency>
+----
+
+NOTE: For historical reasons the `augment` step is still called `deployment`, this will likely remain until we do our big rename.
+
+=== Build Step Processors
+
+Work is done at deployment time by producing and consuming instances of `org.jboss.builder.item.BuildItem`. This is done
+by creating a class that has method(s) annotated with `org.jboss.shamrock.annotations.BuildStep`. These classes can
+consume items by injection, and produce items by either returning them from the method or by injecting an
+instance of `org.jboss.shamrock.annotations.BuildProducer` for the produced type. These processors can also record
+bytecode invocations, which is mapped to a `BuildItem` transparently.
+
+There are two distinct types of `BuildItem`, `SimpleBuildItem` and `MultiBuildItem`. `SimpleBuildItem` will only ever
+have a single instance created, while `MultiBuildItem` can have many instances.
+
+Injection can be done either via field injection, or via method parameter injection. Injection is used to set up
+dependencies between build steps. For example if you inject a `List<ServletBuildItem>` your build step will not be called
+until all possible producers of `ServletBuildItem` have been called. Injected objects are only valid during a `@BuildStep`
+method invocation, once the method is complete they are no longer valid.
+
+The following items are valid for injection:
+
+- `SimpleBuildItem` instances to(at some point we may support `Optional<SimpleBuildItem>`, but it is not implemented yet)
+- `List<? extension MultiBuildItem>` instances
+- `BuildProducer<? extends BuildItem>` instances
+
+If a method returns a `BuildItem`, or injects a `BuildProducer` it is considered to be a producer of that item type,
+while if it injects the item or list of items it is a consumer.
+
+Note that a `@BuildStep` method will only be called if it produces something that another consumer or the final output
+requires. If there is no consumer for a particular item then it will not be produced. What is required will depend on
+the final target that is being produced, for example when running in developer mode the final output will not ask
+for substrate specific build items such as `ReflectiveClassBuildItem` so methods that only produce substrate specific
+items will not be invoked.
+
+Note that private methods and fields are not allowed, as injection is resolved at compile time via an annotation processor,
+and the resulting code does not have permission to inject private fields or invoke private methods.
+
+`BuildItem` instances should be immutable, as the producer/consumer model does not allow for mutation to be correctly
+ordered. This is not enforced but failure to adhere to this can result in race conditions.
+
+=== Configuration
+
+Configuration is done via `@ConfigProperty`, this section is TBD.
+
+=== Bytecode Recording
+
+One of the main outputs of the build process is recorded bytecode. This bytecode actually sets up the runtime environment,
+for example in order to start Undertow the resulting application will have some bytecode that directly registers all
+Servlet instances and then starts Undertow.
+
+As writing bytecode directly is incredibly complex this is instead done via bytecode recorders. At deployment time invocations
+are made on proxy instances of template objects that contain the actual runtime logic, and these invocations are recorded,
+including the value of method parameters. Bytecode is then created to do these same invocations on the actual template
+object at runtime.
+
+This is done by adding a `@Record` annotation to an `@BuildStep` method, and injecting an `@Template` annotated class
+from the runtime module. A proxy of the template will be injected into the method, and any method invocations that are
+made will be recorded, and will be run at application startup.
+
+Methods on a template can return a value, which must be proxiable (if you want to return a non-proxiable item wrap it
+in `org.jboss.shamrock.runtime.RuntimeValue`). These proxies may not be invoked on directly, however they can be passed
+into other template methods. This can be any template method, including from other `@Record` methods, so a common pattern
+is to produce `BuildItem` instances that wrap the results of these template invocations.
+
+For instance in order to make arbitrary changes to the Servlet deployment Undertow has a `ServletExtensionBuildItem`,
+that is a `MultiBuildItem` that wraps a `ServletExtension` instance. I can return a `ServletExtension` from a template
+in another module, and Undertow will consume it and pass it into the template method that starts Undertow.
+
+At run time the bytecode will be invoked in the order it is generated. This means that build step dependencies implicitly
+control the order that generated bytecode is run. In the example above we know that the bytecode that produces a
+`ServletExtensionBuildItem` will be run before the bytecode that consumes it.
+
+TODO: config integration
+
+// end::main[]

@@ -1,4 +1,4 @@
-= Creating your first ShamRock application
+= Creating your first Shamrock application
 
 :toc: macro
 :toclevels: 4
@@ -11,14 +11,15 @@
 :sectnumlevels: 4
 
 
-Learn how to create a Hello World ShamRock app. This guide covers:
+Learn how to create a Hello World Shamrock app.
+This guide covers:
 
 * Bootstrapping an application
 * Creating a JAX-RS endpoint
 * Injecting beans
 * Functional tests
 * Packaging of the application
-* Packaging of the application as a native binary
+* Packaging of the application as a native executable
 * Packaging of the application in a Docker container
 * Deploy the application on OpenShift
 
@@ -29,17 +30,30 @@ To complete this guide, you need:
 * less than 20 minutes
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
-* GraalVM installed from the https://www.oracle.com/technetwork/oracle-labs/program-languages/downloads/index.html[GraalVM web site].
+* GraalVM installed from the http://www.graalvm.org/downloads/[GraalVM web site].
+Using the community edition is enough.
 At least version {graal-version} is required.
 * The `GRAAL_HOME` environment variable configured appropriately
 * Apache Maven 3.5+
 * A running Docker
 
+[NOTE]
+====
+Once you have downloaded GraalVM, expand the archive and set the `GRAAL_HOME` variable to this location:
+
+`export GRAALVM_HOME=~clement/Development/graalvm/`
+
+On MacOS, point the variable to the `Home` sub-directory:
+
+`export GRAALVM_HOME=~clement/Development/graalvm/Contents/Home/`
+====
+
 == Creating the application
 
 === Creating the pom file
 
-In your favorite IDE, create a new Maven project. It should generate a `pom.xml` file with a content similar to:
+In your favorite IDE, create a new Maven project.
+It should generate a `pom.xml` file with a content similar to:
 
 [source,xml]
 ----
@@ -106,13 +120,12 @@ As we are going to create a JAX-RS endpoint, you also need to add the following 
 </dependencies>
 ----
 
-ARC is a CDI-lite implementation providing dependency injection. The logging dependency provides access to logging
-facilities using your favorite API.
+ARC is a CDI-lite implementation providing dependency injection.
+The logging dependency provides access to logging facilities using your favorite API.
 
 === Creating the Application class
 
-It's now time to create the `Application` class, create the `src/main/java/org/acme/quickstart/MyApplication.java` file
-with the following content:
+It's now time to create the `Application` class, create the `src/main/java/org/acme/quickstart/MyApplication.java` file with the following content:
 
 [source,java]
 ----
@@ -129,7 +142,7 @@ public class MyApplication extends Application {
 
 ==== Creating the JaxRS resource
 
-Create the `src/main/java/org/acme/quickstart/MyResource.java` file with the following content:
+Create the `src/main/java/org/acme/quickstart/GreetingResource.java` file with the following content:
 
 [source,java]
 ----
@@ -141,7 +154,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 @Path("/hello")
-public class MyResource {
+public class GreetingResource {
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
@@ -153,7 +166,8 @@ public class MyResource {
 
 === Running the application
 
-Now we are ready to run our application. Use: `mvn compile shamrock:run`:
+Now we are ready to run our application.
+Use: `mvn compile shamrock:run`:
 
 [source, text]
 ----
@@ -209,8 +223,8 @@ Hit `CTRL+C` to stop the application.
 
 === Using injection
 
-Let's add a companion bean. Create the `src/main/java/org/acme/quickstart/GreetingService.java` file with
-the following content:
+Let's add a companion bean.
+Create the `src/main/java/org/acme/quickstart/GreetingService.java` file with the following content:
 
 [source, java]
 ----
@@ -228,7 +242,7 @@ public class GreetingService {
 }
 ----
 
-Edit the `MyResource` class to inject the `GreetingService` and create a new endpoint using it:
+Edit the `GreetingResource` class to inject the `GreetingService` and create a new endpoint using it:
 
 [source, java]
 ----
@@ -242,7 +256,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 @Path("/hello")
-public class MyResource {
+public class GreetingResource {
 
     @Inject
     private GreetingService service;
@@ -264,10 +278,7 @@ public class MyResource {
 
 Start the application and check that http://localhost:8080/app/hello/greeting/shamrock returns `hello shamrock`.
 
-[IMPORTANT]
-====
-While we use CDI annotations, it's important to understand that it's not a complete CDI implementation.
-====
+
 
 === Testing
 
@@ -291,7 +302,7 @@ Edit the `pom.xml` file to add the 2 following dependencies:
 </dependency>
 ----
 
-Then, create the `src/test/java/org/acme/quickstart/MyResourceTest.java` with the following content:
+Then, create the `src/test/java/org/acme/quickstart/GreetingResourceTest.java` with the following content:
 
 [source,java]
 ----
@@ -307,7 +318,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
 @RunWith(ShamrockTest.class)    // <1>
-public class MyResourceTest {
+public class GreetingResourceTest {
 
     @Test
     public void testHelloEndpoint() {
@@ -331,27 +342,30 @@ public class MyResourceTest {
 
 }
 ----
-<1> By using the `ShamrockTest` runner, you instruct Junit to start the application before the tests.
+<1> By using the `ShamrockTest` runner, you instruct JUnit to start the application before the tests.
 <2> Check the HTTP response status code and content
 
 These tests use http://rest-assured.io/[RestAssured], but feel free to use your favorite library.
 
-You can run the test from your IDE directly (be sure you stopped the application first), for from Maven using: `mvn test`.
+You can run the test from your IDE directly (be sure you stopped the application first), or from Maven using: `mvn test`.
 
 === Packaging the application
 
-The application is packaged using `mvn package`. It produces 2 jars files:
+The application is packaged using `mvn package`.
+It produces 2 jar files:
 
-* `shamrock-quickstart-1.0-SNAPSHOT.jar` - containing just the resources of the projects
-* `shamrock-quickstart-1.0-SNAPSHOT-runner.jar` - being an executable _über-jar_. It embeds all the dependencies required
-to run the application.
+* `shamrock-quickstart-1.0-SNAPSHOT.jar` - containing just the classes and resources of the projects, it's the regular
+artifact produced by the Maven build;
+* `shamrock-quickstart-1.0-SNAPSHOT-runner.jar` - being an executable _über-jar_.
+It embeds all the dependencies required to run the application.
 
 You can run the application using: `java -jar target/shamrock-quickstart-1.0-SNAPSHOT-runner.jar`
 
-=== Producing a binary file
+=== Producing a native executable
 
-Let's now produce a binary file for our application. This binary would have everything to run the application including
-the JVM and the application. Notice that you still need the `glibc` and `zlib`.
+Let's now produce a native executable for our application.
+It will even improve the startup time of the application, and produce a very small disk footprint.
+The executable would have everything to run the application including the "JVM" (shrunk to be just enough to run the application), and the application.
 
 Be sure that the `GRAAL_HOME` environment variable is configured appropriately.
 
@@ -389,13 +403,12 @@ We use a profile because, you will see very soon, packaging the native image tak
 
 Now run: `mvn package -Pnative`
 
-In addition to the two files mentioned above, it also produces `target/shamrock-quickstart-1.0-SNAPSHOT-runner`. You can
-run it using: `target/shamrock-quickstart-1.0-SNAPSHOT-runner`.
+In addition to the two files mentioned above, it also produces `target/shamrock-quickstart-1.0-SNAPSHOT-runner`.
+You can run it using: `target/shamrock-quickstart-1.0-SNAPSHOT-runner`.
 
-=== Testing the binary file
+=== Testing the native executable
 
-Producing a binary can lead to a few, and so it's also a good idea to run some test against the application running
-in the binary file.
+Producing a native executable can lead to a few issues, and so it's also a good idea to run some test against the application running in the native file.
 
 In the `pom.xml` file, extend the `native` profile with:
 
@@ -421,7 +434,7 @@ In the `pom.xml` file, extend the `native` profile with:
 </plugin>
 ----
 
-Then, create the `src/test/java/org/acme/quickstart/MyResourceIT.java` with the following content:
+Then, create the `src/test/java/org/acme/quickstart/GreetingResourceIT.java` with the following content:
 
 [source,java]
 ----
@@ -432,30 +445,31 @@ import org.jboss.shamrock.test.SubstrateTest;
 import org.junit.runner.RunWith;
 
 @RunWith(SubstrateTest.class) // <1>
-public class MyResourceIT extends MyResourceTest { // <2>
+public class GreetingResourceIT extends GreetingResourceTest { // <2>
 
     // Run the same tests
 
 }
 ----
-<1> Use another test runner that starts the application from the binary file before the tests. The binary is retrieved
-using the `native.image.path` system property configured in the _Failsafe Maven Plugin_.
+<1> Use another test runner that starts the application from the native file before the tests.
+The executable is retrieved using the `native.image.path` system property configured in the _Failsafe Maven Plugin_.
 <2> We extend our previous tests, but you can also implement your tests
 
 === Producing a Docker container
 
-You can run the application in a Docker container using the _über-jar_ produced by the Shamrock Maven Plugin. However,
-here we are more interested in getting a Docker image using the produced binary file. Because of the Docker container
-may not use the same _executable_ format as the one produced by default, we must instruct the Maven build to produce a
-binary file executable from inside a Docker container:
+You can run the application in a Docker container using the _über-jar_ produced by the Shamrock Maven Plugin.
+However, here we are more interested in getting a Docker image using the produced native executable.
+Because the Docker container may not use the same _executable_ format as the one produced by default, we must instruct the Maven build to produce an
+ executable from inside a Docker container:
 
 [source, bash]
 ----
 mvn package -Pnative -Dnative-image.docker-build=true
 ----
 
-The produced executable may not be runnable on your machine anymore. However, it's not an issue as we are going to copy it
-to a Docker container. Create the following `Dockerfile`:
+The produced executable may not be runnable on your machine anymore.
+However, it's not an issue as we are going to copy it to a Docker container.
+Create the following `Dockerfile`:
 
 [source]
 ----
@@ -467,7 +481,7 @@ EXPOSE 8080
 CMD ["./application", "-Dshamrock.http.host=0.0.0.0"]
 ----
 
-Then, if you didn't delete the generated binary file, you can build the docker image with:
+Then, if you didn't delete the generated native executable, you can build the docker image with:
 
 [source]
 ----
@@ -483,8 +497,7 @@ docker run -i -p 8080:8080 shamrock-quickstart/quickstart
 
 === Final touch - Running on OpenShift
 
-Now that we have a `Dockerfile` and a binary working in a Docker container, to deploy this application to OpenShift, you
-just need:
+Now that we have a `Dockerfile` and a native executable working in a Docker container, to deploy this application to OpenShift, you just need the following commands:
 
 [source]
 ----
@@ -502,7 +515,7 @@ oc expose service shamrock-quickstart
 echo "http://$(oc get route | grep shamrock-quickstart | awk '{print $2}')"
 ----
 
-Your application is exposed on the printed URL.
+Your application is accessible at the printed URL.
 
 
 

@@ -290,6 +290,11 @@ public class BeanDeployment {
                 continue;
             }
 
+            if (beanClass.interfaceNames().contains(DotNames.EXTENSION)) {
+                // Skip portable extensions
+                continue;
+            }
+
             boolean hasBeanDefiningAnnotation = false;
             if (annotationStore.hasAnyAnnotation(beanClass, beanDefiningAnnotations)) {
                 hasBeanDefiningAnnotation = true;
@@ -304,6 +309,7 @@ public class BeanDeployment {
                     // Producers are not inherited
                     producerMethods.add(method);
                     if (!hasBeanDefiningAnnotation) {
+                        LOGGER.infof("Producer method found but %s has no bean defining annotation - using @Dependent", beanClass);
                         beanClasses.add(beanClass);
                     }
                 } else if (annotationStore.hasAnnotation(method, DotNames.DISPOSES)) {
@@ -313,14 +319,14 @@ public class BeanDeployment {
                     // TODO observers are inherited
                     syncObserverMethods.add(method);
                     if (!hasBeanDefiningAnnotation) {
-                        LOGGER.info("Observer method found but the declaring class has no bean defining annotation - using @Dependent");
+                        LOGGER.infof("Observer method found but %s has no bean defining annotation - using @Dependent", beanClass);
                         beanClasses.add(beanClass);
                     }
                 } else if (annotationStore.hasAnnotation(method, DotNames.OBSERVES_ASYNC)) {
                     // TODO observers are inherited
                     asyncObserverMethods.add(method);
                     if (!hasBeanDefiningAnnotation) {
-                        LOGGER.info("Observer method found but the declaring class has no bean defining annotation - using @Dependent");
+                        LOGGER.infof("Observer method found but %s has no bean defining annotation - using @Dependent", beanClass);
                         beanClasses.add(beanClass);
                     }
                 }
@@ -330,7 +336,7 @@ public class BeanDeployment {
                     // Producer fields are not inherited
                     producerFields.add(field);
                     if (!hasBeanDefiningAnnotation) {
-                        LOGGER.info("Producer field found but the declaring class has no bean defining annotation - using @Dependent");
+                        LOGGER.infof("Producer field found but %s has no bean defining annotation - using @Dependent", beanClass);
                         beanClasses.add(beanClass);
                     }
                 }

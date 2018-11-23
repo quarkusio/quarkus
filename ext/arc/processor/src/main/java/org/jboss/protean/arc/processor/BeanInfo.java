@@ -97,10 +97,16 @@ public class BeanInfo {
                     implClazz = target.asClass();
                     break;
                 case FIELD:
-                    implClazz = beanDeployment.getIndex().getClassByName(target.asField().type().name());
+                    Type fieldType = target.asField().type();
+                    if (fieldType.kind() != org.jboss.jandex.Type.Kind.PRIMITIVE) {
+                        implClazz = beanDeployment.getIndex().getClassByName(fieldType.name());
+                    }
                     break;
                 case METHOD:
-                    implClazz = beanDeployment.getIndex().getClassByName(target.asMethod().returnType().name());
+                    Type returnType = target.asMethod().returnType();
+                    if (returnType.kind() != org.jboss.jandex.Type.Kind.PRIMITIVE) {
+                        implClazz = beanDeployment.getIndex().getClassByName(returnType.name());
+                    }
                     break;
                 default:
                     break;
@@ -132,6 +138,10 @@ public class BeanInfo {
         return target;
     }
 
+    /**
+     *
+     * @return the impl class or null in case of a producer of a primitive type
+     */
     public ClassInfo getImplClazz() {
         return implClazz;
     }

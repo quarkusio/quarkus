@@ -295,8 +295,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         Type providerType = bean.getProviderType();
         String baseName = declaringClassBase + PRODUCER_METHOD_SUFFIX + PRODUCER_INDEX.incrementAndGet();
-        ClassInfo providerClass = bean.getDeployment().getIndex().getClassByName(providerType.name());
-        String providerTypeName = providerClass.name().toString();
+        String providerTypeName = providerType.name().toString();
         String targetPackage = DotNames.packageName(declaringClass.name());
         String generatedName = targetPackage.replace('.', '/') + "/" + baseName + BEAN_SUFFIX;
 
@@ -363,8 +362,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         Type providerType = bean.getProviderType();
         String baseName = declaringClassBase + PRODUCER_FIELD_SUFFIX + PRODUCER_INDEX.incrementAndGet();
-        ClassInfo providerClass = bean.getDeployment().getIndex().getClassByName(providerType.name());
-        String providerTypeName = providerClass.name().toString();
+        String providerTypeName = providerType.name().toString();
         String targetPackage = DotNames.packageName(declaringClass.name());
         String generatedName = targetPackage.replace('.', '/') + "/" + baseName + BEAN_SUFFIX;
 

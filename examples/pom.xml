@@ -35,6 +35,7 @@
         <module>jpa-strict</module>
         <module>bean-validation-strict</module>
         <module>common-jpa-entities</module>
+        <module>jpa-h2</module>
         <module>undertow</module>
     </modules>
 

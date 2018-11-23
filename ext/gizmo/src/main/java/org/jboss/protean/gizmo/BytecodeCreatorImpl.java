@@ -700,7 +700,7 @@ class BytecodeCreatorImpl implements BytecodeCreator {
         BytecodeCreatorImpl trueBranch = new BytecodeCreatorImpl(this);
         BytecodeCreatorImpl falseBranch = new BytecodeCreatorImpl(this);
         operations.add(new IfOperation(Opcodes.IFNE, "I", resolvedResultHandle, trueBranch, falseBranch));
-        return new BranchResultImpl(owner == null ? this : owner, trueBranch, falseBranch, trueBranch, falseBranch);
+        return new BranchResultImpl(trueBranch, falseBranch);
     }
 
     @Override
@@ -709,7 +709,7 @@ class BytecodeCreatorImpl implements BytecodeCreator {
         BytecodeCreatorImpl trueBranch = new BytecodeCreatorImpl(this);
         BytecodeCreatorImpl falseBranch = new BytecodeCreatorImpl(this);
         operations.add(new IfOperation(Opcodes.IFNULL, "Ljava/lang/Object;", resolvedResultHandle, trueBranch, falseBranch));
-        return new BranchResultImpl(owner == null ? this : owner, trueBranch, falseBranch, trueBranch, falseBranch);
+        return new BranchResultImpl(trueBranch, falseBranch);
     }
 
 
@@ -948,20 +948,6 @@ class BytecodeCreatorImpl implements BytecodeCreator {
 
     ResultHandle[] resolve(ResultHandle... handles) {
         return owner.resolve(handles);
-    }
-
-    /**
-     * Assigns the value in the second result handle to the first result handle. The first result handle must not be a constant.
-     * <p>
-     * This is used to merge the results of if statements back into a single result.
-     *
-     * @param target The target result handle
-     * @param value  The value
-     */
-    void assign(ResultHandle target, ResultHandle value) {
-        ResultHandle resolvedTarget = resolve(checkScope(target));
-        ResultHandle resolvedValue = resolve(checkScope(value));
-        operations.add(new AssignOperation(resolvedValue, resolvedTarget));
     }
 
     MethodCreatorImpl getMethod() {

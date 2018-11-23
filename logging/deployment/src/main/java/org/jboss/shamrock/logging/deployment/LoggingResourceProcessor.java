@@ -36,6 +36,7 @@ import org.jboss.logmanager.formatters.ColorPatternFormatter;
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.jboss.logmanager.handlers.ConsoleHandler;
 import org.jboss.logmanager.handlers.FileHandler;
+import org.jboss.protean.gizmo.AssignableResultHandle;
 import org.jboss.protean.gizmo.BranchResult;
 import org.jboss.protean.gizmo.BytecodeCreator;
 import org.jboss.protean.gizmo.ClassCreator;
@@ -172,26 +173,27 @@ public final class LoggingResourceProcessor {
             ResultHandle consoleErrorManager;
             ResultHandle console, file;
             if (consoleEnable) {
-                ResultHandle formatter;
+                AssignableResultHandle formatter = branch.createVariable(Formatter.class);
                 final ResultHandle consoleFormatResult = branch.load(consoleFormat);
                 if (consoleColor) {
                     // detect a console at run time
                     final ResultHandle consoleProbeResult = branch.invokeStaticMethod(MethodDescriptor.ofMethod(System.class, "console", Console.class));
                     final BranchResult consoleBranchResult = branch.ifNull(consoleProbeResult);
-                    final ResultHandle noConsole = consoleBranchResult.trueBranch().newInstance(
+                    final BytecodeCreator trueBranch = consoleBranchResult.trueBranch();
+                    trueBranch.assign(formatter, trueBranch.newInstance(
                             MethodDescriptor.ofConstructor(PatternFormatter.class, String.class),
                             consoleFormatResult
-                    );
-                    final ResultHandle yesConsole = consoleBranchResult.falseBranch().newInstance(
+                    ));
+                    final BytecodeCreator falseBranch = consoleBranchResult.falseBranch();
+                    falseBranch.assign(formatter, falseBranch.newInstance(
                             MethodDescriptor.ofConstructor(ColorPatternFormatter.class, String.class),
                             consoleFormatResult
-                    );
-                    formatter = consoleBranchResult.mergeBranches(noConsole, yesConsole, Formatter.class);
+                    ));
                 } else {
-                    formatter = branch.newInstance(
+                    branch.assign(formatter, branch.newInstance(
                             MethodDescriptor.ofConstructor(PatternFormatter.class, String.class),
                             consoleFormatResult
-                    );
+                    ));
                 }
                 console = branch.newInstance(
                         MethodDescriptor.ofConstructor(ConsoleHandler.class, Formatter.class),

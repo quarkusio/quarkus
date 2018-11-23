@@ -37,6 +37,7 @@ import javax.enterprise.inject.Vetoed;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.EventMetadata;
+import javax.enterprise.inject.spi.Extension;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.util.Nonbinding;
 import javax.inject.Inject;
@@ -81,6 +82,7 @@ final class DotNames {
     static final DotName VETOED = create(Vetoed.class);
     static final DotName CLASS = create(Class.class);
     static final DotName ENUM = create(Enum.class);
+    static final DotName EXTENSION = create(Extension.class);
 
     private DotNames() {
     }

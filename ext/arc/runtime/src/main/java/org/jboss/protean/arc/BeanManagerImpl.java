@@ -18,6 +18,7 @@ package org.jboss.protean.arc;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -266,7 +267,7 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public Event<Object> getEvent() {
-        throw new UnsupportedOperationException();
+        return new EventImpl<>(Object.class, new HashSet<>());
     }
 
     @Override

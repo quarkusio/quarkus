@@ -290,36 +290,57 @@ public class BeanDeployment {
                 continue;
             }
 
+            if (beanClass.interfaceNames().contains(DotNames.EXTENSION)) {
+                // Skip portable extensions
+                continue;
+            }
+
+            boolean hasBeanDefiningAnnotation = false;
             if (annotationStore.hasAnyAnnotation(beanClass, beanDefiningAnnotations)) {
-
+                hasBeanDefiningAnnotation = true;
                 beanClasses.add(beanClass);
+            }
 
-                for (MethodInfo method : beanClass.methods()) {
-                    if (annotationStore.getAnnotations(method).isEmpty()) {
-                        continue;
-                    }
-                    if (annotationStore.hasAnnotation(method, DotNames.PRODUCES)) {
-                        // Producers are not inherited
-                        producerMethods.add(method);
-                    } else if (annotationStore.hasAnnotation(method, DotNames.DISPOSES)) {
-                        // Disposers are not inherited
-                        disposerMethods.add(method);
-                    } else if (annotationStore.hasAnnotation(method, DotNames.OBSERVES)) {
-                        // TODO observers are inherited
-                        syncObserverMethods.add(method);
-                    } else if (annotationStore.hasAnnotation(method, DotNames.OBSERVES_ASYNC)) {
-                        // TODO observers are inherited
-                        asyncObserverMethods.add(method);
-                    }
+            for (MethodInfo method : beanClass.methods()) {
+                if (annotationStore.getAnnotations(method).isEmpty()) {
+                    continue;
                 }
-                for (FieldInfo field : beanClass.fields()) {
-                    if (annotationStore.hasAnnotation(field, DotNames.PRODUCES)) {
-                        // Producer fields are not inherited
-                        producerFields.add(field);
+                if (annotationStore.hasAnnotation(method, DotNames.PRODUCES)) {
+                    // Producers are not inherited
+                    producerMethods.add(method);
+                    if (!hasBeanDefiningAnnotation) {
+                        LOGGER.infof("Producer method found but %s has no bean defining annotation - using @Dependent", beanClass);
+                        beanClasses.add(beanClass);
+                    }
+                } else if (annotationStore.hasAnnotation(method, DotNames.DISPOSES)) {
+                    // Disposers are not inherited
+                    disposerMethods.add(method);
+                } else if (annotationStore.hasAnnotation(method, DotNames.OBSERVES)) {
+                    // TODO observers are inherited
+                    syncObserverMethods.add(method);
+                    if (!hasBeanDefiningAnnotation) {
+                        LOGGER.infof("Observer method found but %s has no bean defining annotation - using @Dependent", beanClass);
+                        beanClasses.add(beanClass);
+                    }
+                } else if (annotationStore.hasAnnotation(method, DotNames.OBSERVES_ASYNC)) {
+                    // TODO observers are inherited
+                    asyncObserverMethods.add(method);
+                    if (!hasBeanDefiningAnnotation) {
+                        LOGGER.infof("Observer method found but %s has no bean defining annotation - using @Dependent", beanClass);
+                        beanClasses.add(beanClass);
                     }
                 }
             }
-
+            for (FieldInfo field : beanClass.fields()) {
+                if (annotationStore.hasAnnotation(field, DotNames.PRODUCES)) {
+                    // Producer fields are not inherited
+                    producerFields.add(field);
+                    if (!hasBeanDefiningAnnotation) {
+                        LOGGER.infof("Producer field found but %s has no bean defining annotation - using @Dependent", beanClass);
+                        beanClasses.add(beanClass);
+                    }
+                }
+            }
         }
 
         // Build metadata for typesafe resolution

@@ -69,8 +69,6 @@ class EventImpl<T> implements Event<T> {
     public EventImpl(Type eventType, Set<Annotation> qualifiers) {
         if (eventType instanceof ParameterizedType) {
             eventType = ((ParameterizedType) eventType).getActualTypeArguments()[0];
-        } else {
-            throw new IllegalArgumentException();
         }
         this.injectionPointTypeHierarchy = new HierarchyDiscovery(eventType);
         this.qualifiers = qualifiers;

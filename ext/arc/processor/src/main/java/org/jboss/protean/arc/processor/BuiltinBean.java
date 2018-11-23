@@ -91,7 +91,6 @@ enum BuiltinBean {
     }), BEAN_MANAGER(DotNames.BEAN_MANAGER, new Generator() {
         void generate(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint, ClassCreator clazzCreator,
                 MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals) {
-            // TODO dummy provider
             constructor.writeInstanceField(FieldDescriptor.of(clazzCreator.getClassName(), providerName, InjectableReferenceProvider.class.getName()),
                     constructor.getThis(), constructor.newInstance(MethodDescriptor.ofConstructor(BeanManagerProvider.class)));
         }

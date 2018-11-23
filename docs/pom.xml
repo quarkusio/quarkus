@@ -29,7 +29,7 @@
 
     <groupId>org.shamrock.documentation</groupId>
     <artifactId>shamrock-documentation</artifactId>
-    <version>1.0.0</version>
+
     <packaging>pom</packaging>
     <properties>
         <version.asciidoctor>1.5.7</version.asciidoctor>
@@ -65,6 +65,10 @@
                                 <idprefix/>
                                 <idseparator>-</idseparator>
                                 <docinfo1>true</docinfo1>
+
+                                <shamrock-version>${project.version}</shamrock-version>
+                                <surefire-version>${version.surefire.plugin}</surefire-version>
+                                <graal-version>${graal-sdk.version}</graal-version>
                             </attributes>
                         </configuration>
                     </execution>

@@ -24,14 +24,13 @@ import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
 import static org.objectweb.asm.Opcodes.RETURN;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationValue;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
@@ -43,6 +42,7 @@ public class ClassCreator implements AutoCloseable, AnnotatedElement {
         return new Builder();
     }
 
+    private final BytecodeCreatorImpl enclosing;
     private final ClassOutput classOutput;
     private final String superClass;
     private final String[] interfaces;
@@ -54,7 +54,8 @@ public class ClassCreator implements AutoCloseable, AnnotatedElement {
     private final Map<MethodDescriptor, MethodDescriptor> superclassAccessors = new HashMap<>();
     private static final AtomicInteger accessorCount = new AtomicInteger();
 
-    public ClassCreator(ClassOutput classOutput, String name, String signature, String superClass, String... interfaces) {
+    ClassCreator(BytecodeCreatorImpl enclosing, ClassOutput classOutput, String name, String signature, String superClass, String... interfaces) {
+        this.enclosing = enclosing;
         this.classOutput = classOutput;
         this.superClass = superClass.replace('.', '/');
         this.interfaces = new String[interfaces.length];
@@ -65,11 +66,15 @@ public class ClassCreator implements AutoCloseable, AnnotatedElement {
         this.signature = signature;
     }
 
+    public ClassCreator(ClassOutput classOutput, String name, String signature, String superClass, String... interfaces) {
+        this(null, classOutput, name, signature, superClass, interfaces);
+    }
+
     public MethodCreator getMethodCreator(MethodDescriptor methodDescriptor) {
         if (methods.containsKey(methodDescriptor)) {
             return methods.get(methodDescriptor);
         }
-        MethodCreatorImpl creator = new MethodCreatorImpl(methodDescriptor, className, classOutput, this);
+        MethodCreatorImpl creator = new MethodCreatorImpl(enclosing, methodDescriptor, className, classOutput, this);
         methods.put(methodDescriptor, creator);
         return creator;
     }
@@ -197,9 +202,16 @@ public class ClassCreator implements AutoCloseable, AnnotatedElement {
 
         private final List<String> interfaces;
 
+        private BytecodeCreatorImpl enclosing;
+
         Builder() {
             superClass(Object.class);
             this.interfaces = new ArrayList<>();
+        }
+
+        Builder enclosing(BytecodeCreatorImpl enclosing) {
+            this.enclosing = enclosing;
+            return this;
         }
 
         public Builder classOutput(ClassOutput classOutput) {
@@ -227,9 +239,7 @@ public class ClassCreator implements AutoCloseable, AnnotatedElement {
         }
 
         public Builder interfaces(String... interfaces) {
-            for (String val : interfaces) {
-                this.interfaces.add(val);
-            }
+            Collections.addAll(this.interfaces, interfaces);
             return this;
         }
 
@@ -244,7 +254,7 @@ public class ClassCreator implements AutoCloseable, AnnotatedElement {
             Objects.requireNonNull(className);
             Objects.requireNonNull(classOutput);
             Objects.requireNonNull(superClass);
-            return new ClassCreator(classOutput, className, signature, superClass, interfaces.toArray(new String[0]));
+            return new ClassCreator(enclosing, classOutput, className, signature, superClass, interfaces.toArray(new String[0]));
         }
 
     }

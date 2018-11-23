@@ -77,7 +77,7 @@ public class SampleTest {
             ResultHandle nullHandle = method.loadNull();
             BranchResult branch = method.ifNull(nullHandle);
             branch.trueBranch().returnValue(branch.trueBranch().load("TRUE"));
-            branch.falseBranch().returnValue(branch.trueBranch().load("FALSE"));
+            branch.falseBranch().returnValue(branch.falseBranch().load("FALSE"));
         }
         MyInterface myInterface = (MyInterface) cl.loadClass("com.MyTest").newInstance();
         Assert.assertEquals("TRUE", myInterface.transform("TEST"));

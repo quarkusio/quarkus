@@ -27,7 +27,7 @@ import org.jboss.jandex.MethodInfo;
  * This does not expose the full extent of Java bytecode, rather just the most common operations that generated
  * classes are likely to use.
  */
-public interface BytecodeCreator {
+public interface BytecodeCreator extends AutoCloseable {
 
     /**
      * @return A {@link ResultHandle} that represents the current object
@@ -532,4 +532,10 @@ public interface BytecodeCreator {
      * @return the nested scope
      */
     BytecodeCreator createScope();
+
+    /**
+     * Indicate that the scope is no longer in use.  The scope may refuse additional instructions after this method
+     * is called.
+     */
+    default void close() {}
 }

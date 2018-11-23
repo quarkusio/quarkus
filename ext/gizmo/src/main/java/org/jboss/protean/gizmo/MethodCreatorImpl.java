@@ -41,8 +41,8 @@ class MethodCreatorImpl extends BytecodeCreatorImpl implements MethodCreator {
     private final ClassOutput classOutput;
     private final ClassCreator classCreator;
 
-    MethodCreatorImpl(MethodDescriptor methodDescriptor, String declaringClassName, ClassOutput classOutput, ClassCreator classCreator) {
-        super();
+    MethodCreatorImpl(BytecodeCreatorImpl enclosing, MethodDescriptor methodDescriptor, String declaringClassName, ClassOutput classOutput, ClassCreator classCreator) {
+        super(enclosing, true);
         this.methodDescriptor = methodDescriptor;
         this.declaringClassName = declaringClassName;
         this.classOutput = classOutput;

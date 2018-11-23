@@ -38,7 +38,7 @@ class FunctionCreatorImpl implements FunctionCreator {
         this.instance = instance;
         this.classCreator = classCreator;
         this.owner = owner;
-        fbc = new FunctionBytecodeCreator(this, methodCreator, owner);
+        fbc = new FunctionBytecodeCreator(this, methodCreator);
     }
 
     @Override
@@ -88,8 +88,8 @@ class FunctionCreatorImpl implements FunctionCreator {
         private final FunctionCreatorImpl functionCreator;
         private final MethodCreatorImpl method;
 
-        FunctionBytecodeCreator(FunctionCreatorImpl functionCreator, MethodCreatorImpl method, BytecodeCreatorImpl owner) {
-            super(owner);
+        FunctionBytecodeCreator(FunctionCreatorImpl functionCreator, MethodCreatorImpl method) {
+            super(method);
             this.functionCreator = functionCreator;
             this.method = method;
         }
@@ -105,8 +105,14 @@ class FunctionCreatorImpl implements FunctionCreator {
         ResultHandle resolve(ResultHandle handle) {
             // resolve any captures of captures.
             if (handle == null || handle.getResultType() == ResultHandle.ResultType.CONSTANT) return handle;
-            handle = getOwner().resolve(handle);
-            if (handle.getOwner().getMethod() == getOwner().getMethod()) {
+            final BytecodeCreatorImpl ourOwner = method.getOwner();
+            handle = ourOwner.resolve(handle);
+            final BytecodeCreatorImpl newOwner = handle.getOwner();
+            if (newOwner.isScopedWithin(method)) {
+                // already local
+                return handle;
+            }
+            if (newOwner.getMethod() == ourOwner.getMethod()) {
                 CapturedResultHandle capture = functionCreator.capturedResultHandles.get(handle);
                 if (capture != null) {
                     return capture.substitute;
@@ -137,9 +143,10 @@ class FunctionCreatorImpl implements FunctionCreator {
         }
 
         public ResultHandle invokeSpecialMethod(MethodDescriptor descriptor, ResultHandle object, ResultHandle... args) {
-            if (descriptor.getDeclaringClass().equals(getOwner().getMethod().getClassCreator().getSuperClass())) {
+            final ClassCreator ownersCreator = getMethod().getOwner().getMethod().getClassCreator();
+            if (descriptor.getDeclaringClass().equals(ownersCreator.getSuperClass())) {
                 //this is an invokespecial on the owners superclass, we can't do this directly
-                MethodDescriptor newMethod = getOwner().getMethod().getClassCreator().getSuperclassAccessor(descriptor);
+                MethodDescriptor newMethod = ownersCreator.getSuperclassAccessor(descriptor);
                 return super.invokeVirtualMethod(newMethod, object, args);
             } else {
                 return super.invokeSpecialMethod(descriptor, object, args);

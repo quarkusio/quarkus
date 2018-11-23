@@ -66,6 +66,8 @@ import org.jboss.shamrock.undertow.ServletInitParamBuildItem;
 public class JaxrsScanningProcessor {
 
     private static final String JAX_RS_SERVLET_NAME = "javax.ws.rs.Application";
+    // They happen to share the same value, but I'm not sure they mean the same thing
+    private static final String JAX_RS_APPLICATION_PARAMETER_NAME = JAX_RS_SERVLET_NAME;
 
     private static final DotName APPLICATION_PATH = DotName.createSimple("javax.ws.rs.ApplicationPath");
 
@@ -220,7 +222,7 @@ public class JaxrsScanningProcessor {
             }
             servletContextParams.produce(new ServletInitParamBuildItem("resteasy.servlet.mapping.prefix", path));
             servletContextParams.produce(new ServletInitParamBuildItem("resteasy.injector.factory", ShamrockInjectorFactory.class.getName()));
-            servletContextParams.produce(new ServletInitParamBuildItem(Application.class.getName(), appClass));
+            servletContextParams.produce(new ServletInitParamBuildItem(JAX_RS_APPLICATION_PARAMETER_NAME, appClass));
 
         }
         for (DotName annotationType : METHOD_ANNOTATIONS) {

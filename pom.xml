@@ -102,6 +102,7 @@
         <httpclient.version>4.5.4</httpclient.version>
         <httpcore.version>4.4.7</httpcore.version>
         <quartz.version>2.3.0</quartz.version>
+        <h2.version>1.4.197</h2.version>
 
         <!-- Currently still needs a custom build: GAV is org.postgresql:postgresql-protean -->
         <postgresql-jdbc.version>42.2.6-SNAPSHOT</postgresql-jdbc.version>
@@ -362,6 +363,16 @@
             <dependency>
                 <groupId>org.jboss.shamrock</groupId>
                 <artifactId>jdbc-postgresql-runtime</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>jdbc-h2-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>jdbc-h2-runtime</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -633,6 +644,11 @@
               <groupId>com.uber.jaeger</groupId>
               <artifactId>jaeger-tracerresolver</artifactId>
               <version>${jaeger.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.h2database</groupId>
+                <artifactId>h2</artifactId>
+                <version>${h2.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.agroal</groupId>

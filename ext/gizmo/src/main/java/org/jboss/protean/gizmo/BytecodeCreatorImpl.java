@@ -586,7 +586,7 @@ class BytecodeCreatorImpl implements BytecodeCreator {
     }
 
     public boolean isScopedWithin(final BytecodeCreator other) {
-        return other == this || owner.isScopedWithin(other);
+        return other == this || owner != null && owner.isScopedWithin(other);
     }
 
     public void continueScope(final BytecodeCreator scope) {

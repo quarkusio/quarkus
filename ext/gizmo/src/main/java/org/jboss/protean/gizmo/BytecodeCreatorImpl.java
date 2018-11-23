@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -538,6 +539,25 @@ class BytecodeCreatorImpl implements BytecodeCreator {
     }
 
     @Override
+    public AssignableResultHandle createVariable(final String typeDescr) {
+        Objects.requireNonNull(typeDescr);
+        return new AssignableResultHandle(typeDescr, this);
+    }
+
+    @Override
+    public void assign(final AssignableResultHandle target, final ResultHandle value) {
+        Objects.requireNonNull(target);
+        Objects.requireNonNull(value);
+        ResultHandle resolvedTarget = resolve(target);
+        ResultHandle resolvedValue = resolve(value);
+        if (resolvedTarget instanceof AssignableResultHandle) {
+            operations.add(new AssignOperation(resolvedValue, resolvedTarget));
+        } else {
+            throw new IllegalArgumentException("Cannot assign to captured variables");
+        }
+    }
+
+    @Override
     public ResultHandle checkCast(final ResultHandle resultHandle, final String castTarget) {
         final String intName = castTarget.replace('.', '/');
         // seems like a waste of local vars but it's the safest approach since result type can't be mutated
@@ -909,28 +929,7 @@ class BytecodeCreatorImpl implements BytecodeCreator {
     void assign(ResultHandle target, ResultHandle value) {
         ResultHandle resolvedTarget = resolve(target);
         ResultHandle resolvedValue = resolve(value);
-        operations.add(new Operation() {
-            @Override
-            void writeBytecode(MethodVisitor methodVisitor) {
-                loadResultHandle(methodVisitor, resolvedValue, BytecodeCreatorImpl.this, resolvedTarget.getType());
-                storeResultHandle(methodVisitor, resolvedTarget);
-            }
-
-            @Override
-            Set<ResultHandle> getInputResultHandles() {
-                return Collections.singleton(resolvedValue);
-            }
-
-            @Override
-            ResultHandle getTopResultHandle() {
-                return resolvedValue;
-            }
-
-            @Override
-            ResultHandle getOutgoingResultHandle() {
-                return resolvedTarget;
-            }
-        });
+        operations.add(new AssignOperation(resolvedValue, resolvedTarget));
     }
 
     MethodCreatorImpl getMethod() {
@@ -1219,6 +1218,37 @@ class BytecodeCreatorImpl implements BytecodeCreator {
 
         public void findResultHandles(final Set<ResultHandle> vc) {
             block.findActiveResultHandles(vc);
+        }
+    }
+
+    class AssignOperation extends Operation {
+        private final ResultHandle resolvedValue;
+        private final ResultHandle resolvedTarget;
+
+        public AssignOperation(final ResultHandle resolvedValue, final ResultHandle resolvedTarget) {
+            this.resolvedValue = resolvedValue;
+            this.resolvedTarget = resolvedTarget;
+        }
+
+        @Override
+        void writeBytecode(MethodVisitor methodVisitor) {
+            loadResultHandle(methodVisitor, resolvedValue, BytecodeCreatorImpl.this, resolvedTarget.getType());
+            storeResultHandle(methodVisitor, resolvedTarget);
+        }
+
+        @Override
+        Set<ResultHandle> getInputResultHandles() {
+            return Collections.singleton(resolvedValue);
+        }
+
+        @Override
+        ResultHandle getTopResultHandle() {
+            return resolvedValue;
+        }
+
+        @Override
+        ResultHandle getOutgoingResultHandle() {
+            return resolvedTarget;
         }
     }
 }

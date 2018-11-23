@@ -16,6 +16,8 @@
 
 package org.jboss.protean.gizmo;
 
+import java.util.Objects;
+
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 
@@ -338,6 +340,33 @@ public interface BytecodeCreator {
     default void writeArrayValue(ResultHandle array, int index, ResultHandle value) {
         writeArrayValue(array, load(index), value);
     }
+
+    /**
+     * Create a local variable which can be assigned within this scope.
+     *
+     * @param typeDescr the type descriptor of the variable's type (must not be {@code null})
+     * @return the assignable local variable (not {@code null})
+     */
+    AssignableResultHandle createVariable(final String typeDescr);
+
+    /**
+     * Create a local variable which can be assigned within this scope.
+     *
+     * @param type the type of the variable's type (must not be {@code null})
+     * @return the assignable local variable (not {@code null})
+     */
+    default AssignableResultHandle createVariable(final Class<?> type) {
+        Objects.requireNonNull(type);
+        return createVariable(DescriptorUtils.classToStringRepresentation(type));
+    }
+
+    /**
+     * Assign the given value to the given assignable target.
+     *
+     * @param target the assignment target (must not be {@code null})
+     * @param value the value to assign (must not be {@code null})
+     */
+    void assign(AssignableResultHandle target, ResultHandle value);
 
     /**
      * Add a {@code try} block.

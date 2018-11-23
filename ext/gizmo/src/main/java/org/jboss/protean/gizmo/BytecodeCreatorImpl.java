@@ -772,13 +772,13 @@ class BytecodeCreatorImpl implements BytecodeCreator {
                     methodVisitor.visitInsn(Opcodes.RETURN);
                 } else {
                     loadResultHandle(methodVisitor, resolvedReturnValue, BytecodeCreatorImpl.this, methodDescriptor.getReturnType());
-                    if (resolvedReturnValue.getType().equals("S") || resolvedReturnValue.getType().equals("Z") || resolvedReturnValue.getType().equals("I") || resolvedReturnValue.getType().equals("B")) {
+                    if (methodDescriptor.getReturnType().equals("S") || methodDescriptor.getReturnType().equals("Z") || methodDescriptor.getReturnType().equals("I") || methodDescriptor.getReturnType().equals("B")) {
                         methodVisitor.visitInsn(Opcodes.IRETURN);
-                    } else if (resolvedReturnValue.getType().equals("J")) {
+                    } else if (methodDescriptor.getReturnType().equals("J")) {
                         methodVisitor.visitInsn(Opcodes.LRETURN);
-                    } else if (resolvedReturnValue.getType().equals("F")) {
+                    } else if (methodDescriptor.getReturnType().equals("F")) {
                         methodVisitor.visitInsn(Opcodes.FRETURN);
-                    } else if (resolvedReturnValue.getType().equals("D")) {
+                    } else if (methodDescriptor.getReturnType().equals("D")) {
                         methodVisitor.visitInsn(Opcodes.DRETURN);
                     } else {
                         methodVisitor.visitInsn(Opcodes.ARETURN);

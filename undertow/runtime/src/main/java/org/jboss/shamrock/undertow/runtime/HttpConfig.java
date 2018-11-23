@@ -19,9 +19,9 @@ package org.jboss.shamrock.undertow.runtime;
 import java.util.Optional;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shamrock.runtime.ConfiguredType;
+import org.jboss.shamrock.runtime.ConfigGroup;
 
-@ConfiguredType
+@ConfigGroup
 public class HttpConfig {
 
     /**

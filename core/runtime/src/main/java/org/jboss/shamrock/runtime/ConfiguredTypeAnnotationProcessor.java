@@ -22,10 +22,6 @@ import static javax.lang.model.util.ElementFilter.typesIn;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
@@ -58,7 +54,7 @@ public class ConfiguredTypeAnnotationProcessor extends AbstractProcessor {
 
     @Override
     public Set<String> getSupportedAnnotationTypes() {
-        return Collections.singleton(ConfiguredType.class.getName());
+        return Collections.singleton(ConfigGroup.class.getName());
     }
 
     @Override
@@ -85,7 +81,7 @@ public class ConfiguredTypeAnnotationProcessor extends AbstractProcessor {
         //Call jboss logging tools
         //create a set of classes, and map this to the build step methods
         for (TypeElement annotation : annotations) {
-            if (annotation.getQualifiedName().toString().equals(ConfiguredType.class.getName())) {
+            if (annotation.getQualifiedName().toString().equals(ConfigGroup.class.getName())) {
                 for (TypeElement i : typesIn(roundEnv.getElementsAnnotatedWith(annotation))) {
                     Properties properties = new Properties();
                     for (VariableElement field : fieldsIn(i.getEnclosedElements())) {

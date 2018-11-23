@@ -71,5 +71,13 @@ public @interface BuildStep {
 
     String[] providesCapabilities() default {};
 
+    /**
+     * Indicates that the provided file names should be considered to be application index markers
+     *
+     * If these are present in library on the class path then the library will be indexed, and this index will be
+     * used when evaluating application components
+     *
+     * TODO: this this be a different annotation?
+     */
     String[] applicationArchiveMarkers() default {};
 }

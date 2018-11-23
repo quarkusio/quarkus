@@ -14,23 +14,23 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.logging.deployment;
+package org.jboss.shamrock.deployment.builditem;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shamrock.runtime.ConfigGroup;
+import org.jboss.builder.item.MultiBuildItem;
 
-@ConfigGroup
-public class CategoryConfig {
+/**
+ * A marker file that if present indicates that a given archive should be treated as an
+ * application archive
+ */
+public final class AdditionalApplicationArchiveMarkerBuildItem extends MultiBuildItem {
 
-    /**
-     * The minimum level that this category can be set to
-     */
-    @ConfigProperty(name = "min-level", defaultValue = "inherit")
-    String minLevel;
+    private final String file;
 
-    /**
-     * The log level level for this category
-     */
-    @ConfigProperty(name = "level", defaultValue = "inherit")
-    String level;
+    public AdditionalApplicationArchiveMarkerBuildItem(String file) {
+        this.file = file;
+    }
+
+    public String getFile() {
+        return file;
+    }
 }

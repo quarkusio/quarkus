@@ -20,7 +20,6 @@ import static org.jboss.protean.gizmo.MethodDescriptor.ofConstructor;
 import static org.jboss.protean.gizmo.MethodDescriptor.ofMethod;
 
 import java.beans.PropertyDescriptor;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -42,12 +41,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import org.apache.commons.beanutils.PropertyUtils;
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.invocation.proxy.ProxyConfiguration;
 import org.jboss.invocation.proxy.ProxyFactory;
 import org.jboss.protean.gizmo.AssignableResultHandle;
-import org.jboss.protean.gizmo.BranchResult;
 import org.jboss.protean.gizmo.CatchBlockCreator;
 import org.jboss.protean.gizmo.ClassCreator;
 import org.jboss.protean.gizmo.FieldDescriptor;
@@ -58,6 +54,7 @@ import org.jboss.protean.gizmo.TryBlock;
 import org.jboss.shamrock.deployment.ClassOutput;
 import org.jboss.shamrock.deployment.ShamrockConfig;
 import org.jboss.shamrock.runtime.ConfigHelper;
+import org.jboss.shamrock.runtime.ObjectSubstitution;
 import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.runtime.StartupContext;
 import org.jboss.shamrock.runtime.StartupTask;

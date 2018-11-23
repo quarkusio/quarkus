@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.recording;
+package org.jboss.shamrock.runtime;
 
 /**
  * An interface that can be used to substitute a non-bytecode serializable class

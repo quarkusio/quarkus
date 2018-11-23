@@ -100,6 +100,8 @@
         <vertx.version>3.5.4</vertx.version>
         <httpclient.version>4.5.4</httpclient.version>
         <httpcore.version>4.4.7</httpcore.version>
+        <shrinkwrap.version>1.2.6</shrinkwrap.version>
+        <wildfly-elytron.version>1.7.0.Final</wildfly-elytron.version>
 
         <!-- Currently still needs a custom build: GAV is org.postgresql:postgresql-protean -->
         <postgresql-jdbc.version>42.2.6-SNAPSHOT</postgresql-jdbc.version>
@@ -107,7 +109,7 @@
         <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>
 
         <postgres.url>${env.DATABASE_URL}</postgres.url>
-        <shrinkwrap.version>1.2.6</shrinkwrap.version>
+        <wildfly-client-config.version>1.0.0.Final</wildfly-client-config.version>
     </properties>
 
     <modules>
@@ -141,6 +143,7 @@
         <module>websockets</module>
         <module>jdbc</module>
         <module>examples</module>
+        <module>security</module>
 
         <!-- Do not add modules after legacy. JVM state will fail CI -->
         <module>legacy</module>
@@ -390,6 +393,16 @@
             <dependency>
                 <groupId>org.jboss.shamrock</groupId>
                 <artifactId>shamrock-shared-library-example</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-security-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-security-runtime</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -984,6 +997,16 @@
             </dependency>
 
             <dependency>
+                <groupId>org.jboss.spec.javax.security.jacc</groupId>
+                <artifactId>jboss-jacc-api_1.5_spec</artifactId>
+                <version>1.0.2.Final</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.spec.javax.security.auth.message</groupId>
+                <artifactId>jboss-jaspi-api_1.1_spec</artifactId>
+                <version>1.0.2.Final</version>
+            </dependency>
+            <dependency>
                 <groupId>org.jboss.spec.javax.servlet</groupId>
                 <artifactId>jboss-servlet-api_4.0_spec</artifactId>
                 <version>${jboss-servlet-api_4.0_spec.version}</version>
@@ -1069,6 +1092,28 @@
                 <version>${wildfly.openssl.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>org.wildfly.client</groupId>
+                <artifactId>wildfly-client-config</artifactId>
+                <version>${wildfly-client-config.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.logging</groupId>
+                        <artifactId>jboss-logging</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.wildfly.security</groupId>
+                <artifactId>wildfly-elytron</artifactId>
+                <version>${wildfly-elytron.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.jboss.logging</groupId>
+                        <artifactId>jboss-logging</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
             <dependency>
                 <groupId>org.ow2.asm</groupId>
                 <artifactId>asm</artifactId>

@@ -30,9 +30,10 @@ import javax.servlet.http.HttpServletResponse;
  * Basic secured servlet test target
  */
 @ServletSecurity(
-        @HttpConstraint(
-                rolesAllowed={"Tester"}
+       value = @HttpConstraint(
+                rolesAllowed={"admin"}
         )
+
 )
 @WebServlet(name = "MySecureServlet", urlPatterns = "/secure-test", initParams = {@WebInitParam(name = "message", value = "A secured message")})
 public class TestSecureServlet extends HttpServlet {

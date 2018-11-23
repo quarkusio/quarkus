@@ -102,6 +102,8 @@ import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildI
 import org.jboss.shamrock.deployment.recording.RecorderContext;
 import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.undertow.runtime.HttpConfig;
+import org.jboss.shamrock.undertow.runtime.ServletSecurityInfoProxy;
+import org.jboss.shamrock.undertow.runtime.ServletSecurityInfoSubstitution;
 import org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate;
 
 import io.undertow.servlet.api.DeploymentInfo;
@@ -160,6 +162,8 @@ public class UndertowBuildStep {
                                          List<ServletExtensionBuildItem> extensions,
                                          InjectionFactoryBuildItem injectionFactory,
                                          BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) throws Exception {
+
+        context.registerSubstitution(ServletSecurityInfo.class, ServletSecurityInfoProxy.class, ServletSecurityInfoSubstitution.class);
 
         reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, DefaultServlet.class.getName(), "io.undertow.server.protocol.http.HttpRequestParser$$generated"));
 

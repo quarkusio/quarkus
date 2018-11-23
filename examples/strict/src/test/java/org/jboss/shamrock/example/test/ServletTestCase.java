@@ -50,7 +50,15 @@ public class ServletTestCase {
     @Test()
     public void testSecureAccessFailure() {
         URLResponse response = URLTester.relative("secure-test").invokeURL();
-        Assert.assertEquals(403, response.statusCode());
+        Assert.assertEquals(401, response.statusCode());
         Assert.assertTrue(response.exception() != null);
     }
+
+    // Basic @ServletSecurity test
+    @Test()
+    public void testSecureAccessSuccess() {
+        URLResponse response = URLTester.relative("secure-test").header("Authorization","Basic c3R1YXJ0OnRlc3Q=").invokeURL();
+        Assert.assertEquals(200, response.statusCode());
+    }
+
 }

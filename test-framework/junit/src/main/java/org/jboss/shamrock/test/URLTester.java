@@ -23,6 +23,8 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.json.Json;
 import javax.json.JsonReader;
@@ -33,6 +35,7 @@ import javax.json.JsonReader;
 public final class URLTester {
 
     private final URL fullURL;
+    private Map<String, String> headers = new HashMap<>();
 
     private URLTester(final URL fullURL) {
         this.fullURL = fullURL;
@@ -50,6 +53,9 @@ public final class URLTester {
 
     private URLResponse privateInvokeURL() throws IOException {
         HttpURLConnection connection = (HttpURLConnection) fullURL.openConnection();
+        for(Map.Entry<String, String> i : headers.entrySet()) {
+            connection.addRequestProperty(i.getKey(), i.getValue());
+        }
         int responseCode = connection.getResponseCode();
         IOException ex = null;
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -71,6 +77,11 @@ public final class URLTester {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public URLTester header(String name, String val) {
+        headers.put(name, val);
+        return this;
     }
 
     private static class URLResponseAdapter implements URLResponse {

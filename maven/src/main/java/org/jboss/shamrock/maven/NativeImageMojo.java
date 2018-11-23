@@ -174,9 +174,6 @@ public class NativeImageMojo extends AbstractMojo {
                 command.add("-g");
             }
             if (debugBuildProcess) {
-                command.add("-J-Xdebug");
-                command.add("-J-Xnoagent");
-                command.add("-J-Djava.compiler=NONE");
                 command.add("-J-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y");
             }
             if (dumpProxies) {

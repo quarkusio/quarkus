@@ -16,6 +16,8 @@
 
 package org.jboss.protean.gizmo;
 
+import java.util.Objects;
+
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 
@@ -25,7 +27,7 @@ import org.jboss.jandex.MethodInfo;
  * This does not expose the full extent of Java bytecode, rather just the most common operations that generated
  * classes are likely to use.
  */
-public interface BytecodeCreator {
+public interface BytecodeCreator extends AutoCloseable {
 
     /**
      * @return A {@link ResultHandle} that represents the current object
@@ -340,6 +342,33 @@ public interface BytecodeCreator {
     }
 
     /**
+     * Create a local variable which can be assigned within this scope.
+     *
+     * @param typeDescr the type descriptor of the variable's type (must not be {@code null})
+     * @return the assignable local variable (not {@code null})
+     */
+    AssignableResultHandle createVariable(final String typeDescr);
+
+    /**
+     * Create a local variable which can be assigned within this scope.
+     *
+     * @param type the type of the variable's type (must not be {@code null})
+     * @return the assignable local variable (not {@code null})
+     */
+    default AssignableResultHandle createVariable(final Class<?> type) {
+        Objects.requireNonNull(type);
+        return createVariable(DescriptorUtils.classToStringRepresentation(type));
+    }
+
+    /**
+     * Assign the given value to the given assignable target.
+     *
+     * @param target the assignment target (must not be {@code null})
+     * @param value the value to assign (must not be {@code null})
+     */
+    void assign(AssignableResultHandle target, ResultHandle value);
+
+    /**
      * Add a {@code try} block.
      *
      * @return the {@code try} block
@@ -503,4 +532,10 @@ public interface BytecodeCreator {
      * @return the nested scope
      */
     BytecodeCreator createScope();
+
+    /**
+     * Indicate that the scope is no longer in use.  The scope may refuse additional instructions after this method
+     * is called.
+     */
+    default void close() {}
 }

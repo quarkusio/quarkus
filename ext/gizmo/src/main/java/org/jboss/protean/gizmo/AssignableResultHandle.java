@@ -1,5 +1,7 @@
 /*
- * Copyright 2018 Red Hat, Inc.
+ * JBoss, Home of Professional Open Source.
+ * Copyright 2018 Red Hat, Inc., and individual contributors
+ * as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,23 +18,11 @@
 
 package org.jboss.protean.gizmo;
 
-class BranchResultImpl implements BranchResult {
-
-    private final BytecodeCreator trueBranch;
-    private final BytecodeCreator falseBranch;
-
-    BranchResultImpl(BytecodeCreator trueBranch, BytecodeCreator falseBranch) {
-        this.trueBranch = trueBranch;
-        this.falseBranch = falseBranch;
-    }
-
-    @Override
-    public BytecodeCreator trueBranch() {
-        return trueBranch;
-    }
-
-    @Override
-    public BytecodeCreator falseBranch() {
-        return falseBranch;
+/**
+ * A result handle that can be assigned to (also known as an "lvalue").
+ */
+public class AssignableResultHandle extends ResultHandle {
+    AssignableResultHandle(final String type, final BytecodeCreatorImpl owner) {
+        super(type, owner);
     }
 }

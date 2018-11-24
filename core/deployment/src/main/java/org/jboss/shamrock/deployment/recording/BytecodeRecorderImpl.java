@@ -46,6 +46,7 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.invocation.proxy.ProxyConfiguration;
 import org.jboss.invocation.proxy.ProxyFactory;
+import org.jboss.protean.gizmo.AssignableResultHandle;
 import org.jboss.protean.gizmo.BranchResult;
 import org.jboss.protean.gizmo.CatchBlockCreator;
 import org.jboss.protean.gizmo.ClassCreator;
@@ -351,10 +352,14 @@ public class BytecodeRecorderImpl implements RecorderContext {
             }
         }   else if (param instanceof URL) {
             String url = ((URL) param).toExternalForm();
-            TryBlock et = method.tryBlock();
-            out = et.newInstance(MethodDescriptor.ofConstructor(URL.class, String.class), et.load(url));
-            CatchBlockCreator malformed = et.addCatch(MalformedURLException.class);
-            malformed.throwException(RuntimeException.class, "Malformed URL", malformed.getCaughtException());
+            AssignableResultHandle value = method.createVariable(URL.class);
+            try (TryBlock et = method.tryBlock()) {
+                et.assign(value, et.newInstance(MethodDescriptor.ofConstructor(URL.class, String.class), et.load(url)));
+                out = value;
+                try (CatchBlockCreator malformed = et.addCatch(MalformedURLException.class)) {
+                    malformed.throwException(RuntimeException.class, "Malformed URL", malformed.getCaughtException());
+                }
+            }
 
         } else if (param instanceof Enum) {
             Enum e = (Enum) param;

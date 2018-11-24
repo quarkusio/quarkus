@@ -3,7 +3,7 @@
 == Extension Authors Guide
 
 Shamrock extensions consist of two distinct parts, augmentation and runtime. The augmentation part is responsible for
-all metadata processing, such as reading annotation, XML descriptors etc. The output of this this augmentation phase
+all metadata processing, such as reading annotation, XML descriptors etc. The output of this augmentation phase
 is recorded bytecode which is responsible for directly instantiating the relevant runtime services.
 
 This means that metadata is only processed once at build time, which both saves on startup time, but also on memory

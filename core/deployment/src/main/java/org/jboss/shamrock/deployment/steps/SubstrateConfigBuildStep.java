@@ -25,6 +25,7 @@ import org.jboss.shamrock.deployment.builditem.substrate.SubstrateSystemProperty
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBundleBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildItem;
 
 //TODO: this should go away, once we decide on which one of the API's we want
@@ -35,10 +36,14 @@ class SubstrateConfigBuildStep {
                BuildProducer<SubstrateProxyDefinitionBuildItem> proxy,
                BuildProducer<SubstrateResourceBundleBuildItem> resourceBundle,
                BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit,
+               BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReinit,
                BuildProducer<SubstrateSystemPropertyBuildItem> nativeImage) {
         for (SubstrateConfigBuildItem substrateConfigBuildItem : substrateConfigBuildItems) {
             for (String i : substrateConfigBuildItem.getRuntimeInitializedClasses()) {
                 runtimeInit.produce(new RuntimeInitializedClassBuildItem(i));
+            }
+            for (String i : substrateConfigBuildItem.getRuntimeReinitializedClasses()) {
+                runtimeReinit.produce(new RuntimeReinitializedClassBuildItem(i));
             }
             for (Map.Entry<String, String> e : substrateConfigBuildItem.getNativeImageSystemProperties().entrySet()) {
                 nativeImage.produce(new SubstrateSystemPropertyBuildItem(e.getKey(), e.getValue()));

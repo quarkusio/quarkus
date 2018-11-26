@@ -34,6 +34,11 @@ public class ShutdownHookThread extends Thread {
     public void run() {
         shutdownFlag.set(true);
         LockSupport.unpark(mainThread);
+        for (;;) try {
+            mainThread.join();
+            return;
+        } catch (InterruptedException ignored) {
+        }
     }
 
     public String toString() {

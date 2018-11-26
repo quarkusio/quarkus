@@ -22,13 +22,12 @@ import java.lang.reflect.InvocationHandler;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ServiceLoader;
 
-import org.hibernate.boot.registry.classloading.internal.ClassLoaderServiceImpl;
+import org.hibernate.AssertionFailure;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
@@ -51,7 +50,7 @@ public class FlatClassLoaderService implements ClassLoaderService {
 			return (Class<T>) Class.forName( className, false, getClassLoader() );
 		}
 		catch (ClassNotFoundException e) {
-			log.errorf( "Could not load class '%s' using Class.forName(String) and class loader %s", className , getClassLoader());
+			log.debugf( "Could not load class '%s' using Class.forName(String) and class loader %s", className , getClassLoader());
 		}
 		return null;
 	}
@@ -60,10 +59,10 @@ public class FlatClassLoaderService implements ClassLoaderService {
 	public URL locateResource(String name) {
 		URL resource = getClassLoader().getResource( name );
 		if ( resource == null ) {
-			log.warnf( "Loading of resource '%s' failed. Maybe that's ok, maybe you forgot to include this resource in the binary image? -H:IncludeResources=", name );
+			log.debugf( "Loading of resource '%s' failed. Maybe that's ok, maybe you forgot to include this resource in the binary image? -H:IncludeResources=", name );
 		}
 		else {
-			log.debugf( "Successfully loaded resource '%s'", name );
+			log.tracef( "Successfully loaded resource '%s'", name );
 		}
 		return resource;
 	}
@@ -72,10 +71,10 @@ public class FlatClassLoaderService implements ClassLoaderService {
 	public InputStream locateResourceStream(String name) {
 		InputStream resourceAsStream = getClassLoader().getResourceAsStream( name );
 		if ( resourceAsStream == null ) {
-			log.warnf( "Loading of resource '%s' failed. Maybe that's ok, maybe you forgot to include this resource in the binary image? -H:IncludeResources=", name );
+			log.debugf( "Loading of resource '%s' failed. Maybe that's ok, maybe you forgot to include this resource in the binary image? -H:IncludeResources=", name );
 		}
 		else {
-			log.debugf( "Successfully loaded resource '%s'", name );
+			log.tracef( "Successfully loaded resource '%s'", name );
 		}
 		return resourceAsStream;
 	}
@@ -107,8 +106,7 @@ public class FlatClassLoaderService implements ClassLoaderService {
 
 	//@Override : not present on all tested branches!
 	public <T> T generateProxy(InvocationHandler handler, Class... interfaces) {
-		log.error( "Not implemented! generateProxy(InvocationHandler handler, Class... interfaces)" );
-		return null;
+		throw new AssertionFailure( "Not implemented! generateProxy(InvocationHandler handler, Class... interfaces)" );
 	}
 
 	@Override
@@ -124,7 +122,7 @@ public class FlatClassLoaderService implements ClassLoaderService {
 
 	private ClassLoader getClassLoader() {
 		ClassLoader cl = Thread.currentThread().getContextClassLoader();
-		if(cl == null) {
+		if (cl == null) {
 			return FlatClassLoaderService.class.getClassLoader();
 		}
 		return cl;

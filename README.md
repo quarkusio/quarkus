@@ -34,14 +34,14 @@ At the moment is has the following features:
 ## How to build Shamrock
 
 * Install platform C developer tools:
-    * OSX
-        * `xcode-select --install`
     * Linux
         * Make sure headers are available on your system (you'll hit 'Basic header file missing (<zlib.h>)' error if they aren't).
             * On Fedora `sudo dnf install zlib-devel`
             * Otherwise `sudo apt-get install libz-dev`
+    * macOS
+        * `xcode-select --install`
 * Install GraalVM (minimum RC9)
-* Set `GRAALVM_HOME` to your GraalVM Home directory e.g. `/Users/emmanuel/JDK/GraalVM/Contents/Home`
+* Set `GRAALVM_HOME` to your GraalVM Home directory e.g. `/opt/graalvm` on Linux or `/Users/emmanuel/JDK/GraalVM/Contents/Home` on macOS
 * `mvn install`
 
 The default build will create two different native images, which is quite time consuming. You can skip this

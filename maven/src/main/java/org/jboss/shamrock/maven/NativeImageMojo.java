@@ -70,6 +70,12 @@ public class NativeImageMojo extends AbstractMojo {
     private boolean enableHttpUrlHandler;
 
     @Parameter
+    private boolean enableHttpsUrlHandler;
+
+    @Parameter
+    private boolean enableAllSecurityServices;
+
+    @Parameter
     private boolean enableRetainedHeapReporting;
 
     @Parameter
@@ -193,8 +199,18 @@ public class NativeImageMojo extends AbstractMojo {
             if(nativeImageXmx != null) {
                 command.add("-J-Xmx" + nativeImageXmx);
             }
+            List<String> protocols = new ArrayList<>(2);
             if(enableHttpUrlHandler) {
-                command.add("-H:EnableURLProtocols=http");
+                protocols.add("http");
+            }
+            if(enableHttpsUrlHandler) {
+                protocols.add("https");
+            }
+            if(!protocols.isEmpty()) {
+                command.add("-H:EnableURLProtocols="+String.join(",", protocols));
+            }
+            if(enableAllSecurityServices) {
+                command.add("--enable-all-security-services");
             }
             if (enableRetainedHeapReporting) {
                 command.add("-H:+PrintRetainedHeapHistogram");

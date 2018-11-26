@@ -35,7 +35,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
- * Various tests convering JPA functionality. All tests should work in both standard JVM and SubstrateVM.
+ * Various tests covering JPA functionality. All tests should work in both standard JVM and SubstrateVM.
  */
 @WebServlet(name = "JPATestBootstrapEndpoint", urlPatterns = "/jpa/testfunctionality")
 public class JPAFunctionalityTestEndpoint extends HttpServlet {

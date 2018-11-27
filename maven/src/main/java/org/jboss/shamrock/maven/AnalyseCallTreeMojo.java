@@ -58,7 +58,7 @@ public class AnalyseCallTreeMojo extends AbstractMojo {
         for (File i : files) {
             if (i.getName().startsWith("call_tree")) {
                 try {
-                    ReportAnalyzer.analyse(i.getAbsolutePath(), clazz, method);
+                    System.out.println(ReportAnalyzer.analyse(i.getAbsolutePath(), clazz, method));
                 } catch (Exception e) {
                     throw new MojoExecutionException("Failed", e);
                 }

@@ -18,7 +18,6 @@ package org.jboss.shamrock.maven;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -26,8 +25,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
-import java.util.jar.JarFile;
-import java.util.zip.ZipEntry;
+import java.util.concurrent.CountDownLatch;
 
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -104,6 +102,9 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter(defaultValue = "true")
     private boolean fullStackTraces;
 
+    @Parameter(defaultValue = "true")
+    private boolean generateCallReports;
+
     @Parameter
     private List<String> additionalBuildArgs;
 
@@ -176,6 +177,9 @@ public class NativeImageMojo extends AbstractMojo {
             if (debugBuildProcess) {
                 command.add("-J-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y");
             }
+            if(generateCallReports) {
+                command.add("-H:+PrintAnalysisCallTree");
+            }
             if (dumpProxies) {
                 command.add("-Dsun.misc.ProxyGenerator.saveGeneratedFiles=true");
                 if (enableServer) {
@@ -226,9 +230,11 @@ public class NativeImageMojo extends AbstractMojo {
             }
 
             System.out.println(command);
+            CountDownLatch errorReportLatch = new CountDownLatch(1);
             Process process = Runtime.getRuntime().exec(command.toArray(new String[0]), null, outputDirectory);
             new Thread(new ProcessReader(process.getInputStream(), false)).start();
-            new Thread(new ProcessReader(process.getErrorStream(), true)).start();
+            new Thread(new ErrorReplacingProcessReader(process.getErrorStream(), new File(outputDirectory, "reports"), errorReportLatch)).start();
+            errorReportLatch.await();
             if (process.waitFor() != 0) {
                 throw new RuntimeException("Image generation failed");
             }

@@ -228,9 +228,6 @@
                                       <enableCodeSizeReporting>true</enableCodeSizeReporting>
                                     -->
                                     <graalvmHome>${graalvmHome}</graalvmHome>
-                                    <additionalBuildArgs>
-                                        <additionalBuildArg>-H:+PrintAnalysisCallTree</additionalBuildArg>
-                                    </additionalBuildArgs>
                                 </configuration>
                             </execution>
                         </executions>

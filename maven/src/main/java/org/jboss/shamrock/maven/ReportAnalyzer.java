@@ -35,7 +35,20 @@ public class ReportAnalyzer {
 
     static Pattern PATTERN = Pattern.compile("(.*?)([^\\s(]+)\\.([^.]+\\(.*?\\):[^\\s])");
 
-    public static void analyse(String report, String className, String methodName) throws Exception {
+    /**
+     * Analyze the contents of the call tree report produced by Substrate when using -H:+PrintAnalysisCallTree,
+     * and does a more meaningful analysis of what is causing a type to be retained.
+     *
+     * In particular for virtual or interface methods that have multuple implementations what is calling this method
+     * is not really important, its what caused this particular instance of the class to be created that is important
+     * (e.g. if you have an instance of Runnable, you don't care about all the different parts that call runnable, you
+     * care about what created this particular instance).
+     *
+     * If a virtual or interface call is detected with multiple implementations then printing the current call flow
+     * is abandonded, and instead the call flow for the constructor of the current object is printed instead.
+     *
+     */
+    public static String analyse(String report, String className, String methodName) throws Exception {
         Deque<String> lines = new ArrayDeque<>();
         try (BufferedReader in = new BufferedReader(new FileReader(report))) {
             for (String re = in.readLine(); re != null; re = in.readLine()) {
@@ -107,18 +120,21 @@ public class ReportAnalyzer {
         if (methodName.equals("<init>")) {
             attemptedClasses.add(className);
         }
+        StringBuilder ret = new StringBuilder();
         StringBuilder sb = new StringBuilder();
         while (!runQueue.isEmpty()) {
             Node current = runQueue.pop();
-            sb.append("Possible path to " + current.className + current.method);
+            sb.append("Possible path to " + current.className + "." + current.method);
             while (current != null) {
-                sb.append("\t" + current.className + "." + current.method+ '\n');
+                sb.append("\t" + current.className + "." + current.method + '\n');
 
                 String reason = null;
-                if (current.type.equals("is overridden by")) {
-                    reason = "This is an implementation of " + current.parent.className + " aborting and printing path to constructors of " + current.className;
-                } else if (current.type.equals("is implemented by")) {
-                    reason = "This is an implementation of " + current.parent.className + " aborting and printing path to constructors of " + current.className;
+                if(current.parent == null || current.parent.children.size() > 1) {
+                    if (current.type.equals("is overridden by")) {
+                        reason = "This is an implementation of " + current.parent.className + " printing path to constructors of " + current.className;
+                    } else if (current.type.equals("is implemented by")) {
+                        reason = "This is an implementation of " + current.parent.className + " printing path to constructors of " + current.className;
+                    }
                 }
                 if (reason != null) {
                     if (!attemptedClasses.contains(current.className)) {
@@ -127,8 +143,10 @@ public class ReportAnalyzer {
                         runQueue.addAll(toAdd);
                         sb.append(reason + '\n');
                         sb.append("\n");
-                        System.out.println(sb.toString());
+                        ret.append(sb);
                     }
+                    //note that we discard the string builder if it is part of attemptedClasses, as this basically
+                    //represents an alternate path that we have already displayed
                     sb.setLength(0);
                     break;
                 }
@@ -137,13 +155,9 @@ public class ReportAnalyzer {
 
             }
         }
-        System.out.println(sb.toString());
+        ret.append(sb);
+        return ret.toString();
     }
-
-    public static void main(String[] arg) throws Exception {
-        analyse("/Users/stuart/workspace/shamrock/examples/strict/target/reports/call_tree_shamrock-strict-example-1.0.0.Alpha1-SNAPSHOT-runner_20181127_195442.txt", "sun.misc.GC", "maxObjectInspectionAge");
-    }
-
 
     public static class Node {
         final int indent;

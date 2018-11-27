@@ -46,6 +46,7 @@ import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.session.SessionIdGenerator;
 import io.undertow.servlet.ServletExtension;
 import io.undertow.servlet.Servlets;
+import io.undertow.servlet.api.Deployment;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.FilterInfo;
@@ -178,7 +179,7 @@ public class UndertowDeploymentTemplate {
         info.getValue().addInitParameter(name, value);
     }
 
-    public void startUndertow(ShutdownContext shutdown, HttpHandler handler, HttpConfig config, List<HandlerWrapper> wrappers) throws ServletException {
+    public RuntimeValue<Undertow> startUndertow(ShutdownContext shutdown, Deployment deployment, HttpConfig config, List<HandlerWrapper> wrappers) throws ServletException {
         if (undertow == null) {
             startUndertowEagerly(config, null);
 
@@ -191,11 +192,12 @@ public class UndertowDeploymentTemplate {
                 }
             });
         }
-        HttpHandler main = handler;
+        HttpHandler main = deployment.getHandler();
         for (HandlerWrapper i : wrappers) {
             main = i.wrap(main);
         }
         currentRoot = main;
+        return new RuntimeValue<>(undertow);
     }
 
 
@@ -229,12 +231,13 @@ public class UndertowDeploymentTemplate {
         }
     }
 
-    public HttpHandler bootServletContainer(RuntimeValue<DeploymentInfo> info) {
+    public Deployment bootServletContainer(RuntimeValue<DeploymentInfo> info) {
         try {
             ServletContainer servletContainer = Servlets.defaultContainer();
             DeploymentManager manager = servletContainer.addDeployment(info.getValue());
             manager.deploy();
-            return manager.start();
+            manager.start();
+            return manager.getDeployment();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

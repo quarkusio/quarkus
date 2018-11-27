@@ -26,12 +26,8 @@ import java.util.Properties;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
-import javax.annotation.processing.Completion;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.SourceVersion;
-import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.Element;
-import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.tools.Diagnostic;
@@ -70,15 +66,7 @@ public class ConfiguredTypeAnnotationProcessor extends AbstractProcessor {
         return true;
     }
 
-    @Override
-    public Iterable<? extends Completion> getCompletions(Element element, AnnotationMirror annotation, ExecutableElement member, String userText) {
-        return null;
-    }
-
-
     public void doProcess(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-
-        //Call jboss logging tools
         //create a set of classes, and map this to the build step methods
         for (TypeElement annotation : annotations) {
             if (annotation.getQualifiedName().toString().equals(ConfigGroup.class.getName())) {

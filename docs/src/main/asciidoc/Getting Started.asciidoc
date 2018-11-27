@@ -33,13 +33,13 @@ To complete this guide, you need:
 * GraalVM installed from the http://www.graalvm.org/downloads/[GraalVM web site].
 Using the community edition is enough.
 At least version {graal-version} is required.
-* The `GRAAL_HOME` environment variable configured appropriately
+* The `GRAALVM_HOME` environment variable configured appropriately
 * Apache Maven 3.5+
 * A running Docker
 
 [NOTE]
 ====
-Once you have downloaded GraalVM, expand the archive and set the `GRAAL_HOME` variable to this location:
+Once you have downloaded GraalVM, expand the archive and set the `GRAALVM_HOME` variable to this location:
 
 `export GRAALVM_HOME=~clement/Development/graalvm/`
 
@@ -74,6 +74,7 @@ Add the Shamrock Maven plugin to the `pom.xml` file:
 ----
 <properties>
     <shamrock.version>{shamrock-version}</shamrock.version>
+    <surefire.version>{surefire-version}</surefire.version>
 </properties>
 
 <build>
@@ -367,7 +368,7 @@ Let's now produce a native executable for our application.
 It will even improve the startup time of the application, and produce a very small disk footprint.
 The executable would have everything to run the application including the "JVM" (shrunk to be just enough to run the application), and the application.
 
-Be sure that the `GRAAL_HOME` environment variable is configured appropriately.
+Be sure that the `GRAALVM_HOME` environment variable is configured appropriately.
 
 Edit the `pom.xml` to add the following _profile_.
 
@@ -417,7 +418,7 @@ In the `pom.xml` file, extend the `native` profile with:
 <plugin>
     <groupId>org.apache.maven.plugins</groupId>
     <artifactId>maven-failsafe-plugin</artifactId>
-    <version>{surefire-version}</version>
+    <version>${surefire.version}</version>
     <executions>
         <execution>
             <goals>
@@ -454,6 +455,41 @@ public class GreetingResourceIT extends GreetingResourceTest { // <2>
 <1> Use another test runner that starts the application from the native file before the tests.
 The executable is retrieved using the `native.image.path` system property configured in the _Failsafe Maven Plugin_.
 <2> We extend our previous tests, but you can also implement your tests
+
+To see the `GreetingResourceIT` run against the native image, add a verify goal:
+[source]
+----
+mvn package verify -Pnative
+...
+[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]   (typeflow):  35,160.93 ms
+[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]    (objects):  24,027.13 ms
+[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]   (features):   1,313.94 ms
+[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]     analysis:  61,512.95 ms
+[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]     universe:   1,924.69 ms
+[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]      (parse):  11,479.41 ms
+[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]     (inline):  13,568.71 ms
+[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]    (compile):  82,885.41 ms
+[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]      compile: 114,095.02 ms
+[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]        image:   5,680.17 ms
+[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]        write:   1,876.14 ms
+[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]      [total]: 197,587.37 ms
+[INFO]
+[INFO] --- maven-failsafe-plugin:2.21.0:integration-test (default) @ shamrock-quickstart ---
+[INFO]
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running org.acme.quickstart.GreetingResourceIT
+Executing /Users/starksm/Dev/JBoss/Protean/get-started/target/shamrock-quickstart-1.0-SNAPSHOT-runner
+2018-11-26 08:20:43,169 ironmaiden shamrock-quickstart-1.0-SNAPSHOT-runner[5220] INFO  [o.j.s.u.r.UndertowDeploymentTemplate] (main) Starting Undertow on port 8080
+2018-11-26 08:20:43,190 ironmaiden shamrock-quickstart-1.0-SNAPSHOT-runner[5220] INFO  [o.j.shamrock] (main) Shamrock started in 21.930ms
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.097 s - in org.acme.quickstart.GreetingResourceIT
+[INFO]
+[INFO] Results:
+[INFO]
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0
+...
+----
 
 === Producing a Docker container
 

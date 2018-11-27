@@ -83,7 +83,7 @@ public final class BuildContext {
      * @param items the items (must not be {@code null})
      * @throws IllegalArgumentException if the type of item could not be determined
      */
-    public void produce(List<MultiBuildItem> items) {
+    public void produce(List<? extends MultiBuildItem> items) {
         Assert.checkNotNullParam("items", items);
         for(MultiBuildItem item : items) {
             doProduce(new ItemId(item.getClass(), null), item);

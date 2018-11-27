@@ -35,8 +35,11 @@ import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.annotations.ExecutionTime;
 import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
+import org.jboss.shamrock.deployment.builditem.ServiceStartBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.undertow.ServletContextAttributeBuildItem;
+import org.jboss.shamrock.undertow.ServletDeploymentBuildItem;
+import org.jboss.shamrock.undertow.UndertowBuildItem;
 import org.jboss.shamrock.websockets.runtime.WebsocketTemplate;
 
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
@@ -104,5 +107,12 @@ public class WebsocketBuildStep {
         reflection.produce(new ReflectiveClassBuildItem(true, false , annotatedEndpoints.toArray(new String[annotatedEndpoints.size()])));
         
         return new ServletContextAttributeBuildItem(WebSocketDeploymentInfo.ATTRIBUTE_NAME, template.createDeploymentInfo(annotatedEndpoints, endpoints, config));
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    ServiceStartBuildItem setupWorker(WebsocketTemplate template, UndertowBuildItem undertow) {
+        template.setupWorker(undertow.getUndertow());
+        return new ServiceStartBuildItem("Websockets");
     }
 }

@@ -104,6 +104,7 @@ import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.undertow.runtime.HttpConfig;
 import org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate;
 
+import io.undertow.Undertow;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.HttpMethodSecurityInfo;
@@ -131,10 +132,12 @@ public class UndertowBuildStep {
     @BuildStep
     @Record(RUNTIME_INIT)
     public ServiceStartBuildItem boot(UndertowDeploymentTemplate template,
-                                      ServletHandlerBuildItem servletHandlerBuildItem,
+                                      ServletDeploymentBuildItem servletDeploymentBuildItem,
                                       List<HttpHandlerWrapperBuildItem> wrappers,
-                                      ShutdownContextBuildItem shutdown) throws Exception {
-        template.startUndertow(shutdown, servletHandlerBuildItem.getHandler(), config, wrappers.stream().map(HttpHandlerWrapperBuildItem::getValue).collect(Collectors.toList()));
+                                      ShutdownContextBuildItem shutdown,
+                                      BuildProducer<UndertowBuildItem> undertowProducer) throws Exception {
+        RuntimeValue<Undertow> ut = template.startUndertow(shutdown, servletDeploymentBuildItem.getDeployment(), config, wrappers.stream().map(HttpHandlerWrapperBuildItem::getValue).collect(Collectors.toList()));
+        undertowProducer.produce(new UndertowBuildItem(ut));
         return new ServiceStartBuildItem("undertow");
     }
 
@@ -151,15 +154,15 @@ public class UndertowBuildStep {
 
     @Record(STATIC_INIT)
     @BuildStep
-    public ServletHandlerBuildItem build(ApplicationArchivesBuildItem applicationArchivesBuildItem,
-                                         List<ServletBuildItem> servlets,
-                                         List<FilterBuildItem> filters,
-                                         List<ServletInitParamBuildItem> initParams,
-                                         List<ServletContextAttributeBuildItem> contextParams,
-                                         UndertowDeploymentTemplate template, RecorderContext context,
-                                         List<ServletExtensionBuildItem> extensions,
-                                         InjectionFactoryBuildItem injectionFactory,
-                                         BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) throws Exception {
+    public ServletDeploymentBuildItem build(ApplicationArchivesBuildItem applicationArchivesBuildItem,
+                                            List<ServletBuildItem> servlets,
+                                            List<FilterBuildItem> filters,
+                                            List<ServletInitParamBuildItem> initParams,
+                                            List<ServletContextAttributeBuildItem> contextParams,
+                                            UndertowDeploymentTemplate template, RecorderContext context,
+                                            List<ServletExtensionBuildItem> extensions,
+                                            InjectionFactoryBuildItem injectionFactory,
+                                            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) throws Exception {
 
         reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, DefaultServlet.class.getName(), "io.undertow.server.protocol.http.HttpRequestParser$$generated"));
 
@@ -331,7 +334,7 @@ public class UndertowBuildStep {
         for (ServletExtensionBuildItem i : extensions) {
             template.addServletExtension(deployment, i.getValue());
         }
-        return new ServletHandlerBuildItem(template.bootServletContainer(deployment));
+        return new ServletDeploymentBuildItem(template.bootServletContainer(deployment));
 
     }
 

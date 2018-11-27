@@ -24,8 +24,10 @@ import javax.websocket.server.ServerApplicationConfig;
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.jboss.logging.Logger;
+import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.runtime.Template;
 
+import io.undertow.Undertow;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
 
 @Template
@@ -33,8 +35,15 @@ public class WebsocketTemplate {
 
     private static final Logger log = Logger.getLogger(WebsocketTemplate.class);
 
+
+    public void setupWorker(RuntimeValue<Undertow> undertow) {
+        WorkerSupplier.worker = undertow.getValue().getWorker();
+    }
+
+
     public WebSocketDeploymentInfo createDeploymentInfo(Set<String> annotatedEndpoints, Set<String> endpoints, Set<String> serverApplicationConfigClasses) {
         WebSocketDeploymentInfo container = new WebSocketDeploymentInfo();
+        container.setWorker(new WorkerSupplier());
         Set<Class<? extends Endpoint>> allScannedEndpointImplementations = new HashSet<>();
         for (String i : endpoints) {
             try {

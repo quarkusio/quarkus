@@ -14,21 +14,18 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.undertow;
+package org.jboss.shamrock.websockets.runtime;
 
-import org.jboss.builder.item.SimpleBuildItem;
+import java.util.function.Supplier;
 
-import io.undertow.server.HttpHandler;
+import org.xnio.XnioWorker;
 
-public final class ServletHandlerBuildItem extends SimpleBuildItem {
+public class WorkerSupplier implements Supplier<XnioWorker> {
 
-    private final HttpHandler handler;
+    static volatile XnioWorker worker;
 
-    public ServletHandlerBuildItem(HttpHandler handler) {
-        this.handler = handler;
-    }
-
-    public HttpHandler getHandler() {
-        return handler;
+    @Override
+    public XnioWorker get() {
+        return worker;
     }
 }

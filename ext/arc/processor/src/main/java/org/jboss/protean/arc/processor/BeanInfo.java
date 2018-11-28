@@ -16,7 +16,11 @@
 
 package org.jboss.protean.arc.processor;
 
+import java.nio.charset.Charset;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,7 +30,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -47,8 +50,6 @@ import org.jboss.protean.gizmo.MethodCreator;
  * @author Martin Kouba
  */
 public class BeanInfo {
-
-    private static final AtomicInteger ID_GENERATOR = new AtomicInteger();
 
     private final String identifier;
 
@@ -138,8 +139,7 @@ public class BeanInfo {
         this.destroyerConsumer = destroyerConsumer;
         this.params = params;
         // Identifier is generated and unique for a specific deployment
-        // TODO: I am not quite sure if a simple idx is the best id
-        this.identifier = "" + ID_GENERATOR.incrementAndGet();
+        this.identifier = generateId();
     }
 
     public String getIdentifier() {
@@ -405,6 +405,34 @@ public class BeanInfo {
         }
     }
 
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append(getType());
+        builder.append(" bean [types=");
+        builder.append(types);
+        builder.append(", qualifiers=");
+        builder.append(qualifiers);
+        builder.append(", target=");
+        builder.append(target);
+        if (declaringBean != null) {
+            builder.append(", declaringBean=");
+            builder.append(declaringBean.target);
+        }
+        builder.append("]");
+        return builder.toString();
+    }
+
+    private String generateId() {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-1");
+            md.reset();
+            return Base64.getEncoder().encodeToString(md.digest(toString().getBytes(Charset.forName("UTF-8"))));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     static class InterceptionInfo {
 
         static final InterceptionInfo EMPTY = new InterceptionInfo(Collections.emptyList(), Collections.emptySet());
@@ -422,24 +450,6 @@ public class BeanInfo {
             return interceptors.isEmpty();
         }
 
-    }
-
-    @Override
-    public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append(getType());
-        builder.append(" bean [types=");
-        builder.append(types);
-        builder.append(", qualifiers=");
-        builder.append(qualifiers);
-        builder.append(", target=");
-        builder.append(target);
-        if (declaringBean != null) {
-            builder.append(", declaringBean=");
-            builder.append(declaringBean.target);
-        }
-        builder.append("]");
-        return builder.toString();
     }
 
     static class Builder {

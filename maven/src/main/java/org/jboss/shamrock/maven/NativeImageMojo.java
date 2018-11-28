@@ -108,6 +108,10 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter
     private List<String> additionalBuildArgs;
 
+    public NativeImageMojo() {
+        MojoLogger.logSupplier = this::getLog;
+    }
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
 

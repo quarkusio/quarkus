@@ -46,6 +46,10 @@ public class ExampleConfigMojo extends AbstractMojo {
     protected MavenProject project;
 
 
+    public ExampleConfigMojo() {
+        MojoLogger.logSupplier = this::getLog;
+    }
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         try {

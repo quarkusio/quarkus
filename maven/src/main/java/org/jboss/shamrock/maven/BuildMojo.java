@@ -118,6 +118,9 @@ public class BuildMojo extends AbstractMojo {
     @Parameter(defaultValue = "false")
     private boolean uberJar;
 
+    public BuildMojo() {
+        MojoLogger.logSupplier = this::getLog;
+    }
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {

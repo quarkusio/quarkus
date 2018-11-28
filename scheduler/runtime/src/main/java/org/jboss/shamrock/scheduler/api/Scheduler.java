@@ -15,7 +15,11 @@
  */
 package org.jboss.shamrock.scheduler.api;
 
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Default;
+
 /**
+ * The container provides a built-in bean with bean type {@link Scheduler}, scope {@link ApplicationScoped}, and qualifier {@link Default}.
  *
  * @author Martin Kouba
  */

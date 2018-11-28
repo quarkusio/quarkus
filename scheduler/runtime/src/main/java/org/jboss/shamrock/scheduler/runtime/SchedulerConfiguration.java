@@ -24,7 +24,6 @@ import javax.enterprise.context.ApplicationScoped;
 import org.jboss.shamrock.scheduler.api.Scheduled;
 
 /**
- * TODO holds config
  *
  * @author Martin Kouba
  */

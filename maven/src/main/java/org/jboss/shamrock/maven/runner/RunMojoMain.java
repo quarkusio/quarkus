@@ -26,8 +26,12 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 import org.jboss.shamrock.runtime.Timing;
+
+import io.smallrye.config.PropertiesConfigSource;
+import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 /**
  * The main entry point for the run mojo execution
@@ -47,12 +51,33 @@ public class RunMojoMain {
     static volatile Throwable deploymentProblem;
 
     public static void main(String... args) throws Exception {
+
         Timing.staticInitStarted();
-        RuntimeCompilationSetup.setup();
+
+
+
         //the path that contains the compiled classes
         classesRoot = new File(args[0]);
         wiringDir = new File(args[1]);
         cacheDir = new File(args[2]);
+
+        //first lets look for some config, as it is not on the current class path
+        //and we need to load it to start undertow eagerly
+        File config = new File(classesRoot, "META-INF/microprofile-config.properties");
+        if(config.exists()) {
+            try {
+                Config built = SmallRyeConfigProviderResolver.instance().getBuilder()
+                        .addDefaultSources()
+                        .addDiscoveredConverters()
+                        .addDiscoveredSources()
+                        .withSources(new PropertiesConfigSource(config.toURL())).build();
+                SmallRyeConfigProviderResolver.instance().registerConfig(built, Thread.currentThread().getContextClassLoader());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        RuntimeCompilationSetup.setup();
         //TODO: we can't handle an exception on startup with hot replacement, as Undertow might not have started
 
         doStart();

@@ -16,29 +16,29 @@
 
 package org.jboss.shamrock.runtime.graal;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
 /**
  */
 public class ShutdownHookThread extends Thread {
-    private final AtomicBoolean shutdownFlag;
+    private final AtomicInteger shutdownState;
     private final Thread mainThread;
 
-    public ShutdownHookThread(final AtomicBoolean shutdownFlag, Thread mainThread) {
+    public ShutdownHookThread(final AtomicInteger shutdownState, Thread mainThread) {
         super("Shutdown thread");
-        this.shutdownFlag = shutdownFlag;
+        this.shutdownState = shutdownState;
         this.mainThread = mainThread;
+        setDaemon(false);
     }
 
     public void run() {
-        shutdownFlag.set(true);
+        shutdownState.set(1);
         LockSupport.unpark(mainThread);
-        for (;;) try {
-            mainThread.join();
-            return;
-        } catch (InterruptedException ignored) {
-        }
+        do {
+            LockSupport.park(mainThread);
+            Thread.interrupted();
+        } while (shutdownState.get() != 2);
     }
 
     public String toString() {

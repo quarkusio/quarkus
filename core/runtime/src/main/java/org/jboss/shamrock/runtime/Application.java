@@ -17,13 +17,18 @@
 package org.jboss.shamrock.runtime;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 
+import org.graalvm.nativeimage.ImageInfo;
+import org.jboss.logging.Logger;
 import org.jboss.shamrock.runtime.graal.ShutdownHookThread;
 import org.jboss.threads.Locks;
 import org.wildfly.common.Assert;
+import sun.misc.Signal;
+import sun.misc.SignalHandler;
 
 /**
  * The application base class, which is extended and implemented by a generated class which implements the application
@@ -140,6 +145,7 @@ public abstract class Application {
         } finally {
             stateLock.unlock();
         }
+        final long mark = System.nanoTime();
         try {
             doStop();
         } finally {
@@ -149,6 +155,8 @@ public abstract class Application {
                 stateCond.signalAll();
             } finally {
                 stateLock.unlock();
+                final long time = System.nanoTime() - mark;
+                Logger.getLogger("org.jboss.shamrock").infof("Shamrock stopped in %d.%03dms", Long.valueOf(time / 1_000_000), Long.valueOf(time % 1_000_000 / 1_000));
             }
         }
     }
@@ -159,17 +167,31 @@ public abstract class Application {
      * Run the application as if it were in a standalone JVM.
      */
     public final void run(String[] args) {
-        final AtomicBoolean flag = new AtomicBoolean();
-        final ShutdownHookThread shutdownHookThread = new ShutdownHookThread(flag, Thread.currentThread());
+        final AtomicInteger state = new AtomicInteger();
+        if (ImageInfo.inImageRuntimeCode()) {
+            final SignalHandler handler = new SignalHandler() {
+                public void handle(final Signal signal) {
+                    System.exit(0);
+                }
+            };
+            Signal.handle(new Signal("INT"), handler);
+            Signal.handle(new Signal("TERM"), handler);
+        }
+        final ShutdownHookThread shutdownHookThread = new ShutdownHookThread(state, Thread.currentThread());
         Runtime.getRuntime().addShutdownHook(shutdownHookThread);
         start(args);
         try {
-            while (! flag.get()) {
+            while (state.get() == 0) {
                 Thread.interrupted();
                 LockSupport.park(shutdownHookThread);
             }
         } finally {
-            stop();
+            try {
+                stop();
+            } finally {
+                state.set(2);
+                LockSupport.unpark(shutdownHookThread);
+            }
         }
     }
 

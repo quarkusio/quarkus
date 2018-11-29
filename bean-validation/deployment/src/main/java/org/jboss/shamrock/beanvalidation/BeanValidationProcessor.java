@@ -65,7 +65,6 @@ class BeanValidationProcessor {
         Set<DotName> constraintAnnotations = new HashSet<>();
 
         // Collect the constraint annotations provided by Hibernate Validator and Bean Validation
-        // FIXME: we do not collect everything here unfortunately as purely composite constraints are not declared here.
         contributeBuiltinConstraints(constraintAnnotations);
 
         // Add the constraint annotations present in the application itself

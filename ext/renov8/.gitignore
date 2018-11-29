@@ -1,0 +1,52 @@
+# ignore .svn metadata files
+.svn
+# ignore Maven generated target folders
+~
+target
+# ignore eclipse files
+.project
+.classpath
+.settings
+.metadata
+# ignore m2e annotation processing files
+.factorypath
+# ignore IDEA files
+*.iml
+*.ipr
+*.iws
+.idea
+# ignore NetBeans files
+nbactions.xml
+nb-configuration.xml
+catalog.xml
+#
+maven-ant-tasks.jar
+test-output
+transaction.log
+# vim files
+*.swp
+/.gitk-tmp.*
+atlassian-ide-plugin.xml
+# temp files
+*~
+# maven versions plugin
+pom.xml.versionsBackup
+dependency-reduced-pom.xml
+# hprof dumps
+/*.hprof
+# ignore 'randomly' strewn around logs
+server.log
+# ignore java crashes
+hs_err_pid*.log
+# H2 databases produced by tests
+*.h2.db
+# JBoss transaction generated files
+PutObjectStoreDirHere
+# ignore mvn-rpmbuild repo
+/.m2
+# ignore eap repo
+local-repo-eap
+
+#OS X index files
+.DS_Store
+/core/nbproject/

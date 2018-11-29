@@ -19,6 +19,7 @@ package org.jboss.shamrock.beanvalidation;
 import static org.jboss.shamrock.annotations.ExecutionTime.STATIC_INIT;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -115,6 +116,12 @@ class BeanValidationProcessor {
     private static void contributeClass(Set<Class<?>> classCollector, RecorderContext recorder, IndexView indexView, ClassInfo classInfo) {
         classCollector.add(recorder.classProxy(classInfo.name().toString()));
         for (ClassInfo subclass : indexView.getAllKnownSubclasses(classInfo.name())) {
+            if (Modifier.isAbstract(subclass.flags())) {
+                // we can avoid adding the abstract classes here: either they are parent classes
+                // and they will be dealt with by Hibernate Validator or they are child classes
+                // without any proper implementation and we can ignore them.
+                continue;
+            }
             classCollector.add(recorder.classProxy(subclass.name().toString()));
         }
     }

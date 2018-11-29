@@ -25,6 +25,7 @@ import java.util.Set;
 
 import javax.validation.Constraint;
 
+import org.hibernate.validator.internal.metadata.core.ConstraintHelper;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -35,7 +36,6 @@ import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.beanvalidation.runtime.ValidatorProvider;
 import org.jboss.shamrock.beanvalidation.runtime.ValidatorTemplate;
-import org.jboss.shamrock.beanvalidation.runtime.graal.ConstraintHelperSubstitution;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.InjectionFactoryBuildItem;
@@ -107,7 +107,7 @@ class BeanValidationProcessor {
     }
 
     private static void contributeBuiltinConstraints(Set<DotName> constraintCollector) {
-        Set<Class<? extends Annotation>> builtinConstraints = new ConstraintHelperSubstitution().builtinConstraints.keySet();
+        Set<Class<? extends Annotation>> builtinConstraints = new ConstraintHelper().getBuiltinConstraints();
         for (Class<? extends Annotation> builtinConstraint : builtinConstraints) {
             constraintCollector.add(DotName.createSimple(builtinConstraint.getName()));
         }

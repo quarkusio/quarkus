@@ -14,23 +14,28 @@
  * limitations under the License.
  */
 
+
 package org.jboss.shamrock.beanvalidation.runtime;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
 
-@ApplicationScoped
-public class ValidatorProvider {
+public class ValidatorHolder {
 
-    @Produces
-    public ValidatorFactory factory() {
-        return ValidatorHolder.getValidatorFactory();
+    private static ValidatorFactory validatorFactory;
+
+    private static Validator validator;
+
+    static void initialize(ValidatorFactory validatorFactory) {
+        ValidatorHolder.validatorFactory = validatorFactory;
+        ValidatorHolder.validator = validatorFactory.getValidator();
     }
 
-    @Produces
-    public Validator validator() {
-        return ValidatorHolder.getValidator();
+    static ValidatorFactory getValidatorFactory() {
+        return validatorFactory;
+    }
+
+    static Validator getValidator() {
+        return validator;
     }
 }

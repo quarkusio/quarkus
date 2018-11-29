@@ -20,7 +20,7 @@ import java.util.function.Predicate;
 
 import javax.validation.MessageInterpolator;
 
-import org.hibernate.validator.internal.engine.ConfigurationImpl;
+import org.hibernate.validator.internal.engine.AbstractConfigurationImpl;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 
 import com.oracle.svm.core.annotate.Alias;
@@ -28,8 +28,8 @@ import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.annotate.TargetElement;
 
-@TargetClass(ConfigurationImpl.class)
-final class ConfigurationImplSubstitution {
+@TargetClass(AbstractConfigurationImpl.class)
+final class AbstractConfigurationImplSubstitution {
 
     @Alias
     private MessageInterpolator defaultMessageInterpolator;

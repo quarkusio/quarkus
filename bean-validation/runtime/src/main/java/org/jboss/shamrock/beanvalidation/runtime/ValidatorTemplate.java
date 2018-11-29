@@ -16,30 +16,34 @@
 
 package org.jboss.shamrock.beanvalidation.runtime;
 
-import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
+import java.lang.reflect.Method;
+import java.util.Set;
 
-import org.jboss.shamrock.runtime.InjectionFactory;
+import javax.validation.Validation;
+
+import org.hibernate.validator.PredefinedScopeHibernateValidator;
+import org.hibernate.validator.PredefinedScopeHibernateValidatorConfiguration;
+import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
 import org.jboss.shamrock.runtime.Template;
-import org.jboss.shamrock.runtime.InjectionInstance;
 
 @Template
 public class ValidatorTemplate {
 
-    /**
-     * Force the validation factory to be created at static init time, so it is
-     * bootstrapped in a JVM rather than in native-image
-     * <p>
-     * TODO: we really only need to run in native-image
-     *
-     * @param provider
-     */
-    public void forceInit(InjectionFactory provider, Class<?>... classesToValidate) {
-        ValidatorProvider validatorProvider = provider.create(ValidatorProvider.class).newInstance();
-        validatorProvider.forceInit();
-        Validator validator = validatorProvider.factory().getValidator();
-        for (Class<?> i : classesToValidate) {
-            validator.getConstraintsForClass(i);
+    public void initializeValidatorFactory(Set<Class<?>> classesToBeValidated) {
+        PredefinedScopeHibernateValidatorConfiguration configuration = Validation.byProvider(PredefinedScopeHibernateValidator.class)
+                .configure();
+
+        try {
+            Class<?> cl = Class.forName("javax.el.ELManager");
+            Method method = cl.getDeclaredMethod("getExpressionFactory");
+            method.invoke(null);
+        } catch (Throwable t) {
+            //if EL is not on the class path we use the parameter message interpolator
+            configuration.messageInterpolator(new ParameterMessageInterpolator());
         }
+
+        configuration.initializeBeanMetaData(classesToBeValidated);
+
+        ValidatorHolder.initialize(configuration.buildValidatorFactory());
     }
 }

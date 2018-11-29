@@ -23,8 +23,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.validation.ConstraintValidator;
 import javax.validation.constraints.AssertFalse;
@@ -51,7 +49,6 @@ import javax.validation.constraints.PositiveOrZero;
 import javax.validation.constraints.Size;
 
 import org.hibernate.validator.constraints.CodePointLength;
-import org.hibernate.validator.constraints.Currency;
 import org.hibernate.validator.constraints.EAN;
 import org.hibernate.validator.constraints.ISBN;
 import org.hibernate.validator.constraints.Length;
@@ -84,7 +81,6 @@ import org.hibernate.validator.internal.constraintvalidators.bv.NotBlankValidato
 import org.hibernate.validator.internal.constraintvalidators.bv.NotNullValidator;
 import org.hibernate.validator.internal.constraintvalidators.bv.NullValidator;
 import org.hibernate.validator.internal.constraintvalidators.bv.PatternValidator;
-import org.hibernate.validator.internal.constraintvalidators.bv.money.CurrencyValidatorForMonetaryAmount;
 import org.hibernate.validator.internal.constraintvalidators.bv.money.DecimalMaxValidatorForMonetaryAmount;
 import org.hibernate.validator.internal.constraintvalidators.bv.money.DecimalMinValidatorForMonetaryAmount;
 import org.hibernate.validator.internal.constraintvalidators.bv.money.MaxValidatorForMonetaryAmount;
@@ -189,8 +185,6 @@ import org.hibernate.validator.internal.constraintvalidators.bv.time.future.Futu
 import org.hibernate.validator.internal.constraintvalidators.bv.time.future.FutureValidatorForMonthDay;
 import org.hibernate.validator.internal.constraintvalidators.bv.time.future.FutureValidatorForOffsetDateTime;
 import org.hibernate.validator.internal.constraintvalidators.bv.time.future.FutureValidatorForOffsetTime;
-import org.hibernate.validator.internal.constraintvalidators.bv.time.future.FutureValidatorForReadableInstant;
-import org.hibernate.validator.internal.constraintvalidators.bv.time.future.FutureValidatorForReadablePartial;
 import org.hibernate.validator.internal.constraintvalidators.bv.time.future.FutureValidatorForThaiBuddhistDate;
 import org.hibernate.validator.internal.constraintvalidators.bv.time.future.FutureValidatorForYear;
 import org.hibernate.validator.internal.constraintvalidators.bv.time.future.FutureValidatorForYearMonth;
@@ -207,8 +201,6 @@ import org.hibernate.validator.internal.constraintvalidators.bv.time.futureorpre
 import org.hibernate.validator.internal.constraintvalidators.bv.time.futureorpresent.FutureOrPresentValidatorForMonthDay;
 import org.hibernate.validator.internal.constraintvalidators.bv.time.futureorpresent.FutureOrPresentValidatorForOffsetDateTime;
 import org.hibernate.validator.internal.constraintvalidators.bv.time.futureorpresent.FutureOrPresentValidatorForOffsetTime;
-import org.hibernate.validator.internal.constraintvalidators.bv.time.futureorpresent.FutureOrPresentValidatorForReadableInstant;
-import org.hibernate.validator.internal.constraintvalidators.bv.time.futureorpresent.FutureOrPresentValidatorForReadablePartial;
 import org.hibernate.validator.internal.constraintvalidators.bv.time.futureorpresent.FutureOrPresentValidatorForThaiBuddhistDate;
 import org.hibernate.validator.internal.constraintvalidators.bv.time.futureorpresent.FutureOrPresentValidatorForYear;
 import org.hibernate.validator.internal.constraintvalidators.bv.time.futureorpresent.FutureOrPresentValidatorForYearMonth;
@@ -225,8 +217,6 @@ import org.hibernate.validator.internal.constraintvalidators.bv.time.past.PastVa
 import org.hibernate.validator.internal.constraintvalidators.bv.time.past.PastValidatorForMonthDay;
 import org.hibernate.validator.internal.constraintvalidators.bv.time.past.PastValidatorForOffsetDateTime;
 import org.hibernate.validator.internal.constraintvalidators.bv.time.past.PastValidatorForOffsetTime;
-import org.hibernate.validator.internal.constraintvalidators.bv.time.past.PastValidatorForReadableInstant;
-import org.hibernate.validator.internal.constraintvalidators.bv.time.past.PastValidatorForReadablePartial;
 import org.hibernate.validator.internal.constraintvalidators.bv.time.past.PastValidatorForThaiBuddhistDate;
 import org.hibernate.validator.internal.constraintvalidators.bv.time.past.PastValidatorForYear;
 import org.hibernate.validator.internal.constraintvalidators.bv.time.past.PastValidatorForYearMonth;
@@ -243,8 +233,6 @@ import org.hibernate.validator.internal.constraintvalidators.bv.time.pastorprese
 import org.hibernate.validator.internal.constraintvalidators.bv.time.pastorpresent.PastOrPresentValidatorForMonthDay;
 import org.hibernate.validator.internal.constraintvalidators.bv.time.pastorpresent.PastOrPresentValidatorForOffsetDateTime;
 import org.hibernate.validator.internal.constraintvalidators.bv.time.pastorpresent.PastOrPresentValidatorForOffsetTime;
-import org.hibernate.validator.internal.constraintvalidators.bv.time.pastorpresent.PastOrPresentValidatorForReadableInstant;
-import org.hibernate.validator.internal.constraintvalidators.bv.time.pastorpresent.PastOrPresentValidatorForReadablePartial;
 import org.hibernate.validator.internal.constraintvalidators.bv.time.pastorpresent.PastOrPresentValidatorForThaiBuddhistDate;
 import org.hibernate.validator.internal.constraintvalidators.bv.time.pastorpresent.PastOrPresentValidatorForYear;
 import org.hibernate.validator.internal.constraintvalidators.bv.time.pastorpresent.PastOrPresentValidatorForYearMonth;
@@ -561,24 +549,30 @@ public final class ConstraintHelperSubstitution {
     }
 
     @Alias
-    private static <A extends Annotation> void putConstraint(Map<Class<? extends Annotation>, List<ConstraintValidatorDescriptor<?>>> validators, Class<A> constraintType, Class<? extends ConstraintValidator<A, ?>> validatorType) {
-        validators.put( constraintType, Collections.singletonList( ConstraintValidatorDescriptor.forClass( validatorType ) ) );
+    private static <A extends Annotation> void putConstraint(Map<Class<? extends Annotation>, List<ConstraintValidatorDescriptor<?>>> validators,
+            Class<A> constraintType, Class<? extends ConstraintValidator<A, ?>> validatorType) {
+        validators.put( constraintType, Collections.singletonList( ConstraintValidatorDescriptor.forClass( validatorType, constraintType ) ) );
     }
 
     @Alias
-    private static <A extends Annotation> void putConstraints(Map<Class<? extends Annotation>, List<ConstraintValidatorDescriptor<?>>> validators, Class<A> constraintType, Class<? extends ConstraintValidator<A, ?>> validatorType1, Class<? extends ConstraintValidator<A, ?>> validatorType2) {
-        List<ConstraintValidatorDescriptor<?>> descriptors = Stream.of( validatorType1, validatorType2 )
-                .map( ConstraintValidatorDescriptor::forClass )
-                .collect( Collectors.toList() );
+    private static <A extends Annotation> void putConstraints(Map<Class<? extends Annotation>, List<ConstraintValidatorDescriptor<?>>> validators,
+            Class<A> constraintType, Class<? extends ConstraintValidator<A, ?>> validatorType1, Class<? extends ConstraintValidator<A, ?>> validatorType2) {
+        List<ConstraintValidatorDescriptor<?>> descriptors = new ArrayList<>( 2 );
+
+        descriptors.add( ConstraintValidatorDescriptor.forClass( validatorType1, constraintType ) );
+        descriptors.add( ConstraintValidatorDescriptor.forClass( validatorType2, constraintType ) );
 
         validators.put( constraintType, CollectionHelper.toImmutableList( descriptors ) );
     }
 
     @Alias
-    private static <A extends Annotation> void putConstraints(Map<Class<? extends Annotation>, List<ConstraintValidatorDescriptor<?>>> validators, Class<A> constraintType, List<Class<? extends ConstraintValidator<A, ?>>> validatorDescriptors) {
-        List<ConstraintValidatorDescriptor<?>> descriptors = validatorDescriptors.stream()
-                .map( ConstraintValidatorDescriptor::forClass )
-                .collect( Collectors.toList() );
+    private static <A extends Annotation> void putConstraints(Map<Class<? extends Annotation>, List<ConstraintValidatorDescriptor<?>>> validators,
+            Class<A> constraintType, List<Class<? extends ConstraintValidator<A, ?>>> validatorTypes) {
+        List<ConstraintValidatorDescriptor<?>> descriptors = new ArrayList<>( validatorTypes.size() );
+
+        for ( Class<? extends ConstraintValidator<A, ?>> validatorType : validatorTypes ) {
+            descriptors.add( ConstraintValidatorDescriptor.forClass( validatorType, constraintType ) );
+        }
 
         validators.put( constraintType, CollectionHelper.toImmutableList( descriptors ) );
     }

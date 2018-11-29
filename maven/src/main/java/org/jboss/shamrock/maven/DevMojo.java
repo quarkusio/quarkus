@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.maven.runner;
+package org.jboss.shamrock.maven;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -38,17 +38,20 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
-import org.jboss.shamrock.maven.ProcessReader;
+import org.jboss.shamrock.dev.DevModeMain;
 
 /**
- * The run mojo, that runs a shamrock app in a forked process
+ * The dev mojo, that runs a shamrock app in a forked process
  * <p>
- * This will use Fakereplace to enable hot replacement, and also enable on demand compile
  */
-@Mojo(name = "run", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
-public class RunMojo extends AbstractMojo {
+@Mojo(name = "dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
+public class DevMojo extends AbstractMojo {
 
     private static final String RESOURCES_PROP = "shamrock.undertow.resources";
+
+    private static final String LOGGING_ARTIFACT = "shamrock-logging-deployment";
+    private static final String LOGGING_GROUP = "org.jboss.shamrock";
+
     /**
      * The directory for compiled classes.
      */
@@ -108,9 +111,17 @@ public class RunMojo extends AbstractMojo {
             //build a class-path string for the base platform
             //this stuff does not change
             StringBuilder classPath = new StringBuilder();
+            boolean logmanager = false;
             for (Artifact artifact : project.getArtifacts()) {
                 classPath.append(artifact.getFile().getAbsolutePath());
                 classPath.append(" ");
+                if(artifact.getArtifactId().equals(LOGGING_ARTIFACT) &&
+                        artifact.getGroupId().equals(LOGGING_GROUP)) {
+                    logmanager = true;
+                }
+            }
+            if(logmanager) {
+                args.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
             }
             File wiringClassesDirectory = Files.createTempDirectory("wiring-classes").toFile();
             wiringClassesDirectory.deleteOnExit();
@@ -146,7 +157,7 @@ public class RunMojo extends AbstractMojo {
             //we also want to add the maven plugin jar to the class path
             //this allows us to just directly use classes, without messing around copying them
             //to the runner jar
-            URL classFile = getClass().getClassLoader().getResource(getClass().getName().replace('.', '/') + ".class");
+            URL classFile = getClass().getClassLoader().getResource(DevModeMain.class.getName().replace('.', '/') + ".class");
             classPath.append(((JarURLConnection) classFile.openConnection()).getJarFileURL().getFile());
 
             //now we need to build a temporary jar to actually run
@@ -158,7 +169,7 @@ public class RunMojo extends AbstractMojo {
                 Manifest manifest = new Manifest();
                 manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
                 manifest.getMainAttributes().put(Attributes.Name.CLASS_PATH, classPath.toString());
-                manifest.getMainAttributes().put(Attributes.Name.MAIN_CLASS, RunMojoMain.class.getName());
+                manifest.getMainAttributes().put(Attributes.Name.MAIN_CLASS, DevModeMain.class.getName());
                 out.putNextEntry(new ZipEntry("META-INF/MANIFEST.MF"));
                 manifest.write(out);
             }

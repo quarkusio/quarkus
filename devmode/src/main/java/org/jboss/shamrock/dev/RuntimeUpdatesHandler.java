@@ -14,14 +14,10 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.maven.runner;
+package org.jboss.shamrock.dev;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.lang.instrument.ClassDefinition;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,14 +29,12 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.jboss.shamrock.maven.CopyUtils;
 
 import org.fakereplace.core.Fakereplace;
 import org.fakereplace.replacement.AddedClass;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.util.Headers;
 
 public class RuntimeUpdatesHandler implements HttpHandler {
 
@@ -84,8 +78,8 @@ public class RuntimeUpdatesHandler implements HttpHandler {
             return;
         }
         if (nextUpdate > System.currentTimeMillis()) {
-            if (RunMojoMain.deploymentProblem != null) {
-                ReplacementDebugPage.handleRequest(exchange, RunMojoMain.deploymentProblem);
+            if (DevModeMain.deploymentProblem != null) {
+                ReplacementDebugPage.handleRequest(exchange, DevModeMain.deploymentProblem);
                 return;
             }
             next.handleRequest(exchange);
@@ -99,8 +93,8 @@ public class RuntimeUpdatesHandler implements HttpHandler {
 
             }
         }
-        if (RunMojoMain.deploymentProblem != null) {
-            ReplacementDebugPage.handleRequest(exchange, RunMojoMain.deploymentProblem);
+        if (DevModeMain.deploymentProblem != null) {
+            ReplacementDebugPage.handleRequest(exchange, DevModeMain.deploymentProblem);
             return;
         }
         next.handleRequest(exchange);
@@ -126,7 +120,7 @@ public class RuntimeUpdatesHandler implements HttpHandler {
             try {
                 compiler.compile(changedSourceFiles);
             } catch (Exception e) {
-                RunMojoMain.deploymentProblem = e;
+                DevModeMain.deploymentProblem = e;
                 return;
             }
         }
@@ -148,10 +142,10 @@ public class RuntimeUpdatesHandler implements HttpHandler {
         lastChange = System.currentTimeMillis();
 
         if (FAKEREPLACE_HANDLER == null) {
-            RunMojoMain.restartApp(false);
+            DevModeMain.restartApp(false);
         } else {
             FAKEREPLACE_HANDLER.handle(changedClasses);
-            RunMojoMain.restartApp(true);
+            DevModeMain.restartApp(true);
         }
         System.out.println("Hot replace total time: " + (System.currentTimeMillis() - start) + "ms");
     }
@@ -185,7 +179,7 @@ public class RuntimeUpdatesHandler implements HttpHandler {
             for (Map.Entry<String, byte[]> e : changed.entrySet()) {
                 ClassDefinition cd = null;
                 try {
-                    cd = new ClassDefinition(Class.forName(e.getKey(), false, RunMojoMain.getCurrentAppClassLoader()), e.getValue());
+                    cd = new ClassDefinition(Class.forName(e.getKey(), false, DevModeMain.getCurrentAppClassLoader()), e.getValue());
                 } catch (ClassNotFoundException e1) {
                     //TODO: added classes
                     throw new RuntimeException(e1);

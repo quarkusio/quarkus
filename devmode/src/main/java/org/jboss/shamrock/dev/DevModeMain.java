@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.maven.runner;
+package org.jboss.shamrock.dev;
 
 import java.io.Closeable;
 import java.io.File;
@@ -25,7 +25,6 @@ import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 import org.jboss.shamrock.runtime.Timing;
@@ -34,11 +33,11 @@ import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 /**
- * The main entry point for the run mojo execution
+ * The main entry point for the dev mojo execution
  */
-public class RunMojoMain {
+public class DevModeMain {
 
-    private static final Logger log = Logger.getLogger(RunMojoMain.class);
+    private static final Logger log = Logger.getLogger(DevModeMain.class);
 
     private static volatile boolean keepCl = false;
     private static volatile ClassLoader currentAppClassLoader;
@@ -84,7 +83,7 @@ public class RunMojoMain {
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
             @Override
             public void run() {
-                synchronized (RunMojoMain.class) {
+                synchronized (DevModeMain.class) {
                     if (closeable != null) {
                         try {
                             closeable.close();

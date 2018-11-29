@@ -128,7 +128,8 @@ public class MojoLogger implements LoggerProvider {
     }
 
     public Object putMdc(final String key, final Object value) {
-        throw Assert.unsupported();
+        //throw Assert.unsupported();
+        return null;
     }
 
     public Object getMdc(final String key) {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.maven.runner;
+package org.jboss.shamrock.dev;
 
 import java.io.IOException;
 import java.io.PrintWriter;

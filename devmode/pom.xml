@@ -25,26 +25,9 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-maven-plugin</artifactId>
-    <packaging>maven-plugin</packaging>
+    <artifactId>shamrock-development-mode</artifactId>
     <dependencies>
 
-        <dependency>
-            <groupId>org.apache.maven</groupId>
-            <artifactId>maven-plugin-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven</groupId>
-            <artifactId>maven-core</artifactId>
-        </dependency>
-
-
-        <!-- dependencies to annotations -->
-        <dependency>
-            <groupId>org.apache.maven.plugin-tools</groupId>
-            <artifactId>maven-plugin-annotations</artifactId>
-            <scope>provided</scope>
-        </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-core-deployment</artifactId>
@@ -62,8 +45,8 @@
             <artifactId>fakereplace</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-development-mode</artifactId>
+            <groupId>org.jboss.logmanager</groupId>
+            <artifactId>jboss-logmanager-embedded</artifactId>
         </dependency>
     </dependencies>
 

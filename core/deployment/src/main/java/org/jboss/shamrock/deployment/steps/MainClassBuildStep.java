@@ -66,7 +66,7 @@ class MainClassBuildStep {
         MethodCreator mv = file.getMethodCreator("<clinit>", void.class);
         mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
 
-        //very first thing is to set system props
+        //very first thing is to set system props (for build time)
         for (SystemPropertyBuildItem i : properties) {
             mv.invokeStaticMethod(ofMethod(System.class, "setProperty", String.class, String.class, String.class), mv.load(i.getKey()), mv.load(i.getValue()));
         }
@@ -94,6 +94,12 @@ class MainClassBuildStep {
 
         mv = file.getMethodCreator("doStart", void.class, String[].class);
         mv.setModifiers(Modifier.PROTECTED | Modifier.FINAL);
+
+        // very first thing is to set system props (for run time, which use substitutions for a different
+        // storage from build-time)
+        for (SystemPropertyBuildItem i : properties) {
+            mv.invokeStaticMethod(ofMethod(System.class, "setProperty", String.class, String.class, String.class), mv.load(i.getKey()), mv.load(i.getValue()));
+        }
 
         mv.invokeStaticMethod(ofMethod(Timing.class, "mainStarted", void.class));
         startupContext = mv.readStaticField(scField.getFieldDescriptor());

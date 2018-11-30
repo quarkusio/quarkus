@@ -35,6 +35,9 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.eclipse.microprofile.config.Config;
+
+import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 @Mojo(name = "native-image", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.RUNTIME)
 public class NativeImageMojo extends AbstractMojo {
@@ -68,6 +71,12 @@ public class NativeImageMojo extends AbstractMojo {
 
     @Parameter
     private boolean enableHttpUrlHandler;
+
+    @Parameter
+    private boolean enableHttpsUrlHandler;
+
+    @Parameter
+    private boolean enableAllSecurityServices;
 
     @Parameter
     private boolean enableRetainedHeapReporting;
@@ -115,6 +124,8 @@ public class NativeImageMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
 
+        Config config = SmallRyeConfigProviderResolver.instance().getConfig();
+        
         boolean vmVersionOutOfDate = isThisGraalVMRC7();
 
         HashMap<String, String> env = new HashMap<>(System.getenv());
@@ -164,6 +175,13 @@ public class NativeImageMojo extends AbstractMojo {
                     }
                 }
             }
+            if(config != null) {
+                if(config.getOptionalValue("shamrock.ssl.native", Boolean.class).orElse(false)) {
+                    enableHttpsUrlHandler = true;
+                    enableJni = true;
+                    enableAllSecurityServices = true;
+                }
+            }
             if (additionalBuildArgs != null) {
                 additionalBuildArgs.forEach(command::add);
             }
@@ -193,8 +211,18 @@ public class NativeImageMojo extends AbstractMojo {
             if(nativeImageXmx != null) {
                 command.add("-J-Xmx" + nativeImageXmx);
             }
+            List<String> protocols = new ArrayList<>(2);
             if(enableHttpUrlHandler) {
-                command.add("-H:EnableURLProtocols=http");
+                protocols.add("http");
+            }
+            if(enableHttpsUrlHandler) {
+                protocols.add("https");
+            }
+            if(!protocols.isEmpty()) {
+                command.add("-H:EnableURLProtocols="+String.join(",", protocols));
+            }
+            if(enableAllSecurityServices) {
+                command.add("--enable-all-security-services");
             }
             if (enableRetainedHeapReporting) {
                 command.add("-H:+PrintRetainedHeapHistogram");

@@ -29,12 +29,14 @@ import org.jboss.builder.item.MultiBuildItem;
 public final class SubstrateConfigBuildItem extends MultiBuildItem {
 
     private final Set<String> runtimeInitializedClasses;
+    private final Set<String> runtimeReinitializedClasses;
     private final Set<String> resourceBundles;
     private final Set<List<String>> proxyDefinitions;
     private final Map<String, String> nativeImageSystemProperties;
 
     public SubstrateConfigBuildItem(Builder builder) {
         this.runtimeInitializedClasses = Collections.unmodifiableSet(builder.runtimeInitializedClasses);
+        this.runtimeReinitializedClasses = Collections.unmodifiableSet(builder.runtimeReinitializedClasses);
         this.resourceBundles = Collections.unmodifiableSet(builder.resourceBundles);
         this.proxyDefinitions = Collections.unmodifiableSet(builder.proxyDefinitions);
         this.nativeImageSystemProperties = Collections.unmodifiableMap(builder.nativeImageSystemProperties);
@@ -42,6 +44,10 @@ public final class SubstrateConfigBuildItem extends MultiBuildItem {
 
     public Iterable<String> getRuntimeInitializedClasses() {
         return runtimeInitializedClasses;
+    }
+
+    public Iterable<String> getRuntimeReinitializedClasses() {
+        return runtimeReinitializedClasses;
     }
 
     public Iterable<String> getResourceBundles() {
@@ -63,12 +69,18 @@ public final class SubstrateConfigBuildItem extends MultiBuildItem {
     public static class Builder {
 
         final Set<String> runtimeInitializedClasses = new HashSet<>();
+        final Set<String> runtimeReinitializedClasses = new HashSet<>();
         final Set<String> resourceBundles = new HashSet<>();
         final Set<List<String>> proxyDefinitions = new HashSet<>();
         final Map<String, String> nativeImageSystemProperties = new HashMap<>();
 
         public Builder addRuntimeInitializedClass(String className) {
             runtimeInitializedClasses.add(className);
+            return this;
+        }
+
+        public Builder addRuntimeReinitializedClass(String className) {
+            runtimeReinitializedClasses.add(className);
             return this;
         }
 

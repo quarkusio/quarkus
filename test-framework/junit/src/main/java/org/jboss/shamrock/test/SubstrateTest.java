@@ -160,7 +160,7 @@ public class SubstrateTest extends BlockJUnit4ClassRunner {
                     System.out.print(new String(b, 0, i));
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                //ignore
             }
         }
     }

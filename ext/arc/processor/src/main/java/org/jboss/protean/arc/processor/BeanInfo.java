@@ -16,11 +16,7 @@
 
 package org.jboss.protean.arc.processor;
 
-import java.nio.charset.Charset;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -138,8 +134,8 @@ public class BeanInfo {
         this.creatorConsumer = creatorConsumer;
         this.destroyerConsumer = destroyerConsumer;
         this.params = params;
-        // Identifier is generated and unique for a specific deployment
-        this.identifier = generateId();
+        // Identifier must be unique for a specific deployment
+        this.identifier = Hashes.sha1(toString());
     }
 
     public String getIdentifier() {
@@ -421,16 +417,6 @@ public class BeanInfo {
         }
         builder.append("]");
         return builder.toString();
-    }
-
-    private String generateId() {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-1");
-            md.reset();
-            return Base64.getEncoder().encodeToString(md.digest(toString().getBytes(Charset.forName("UTF-8"))));
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
-        }
     }
 
     static class InterceptionInfo {

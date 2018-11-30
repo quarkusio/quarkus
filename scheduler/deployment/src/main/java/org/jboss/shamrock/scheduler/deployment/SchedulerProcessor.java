@@ -170,13 +170,11 @@ public class SchedulerProcessor {
                             if (schedules != null) {
                                 // Validate method params and return type
                                 List<Type> params = method.parameters();
-                                if (!params.isEmpty() && !params.get(0).equals(SCHEDULED_EXECUTION_TYPE)) {
-                                    LOGGER.warnf("Invalid scheduled business method parameters %s [method: %s, bean:%s", params, method, bean);
-                                    continue;
+                                if (params.size() > 1 || (params.size() == 1 && !params.get(0).equals(SCHEDULED_EXECUTION_TYPE))) {
+                                    throw new IllegalStateException(String.format("Invalid scheduled business method parameters %s [method: %s, bean:%s", params, method, bean));
                                 }
                                 if (!method.returnType().kind().equals(Type.Kind.VOID)) {
-                                    LOGGER.warnf("Invalid scheduled business return type %s [method: %s, bean:%s", method.returnType(), method, bean);
-                                    continue;
+                                    throw new IllegalStateException(String.format("Scheduled business method must return void [method: %s, bean:%s", method.returnType(), method, bean));
                                 }
                                 scheduledBusinessMethods.produce(new ScheduledBusinessMethodItem(bean, method, schedules));
                                 // TODO: validate cron and period expressions

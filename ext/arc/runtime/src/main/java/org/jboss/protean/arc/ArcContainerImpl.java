@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.UUID;
@@ -123,12 +124,13 @@ class ArcContainerImpl implements ArcContainer {
         requireRunning();
 
         InjectableBean<T> bean = getBean(type, qualifiers);
-        if(bean == null) {
+        if (bean == null) {
             return null;
         }
         return new Supplier<InstanceHandle<T>>() {
             @Override
-            public InstanceHandle<T> get() {CreationalContextImpl<T> creationalContext = new CreationalContextImpl<>();
+            public InstanceHandle<T> get() {
+                CreationalContextImpl<T> creationalContext = new CreationalContextImpl<>();
                 InjectionPoint prev = InjectionPointProvider.CURRENT.get();
                 InjectionPointProvider.CURRENT.set(CurrentInjectionPointProvider.EMPTY);
                 try {
@@ -142,6 +144,19 @@ class ArcContainerImpl implements ArcContainer {
                 }
             }
         };
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> InstanceHandle<T> instance(String beanIdentifier) {
+        Objects.requireNonNull(beanIdentifier);
+        requireRunning();
+        for (InjectableBean<?> bean : beans) {
+            if (bean.getIdentifier().equals(beanIdentifier)) {
+                return (InstanceHandle<T>) beanInstanceHandle(bean, null);
+            }
+        }
+        return InstanceHandleImpl.unavailable();
     }
 
     @Override

@@ -18,8 +18,12 @@ package org.jboss.shamrock.logging.runtime;
 
 import java.util.logging.Handler;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
+import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
 /**
@@ -30,6 +34,15 @@ final class Target_org_jboss_logmanager_LoggerNode {
     @Alias
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
     volatile Handler[] handlers;
+}
+
+@TargetClass(className = "org.slf4j.LoggerFactory")
+final class Target_org_slf4j_LoggerFactory {
+
+    @Substitute
+    public static Logger getLogger(Class<?> clazz) {
+        return LoggerFactory.getLogger(clazz.getName());
+    }
 }
 
 final class Substitutions {}

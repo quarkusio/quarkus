@@ -16,8 +16,6 @@
 
 package org.jboss.shamrock.arc.runtime;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.function.Supplier;
@@ -28,12 +26,11 @@ import org.jboss.protean.arc.Arc;
 import org.jboss.protean.arc.ArcContainer;
 import org.jboss.protean.arc.InstanceHandle;
 import org.jboss.protean.arc.ManagedContext;
+import org.jboss.shamrock.runtime.InjectionFactory;
+import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.runtime.ShutdownContext;
 import org.jboss.shamrock.runtime.Template;
 import org.jboss.shamrock.runtime.cdi.BeanContainer;
-import org.jboss.shamrock.runtime.InjectionFactory;
-import org.jboss.shamrock.runtime.InjectionInstance;
-import org.jboss.shamrock.runtime.StartupContext;
 import org.jboss.shamrock.runtime.cdi.BeanContainerListener;
 
 import io.undertow.server.HttpServerExchange;

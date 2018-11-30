@@ -49,23 +49,23 @@ public enum ScopeInfo {
         this.isNormal = isNormal;
     }
 
-    DotName getDotName() {
+    public DotName getDotName() {
         return dotName;
     }
 
-    Class<? extends Annotation> getClazz() {
+    public Class<? extends Annotation> getClazz() {
         return clazz;
     }
 
-    boolean isNormal() {
+    public boolean isNormal() {
         return isNormal;
     }
 
-    boolean isDefault() {
+    public boolean isDefault() {
         return DEPENDENT == this;
     }
 
-    static ScopeInfo from(DotName name) {
+    public static ScopeInfo from(DotName name) {
         for (ScopeInfo scope : ScopeInfo.values()) {
             if (scope.getDotName().equals(name)) {
                 return scope;

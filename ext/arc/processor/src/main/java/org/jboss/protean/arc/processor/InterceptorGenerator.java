@@ -104,6 +104,8 @@ public class InterceptorGenerator extends BeanGenerator {
         createProviderFields(interceptorCreator, interceptor, injectionPointToProviderField, interceptorToProviderField);
         createConstructor(classOutput, interceptorCreator, interceptor, baseName, injectionPointToProviderField, interceptorToProviderField,
                 bindings.getFieldDescriptor());
+
+        implementGetIdentifier(interceptor, interceptorCreator);
         implementCreate(classOutput, interceptorCreator, interceptor, providerTypeName, baseName, injectionPointToProviderField, interceptorToProviderField,
                 reflectionRegistration, targetPackage);
         implementGet(interceptor, interceptorCreator, providerTypeName);

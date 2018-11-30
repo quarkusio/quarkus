@@ -46,6 +46,11 @@ public class InitializedInterceptor<T> implements InjectableInterceptor<T> {
     }
 
     @Override
+    public String getIdentifier() {
+        return delegate.getIdentifier();
+    }
+
+    @Override
     public Class<? extends Annotation> getScope() {
         return delegate.getScope();
     }

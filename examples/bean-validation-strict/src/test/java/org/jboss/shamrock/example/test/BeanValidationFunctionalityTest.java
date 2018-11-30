@@ -16,7 +16,7 @@ public class BeanValidationFunctionalityTest {
     @Test
     public void testBeanValidationFunctionalityFromServlet() throws Exception {
         StringBuilder expected = new StringBuilder();
-        expected.append("failed: email").append("\n");
+        expected.append("failed: email (must be a well-formed email address)").append("\n");
         expected.append("passed");
 
         assertEquals(expected.toString(), URLTester.relative("bean-validation/testfunctionality").invokeURL().asString());

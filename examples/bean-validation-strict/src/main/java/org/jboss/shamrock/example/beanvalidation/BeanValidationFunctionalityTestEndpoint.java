@@ -12,7 +12,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validator;
-import javax.validation.constraints.Size;
+import javax.validation.constraints.Email;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
@@ -54,7 +54,7 @@ public class BeanValidationFunctionalityTestEndpoint extends HttpServlet {
         }
 
         return "failed: " + violations.stream()
-                .map(v -> v.getPropertyPath().toString())
+                .map(v -> v.getPropertyPath().toString() + " (" + v.getMessage() + ")")
                 .sorted()
                 .collect(Collectors.joining(", "));
     }
@@ -63,7 +63,7 @@ public class BeanValidationFunctionalityTestEndpoint extends HttpServlet {
 
         private String name;
 
-        @Size(min = 3)
+        @Email
         private String email;
 
         public MyBean(String name, String email) {

@@ -19,6 +19,7 @@ package org.jboss.shamrock.maven.utilities;
 
 
 import org.apache.maven.model.Dependency;
+import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
@@ -67,18 +68,15 @@ public class MojoUtils {
     /**
      * Checks whether the project has the dependency
      *
-     * @param project    - the project to check existence of dependency
+     * @param model    - the project to check existence of dependency
      * @param groupId    - the dependency groupId
      * @param artifactId - the dependency artifactId
      * @return true if the project has the dependency
      */
-    public static boolean hasDependency(MavenProject project, String groupId, String artifactId) {
-
-        Optional<Dependency> dep = project.getDependencies().stream()
-                .filter(d -> groupId.equals(d.getGroupId())
-                        && artifactId.equals(d.getArtifactId())).findFirst();
-
-        return dep.isPresent();
+    public static boolean hasDependency(Model model, String groupId, String artifactId) {
+        return model.getDependencies().stream()
+                .anyMatch(d -> groupId.equals(d.getGroupId())
+                        && artifactId.equals(d.getArtifactId()));
     }
 
     private static void loadProperties() {
@@ -87,7 +85,7 @@ public class MojoUtils {
         try (InputStream in = url.openStream()) {
             properties.load(in);
         } catch (IOException e) {
-            throw new RuntimeException("Invalid packaging of the shamrock-maven-plugin, the shamrock-maven-plugin" +
+            throw new IllegalStateException("Invalid packaging of the shamrock-maven-plugin, the shamrock-maven-plugin" +
                     ".properties file cannot be read", e);
         }
     }
@@ -111,7 +109,7 @@ public class MojoUtils {
     }
 
     /**
-     * Defines the plugin without its version or dependencies.
+     * Defines the plugin without its version or extensions.
      *
      * @param groupId    The group id
      * @param artifactId The artifact id
@@ -122,7 +120,7 @@ public class MojoUtils {
     }
 
     /**
-     * Defines a plugin without dependencies.
+     * Defines a plugin without extensions.
      *
      * @param groupId    The group id
      * @param artifactId The artifact id
@@ -139,7 +137,7 @@ public class MojoUtils {
      * @param groupId      The group id
      * @param artifactId   The artifact id
      * @param version      The plugin version
-     * @param dependencies The plugin dependencies
+     * @param dependencies The plugin extensions
      * @return The plugin instance
      */
     public static Plugin plugin(String groupId, String artifactId, String version, List<Dependency> dependencies) {

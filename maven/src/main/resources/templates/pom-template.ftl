@@ -33,7 +33,7 @@
             <version>${r"${shamrock.version}"}</version>
         </dependency>
 
-        <!-- Test dependencies -->
+        <!-- Test extensions -->
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-junit</artifactId>

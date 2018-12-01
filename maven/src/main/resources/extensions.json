@@ -1,0 +1,185 @@
+[
+  {
+    "name": "Agroal",
+    "labels": [
+      "agroal",
+      "database-connection-pool"
+    ],
+    "groupId": "org.jboss.shamrock",
+    "artifactId": "shamrock-agroal-deployment"
+  },
+  {
+    "name": "Arc",
+    "labels": [
+      "arc",
+      "cdi",
+      "dependency-injection",
+      "di"
+    ],
+    "groupId": "org.jboss.shamrock",
+    "artifactId": "shamrock-arc-deployment"
+  },
+  {
+    "name": "Bean Validation",
+    "labels": [
+      "bean-validation",
+      "validation"
+    ],
+    "groupId": "org.jboss.shamrock",
+    "artifactId": "shamrock-bean-validation"
+  },
+  {
+    "name": "Fault Tolerance",
+    "labels": [
+      "fault-tolerance",
+      "microprofile-fault-tolerance",
+      "circuit-breaker",
+      "bulkhead"
+    ],
+    "groupId": "org.jboss.shamrock",
+    "artifactId": "shamrock-fault-tolerance-deployment"
+  },
+  {
+    "name": "Health",
+    "labels": [
+      "health-check",
+      "health",
+      "microprofile-health",
+      "microprofile-health-check"
+    ],
+    "groupId": "org.jboss.shamrock",
+    "artifactId": "shamrock-health-deployment"
+  },
+  {
+    "name": "JaxRS",
+    "labels": [
+      "jaxrs",
+      "resteasy",
+      "web",
+      "rest"
+    ],
+    "groupId": "org.jboss.shamrock",
+    "artifactId": "shamrock-jaxrs-deployment"
+  },
+  {
+    "name": "JPA",
+    "labels": [
+      "jpa",
+      "hibernate"
+    ],
+    "groupId": "org.jboss.shamrock",
+    "artifactId": "shamrock-jpa-deployment"
+  },
+  {
+    "name": "Logging",
+    "labels": [
+      "log",
+      "logging",
+      "slf4j",
+      "log4j"
+    ],
+    "groupId": "org.jboss.shamrock",
+    "artifactId": "shamrock-logging-deployment"
+  },
+  {
+    "name": "Metrics",
+    "labels": [
+      "metrics",
+      "metric",
+      "prometheus",
+      "monitoring"
+    ],
+    "groupId": "org.jboss.shamrock",
+    "artifactId": "shamrock-metrics-deployment"
+  },
+  {
+    "name": "OpenAPI",
+    "labels": [
+      "openapi",
+      "open-api"
+    ],
+    "groupId": "org.jboss.shamrock",
+    "artifactId": "shamrock-openapi-deployment"
+  },
+  {
+    "name": "Open Tracing",
+    "labels": [
+      "open-tracing",
+      "tracing",
+      "distributed-tracing",
+      "jaeger"
+    ],
+    "groupId": "org.jboss.shamrock",
+    "artifactId": "shamrock-opentracing-deployment"
+  },
+  {
+    "name": "Reactive Streams",
+    "labels": [
+      "reactive-streams",
+      "microprofile-reactive-streams"
+    ],
+    "groupId": "org.jboss.shamrock",
+    "artifactId": "shamrock-reactive-streams-operators-deployment"
+  },
+  {
+    "name": "Rest Client",
+    "labels": [
+      "rest-client",
+      "web-client",
+      "microprofile-rest-client"
+    ],
+    "groupId": "org.jboss.shamrock",
+    "artifactId": "shamrock-rest-client-deployment"
+  },
+  {
+    "name": "Scheduler",
+    "labels": [
+      "scheduler",
+      "tasks",
+      "periodic-tasks"
+    ],
+    "groupId": "org.jboss.shamrock",
+    "artifactId": "shamrock-scheduler-deployment"
+  },
+  {
+    "name": "Transactions",
+    "labels": [
+      "transactions",
+      "transaction",
+      "tx",
+      "txs"
+    ],
+    "groupId": "org.jboss.shamrock",
+    "artifactId": "shamrock-transactions-deployment"
+  },
+  {
+    "name": "Servlet",
+    "labels": [
+      "servlet",
+      "undertow"
+    ],
+    "groupId": "org.jboss.shamrock",
+    "artifactId": "shamrock-undertow-deployment"
+  },
+  {
+    "name": "Eclipse Vert.x",
+    "labels": [
+      "eclipse-vert.x",
+      "vertx",
+      "vert.x"
+    ],
+    "groupId": "org.jboss.shamrock",
+    "artifactId": "shamrock-vertx-deployment"
+  },
+  {
+    "name": "Web Sockets",
+    "labels": [
+      "websocket",
+      "websockets",
+      "web-socket",
+      "web-sockets"
+    ],
+    "groupId": "org.jboss.shamrock",
+    "artifactId": "shamrock-websockets-deployment"
+  }
+]

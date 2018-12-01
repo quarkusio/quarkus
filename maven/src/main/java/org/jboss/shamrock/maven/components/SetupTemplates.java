@@ -14,7 +14,7 @@
  *    permissions and limitations under the License.
  */
 
-package org.jboss.shamrock.maven.utilities;
+package org.jboss.shamrock.maven.components;
 
 import com.google.common.base.Strings;
 import freemarker.cache.ClassTemplateLoader;
@@ -22,8 +22,8 @@ import freemarker.template.Configuration;
 import freemarker.template.Template;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
-import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.apache.maven.project.MavenProject;
+import org.codehaus.plexus.component.annotations.Component;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -32,22 +32,23 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * @author kameshs
+ * Prompt implementation.
+ *
+ * @author <a href="http://escoffier.me">Clement Escoffier</a>
  */
-// TODO This should be a component
-public class SetupTemplateUtils {
+@Component(role = SetupTemplates.class, instantiationStrategy = "singleton")
+public class SetupTemplates {
 
     private static final Configuration cfg;
     private static final String JAVA_EXTENSION = ".java";
 
     static {
         cfg = new Configuration(Configuration.VERSION_2_3_23);
-        cfg.setTemplateLoader(new ClassTemplateLoader(SetupTemplateUtils.class, "/"));
+        cfg.setTemplateLoader(new ClassTemplateLoader(SetupTemplates.class, "/"));
     }
 
-    public static void createPom(Map<String, String> context, File pomFile) throws MojoExecutionException {
+    public void createNewProjectPomFile(Map<String, String> context, File pomFile) throws MojoExecutionException {
         try {
-
             Template temp = cfg.getTemplate("templates/pom-template.ftl");
             Writer out = new FileWriter(pomFile);
             temp.process(context, out);
@@ -56,7 +57,7 @@ public class SetupTemplateUtils {
         }
     }
 
-    public static void createSource(MavenProject project, String rootPath, String path, String className, Log log) throws MojoExecutionException {
+    public void generate(MavenProject project, String rootPath, String path, String className, Log log) throws MojoExecutionException {
         if (Strings.isNullOrEmpty(className)) {
             return;
         }
@@ -109,7 +110,7 @@ public class SetupTemplateUtils {
             throw new MojoExecutionException("Unable to generate resource code", e);
         }
 
-        // Generate test
+        // Generate test resources.
         try {
             Template temp = cfg.getTemplate("templates/test-resource-template.ftl");
             Writer out = new FileWriter(testClassFile);
@@ -118,14 +119,14 @@ public class SetupTemplateUtils {
             throw new MojoExecutionException("Unable to generate test code", e);
         }
 
-        // Generate application
+        // Generate application.
         File appClassFile = new File(root, "ShamrockApplication.java");
         try {
             Template temp = cfg.getTemplate("templates/application-template.ftl");
             Writer out = new FileWriter(appClassFile);
             temp.process(context, out);
         } catch (Exception e) {
-            throw new MojoExecutionException("Unable to generate application code", e);
+            throw new MojoExecutionException("Unable to generate Application class", e);
         }
 
     }

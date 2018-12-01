@@ -16,22 +16,69 @@
  */
 package org.jboss.shamrock.maven.components;
 
+import jline.console.ConsoleReader;
+import org.apache.commons.lang3.StringUtils;
+import org.codehaus.plexus.component.annotations.Component;
+
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Objects;
 
 /**
- * A simple component to retrieve user input.
+ * Prompt implementation.
  *
  * @author <a href="http://escoffier.me">Clement Escoffier</a>
  */
-public interface Prompter {
+@Component(role = Prompter.class, instantiationStrategy = "per-lookup")
+public class Prompter {
 
-    /**
-     * Prompt user for a string.
-     */
-    String prompt(String message) throws IOException;
+    private final ConsoleReader console;
 
-    /**
-     * Prompt user for a string; if user response is blank use a default value.
-     */
-    String promptWithDefaultValue(String message, String defaultValue) throws IOException;
+    public Prompter() throws IOException {
+        this.console = new ConsoleReader();
+        console.setHistoryEnabled(false);
+        console.setExpandEvents(false);
+    }
+
+    public Prompter(InputStream in, OutputStream out) throws IOException {
+        this.console = new ConsoleReader(in, out);
+        console.setHistoryEnabled(false);
+        console.setExpandEvents(false);
+    }
+
+    public ConsoleReader getConsole() {
+        return console;
+    }
+
+    public String prompt(final String message, final Character mask) throws IOException {
+        Objects.requireNonNull(message);
+
+        final String prompt = String.format("%s: ", message);
+        String value;
+        do {
+            value = console.readLine(prompt, mask);
+        }
+        while (StringUtils.isBlank(value));
+        return value;
+    }
+
+
+    public String prompt(final String message) throws IOException {
+        Objects.requireNonNull(message);
+        return prompt(message, null);
+    }
+
+    public String promptWithDefaultValue(final String message, final String defaultValue) throws IOException {
+        Objects.requireNonNull(message);
+        Objects.requireNonNull(defaultValue);
+
+        final String prompt = String.format("%s [%s]: ", message, defaultValue);
+        String value = console.readLine(prompt);
+        if (StringUtils.isBlank(value)) {
+            return defaultValue;
+        }
+        return value;
+    }
+
 }

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <parent>
+    <artifactId>shamrock-scheduler</artifactId>
+    <groupId>org.jboss.shamrock</groupId>
+    <version>1.0.0.Alpha1-SNAPSHOT</version>
+    <relativePath>../</relativePath>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>shamrock-scheduler-runtime</artifactId>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.jboss.shamrock</groupId>
+      <artifactId>shamrock-arc-runtime</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>com.oracle.substratevm</groupId>
+      <artifactId>svm</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.quartz-scheduler</groupId>
+      <artifactId>quartz</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>com.zaxxer</groupId>
+          <artifactId>HikariCP-java6</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.mchange</groupId>
+          <artifactId>c3p0</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

@@ -21,6 +21,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -60,6 +61,8 @@ class EventImpl<T> implements Event<T> {
 
     private final HierarchyDiscovery injectionPointTypeHierarchy;
 
+    private final Type eventType;
+
     private final Set<Annotation> qualifiers;
 
     private final ConcurrentMap<Class<?>, Notifier<? super T>> notifiers;
@@ -70,6 +73,7 @@ class EventImpl<T> implements Event<T> {
         if (eventType instanceof ParameterizedType) {
             eventType = ((ParameterizedType) eventType).getActualTypeArguments()[0];
         }
+        this.eventType = eventType;
         this.injectionPointTypeHierarchy = new HierarchyDiscovery(eventType);
         this.qualifiers = qualifiers;
         this.qualifiers.add(Any.Literal.INSTANCE);
@@ -123,7 +127,9 @@ class EventImpl<T> implements Event<T> {
 
     @Override
     public Event<T> select(Annotation... qualifiers) {
-        throw new UnsupportedOperationException();
+        Set<Annotation> mergerdQualifiers = new HashSet<>(this.qualifiers);
+        Collections.addAll(mergerdQualifiers, qualifiers);
+        return new EventImpl<T>(eventType, mergerdQualifiers);
     }
 
     @Override

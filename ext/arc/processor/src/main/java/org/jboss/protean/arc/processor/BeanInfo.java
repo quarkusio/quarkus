@@ -47,6 +47,8 @@ import org.jboss.protean.gizmo.MethodCreator;
  */
 public class BeanInfo {
 
+    private final String identifier;
+
     private final ClassInfo implClazz;
 
     private final Optional<AnnotationTarget> target;
@@ -132,6 +134,12 @@ public class BeanInfo {
         this.creatorConsumer = creatorConsumer;
         this.destroyerConsumer = destroyerConsumer;
         this.params = params;
+        // Identifier must be unique for a specific deployment
+        this.identifier = Hashes.sha1(toString());
+    }
+
+    public String getIdentifier() {
+        return identifier;
     }
 
     public Optional<AnnotationTarget> getTarget() {
@@ -393,6 +401,24 @@ public class BeanInfo {
         }
     }
 
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append(getType());
+        builder.append(" bean [types=");
+        builder.append(types);
+        builder.append(", qualifiers=");
+        builder.append(qualifiers);
+        builder.append(", target=");
+        builder.append(target);
+        if (declaringBean != null) {
+            builder.append(", declaringBean=");
+            builder.append(declaringBean.target);
+        }
+        builder.append("]");
+        return builder.toString();
+    }
+
     static class InterceptionInfo {
 
         static final InterceptionInfo EMPTY = new InterceptionInfo(Collections.emptyList(), Collections.emptySet());
@@ -410,24 +436,6 @@ public class BeanInfo {
             return interceptors.isEmpty();
         }
 
-    }
-
-    @Override
-    public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append(getType());
-        builder.append(" bean [types=");
-        builder.append(types);
-        builder.append(", qualifiers=");
-        builder.append(qualifiers);
-        builder.append(", target=");
-        builder.append(target);
-        if (declaringBean != null) {
-            builder.append(", declaringBean=");
-            builder.append(declaringBean.target);
-        }
-        builder.append("]");
-        return builder.toString();
     }
 
     static class Builder {

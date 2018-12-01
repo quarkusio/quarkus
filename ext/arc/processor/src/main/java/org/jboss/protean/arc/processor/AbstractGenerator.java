@@ -33,7 +33,7 @@ abstract class AbstractGenerator {
 
     protected String getBaseName(BeanInfo bean, String beanClassName) {
         String name = Types.getSimpleName(beanClassName);
-        return name.substring(0, name.indexOf(BeanGenerator.BEAN_SUFFIX));
+        return name.substring(0, name.lastIndexOf(BeanGenerator.BEAN_SUFFIX));
     }
 
     protected boolean isReflectionFallbackNeeded(MethodInfo method, String targetPackage) {

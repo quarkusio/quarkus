@@ -71,7 +71,7 @@ public class ObserverInfo {
         return declaringBean;
     }
 
-    MethodInfo getObserverMethod() {
+    public MethodInfo getObserverMethod() {
         return observerMethod;
     }
 

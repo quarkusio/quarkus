@@ -35,18 +35,39 @@ public interface ArcContainer {
      */
     InjectableContext getContext(Class<? extends Annotation> scopeType);
 
+    /**
+     *
+     * @param type
+     * @param qualifiers
+     * @return a new instance handle
+     */
     <T> InstanceHandle<T> instance(Class<T> type, Annotation... qualifiers);
 
+    /**
+     *
+     * @param type
+     * @param qualifiers
+     * @return a new instance handle
+     */
     <T> InstanceHandle<T> instance(TypeLiteral<T> type, Annotation... qualifiers);
 
     /**
-     * Returns a supplier that can be used to create new instances, or null if no matching bean can be found
+     * Returns a supplier that can be used to create new instances, or null if no matching bean can be found.
+     *
      * @param type
      * @param qualifiers
      * @param <T>
      * @return
      */
     <T> Supplier<InstanceHandle<T>> instanceSupplier(Class<T> type, Annotation... qualifiers);
+
+    /**
+     *
+     * @param beanIdentifier
+     * @return a new instance handle
+     * @see InjectableBean#getIdentifier()
+     */
+    <T> InstanceHandle<T> instance(String beanIdentifier);
 
     /**
      *
@@ -72,6 +93,11 @@ public interface ArcContainer {
      */
     <T> Supplier<T> withinRequest(Supplier<T> action);
 
+    /**
+     * NOTE: Not all methods are supported!
+     *
+     * @return the bean manager
+     */
     BeanManager beanManager();
 
 }

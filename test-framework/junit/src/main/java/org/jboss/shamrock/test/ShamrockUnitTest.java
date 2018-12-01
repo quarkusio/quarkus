@@ -19,10 +19,12 @@ package org.jboss.shamrock.test;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.URL;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 
@@ -78,7 +80,10 @@ public class ShamrockUnitTest extends BlockJUnit4ClassRunner {
 
                 archive.as(ExplodedExporter.class).exportExplodedInto(deploymentDir.toFile());
 
-                runtimeRunner = new RuntimeRunner(getClass().getClassLoader(), deploymentDir, deploymentDir, null, new ArrayList<>());
+                String classFileName = theClass.getName().replace('.', '/') + ".class";
+                URL resource = theClass.getClassLoader().getResource(classFileName);
+                String testClassLocation = resource.getPath().substring(0, resource.getPath().length() - classFileName.length());
+                runtimeRunner = new RuntimeRunner(getClass().getClassLoader(), deploymentDir, Paths.get(testClassLocation), null, new ArrayList<>());
                 runtimeRunner.run();
                 existing.evaluate();
 

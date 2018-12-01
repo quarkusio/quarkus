@@ -197,6 +197,7 @@
                     <systemPropertyVariables>
                         <!--suppress MavenModelInspection -->
                         <maven.home>${maven.home}</maven.home>
+                        <maven.repo>${settings.localRepository}</maven.repo>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>

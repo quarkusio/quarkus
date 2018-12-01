@@ -25,7 +25,11 @@ public class CreateProjectMojoIT extends MojoTestBase {
     private void init(File root) {
         invoker = new DefaultInvoker();
         invoker.setWorkingDirectory(root);
-        invoker.setLocalRepositoryDirectory(new File("target/local-repo"));
+        String repo = System.getProperty("maven.repo");
+        if (repo == null) {
+            repo = new File(System.getProperty("user.home"), ".m2/repository").getAbsolutePath();
+        }
+        invoker.setLocalRepositoryDirectory(new File(repo));
         installPluginToLocalRepository(invoker.getLocalRepositoryDirectory());
     }
 

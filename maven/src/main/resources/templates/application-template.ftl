@@ -5,7 +5,7 @@ package ${packageName};
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.core.Application;
 
-@ApplicationPath("/${root_prefix}")
+@ApplicationPath("${root_prefix}")
 public class ShamrockApplication extends Application {
 
 }

@@ -34,6 +34,7 @@ import java.util.Map;
 /**
  * @author kameshs
  */
+// TODO This should be a component
 public class SetupTemplateUtils {
 
     private static final Configuration cfg;
@@ -62,6 +63,7 @@ public class SetupTemplateUtils {
         log.info("Creating resource " + className);
 
         File root = new File(project.getBasedir(), "src/main/java");
+        File testRoot = new File(project.getBasedir(), "src/test/java");
 
         String packageName = null;
         if (className.endsWith(JAVA_EXTENSION)) {
@@ -81,9 +83,17 @@ public class SetupTemplateUtils {
                 log.info("Creating directory " + packageDir.getAbsolutePath());
             }
             root = packageDir;
+
+            File testPackageDir = new File(testRoot, packageName.replace('.', '/'));
+            if (!testPackageDir.exists()) {
+                testPackageDir.mkdirs();
+                log.info("Creating directory " + packageDir.getAbsolutePath());
+            }
+            testRoot = testPackageDir;
         }
 
         File classFile = new File(root, className + JAVA_EXTENSION);
+        File testClassFile = new File(testRoot, className + "Test" + JAVA_EXTENSION);
         Map<String, String> context = new HashMap<>();
         context.put("classname", className);
         context.put("root_prefix", rootPath);
@@ -96,7 +106,16 @@ public class SetupTemplateUtils {
             Writer out = new FileWriter(classFile);
             temp.process(context, out);
         } catch (Exception e) {
-            throw new MojoExecutionException("Unable to generate source code", e);
+            throw new MojoExecutionException("Unable to generate resource code", e);
+        }
+
+        // Generate test
+        try {
+            Template temp = cfg.getTemplate("templates/test-resource-template.ftl");
+            Writer out = new FileWriter(testClassFile);
+            temp.process(context, out);
+        } catch (Exception e) {
+            throw new MojoExecutionException("Unable to generate test code", e);
         }
 
         // Generate application
@@ -106,7 +125,7 @@ public class SetupTemplateUtils {
             Writer out = new FileWriter(appClassFile);
             temp.process(context, out);
         } catch (Exception e) {
-            throw new MojoExecutionException("Unable to generate verticle", e);
+            throw new MojoExecutionException("Unable to generate application code", e);
         }
 
     }

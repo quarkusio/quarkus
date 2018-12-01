@@ -18,26 +18,26 @@
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-jaxrs-deployment</artifactId>
             <scope>provided</scope>
-            <version>${shamrock.version}</version>
+            <version>${r"${shamrock.version}"}</version>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-arc-deployment</artifactId>
             <scope>provided</scope>
-            <version>${shamrock.version}</version>
+            <version>${r"${shamrock.version}"}</version>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-logging-deployment</artifactId>
             <scope>provided</scope>
-            <version>${shamrock.version}</version>
+            <version>${r"${shamrock.version}"}</version>
         </dependency>
 
         <!-- Test dependencies -->
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-junit</artifactId>
-            <version>${shamrock.version}</version>
+            <version>${r"${shamrock.version}"}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -53,7 +53,7 @@
             <plugin>
                 <groupId>org.jboss.shamrock</groupId>
                 <artifactId>shamrock-maven-plugin</artifactId>
-                <version>${shamrock.version}</version>
+                <version>${r"${shamrock.version}"}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -64,5 +64,30 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>native</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jboss.shamrock</groupId>
+                        <artifactId>shamrock-maven-plugin</artifactId>
+                        <version>${r"${shamrock.version}"}</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>native-image</goal>
+                                </goals>
+                                <configuration>
+                                    <enableHttpUrlHandler>true</enableHttpUrlHandler>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>

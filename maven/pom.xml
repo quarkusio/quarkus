@@ -92,6 +92,9 @@
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
+                <excludes>
+                    <exclude>*.ftl</exclude>
+                </excludes>
             </resource>
         </resources>
         <plugins>

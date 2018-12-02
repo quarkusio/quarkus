@@ -63,7 +63,7 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
      * @return a collection of resources
      */
     Collection<Resource> generate(String name, BeanDeployment beanDeployment, ComputingCache<CacheKey, String> annotationLiteralsCache) {
-        ResourceClassOutput classOutput = new ResourceClassOutput();
+        ResourceClassOutput classOutput = new ResourceClassOutput(true);
 
         annotationLiteralsCache.forEachEntry(
                 (key, literalName) -> createAnnotationLiteral(classOutput, beanDeployment.getIndex().getClassByName(key.name), key.values, literalName));

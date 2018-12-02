@@ -30,6 +30,8 @@ public interface ResourceOutput {
 
     interface Resource {
 
+        boolean isApplicationClass();
+
         File writeTo(File directory) throws IOException;
 
         byte[] getData();

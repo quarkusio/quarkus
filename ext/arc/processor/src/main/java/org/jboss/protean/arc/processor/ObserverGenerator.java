@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 
 import javax.enterprise.inject.spi.EventContext;
 import javax.enterprise.inject.spi.ObserverMethod;
@@ -69,12 +70,15 @@ public class ObserverGenerator extends AbstractGenerator {
 
     private final AnnotationLiteralProcessor annotationLiterals;
 
+    private final Predicate<DotName> applicationClassPredicate;
     /**
      *
      * @param annotationLiterals
+     * @param applicationClassPredicate
      */
-    public ObserverGenerator(AnnotationLiteralProcessor annotationLiterals) {
+    public ObserverGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate) {
         this.annotationLiterals = annotationLiterals;
+        this.applicationClassPredicate = applicationClassPredicate;
     }
 
     /**
@@ -95,7 +99,7 @@ public class ObserverGenerator extends AbstractGenerator {
         String baseName = declaringClassBase + OBSERVER_SUFFIX + OBSERVER_INDEX.incrementAndGet();
         String generatedName = DotNames.packageName(declaringClass.name()).replace('.', '/') + "/" + baseName;
 
-        ResourceClassOutput classOutput = new ResourceClassOutput(name -> name.equals(generatedName) ? SpecialType.OBSERVER : null);
+        ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(observer.getObserverMethod().declaringClass().name()), name -> name.equals(generatedName) ? SpecialType.OBSERVER : null);
 
         // Foo_Observer1 implements ObserverMethod<T>
         ClassCreator observerCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName).interfaces(InjectableObserverMethod.class)

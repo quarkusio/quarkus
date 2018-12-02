@@ -22,11 +22,7 @@ import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
 import java.lang.reflect.Modifier;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -38,6 +34,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import javax.enterprise.context.spi.Contextual;
@@ -48,6 +45,7 @@ import javax.interceptor.InvocationContext;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -102,8 +100,11 @@ public class BeanGenerator extends AbstractGenerator {
 
     protected final AnnotationLiteralProcessor annotationLiterals;
 
-    public BeanGenerator(AnnotationLiteralProcessor annotationLiterals) {
+    protected final Predicate<DotName> applicationClassPredicate;
+
+    public BeanGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate) {
         this.annotationLiterals = annotationLiterals;
+        this.applicationClassPredicate = applicationClassPredicate;
     }
 
     /**
@@ -144,7 +145,7 @@ public class BeanGenerator extends AbstractGenerator {
         String targetPackage = getPackageName(bean);
         String generatedName = targetPackage.replace('.', '/') + "/" + baseName + SYNTHETIC_SUFFIX + BEAN_SUFFIX;
 
-        ResourceClassOutput classOutput = new ResourceClassOutput(name -> name.equals(generatedName) ? SpecialType.BEAN : null);
+        ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(bean.getImplClazz().name()), name -> name.equals(generatedName) ? SpecialType.BEAN : null);
 
         // Foo_Bean implements InjectableBean<T>
         ClassCreator beanCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName).interfaces(InjectableBean.class).build();
@@ -234,7 +235,7 @@ public class BeanGenerator extends AbstractGenerator {
         String targetPackage = DotNames.packageName(providerType.name());
         String generatedName = targetPackage.replace('.', '/') + "/" + baseName + BEAN_SUFFIX;
 
-        ResourceClassOutput classOutput = new ResourceClassOutput(name -> name.equals(generatedName) ? SpecialType.BEAN : null);
+        ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(beanClass.name()), name -> name.equals(generatedName) ? SpecialType.BEAN : null);
 
         // Foo_Bean implements InjectableBean<T>
         ClassCreator beanCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName).interfaces(InjectableBean.class).build();
@@ -313,7 +314,7 @@ public class BeanGenerator extends AbstractGenerator {
         String targetPackage = DotNames.packageName(declaringClass.name());
         String generatedName = targetPackage.replace('.', '/') + "/" + baseName + BEAN_SUFFIX;
 
-        ResourceClassOutput classOutput = new ResourceClassOutput(name -> name.equals(generatedName) ? SpecialType.BEAN : null);
+        ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(declaringClass.name()), name -> name.equals(generatedName) ? SpecialType.BEAN : null);
 
         // Foo_Bean implements InjectableBean<T>
         ClassCreator beanCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName).interfaces(InjectableBean.class).build();
@@ -382,7 +383,7 @@ public class BeanGenerator extends AbstractGenerator {
         String targetPackage = DotNames.packageName(declaringClass.name());
         String generatedName = targetPackage.replace('.', '/') + "/" + baseName + BEAN_SUFFIX;
 
-        ResourceClassOutput classOutput = new ResourceClassOutput(name -> name.equals(generatedName) ? SpecialType.BEAN : null);
+        ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(declaringClass.name()), name -> name.equals(generatedName) ? SpecialType.BEAN : null);
 
         // Foo_Bean implements InjectableBean<T>
         ClassCreator beanCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName).interfaces(InjectableBean.class).build();

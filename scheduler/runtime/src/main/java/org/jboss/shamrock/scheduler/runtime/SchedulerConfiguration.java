@@ -50,7 +50,7 @@ public class SchedulerConfiguration {
     @SuppressWarnings("unchecked")
     ScheduledInvoker createInvoker(String invokerClassName) {
         try {
-            Class<? extends ScheduledInvoker> invokerClazz = (Class<? extends ScheduledInvoker>) getClass().getClassLoader().loadClass(invokerClassName);
+            Class<? extends ScheduledInvoker> invokerClazz = (Class<? extends ScheduledInvoker>) Thread.currentThread().getContextClassLoader().loadClass(invokerClassName);
             return invokerClazz.newInstance();
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
             throw new IllegalStateException("Unable to create invoker: " + invokerClassName, e);

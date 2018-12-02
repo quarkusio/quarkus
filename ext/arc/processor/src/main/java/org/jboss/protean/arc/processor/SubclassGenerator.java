@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.enterprise.context.spi.CreationalContext;
@@ -66,6 +67,7 @@ public class SubclassGenerator extends AbstractGenerator {
 
     static final String SUBCLASS_SUFFIX = "_Subclass";
 
+    private final Predicate<DotName> applicationClassPredicate;
     static String generatedName(DotName providerTypeName, String baseName) {
         return DotNames.packageName(providerTypeName).replace('.', '/') + "/" + baseName + SUBCLASS_SUFFIX;
     }
@@ -74,9 +76,11 @@ public class SubclassGenerator extends AbstractGenerator {
 
     /**
      *
+     * @param applicationClassPredicate
      * @param annotationLiterals
      */
-    public SubclassGenerator(AnnotationLiteralProcessor annotationLiterals) {
+    public SubclassGenerator(Predicate<DotName> applicationClassPredicate, AnnotationLiteralProcessor annotationLiterals) {
+        this.applicationClassPredicate = applicationClassPredicate;
         this.annotationLiterals = annotationLiterals;
     }
 
@@ -88,7 +92,7 @@ public class SubclassGenerator extends AbstractGenerator {
      */
     Collection<Resource> generate(BeanInfo bean, String beanClassName, ReflectionRegistration reflectionRegistration) {
 
-        ResourceClassOutput classOutput = new ResourceClassOutput();
+        ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(bean.getBeanClass()));
 
         Type providerType = bean.getProviderType();
         ClassInfo providerClass = bean.getDeployment().getIndex().getClassByName(providerType.name());

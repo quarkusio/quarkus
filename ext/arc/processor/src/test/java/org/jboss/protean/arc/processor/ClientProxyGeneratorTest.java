@@ -40,8 +40,8 @@ public class ClientProxyGeneratorTest {
         BeanDeployment deployment = new BeanDeployment(index, null, null);
         deployment.init();
 
-        BeanGenerator beanGenerator = new BeanGenerator( new AnnotationLiteralProcessor(BeanProcessor.DEFAULT_NAME, true));
-        ClientProxyGenerator proxyGenerator = new ClientProxyGenerator();
+        BeanGenerator beanGenerator = new BeanGenerator( new AnnotationLiteralProcessor(BeanProcessor.DEFAULT_NAME, true), TruePredicate.INSTANCE);
+        ClientProxyGenerator proxyGenerator = new ClientProxyGenerator(TruePredicate.INSTANCE);
 
         deployment.getBeans().stream().filter(bean -> bean.getScope().isNormal()).forEach(bean -> {
             for (Resource resource : beanGenerator.generate(bean, ReflectionRegistration.NOOP)) {

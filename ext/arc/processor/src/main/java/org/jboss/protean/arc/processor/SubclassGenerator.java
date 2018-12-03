@@ -76,10 +76,10 @@ public class SubclassGenerator extends AbstractGenerator {
 
     /**
      *
-     * @param applicationClassPredicate
      * @param annotationLiterals
+     * @param applicationClassPredicate
      */
-    public SubclassGenerator(Predicate<DotName> applicationClassPredicate, AnnotationLiteralProcessor annotationLiterals) {
+    public SubclassGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate) {
         this.applicationClassPredicate = applicationClassPredicate;
         this.annotationLiterals = annotationLiterals;
     }

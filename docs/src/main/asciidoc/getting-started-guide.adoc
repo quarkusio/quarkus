@@ -19,34 +19,32 @@ This guide covers:
 * Injecting beans
 * Functional tests
 * Packaging of the application
-* Packaging of the application as a native executable
-* Packaging of the application in a Docker container
-* Deploy the application on OpenShift
 
 == Prerequisites
 
 To complete this guide, you need:
 
-* less than 20 minutes
+* less than 15 minutes
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
-* GraalVM installed from the http://www.graalvm.org/downloads/[GraalVM web site].
-Using the community edition is enough.
-At least version {graal-version} is required.
-* The `GRAALVM_HOME` environment variable configured appropriately
 * Apache Maven 3.5+
-* A running Docker
 
-[NOTE]
-====
-Once you have downloaded GraalVM, expand the archive and set the `GRAALVM_HOME` variable to this location:
+== Architecture
 
-`export GRAALVM_HOME=~clement/Development/graalvm/`
+In this guide, we create a straightforward application serving a `hello` endpoint. To demonstrate,
+dependency injection, this endpoint uses a `greeting` bean.
 
-On MacOS, point the variable to the `Home` sub-directory:
+image::getting-started-architecture.png[alt=Architecture,width=640,height=480]
 
-`export GRAALVM_HOME=~clement/Development/graalvm/Contents/Home/`
-====
+This guide also covers the testing of the endpoint.
+
+== Solution
+
+We recommend you to follow the instructions in the next sections and create the app step by step. However, you can go right to the completed example.
+
+Clone the Git repository: `git clone https://github.com/protean-project/quickstarts.git`, or download an http://https://github.com/protean-project/quickstarts/archive/master.zip[archive].
+
+The solution is located in the `getting-started` directory.
 
 == Creating the application
 
@@ -54,6 +52,8 @@ On MacOS, point the variable to the `Home` sub-directory:
 
 In your favorite IDE, create a new Maven project.
 It should generate a `pom.xml` file with a content similar to:
+
+// TODO Use the create mojo once merged
 
 [source,xml]
 ----
@@ -168,7 +168,7 @@ public class GreetingResource {
 === Running the application
 
 Now we are ready to run our application.
-Use: `mvn compile shamrock:run`:
+Use: `mvn compile shamrock:dev`:
 
 [source, text]
 ----
@@ -184,7 +184,7 @@ Use: `mvn compile shamrock:run`:
 [INFO] --- maven-compiler-plugin:3.1:compile (default-compile) @ shamrock-quickstart ---
 [INFO] Nothing to compile - all classes are up to date
 [INFO]
-[INFO] --- shamrock-maven-plugin:....:run (default-cli) @ shamrock-quickstart ---
+[INFO] --- shamrock-maven-plugin:....:dev (default-cli) @ shamrock-quickstart ---
 Nov 23, 2018 10:48:57 AM org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate startUndertowEagerly
 INFO: Starting Undertow on port 8080
 Nov 23, 2018 10:48:57 AM org.xnio.Xnio <clinit>
@@ -260,7 +260,7 @@ import javax.ws.rs.core.MediaType;
 public class GreetingResource {
 
     @Inject
-    private GreetingService service;
+    GreetingService service;
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
@@ -286,6 +286,8 @@ Start the application and check that http://localhost:8080/app/hello/greeting/sh
 All right, so far so good, but wouldn't it be better with a few tests; just in case.
 
 Edit the `pom.xml` file to add the 2 following dependencies:
+
+// TODO Extract rest assured version as variable
 
 [source,xml]
 ----
@@ -350,7 +352,7 @@ These tests use http://rest-assured.io/[RestAssured], but feel free to use your 
 
 You can run the test from your IDE directly (be sure you stopped the application first), or from Maven using: `mvn test`.
 
-=== Packaging the application
+=== Packaging and run the application
 
 The application is packaged using `mvn package`.
 It produces 2 jar files:
@@ -362,196 +364,10 @@ It embeds all the dependencies required to run the application.
 
 You can run the application using: `java -jar target/shamrock-quickstart-1.0-SNAPSHOT-runner.jar`
 
-=== Producing a native executable
+=== What's next?
 
-Let's now produce a native executable for our application.
-It will even improve the startup time of the application, and produce a very small disk footprint.
-The executable would have everything to run the application including the "JVM" (shrunk to be just enough to run the application), and the application.
-
-Be sure that the `GRAALVM_HOME` environment variable is configured appropriately.
-
-Edit the `pom.xml` to add the following _profile_.
-
-[source,xml]
-----
-<profiles>
-    <profile>
-        <id>native</id>
-        <build>
-            <plugins>
-                <plugin>
-                    <groupId>org.jboss.shamrock</groupId>
-                    <artifactId>shamrock-maven-plugin</artifactId>
-                    <version>${shamrock.version}</version>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>native-image</goal>
-                            </goals>
-                            <configuration>
-                                <enableHttpUrlHandler>true</enableHttpUrlHandler>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-            </plugins>
-        </build>
-    </profile>
-</profiles>
-----
-
-We use a profile because, you will see very soon, packaging the native image takes a _few_ seconds.
-
-Now run: `mvn package -Pnative`
-
-In addition to the two files mentioned above, it also produces `target/shamrock-quickstart-1.0-SNAPSHOT-runner`.
-You can run it using: `target/shamrock-quickstart-1.0-SNAPSHOT-runner`.
-
-=== Testing the native executable
-
-Producing a native executable can lead to a few issues, and so it's also a good idea to run some test against the application running in the native file.
-
-In the `pom.xml` file, extend the `native` profile with:
-
-[source, xml]
-----
-<plugin>
-    <groupId>org.apache.maven.plugins</groupId>
-    <artifactId>maven-failsafe-plugin</artifactId>
-    <version>${surefire.version}</version>
-    <executions>
-        <execution>
-            <goals>
-                <goal>integration-test</goal>
-                <goal>verify</goal>
-            </goals>
-            <configuration>
-                <systemProperties>
-                    <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
-                </systemProperties>
-            </configuration>
-        </execution>
-    </executions>
-</plugin>
-----
-
-Then, create the `src/test/java/org/acme/quickstart/GreetingResourceIT.java` with the following content:
-
-[source,java]
-----
-package org.acme.quickstart;
-
-
-import org.jboss.shamrock.test.SubstrateTest;
-import org.junit.runner.RunWith;
-
-@RunWith(SubstrateTest.class) // <1>
-public class GreetingResourceIT extends GreetingResourceTest { // <2>
-
-    // Run the same tests
-
-}
-----
-<1> Use another test runner that starts the application from the native file before the tests.
-The executable is retrieved using the `native.image.path` system property configured in the _Failsafe Maven Plugin_.
-<2> We extend our previous tests, but you can also implement your tests
-
-To see the `GreetingResourceIT` run against the native image, add a verify goal:
-[source]
-----
-mvn package verify -Pnative
-...
-[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]   (typeflow):  35,160.93 ms
-[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]    (objects):  24,027.13 ms
-[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]   (features):   1,313.94 ms
-[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]     analysis:  61,512.95 ms
-[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]     universe:   1,924.69 ms
-[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]      (parse):  11,479.41 ms
-[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]     (inline):  13,568.71 ms
-[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]    (compile):  82,885.41 ms
-[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]      compile: 114,095.02 ms
-[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]        image:   5,680.17 ms
-[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]        write:   1,876.14 ms
-[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]      [total]: 197,587.37 ms
-[INFO]
-[INFO] --- maven-failsafe-plugin:2.21.0:integration-test (default) @ shamrock-quickstart ---
-[INFO]
-[INFO] -------------------------------------------------------
-[INFO]  T E S T S
-[INFO] -------------------------------------------------------
-[INFO] Running org.acme.quickstart.GreetingResourceIT
-Executing /Users/starksm/Dev/JBoss/Protean/get-started/target/shamrock-quickstart-1.0-SNAPSHOT-runner
-2018-11-26 08:20:43,169 ironmaiden shamrock-quickstart-1.0-SNAPSHOT-runner[5220] INFO  [o.j.s.u.r.UndertowDeploymentTemplate] (main) Starting Undertow on port 8080
-2018-11-26 08:20:43,190 ironmaiden shamrock-quickstart-1.0-SNAPSHOT-runner[5220] INFO  [o.j.shamrock] (main) Shamrock started in 21.930ms
-[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.097 s - in org.acme.quickstart.GreetingResourceIT
-[INFO]
-[INFO] Results:
-[INFO]
-[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0
-...
-----
-
-=== Producing a Docker container
-
-You can run the application in a Docker container using the _über-jar_ produced by the Shamrock Maven Plugin.
-However, here we are more interested in getting a Docker image using the produced native executable.
-Because the Docker container may not use the same _executable_ format as the one produced by default, we must instruct the Maven build to produce an
- executable from inside a Docker container:
-
-[source, bash]
-----
-mvn package -Pnative -Dnative-image.docker-build=true
-----
-
-The produced executable may not be runnable on your machine anymore.
-However, it's not an issue as we are going to copy it to a Docker container.
-Create the following `Dockerfile`:
-
-[source]
-----
-FROM centos:7
-WORKDIR /work/
-COPY target/*-runner /work/application
-RUN chmod 775 /work
-EXPOSE 8080
-CMD ["./application", "-Dshamrock.http.host=0.0.0.0"]
-----
-
-Then, if you didn't delete the generated native executable, you can build the docker image with:
-
-[source]
-----
-docker build -t shamrock-quickstart/quickstart .
-----
-
-And finally, run it with:
-
-[source]
-----
-docker run -i -p 8080:8080 shamrock-quickstart/quickstart
-----
-
-=== Final touch - Running on OpenShift
-
-Now that we have a `Dockerfile` and a native executable working in a Docker container, to deploy this application to OpenShift, you just need the following commands:
-
-[source]
-----
-# To build the image on OpenShift
-oc new-build --binary --name=shamrock-quickstart -l app=shamrock-quickstart
-oc start-build shamrock-quickstart --from-dir=. --follow
-
-# To instantiate the image
-oc new-app --image-stream=shamrock-quickstart:latest
-
-# To create the route
-oc expose service shamrock-quickstart
-
-# Get the route URL
-echo "http://$(oc get route | grep shamrock-quickstart | awk '{print $2}')"
-----
-
-Your application is accessible at the printed URL.
-
+This guide covered the creation of an application using Shamrock.
+However, there is much more.
+We recommend continuing the journey with the link:building-native-image-guide.html[building a native image guide], where you learn about the native executable creation and the packaging in a container.
 
 

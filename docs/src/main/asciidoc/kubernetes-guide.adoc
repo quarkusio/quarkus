@@ -1,0 +1,87 @@
+= Deploying the application to Kubernetes and OpenShift
+
+This guide covers:
+
+* The deployment of the application to Kubernetes
+* The deployment of the application to OpenShift
+
+This guide takes as input the application developed in the link:building-native-image-guide.html[native application guide].
+So, you should have been able to package your application as a binary executable, copied it in a Docker image and run this image.
+
+Depending on whether you are a _bare_ Kubernetes user or an OpenShift user, pick the section you are need.
+The OpenShift section leverage OpenShift build and route which are not available in _bare_ Kubernetes.
+
+== Prerequisites
+
+For this guide you need:
+
+* roughly 10 minutes (20 minutes if you want to deploy the application on both platforms)
+* having access to a Kubernetes and/or OpenShift cluster. Minikube and Minishift are valid options.
+* have been able to package the docker image from the link:building-native-image-guide.html[native application guide]
+
+== Solution
+
+We recommend you to follow the instructions in the next sections and application the app step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone https://github.com/protean-project/quickstarts.git`, or download an http://https://github.com/protean-project/quickstarts/archive/master.zip[archive].
+
+The solution is located in the `getting-started-kubernetes` directory.
+
+== Deploying the application in Kubernetes
+
+First, you need to _push_ the Docker image (created in the previous guide) to the image registry of your Kubernetes cluster.
+Depending on your cluster, there are several ways.
+For `minikube`, execute:
+
+[source, bash]
+----
+eval $(minikube docker-env) # For minishift run: eval $(minishift docker-env)
+docker build -t shamrock-quickstart/quickstart .
+----
+
+Once the image has been pushed to the Kubernetes image registry, instantiate the application as follows:
+
+[source, bash]
+----
+kubectl run shamrock-quickstart --image=shamrock-quickstart/quickstart:latest --port=8080 --image-pull-policy=IfNotPresent
+kubectl expose deployment shamrock-quickstart --type=NodePort
+----
+
+The application is now exposed as an internal service. If you are using `minikube`, you can access it using:
+
+[source, bash]
+----
+curl $(minikube service shamrock-quickstart --url)/app/hello/greeting/shamrock
+----
+
+== Deploying the application in OpenShift
+
+In this section, we are going to leverage the build mechanism from OpenShift.
+As we have a `Dockerfile` available, we are going to create an OpenShift `build` executing it:
+
+[source]
+----
+# To build the image on OpenShift
+oc new-build --binary --name=shamrock-quickstart -l app=shamrock-quickstart
+oc start-build shamrock-quickstart --from-dir=. --follow
+
+# To instantiate the image
+oc new-app --image-stream=shamrock-quickstart:latest
+
+# To create the route
+oc expose service shamrock-quickstart
+
+# Get the route URL
+export URL="http://$(oc get route | grep shamrock-quickstart | awk '{print $2}')"
+curl $URL/app/hello/greeting/shamrock
+----
+
+Your application is accessible at the printed URL.
+
+== Going further
+
+This guide covered the deployment of a Shamrock application on Kubernetes and OpenShift.
+However, there is much more, and the integration with these environments has been tailored to make shamrock applications execution very smooth.
+For instance, the health extension can be used for health check; the configuration support allows mounting the application configuration using config map, the metric extension produces data _scrapable_ by Prometheus and so on.
+

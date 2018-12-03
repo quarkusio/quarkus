@@ -46,9 +46,7 @@ Clone the Git repository: `git clone https://github.com/protean-project/quicksta
 
 The solution is located in the `getting-started` directory.
 
-== Creating the application
-
-=== Creating the pom file
+== Creating the pom file
 
 In your favorite IDE, create a new Maven project.
 It should generate a `pom.xml` file with a content similar to:
@@ -124,7 +122,7 @@ As we are going to create a JAX-RS endpoint, you also need to add the following 
 ARC is a CDI-lite implementation providing dependency injection.
 The logging dependency provides access to logging facilities using your favorite API.
 
-=== Creating the Application class
+== Creating the Application class
 
 It's now time to create the `Application` class, create the `src/main/java/org/acme/quickstart/MyApplication.java` file with the following content:
 
@@ -141,7 +139,7 @@ public class MyApplication extends Application {
 }
 ----
 
-==== Creating the JaxRS resource
+=== Creating the JaxRS resource
 
 Create the `src/main/java/org/acme/quickstart/GreetingResource.java` file with the following content:
 
@@ -165,7 +163,7 @@ public class GreetingResource {
 }
 ----
 
-=== Running the application
+== Running the application
 
 Now we are ready to run our application.
 Use: `mvn compile shamrock:dev`:
@@ -222,7 +220,7 @@ hello
 
 Hit `CTRL+C` to stop the application.
 
-=== Using injection
+== Using injection
 
 Let's add a companion bean.
 Create the `src/main/java/org/acme/quickstart/GreetingService.java` file with the following content:
@@ -281,13 +279,11 @@ Start the application and check that http://localhost:8080/app/hello/greeting/sh
 
 
 
-=== Testing
+== Testing
 
 All right, so far so good, but wouldn't it be better with a few tests; just in case.
 
 Edit the `pom.xml` file to add the 2 following dependencies:
-
-// TODO Extract rest assured version as variable
 
 [source,xml,subs=attributes+]
 ----
@@ -352,7 +348,7 @@ These tests use http://rest-assured.io/[RestAssured], but feel free to use your 
 
 You can run the test from your IDE directly (be sure you stopped the application first), or from Maven using: `mvn test`.
 
-=== Packaging and run the application
+== Packaging and run the application
 
 The application is packaged using `mvn package`.
 It produces 2 jar files:
@@ -364,7 +360,24 @@ It embeds all the dependencies required to run the application.
 
 You can run the application using: `java -jar target/shamrock-quickstart-1.0-SNAPSHOT-runner.jar`
 
-=== What's next?
+== Async
+
+The resource can also use `CompletionStage` as return type to handle asynchronous actions:
+
+[source,java]
+----
+@GET
+@Produces(MediaType.TEXT_PLAIN)
+public CompletionStage<String> hello() {
+    return CompletableFuture.supplyAsync(() -> {
+        return "hello";
+    });
+}
+----
+
+The async version of the code is available in the https://github.com/protean-project/quickstarts[Github] repository, in the `getting-started-async` directory.
+
+== What's next?
 
 This guide covered the creation of an application using Shamrock.
 However, there is much more.

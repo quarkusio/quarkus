@@ -29,6 +29,8 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 
 import org.jboss.shamrock.runner.RuntimeRunner;
+import org.jboss.shamrock.runtime.InjectionFactoryTemplate;
+import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.runners.BlockJUnit4ClassRunner;
@@ -37,20 +39,56 @@ import org.junit.runners.model.Statement;
 
 public class ShamrockUnitTest extends BlockJUnit4ClassRunner {
 
-    private Path deploymentDir;
-    private RuntimeRunner runtimeRunner;
+    private static Path deploymentDir;
+    private static RuntimeRunner runtimeRunner;
 
     static boolean started = false;
 
     public ShamrockUnitTest(Class<?> klass) throws InitializationError {
-        super(klass);
+        super(doSetup(klass));
         started = true;
     }
 
     @Override
     protected Object createTest() throws Exception {
-        Object testInstance = super.createTest();
-        return testInstance;
+        InjectionInstance<?> factory = InjectionFactoryTemplate.currentFactory().create(getTestClass().getJavaClass());
+        return factory.newInstance();
+    }
+
+    static Class<?> doSetup(Class<?> clazz) {
+        try {
+            Class<?> theClass = clazz;
+            Method deploymentMethod = null;
+            for (Method m : theClass.getMethods()) {
+                if (m.isAnnotationPresent(Deployment.class)) {
+                    deploymentMethod = m;
+                    break;
+                }
+            }
+            if (deploymentMethod == null) {
+                throw new RuntimeException("Could not find @Deployment method on " + theClass);
+            }
+            if (!Modifier.isStatic(deploymentMethod.getModifiers())) {
+                throw new RuntimeException("@Deployment method must be static" + deploymentMethod);
+            }
+
+            JavaArchive archive = (JavaArchive) deploymentMethod.invoke(null);
+            archive.addClass(theClass);
+            deploymentDir = Files.createTempDirectory("shamrock-unit-test");
+
+            archive.as(ExplodedExporter.class).exportExplodedInto(deploymentDir.toFile());
+
+            String classFileName = theClass.getName().replace('.', '/') + ".class";
+            URL resource = theClass.getClassLoader().getResource(classFileName);
+            String testClassLocation = resource.getPath().substring(0, resource.getPath().length() - classFileName.length());
+            runtimeRunner = new RuntimeRunner(clazz.getClassLoader(), deploymentDir, Paths.get(testClassLocation), null, new ArrayList<>());
+            runtimeRunner.run();
+
+            String javaClass = clazz.getName();
+            return Class.forName(javaClass, true, Thread.currentThread().getContextClassLoader());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -60,31 +98,6 @@ public class ShamrockUnitTest extends BlockJUnit4ClassRunner {
             @Override
             public void evaluate() throws Throwable {
 
-                Class<?> theClass = getTestClass().getJavaClass();
-                Method deploymentMethod = null;
-                for (Method m : theClass.getMethods()) {
-                    if (m.isAnnotationPresent(Deployment.class)) {
-                        deploymentMethod = m;
-                        break;
-                    }
-                }
-                if (deploymentMethod == null) {
-                    throw new RuntimeException("Could not find @Deployment method on " + theClass);
-                }
-                if (!Modifier.isStatic(deploymentMethod.getModifiers())) {
-                    throw new RuntimeException("@Deployment method must be static" + deploymentMethod);
-                }
-
-                JavaArchive archive = (JavaArchive) deploymentMethod.invoke(null);
-                deploymentDir = Files.createTempDirectory("shamrock-unit-test");
-
-                archive.as(ExplodedExporter.class).exportExplodedInto(deploymentDir.toFile());
-
-                String classFileName = theClass.getName().replace('.', '/') + ".class";
-                URL resource = theClass.getClassLoader().getResource(classFileName);
-                String testClassLocation = resource.getPath().substring(0, resource.getPath().length() - classFileName.length());
-                runtimeRunner = new RuntimeRunner(getClass().getClassLoader(), deploymentDir, Paths.get(testClassLocation), null, new ArrayList<>());
-                runtimeRunner.run();
                 existing.evaluate();
 
             }

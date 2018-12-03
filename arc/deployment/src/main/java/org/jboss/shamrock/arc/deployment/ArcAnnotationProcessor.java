@@ -57,6 +57,7 @@ import org.jboss.shamrock.arc.runtime.ArcDeploymentTemplate;
 import org.jboss.shamrock.arc.runtime.LifecycleEventRunner;
 import org.jboss.shamrock.deployment.Capabilities;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
+import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
 import org.jboss.shamrock.deployment.builditem.BeanArchiveIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.BeanContainerBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
@@ -117,8 +118,10 @@ public class ArcAnnotationProcessor {
     @Record(STATIC_INIT)
     public BeanContainerBuildItem build(ArcDeploymentTemplate arcTemplate, BuildProducer<ServletExtensionBuildItem> extensions,
             BuildProducer<InjectionProviderBuildItem> injectionProvider, List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems,
+                                        ApplicationArchivesBuildItem applicationArchivesBuildItem,
             List<GeneratedBeanBuildItem> generatedBeans, List<AnnotationTransformerBuildItem> annotationTransformerAdapters,
             List<org.jboss.shamrock.arc.deployment.AnnotationTransformerBuildItem> annotationTransformers, ShutdownContextBuildItem shutdown) throws Exception {
+
 
         List<String> additionalBeans = new ArrayList<>();
         for (AdditionalBeanBuildItem i : this.additionalBeans) {
@@ -141,29 +144,25 @@ public class ArcAnnotationProcessor {
         for (String beanClass : additionalBeans) {
             indexBeanClass(beanClass, indexer, beanArchiveIndex.getIndex(), additionalIndex);
         }
-        Set<String> frameworkPackages = additionalIndex.stream().map(dotName -> {
-            String name = dotName.toString();
-            return name.substring(0, name.lastIndexOf("."));
-        }).collect(Collectors.toSet());
-        List<Predicate<String>> frameworkPredicates = new ArrayList<>();
-        frameworkPredicates.add(fqcn -> {
-            for (String frameworkPackage : frameworkPackages) {
-                if (fqcn.startsWith(frameworkPackage)) {
-                    return true;
-                }
-            }
-            return false;
-        });
-        // For some odd reason we cannot add org.jboss.protean.arc as a fwk package
-        frameworkPredicates.add(fqcn -> {
-            return fqcn.startsWith(ActivateRequestContextInterceptor.class.getName()) || fqcn.startsWith("org.jboss.protean.arc.ActivateRequestContext");
-        });
-
+        Set<DotName> generatedClassNames = new HashSet<>();
         for (GeneratedBeanBuildItem beanClass : generatedBeans) {
             indexBeanClass(beanClass.getName(), indexer, beanArchiveIndex.getIndex(), additionalIndex, beanClass.getData());
+            generatedClassNames.add(DotName.createSimple(beanClass.getName()));
         }
         CompositeIndex index = CompositeIndex.create(indexer.complete(), beanArchiveIndex.getIndex());
         Builder builder = BeanProcessor.builder();
+        builder.setApplicationClassPredicate(new Predicate<DotName>() {
+            @Override
+            public boolean test(DotName dotName) {
+                if(applicationArchivesBuildItem.getRootArchive().getIndex().getClassByName(dotName) != null) {
+                    return true;
+                }
+                if(generatedClassNames.contains(dotName)) {
+                    return true;
+                }
+                return false;
+            }
+        });
         builder.setIndex(index);
         builder.setAdditionalBeanDefiningAnnotations(additionalBeanDefiningAnnotations);
         builder.setSharedAnnotationLiterals(false);
@@ -198,21 +197,8 @@ public class ArcAnnotationProcessor {
             public void writeResource(Resource resource) throws IOException {
                 switch (resource.getType()) {
                     case JAVA_CLASS:
-                        // TODO a better way to identify app classes
-                        boolean isAppClass = true;
-
-                        if (!resource.getFullyQualifiedName().contains("$$APP$$")) {
-                            // ^ horrible hack, we really need to look into into
-                            // app vs framework classes cause big problems for the runtime runner
-                            for (Predicate<String> predicate : frameworkPredicates) {
-                                if (predicate.test(resource.getFullyQualifiedName())) {
-                                    isAppClass = false;
-                                    break;
-                                }
-                            }
-                        }
-                        log.debugf("Add %s class: %s", (isAppClass ? "APP" : "FWK"), resource.getFullyQualifiedName());
-                        generatedClass.produce(new GeneratedClassBuildItem(isAppClass, resource.getName(), resource.getData()));
+                        log.debugf("Add %s class: %s", (resource.isApplicationClass() ? "APP" : "FWK"), resource.getFullyQualifiedName());
+                        generatedClass.produce(new GeneratedClassBuildItem(resource.isApplicationClass(), resource.getName(), resource.getData()));
                         break;
                     case SERVICE_PROVIDER:
                         generatedResource.produce(new GeneratedResourceBuildItem("META-INF/services/" + resource.getName(), resource.getData()));

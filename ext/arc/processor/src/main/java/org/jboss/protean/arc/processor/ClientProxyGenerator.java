@@ -26,8 +26,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -55,6 +57,12 @@ public class ClientProxyGenerator extends AbstractGenerator {
 
     static final String CLIENT_PROXY_SUFFIX = "_ClientProxy";
 
+    private final Predicate<DotName> applicationClassPredicate;
+
+    public ClientProxyGenerator(Predicate<DotName> applicationClassPredicate) {
+        this.applicationClassPredicate = applicationClassPredicate;
+    }
+
     /**
      *
      * @param bean
@@ -63,7 +71,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
      */
     Collection<Resource> generate(BeanInfo bean, String beanClassName, ReflectionRegistration reflectionRegistration) {
 
-        ResourceClassOutput classOutput = new ResourceClassOutput();
+        ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(bean.getBeanClass()));
 
         Type providerType = bean.getProviderType();
         ClassInfo providerClass = bean.getDeployment().getIndex().getClassByName(providerType.name());

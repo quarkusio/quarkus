@@ -32,19 +32,22 @@ public class ResourceClassOutput implements ClassOutput {
 
     private final List<Resource> resources = new ArrayList<>();
 
+    private final boolean applicationClass;
+
     private final Function<String, SpecialType> specialTypeFunction;
 
-    public ResourceClassOutput() {
-        this(null);
+    public ResourceClassOutput(boolean applicationClass) {
+        this(applicationClass, null);
     }
 
-    public ResourceClassOutput(Function<String, SpecialType> specialTypeFunction) {
+    public ResourceClassOutput(boolean applicationClass, Function<String, SpecialType> specialTypeFunction) {
+        this.applicationClass = applicationClass;
         this.specialTypeFunction = specialTypeFunction;
     }
 
     @Override
     public void write(String name, byte[] data) {
-        resources.add(ResourceImpl.javaClass(name, data, specialTypeFunction != null ? specialTypeFunction.apply(name) : null));
+        resources.add(ResourceImpl.javaClass(name, data, specialTypeFunction != null ? specialTypeFunction.apply(name) : null, applicationClass));
     }
 
     List<Resource> getResources() {

@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 
 import javax.enterprise.context.control.ActivateRequestContext;
 import javax.enterprise.inject.Any;
@@ -86,11 +87,14 @@ public class BeanProcessor {
 
     private final BuildContextImpl buildContext;
 
+    private final Predicate<DotName> applicationClassPredicate;
+
     private BeanProcessor(String name, IndexView index, Collection<DotName> additionalBeanDefiningAnnotations, ResourceOutput output,
-            boolean sharedAnnotationLiterals, ReflectionRegistration reflectionRegistration, List<AnnotationsTransformer> annotationTransformers,
-            Collection<DotName> resourceAnnotations, List<BeanRegistrar> beanRegistrars, List<DeploymentEnhancer> deploymentEnhancers,
-            List<BeanDeploymentValidator> beanDeploymentValidators) {
+                          boolean sharedAnnotationLiterals, ReflectionRegistration reflectionRegistration, List<AnnotationsTransformer> annotationTransformers,
+                          Collection<DotName> resourceAnnotations, List<BeanRegistrar> beanRegistrars, List<DeploymentEnhancer> deploymentEnhancers,
+                          List<BeanDeploymentValidator> beanDeploymentValidators, Predicate<DotName> applicationClassPredicate) {
         this.reflectionRegistration = reflectionRegistration;
+        this.applicationClassPredicate = applicationClassPredicate;
         Objects.requireNonNull(output);
         this.name = name;
         this.additionalBeanDefiningAnnotations = additionalBeanDefiningAnnotations;
@@ -148,11 +152,11 @@ public class BeanProcessor {
         beanDeployment.init();
 
         AnnotationLiteralProcessor annotationLiterals = new AnnotationLiteralProcessor(name, sharedAnnotationLiterals);
-        BeanGenerator beanGenerator = new BeanGenerator(annotationLiterals);
-        ClientProxyGenerator clientProxyGenerator = new ClientProxyGenerator();
-        InterceptorGenerator interceptorGenerator = new InterceptorGenerator(annotationLiterals);
-        SubclassGenerator subclassGenerator = new SubclassGenerator(annotationLiterals);
-        ObserverGenerator observerGenerator = new ObserverGenerator(annotationLiterals);
+        BeanGenerator beanGenerator = new BeanGenerator(annotationLiterals, applicationClassPredicate);
+        ClientProxyGenerator clientProxyGenerator = new ClientProxyGenerator(applicationClassPredicate);
+        InterceptorGenerator interceptorGenerator = new InterceptorGenerator(annotationLiterals, applicationClassPredicate);
+        SubclassGenerator subclassGenerator = new SubclassGenerator(applicationClassPredicate, annotationLiterals);
+        ObserverGenerator observerGenerator = new ObserverGenerator(annotationLiterals, applicationClassPredicate);
         AnnotationLiteralGenerator annotationLiteralsGenerator = new AnnotationLiteralGenerator();
 
         Map<BeanInfo, String> beanToGeneratedName = new HashMap<>();
@@ -257,6 +261,12 @@ public class BeanProcessor {
         private final List<BeanRegistrar> beanRegistrars = new ArrayList<>();
         private final List<DeploymentEnhancer> deploymentEnhancers = new ArrayList<>();
         private final List<BeanDeploymentValidator> beanDeploymentValidators = new ArrayList<>();
+        private Predicate<DotName> applicationClassPredicate = new Predicate<DotName>() {
+            @Override
+            public boolean test(DotName dotName) {
+                return true;
+            }
+        };
 
         public Builder setName(String name) {
             this.name = name;
@@ -313,9 +323,14 @@ public class BeanProcessor {
             return this;
         }
 
+        public Builder setApplicationClassPredicate(Predicate<DotName> applicationClassPredicate) {
+            this.applicationClassPredicate = applicationClassPredicate;
+            return this;
+        }
+
         public BeanProcessor build() {
             return new BeanProcessor(name, addBuiltinClasses(index), additionalBeanDefiningAnnotations, output, sharedAnnotationLiterals,
-                    reflectionRegistration, annotationTransformers, resourceAnnotations, beanRegistrars, deploymentEnhancers, beanDeploymentValidators);
+                    reflectionRegistration, annotationTransformers, resourceAnnotations, beanRegistrars, deploymentEnhancers, beanDeploymentValidators, applicationClassPredicate);
         }
 
     }

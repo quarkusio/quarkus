@@ -30,12 +30,10 @@ import org.jboss.protean.arc.processor.ResourceOutput.Resource;
  */
 class ResourceImpl implements ResourceOutput.Resource {
 
-    static Resource javaClass(String name, byte[] data) {
-        return javaClass(name, data, null);
-    }
+    private final boolean applicationClass;
 
-    static Resource javaClass(String name, byte[] data, SpecialType specialType) {
-        return new ResourceImpl(name, data, Type.JAVA_CLASS, specialType);
+    static Resource javaClass(String name, byte[] data, SpecialType specialType, boolean applicationClass) {
+        return new ResourceImpl(applicationClass, name, data, Type.JAVA_CLASS, specialType);
 
     }
 
@@ -44,7 +42,7 @@ class ResourceImpl implements ResourceOutput.Resource {
     }
 
     static Resource serviceProvider(String name, byte[] data, SpecialType specialType) {
-        return new ResourceImpl(name, data, Type.SERVICE_PROVIDER, specialType);
+        return new ResourceImpl(true, name, data, Type.SERVICE_PROVIDER, specialType);
     }
 
     private final String name;
@@ -55,11 +53,17 @@ class ResourceImpl implements ResourceOutput.Resource {
 
     private final SpecialType specialType;
 
-    private ResourceImpl(String name, byte[] data, Type type, SpecialType specialType) {
+    private ResourceImpl(boolean applicationClass, String name, byte[] data, Type type, SpecialType specialType) {
+        this.applicationClass = applicationClass;
         this.name = name;
         this.data = data;
         this.type = type;
         this.specialType = specialType;
+    }
+
+    @Override
+    public boolean isApplicationClass() {
+        return applicationClass;
     }
 
     @Override

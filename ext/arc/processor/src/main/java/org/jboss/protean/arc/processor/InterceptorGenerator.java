@@ -26,12 +26,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import javax.enterprise.inject.spi.InterceptionType;
 import javax.interceptor.InvocationContext;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
@@ -62,8 +64,8 @@ public class InterceptorGenerator extends BeanGenerator {
      *
      * @param annotationLiterals
      */
-    public InterceptorGenerator(AnnotationLiteralProcessor annotationLiterals) {
-        super(annotationLiterals);
+    public InterceptorGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate) {
+        super(annotationLiterals, applicationClassPredicate);
     }
 
     /**
@@ -87,7 +89,7 @@ public class InterceptorGenerator extends BeanGenerator {
         String targetPackage = DotNames.packageName(providerType.name());
         String generatedName = targetPackage.replace('.', '/') + "/" + baseName + BEAN_SUFFIX;
 
-        ResourceClassOutput classOutput = new ResourceClassOutput(name -> name.equals(generatedName) ? SpecialType.INTERCEPTOR_BEAN : null);
+        ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(interceptor.getBeanClass()), name -> name.equals(generatedName) ? SpecialType.INTERCEPTOR_BEAN : null);
 
         // MyInterceptor_Bean implements InjectableInterceptor<T>
         ClassCreator interceptorCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName).interfaces(InjectableInterceptor.class)

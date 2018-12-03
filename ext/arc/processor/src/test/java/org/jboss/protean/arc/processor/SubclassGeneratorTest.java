@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.util.function.Predicate;
 
 import javax.annotation.Priority;
 import javax.enterprise.context.Dependent;
@@ -50,8 +51,8 @@ public class SubclassGeneratorTest {
         deployment.init();
 
         AnnotationLiteralProcessor annotationLiteralProcessor = new AnnotationLiteralProcessor(BeanProcessor.DEFAULT_NAME, true);
-        BeanGenerator beanGenerator = new BeanGenerator(annotationLiteralProcessor);
-        SubclassGenerator generator = new SubclassGenerator(annotationLiteralProcessor);
+        BeanGenerator beanGenerator = new BeanGenerator(annotationLiteralProcessor, TruePredicate.INSTANCE);
+        SubclassGenerator generator = new SubclassGenerator(TruePredicate.INSTANCE, annotationLiteralProcessor);
         BeanInfo simpleBean = deployment.getBeans().stream()
                 .filter(b -> b.getTarget().get().asClass().name().equals(DotName.createSimple(SimpleBean.class.getName()))).findAny().get();
         for (Resource resource : beanGenerator.generate(simpleBean, ReflectionRegistration.NOOP)) {

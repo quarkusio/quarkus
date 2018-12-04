@@ -49,7 +49,7 @@ final class InternalLocatableAnnotationSubstitutions {
             try {
                 Class.forName("com.sun.xml.internal.bind.v2.model.annotation.LocatableAnnotation");
                 return true;
-            } catch (ClassNotFoundException e) {
+            } catch (ClassNotFoundException | NoClassDefFoundError e) {
                 return false;
             }
         }

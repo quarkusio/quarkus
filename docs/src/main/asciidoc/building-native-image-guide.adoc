@@ -11,7 +11,7 @@ This guide takes as input the application developed in the link:getting-started-
 
 To complete this guide, you need:
 
-* less than 115 minutes
+* less than 15 minutes
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * GraalVM installed from the http://www.graalvm.org/downloads/[GraalVM web site].
@@ -186,7 +186,7 @@ Because the Docker container may not use the same _executable_ format as the one
 mvn package -Pnative -Dnative-image.docker-build=true
 ----
 
-The produced executable may not be runnable on your machine anymore.
+The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.
 However, it's not an issue as we are going to copy it to a Docker container.
 Create the following `Dockerfile`:
 

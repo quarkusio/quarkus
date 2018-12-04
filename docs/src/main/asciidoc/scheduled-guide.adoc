@@ -43,11 +43,11 @@ mvn org.jboss.shamrock:shamrock-maven-plugin:1.0.0.Alpha1-SNAPSHOT:create \
 
 It generates:
 
-* the maven structure
+* the Maven structure
 * an `org.acme.scheduling.CountResource` resource
 * an associated test
 
-The maven project also imports the Shamrock scheduler extension.
+The Maven project also imports the Shamrock scheduler extension.
 
 == Creating a scheduled job
 

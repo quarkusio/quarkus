@@ -38,7 +38,7 @@ mvn org.jboss.shamrock:shamrock-maven-plugin:1.0.0.Alpha1-SNAPSHOT:create \
 
 It generates:
 
-* the maven structure
+* the Maven structure
 * an `org.acme.scheduling.GreetingResource` resource
 * an associated test
 

@@ -134,6 +134,8 @@ public class ArcAnnotationProcessor {
         List<DotName> additionalBeanDefiningAnnotations = new ArrayList<>();
         additionalBeanDefiningAnnotations.add(DotName.createSimple("javax.servlet.annotation.WebServlet"));
         additionalBeanDefiningAnnotations.add(DotName.createSimple("javax.ws.rs.Path"));
+        //allows injection into shamrock unit tests
+        additionalBeanDefiningAnnotations.add(DotName.createSimple("org.junit.runner.RunWith"));
 
         // TODO MP config
         additionalBeans.add(ConfigProducer.class.getName());

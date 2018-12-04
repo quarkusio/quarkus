@@ -9,6 +9,50 @@ is recorded bytecode which is responsible for directly instantiating the relevan
 This means that metadata is only processed once at build time, which both saves on startup time, but also on memory
 usage as the classes etc that are used for processing are not loaded (or even present) in the runtime JVM.
 
+
+== Three Phases of Bootstrap and Shamrock Philosophy
+
+There are three distinct phases of the bootstrap of a Shamrock app:
+
+Augmentation::
+    This is the first phase, and is done by the build step processors. These processors have access to Jandex annotation
+    information and can parse any descriptors, but should not attempt to load any application classes. The output of these
+    build steps is some recorded bytecode, that is used to actually bootstrap the app at runtime. Depending on the mode
+    this step may be run in a different JVM to the following two steps.
+
+Static Init::
+    If bytecode is recorded with `@Record(STATIC_INIT)` then it will be executed from a static init method on the main
+    class. This means that for a native image build this code is executed in a normal JVM as part of the image build
+    process. Any retained objects that are produced in this stage will be directly serialized into the native image.
+    This means that if a framework can boot in this phase then it will have its booted state directly written to the
+    image, so the boot code does not need to be executed when the image is started.
+
+    There are some restrictions on what can be done in this stage as substrate disallows some objects in the native image,
+    for example you should not attempt to listen on a port or start threads in this phase.
+
+    In JVM mode there is no real difference between this and runtime init, except that this is always executed first.
+
+Runtime Init::
+    If bytecode is recorded with `@Record(RUNTIME_INIT)` then it is executed from the applications main method. This code
+    will be run on native image boot. In general as little code as possible should be executed in this phase, and should
+    be restricted to code that needs to open ports etc.
+
+This means that there are really two different optimisations we are trying to make, for native image we want to boot
+as much as possible in static init, so that the resulting native image will start as fast as possible. When running on
+the JVM we want to push as much code as possible into offline processing, so that as few classes as possible are loaded
+on application start, and so that as little processing as possible is done as part of app startup. In servers like
+WildFly deployment related classes such as XML parsers hang around for the life of the application, using up valuable
+memory. Shamrock aims to eliminate this, so that the only classes loaded at runtime are actually used at runtime.
+
+As an example the only reason that a Shamrock app should load an XML parser is if the user is using XML in their
+application. Any XML parsing of configuration should be done in the Augmentation phase.
+
+Another advantage of this approach is that it means substrate can more easily eliminate features that are not used.
+If features are directly initialized via bytecode substrate can detect that a method is never called and eliminate
+that method. If config is read at runtime substrate cannot reason about the contents of the config and so needs to
+keep all features in case they are required.
+
+
 === Maven setup
 
 Your runtime artifact should depend on shamrock-core-runtime, and possibly the runtime artifacts of other Shamrock
@@ -35,11 +79,11 @@ inherit the correct configuration.
 </build>
 ----
 
-WARNING: Under no circumstances can you runtime module depend on a deployment artifact. This would result
+WARNING: Under no circumstances can the runtime module depend on a deployment artifact. This would result
 in pulling all the deployment time code into runtime scope, which defeats the purpose of having the split.
 
 
-Your deployment time module should depend on shamrock-core-deployment, your runtime artifact,
+Your deployment time module should depend on `shamrock-core-deployment`, your runtime artifact,
 and possibly the deployment artifacts of other Shamrock modules if you want to use functionality provided by them.
 
 
@@ -137,46 +181,74 @@ convenience to avoid the need to explicitly load classes in the templates.
 
 TODO: config integration
 
-== Three Phases of Bootstrap and Shamrock Philosophy
 
-There are three distinct phases of the bootstrap of a Shamrock app:
+=== Testing Extensions
 
-Augmentation::
-    This is the first phase, and is done by the build step processors. These processors have access to Jandex annotation
-    information and can parse any descriptors, but should not attempt to load any application classes. The output of these
-    build steps is some recorded bytecode, that is used to actually bootstrap the app at runtime. Depending on the mode
-    this step may be run in a different JVM to the following two steps.
+Testing of extensions should be done with the `org.jboss.shamrock.test.ShamrockUnitTest` runner. This runner is allows
+for arquillian style tests that test specific functionality. It is not intended for testing user applications, this
+should be done via `org.jboss.shamrock.test.ShamrockTest`. The main difference between these test runners is that
+`ShamrockTest` simply boots the application once at the start of the run, while `ShamrockUnitTest` deploys a custom
+shamrock application for each test class.
 
-Static Init::
-    If bytecode is recorded with `@Record(STATIC_INIT)` then it will be executed from a static init method on the main
-    class. This means that for a native image build this code is executed in a normal JVM as part of the image build
-    process. Any retained objects that are produced in this stage will be directly serialized into the native image.
-    This means that if a framework can boot in this phase then it will have its booted state directly written to the
-    image, so the boot code does not need to be executed when the image is started.
+These tests should be placed in the augmentation module, if additional shamrock modules are required for testing
+their augment modules should also be added as test scoped dependencies.
 
-    There are some restrictions on what can be done in this stage as substrate disallows some objects in the native image,
-    for example you should not attempt to listen on a port or start threads in this phase.
+An example test class may book like:
 
-    In JVM mode there is no real difference between this and runtime init, except that this is always executed first.
+[source,java]
+----
 
-Runtime Init::
-    If bytecode is recorded with `@Record(RUNTIME_INIT)` then it is executed from the applications main method. This code
-    will be run on native image boot. In general as little code as possible should be executed in this phase, and should
-    be restricted to code that needs to open ports etc.
+import javax.enterprise.inject.Instance;
+import javax.inject.Inject;
 
-This means that there are really two different optimisations we are trying to make, for native image we want to boot
-as much as possible in static init, so that the resulting native image will start as fast as possible. When running on
-the JVM we want to push as much code as possible into offline processing, so that as few classes as possible are loaded
-on application start, and so that as little processing as possible is done as part of app startup. In servers like
-WildFly deployment related classes such as XML parsers hang around for the life of the application, using up valuable
-memory. Shamrock aims to eliminate this, so that the only classes loaded at runtime are actually used at runtime.
+import org.eclipse.microprofile.health.*;
+import org.jboss.shamrock.test.*;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.EmptyAsset;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
-As an example the only reason that a Shamrock app should load an XML parser is if the user is using XML in their
-application. Any XML parsing of configuration should be done in the Augmentation phase.
+@RunWith(ShamrockUnitTest.class)                                            <1>
+public class FailingUnitTest {
 
-Another advantage of this approach is that it means substrate can more easily eliminate features that are not used.
-If features are directly initialized via bytecode substrate can detect that a method is never called and eliminate
-that method. If config is read at runtime substrate cannot reason about the contents of the config and so needs to
-keep all features in case they are required.
+    @Deployment                                                             <2>
+    public static JavaArchive deploy() {
+        return ShrinkWrap.create(JavaArchive.class)
+                .addClasses(FailingHealthCheck.class)
+                .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml");
+    }
+
+    @Inject                                                                 <3>
+    @Health
+    Instance<HealthCheck> checks;
+
+    @Test
+    public void testHealthServlet() {
+        URLResponse rep = URLTester.relative("health").invokeURL();         <4>
+        Assert.assertEquals(503, rep.statusCode());
+    }
+
+    @Test
+    public void testHealthBeans() {
+        List<HealthCheck> check = new ArrayList<>();                        <5>
+        for (HealthCheck i : checks) {
+            check.add(i);
+        }
+        Assert.assertEquals(1, check.size());
+        Assert.assertEquals(HealthCheckResponse.State.DOWN, check.get(0).call().getState());
+    }
+}
+----
+
+
+<1> This tells JUnit to use the Shamrock unit test runner
+<2> This deployment method is used to build the app to be tested. It uses Shrinkwrap to create an JavaArchive to test
+<3> It is possible to inject beans from our test deployment directly into the test case
+<4> This method direcly invokes the health check Servlet and verifies the response
+<5> This method uses the injected health check bean to verify it is returning the expected result
+
+
 
 // end::main[]

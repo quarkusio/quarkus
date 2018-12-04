@@ -16,10 +16,15 @@
 
 package org.jboss.shamrock.health.test;
 
-import javax.json.JsonArray;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
+import java.util.ArrayList;
+import java.util.List;
 
+import javax.enterprise.inject.Instance;
+import javax.inject.Inject;
+
+import org.eclipse.microprofile.health.Health;
+import org.eclipse.microprofile.health.HealthCheck;
+import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.jboss.shamrock.test.Deployment;
 import org.jboss.shamrock.test.ShamrockUnitTest;
 import org.jboss.shamrock.test.URLResponse;
@@ -41,10 +46,23 @@ public class FailingUnitTest {
                 .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml");
     }
 
+    @Inject
+    @Health
+    Instance<HealthCheck> checks;
+
     @Test
-    public void testHealth() {
+    public void testHealthServlet() {
         URLResponse rep = URLTester.relative("health").invokeURL();
         Assert.assertEquals(503, rep.statusCode());
     }
 
+    @Test
+    public void testHealthBeans() {
+        List<HealthCheck> check = new ArrayList<>();
+        for (HealthCheck i : checks) {
+            check.add(i);
+        }
+        Assert.assertEquals(1, check.size());
+        Assert.assertEquals(HealthCheckResponse.State.DOWN, check.get(0).call().getState());
+    }
 }

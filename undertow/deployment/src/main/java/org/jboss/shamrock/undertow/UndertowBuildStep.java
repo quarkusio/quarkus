@@ -92,6 +92,7 @@ import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.deployment.ApplicationArchive;
 import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
 import org.jboss.shamrock.deployment.builditem.ArchiveRootBuildItem;
+import org.jboss.shamrock.deployment.builditem.BeanContainerBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.InjectionFactoryBuildItem;
 import org.jboss.shamrock.deployment.builditem.ServiceStartBuildItem;
@@ -171,6 +172,7 @@ public class UndertowBuildStep {
                                             UndertowDeploymentTemplate template, RecorderContext context,
                                             List<ServletExtensionBuildItem> extensions,
                                             InjectionFactoryBuildItem injectionFactory,
+                                            InjectionFactoryBuildItem bc,
                                             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) throws Exception {
 
         reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, DefaultServlet.class.getName(), "io.undertow.server.protocol.http.HttpRequestParser$$generated"));
@@ -343,7 +345,7 @@ public class UndertowBuildStep {
         for (ServletExtensionBuildItem i : extensions) {
             template.addServletExtension(deployment, i.getValue());
         }
-        return new ServletDeploymentBuildItem(template.bootServletContainer(deployment));
+        return new ServletDeploymentBuildItem(template.bootServletContainer(deployment, bc.getFactory()));
 
     }
 

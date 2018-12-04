@@ -136,6 +136,7 @@ public class DevModeMain {
             }
         }
         closeable = null;
+        Timing.restart();
         doStart();
     }
 

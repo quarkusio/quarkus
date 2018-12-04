@@ -68,6 +68,7 @@ public class ClassLoaderCompiler {
             toParse.add(new File(url.getPath()).getAbsolutePath());
         }
         Set<File> classPathElements = new HashSet<>();
+        classPathElements.add(outputDirectory);
         while (!toParse.isEmpty()) {
             String s = toParse.poll();
             if (!parsedFiles.contains(s)) {

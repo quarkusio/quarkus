@@ -38,7 +38,7 @@ On MacOS, point the variable to the `Home` sub-directory:
 We recommend you to follow the instructions in the next sections and package the application step by step.
 However, you can go right to the completed example.
 
-Clone the Git repository: `git clone https://github.com/protean-project/quickstarts.git`, or download an http://https://github.com/protean-project/quickstarts/archive/master.zip[archive].
+Clone the Git repository: `git clone https://github.com/protean-project/quickstarts.git`, or download an https://github.com/protean-project/quickstarts/archive/master.zip[archive].
 
 The solution is located in the `getting-started-native` directory.
 

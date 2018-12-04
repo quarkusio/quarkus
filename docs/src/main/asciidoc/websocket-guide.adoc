@@ -1,7 +1,7 @@
 
  = Using Web Sockets
 
-This guide explains how your Shamrock application can utilize web socket to create interactive web applications.
+This guide explains how your Shamrock application can utilize web sockets to create interactive web applications.
 Because it's the _canonical_ web socket application, we are going to create a simple chat application.
 
 == Prerequisites
@@ -24,7 +24,7 @@ image:websocket-guide-architecture.png[alt=Architecture,width=640,height=480]
 We recommend you to follow the instructions in the next sections and create the application step by step.
 However, you can go right to the completed example.
 
-Clone the Git repository: `git clone https://github.com/protean-project/quickstarts.git`, or download an http://https://github.com/protean-project/quickstarts/archive/master.zip[archive].
+Clone the Git repository: `git clone https://github.com/protean-project/quickstarts.git`, or download an https://github.com/protean-project/quickstarts/archive/master.zip[archive].
 
 The solution is located in the `using-websocket` https://github.com/protean-project/quickstarts/tree/master/using-websockets[directory].
 
@@ -43,11 +43,11 @@ mvn org.jboss.shamrock:shamrock-maven-plugin:1.0.0.Alpha1-SNAPSHOT:create \
 
 It generates:
 
-* the maven structure
+* the Maven project structure
 * an `org.acme.websocket.HelloResource` resource
 * an associated test
 
-The maven project also imports the Shamrock WebSocket extension.
+The Maven project also imports the Shamrock WebSockets extension.
 
 == Handling web sockets
 

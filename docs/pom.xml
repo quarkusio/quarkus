@@ -55,6 +55,14 @@
                         <version>${asciidoctorj-pdf.version}</version>
                     </dependency>
                 </dependencies>
+                <configuration>
+                    <attributes>
+                        <shamrock-version>${project.version}</shamrock-version>
+                        <surefire-version>${version.surefire.plugin}</surefire-version>
+                        <graal-version>${graal-sdk.version}</graal-version>
+                        <restassured-version>3.2.0</restassured-version>
+                    </attributes>
+                </configuration>
                 <executions>
                     <execution>
                         <id>output-html</id>
@@ -73,11 +81,6 @@
                                 <idprefix/>
                                 <idseparator>-</idseparator>
                                 <docinfo1>true</docinfo1>
-
-                                <shamrock-version>${project.version}</shamrock-version>
-                                <surefire-version>2.21.0</surefire-version>
-                                <graal-version>${graal-sdk.version}</graal-version>
-                                <restassured-version>3.2.0</restassured-version>
                             </attributes>
                         </configuration>
                     </execution>
@@ -89,11 +92,6 @@
                         </goals>
                         <configuration>
                             <backend>pdf</backend>
-                            <attributes>
-                                <shamrock-version>${project.version}</shamrock-version>
-                                <surefire-version>2.21.0</surefire-version>
-                                <graal-version>${graal-sdk.version}</graal-version>
-                            </attributes>
                         </configuration>
                     </execution>
                 </executions>

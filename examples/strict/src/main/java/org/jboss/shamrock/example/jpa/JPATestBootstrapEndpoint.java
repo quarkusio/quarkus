@@ -16,10 +16,16 @@
 
 package org.jboss.shamrock.example.jpa;
 
-import org.jboss.shamrock.examples.common.Clown;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.List;
+import java.util.UUID;
 
 import javax.inject.Inject;
-import javax.persistence.*;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.EntityTransaction;
+import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
@@ -27,12 +33,8 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.List;
-import java.util.UUID;
+
+import org.jboss.shamrock.examples.common.Clown;
 
 /**
  * Various tests for the JPA integration.
@@ -42,7 +44,7 @@ import java.util.UUID;
 public class JPATestBootstrapEndpoint extends HttpServlet {
 
     @Inject
-    private EntityManagerFactory entityManagerFactory;
+    EntityManagerFactory entityManagerFactory;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {

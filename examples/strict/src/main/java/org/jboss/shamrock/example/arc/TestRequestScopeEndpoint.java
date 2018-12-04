@@ -24,7 +24,7 @@ import javax.ws.rs.Path;
 public class TestRequestScopeEndpoint {
 
     @Inject
-    private RequestScopedBean requestScopedBean;
+    RequestScopedBean requestScopedBean;
 
     @GET
     public String manualValidation() {

@@ -41,6 +41,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
+import org.jboss.logging.Logger.Level;
 import org.jboss.protean.arc.CreationalContextImpl;
 import org.jboss.protean.arc.CurrentInjectionPointProvider;
 import org.jboss.protean.arc.InjectableBean;
@@ -99,7 +100,8 @@ public class ObserverGenerator extends AbstractGenerator {
         String baseName = declaringClassBase + OBSERVER_SUFFIX + OBSERVER_INDEX.incrementAndGet();
         String generatedName = DotNames.packageName(declaringClass.name()).replace('.', '/') + "/" + baseName;
 
-        ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(observer.getObserverMethod().declaringClass().name()), name -> name.equals(generatedName) ? SpecialType.OBSERVER : null);
+        boolean isApplicationClass = applicationClassPredicate.test(observer.getObserverMethod().declaringClass().name());
+        ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass, name -> name.equals(generatedName) ? SpecialType.OBSERVER : null);
 
         // Foo_Observer1 implements ObserverMethod<T>
         ClassCreator observerCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName).interfaces(InjectableObserverMethod.class)
@@ -123,7 +125,7 @@ public class ObserverGenerator extends AbstractGenerator {
             implementGetObservedQualifiers(observerCreator, observedQualifiers.getFieldDescriptor());
         }
         implementGetBeanClass(observerCreator, observer.getDeclaringBean().getTarget().get().asClass().name());
-        implementNotify(observer, observerCreator, injectionPointToProviderField, reflectionRegistration);
+        implementNotify(observer, observerCreator, injectionPointToProviderField, reflectionRegistration, isApplicationClass);
         if (observer.getPriority() != ObserverMethod.DEFAULT_PRIORITY) {
             implementGetPriority(observerCreator, observer);
         }
@@ -169,7 +171,7 @@ public class ObserverGenerator extends AbstractGenerator {
     }
 
     protected void implementNotify(ObserverInfo observer, ClassCreator observerCreator, Map<InjectionPointInfo, String> injectionPointToProviderField,
-            ReflectionRegistration reflectionRegistration) {
+            ReflectionRegistration reflectionRegistration, boolean isApplicationClass) {
         MethodCreator notify = observerCreator.getMethodCreator("notify", void.class, EventContext.class).setModifiers(ACC_PUBLIC);
 
         ResultHandle declaringProviderHandle = notify
@@ -202,8 +204,9 @@ public class ObserverGenerator extends AbstractGenerator {
         }
 
         if (Modifier.isPrivate(observer.getObserverMethod().flags())) {
-            LOGGER.infof("Observer %s#%s is private - Arc users are encouraged to avoid using private observers",
-                    observer.getObserverMethod().declaringClass().name(), observer.getObserverMethod().name());
+            Level level = isApplicationClass ? Level.INFO : Level.DEBUG;
+            LOGGER.logf(level, "Observer %s#%s is private - users are encouraged to avoid using private observers", observer.getObserverMethod().declaringClass().name(),
+                    observer.getObserverMethod().name());
             ResultHandle paramTypesArray = notify.newArray(Class.class, notify.load(referenceHandles.length));
             ResultHandle argsArray = notify.newArray(Object.class, notify.load(referenceHandles.length));
             for (int i = 0; i < referenceHandles.length; i++) {

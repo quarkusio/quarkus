@@ -37,7 +37,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.spi.InterceptionType;
 import javax.interceptor.InvocationContext;
@@ -50,6 +49,7 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
+import org.jboss.logging.Logger.Level;
 import org.jboss.protean.arc.CreationalContextImpl;
 import org.jboss.protean.arc.CurrentInjectionPointProvider;
 import org.jboss.protean.arc.InitializedInterceptor;
@@ -144,8 +144,9 @@ public class BeanGenerator extends AbstractGenerator {
         String providerTypeName = providerClass.name().toString();
         String targetPackage = getPackageName(bean);
         String generatedName = targetPackage.replace('.', '/') + "/" + baseName + SYNTHETIC_SUFFIX + BEAN_SUFFIX;
-
-        ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(bean.getImplClazz().name()), name -> name.equals(generatedName) ? SpecialType.BEAN : null);
+        
+        boolean isApplicationClass = applicationClassPredicate.test(bean.getImplClazz().name());
+        ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass, name -> name.equals(generatedName) ? SpecialType.BEAN : null);
 
         // Foo_Bean implements InjectableBean<T>
         ClassCreator beanCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName).interfaces(InjectableBean.class).build();
@@ -196,10 +197,10 @@ public class BeanGenerator extends AbstractGenerator {
 
         implementGetIdentifier(bean, beanCreator);
         if (!bean.hasDefaultDestroy()) {
-            implementDestroy(bean, beanCreator, providerTypeName, Collections.emptyMap(), reflectionRegistration);
+            implementDestroy(bean, beanCreator, providerTypeName, Collections.emptyMap(), reflectionRegistration, isApplicationClass);
         }
         implementCreate(classOutput, beanCreator, bean, providerTypeName, baseName, Collections.emptyMap(), Collections.emptyMap(), reflectionRegistration,
-                targetPackage);
+                targetPackage, isApplicationClass);
         implementGet(bean, beanCreator, providerTypeName);
 
         implementGetTypes(beanCreator, beanTypes.getFieldDescriptor());
@@ -235,7 +236,8 @@ public class BeanGenerator extends AbstractGenerator {
         String targetPackage = DotNames.packageName(providerType.name());
         String generatedName = targetPackage.replace('.', '/') + "/" + baseName + BEAN_SUFFIX;
 
-        ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(beanClass.name()), name -> name.equals(generatedName) ? SpecialType.BEAN : null);
+        boolean isApplicationClass = applicationClassPredicate.test(beanClass.name());
+        ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass, name -> name.equals(generatedName) ? SpecialType.BEAN : null);
 
         // Foo_Bean implements InjectableBean<T>
         ClassCreator beanCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName).interfaces(InjectableBean.class).build();
@@ -264,10 +266,10 @@ public class BeanGenerator extends AbstractGenerator {
 
         implementGetIdentifier(bean, beanCreator);
         if (!bean.hasDefaultDestroy()) {
-            implementDestroy(bean, beanCreator, providerTypeName, injectionPointToProviderField, reflectionRegistration);
+            implementDestroy(bean, beanCreator, providerTypeName, injectionPointToProviderField, reflectionRegistration, isApplicationClass);
         }
         implementCreate(classOutput, beanCreator, bean, providerTypeName, baseName, injectionPointToProviderField, interceptorToProviderField,
-                reflectionRegistration, targetPackage);
+                reflectionRegistration, targetPackage, isApplicationClass);
         implementGet(bean, beanCreator, providerTypeName);
 
         implementGetTypes(beanCreator, beanTypes.getFieldDescriptor());
@@ -314,7 +316,8 @@ public class BeanGenerator extends AbstractGenerator {
         String targetPackage = DotNames.packageName(declaringClass.name());
         String generatedName = targetPackage.replace('.', '/') + "/" + baseName + BEAN_SUFFIX;
 
-        ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(declaringClass.name()), name -> name.equals(generatedName) ? SpecialType.BEAN : null);
+        boolean isApplicationClass = applicationClassPredicate.test(declaringClass.name());
+        ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass, name -> name.equals(generatedName) ? SpecialType.BEAN : null);
 
         // Foo_Bean implements InjectableBean<T>
         ClassCreator beanCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName).interfaces(InjectableBean.class).build();
@@ -343,10 +346,10 @@ public class BeanGenerator extends AbstractGenerator {
 
         implementGetIdentifier(bean, beanCreator);
         if (!bean.hasDefaultDestroy()) {
-            implementDestroy(bean, beanCreator, providerTypeName, injectionPointToProviderField, reflectionRegistration);
+            implementDestroy(bean, beanCreator, providerTypeName, injectionPointToProviderField, reflectionRegistration, isApplicationClass);
         }
         implementCreate(classOutput, beanCreator, bean, providerTypeName, baseName, injectionPointToProviderField, Collections.emptyMap(),
-                reflectionRegistration, targetPackage);
+                reflectionRegistration, targetPackage, isApplicationClass);
         implementGet(bean, beanCreator, providerTypeName);
 
         implementGetTypes(beanCreator, beanTypes.getFieldDescriptor());
@@ -383,7 +386,8 @@ public class BeanGenerator extends AbstractGenerator {
         String targetPackage = DotNames.packageName(declaringClass.name());
         String generatedName = targetPackage.replace('.', '/') + "/" + baseName + BEAN_SUFFIX;
 
-        ResourceClassOutput classOutput = new ResourceClassOutput(applicationClassPredicate.test(declaringClass.name()), name -> name.equals(generatedName) ? SpecialType.BEAN : null);
+        boolean isApplicationClass = applicationClassPredicate.test(declaringClass.name());
+        ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass, name -> name.equals(generatedName) ? SpecialType.BEAN : null);
 
         // Foo_Bean implements InjectableBean<T>
         ClassCreator beanCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName).interfaces(InjectableBean.class).build();
@@ -408,10 +412,10 @@ public class BeanGenerator extends AbstractGenerator {
 
         implementGetIdentifier(bean, beanCreator);
         if (!bean.hasDefaultDestroy()) {
-            implementDestroy(bean, beanCreator, providerTypeName, null, reflectionRegistration);
+            implementDestroy(bean, beanCreator, providerTypeName, null, reflectionRegistration, isApplicationClass);
         }
         implementCreate(classOutput, beanCreator, bean, providerTypeName, baseName, Collections.emptyMap(), Collections.emptyMap(), reflectionRegistration,
-                targetPackage);
+                targetPackage, isApplicationClass);
         implementGet(bean, beanCreator, providerTypeName);
 
         implementGetTypes(beanCreator, beanTypes.getFieldDescriptor());
@@ -622,7 +626,7 @@ public class BeanGenerator extends AbstractGenerator {
     }
 
     protected void implementDestroy(BeanInfo bean, ClassCreator beanCreator, String providerTypeName,
-            Map<InjectionPointInfo, String> injectionPointToProviderField, ReflectionRegistration reflectionRegistration) {
+            Map<InjectionPointInfo, String> injectionPointToProviderField, ReflectionRegistration reflectionRegistration, boolean isApplicationClass) {
 
         MethodCreator destroy = beanCreator.getMethodCreator("destroy", void.class, providerTypeName, CreationalContext.class).setModifiers(ACC_PUBLIC);
 
@@ -638,7 +642,7 @@ public class BeanGenerator extends AbstractGenerator {
                         bean.getDeployment().getIndex());
                 for (MethodInfo callback : preDestroyCallbacks) {
                     if (Modifier.isPrivate(callback.flags())) {
-                        LOGGER.infof("PreDestroy callback %s#%s is private - Arc users are encouraged to avoid using private callbacks",
+                        LOGGER.infof("PreDestroy callback %s#%s is private - users are encouraged to avoid using private callbacks",
                                 callback.declaringClass().name(), callback.name());
                         reflectionRegistration.registerMethod(callback);
                         destroy.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD, destroy.loadClass(callback.declaringClass().name().toString()),
@@ -688,7 +692,8 @@ public class BeanGenerator extends AbstractGenerator {
             }
 
             if (Modifier.isPrivate(disposerMethod.flags())) {
-                LOGGER.infof("Disposer %s#%s is private - Arc users are encouraged to avoid using private disposers", disposerMethod.declaringClass().name(),
+                Level level = isApplicationClass ? Level.INFO : Level.DEBUG;
+                LOGGER.logf(level, "Disposer %s#%s is private - users are encouraged to avoid using private disposers", disposerMethod.declaringClass().name(),
                         disposerMethod.name());
                 ResultHandle paramTypesArray = destroy.newArray(Class.class, destroy.load(referenceHandles.length));
                 ResultHandle argsArray = destroy.newArray(Object.class, destroy.load(referenceHandles.length));
@@ -724,22 +729,9 @@ public class BeanGenerator extends AbstractGenerator {
                 bridgeDestroy.getMethodParam(1)));
     }
 
-    /**
-     *
-     * @param classOutput
-     * @param beanCreator
-     * @param bean
-     * @param providerTypeName
-     * @param baseName
-     * @param injectionPointToProviderField
-     * @param interceptorToProviderField
-     * @param reflectionRegistration
-     * @param targetPackage
-     * @see Contextual#create(CreationalContext)
-     */
     protected void implementCreate(ClassOutput classOutput, ClassCreator beanCreator, BeanInfo bean, String providerTypeName, String baseName,
             Map<InjectionPointInfo, String> injectionPointToProviderField, Map<InterceptorInfo, String> interceptorToProviderField,
-            ReflectionRegistration reflectionRegistration, String targetPackage) {
+            ReflectionRegistration reflectionRegistration, String targetPackage, boolean isApplicationClass) {
 
         MethodCreator create = beanCreator.getMethodCreator("create", providerTypeName, CreationalContext.class).setModifiers(ACC_PUBLIC);
         AssignableResultHandle instanceHandle;
@@ -850,7 +842,7 @@ public class BeanGenerator extends AbstractGenerator {
                 FunctionCreator func = create.createFunction(Supplier.class);
                 BytecodeCreator funcBytecode = func.getBytecode();
                 ResultHandle retHandle = newInstanceHandle(bean, beanCreator, funcBytecode, create, providerTypeName, baseName, providerHandles,
-                        reflectionRegistration);
+                        reflectionRegistration, isApplicationClass);
                 funcBytecode.returnValue(retHandle);
                 // Interceptor bindings
                 ResultHandle bindingsHandle = create.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
@@ -874,7 +866,7 @@ public class BeanGenerator extends AbstractGenerator {
             } else {
                 create.assign(instanceHandle, newInstanceHandle(bean, beanCreator, create, create, providerTypeName, baseName,
                         newProviderHandles(bean, beanCreator, create, injectionPointToProviderField, interceptorToProviderField, interceptorToWrap),
-                        reflectionRegistration));
+                        reflectionRegistration, isApplicationClass));
             }
 
             // Perform field and initializer injections
@@ -888,7 +880,8 @@ public class BeanGenerator extends AbstractGenerator {
                 FieldInfo injectedField = fieldInjection.target.asField();
                 if (isReflectionFallbackNeeded(injectedField, targetPackage)) {
                     if (Modifier.isPrivate(injectedField.flags())) {
-                        LOGGER.infof("@Inject %s#%s is private - Arc users are encouraged to avoid using private injection fields",
+                        Level level = isApplicationClass ? Level.INFO : Level.DEBUG;
+                        LOGGER.logf(level, "@Inject %s#%s is private - users are encouraged to avoid using private injection fields",
                                 fieldInjection.target.asField().declaringClass().name(), fieldInjection.target.asField().name());
                     }
                     reflectionRegistration.registerField(injectedField);
@@ -914,7 +907,8 @@ public class BeanGenerator extends AbstractGenerator {
                 MethodInfo initializerMethod = methodInjection.target.asMethod();
                 if (isReflectionFallbackNeeded(initializerMethod, targetPackage)) {
                     if (Modifier.isPrivate(initializerMethod.flags())) {
-                        LOGGER.infof("@Inject %s#%s() is private - Arc users are encouraged to avoid using private injection initializers",
+                        Level level = isApplicationClass ? Level.INFO : Level.DEBUG;
+                        LOGGER.logf(level, "@Inject %s#%s() is private - users are encouraged to avoid using private injection initializers",
                                 initializerMethod.declaringClass().name(), initializerMethod.name());
                     }
                     ResultHandle paramTypesArray = create.newArray(Class.class, create.load(referenceHandles.length));
@@ -963,8 +957,10 @@ public class BeanGenerator extends AbstractGenerator {
                         bean.getDeployment().getIndex());
                 for (MethodInfo callback : postConstructCallbacks) {
                     if (Modifier.isPrivate(callback.flags())) {
-                        LOGGER.infof("PostConstruct callback %s#%s is private - Arc users are encouraged to avoid using private callbacks",
-                                callback.declaringClass().name(), callback.name());
+                        Level level = isApplicationClass ? Level.INFO : Level.DEBUG;
+                        LOGGER.logf(level, "PostConstruct callback %s#%s is private - users are encouraged to avoid using private callbacks",
+                               callback.declaringClass().name(),
+                               callback.name());
                         reflectionRegistration.registerMethod(callback);
                         create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD, create.loadClass(callback.declaringClass().name().toString()),
                                 create.load(callback.name()), create.newArray(Class.class, create.load(0)), instanceHandle,
@@ -1004,8 +1000,9 @@ public class BeanGenerator extends AbstractGenerator {
 
             MethodInfo producerMethod = bean.getTarget().get().asMethod();
             if (Modifier.isPrivate(producerMethod.flags())) {
-                LOGGER.infof("Producer %s#%s is private - Arc users are encouraged to avoid using private producers", producerMethod.declaringClass().name(),
-                        producerMethod.name());
+                Level level = isApplicationClass ? Level.INFO : Level.DEBUG;
+                LOGGER.logf(level, "Producer %s#%s is private - users are encouraged to avoid using private producers", producerMethod.declaringClass().name(),
+                         producerMethod.name());
                 ResultHandle paramTypesArray = create.newArray(Class.class, create.load(referenceHandles.length));
                 ResultHandle argsArray = create.newArray(Object.class, create.load(referenceHandles.length));
                 for (int i = 0; i < referenceHandles.length; i++) {
@@ -1045,8 +1042,9 @@ public class BeanGenerator extends AbstractGenerator {
             }
 
             if (Modifier.isPrivate(producerField.flags())) {
-                LOGGER.infof("Producer %s#%s is private - Arc users are encouraged to avoid using private producers", producerField.declaringClass().name(),
-                        producerField.name());
+                Level level = isApplicationClass ? Level.INFO : Level.DEBUG;
+                LOGGER.logf(level, "Producer %s#%s is private - users are encouraged to avoid using private producers", producerField.declaringClass().name(),
+                            producerField.name());
                 reflectionRegistration.registerField(producerField);
                 create.assign(instanceHandle, create.invokeStaticMethod(MethodDescriptors.REFLECTIONS_READ_FIELD,
                         create.loadClass(producerField.declaringClass().name().toString()), create.load(producerField.name()), declaringProviderInstanceHandle));
@@ -1100,7 +1098,7 @@ public class BeanGenerator extends AbstractGenerator {
     }
 
     private ResultHandle newInstanceHandle(BeanInfo bean, ClassCreator beanCreator, BytecodeCreator creator, MethodCreator createMethod,
-            String providerTypeName, String baseName, List<ResultHandle> providerHandles, ReflectionRegistration registration) {
+            String providerTypeName, String baseName, List<ResultHandle> providerHandles, ReflectionRegistration registration, boolean isApplicationClass) {
 
         Optional<Injection> constructorInjection = bean.getConstructorInjection();
         MethodInfo constructor = constructorInjection.isPresent() ? constructorInjection.get().target.asMethod() : null;
@@ -1135,8 +1133,9 @@ public class BeanGenerator extends AbstractGenerator {
 
         } else if (constructorInjection.isPresent()) {
             if (Modifier.isPrivate(constructor.flags())) {
-                LOGGER.infof("Constructor %s is private - Arc users are encouraged to avoid using private interceptor methods",
-                        constructor.declaringClass().name());
+                Level level = isApplicationClass ? Level.INFO : Level.DEBUG;
+                LOGGER.logf(level, "Constructor %s is private - users are encouraged to avoid using private constructors",
+                            constructor.declaringClass().name());
                 ResultHandle paramTypesArray = creator.newArray(Class.class, creator.load(providerHandles.size()));
                 ResultHandle argsArray = creator.newArray(Object.class, creator.load(providerHandles.size()));
                 for (int i = 0; i < injectionPoints.size(); i++) {
@@ -1158,7 +1157,8 @@ public class BeanGenerator extends AbstractGenerator {
         } else {
             MethodInfo noArgsConstructor = bean.getTarget().get().asClass().method("<init>");
             if (Modifier.isPrivate(noArgsConstructor.flags())) {
-                LOGGER.infof("Constructor %s is private - Arc users are encouraged to avoid using private interceptor methods",
+                Level level = isApplicationClass ? Level.INFO : Level.DEBUG;
+                LOGGER.logf(level, "Constructor %s is private - users are encouraged to avoid using private constructors",
                         noArgsConstructor.declaringClass().name());
                 ResultHandle paramTypesArray = creator.newArray(Class.class, creator.load(0));
                 ResultHandle argsArray = creator.newArray(Object.class, creator.load(0));

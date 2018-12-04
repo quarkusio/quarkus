@@ -34,16 +34,16 @@ import javax.ws.rs.QueryParam;
 public class DatasourceResource {
 
     @Inject
-    private DataSource dataSource;
+    DataSource dataSource;
 
     @Inject
-    private UserTransaction userTransaction;
+    UserTransaction userTransaction;
 
     @Inject
-    private DatasourceSetup datasourceSetup;
+    DatasourceSetup datasourceSetup;
 
     @PostConstruct
-    public void postConstruct() throws Exception {
+    void postConstruct() throws Exception {
         datasourceSetup.doInit();
     }
 

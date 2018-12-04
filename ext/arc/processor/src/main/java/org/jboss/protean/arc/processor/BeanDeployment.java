@@ -100,7 +100,7 @@ public class BeanDeployment {
         this.beanResolver = new BeanResolver(this);
         List<ObserverInfo> observers = new ArrayList<>();
         List<InjectionPointInfo> injectionPoints = new ArrayList<>();
-        this.beans = findBeans(initBeanDefiningAnnotations(additionalBeanDefiningAnnotations, stereotypes), observers, injectionPoints);
+        this.beans = findBeans(initBeanDefiningAnnotations(additionalBeanDefiningAnnotations, stereotypes.keySet()), observers, injectionPoints);
 
         if (buildContext != null) {
             buildContext.putInternal(Key.INJECTION_POINTS.asString(), Collections.unmodifiableList(injectionPoints));
@@ -252,7 +252,7 @@ public class BeanDeployment {
         return stereotypes;
     }
 
-    private List<BeanInfo> findBeans(List<DotName> beanDefiningAnnotations, List<ObserverInfo> observers, List<InjectionPointInfo> injectionPoints) {
+    private List<BeanInfo> findBeans(Collection<DotName> beanDefiningAnnotations, List<ObserverInfo> observers, List<InjectionPointInfo> injectionPoints) {
 
         Set<ClassInfo> beanClasses = new HashSet<>();
         Set<MethodInfo> producerMethods = new HashSet<>();
@@ -458,15 +458,15 @@ public class BeanDeployment {
         return interceptors;
     }
 
-    private List<DotName> initBeanDefiningAnnotations(Collection<DotName> additionalBeanDefiningAnnotationss, Map<DotName, StereotypeInfo> stereotypes) {
-        List<DotName> beanDefiningAnnotations = new ArrayList<>();
+    public static Set<DotName> initBeanDefiningAnnotations(Collection<DotName> additionalBeanDefiningAnnotationss, Set<DotName> stereotypes) {
+        Set<DotName> beanDefiningAnnotations = new HashSet<>();
         for (ScopeInfo scope : ScopeInfo.values()) {
             beanDefiningAnnotations.add(scope.getDotName());
         }
         if (additionalBeanDefiningAnnotationss != null) {
             beanDefiningAnnotations.addAll(additionalBeanDefiningAnnotationss);
         }
-        beanDefiningAnnotations.addAll(stereotypes.keySet());
+        beanDefiningAnnotations.addAll(stereotypes);
         beanDefiningAnnotations.add(DotNames.create(Model.class));
         return beanDefiningAnnotations;
     }

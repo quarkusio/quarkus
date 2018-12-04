@@ -53,36 +53,36 @@ public final class DotNames {
 
     private static final Map<String, DotName> NAMES = new ConcurrentHashMap<>();
 
-    static final DotName OBJECT = create(Object.class);
-    static final DotName OBSERVES = create(Observes.class);
-    static final DotName OBSERVES_ASYNC = create(ObservesAsync.class);
-    static final DotName PRODUCES = create(Produces.class);
-    static final DotName DISPOSES = create(Disposes.class);
-    static final DotName QUALIFIER = create(Qualifier.class);
-    static final DotName NONBINDING = create(Nonbinding.class);
-    static final DotName INJECT = create(Inject.class);
-    static final DotName POST_CONSTRUCT = create(PostConstruct.class);
-    static final DotName PRE_DESTROY = create(PreDestroy.class);
-    static final DotName INSTANCE = create(Instance.class);
-    static final DotName INJECTION_POINT = create(InjectionPoint.class);
-    static final DotName INTERCEPTOR = create(Interceptor.class);
-    static final DotName INTERCEPTOR_BINDING = create(InterceptorBinding.class);
-    static final DotName AROUND_INVOKE = create(AroundInvoke.class);
-    static final DotName AROUND_CONSTRUCT = create(AroundConstruct.class);
-    static final DotName PRIORITY = create(Priority.class);
-    static final DotName DEFAULT = create(Default.class);
-    static final DotName ANY = create(Any.class);
-    static final DotName BEAN = create(Bean.class);
-    static final DotName BEAN_MANAGER = create(BeanManager.class);
-    static final DotName EVENT = create(Event.class);
-    static final DotName EVENT_METADATA = create(EventMetadata.class);
-    static final DotName ALTERNATIVE = create(Alternative.class);
-    static final DotName STEREOTYPE = create(Stereotype.class);
-    static final DotName TYPED = create(Typed.class);
-    static final DotName VETOED = create(Vetoed.class);
-    static final DotName CLASS = create(Class.class);
-    static final DotName ENUM = create(Enum.class);
-    static final DotName EXTENSION = create(Extension.class);
+    public static final DotName OBJECT = create(Object.class);
+    public static final DotName OBSERVES = create(Observes.class);
+    public static final DotName OBSERVES_ASYNC = create(ObservesAsync.class);
+    public static final DotName PRODUCES = create(Produces.class);
+    public static final DotName DISPOSES = create(Disposes.class);
+    public static final DotName QUALIFIER = create(Qualifier.class);
+    public static final DotName NONBINDING = create(Nonbinding.class);
+    public static final DotName INJECT = create(Inject.class);
+    public static final DotName POST_CONSTRUCT = create(PostConstruct.class);
+    public static final DotName PRE_DESTROY = create(PreDestroy.class);
+    public static final DotName INSTANCE = create(Instance.class);
+    public static final DotName INJECTION_POINT = create(InjectionPoint.class);
+    public static final DotName INTERCEPTOR = create(Interceptor.class);
+    public static final DotName INTERCEPTOR_BINDING = create(InterceptorBinding.class);
+    public static final DotName AROUND_INVOKE = create(AroundInvoke.class);
+    public static final DotName AROUND_CONSTRUCT = create(AroundConstruct.class);
+    public static final DotName PRIORITY = create(Priority.class);
+    public static final DotName DEFAULT = create(Default.class);
+    public static final DotName ANY = create(Any.class);
+    public static final DotName BEAN = create(Bean.class);
+    public static final DotName BEAN_MANAGER = create(BeanManager.class);
+    public static final DotName EVENT = create(Event.class);
+    public static final DotName EVENT_METADATA = create(EventMetadata.class);
+    public static final DotName ALTERNATIVE = create(Alternative.class);
+    public static final DotName STEREOTYPE = create(Stereotype.class);
+    public static final DotName TYPED = create(Typed.class);
+    public static final DotName VETOED = create(Vetoed.class);
+    public static final DotName CLASS = create(Class.class);
+    public static final DotName ENUM = create(Enum.class);
+    public static final DotName EXTENSION = create(Extension.class);
 
     private DotNames() {
     }

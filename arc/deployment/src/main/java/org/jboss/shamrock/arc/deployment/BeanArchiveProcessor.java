@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment;
+package org.jboss.shamrock.arc.deployment;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
@@ -29,10 +30,14 @@ import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.protean.arc.processor.BeanDeployment;
+import org.jboss.protean.arc.processor.DotNames;
 import org.jboss.shamrock.annotations.BuildProducer;
 import org.jboss.shamrock.annotations.BuildStep;
+import org.jboss.shamrock.deployment.ApplicationArchive;
 import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
 import org.jboss.shamrock.deployment.builditem.BeanArchiveIndexBuildItem;
+import org.jboss.shamrock.deployment.cdi.BeanDefiningAnnotationBuildItem;
 
 public class BeanArchiveProcessor {
 
@@ -42,52 +47,50 @@ public class BeanArchiveProcessor {
     @Inject
     ApplicationArchivesBuildItem applicationArchivesBuildItem;
 
+    @Inject
+    List<BeanDefiningAnnotationBuildItem> additionalBeanDefiningAnnotations;
+
     @BuildStep
     public void build() throws Exception {
 
         Set<ApplicationArchive> archives = applicationArchivesBuildItem.getAllApplicationArchives();
 
-        // The list is not exhaustive - it merely contains all annotations supported by Arc
-        List<DotName> beanDefiningAnnotations = new ArrayList<>();
-        beanDefiningAnnotations.add(DotName.createSimple("javax.enterprise.context.Dependent"));
-        beanDefiningAnnotations.add(DotName.createSimple("javax.enterprise.context.RequestScoped"));
-        beanDefiningAnnotations.add(DotName.createSimple("javax.enterprise.context.ApplicationScoped"));
-        beanDefiningAnnotations.add(DotName.createSimple("javax.interceptor.Interceptor"));
-        // TODO: we could also add @Inject and @Singleton although these are not officialy included
-
-        // First find annotations annotated with "meta" bean defining annotations
-        List<DotName> metaBeanDefiningAnnotations = Collections.singletonList(DotName.createSimple("javax.enterprise.inject.Stereotype"));
+        Set<DotName> stereotypes = new HashSet<>();
         for (ApplicationArchive archive : archives) {
-            for (DotName metaAnnotation : metaBeanDefiningAnnotations) {
-                Collection<AnnotationInstance> annotations = archive.getIndex().getAnnotations(metaAnnotation);
-                if (!annotations.isEmpty()) {
-                    for (AnnotationInstance annotationInstance : annotations) {
-                        if (annotationInstance.target().kind() == Kind.CLASS) {
-                            beanDefiningAnnotations.add(annotationInstance.target().asClass().name());
-                        }
+            Collection<AnnotationInstance> annotations = archive.getIndex()
+                    .getAnnotations(DotNames.STEREOTYPE);
+            if (!annotations.isEmpty()) {
+                for (AnnotationInstance annotationInstance : annotations) {
+                    if (annotationInstance.target()
+                            .kind() == Kind.CLASS) {
+                        stereotypes.add(annotationInstance.target()
+                                .asClass()
+                                .name());
                     }
                 }
             }
         }
-        DotName extensionName = DotName.createSimple("javax.enterprise.inject.spi.Extension");
+
+        Collection<DotName> beanDefiningAnnotations = BeanDeployment.initBeanDefiningAnnotations(additionalBeanDefiningAnnotations.stream()
+                .map(bda -> bda.getName())
+                .collect(Collectors.toList()), stereotypes);
 
         List<IndexView> indexes = new ArrayList<>();
 
         for (ApplicationArchive archive : archives) {
-
             IndexView index = archive.getIndex();
 
-            // TODO: this should not really be in core
             if (archive.getChildPath("META-INF/beans.xml") != null) {
                 indexes.add(index);
             } else if (archive.getChildPath("WEB-INF/beans.xml") != null) {
-                // TODO: how to handle WEB-INF?
                 indexes.add(index);
             } else {
                 // Implicit bean archive without beans.xml - contains one or more bean classes with a bean defining annotation and no extension
-                if (index.getAllKnownImplementors(extensionName).isEmpty()) {
+                if (index.getAllKnownImplementors(DotNames.EXTENSION)
+                        .isEmpty()) {
                     for (DotName beanDefiningAnnotation : beanDefiningAnnotations) {
-                        if (!index.getAnnotations(beanDefiningAnnotation).isEmpty()) {
+                        if (!index.getAnnotations(beanDefiningAnnotation)
+                                .isEmpty()) {
                             indexes.add(index);
                             break;
                         }

@@ -99,6 +99,7 @@ import org.jboss.shamrock.deployment.builditem.ShutdownContextBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import org.jboss.shamrock.deployment.cdi.BeanDefiningAnnotationBuildItem;
 import org.jboss.shamrock.deployment.recording.RecorderContext;
 import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.undertow.runtime.HttpConfig;
@@ -150,7 +151,15 @@ public class UndertowBuildStep {
 
                 .build();
     }
-
+    
+    @BuildStep
+    List<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations() {
+        List<BeanDefiningAnnotationBuildItem> annotations = new ArrayList<>();
+        annotations.add(new BeanDefiningAnnotationBuildItem(webFilter));
+        annotations.add(new BeanDefiningAnnotationBuildItem(webServlet));
+        annotations.add(new BeanDefiningAnnotationBuildItem(webListener));
+        return annotations;
+    }
 
     @Record(STATIC_INIT)
     @BuildStep

@@ -21,15 +21,16 @@ import org.jboss.jandex.DotName;
 import org.jboss.shamrock.deployment.Capabilities;
 
 /**
- * This build item is used to specify resource annotations that makes it possible to resolve non-CDI injection points, such as Java EE resources.
+ * This build item is used to specify additional bean defining annotations. See also
+ * <a href="http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#bean_defining_annotations">2.5.1. Bean defining annotations</a>.
  * 
  * @see Capabilities#CDI_ARC
  */
-public final class ResourceAnnotationBuildItem extends MultiBuildItem {
+public final class BeanDefiningAnnotationBuildItem extends MultiBuildItem {
 
     private final DotName name;
 
-    public ResourceAnnotationBuildItem(DotName name) {
+    public BeanDefiningAnnotationBuildItem(DotName name) {
         this.name = name;
     }
 

@@ -26,11 +26,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 
 import javax.ws.rs.container.DynamicFeature;
-import javax.ws.rs.core.Application;
 import javax.ws.rs.ext.Providers;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -53,6 +53,7 @@ import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClass
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import org.jboss.shamrock.deployment.cdi.BeanDefiningAnnotationBuildItem;
 import org.jboss.shamrock.jaxrs.runtime.graal.JaxrsTemplate;
 import org.jboss.shamrock.jaxrs.runtime.graal.ShamrockInjectorFactory;
 import org.jboss.shamrock.undertow.ServletBuildItem;
@@ -265,4 +266,10 @@ public class JaxrsScanningProcessor {
     void integrate(JaxrsTemplate template, BeanContainerBuildItem beanContainerBuildItem) {
         template.setupIntegration(beanContainerBuildItem.getValue());
     }
+
+	@BuildStep
+	List<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations() {
+		return Collections.singletonList(new BeanDefiningAnnotationBuildItem(PATH));
+	}
+    
 }

@@ -23,7 +23,6 @@ import java.util.UUID;
 
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
-import javax.persistence.EntityTransaction;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -41,10 +40,10 @@ import javax.transaction.UserTransaction;
 public class JPATestEMInjectionEndpoint extends HttpServlet {
 
     @Inject
-    private EntityManager em;
+    EntityManager em;
 
     @Inject
-    private UserTransaction transaction;
+    UserTransaction transaction;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {

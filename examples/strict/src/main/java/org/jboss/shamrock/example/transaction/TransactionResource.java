@@ -29,10 +29,10 @@ import javax.ws.rs.Path;
 public class TransactionResource {
 
     @Inject
-    private UserTransaction userTransaction;
+    UserTransaction userTransaction;
 
     @Inject
-    private TransactionSynchronizationRegistry trs;
+    TransactionSynchronizationRegistry trs;
 
     @GET
     public boolean tryTxn() throws Exception {

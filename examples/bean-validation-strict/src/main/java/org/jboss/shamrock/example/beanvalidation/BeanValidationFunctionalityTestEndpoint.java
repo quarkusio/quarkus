@@ -20,7 +20,7 @@ import javax.ws.rs.Path;
 public class BeanValidationFunctionalityTestEndpoint extends HttpServlet {
 
     @Inject
-    private Validator validator;
+    Validator validator;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {

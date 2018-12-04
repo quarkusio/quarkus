@@ -30,7 +30,7 @@ public class ClientResource {
 
     @Inject
     @RestClient
-    private RestInterface restInterface;
+    RestInterface restInterface;
 
     @GET
     @Path("/manual")

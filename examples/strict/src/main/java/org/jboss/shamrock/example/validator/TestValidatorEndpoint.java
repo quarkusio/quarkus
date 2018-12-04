@@ -30,7 +30,7 @@ import javax.ws.rs.Path;
 public class TestValidatorEndpoint {
 
     @Inject
-    private Validator validator;
+    Validator validator;
 
     @POST
     @Path("/manual")

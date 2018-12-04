@@ -21,7 +21,7 @@ jobs:
     displayName: 'Maven Build'
     inputs:
       goals: 'install'
-      options: '-Dnative-image.docker-build -Dno-postgres -Dnative-image.xmx=4g'
+      options: '-Dnative-image.docker-build -Dno-postgres -Dnative-image.xmx=4g -X'
 
   - script: |
       docker build -f docker/strict-example/Dockerfile -t jtgdocker1/shamrock-strict-example examples/strict/

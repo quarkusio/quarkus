@@ -5,6 +5,7 @@
 
 jobs:
 - job: Build
+  timeoutInMinutes: 120
   pool:
     vmImage: 'Ubuntu 16.04'
 

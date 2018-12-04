@@ -1,0 +1,222 @@
+= Building a native image
+
+This guide covers:
+
+* The packaging of the application as a native executable
+* The packaging of the application in a Docker container
+
+This guide takes as input the application developed in the link:getting-started-guide.html[Getting Started Guide].
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 115 minutes
+* an IDE
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* GraalVM installed from the http://www.graalvm.org/downloads/[GraalVM web site].
+Using the community edition is enough.
+At least version {graal-version} is required.
+* The `GRAALVM_HOME` environment variable configured appropriately
+* Apache Maven 3.5+
+* A running Docker
+* The code of the application developed in the link:getting-started-guide.adoc[Getting Started Guide].
+
+[NOTE]
+====
+Once you have downloaded GraalVM, expand the archive and set the `GRAALVM_HOME` variable to this location:
+
+`export GRAALVM_HOME=~clement/Development/graalvm/`
+
+On MacOS, point the variable to the `Home` sub-directory:
+
+`export GRAALVM_HOME=~clement/Development/graalvm/Contents/Home/`
+====
+
+== Solution
+
+We recommend you to follow the instructions in the next sections and package the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone https://github.com/protean-project/quickstarts.git`, or download an http://https://github.com/protean-project/quickstarts/archive/master.zip[archive].
+
+The solution is located in the `getting-started-native` directory.
+
+== Producing a native executable
+
+
+Let's now produce a native executable for our application.
+It improves the startup time of the application, and produce a minimal disk footprint.
+The executable would have everything to run the application including the "JVM" (shrunk to be just enough to run the application), and the application.
+
+image:native-image-process.png[Creating a native executable, width=640]
+
+Before going further, be sure that the `GRAALVM_HOME` environment variable is configured appropriately.
+
+Edit the `pom.xml` to add the following _profile_.
+
+[source,xml]
+----
+<profiles>
+    <profile>
+        <id>native</id>
+        <build>
+            <plugins>
+                <plugin>
+                    <groupId>org.jboss.shamrock</groupId>
+                    <artifactId>shamrock-maven-plugin</artifactId>
+                    <version>${shamrock.version}</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>native-image</goal>
+                            </goals>
+                            <configuration>
+                                <enableHttpUrlHandler>true</enableHttpUrlHandler>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </build>
+    </profile>
+</profiles>
+----
+
+We use a profile because, you will see very soon, packaging the native image takes a _few_ seconds.
+
+Now run: `mvn package -Pnative`
+
+In addition to the regular files, the build also produces `target/shamrock-quickstart-1.0-SNAPSHOT-runner`.
+You can run it using: `target/shamrock-quickstart-1.0-SNAPSHOT-runner`.
+
+== Testing the native executable
+
+Producing a native executable can lead to a few issues, and so it's also a good idea to run some test against the application running in the native file.
+
+In the `pom.xml` file, extend the `native` profile with:
+
+[source, xml]
+----
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-failsafe-plugin</artifactId>
+    <version>${surefire.version}</version>
+    <executions>
+        <execution>
+            <goals>
+                <goal>integration-test</goal>
+                <goal>verify</goal>
+            </goals>
+            <configuration>
+                <systemProperties>
+                    <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
+                </systemProperties>
+            </configuration>
+        </execution>
+    </executions>
+</plugin>
+----
+
+Then, create the `src/test/java/org/acme/quickstart/GreetingResourceIT.java` with the following content:
+
+[source,java]
+----
+package org.acme.quickstart;
+
+
+import org.jboss.shamrock.test.SubstrateTest;
+import org.junit.runner.RunWith;
+
+@RunWith(SubstrateTest.class) // <1>
+public class GreetingResourceIT extends GreetingResourceTest { // <2>
+
+    // Run the same tests
+
+}
+----
+<1> Use another test runner that starts the application from the native file before the tests.
+The executable is retrieved using the `native.image.path` system property configured in the _Failsafe Maven Plugin_.
+<2> We extend our previous tests, but you can also implement your tests
+
+To see the `GreetingResourceIT` run against the native image, add a verify goal:
+[source]
+----
+mvn package verify -Pnative
+...
+[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]   (typeflow):  35,160.93 ms
+[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]    (objects):  24,027.13 ms
+[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]   (features):   1,313.94 ms
+[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]     analysis:  61,512.95 ms
+[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]     universe:   1,924.69 ms
+[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]      (parse):  11,479.41 ms
+[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]     (inline):  13,568.71 ms
+[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]    (compile):  82,885.41 ms
+[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]      compile: 114,095.02 ms
+[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]        image:   5,680.17 ms
+[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]        write:   1,876.14 ms
+[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]      [total]: 197,587.37 ms
+[INFO]
+[INFO] --- maven-failsafe-plugin:2.21.0:integration-test (default) @ shamrock-quickstart ---
+[INFO]
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running org.acme.quickstart.GreetingResourceIT
+Executing /Users/starksm/Dev/JBoss/Protean/get-started/target/shamrock-quickstart-1.0-SNAPSHOT-runner
+2018-11-26 08:20:43,169 ironmaiden shamrock-quickstart-1.0-SNAPSHOT-runner[5220] INFO  [o.j.s.u.r.UndertowDeploymentTemplate] (main) Starting Undertow on port 8080
+2018-11-26 08:20:43,190 ironmaiden shamrock-quickstart-1.0-SNAPSHOT-runner[5220] INFO  [o.j.shamrock] (main) Shamrock started in 21.930ms
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.097 s - in org.acme.quickstart.GreetingResourceIT
+[INFO]
+[INFO] Results:
+[INFO]
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0
+...
+----
+
+== Producing a Docker container
+
+You can run the application in a Docker container using the _über-jar_ produced by the Shamrock Maven Plugin.
+However, here we are more interested in getting a Docker image using the produced native executable.
+Because the Docker container may not use the same _executable_ format as the one produced by default, we must instruct the Maven build to produce an
+ executable from inside a Docker container:
+
+[source, bash]
+----
+mvn package -Pnative -Dnative-image.docker-build=true
+----
+
+The produced executable may not be runnable on your machine anymore.
+However, it's not an issue as we are going to copy it to a Docker container.
+Create the following `Dockerfile`:
+
+[source]
+----
+FROM centos:7
+WORKDIR /work/
+COPY target/*-runner /work/application
+RUN chmod 775 /work
+EXPOSE 8080
+CMD ["./application", "-Dshamrock.http.host=0.0.0.0"]
+----
+
+Then, if you didn't delete the generated native executable, you can build the docker image with:
+
+[source]
+----
+docker build -t shamrock-quickstart/quickstart .
+----
+
+And finally, run it with:
+
+[source]
+----
+docker run -i -p 8080:8080 shamrock-quickstart/quickstart
+----
+
+== What's next?
+
+This guide covered the creation of a native (binary) executable for your application.
+It provides an application exhibiting a swift startup time and consuming less memory.
+However, there is much more.
+We recommend continuing the journey with the link:kubernetes-guide.html[deployment to Kubernetes and OpenShift].

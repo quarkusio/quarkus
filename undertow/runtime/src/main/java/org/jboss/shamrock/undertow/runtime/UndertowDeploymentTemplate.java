@@ -35,6 +35,7 @@ import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.runtime.ShutdownContext;
 import org.jboss.shamrock.runtime.Template;
+import org.jboss.shamrock.runtime.cdi.BeanContainer;
 
 import io.undertow.Undertow;
 import io.undertow.server.HandlerWrapper;
@@ -46,11 +47,13 @@ import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.session.SessionIdGenerator;
 import io.undertow.servlet.ServletExtension;
 import io.undertow.servlet.Servlets;
+import io.undertow.servlet.api.ClassIntrospecter;
 import io.undertow.servlet.api.Deployment;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.InstanceFactory;
+import io.undertow.servlet.api.InstanceHandle;
 import io.undertow.servlet.api.ListenerInfo;
 import io.undertow.servlet.api.ServletContainer;
 import io.undertow.servlet.api.ServletInfo;
@@ -231,8 +234,35 @@ public class UndertowDeploymentTemplate {
         }
     }
 
-    public Deployment bootServletContainer(RuntimeValue<DeploymentInfo> info) {
+    public Deployment bootServletContainer(RuntimeValue<DeploymentInfo> info, InjectionFactory injectionFactory) {
         try {
+            ClassIntrospecter defaultVal = info.getValue().getClassIntrospecter();
+            info.getValue().setClassIntrospecter(new ClassIntrospecter() {
+                @Override
+                public <T> InstanceFactory<T> createInstanceFactory(Class<T> clazz) throws NoSuchMethodException {
+                    InjectionInstance<T> res = injectionFactory.create(clazz);
+                    if(res == null) {
+                        return defaultVal.createInstanceFactory(clazz);
+                    }
+                    return new InstanceFactory<T>() {
+                        @Override
+                        public InstanceHandle<T> createInstance() throws InstantiationException {
+                            T ih = res.newInstance();
+                            return new InstanceHandle<T>() {
+                                @Override
+                                public T getInstance() {
+                                    return ih;
+                                }
+
+                                @Override
+                                public void release() {
+
+                                }
+                            };
+                        }
+                    };
+                }
+            });
             ServletContainer servletContainer = Servlets.defaultContainer();
             DeploymentManager manager = servletContainer.addDeployment(info.getValue());
             manager.deploy();

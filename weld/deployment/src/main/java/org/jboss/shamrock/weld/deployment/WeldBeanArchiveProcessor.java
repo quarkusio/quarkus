@@ -35,7 +35,7 @@ import org.jboss.shamrock.deployment.ApplicationArchive;
 import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
 import org.jboss.shamrock.deployment.builditem.BeanArchiveIndexBuildItem;
 
-public class BeanArchiveProcessor {
+public class WeldBeanArchiveProcessor {
 
     @Inject
     BuildProducer<BeanArchiveIndexBuildItem> beanArchiveIndexBuildProducer;
@@ -74,7 +74,7 @@ public class BeanArchiveProcessor {
 
         List<IndexView> indexes = new ArrayList<>();
 
-        for (ApplicationArchive archive : archives) {
+        for (ApplicationArchive archive : applicationArchivesBuildItem.getApplicationArchives()) {
 
             IndexView index = archive.getIndex();
 
@@ -96,6 +96,7 @@ public class BeanArchiveProcessor {
                 }
             }
         }
+        indexes.add(applicationArchivesBuildItem.getRootArchive().getIndex());
         beanArchiveIndexBuildProducer.produce(new BeanArchiveIndexBuildItem(CompositeIndex.create(indexes)));
     }
 

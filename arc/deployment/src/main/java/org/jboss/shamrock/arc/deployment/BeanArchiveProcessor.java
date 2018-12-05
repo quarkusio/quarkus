@@ -77,7 +77,7 @@ public class BeanArchiveProcessor {
 
         List<IndexView> indexes = new ArrayList<>();
 
-        for (ApplicationArchive archive : archives) {
+        for (ApplicationArchive archive : applicationArchivesBuildItem.getApplicationArchives()) {
             IndexView index = archive.getIndex();
 
             if (archive.getChildPath("META-INF/beans.xml") != null) {
@@ -98,6 +98,7 @@ public class BeanArchiveProcessor {
                 }
             }
         }
+        indexes.add(applicationArchivesBuildItem.getRootArchive().getIndex());
         beanArchiveIndexBuildProducer.produce(new BeanArchiveIndexBuildItem(CompositeIndex.create(indexes)));
     }
 

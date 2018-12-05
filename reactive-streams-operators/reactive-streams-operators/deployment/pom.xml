@@ -35,12 +35,12 @@
         <dependency>
             <groupId>org.eclipse.microprofile.reactive.streams</groupId>
             <artifactId>microprofile-reactive-streams-operators</artifactId>
-            <version>1.0-RC2</version>
+            <version>${microprofile-reactive-streams-operators.version}</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.microprofile.reactive.streams</groupId>
             <artifactId>microprofile-reactive-streams-operators-core</artifactId>
-            <version>1.0-RC2</version>
+            <version>${microprofile-reactive-streams-operators.version}</version>
         </dependency>
         <dependency>
             <groupId>io.smallrye.reactive</groupId>

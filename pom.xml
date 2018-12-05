@@ -90,6 +90,7 @@
         <rxjava.version>2.2.3</rxjava.version>
         <microprofile-rest-client-api.version>1.0</microprofile-rest-client-api.version>
         <microprofile-opentracing-api.version>1.2</microprofile-opentracing-api.version>
+        <microprofile-reactive-streams-operators.version>1.0-RC3</microprofile-reactive-streams-operators.version>
         <wildfly.openssl.version>1.0.6.Final</wildfly.openssl.version>
         <log4j.version>1.2.16</log4j.version>
         <log4j2.version>2.0</log4j2.version>

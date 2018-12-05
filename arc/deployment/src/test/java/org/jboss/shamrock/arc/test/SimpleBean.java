@@ -39,6 +39,10 @@ public class SimpleBean {
     @Inject
     @ConfigProperty(name = "unconfigured")
     Optional<String> fooOptional;
+    
+    @Inject
+    @ConfigProperty(name = "simpleBean.baz")
+    Optional<String> bazOptional;
 
     void onStart(@Observes StartupEvent event) {
         startupEvent.set(event);
@@ -54,6 +58,10 @@ public class SimpleBean {
 
     Optional<String> getFooOptional() {
         return fooOptional;
+    }
+
+    Optional<String> getBazOptional() {
+        return bazOptional;
     }
     
 }

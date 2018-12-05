@@ -16,6 +16,7 @@
 
 package org.jboss.shamrock.test;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -27,11 +28,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Comparator;
 
 import org.jboss.shamrock.runner.RuntimeRunner;
 import org.jboss.shamrock.runtime.InjectionFactoryTemplate;
 import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
+import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.InitializationError;
@@ -78,6 +81,25 @@ public class ShamrockUnitTest extends BlockJUnit4ClassRunner {
 
             archive.as(ExplodedExporter.class).exportExplodedInto(deploymentDir.toFile());
 
+            String exportPath = System.getProperty("shamrock.deploymentExportPath");
+            if (exportPath != null) {
+                File exportDir = new File(exportPath);
+                if (exportDir.exists()) {
+                    if (!exportDir.isDirectory()) {
+                        throw new IllegalStateException("Export path is not a directory: " + exportPath);
+                    }
+                    Files.walk(exportDir.toPath())
+                            .sorted(Comparator.reverseOrder())
+                            .map(Path::toFile)
+                            .forEach(File::delete);
+                } else if (!exportDir.mkdirs()) {
+                    throw new IllegalStateException("Export path could not be created: " + exportPath);
+                }
+                File exportFile = new File(exportDir, archive.getName());
+                archive.as(ZipExporter.class)
+                        .exportTo(exportFile);
+            }
+            
             String classFileName = theClass.getName().replace('.', '/') + ".class";
             URL resource = theClass.getClassLoader().getResource(classFileName);
             String testClassLocation = resource.getPath().substring(0, resource.getPath().length() - classFileName.length());

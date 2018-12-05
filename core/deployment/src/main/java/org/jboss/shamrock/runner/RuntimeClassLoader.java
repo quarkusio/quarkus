@@ -23,17 +23,17 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,7 +41,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 
 import org.jboss.logging.Logger;
 import org.jboss.shamrock.deployment.ClassOutput;
@@ -86,7 +85,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
             name = nm;
         }
 
-        // TODO some superugly hack for bean provider
+        // TODO: some superugly hack for bean provider
         byte[] data = resources.get(name);
         if (data != null) {
             URL url = new URL(null, "shamrock:" + name + "/", new URLStreamHandler() {
@@ -106,6 +105,16 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
             });
             return Collections.enumeration(Collections.singleton(url));
         }
+
+        URL appResource = findApplicationResource(name);
+        if (appResource != null) {
+            List<URL> resources = new ArrayList<>();
+            resources.add(appResource);
+            for (Enumeration<URL> e = super.getResources(name); e.hasMoreElements();) {
+                resources.add(e.nextElement());
+            }
+            return Collections.enumeration(resources);
+        }
         return super.getResources(name);
     }
 
@@ -116,6 +125,10 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
             name = nm.substring(1);
         } else {
             name = nm;
+        }
+        URL appResource = findApplicationResource(name);
+        if (appResource != null) {
+            return appResource;
         }
         return super.getResource(name);
     }
@@ -130,7 +143,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
         }
         return super.getResourceAsStream(name);
     }
-
+    
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
         Class<?> ex = findLoadedClass(name);
@@ -302,6 +315,16 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
                 out.write(buf, 0, r);
             }
             return out.toByteArray();
+        }
+    }
+
+    private URL findApplicationResource(String name) {
+        Path resourcePath = applicationClasses.resolve(name);
+        try {
+            return Files.exists(resourcePath) ? resourcePath.toUri()
+                    .toURL() : null;
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
         }
     }
 

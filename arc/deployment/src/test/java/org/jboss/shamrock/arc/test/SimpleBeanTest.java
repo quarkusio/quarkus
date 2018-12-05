@@ -25,6 +25,7 @@ import javax.inject.Inject;
 import org.jboss.shamrock.test.Deployment;
 import org.jboss.shamrock.test.ShamrockUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -35,7 +36,8 @@ public class SimpleBeanTest {
     @Deployment
     public static JavaArchive deploy() {
         return ShrinkWrap.create(JavaArchive.class)
-                .addClasses(SimpleBean.class);
+                .addClasses(SimpleBean.class)
+                .addAsManifestResource(new StringAsset("simpleBean.baz=1"), "microprofile-config.properties");
     }
 
     @Inject
@@ -46,6 +48,7 @@ public class SimpleBeanTest {
         assertNotNull(simpleBean.getStartupEvent());
         assertEquals(SimpleBean.DEFAULT, simpleBean.getFoo());
         assertFalse(simpleBean.getFooOptional().isPresent());
+        assertEquals("1", simpleBean.getBazOptional().get());
     }
 
 }

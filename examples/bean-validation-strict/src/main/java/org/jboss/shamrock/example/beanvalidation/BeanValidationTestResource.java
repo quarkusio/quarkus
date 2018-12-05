@@ -1,7 +1,5 @@
 package org.jboss.shamrock.example.beanvalidation;
 
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -10,41 +8,28 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validator;
 import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.Email;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 
 import org.hibernate.validator.constraints.Length;
+import org.jboss.shamrock.example.beanvalidation.custom.MyOtherBean;
 
-@WebServlet(name = "BeanValidationFunctionalityTestEndpoint", urlPatterns = "/bean-validation/testfunctionality")
-public class BeanValidationFunctionalityTestEndpoint extends HttpServlet {
+@Path("/test")
+public class BeanValidationTestResource {
 
     @Inject
     Validator validator;
 
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        try {
-            String result = testFunctionality();
-
-            resp.getWriter().write(result);
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-            reportException("Oops, shit happened, No boot for you!", e, resp);
-        }
-    }
-
     @GET
-    @Path("/testfunctionality")
-    public String testFunctionality() {
+    @Path("/basic-features")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String testBasicFeatures() {
         ResultBuilder result = new ResultBuilder();
 
         Map<String, List<String>> invalidCategorizedEmails = new HashMap<>();
@@ -68,6 +53,18 @@ public class BeanValidationFunctionalityTestEndpoint extends HttpServlet {
                 5d,
                 validCategorizedEmails
         )));
+
+        return result.build();
+    }
+
+    @GET
+    @Path("/custom-class-level-constraint")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String testCustomClassLevelConstraint() {
+        ResultBuilder result = new ResultBuilder();
+
+        result.append(validate(new MyOtherBean(null)));
+        result.append(validate(new MyOtherBean("name")));
 
         return result.build();
     }
@@ -163,17 +160,5 @@ public class BeanValidationFunctionalityTestEndpoint extends HttpServlet {
         public String build() {
             return builder.toString();
         }
-    }
-
-    private void reportException(String errorMessage, final Exception e, final HttpServletResponse resp) throws IOException {
-        final PrintWriter writer = resp.getWriter();
-        if ( errorMessage != null ) {
-            writer.write(errorMessage);
-            writer.write(" ");
-        }
-        writer.write(e.toString());
-        writer.append("\n\t");
-        e.printStackTrace(writer);
-        writer.append("\n\t");
     }
 }

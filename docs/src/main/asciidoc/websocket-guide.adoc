@@ -1,5 +1,4 @@
-
- = Using Web Sockets
+= Using Web Sockets
 
 This guide explains how your Shamrock application can utilize web sockets to create interactive web applications.
 Because it's the _canonical_ web socket application, we are going to create a simple chat application.
@@ -26,7 +25,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone https://github.com/protean-project/quickstarts.git`, or download an https://github.com/protean-project/quickstarts/archive/master.zip[archive].
 
-The solution is located in the `using-websocket` https://github.com/protean-project/quickstarts/tree/master/using-websockets[directory].
+The solution is located in the `using-websockets` https://github.com/protean-project/quickstarts/tree/master/using-websockets[directory].
 
 == Creating the Maven project
 
@@ -36,22 +35,16 @@ First, we need a new project. Create a new project with the following command:
 mvn org.jboss.shamrock:shamrock-maven-plugin:1.0.0.Alpha1-SNAPSHOT:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=using-websockets \
-    -DclassName="org.acme.websocket.HelloResource" \
-    -Dpath="/hello" \
     -Dextensions="websockets"
 ```
 
-It generates:
-
-* the Maven project structure
-* an `org.acme.websocket.HelloResource` resource
-* an associated test
-
-The Maven project also imports the Shamrock WebSockets extension.
+This command generates the Maven project (without any classes) and import the WebSockets extension.
 
 == Handling web sockets
 
-In the `org.acme.websocket` package, create the `ChatSocket` class, with the following content:
+Our application contains a single class that handles the web sockets.
+Create the `org.acme.websocket.ChatSocket` class in the `src/main/java` directory.
+Copy the following content into the created file:
 
 [source,java]
 ----
@@ -71,24 +64,24 @@ import javax.websocket.Session;
 
 @ServerEndpoint("/chat/{username}")         // <1>
 @ApplicationScoped
-public class ChatManager {
+public class ChatSocket {
 
     Map<String, Session> sessions = new ConcurrentHashMap<>(); // <2>
 
     @OnOpen
-    public void opening(Session session, @PathParam("username") String username) {
+    public void onOpen(Session session, @PathParam("username") String username) {
         sessions.put(username, session);
         broadcast("User " + username + " joined");
     }
 
     @OnClose
-    public void closing(Session session, @PathParam("username") String username) {
+    public void onClose(Session session, @PathParam("username") String username) {
         sessions.remove(username);
         broadcast("User " + username + " left");
     }
 
     @OnError
-    public void errored(Session session, @PathParam("username") String username, Throwable throwable) {
+    public void onError(Session session, @PathParam("username") String username, Throwable throwable) {
         sessions.remove(username);
         broadcast("User " + username + " left on error: " + throwable);
     }
@@ -115,33 +108,19 @@ public class ChatManager {
 
 == A slick web frontend
 
-All chat applications need a _nice_ UI, well this one may not be that nice, but should do the work.
-The first things to do is to configure our application to serve static resources.
-Edit the `HelloResource.java` file and add the following method:
-
-[source,java]
-----
-@GET
-@Path("/assets/{path: .*}")
-public Response staticResources(@PathParam("path") final String path) {
-    InputStream resource = HelloResource.class.getClassLoader().getResourceAsStream("/assets/" + path);
-    return resource == null ? Response.status(404).build() : Response.ok().entity(resource).build();
-}
-----
-
-This method serves any files located into the `assets` directory.
-
-Now, create the `assets` directory in `src/main/resources` and, in this newly created directory, copy this https://github.com/protean-project/quickstarts/blob/master/using-websockets/src/main/resources/assets/index.html[index.html] file.
+All chat applications need a _nice_ UI, well, this one may not be that nice, but does the work.
+Shamrock automatically serves static resources contained in the `META-INF/resources` directory.
+Creates the `src/main/resources/META-INF/resources` directory and copy this https://github.com/protean-project/quickstarts/blob/master/using-websockets/src/main/resources/assets/index.html[index.html] file in it.
 
 == Run the application
 
 Now, let's see our application in action. Run it with:
 
 ```
-mvn compile shamrock:run
+mvn compile shamrock:dev
 ```
 
-Then open your 2 browser windows to http://localhost:8080/app/hello/assets/index.html:
+Then open your 2 browser windows to http://localhost:8080/:
 
 1. Enter a name in the top text area (use 2 different names).
 2. Click on connect

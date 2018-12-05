@@ -18,8 +18,15 @@ package org.jboss.protean.arc.test.metadata;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import java.lang.annotation.Annotation;
+import java.util.Set;
 
 import javax.enterprise.context.Dependent;
+import javax.enterprise.inject.Default;
+import javax.enterprise.inject.spi.Annotated;
+import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -42,6 +49,17 @@ public class InjectionPointMetadataTest {
         InjectionPoint injectionPoint = controller.controlled.injectionPoint;
         assertNotNull(injectionPoint);
         assertEquals(Controlled.class, injectionPoint.getType());
+        Set<Annotation> qualifiers = injectionPoint.getQualifiers();
+        assertEquals(1, qualifiers.size());
+        assertEquals(Default.class, qualifiers.iterator().next().annotationType());
+        Bean<?> bean = injectionPoint.getBean();
+        assertNotNull(bean);
+        assertTrue(bean.getTypes()
+                .stream()
+                .anyMatch(t -> t.equals(Controller.class)));
+        Annotated annotated = injectionPoint.getAnnotated();
+        assertNotNull(annotated);
+        assertEquals(Controlled.class, annotated.getBaseType());
     }
 
     @Singleton

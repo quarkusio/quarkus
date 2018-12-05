@@ -24,24 +24,28 @@ import java.util.Set;
 
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.spi.Annotated;
+import javax.enterprise.inject.spi.AnnotatedMember;
+import javax.enterprise.inject.spi.AnnotatedType;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.InjectionPoint;
 
 /**
+ * TODO: add support for AnnotatedMember.getDeclaringType() and AnnotatedMember.getJavaMember() so that smallrye-config could derive the default name for
+ * ConfigProperty
  *
  * @author Martin Kouba
  */
 public class CurrentInjectionPointProvider<T> implements InjectableReferenceProvider<T> {
 
-    static final InjectionPoint EMPTY = new InjectionPointImpl(Object.class, Collections.emptySet());
+    static final InjectionPoint EMPTY = new InjectionPointImpl(Object.class, Collections.emptySet(), null);
 
     private final InjectableReferenceProvider<T> delegate;
 
     private final InjectionPoint injectionPoint;
 
-    public CurrentInjectionPointProvider(InjectableReferenceProvider<T> delegate, Type requiredType, Set<Annotation> qualifiers) {
+    public CurrentInjectionPointProvider(InjectableBean<?> bean, InjectableReferenceProvider<T> delegate, Type requiredType, Set<Annotation> qualifiers) {
         this.delegate = delegate;
-        this.injectionPoint = new InjectionPointImpl(requiredType, qualifiers);
+        this.injectionPoint = new InjectionPointImpl(requiredType, qualifiers, bean);
     }
 
     @Override
@@ -65,9 +69,15 @@ public class CurrentInjectionPointProvider<T> implements InjectableReferenceProv
 
         private final Set<Annotation> qualifiers;
 
-        InjectionPointImpl(Type requiredType, Set<Annotation> qualifiers) {
+        private final InjectableBean<?> bean;
+        
+        private final AnnotatedMember<?> annotatedMember;
+
+        InjectionPointImpl(Type requiredType, Set<Annotation> qualifiers, InjectableBean<?> bean) {
             this.requiredType = requiredType;
             this.qualifiers = qualifiers;
+            this.bean = bean;
+            this.annotatedMember = new AnnotatedMemberImpl<>(requiredType);
         }
 
         @Override
@@ -82,7 +92,7 @@ public class CurrentInjectionPointProvider<T> implements InjectableReferenceProv
 
         @Override
         public Bean<?> getBean() {
-            return null;
+            return bean;
         }
 
         @Override
@@ -92,7 +102,7 @@ public class CurrentInjectionPointProvider<T> implements InjectableReferenceProv
 
         @Override
         public Annotated getAnnotated() {
-            throw new UnsupportedOperationException();
+            return annotatedMember;
         }
 
         @Override
@@ -105,6 +115,61 @@ public class CurrentInjectionPointProvider<T> implements InjectableReferenceProv
             return false;
         }
 
+    }
+    
+    private static class AnnotatedMemberImpl<X> implements AnnotatedMember<X> {
+
+        private final Type baseType;
+        
+        AnnotatedMemberImpl(Type baseType) {
+            this.baseType = baseType;
+        }
+
+        @Override
+        public Type getBaseType() {
+            return baseType;
+        }
+
+        @Override
+        public Set<Type> getTypeClosure() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <T extends Annotation> T getAnnotation(Class<T> annotationType) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <T extends Annotation> Set<T> getAnnotations(Class<T> annotationType) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Set<Annotation> getAnnotations() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean isAnnotationPresent(Class<? extends Annotation> annotationType) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Member getJavaMember() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean isStatic() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public AnnotatedType<X> getDeclaringType() {
+            throw new UnsupportedOperationException();
+        }
+        
     }
 
 }

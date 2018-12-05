@@ -222,6 +222,7 @@ class ArcContainerImpl implements ArcContainer {
                 beans.clear();
                 resolved.clear();
                 observers.clear();
+                LOGGER.infof("ArC DI container shut down");
             }
         }
     }

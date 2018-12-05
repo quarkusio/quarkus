@@ -27,7 +27,7 @@ import org.jboss.shamrock.scheduler.api.Scheduler;
 import org.jboss.shamrock.test.Deployment;
 import org.jboss.shamrock.test.ShamrockUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.asset.EmptyAsset;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -39,8 +39,7 @@ public class SimpleScheduledMethodTest {
     public static JavaArchive deploy() {
         return ShrinkWrap.create(JavaArchive.class)
                 .addClasses(SimpleJobs.class)
-                // We need beans.xml because SimpleJobs is not annotated with a bean defining annotation
-                .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml");
+                .addAsManifestResource(new StringAsset("simpleJobs.cron=0/1 * * * * ?\nsimpleJobs.every=1s"), "microprofile-config.properties");
     }
 
     @Inject
@@ -48,8 +47,9 @@ public class SimpleScheduledMethodTest {
 
     @Test
     public void testSimpleScheduledJobs() throws InterruptedException {
-        SimpleJobs.EVERY.await(4, TimeUnit.SECONDS);
-        SimpleJobs.CRON.await(4, TimeUnit.SECONDS);
+        for (CountDownLatch latch : SimpleJobs.LATCHES.values()) {
+            assertTrue(latch.await(4, TimeUnit.SECONDS));
+        }
     }
 
     @Test

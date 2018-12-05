@@ -15,23 +15,42 @@
  */
 package org.jboss.shamrock.scheduler.test;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
 import org.jboss.shamrock.scheduler.api.Scheduled;
 
 public class SimpleJobs {
 
-    static final CountDownLatch EVERY = new CountDownLatch(2);
-    static final CountDownLatch CRON = new CountDownLatch(2);
-
+    static final Map<String, CountDownLatch> LATCHES;
+    
+    static {
+        LATCHES = new ConcurrentHashMap<>();
+        LATCHES.put("every", new CountDownLatch(2));
+        LATCHES.put("everyConfig", new CountDownLatch(2));
+        LATCHES.put("cron", new CountDownLatch(2));
+        LATCHES.put("cronConfig", new CountDownLatch(2));
+    }
+    
     @Scheduled(cron = "0/1 * * * * ?")
     void checkEverySecondCron() {
-        CRON.countDown();
+        LATCHES.get("cron").countDown();
     }
 
     @Scheduled(every = "1s")
     void checkEverySecond() {
-        EVERY.countDown();
+        LATCHES.get("every").countDown();
+    }
+    
+    @Scheduled(cron = "{simpleJobs.cron}")
+    void checkEverySecondCronConfig() {
+        LATCHES.get("cronConfig").countDown();
+    }
+    
+    @Scheduled(every = "{simpleJobs.every}")
+    void checkEverySecondConfig() {
+        LATCHES.get("everyConfig").countDown();
     }
 
 }

@@ -50,12 +50,12 @@ import org.jboss.shamrock.deployment.recording.RecorderContext;
 
 class BeanValidationProcessor {
 
+    private static final DotName VALIDATE_ON_EXECUTION = DotName.createSimple("javax.validation.executable.ValidateOnExecution");
 
     @BuildStep
     HotDeploymentConfigFileBuildItem configFile() {
         return new HotDeploymentConfigFileBuildItem("META-INF/validation.xml");
     }
-
 
     @BuildStep
     AdditionalBeanBuildItem registerBean() {
@@ -72,19 +72,22 @@ class BeanValidationProcessor {
 
         IndexView indexView = combinedIndexBuildItem.getIndex();
 
-        Set<DotName> constraintAnnotations = new HashSet<>();
+        Set<DotName> consideredAnnotations = new HashSet<>();
 
         // Collect the constraint annotations provided by Hibernate Validator and Bean Validation
-        contributeBuiltinConstraints(constraintAnnotations);
+        contributeBuiltinConstraints(consideredAnnotations);
 
         // Add the constraint annotations present in the application itself
         for (AnnotationInstance constraint : indexView.getAnnotations(DotName.createSimple(Constraint.class.getName()))) {
-            constraintAnnotations.add(constraint.target().asClass().name());
+            consideredAnnotations.add(constraint.target().asClass().name());
         }
+
+        // Also consider elements that are marked with @ValidateOnExecution
+        consideredAnnotations.add(VALIDATE_ON_EXECUTION);
 
         Set<Class<?>> classesToBeValidated = new HashSet<>();
 
-        for (DotName constraint : constraintAnnotations) {
+        for (DotName constraint : consideredAnnotations) {
             Collection<AnnotationInstance> annotationInstances = indexView.getAnnotations(constraint);
 
             for (AnnotationInstance annotation : annotationInstances) {

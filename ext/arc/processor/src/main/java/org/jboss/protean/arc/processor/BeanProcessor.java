@@ -237,7 +237,7 @@ public class BeanProcessor {
         try (InputStream stream = BeanProcessor.class.getClassLoader().getResourceAsStream(className.replace('.', '/') + ".class")) {
             indexer.index(stream);
         } catch (IOException e) {
-            throw new IllegalStateException("Failed to index: " + className);
+            throw new IllegalStateException("Failed to index: " + className, e);
         }
     }
 

@@ -109,7 +109,6 @@ class BeanValidationProcessor {
     @BuildStep
     SubstrateConfigBuildItem substrateConfig() {
         return SubstrateConfigBuildItem.builder()
-                .addRuntimeInitializedClass("javax.el.ELUtil")
                 .addResourceBundle("org.hibernate.validator.ValidationMessages")
                 .build();
     }

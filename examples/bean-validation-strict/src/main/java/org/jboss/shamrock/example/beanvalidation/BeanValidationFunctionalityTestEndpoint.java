@@ -2,6 +2,10 @@ package org.jboss.shamrock.example.beanvalidation;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -12,9 +16,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validator;
+import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.Email;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+
+import org.hibernate.validator.constraints.Length;
 
 @WebServlet(name = "BeanValidationFunctionalityTestEndpoint", urlPatterns = "/bean-validation/testfunctionality")
 public class BeanValidationFunctionalityTestEndpoint extends HttpServlet {
@@ -40,8 +47,27 @@ public class BeanValidationFunctionalityTestEndpoint extends HttpServlet {
     public String testFunctionality() {
         ResultBuilder result = new ResultBuilder();
 
-        result.append(validate(new MyBean("Bill Jones", "b")));
-        result.append(validate(new MyBean("Bill Jones", "bill.jones@example.com")));
+        Map<String, List<String>> invalidCategorizedEmails = new HashMap<>();
+        invalidCategorizedEmails.put("a", Collections.singletonList("b"));
+
+        result.append(validate(new MyBean(
+                "Bill Jones",
+                "b",
+                Collections.singletonList("c"),
+                -4d,
+                invalidCategorizedEmails
+        )));
+
+        Map<String, List<String>> validCategorizedEmails = new HashMap<>();
+        validCategorizedEmails.put("Professional", Collections.singletonList("bill.jones@example.com"));
+
+        result.append(validate(new MyBean(
+                "Bill Jones",
+                "bill.jones@example.com",
+                Collections.singletonList("biji@example.com"),
+                5d,
+                validCategorizedEmails
+        )));
 
         return result.build();
     }
@@ -66,9 +92,19 @@ public class BeanValidationFunctionalityTestEndpoint extends HttpServlet {
         @Email
         private String email;
 
-        public MyBean(String name, String email) {
+        private List<@Email String> additionalEmails;
+
+        @DecimalMin("0")
+        private Double score;
+
+        private Map<@Length(min = 3) String, List<@Email String>> categorizedEmails;
+
+        public MyBean(String name, String email, List<String> additionalEmails, Double score, Map<String, List<String>> categorizedEmails) {
             this.name = name;
             this.email = email;
+            this.additionalEmails = additionalEmails;
+            this.score = score;
+            this.categorizedEmails = categorizedEmails;
         }
 
         public String getName() {
@@ -85,6 +121,30 @@ public class BeanValidationFunctionalityTestEndpoint extends HttpServlet {
 
         public void setEmail(String email) {
             this.email = email;
+        }
+
+        public List<String> getAdditionalEmails() {
+            return additionalEmails;
+        }
+
+        public void setAdditionalEmails(List<String> additionalEmails) {
+            this.additionalEmails = additionalEmails;
+        }
+
+        public Double getScore() {
+            return score;
+        }
+
+        public void setScore(Double score) {
+            this.score = score;
+        }
+
+        public Map<String, List<String>> getCategorizedEmails() {
+            return categorizedEmails;
+        }
+
+        public void setCategorizedEmails(Map<String, List<String>> categorizedEmails) {
+            this.categorizedEmails = categorizedEmails;
         }
     }
 

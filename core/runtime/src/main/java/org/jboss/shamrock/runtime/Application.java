@@ -16,15 +16,12 @@
 
 package org.jboss.shamrock.runtime;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.runtime.graal.ShutdownHookThread;
 import org.jboss.threads.Locks;
 import org.wildfly.common.Assert;
 import sun.misc.Signal;
@@ -45,6 +42,7 @@ public abstract class Application {
     private final Condition stateCond = stateLock.newCondition();
 
     private int state = ST_INITIAL;
+    private volatile boolean shutdownRequested;
 
     /**
      * Construct a new instance.
@@ -167,7 +165,6 @@ public abstract class Application {
      * Run the application as if it were in a standalone JVM.
      */
     public final void run(String[] args) {
-        final AtomicInteger state = new AtomicInteger();
         if (ImageInfo.inImageRuntimeCode()) {
             final SignalHandler handler = new SignalHandler() {
                 public void handle(final Signal signal) {
@@ -177,21 +174,16 @@ public abstract class Application {
             Signal.handle(new Signal("INT"), handler);
             Signal.handle(new Signal("TERM"), handler);
         }
-        final ShutdownHookThread shutdownHookThread = new ShutdownHookThread(state, Thread.currentThread());
+        final ShutdownHookThread shutdownHookThread = new ShutdownHookThread(Thread.currentThread());
         Runtime.getRuntime().addShutdownHook(shutdownHookThread);
         start(args);
         try {
-            while (state.get() == 0) {
+            while (! shutdownRequested) {
                 Thread.interrupted();
                 LockSupport.park(shutdownHookThread);
             }
         } finally {
-            try {
-                stop();
-            } finally {
-                state.set(2);
-                LockSupport.unpark(shutdownHookThread);
-            }
+            stop();
         }
     }
 
@@ -201,5 +193,34 @@ public abstract class Application {
 
     private static IllegalStateException interruptedOnAwaitStop() {
         return new IllegalStateException("Interrupted while waiting for another thread to stop the application");
+    }
+
+    class ShutdownHookThread extends Thread {
+        private final Thread mainThread;
+
+        ShutdownHookThread(Thread mainThread) {
+            super("Shutdown thread");
+            this.mainThread = mainThread;
+            setDaemon(false);
+        }
+
+        public void run() {
+            shutdownRequested = true;
+            LockSupport.unpark(mainThread);
+            final Lock stateLock = Application.this.stateLock;
+            final Condition stateCond = Application.this.stateCond;
+            stateLock.lock();
+            try {
+                while (state != ST_STOPPED) {
+                    stateCond.awaitUninterruptibly();
+                }
+            } finally {
+                stateLock.unlock();
+            }
+        }
+
+        public String toString() {
+            return getName();
+        }
     }
 }

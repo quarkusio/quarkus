@@ -547,9 +547,9 @@ public class BeanGenerator extends AbstractGenerator {
                         }
                     }
                     ResultHandle wrapHandle = constructor.newInstance(
-                            MethodDescriptor.ofConstructor(CurrentInjectionPointProvider.class, InjectableReferenceProvider.class, java.lang.reflect.Type.class,
+                            MethodDescriptor.ofConstructor(CurrentInjectionPointProvider.class, InjectableBean.class, InjectableReferenceProvider.class, java.lang.reflect.Type.class,
                                     Set.class),
-                            constructor.getMethodParam(paramIdx++), Types.getTypeHandle(constructor, injectionPoint.getRequiredType()),
+                            constructor.getThis(), constructor.getMethodParam(paramIdx++), Types.getTypeHandle(constructor, injectionPoint.getRequiredType()),
                             requiredQualifiersHandle);
                     constructor.writeInstanceField(FieldDescriptor.of(beanCreator.getClassName(), injectionPointToProviderField.get(injectionPoint),
                             InjectableReferenceProvider.class.getName()), constructor.getThis(), wrapHandle);

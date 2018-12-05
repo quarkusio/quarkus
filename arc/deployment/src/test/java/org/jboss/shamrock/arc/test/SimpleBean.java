@@ -15,6 +15,7 @@
  */
 package org.jboss.shamrock.arc.test;
 
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -30,11 +31,15 @@ public class SimpleBean {
     static final String DEFAULT = "bar";
 
     private final AtomicReference<StartupEvent> startupEvent = new AtomicReference<StartupEvent>();
-    
+
     @Inject
-    @ConfigProperty(name="undefinedValue",defaultValue = DEFAULT)
+    @ConfigProperty(name = "unconfigured", defaultValue = DEFAULT)
     String foo;
-    
+
+    @Inject
+    @ConfigProperty(name = "unconfigured")
+    Optional<String> fooOptional;
+
     void onStart(@Observes StartupEvent event) {
         startupEvent.set(event);
     }
@@ -45,6 +50,10 @@ public class SimpleBean {
 
     String getFoo() {
         return foo;
+    }
+
+    Optional<String> getFooOptional() {
+        return fooOptional;
     }
     
 }

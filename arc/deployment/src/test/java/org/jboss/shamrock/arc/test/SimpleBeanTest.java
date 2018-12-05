@@ -17,6 +17,7 @@
 package org.jboss.shamrock.arc.test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
 import javax.inject.Inject;
@@ -44,6 +45,7 @@ public class SimpleBeanTest {
     public void testSimpleBean() {
         assertNotNull(simpleBean.getStartupEvent());
         assertEquals(SimpleBean.DEFAULT, simpleBean.getFoo());
+        assertFalse(simpleBean.getFooOptional().isPresent());
     }
 
 }

@@ -71,7 +71,7 @@ private Optional<String> name;
 
 The first property is _mandatory_. If you do not provide a value, the build fails.
 The second property injects the given default value if the configuration file does not provide a value.
-The third property is optional. The injected `Optional` is empty is the configuration file does not provide a value.
+The third property is optional. The injected `Optional` is empty as the configuration file does not provide a value.
 
 Now, modify the `hello` method to use the injected properties:
 

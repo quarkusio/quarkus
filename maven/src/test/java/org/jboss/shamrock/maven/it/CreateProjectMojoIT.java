@@ -157,7 +157,8 @@ public class CreateProjectMojoIT extends MojoTestBase {
         ));
         request.setProperties(params);
         getEnv().forEach(request::addShellEnvironment);
-        PrintStreamLogger logger = new PrintStreamLogger(new PrintStream(new FileOutputStream("build-create.log")),
+        File log = new File(testDir.getParentFile(), "build-create-" + testDir.getName() + ".log");
+        PrintStreamLogger logger = new PrintStreamLogger(new PrintStream(new FileOutputStream(log)),
                 InvokerLogger.DEBUG);
         invoker.setLogger(logger);
         invoker.execute(request);

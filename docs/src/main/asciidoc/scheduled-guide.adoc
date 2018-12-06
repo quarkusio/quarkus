@@ -32,14 +32,15 @@ The solution is located in the `scheduling-periodic-task` directory.
 
 First, we need a new project. Create a new project with the following command:
 
-```
-mvn org.jboss.shamrock:shamrock-maven-plugin:1.0.0.Alpha1-SNAPSHOT:create \
+[source, subs=attributes+]
+----
+mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=scheduling-periodic-tasks \
     -DclassName="org.acme.scheduling.CountResource" \
     -Dpath="/count" \
     -Dextensions="scheduler"
-```
+----
 
 It generates:
 

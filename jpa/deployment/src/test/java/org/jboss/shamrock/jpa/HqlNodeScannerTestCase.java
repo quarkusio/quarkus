@@ -29,7 +29,7 @@ import org.jboss.jandex.Indexer;
 import org.junit.Ignore;
 import org.junit.Test;
 
-//not a real test, but you can use to to
+//not a real test, but you can use it to
 //get all not implementation that need to be added for reflection
 @Ignore
 public class HqlNodeScannerTestCase {

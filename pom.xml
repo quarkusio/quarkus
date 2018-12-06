@@ -53,6 +53,7 @@
         <module>jboss-logmanager-embedded</module>
         <module>jboss-logging-embedded</module>
         <module>core</module>
+        <module>creator</module>
         <module>test-framework</module>
 
         <!-- External projects -->

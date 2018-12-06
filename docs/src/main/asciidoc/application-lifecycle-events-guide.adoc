@@ -22,7 +22,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone https://github.com/protean-project/quickstarts.git`, or download an https://github.com/protean-project/quickstarts/archive/master.zip[archive].
 
-The solution is located in the `application-configuration` directory.
+The solution is located in the `application-lifecycle-events` directory.
 
 == Creating the Maven project
 
@@ -31,9 +31,9 @@ First, we need a new project. Create a new project with the following command:
 ```
 mvn org.jboss.shamrock:shamrock-maven-plugin:1.0.0.Alpha1-SNAPSHOT:create \
     -DprojectGroupId=org.acme \
-    -DprojectArtifactId=application-configuration \
-    -DclassName="org.acme.config.GreetingResource" \
-    -Dpath="/greeting"
+    -DprojectArtifactId=application-lifecycle-events \
+    -DclassName="org.acme.events.GreetingResource" \
+    -Dpath="/hello"
 ```
 
 It generates:
@@ -42,17 +42,50 @@ It generates:
 * an `org.acme.scheduling.GreetingResource` resource
 * an associated test
 
-== Injecting configuration value
+== Listening for startup and shutdown events
 
-* Edit resource
-* Add @Inject @ConfigurationValue
-* 1 with default value, one with optional
-* update the endpoint to use these values
+Create a new class named `AppLifecycleBean` (or pick another name) in the `org.acme.events` package, and copy the
+following content:
 
-== Create the configuration
+[source,java]
+----
+package org.acme.events;
 
-* META-INF/microprofile-config.properties (should it have a better name) ?
-*
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
+
+import org.jboss.shamrock.runtime.ShutdownEvent;
+import org.jboss.shamrock.runtime.StartupEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+@ApplicationScoped
+public class AppLifecycleBean {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger("ListenerBean");
+
+    void onStart(@Observes StartupEvent ev) {               // <1>
+        LOGGER.info("The application is starting...");
+    }
+
+    void onStop(@Observes ShutdownEvent ev) {               // <2>
+        LOGGER.info("The application is stopping...");
+    }
+
+}
+----
+1. Method called when the application is starting
+2. Method called when the application is terminating
+
+[INFO]
+====
+The events are also called in _dev mode_ between each redeployment.
+====
+
+[INFO]
+====
+The methods can access injected beans. Check the https://github.com/protean-project/quickstarts/blob/master/application-lifecycle-events/src/main/java/org/acme/events/AppLifecycleBean.java[AppLifecycleBean.java] class for details.
+====
 
 == Package and run the application
 

@@ -28,13 +28,14 @@ The solution is located in the `application-lifecycle-events` directory.
 
 First, we need a new project. Create a new project with the following command:
 
-```
-mvn org.jboss.shamrock:shamrock-maven-plugin:1.0.0.Alpha1-SNAPSHOT:create \
+[source, subs=attributes+]
+----
+mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=application-lifecycle-events \
     -DclassName="org.acme.events.GreetingResource" \
     -Dpath="/hello"
-```
+----
 
 It generates:
 

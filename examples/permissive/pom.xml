@@ -162,6 +162,7 @@
                                 <configuration>
                                     <reportErrorsAtRuntime>true</reportErrorsAtRuntime>
                                     <graalvmHome>${graalvmHome}</graalvmHome>
+                                    <enableHttpUrlHandler>true</enableHttpUrlHandler>
                                 </configuration>
                             </execution>
                         </executions>

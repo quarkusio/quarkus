@@ -78,6 +78,7 @@ public class WeldDeploymentTemplate {
         // Remove unused beans after bootstrap
         weld.property(ConfigurationKey.UNUSED_BEANS_EXCLUDE_TYPE.get(), UnusedBeans.ALL);
         weld.property(ConfigurationKey.UNUSED_BEANS_EXCLUDE_ANNOTATION.get(), "javax\\.ws\\.rs.*|javax\\.servlet\\.annotation.*");
+        weld.property(ConfigurationKey.PRELOADER_THREAD_POOL_SIZE.get(), 0);
         return weld;
     }
 

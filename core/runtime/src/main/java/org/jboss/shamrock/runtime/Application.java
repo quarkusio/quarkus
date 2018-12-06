@@ -22,6 +22,7 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
+import org.jboss.shamrock.runtime.graal.DiagnosticPrinter;
 import org.jboss.threads.Locks;
 import org.wildfly.common.Assert;
 import sun.misc.Signal;
@@ -173,6 +174,11 @@ public abstract class Application {
             };
             Signal.handle(new Signal("INT"), handler);
             Signal.handle(new Signal("TERM"), handler);
+            Signal.handle(new Signal("QUIT"), new SignalHandler() {
+                public void handle(final Signal signal) {
+                    DiagnosticPrinter.printDiagnostics(System.out);
+                }
+            });
         }
         final ShutdownHookThread shutdownHookThread = new ShutdownHookThread(Thread.currentThread());
         Runtime.getRuntime().addShutdownHook(shutdownHookThread);

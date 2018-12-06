@@ -41,11 +41,30 @@ public interface AnnotationsTransformer extends BuildExtension {
 
     /**
      *
-     * @param target
-     * @param annotations
-     * @return the transformed annotations
-     * @see Transformation
+     * @param transformationContext
      */
-    Collection<AnnotationInstance> transform(AnnotationTarget target, Collection<AnnotationInstance> annotations);
+    void transform(TransformationContext transformationContext);
+
+    interface TransformationContext extends BuildContext {
+
+        AnnotationTarget getTarget();
+
+        Collection<AnnotationInstance> getAnnotations();
+
+        Transformation transform();
+        
+        default boolean isClass() {
+            return getTarget().kind() == Kind.CLASS;
+        }
+        
+        default boolean isField() {
+            return getTarget().kind() == Kind.FIELD;
+        }
+        
+        default boolean isMethodParameter() {
+            return getTarget().kind() == Kind.METHOD_PARAMETER;
+        }
+
+    }
 
 }

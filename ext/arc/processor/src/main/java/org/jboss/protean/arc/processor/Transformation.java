@@ -19,39 +19,27 @@ package org.jboss.protean.arc.processor;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Predicate;
 
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
+import org.jboss.protean.arc.processor.AnnotationStore.TransformationContextImpl;
 
 /**
  * Convenient helper class.
  */
 public final class Transformation {
 
-    /**
-     *
-     * @param target
-     * @param annotations
-     * @return a new transformation
-     */
-    public static Transformation with(AnnotationTarget target, Collection<AnnotationInstance> annotations) {
-        Objects.requireNonNull(target);
-        Objects.requireNonNull(annotations);
-        return new Transformation(target, annotations);
-    }
-
-    private final AnnotationTarget target;
+    private final TransformationContextImpl transformationContext;
 
     private final List<AnnotationInstance> modified;
 
-    public Transformation(AnnotationTarget target, Collection<AnnotationInstance> annotations) {
-        this.target = target;
-        this.modified = new ArrayList<>(annotations);
+    public Transformation(TransformationContextImpl transformationContext) {
+        this.transformationContext = transformationContext;
+        this.modified = new ArrayList<>(transformationContext.getAnnotations());
     }
 
     public Transformation add(AnnotationInstance annotation) {
@@ -59,13 +47,23 @@ public final class Transformation {
         return this;
     }
 
+    public Transformation addAll(Collection<AnnotationInstance> annotations) {
+        modified.addAll(annotations);
+        return this;
+    }
+    
+    public Transformation addAll(AnnotationInstance... annotations) {
+        Collections.addAll(modified, annotations);
+        return this;
+    }
+    
     public Transformation add(Class<? extends Annotation> annotationType, AnnotationValue... values) {
         add(DotNames.create(annotationType.getName()), values);
         return this;
     }
 
     public Transformation add(DotName name, AnnotationValue... values) {
-        add(AnnotationInstance.create(name, target, values));
+        add(AnnotationInstance.create(name, transformationContext.getTarget(), values));
         return this;
     }
 
@@ -73,9 +71,14 @@ public final class Transformation {
         modified.removeIf(predicate);
         return this;
     }
+    
+    public Transformation removeAll() {
+        modified.clear();
+        return this;
+    }
 
-    public Collection<AnnotationInstance> done() {
-        return modified;
+    public void done() {
+        transformationContext.setAnnotations(modified);
     }
 
 }

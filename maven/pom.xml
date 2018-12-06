@@ -30,7 +30,6 @@
 
     <properties>
         <shamrock.version>${project.version}</shamrock.version>
-
     </properties>
     <dependencies>
 

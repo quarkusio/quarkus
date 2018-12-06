@@ -20,9 +20,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.uber.jaeger.Configuration;
 import com.uber.jaeger.senders.UdpSender;
-import io.opentracing.ActiveSpan;
-import io.opentracing.NoopTracer;
-import io.opentracing.NoopTracerFactory;
+import io.opentracing.ScopeManager;
+import io.opentracing.noop.NoopTracerFactory;
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
@@ -108,13 +107,13 @@ public class ShamrockTracer implements Tracer {
     }
 
     @Override
-    public ActiveSpan activeSpan() {
-        return tracer().activeSpan();
+    public ScopeManager scopeManager() {
+        return tracer().scopeManager();
     }
 
     @Override
-    public ActiveSpan makeActive(Span span) {
-        return tracer().makeActive(span);
+    public Span activeSpan() {
+        return tracer().activeSpan();
     }
 }
 

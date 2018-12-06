@@ -17,6 +17,7 @@
 package org.jboss.protean.arc.processor;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.PostConstruct;
@@ -83,6 +84,7 @@ public final class DotNames {
     public static final DotName CLASS = create(Class.class);
     public static final DotName ENUM = create(Enum.class);
     public static final DotName EXTENSION = create(Extension.class);
+    public static final DotName OPTIONAL = create(Optional.class);
 
     private DotNames() {
     }

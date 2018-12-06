@@ -128,23 +128,16 @@ public class SchedulerProcessor {
 
     @BuildStep
     BeanDeploymentValidatorBuildItem beanDeploymentValidator(BuildProducer<ScheduledBusinessMethodItem> scheduledBusinessMethods) {
-        // We need to collect all business methods annotated with @Scheduled first
+        
         return new BeanDeploymentValidatorBuildItem(new BeanDeploymentValidator() {
 
-            private BuildContext buildContext;
-
             @Override
-            public boolean initialize(BuildContext buildContext) {
-                this.buildContext = buildContext;
-                return true;
-            }
+            public void validate(ValidationContext validationContext) {
 
-            @Override
-            public void validate() {
+                AnnotationStore annotationStore = validationContext.get(Key.ANNOTATION_STORE);
 
-                AnnotationStore annotationStore = buildContext.get(Key.ANNOTATION_STORE);
-
-                for (BeanInfo bean : buildContext.get(Key.BEANS)) {
+                // We need to collect all business methods annotated with @Scheduled first
+                for (BeanInfo bean : validationContext.get(Key.BEANS)) {
                     if (bean.isClassBean()) {
                         // TODO: inherited business methods?
                         for (MethodInfo method : bean.getTarget().get().asClass().methods()) {

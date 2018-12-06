@@ -19,18 +19,23 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>shamrock-parent</artifactId>
+        <artifactId>jdbc-mariadb</artifactId>
         <groupId>org.jboss.shamrock</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>jdbc</artifactId>
-    <packaging>pom</packaging>
-    <modules>
-        <module>jdbc-postgresql</module>
-        <module>jdbc-h2</module>
-        <module>jdbc-mariadb</module>
-    </modules>
+    <artifactId>jdbc-mariadb-deployment</artifactId>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-core-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>jdbc-mariadb-runtime</artifactId>
+        </dependency>
+    </dependencies>
 
 </project>

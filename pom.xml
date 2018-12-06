@@ -110,6 +110,8 @@
         <h2.version>1.4.197</h2.version>
         <postgresql-jdbc.version>42.2.5</postgresql-jdbc.version>
 
+        <mariadb-jdbc.version>2.3.0</mariadb-jdbc.version>
+
         <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>
 
         <postgres.url>${env.DATABASE_URL}</postgres.url>
@@ -379,6 +381,16 @@
             <dependency>
                 <groupId>org.jboss.shamrock</groupId>
                 <artifactId>jdbc-h2-runtime</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>jdbc-mariadb-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>jdbc-mariadb-runtime</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -1248,6 +1260,11 @@
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
                 <version>${postgresql-jdbc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mariadb.jdbc</groupId>
+                <artifactId>mariadb-java-client</artifactId>
+                <version>${mariadb-jdbc.version}</version>
             </dependency>
 
             <dependency>

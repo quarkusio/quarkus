@@ -98,7 +98,7 @@
         <wildfly-common.version>1.5.0.Alpha3-format-001</wildfly-common.version>
         <jboss-modules.version>1.8.0.Final</jboss-modules.version>
         <jboss-threads.version>3.0.0.Alpha4</jboss-threads.version>
-        <vertx.version>3.5.4</vertx.version>
+        <vertx.version>3.6.0.CR2</vertx.version>
         <httpclient.version>4.5.4</httpclient.version>
         <httpcore.version>4.4.7</httpcore.version>
         <quartz.version>2.3.0</quartz.version>

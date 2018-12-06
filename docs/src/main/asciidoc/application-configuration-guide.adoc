@@ -1,13 +1,13 @@
 = Configuring your application
 
 Hardcoded values in your code is a _no go_ (even if we all did it at some point ;-)).
-In this guide we learn how to configure your application.
+In this guide, we learn how to configure your application.
 
 == Prerequisites
 
 To complete this guide, you need:
 
-* less than 10 minutes
+* between 5 and 10 minutes
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.5+
@@ -19,19 +19,20 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone https://github.com/protean-project/quickstarts.git`, or download an https://github.com/protean-project/quickstarts/archive/master.zip[archive].
 
-The solution is located in the `application-lifecycle-events` directory.
+The solution is located in the `application-configuration` directory.
 
 == Creating the Maven project
 
 First, we need a new project. Create a new project with the following command:
 
-```
+[source]
+----
 mvn org.jboss.shamrock:shamrock-maven-plugin:1.0.0.Alpha1-SNAPSHOT:create \
     -DprojectGroupId=org.acme \
-    -DprojectArtifactId=application-lifecycle-events \
-    -DclassName="org.acme.events.GreetingResource" \
-    -Dpath="/hello"
-```
+    -DprojectArtifactId=application-configuration \
+    -DclassName="org.acme.config.GreetingResource" \
+    -Dpath="/greeting"
+----
 
 It generates:
 
@@ -39,55 +40,103 @@ It generates:
 * an `org.acme.scheduling.GreetingResource` resource
 * an associated test
 
-== Listening for startup and shutdown events
+== Injecting configuration value
 
-Create a new class named `AppLifecycleBean` (or pick another name) in the `org.acme.events` package, and copy the
-following content:
+Shamrock uses https://microprofile.io/project/eclipse/microprofile-config[MicroProfile Config] to inject the configuration in the application.
+The injection uses 2 annotations: `@Inject` and `@ConfigProperty`:
 
 [source,java]
 ----
-package org.acme.events;
+@Inject
+@ConfigProperty(name = "greeting.message")
+private String message;
+----
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
+Edit the `org.acme.config.GreetingResource`, and introduce the 3 following configuration properties:
 
-import org.jboss.shamrock.runtime.ShutdownEvent;
-import org.jboss.shamrock.runtime.StartupEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+[source,java]
+----
+@Inject
+@ConfigProperty(name = "greeting.message")
+private String message;
 
-@ApplicationScoped
-public class AppLifecycleBean {
+@Inject
+@ConfigProperty(name = "greeting.suffix", defaultValue="!")
+private String suffix;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("ListenerBean");
+@Inject
+@ConfigProperty(name = "greeting.name")
+private Optional<String> name;
+----
 
-    void onStart(@Observes StartupEvent ev) {               // <1>
-        LOGGER.info("The application is starting...");
-    }
+The first property is _mandatory_. If you do not provide a value, the build fails.
+The second property injects the given default value if the configuration file does not provide a value.
+The third property is optional. The injected `Optional` is empty is the configuration file does not provide a value.
 
-    void onStop(@Observes ShutdownEvent ev) {               // <2>
-        LOGGER.info("The application is stopping...");
+Now, modify the `hello` method to use the injected properties:
+
+[source,java]
+----
+@GET
+@Produces(MediaType.TEXT_PLAIN)
+public String hello() {
+    return message + " " + name.orElse("world") + suffix;
+}
+----
+
+
+== Create the configuration
+
+We need to create the file providing the values.
+By default, Shamrock reads `META-INF/microprofile-config.properties`.
+Create the `src/main/resources/META-INF/microprofile-config.properties` with the following content:
+
+[source]
+----
+# Your configuration properties
+greeting.message = hello
+greeting.name = shamrock
+----
+
+== Update the test
+
+We also need to update the functional test to reflect the change made to endpoint.
+Edit the `src/test/java/org/acme/config/GreetingResourceTest.java` file and change the content of the `testHelloEndpoint` method to:
+
+
+[source, java]
+----
+package org.acme.config;
+
+import org.jboss.shamrock.test.ShamrockTest;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.is;
+
+@RunWith(ShamrockTest.class)
+public class GreetingResourceTest {
+
+    @Test
+    public void testHelloEndpoint() {
+        given()
+          .when().get("/app/greeting")
+          .then()
+             .statusCode(200)
+             .body(is("hello shamrock!")); // Modified line
     }
 
 }
 ----
-1. Method called when the application is starting
-2. Method called when the application is terminating
-
-[INFO]
-====
-The events are also called in _dev mode_ between each redeployment.
-====
-
-[INFO]
-====
-The methods can access injected beans. Check the https://github.com/protean-project/quickstarts/blob/master/application-lifecycle-events/src/main/java/org/acme/events/AppLifecycleBean.java[AppLifecycleBean.java] class for details.
-====
 
 == Package and run the application
 
-Run the application with: `mvn compile shamrock:dev`, the logged message is printed.
-When the application is stopped, the second log message is printed.
+Run the application with: `mvn compile shamrock:dev`.
+Open your browser to http://localhost:8080/app/greeting.
+
+Changing the configuration file is immediately reflected.
+You can add the `greeting.suffix`, remove the other properties, change the values, etc.
 
 As usual, the application can be packaged using `mvn clean package` and executed using the `-runner.jar` file.
 You can also generate the native executable.

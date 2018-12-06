@@ -16,6 +16,9 @@
 
 package org.jboss.shamrock.test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -30,6 +33,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Comparator;
 
+import org.jboss.builder.BuildException;
 import org.jboss.shamrock.runner.RuntimeRunner;
 import org.jboss.shamrock.runtime.InjectionFactoryTemplate;
 import org.jboss.shamrock.runtime.InjectionInstance;
@@ -37,6 +41,7 @@ import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.runners.BlockJUnit4ClassRunner;
+import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.Statement;
 
@@ -49,13 +54,17 @@ public class ShamrockUnitTest extends BlockJUnit4ClassRunner {
 
     public ShamrockUnitTest(Class<?> klass) throws InitializationError {
         super(doSetup(klass));
-        started = true;
     }
 
     @Override
     protected Object createTest() throws Exception {
         InjectionInstance<?> factory = InjectionFactoryTemplate.currentFactory().create(getTestClass().getJavaClass());
         return factory.newInstance();
+    }
+    
+    @Override
+    protected boolean isIgnored(FrameworkMethod child) {
+        return !started || super.isIgnored(child);
     }
 
     static Class<?> doSetup(Class<?> clazz) {
@@ -104,7 +113,31 @@ public class ShamrockUnitTest extends BlockJUnit4ClassRunner {
             URL resource = theClass.getClassLoader().getResource(classFileName);
             String testClassLocation = resource.getPath().substring(0, resource.getPath().length() - classFileName.length());
             runtimeRunner = new RuntimeRunner(clazz.getClassLoader(), deploymentDir, Paths.get(testClassLocation), null, new ArrayList<>());
-            runtimeRunner.run();
+
+            BuildShouldFailWith buildShouldFailWith = deploymentMethod.getAnnotation(BuildShouldFailWith.class);
+            try {
+                runtimeRunner.run();
+                if (buildShouldFailWith != null) {
+                    fail("Build did not fail");
+                }
+                started = true;
+            } catch (Exception e) {
+                if (buildShouldFailWith != null) {
+                    if (e instanceof RuntimeException) {
+                        Throwable cause = e.getCause();
+                        if (cause != null && cause instanceof BuildException) {
+                            assertEquals("Build failed with wrong exception", buildShouldFailWith.value(), cause.getCause()
+                                    .getClass());
+                        } else {
+                            fail("Build did not fail with build exception: " + e);
+                        }
+                    } else {
+                        fail("Unable to unwrap build exception from: " + e);
+                    }
+                } else {
+                    throw e;
+                }
+            }
 
             String javaClass = clazz.getName();
             return Class.forName(javaClass, true, Thread.currentThread().getContextClassLoader());

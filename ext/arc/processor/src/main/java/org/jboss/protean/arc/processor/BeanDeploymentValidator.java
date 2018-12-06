@@ -26,13 +26,19 @@ import javax.enterprise.inject.spi.DeploymentException;
 public interface BeanDeploymentValidator extends BuildExtension {
 
     /**
-     * At this point, all beans/observers are registered. This method should throw a {@link DeploymentException} if validation fails.
+     * At this point, all beans/observers are registered. This method should call {@link ValidationContext#addDeploymentProblem(Throwable)} if validation fails.
      *
      * @see Key#INJECTION_POINTS
      * @see Key#BEANS
      * @see Key#OBSERVERS
      * @see DeploymentException
      */
-    void validate();
+    void validate(ValidationContext validationContext);
+
+    interface ValidationContext extends BuildContext {
+
+        void addDeploymentProblem(Throwable t);
+
+    }
 
 }

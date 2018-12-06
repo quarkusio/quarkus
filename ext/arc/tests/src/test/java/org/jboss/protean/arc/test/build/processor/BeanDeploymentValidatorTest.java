@@ -62,20 +62,21 @@ public class BeanDeploymentValidatorTest {
 
     static class TestValidator implements BeanDeploymentValidator {
 
-        private BuildContext buildContext;
-
         @Override
-        public boolean initialize(BuildContext buildContext) {
-            this.buildContext = buildContext;
-            return true;
-        }
-
-        @Override
-        public void validate() {
-            assertTrue(buildContext.get(Key.BEANS).stream().anyMatch(b -> b.isClassBean() && b.getBeanClass().toString().equals(Alpha.class.getName())));
-            assertTrue(buildContext.get(Key.BEANS).stream().anyMatch(b -> b.isSynthetic() && b.getTypes().contains(EmptyStringListCreator.listStringType())));
-            assertTrue(buildContext.get(Key.OBSERVERS).stream()
-                    .anyMatch(o -> o.getObservedType().equals(Type.create(DotName.createSimple(Object.class.getName()), Kind.CLASS))));
+        public void validate(ValidationContext validationContext) {
+            assertTrue(validationContext.get(Key.BEANS)
+                    .stream()
+                    .anyMatch(b -> b.isClassBean() && b.getBeanClass()
+                            .toString()
+                            .equals(Alpha.class.getName())));
+            assertTrue(validationContext.get(Key.BEANS)
+                    .stream()
+                    .anyMatch(b -> b.isSynthetic() && b.getTypes()
+                            .contains(EmptyStringListCreator.listStringType())));
+            assertTrue(validationContext.get(Key.OBSERVERS)
+                    .stream()
+                    .anyMatch(o -> o.getObservedType()
+                            .equals(Type.create(DotName.createSimple(Object.class.getName()), Kind.CLASS))));
             // We do not test a validation problem - ArcTestContainer rule would fail
         }
 

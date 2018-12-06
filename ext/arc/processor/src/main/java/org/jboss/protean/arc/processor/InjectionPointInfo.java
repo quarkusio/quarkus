@@ -86,6 +86,8 @@ public class InjectionPointInfo {
     private final AtomicReference<BeanInfo> resolvedBean;
 
     private final Kind kind;
+    
+    private final boolean hasDefaultedQualifier;
 
     InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers) {
         this(requiredType, requiredQualifiers, Kind.CDI);
@@ -97,6 +99,7 @@ public class InjectionPointInfo {
                         : requiredQualifiers);
         this.resolvedBean = new AtomicReference<BeanInfo>(null);
         this.kind = kind;
+        this.hasDefaultedQualifier = requiredQualifiers.isEmpty();
     }
 
     void resolve(BeanInfo bean) {
@@ -119,6 +122,10 @@ public class InjectionPointInfo {
         return typeAndQualifiers.qualifiers;
     }
 
+    public boolean hasDefaultedQualifier() {
+        return hasDefaultedQualifier;
+    }
+    
     TypeAndQualifiers getTypeAndQualifiers() {
         return typeAndQualifiers;
     }

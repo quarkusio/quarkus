@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 
 import javax.enterprise.inject.Model;
 import javax.enterprise.inject.spi.DefinitionException;
+import javax.enterprise.inject.spi.DeploymentException;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -42,8 +43,10 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.logging.Logger.Level;
+import org.jboss.protean.arc.processor.BeanDeploymentValidator.ValidationContext;
 import org.jboss.protean.arc.processor.BeanProcessor.BuildContextImpl;
 import org.jboss.protean.arc.processor.BeanRegistrar.RegistrationContext;
+import org.jboss.protean.arc.processor.BuildExtension.BuildContext;
 import org.jboss.protean.arc.processor.BuildExtension.Key;
 
 /**
@@ -134,8 +137,24 @@ public class BeanDeployment {
         }
 
         // Validate the bean deployment
+        ValidationContextImpl validationContext = new ValidationContextImpl(buildContext);
         for (BeanDeploymentValidator validator : validators) {
-            validator.validate();
+            validator.validate(validationContext);
+        }
+        List<Throwable> errors = validationContext.getErrors();
+        if (!errors.isEmpty()) {
+            if (errors.size() == 1) {
+                throw new DeploymentException(errors.get(0));
+            } else {
+                DeploymentException deploymentException = new DeploymentException("Multiple deployment problems occured: " + errors.stream()
+                        .map(e -> e.getMessage())
+                        .collect(Collectors.toList())
+                        .toString());
+                for (Throwable error : errors) {
+                    deploymentException.addSuppressed(error);
+                }
+                throw deploymentException;
+            }
         }
 
         this.observers = observers;
@@ -143,7 +162,7 @@ public class BeanDeployment {
 
         LOGGER.infof("Build deployment created in %s ms", System.currentTimeMillis() - start);
     }
-
+    
     public Collection<BeanInfo> getBeans() {
         return beans;
     }
@@ -469,6 +488,38 @@ public class BeanDeployment {
         beanDefiningAnnotations.addAll(stereotypes);
         beanDefiningAnnotations.add(DotNames.create(Model.class));
         return beanDefiningAnnotations;
+    }
+    
+    static class ValidationContextImpl implements ValidationContext {
+
+        private final BuildContext buildContext;
+        
+        private final List<Throwable> errors;
+        
+        public ValidationContextImpl(BuildContext buildContext) {
+            this.buildContext = buildContext;
+            this.errors = new ArrayList<Throwable>();
+        }
+
+        @Override
+        public <V> V get(Key<V> key) {
+            return buildContext.get(key);
+        }
+
+        @Override
+        public <V> V put(Key<V> key, V value) {
+            return buildContext.put(key, value);
+        }
+
+        @Override
+        public void addDeploymentProblem(Throwable problem) {
+            errors.add(problem);
+        }
+
+        List<Throwable> getErrors() {
+            return errors;
+        }
+        
     }
 
 }

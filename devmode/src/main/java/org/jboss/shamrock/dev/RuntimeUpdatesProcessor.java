@@ -24,11 +24,11 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 
 import org.fakereplace.core.Fakereplace;
 import org.fakereplace.replacement.AddedClass;
@@ -36,23 +36,26 @@ import org.fakereplace.replacement.AddedClass;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 
-public class RuntimeUpdatesHandler implements HttpHandler {
+public class RuntimeUpdatesProcessor {
 
     private static final long TWO_SECONDS = 2000;
 
-    private final HttpHandler next;
     private final Path classesDir;
     private final Path sourcesDir;
+    private final Path resourcesDir;
     private volatile long nextUpdate;
     private volatile long lastChange = System.currentTimeMillis();
     private final ClassLoaderCompiler compiler;
 
     static final UpdateHandler FAKEREPLACE_HANDLER;
 
+    private volatile Set<String> configFilePaths = Collections.emptySet();
+    private final Map<String, Long> configFileTimestamps = new ConcurrentHashMap<>();
+
     static {
         UpdateHandler fr;
         try {
-            if(Boolean.getBoolean("shamrock.fakereplace")) {
+            if (Boolean.getBoolean("shamrock.fakereplace")) {
                 fr = new FakereplaceHandler();
             } else {
                 fr = null;
@@ -63,20 +66,15 @@ public class RuntimeUpdatesHandler implements HttpHandler {
         FAKEREPLACE_HANDLER = fr;
     }
 
-    public RuntimeUpdatesHandler(HttpHandler next, Path classesDir, Path sourcesDir, ClassLoaderCompiler compiler) {
-        this.next = next;
+    public RuntimeUpdatesProcessor(Path classesDir, Path sourcesDir, Path resourcesDir, ClassLoaderCompiler compiler) {
         this.classesDir = classesDir;
         this.sourcesDir = sourcesDir;
+        this.resourcesDir = resourcesDir;
         this.compiler = compiler;
     }
 
-    @Override
-    public void handleRequest(HttpServerExchange exchange) throws Exception {
+    public void handleRequest(HttpServerExchange exchange, HttpHandler next) throws Exception {
 
-        if (exchange.isInIoThread()) {
-            exchange.dispatch(this);
-            return;
-        }
         if (nextUpdate > System.currentTimeMillis()) {
             if (DevModeMain.deploymentProblem != null) {
                 ReplacementDebugPage.handleRequest(exchange, DevModeMain.deploymentProblem);
@@ -103,6 +101,7 @@ public class RuntimeUpdatesHandler implements HttpHandler {
     private void doScan() throws IOException {
         final Set<File> changedSourceFiles;
         final long start = System.currentTimeMillis();
+
         if (sourcesDir != null) {
             try (final Stream<Path> sourcesStream = Files.walk(sourcesDir)) {
                 changedSourceFiles = sourcesStream
@@ -132,10 +131,10 @@ public class RuntimeUpdatesHandler implements HttpHandler {
                     .filter(p -> wasRecentlyModified(p))
                     .collect(Collectors.toConcurrentMap(
                             p -> pathToClassName(p),
-                            p -> CopyUtils.readFileContentNoIOExceptions( p))
+                            p -> CopyUtils.readFileContentNoIOExceptions(p))
                     );
         }
-        if (changedClasses.isEmpty()) {
+        if (changedClasses.isEmpty() && !configFilesChanged()) {
             return;
         }
 
@@ -148,6 +147,29 @@ public class RuntimeUpdatesHandler implements HttpHandler {
             DevModeMain.restartApp(true);
         }
         System.out.println("Hot replace total time: " + (System.currentTimeMillis() - start) + "ms");
+    }
+
+    private boolean configFilesChanged() {
+
+        Path root = resourcesDir;
+        if (root == null) {
+            root = classesDir;
+        }
+        for (String i : configFilePaths) {
+            Path config = root.resolve(i);
+            if (Files.exists(config)) {
+                try {
+                    long value = Files.getLastModifiedTime(config).toMillis();
+                    Long existing = configFileTimestamps.get(i);
+                    if (value > existing) {
+                        return true;
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        return false;
     }
 
     private boolean wasRecentlyModified(final Path p) {
@@ -168,6 +190,29 @@ public class RuntimeUpdatesHandler implements HttpHandler {
 
         void handle(Map<String, byte[]> changed);
 
+    }
+
+    public RuntimeUpdatesProcessor setConfigFilePaths(Set<String> configFilePaths) {
+        this.configFilePaths = configFilePaths;
+        configFileTimestamps.clear();
+        Path root = resourcesDir;
+        if (root == null) {
+            root = classesDir;
+        }
+        for (String i : configFilePaths) {
+            Path config = root.resolve(i);
+            if (Files.exists(config)) {
+                try {
+                    configFileTimestamps.put(i, Files.getLastModifiedTime(config).toMillis());
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            } else {
+                configFileTimestamps.put(i, 0L);
+            }
+        }
+
+        return this;
     }
 
     private static class FakereplaceHandler implements UpdateHandler {

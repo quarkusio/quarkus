@@ -46,6 +46,7 @@ import org.jboss.shamrock.deployment.builditem.BeanContainerBuildItem;
 import org.jboss.shamrock.deployment.builditem.BytecodeTransformerBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedResourceBuildItem;
+import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import org.jboss.shamrock.deployment.cdi.BeanContainerListenerBuildItem;
@@ -72,6 +73,12 @@ public final class HibernateResourceProcessor {
     private static final DotName PERSISTENCE_CONTEXT = DotName.createSimple(PersistenceContext.class.getName());
     private static final DotName PERSISTENCE_UNIT = DotName.createSimple(PersistenceUnit.class.getName());
     private static final DotName PRODUCES = DotName.createSimple(Produces.class.getName());
+
+
+    @BuildStep
+    HotDeploymentConfigFileBuildItem configFile() {
+        return new HotDeploymentConfigFileBuildItem("META-INF/persistence.xml");
+    }
 
     @BuildStep
     void doParse(BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceProducer) {

@@ -24,6 +24,8 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -35,6 +37,7 @@ import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
+import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
 import org.jboss.shamrock.deployment.cdi.BeanContainerListenerBuildItem;
 import org.jboss.shamrock.openapi.runtime.OpenApiDeploymentTemplate;
 import org.jboss.shamrock.openapi.runtime.OpenApiDocumentProducer;
@@ -52,11 +55,23 @@ import io.smallrye.openapi.runtime.scanner.OpenApiAnnotationScanner;
  */
 public class OpenApiProcessor {
 
+    private static final String META_INF_OPENAPI_YAML = "META-INF/openapi.yaml";
+    private static final String WEB_INF_CLASSES_META_INF_OPENAPI_YAML = "WEB-INF/classes/META-INF/openapi.yaml";
+    private static final String META_INF_OPENAPI_YML = "META-INF/openapi.yml";
+    private static final String WEB_INF_CLASSES_META_INF_OPENAPI_YML = "WEB-INF/classes/META-INF/openapi.yml";
+    private static final String META_INF_OPENAPI_JSON = "META-INF/openapi.json";
+    private static final String WEB_INF_CLASSES_META_INF_OPENAPI_JSON = "WEB-INF/classes/META-INF/openapi.json";
     /**
      * The path to register the OpenAPI Servlet
      */
     @ConfigProperty(name = "shamrock.openapi.path", defaultValue = "/openapi")
     String path;
+
+    List<HotDeploymentConfigFileBuildItem> configFiles() {
+        return Stream.of(META_INF_OPENAPI_YAML, WEB_INF_CLASSES_META_INF_OPENAPI_YAML,
+                META_INF_OPENAPI_YML, WEB_INF_CLASSES_META_INF_OPENAPI_YML,
+                META_INF_OPENAPI_JSON, WEB_INF_CLASSES_META_INF_OPENAPI_JSON).map(HotDeploymentConfigFileBuildItem::new).collect(Collectors.toList());
+    }
 
     @BuildStep
     ServletBuildItem servlet() {
@@ -107,22 +122,22 @@ public class OpenApiProcessor {
     private Result findStaticModel(ApplicationArchivesBuildItem archivesBuildItem) {
         // Check for the file in both META-INF and WEB-INF/classes/META-INF
         OpenApiSerializer.Format format = OpenApiSerializer.Format.YAML;
-        Path resourcePath = archivesBuildItem.getRootArchive().getChildPath("META-INF/openapi.yaml");
+        Path resourcePath = archivesBuildItem.getRootArchive().getChildPath(META_INF_OPENAPI_YAML);
         if (resourcePath == null) {
-            resourcePath = archivesBuildItem.getRootArchive().getChildPath("WEB-INF/classes/META-INF/openapi.yaml");
+            resourcePath = archivesBuildItem.getRootArchive().getChildPath(WEB_INF_CLASSES_META_INF_OPENAPI_YAML);
         }
         if (resourcePath == null) {
-            resourcePath = archivesBuildItem.getRootArchive().getChildPath("META-INF/openapi.yml");
+            resourcePath = archivesBuildItem.getRootArchive().getChildPath(META_INF_OPENAPI_YML);
         }
         if (resourcePath == null) {
-            resourcePath = archivesBuildItem.getRootArchive().getChildPath("WEB-INF/classes/META-INF/openapi.yml");
+            resourcePath = archivesBuildItem.getRootArchive().getChildPath(WEB_INF_CLASSES_META_INF_OPENAPI_YML);
         }
         if (resourcePath == null) {
-            resourcePath = archivesBuildItem.getRootArchive().getChildPath("META-INF/openapi.json");
+            resourcePath = archivesBuildItem.getRootArchive().getChildPath(META_INF_OPENAPI_JSON);
             format = OpenApiSerializer.Format.JSON;
         }
         if (resourcePath == null) {
-            resourcePath = archivesBuildItem.getRootArchive().getChildPath("WEB-INF/classes/META-INF/openapi.json");
+            resourcePath = archivesBuildItem.getRootArchive().getChildPath(WEB_INF_CLASSES_META_INF_OPENAPI_JSON);
             format = OpenApiSerializer.Format.JSON;
         }
 

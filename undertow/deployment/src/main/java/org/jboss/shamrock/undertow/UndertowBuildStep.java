@@ -94,6 +94,7 @@ import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
 import org.jboss.shamrock.deployment.builditem.ArchiveRootBuildItem;
 import org.jboss.shamrock.deployment.builditem.BeanContainerBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
+import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
 import org.jboss.shamrock.deployment.builditem.InjectionFactoryBuildItem;
 import org.jboss.shamrock.deployment.builditem.ServiceStartBuildItem;
 import org.jboss.shamrock.deployment.builditem.ShutdownContextBuildItem;
@@ -124,6 +125,7 @@ public class UndertowBuildStep {
     private static final DotName declareRoles = DotName.createSimple(DeclareRoles.class.getName());
     private static final DotName multipartConfig = DotName.createSimple(MultipartConfig.class.getName());
     private static final DotName servletSecurity = DotName.createSimple(ServletSecurity.class.getName());
+    private static final String WEB_XML = "META-INF/web.xml";
 
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
@@ -160,6 +162,12 @@ public class UndertowBuildStep {
         annotations.add(new BeanDefiningAnnotationBuildItem(webServlet));
         annotations.add(new BeanDefiningAnnotationBuildItem(webListener));
         return annotations;
+    }
+
+
+    @BuildStep
+    HotDeploymentConfigFileBuildItem configFile() {
+        return new HotDeploymentConfigFileBuildItem(WEB_XML);
     }
 
     @Record(STATIC_INIT)
@@ -201,7 +209,7 @@ public class UndertowBuildStep {
         RuntimeValue<DeploymentInfo> deployment = template.createDeployment("test", knownFiles, knownDirectories);
 
         WebMetaData result;
-        Path webXml = applicationArchivesBuildItem.getRootArchive().getChildPath("META-INF/web.xml");
+        Path webXml = applicationArchivesBuildItem.getRootArchive().getChildPath(WEB_XML);
         if (webXml != null) {
 
             final XMLInputFactory inputFactory = XMLInputFactory.newInstance();

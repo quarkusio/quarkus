@@ -35,6 +35,10 @@
     </dependency>
     <dependency>
       <groupId>org.jboss.shamrock</groupId>
+      <artifactId>shamrock-arc-deployment</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.shamrock</groupId>
       <artifactId>shamrock-fault-tolerance-runtime</artifactId>
     </dependency>
     <dependency>

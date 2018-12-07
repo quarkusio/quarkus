@@ -28,21 +28,32 @@ import org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate;
 
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
 
 public class RuntimeCompilationSetup {
 
     private static Logger log = Logger.getLogger(RuntimeCompilationSetup.class.getName());
 
-    public static void setup() throws Exception {
+    public static RuntimeUpdatesProcessor setup() throws Exception {
         try {
             //don't do this if we don't have Undertow
             Class.forName("org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate");
         } catch (ClassNotFoundException e) {
-            return;
+            return null;
         }
         String classesDir = System.getProperty("shamrock.runner.classes");
+        String sourcesDir = System.getProperty("shamrock.runner.sources");
+        String resourcesDir = System.getProperty("shamrock.runner.resources");
         if (classesDir != null) {
-            HandlerWrapper wrapper = createHandlerWrapper();
+            ClassLoaderCompiler compiler = null;
+            try {
+                compiler = new ClassLoaderCompiler(Thread.currentThread().getContextClassLoader(), new File(classesDir));
+            } catch (Exception e) {
+                log.log(Level.SEVERE, "Failed to create compiler, runtime compilation will be unavailable", e);
+                return null;
+            }
+            RuntimeUpdatesProcessor processor = new RuntimeUpdatesProcessor(Paths.get(classesDir), Paths.get(sourcesDir), Paths.get(resourcesDir), compiler);
+            HandlerWrapper wrapper = createHandlerWrapper(processor);
             //TODO: we need to get these values from the config in runtime mode
             HttpConfig config = new HttpConfig();
             config.port = ShamrockConfig.getInt("shamrock.http.port", "8080");
@@ -51,26 +62,28 @@ public class RuntimeCompilationSetup {
             config.workerThreads = Optional.empty();
 
             UndertowDeploymentTemplate.startUndertowEagerly(config, wrapper);
+            return processor;
         }
+        return null;
     }
 
 
-    private static HandlerWrapper createHandlerWrapper() {
+    private static HandlerWrapper createHandlerWrapper(RuntimeUpdatesProcessor processor) {
 
-        String classesDir = System.getProperty("shamrock.runner.classes");
-        String sourcesDir = System.getProperty("shamrock.runner.sources");
 
         return new HandlerWrapper() {
             @Override
             public HttpHandler wrap(HttpHandler handler) {
-                ClassLoaderCompiler compiler = null;
-                try {
-                    compiler = new ClassLoaderCompiler(Thread.currentThread().getContextClassLoader(), new File(classesDir));
-                } catch (Exception e) {
-                    log.log(Level.SEVERE, "Failed to create compiler, runtime compilation will be unavailable", e);
-                    return handler;
-                }
-                return new RuntimeUpdatesHandler(handler, Paths.get(classesDir), Paths.get(sourcesDir), compiler);
+                return new HttpHandler() {
+                    @Override
+                    public void handleRequest(HttpServerExchange exchange) throws Exception {
+                        if (exchange.isInIoThread()) {
+                            exchange.dispatch(this);
+                            return;
+                        }
+                        processor.handleRequest(exchange, handler);
+                    }
+                };
             }
         };
     }

@@ -73,7 +73,6 @@ public class DevMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project.build.sourceDirectory}")
     private File sourceDir;
 
-
     @Parameter(defaultValue = "${jvm.args}")
     private String jvmArgs;
 
@@ -173,9 +172,18 @@ public class DevMojo extends AbstractMojo {
                 out.putNextEntry(new ZipEntry("META-INF/MANIFEST.MF"));
                 manifest.write(out);
             }
+            String resources = null;
+            for(Resource i : project.getBuild().getResources()) {
+                //todo: support multiple resources dirs for config hot deployment
+                resources = i.getDirectory();
+                break;
+            }
 
             args.add("-Dshamrock.runner.classes=" + outputDirectory.getAbsolutePath());
             args.add("-Dshamrock.runner.sources=" + sourceDir.getAbsolutePath());
+            if(resources != null) {
+                args.add("-Dshamrock.runner.resources=" + new File(resources).getAbsolutePath());
+            }
             args.add("-jar");
             args.add(tempFile.getAbsolutePath());
             args.add(outputDirectory.getAbsolutePath());

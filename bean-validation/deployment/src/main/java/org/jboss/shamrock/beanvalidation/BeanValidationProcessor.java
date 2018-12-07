@@ -39,6 +39,7 @@ import org.jboss.shamrock.beanvalidation.runtime.ValidatorProvider;
 import org.jboss.shamrock.beanvalidation.runtime.ValidatorTemplate;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
+import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
 import org.jboss.shamrock.deployment.builditem.InjectionFactoryBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveFieldBuildItem;
@@ -47,6 +48,13 @@ import org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildIte
 import org.jboss.shamrock.deployment.recording.RecorderContext;
 
 class BeanValidationProcessor {
+
+
+    @BuildStep
+    HotDeploymentConfigFileBuildItem configFile() {
+        return new HotDeploymentConfigFileBuildItem("META-INF/validation.xml");
+    }
+
 
     @BuildStep
     AdditionalBeanBuildItem registerBean() {

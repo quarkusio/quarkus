@@ -43,10 +43,11 @@
         <resteasy.version>4.0.0.Beta6</resteasy.version>
         <weld-se-core.version>3.0.5.Final</weld-se-core.version>
         <opentracing.version>0.31.0</opentracing.version>
-        <opentracing-jaxrs.version>0.0.12</opentracing-jaxrs.version>
+        <opentracing-jaxrs.version>0.1.7</opentracing-jaxrs.version>
+        <opentracing-web-servlet-filter.version>0.1.0.redhat-00027</opentracing-web-servlet-filter.version>
         <opentracing-tracerresolver.version>0.1.4</opentracing-tracerresolver.version>
         <opentracing-concurrent.version>0.0.1</opentracing-concurrent.version>
-        <jaeger.version>0.21.0</jaeger.version>
+        <jaeger.version>0.27.0</jaeger.version>
         <undertow.version>2.0.16.Final</undertow.version>
         <xnio.version>3.6.5.Final</xnio.version>
         <jboss-servlet-api_4.0_spec.version>1.0.0.Final</jboss-servlet-api_4.0_spec.version>
@@ -691,6 +692,11 @@
                 <groupId>io.opentracing.contrib</groupId>
                 <artifactId>opentracing-concurrent</artifactId>
                 <version>${opentracing-concurrent.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.opentracing.contrib</groupId>
+                <artifactId>opentracing-web-servlet-filter</artifactId>
+                <version>${opentracing-web-servlet-filter.version}</version>
             </dependency>
             <dependency>
               <groupId>io.opentracing.contrib</groupId>

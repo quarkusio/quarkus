@@ -13,7 +13,7 @@
 
 [quote]
 --
-{project-name} is a Cloud Native, Container First framework for Java applications.
+{project-name} is a Cloud Native, Container First framework for writing Java applications.
 --
 
 Container First::

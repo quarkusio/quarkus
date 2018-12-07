@@ -38,7 +38,16 @@
                     <groupId>org.javassist</groupId>
                     <artifactId>javassist</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>javax.activation</groupId>
+                    <artifactId>javax.activation-api</artifactId>
+                </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.activation</groupId>
+            <artifactId>jakarta.activation</artifactId>
+            <version>${version.jakarta-activation}</version>
         </dependency>
         <dependency>
             <groupId>org.jboss.graalvm</groupId>

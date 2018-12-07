@@ -37,6 +37,7 @@
         <version.junit>4.12</version.junit>
         <version.org.hibernate>5.4.0-protean-SNAPSHOT</version.org.hibernate>
         <version.org.hibernate.tooling>5.3.6.Final</version.org.hibernate.tooling>
+        <version.jakarta-activation>1.2.1</version.jakarta-activation>
 
         <!-- Build settings -->
 

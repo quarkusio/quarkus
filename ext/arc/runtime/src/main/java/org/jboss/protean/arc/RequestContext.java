@@ -92,7 +92,7 @@ class RequestContext implements ManagedContext {
     }
 
     @Override
-    public synchronized void activate(Collection<InstanceHandle<?>> initialState) {
+    public void activate(Collection<InstanceHandle<?>> initialState) {
         Map<Contextual<?>, InstanceHandle<?>> state = new HashMap<>();
         if (initialState != null) {
             for (InstanceHandle<?> instanceHandle : initialState) {
@@ -106,7 +106,7 @@ class RequestContext implements ManagedContext {
     }
 
     @Override
-    public synchronized void deactivate() {
+    public void deactivate() {
         currentContext.remove();
     }
 

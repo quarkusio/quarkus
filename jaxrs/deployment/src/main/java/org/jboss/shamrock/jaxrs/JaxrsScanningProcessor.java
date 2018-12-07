@@ -28,11 +28,22 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+import javax.ws.rs.Consumes;
+import javax.ws.rs.Produces;
 import javax.ws.rs.container.DynamicFeature;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.ext.ContextResolver;
+import javax.ws.rs.ext.MessageBodyReader;
+import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Providers;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -40,6 +51,10 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.resteasy.core.MediaTypeMap;
+import org.jboss.resteasy.plugins.interceptors.AcceptEncodingGZIPFilter;
+import org.jboss.resteasy.plugins.interceptors.GZIPDecodingInterceptor;
+import org.jboss.resteasy.plugins.interceptors.GZIPEncodingInterceptor;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 import org.jboss.shamrock.annotations.BuildProducer;
@@ -60,7 +75,7 @@ import org.jboss.shamrock.undertow.ServletBuildItem;
 import org.jboss.shamrock.undertow.ServletInitParamBuildItem;
 
 /**
- * Processor that finds jax-rs classes in the deployment
+ * Processor that finds JAX-RS classes in the deployment
  *
  * @author Stuart Douglas
  */
@@ -79,16 +94,42 @@ public class JaxrsScanningProcessor {
     private static final DotName JSONB_ANNOTATION = DotName.createSimple("javax.json.bind.annotation.JsonbAnnotation");
     private static final DotName CONTEXT = DotName.createSimple("javax.ws.rs.core.Context");
 
+    private static final DotName GET = DotName.createSimple("javax.ws.rs.GET");
+    private static final DotName HEAD = DotName.createSimple("javax.ws.rs.HEAD");
+    private static final DotName DELETE = DotName.createSimple("javax.ws.rs.DELETE");
+    private static final DotName OPTIONS = DotName.createSimple("javax.ws.rs.OPTIONS");
+    private static final DotName PATCH = DotName.createSimple("javax.ws.rs.PATCH");
+    private static final DotName POST = DotName.createSimple("javax.ws.rs.POST");
+    private static final DotName PUT = DotName.createSimple("javax.ws.rs.PUT");
+
+    private static final DotName CONSUMES = DotName.createSimple("javax.ws.rs.Consumes");
+    private static final DotName PRODUCES = DotName.createSimple("javax.ws.rs.Produces");
+
     private static final DotName[] METHOD_ANNOTATIONS = {
-            DotName.createSimple("javax.ws.rs.GET"),
-            DotName.createSimple("javax.ws.rs.HEAD"),
-            DotName.createSimple("javax.ws.rs.DELETE"),
-            DotName.createSimple("javax.ws.rs.OPTIONS"),
-            DotName.createSimple("javax.ws.rs.PATCH"),
-            DotName.createSimple("javax.ws.rs.POST"),
-            DotName.createSimple("javax.ws.rs.PUT"),
+            GET,
+            HEAD,
+            DELETE,
+            OPTIONS,
+            PATCH,
+            POST,
+            PUT,
     };
 
+    private static final ProviderDiscoverer[] PROVIDER_DISCOVERERS = {
+            new ProviderDiscoverer(GET, false, true),
+            new ProviderDiscoverer(HEAD, false, false),
+            new ProviderDiscoverer(DELETE, true, false),
+            new ProviderDiscoverer(OPTIONS, false, true),
+            new ProviderDiscoverer(PATCH, true, false),
+            new ProviderDiscoverer(POST, true, true),
+            new ProviderDiscoverer(PUT, true, false)
+    };
+
+    /**
+     * Enable gzip support for JAX-RS services.
+     */
+    @ConfigProperty(name = "shamrock.jaxrs.enable-gzip")
+    Optional<Boolean> isGzipSupportEnabled;
 
     @BuildStep
     ServletInitParamBuildItem registerProviders(List<JaxrsProviderBuildItem> providers) {
@@ -117,8 +158,8 @@ public class JaxrsScanningProcessor {
                       BuildProducer<SubstrateResourceBuildItem> resource,
                       BuildProducer<RuntimeInitializedClassBuildItem> runtimeClasses,
                       BuildProducer<ServletBuildItem> servletProducer,
-                      CombinedIndexBuildItem combinedIndexBuildItem,
-                      BuildProducer<ServletInitParamBuildItem> servletContextParams
+                      BuildProducer<ServletInitParamBuildItem> servletContextParams,
+                      CombinedIndexBuildItem combinedIndexBuildItem
     ) throws Exception {
 
 
@@ -238,9 +279,80 @@ public class JaxrsScanningProcessor {
                 }
             }
         }
+    }
 
-        //register providers for reflection
-        Enumeration<URL> resources = getClass().getClassLoader().getResources("META-INF/services/" + Providers.class.getName());
+    @BuildStep
+    void registerProviders(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ServletInitParamBuildItem> servletContextParams,
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            List<JaxrsProviderBuildItem> contributedProviderBuildItems) throws Exception {
+        IndexView index = combinedIndexBuildItem.getIndex();
+
+        Set<String> contributedProviders = new HashSet<>();
+        for ( JaxrsProviderBuildItem contributedProviderBuildItem : contributedProviderBuildItems ) {
+            contributedProviders.add(contributedProviderBuildItem.getName());
+        }
+
+        Set<String> availableProviders = getAvailableProviders();
+
+        MediaTypeMap<String> categorizedReaders = new MediaTypeMap<>();
+        MediaTypeMap<String> categorizedWriters = new MediaTypeMap<>();
+        MediaTypeMap<String> categorizedContextResolvers = new MediaTypeMap<>();
+        Set<String> otherProviders = new HashSet<>();
+
+        categorizeProviders(availableProviders, categorizedReaders, categorizedWriters, categorizedContextResolvers, otherProviders);
+
+        Set<String> providersToRegister = new HashSet<>();
+
+        // add the other providers detected
+        providersToRegister.addAll(otherProviders);
+
+        // find the providers declared in our services
+        boolean useBuiltinProviders = collectDeclaredProviders(providersToRegister, categorizedReaders, categorizedWriters, categorizedContextResolvers, index);
+
+        // If GZIP support is enabled, enable it
+        if (Boolean.TRUE.equals(isGzipSupportEnabled.orElse(Boolean.FALSE))) {
+            providersToRegister.add(AcceptEncodingGZIPFilter.class.getName());
+            providersToRegister.add(GZIPDecodingInterceptor.class.getName());
+            providersToRegister.add(GZIPEncodingInterceptor.class.getName());
+        }
+
+        if (useBuiltinProviders) {
+            // if we find a wildcard media type, we just use the built-in providers
+            servletContextParams.produce(new ServletInitParamBuildItem("resteasy.use.builtin.providers", "true"));
+            if (!contributedProviders.isEmpty()) {
+                servletContextParams.produce(new ServletInitParamBuildItem("resteasy.providers", contributedProviders.stream().collect(Collectors.joining(","))));
+            }
+
+            providersToRegister = new HashSet<>(contributedProviders);
+            providersToRegister.addAll(availableProviders);
+        } else {
+            providersToRegister.addAll(contributedProviders);
+            servletContextParams.produce(new ServletInitParamBuildItem("resteasy.use.builtin.providers", "false"));
+            servletContextParams.produce(new ServletInitParamBuildItem("resteasy.providers", providersToRegister.stream().collect(Collectors.joining(","))));
+        }
+
+        // register the providers for reflection
+        for (String providerToRegister : providersToRegister) {
+            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, providerToRegister));
+        }
+    }
+
+    @Record(STATIC_INIT)
+    @BuildStep
+    void integrate(JaxrsTemplate template, BeanContainerBuildItem beanContainerBuildItem) {
+        template.setupIntegration(beanContainerBuildItem.getValue());
+    }
+
+    @BuildStep
+    List<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations() {
+        return Collections.singletonList(new BeanDefiningAnnotationBuildItem(PATH));
+    }
+
+    private Set<String> getAvailableProviders() throws Exception {
+        Set<String> availableProviders = new HashSet<>();
+        Enumeration<URL> resources = getClass().getClassLoader()
+                .getResources("META-INF/services/" + Providers.class.getName());
         while (resources.hasMoreElements()) {
             URL url = resources.nextElement();
             try (InputStream in = url.openStream()) {
@@ -251,25 +363,153 @@ public class JaxrsScanningProcessor {
                         line = line.substring(line.indexOf("#"));
                     }
                     line = line.trim();
-                    if (line.equals("")) continue;
-                    reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, line));
+                    if (line.equals("")) {
+                        continue;
+                    }
+
+                    availableProviders.add(line);
+                }
+            }
+        }
+        return availableProviders;
+    }
+
+    private static void categorizeProviders(Set<String> availableProviders, MediaTypeMap<String> categorizedReaders,
+            MediaTypeMap<String> categorizedWriters, MediaTypeMap<String> categorizedContextResolvers,
+            Set<String> otherProviders) {
+        for (String availableProvider : availableProviders) {
+            try {
+                Class<?> providerClass = Class.forName(availableProvider);
+                if (MessageBodyReader.class.isAssignableFrom(providerClass) || MessageBodyWriter.class.isAssignableFrom(providerClass)) {
+                    if (MessageBodyReader.class.isAssignableFrom(providerClass)) {
+                        Consumes consumes = providerClass.getAnnotation(Consumes.class);
+                        if (consumes != null) {
+                            for (String consumesMediaType : consumes.value()) {
+                                categorizedReaders.add(MediaType.valueOf(consumesMediaType), providerClass.getName());
+                            }
+                        } else {
+                            categorizedReaders.add(MediaType.WILDCARD_TYPE, providerClass.getName());
+                        }
+                    }
+                    if (MessageBodyWriter.class.isAssignableFrom(providerClass)) {
+                        Produces produces = providerClass.getAnnotation(Produces.class);
+                        if (produces != null) {
+                            for (String producesMediaType : produces.value()) {
+                                categorizedWriters.add(MediaType.valueOf(producesMediaType), providerClass.getName());
+                            }
+                        } else {
+                            categorizedWriters.add(MediaType.WILDCARD_TYPE, providerClass.getName());
+                        }
+                    }
+                } else if (ContextResolver.class.isAssignableFrom(providerClass)) {
+                    Produces produces = providerClass.getAnnotation(Produces.class);
+                    if (produces != null) {
+                        for (String producesMediaType : produces.value()) {
+                            categorizedContextResolvers.add(MediaType.valueOf(producesMediaType),
+                                    providerClass.getName());
+                        }
+                    } else {
+                        categorizedContextResolvers.add(MediaType.WILDCARD_TYPE, providerClass.getName());
+                    }
+                } else {
+                    otherProviders.add(providerClass.getName());
+                }
+            } catch (ClassNotFoundException e) {
+                // Ignore
+            }
+        }
+    }
+
+    private static boolean collectDeclaredProviders(Set<String> providersToRegister,
+            MediaTypeMap<String> categorizedReaders, MediaTypeMap<String> categorizedWriters,
+            MediaTypeMap<String> categorizedContextResolvers, IndexView index) {
+        for (ProviderDiscoverer providerDiscoverer : PROVIDER_DISCOVERERS) {
+            Collection<AnnotationInstance> getMethods = index.getAnnotations(providerDiscoverer.getMethodAnnotation());
+            for (AnnotationInstance getMethod : getMethods) {
+                MethodInfo methodTarget = getMethod.target().asMethod();
+                if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister, categorizedReaders,
+                        methodTarget, CONSUMES, providerDiscoverer.noConsumesDefaultsToAll())) {
+                    return true;
+                }
+                if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister, categorizedWriters,
+                        methodTarget, PRODUCES, providerDiscoverer.noProducesDefaultsToAll())) {
+                    return true;
+                }
+                if (collectDeclaredProvidersForMethodAndMediaTypeAnnotation(providersToRegister,
+                        categorizedContextResolvers, methodTarget, PRODUCES,
+                        providerDiscoverer.noProducesDefaultsToAll())) {
+                    return true;
                 }
             }
         }
 
-
+        return false;
     }
 
+    private static boolean collectDeclaredProvidersForMethodAndMediaTypeAnnotation(Set<String> providersToRegister,
+            MediaTypeMap<String> categorizedProviders, MethodInfo methodTarget, DotName mediaTypeAnnotation,
+            boolean defaultsToAll) {
+        AnnotationInstance mediaTypeAnnotationInstance = methodTarget.annotation(mediaTypeAnnotation);
+        if (mediaTypeAnnotationInstance == null) {
+            // let's consider the class
+            Collection<AnnotationInstance> classAnnotations = methodTarget.declaringClass().classAnnotations();
+            for (AnnotationInstance classAnnotation : classAnnotations) {
+                if (mediaTypeAnnotation.equals(classAnnotation.name())) {
+                    if( collectDeclaredProvidersForMediaTypeAnnotationInstance(providersToRegister, categorizedProviders,
+                            classAnnotation) ) {
+                        return true;
+                    }
+                    return false;
+                }
+            }
+            return defaultsToAll;
+        }
+        if (collectDeclaredProvidersForMediaTypeAnnotationInstance(providersToRegister, categorizedProviders,
+                mediaTypeAnnotationInstance) ) {
+            return true;
+        }
 
-    @Record(STATIC_INIT)
-    @BuildStep
-    void integrate(JaxrsTemplate template, BeanContainerBuildItem beanContainerBuildItem) {
-        template.setupIntegration(beanContainerBuildItem.getValue());
+        return false;
     }
 
-	@BuildStep
-	List<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations() {
-		return Collections.singletonList(new BeanDefiningAnnotationBuildItem(PATH));
-	}
-    
+    private static boolean collectDeclaredProvidersForMediaTypeAnnotationInstance(Set<String> providersToRegister,
+            MediaTypeMap<String> categorizedProviders, AnnotationInstance mediaTypeAnnotationInstance) {
+        for (String media : mediaTypeAnnotationInstance.value().asStringArray()) {
+            MediaType mediaType = MediaType.valueOf(media);
+            if (MediaType.WILDCARD_TYPE.equals(mediaType)) {
+                // exit early if we have the wildcard type
+                return true;
+            }
+            providersToRegister.addAll(categorizedProviders.getPossible(mediaType));
+        }
+        return false;
+    }
+
+    private static class ProviderDiscoverer {
+
+        private final DotName methodAnnotation;
+
+        private final boolean noConsumesDefaultsToAll;
+
+        private final boolean noProducesDefaultsToAll;
+
+        private ProviderDiscoverer(DotName methodAnnotation, boolean noConsumesDefaultsToAll,
+                boolean noProducesDefaultsToAll) {
+            this.methodAnnotation = methodAnnotation;
+            this.noConsumesDefaultsToAll = noConsumesDefaultsToAll;
+            this.noProducesDefaultsToAll = noProducesDefaultsToAll;
+        }
+
+        public DotName getMethodAnnotation() {
+            return methodAnnotation;
+        }
+
+        public boolean noConsumesDefaultsToAll() {
+            return noConsumesDefaultsToAll;
+        }
+
+        public boolean noProducesDefaultsToAll() {
+            return noProducesDefaultsToAll;
+        }
+    }
 }

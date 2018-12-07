@@ -22,22 +22,17 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.AbstractList;
-import java.util.Collection;
-import java.util.Collections;
 
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Vetoed;
 import javax.inject.Inject;
 
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.DotName;
 import org.jboss.protean.arc.Arc;
 import org.jboss.protean.arc.ArcContainer;
 import org.jboss.protean.arc.InstanceHandle;
 import org.jboss.protean.arc.processor.AnnotationsTransformer;
-import org.jboss.protean.arc.processor.Transformation;
 import org.jboss.protean.arc.test.ArcTestContainer;
 import org.junit.Rule;
 import org.junit.Test;
@@ -76,19 +71,18 @@ public class AnnotationsTransformerTest {
         }
 
         @Override
-        public Collection<AnnotationInstance> transform(AnnotationTarget target, Collection<AnnotationInstance> annotations) {
-            if (target.kind() == Kind.CLASS) {
-                if (target.asClass().name().toString().equals(One.class.getName())) {
+        public void transform(TransformationContext context) {
+            if (context.isClass()) {
+                if (context.getTarget().asClass().name().toString().equals(One.class.getName())) {
                     // Veto bean class One
-                    return Transformation.with(target, annotations).add(Vetoed.class).done();
+                    context.transform().add(Vetoed.class).done();
                 }
-                if (target.asClass().name().local().equals(IWantToBeABean.class.getSimpleName())) {
-                    return Transformation.with(target, annotations).add(Dependent.class).done();
+                if (context.getTarget().asClass().name().local().equals(IWantToBeABean.class.getSimpleName())) {
+                    context.transform().add(Dependent.class).done();
                 }
-            } else if (target.kind() == Kind.FIELD && target.asField().name().equals("seven")) {
-                return Transformation.with(target, annotations).add(Inject.class).done();
+            } else if (context.isField() && context.getTarget().asField().name().equals("seven")) {
+                context.transform().add(Inject.class).done();
             }
-            return annotations;
         }
 
     }
@@ -101,8 +95,7 @@ public class AnnotationsTransformerTest {
         }
 
         @Override
-        public Collection<AnnotationInstance> transform(AnnotationTarget target, Collection<AnnotationInstance> annotations) {
-            return Collections.emptyList();
+        public void transform(TransformationContext transformationContext) {
         }
 
     }

@@ -34,7 +34,6 @@ import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
@@ -122,7 +121,7 @@ public class ArcAnnotationProcessor {
             BuildProducer<InjectionProviderBuildItem> injectionProvider, List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems,
                                         ApplicationArchivesBuildItem applicationArchivesBuildItem,
             List<GeneratedBeanBuildItem> generatedBeans, List<AnnotationTransformerBuildItem> annotationTransformerAdapters,
-            List<org.jboss.shamrock.arc.deployment.AnnotationTransformerBuildItem> annotationTransformers, ShutdownContextBuildItem shutdown) throws Exception {
+            List<org.jboss.shamrock.arc.deployment.AnnotationsTransformerBuildItem> annotationTransformers, ShutdownContextBuildItem shutdown) throws Exception {
 
 
         List<String> additionalBeans = new ArrayList<>();
@@ -182,12 +181,15 @@ public class ArcAnnotationProcessor {
             builder.addAnnotationTransformer(new AnnotationsTransformer() {
 
                 @Override
-                public Collection<AnnotationInstance> transform(AnnotationTarget target, Collection<AnnotationInstance> annotations) {
-                    return adapterItem.getTransformer().apply(target, annotations);
+                public void transform(TransformationContext context) {
+                    Collection<AnnotationInstance> result = adapterItem.getTransformer().apply(context.getTarget(), context.getAnnotations());
+                    if (!result.equals(context.getAnnotations())) {
+                        context.transform().removeAll().addAll(result).done();
+                    }
                 }
             });
         }
-        for (org.jboss.shamrock.arc.deployment.AnnotationTransformerBuildItem transformerItem : annotationTransformers) {
+        for (org.jboss.shamrock.arc.deployment.AnnotationsTransformerBuildItem transformerItem : annotationTransformers) {
             builder.addAnnotationTransformer(transformerItem.getAnnotationsTransformer());
         }
 

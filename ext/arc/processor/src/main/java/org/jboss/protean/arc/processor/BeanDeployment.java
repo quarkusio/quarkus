@@ -89,7 +89,7 @@ public class BeanDeployment {
         long start = System.currentTimeMillis();
         this.resourceAnnotations = new HashSet<>(resourceAnnotations);
         this.index = index;
-        this.annotationStore = new AnnotationStore(annotationTransformers);
+        this.annotationStore = new AnnotationStore(annotationTransformers, buildContext);
 
         if (buildContext != null) {
             buildContext.putInternal(Key.ANNOTATION_STORE.asString(), annotationStore);

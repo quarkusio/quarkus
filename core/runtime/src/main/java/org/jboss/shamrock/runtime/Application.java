@@ -166,30 +166,35 @@ public abstract class Application {
      * Run the application as if it were in a standalone JVM.
      */
     public final void run(String[] args) {
-        if (ImageInfo.inImageRuntimeCode()) {
-            final SignalHandler handler = new SignalHandler() {
-                public void handle(final Signal signal) {
-                    System.exit(0);
-                }
-            };
-            Signal.handle(new Signal("INT"), handler);
-            Signal.handle(new Signal("TERM"), handler);
-            Signal.handle(new Signal("QUIT"), new SignalHandler() {
-                public void handle(final Signal signal) {
-                    DiagnosticPrinter.printDiagnostics(System.out);
-                }
-            });
-        }
-        final ShutdownHookThread shutdownHookThread = new ShutdownHookThread(Thread.currentThread());
-        Runtime.getRuntime().addShutdownHook(shutdownHookThread);
-        start(args);
         try {
-            while (! shutdownRequested) {
-                Thread.interrupted();
-                LockSupport.park(shutdownHookThread);
+            if (ImageInfo.inImageRuntimeCode()) {
+                final SignalHandler handler = new SignalHandler() {
+                    public void handle(final Signal signal) {
+                        System.exit(0);
+                    }
+                };
+                Signal.handle(new Signal("INT"), handler);
+                Signal.handle(new Signal("TERM"), handler);
+                Signal.handle(new Signal("QUIT"), new SignalHandler() {
+                    public void handle(final Signal signal) {
+                        DiagnosticPrinter.printDiagnostics(System.out);
+                    }
+                });
+            }
+            final ShutdownHookThread shutdownHookThread = new ShutdownHookThread(Thread.currentThread());
+            Runtime.getRuntime().addShutdownHook(shutdownHookThread);
+            start(args);
+            try {
+                while (! shutdownRequested) {
+                    Thread.interrupted();
+                    LockSupport.park(shutdownHookThread);
+                }
+            } finally {
+                stop();
             }
         } finally {
-            stop();
+            System.out.flush();
+            System.err.flush();
         }
     }
 

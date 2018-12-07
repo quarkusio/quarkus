@@ -195,6 +195,9 @@ public class BuildMojo extends AbstractMojo {
                     if (a.getScope().equals(PROVIDED) && !whitelist.contains(a.getDependencyConflictId())) {
                         continue;
                     }
+                    if (a.getArtifactId().equals("svm") && a.getGroupId().equals("com.oracle.substratevm")) {
+                        continue;
+                    }
                     final File artifactFile = a.getFile();
                     if (uberJar) {
                         try (ZipInputStream in = new ZipInputStream(new FileInputStream(artifactFile))) {

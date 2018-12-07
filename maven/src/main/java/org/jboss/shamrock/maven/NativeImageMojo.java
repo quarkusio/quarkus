@@ -111,8 +111,8 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter(defaultValue = "true")
     private boolean fullStackTraces;
 
-    @Parameter(defaultValue = "true")
-    private boolean generateCallReports;
+    @Parameter(defaultValue = "${native-image.disable-reports}")
+    private boolean disableReports;
 
     @Parameter
     private List<String> additionalBuildArgs;
@@ -199,7 +199,7 @@ public class NativeImageMojo extends AbstractMojo {
             if (debugBuildProcess) {
                 command.add("-J-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y");
             }
-            if(generateCallReports) {
+            if(!disableReports) {
                 command.add("-H:+PrintAnalysisCallTree");
             }
             if (dumpProxies) {

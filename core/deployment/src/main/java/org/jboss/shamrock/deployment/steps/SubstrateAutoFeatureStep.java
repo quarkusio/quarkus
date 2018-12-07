@@ -244,6 +244,8 @@ public class SubstrateAutoFeatureStep {
         CatchBlockCreator print = overallCatch.addCatch(Throwable.class);
         print.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), print.getCaughtException());
 
+
+        beforeAn.loadClass("org.jboss.shamrock.runner.ApplicationImpl");
         beforeAn.returnValue(null);
 
         file.close();

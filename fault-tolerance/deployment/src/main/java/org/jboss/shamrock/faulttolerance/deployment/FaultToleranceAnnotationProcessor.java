@@ -96,6 +96,7 @@ public class FaultToleranceAnnotationProcessor {
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, fallbackHandler.name().toString()));
         }
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, true, HystrixCircuitBreaker.Factory.class.getName()));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, Retry.class.getName()));
 
         if (capabilities.isCapabilityPresent(Capabilities.CDI_ARC)) {
             // Add HystrixCommandBinding to app classes

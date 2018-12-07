@@ -41,7 +41,6 @@
     <properties>
         <version.org.jandex>2.1.0.Beta1</version.org.jandex>
         <resteasy.version>4.0.0.Beta6</resteasy.version>
-        <weld-se-core.version>3.0.5.Final</weld-se-core.version>
         <opentracing.version>0.31.0</opentracing.version>
         <opentracing-jaxrs.version>0.1.7</opentracing-jaxrs.version>
         <opentracing-web-servlet-filter.version>0.1.0.redhat-00027</opentracing-web-servlet-filter.version>
@@ -123,7 +122,6 @@
         <module>maven</module>
         <module>jaxrs</module>
         <module>test-framework</module>
-        <module>weld</module>
         <module>health</module>
         <module>logging</module>
         <module>metrics</module>
@@ -490,16 +488,6 @@
             <dependency>
                 <groupId>org.jboss.shamrock</groupId>
                 <artifactId>shamrock-undertow-runtime</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jboss.shamrock</groupId>
-                <artifactId>shamrock-weld-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jboss.shamrock</groupId>
-                <artifactId>shamrock-weld-runtime</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -1119,17 +1107,6 @@
                 <groupId>org.jboss</groupId>
                 <artifactId>jboss-transaction-spi</artifactId>
                 <version>${jboss-transaction-spi.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jboss.weld.se</groupId>
-                <artifactId>weld-se-core</artifactId>
-                <version>${weld-se-core.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.jboss.logging</groupId>
-                        <artifactId>jboss-logging</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.jboss.protean.arc</groupId>

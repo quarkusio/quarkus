@@ -12,6 +12,8 @@ To complete this guide, you need:
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.5+
 
+Don't forget to configure Maven as indicated on the link:maven-config.html[Maven configuration page].
+
 == Solution
 
 We recommend you to follow the instructions in the next sections and create the application step by step.

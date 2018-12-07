@@ -33,6 +33,8 @@ On MacOS, point the variable to the `Home` sub-directory:
 `export GRAALVM_HOME=~clement/Development/graalvm/Contents/Home/`
 ====
 
+Don't forget to configure Maven as indicated on the link:maven-config.html[Maven configuration page].
+
 == Solution
 
 We recommend you to follow the instructions in the next sections and package the application step by step.

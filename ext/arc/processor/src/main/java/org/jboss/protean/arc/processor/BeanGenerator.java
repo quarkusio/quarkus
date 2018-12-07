@@ -1202,7 +1202,7 @@ public class BeanGenerator extends AbstractGenerator {
             get.returnValue(get.invokeInterfaceMethod(MethodDescriptors.CONTEXT_GET, context, get.getThis(), creationalContext));
         } else if (bean.getScope().isNormal()) {
             // return proxy.get()
-            ResultHandle proxy = get.readInstanceField(FieldDescriptor.of(beanCreator.getClassName(), "proxy", LazyValue.class.getName()), get.getThis());
+            ResultHandle proxy = get.readInstanceField(FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_PROXY, LazyValue.class.getName()), get.getThis());
             get.returnValue(get.invokeVirtualMethod(MethodDescriptors.LAZY_VALUE_GET, proxy));
         }
 

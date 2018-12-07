@@ -122,6 +122,7 @@ public class ShamrockUnitTest extends BlockJUnit4ClassRunner {
                 }
                 started = true;
             } catch (Exception e) {
+                started = false;
                 if (buildShouldFailWith != null) {
                     if (e instanceof RuntimeException) {
                         Throwable cause = e.getCause();

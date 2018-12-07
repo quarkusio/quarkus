@@ -175,7 +175,8 @@
           <id>weld</id>
           <activation>
             <property>
-              <name>!arc</name>
+              <name>weld</name>
+              <value>true</value>
             </property>
           </activation>
           <dependencies>
@@ -191,8 +192,7 @@
           <id>arc</id>
           <activation>
             <property>
-              <name>arc</name>
-              <value>true</value>
+              <name>!weld</name>
             </property>
           </activation>
           <dependencies>

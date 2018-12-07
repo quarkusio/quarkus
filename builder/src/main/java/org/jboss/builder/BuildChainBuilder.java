@@ -44,7 +44,7 @@ import org.wildfly.common.Assert;
  */
 public final class BuildChainBuilder {
 
-    private static final String GRAPH_OUTPUT = System.getProperty("jboss.builder.graph-output", "graph-output.dot");
+    private static final String GRAPH_OUTPUT = System.getProperty("jboss.builder.graph-output");
 
     private final BuildStepBuilder finalStep;
     private final List<BuildProvider> providers = new ArrayList<>();

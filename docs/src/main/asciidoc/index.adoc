@@ -17,6 +17,19 @@ include::protean-intro.adoc[tag=intro]
 * link:extension-authors-guide.html[Write your own extension] _(advanced)_
 * link:performance-measure.html[Measuring performance] _(advanced)_
 
+== Recommended tooling
+
+_Mandatory:_
+
+* https://adoptopenjdk.net/[Java - OpenJDK 1.8+]
+* https://maven.apache.org/install.html[Maven 3.5+]
+
+_Recommended:_
+
+* https://docs.docker.com/install/[Docker]
+* http://www.graalvm.org/docs/getting-started/[GraalVM {graal-version}]
+
+
 == Feedback, looking for help?
 
 You can contact the project team using:

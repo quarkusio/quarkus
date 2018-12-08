@@ -92,7 +92,6 @@ public class CreateProjectMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException {
-        getLog().info("Executing...");
         File pomFile = project.getFile();
 
         Model model;
@@ -105,9 +104,14 @@ public class CreateProjectMojo extends AbstractMojo {
         model = project.getOriginalModel().clone();
 
         createDirectories();
-        templates.generate(project, root, path, className, getLog());
+        templates.generate(project, model, root, path, className, getLog());
         Optional<Plugin> maybe = MojoUtils.hasPlugin(project, PLUGIN_KEY);
         if (maybe.isPresent()) {
+            getLog().info("========================================================================================");
+            getLog().info("Your new application has been created in " + pomFile.getAbsolutePath());
+            getLog().info("Navigate into this directory and launch your application with `mvn compile shamrock:dev`");
+            getLog().info("Your application will be accessible on `http://localhost:8080`");
+            getLog().info("========================================================================================");
             return;
         }
 
@@ -254,6 +258,8 @@ public class CreateProjectMojo extends AbstractMojo {
             context.put("path", path);
 
             templates.createNewProjectPomFile(context, pomFile);
+            templates.createIndexPage(context, project.getBasedir(), getLog());
+            templates.createConfiguration(project.getBasedir(), getLog());
 
             //The project should be recreated and set with right model
             MavenXpp3Reader xpp3Reader = new MavenXpp3Reader();

@@ -61,6 +61,7 @@
                         <surefire-version>${version.surefire.plugin}</surefire-version>
                         <graal-version>${graal-sdk.version}</graal-version>
                         <restassured-version>3.2.0</restassured-version>
+                        <project-name>Protean</project-name>
                     </attributes>
                 </configuration>
                 <executions>

@@ -1,5 +1,4 @@
 = How do we measure performance
-:project-name: Protean
 
 This guide covers:
 

@@ -1,4 +1,4 @@
-= Creating your first Shamrock application
+= Creating your first {project-name} application
 
 :toc: macro
 :toclevels: 4
@@ -28,6 +28,8 @@ To complete this guide, you need:
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.5+
+
+include::./maven-config.adoc[tag=repositories]
 
 == Architecture
 
@@ -93,6 +95,12 @@ Add the Shamrock Maven plugin to the `pom.xml` file:
     </plugins>
 </build>
 ----
+
+[NOTE]
+.What's Shamrock?
+====
+Shamrock can be seen as {project-name} core.
+====
 
 As we are going to create a JAX-RS endpoint, you also need to add the following dependencies:
 

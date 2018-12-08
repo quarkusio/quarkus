@@ -1,0 +1,53 @@
+= {project-name} Maven repositories
+
+// tag::repositories[]
+{project-name} releases are not yet available on Maven Central, so you need to configure the repositories.
+It's recommended to add the following repositories in the `~/.m2/settings.xml` file (using a auto-activated profile):
+
+[source, xml, subs=attributes+]
+----
+<profiles>
+    ...
+    <profile>
+      <id>{project-name}</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <repositories>
+        <repository>
+            <id>{project-name}-release</id>
+            <name>{project-name} - Releases</name>
+            <url>http://ec2-18-234-117-118.compute-1.amazonaws.com:8081/nexus/content/repositories/releases/</url>
+            <layout>default</layout>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+      </repositories>
+      <pluginRepositories>
+        <pluginRepository>
+            <id>{project-name}-release</id>
+            <name>{project-name} - Releases</name>
+            <url>http://ec2-18-234-117-118.compute-1.amazonaws.com:8081/nexus/content/repositories/releases/</url>
+            <layout>default</layout>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>
+      </pluginRepositories>
+    </profile>
+    ...
+</profiles>
+----
+
+Alternatively you add the repositories in your `pom.xml` file.
+
+// end::repositories[]

@@ -20,6 +20,7 @@
     <id>shamrock-docs</id>
     <formats>
        <format>zip</format>
+       <format>tar.gz</format>
     </formats>
     <includeBaseDirectory>true</includeBaseDirectory>
     <fileSets>

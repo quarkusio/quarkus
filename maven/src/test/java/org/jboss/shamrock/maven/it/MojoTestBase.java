@@ -9,6 +9,7 @@ import org.jboss.shamrock.maven.utilities.MojoUtils;
 import org.junit.BeforeClass;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,11 +32,6 @@ public class MojoTestBase {
                 "@project.artifactId@", CreateProjectMojo.PLUGIN_ARTIFACTID,
                 "@project.version@", VERSION);
     }
-
-    boolean isCoverage() {
-        return System.getProperty("coverage") != null;
-    }
-
 
     static File initProject(String name) {
         return initProject(name, name);
@@ -93,6 +89,13 @@ public class MojoTestBase {
         }
 
         File plugin = new File("target", CreateProjectMojo.PLUGIN_ARTIFACTID + "-" + MojoTestBase.VERSION + ".jar");
+        if (! plugin.isFile()) {
+            File[] files = new File("target").listFiles(
+                    file -> file.getName().startsWith(CreateProjectMojo.PLUGIN_ARTIFACTID) && file.getName().endsWith(".jar"));
+            if (files != null  && files.length != 0) {
+                plugin = files[0];
+            }
+        }
 
         try {
             FileUtils.copyFileToDirectory(plugin, repo);

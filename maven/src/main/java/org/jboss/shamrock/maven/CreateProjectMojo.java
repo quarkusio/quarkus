@@ -26,6 +26,7 @@ import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
+import org.fusesource.jansi.Ansi;
 import org.jboss.shamrock.maven.components.Prompter;
 import org.jboss.shamrock.maven.components.SetupTemplates;
 import org.jboss.shamrock.maven.utilities.MojoUtils;
@@ -36,6 +37,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 
+import static org.fusesource.jansi.Ansi.ansi;
 import static org.jboss.shamrock.maven.components.dependencies.Extensions.addExtensions;
 import static org.jboss.shamrock.maven.utilities.MojoUtils.configuration;
 import static org.jboss.shamrock.maven.utilities.MojoUtils.plugin;
@@ -106,12 +108,9 @@ public class CreateProjectMojo extends AbstractMojo {
         createDirectories();
         templates.generate(project, model, root, path, className, getLog());
         Optional<Plugin> maybe = MojoUtils.hasPlugin(project, PLUGIN_KEY);
+
         if (maybe.isPresent()) {
-            getLog().info("========================================================================================");
-            getLog().info("Your new application has been created in " + pomFile.getAbsolutePath());
-            getLog().info("Navigate into this directory and launch your application with `mvn compile shamrock:dev`");
-            getLog().info("Your application will be accessible on `http://localhost:8080`");
-            getLog().info("========================================================================================");
+            printUserInstructions(pomFile);
             return;
         }
 
@@ -121,6 +120,16 @@ public class CreateProjectMojo extends AbstractMojo {
         addExtensions(model, extensions, getLog());
         addNativeProfile(model);
         save(pomFile, model);
+    }
+
+    private void printUserInstructions(File pomFile) {
+        getLog().info("");
+        getLog().info("========================================================================================");
+        getLog().info(ansi().a("Your new application has been created in ").bold().a(pomFile.getAbsolutePath()).boldOff().toString());
+        getLog().info(ansi().a("Navigate into this directory and launch your application with ").bold().fg(Ansi.Color.CYAN).a("mvn compile shamrock:dev").reset().toString());
+        getLog().info(ansi().a("Your application will be accessible on ").bold().fg(Ansi.Color.CYAN).a("http://localhost:8080").reset().toString());
+        getLog().info("========================================================================================");
+        getLog().info("");
     }
 
     private void addNativeProfile(Model model) {

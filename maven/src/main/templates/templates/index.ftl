@@ -139,9 +139,9 @@
         <div class="right-section">
             <h3>Next steps</h3>
             <ul>
-                <li><a href="#">Setup your IDE</a></li>
-                <li><a href="#">Getting started</a></li>
-                <li><a href="#">Documentation</a></li>
+                <li><a href="${docRoot}/ide-configuration.html#import-in-your-ide">Setup your IDE</a></li>
+                <li><a href="${docRoot}/getting-started-guide.html">Getting started</a></li>
+                <li><a href="${docRoot}/index.html">Documentation</a></li>
             </ul>
         </div>
     </div>

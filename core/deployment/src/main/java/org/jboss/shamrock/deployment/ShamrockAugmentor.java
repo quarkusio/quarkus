@@ -36,16 +36,16 @@ import org.jboss.shamrock.deployment.builditem.GeneratedResourceBuildItem;
 import org.jboss.shamrock.deployment.builditem.ShutdownContextBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 
-public class ShamrockAugumentor {
+public class ShamrockAugmentor {
 
-    private static final Logger log = Logger.getLogger(ShamrockAugumentor.class);
+    private static final Logger log = Logger.getLogger(ShamrockAugmentor.class);
 
     private final ClassOutput output;
     private final ClassLoader classLoader;
     private final Path root;
     private final Set<Class<? extends BuildItem>> finalResults;
 
-    ShamrockAugumentor(Builder builder) {
+    ShamrockAugmentor(Builder builder) {
         this.output = builder.output;
         this.classLoader = builder.classLoader;
         this.root = builder.root;
@@ -154,8 +154,8 @@ public class ShamrockAugumentor {
             return this;
         }
 
-        public ShamrockAugumentor build() {
-            return new ShamrockAugumentor(this);
+        public ShamrockAugmentor build() {
+            return new ShamrockAugmentor(this);
         }
     }
 }

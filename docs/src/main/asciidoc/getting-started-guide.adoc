@@ -198,7 +198,7 @@ Nov 23, 2018 10:48:57 AM org.xnio.Xnio <clinit>
 INFO: XNIO version 3.3.8.Final
 Nov 23, 2018 10:48:57 AM org.xnio.nio.NioXnio <clinit>
 INFO: XNIO NIO Implementation Version 3.3.8.Final
-Nov 23, 2018 10:48:57 AM org.jboss.shamrock.deployment.ShamrockAugumentor run
+Nov 23, 2018 10:48:57 AM org.jboss.shamrock.deployment.ShamrockAugmentor run
 INFO: Beginning shamrock augmentation
 Nov 23, 2018 10:48:57 AM org.jboss.threads.Version <clinit>
 INFO: JBoss Threads version 3.0.0.Alpha3
@@ -208,7 +208,7 @@ Nov 23, 2018 10:48:57 AM org.jboss.protean.arc.processor.BeanDeployment init
 INFO: Bean deployment initialized in 7 ms
 Nov 23, 2018 10:48:57 AM org.jboss.protean.arc.processor.BeanProcessor process
 INFO: 27 resources generated/written in 48 ms
-Nov 23, 2018 10:48:57 AM org.jboss.shamrock.deployment.ShamrockAugumentor run
+Nov 23, 2018 10:48:57 AM org.jboss.shamrock.deployment.ShamrockAugmentor run
 INFO: Shamrock augmentation completed in 382ms
 Nov 23, 2018 10:48:57 AM org.jboss.protean.arc.ArcContainerImpl init
 INFO: ArC DI container initialized [beans=12, observers=0]

@@ -28,7 +28,7 @@ import java.util.concurrent.Executors;
 import java.util.function.BiFunction;
 
 import org.jboss.builder.BuildResult;
-import org.jboss.shamrock.deployment.ShamrockAugumentor;
+import org.jboss.shamrock.deployment.ShamrockAugmentor;
 import org.jboss.shamrock.deployment.builditem.BytecodeTransformerBuildItem;
 import org.jboss.shamrock.deployment.builditem.MainClassBuildItem;
 import org.jboss.shamrock.runtime.Application;
@@ -62,7 +62,7 @@ public class RuntimeRunner implements Runnable, Closeable {
     public void run() {
         Thread.currentThread().setContextClassLoader(loader);
         try {
-            ShamrockAugumentor.Builder builder = ShamrockAugumentor.builder();
+            ShamrockAugmentor.Builder builder = ShamrockAugmentor.builder();
             builder.setRoot(target);
             builder.setClassLoader(loader);
             builder.setOutput(loader);

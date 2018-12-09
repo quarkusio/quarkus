@@ -64,7 +64,7 @@ import org.apache.maven.project.MavenProject;
 import org.eclipse.microprofile.config.Config;
 import org.jboss.builder.BuildResult;
 import org.jboss.shamrock.deployment.ClassOutput;
-import org.jboss.shamrock.deployment.ShamrockAugumentor;
+import org.jboss.shamrock.deployment.ShamrockAugmentor;
 import org.jboss.shamrock.deployment.builditem.BytecodeTransformerBuildItem;
 import org.jboss.shamrock.deployment.builditem.MainClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateOutputBuildItem;
@@ -270,7 +270,7 @@ public class BuildMojo extends AbstractMojo {
                 try {
                     Thread.currentThread().setContextClassLoader(runnerClassLoader);
 
-                    ShamrockAugumentor.Builder builder = ShamrockAugumentor.builder();
+                    ShamrockAugmentor.Builder builder = ShamrockAugmentor.builder();
                     builder.setRoot(outputDirectory.toPath());
                     builder.setClassLoader(runnerClassLoader);
                     builder.setOutput(classOutput);

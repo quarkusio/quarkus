@@ -2,7 +2,34 @@
 
 [![Build Status](https://dev.azure.com/protean-ci/Shamrock/_apis/build/status/protean-project.shamrock)](https://dev.azure.com/protean-ci/Shamrock/_build/latest?definitionId=1)
 
-Shamrock is a framework that allows you to process Java EE and Microprofile metadata at build time,
+> Protean is a Cloud Native, Container First framework for writing Java applications.
+
+
+* **Container First**: 
+Minimal footprint Java applications optimal for running in containers
+* **Cloud Native**:
+Embraces 12 factor architecture in environments like Kubernetes.
+* **Unify imperative and reactive**:
+Brings under one programming model non blocking and imperative styles of development.
+* **Standards-based**:
+Based on the standards and frameworks you love and use (RESTEasy, Hibernate, Netty, Eclipse Vert.x, Apache Camel...)
+* **Microservice First**:
+Brings lightning fast startup time and code turn around to Java apps
+* **Developer Joy**:
+Development centric experience without compromise to bring your amazing apps to life in no time
+
+_All under ONE framework._
+
+## Getting Started
+
+* [Documentation](https://vertx-jenkins.rhev-ci-vms.eng.rdu2.redhat.com//userContent/protean/index.html)
+* [Getting Started](https://vertx-jenkins.rhev-ci-vms.eng.rdu2.redhat.com//userContent/protean/getting-started-guide.html)
+
+---
+
+## Shamrock
+
+Shamrock, aka the core of Protean, is a framework that allows you to process Java EE and Eclipse MicroProfile metadata at build time,
 and use it to create low overhead jar files, as well as native images using Graal/Substrate VM.
 
 At the moment is has the following features:
@@ -23,15 +50,16 @@ At the moment is has the following features:
     - Microprofile Health Check (SmallRye)
     - Microprofile OpenAPI (SmallRye)
     - Microprofile Metrics (SmallRye)
+    - Microprofile Reactive Streams Operators (SmallRye)
     - Bean Validation (Hibernate Validator)
     - Transactions (Narayana)
     - Datasources (Agroal)
-- A maven plugin to run the build, and create native images
+    - Eclipse Vert.x
+- A Maven plugin to run the build, and create native images
 - A JUnit runner that can run tests, and supports IDE usage
 - A JUnit runner that can test a native image produced by the Maven plugin
 
-
-## How to build Shamrock
+### How to build Shamrock
 
 * Install platform C developer tools:
     * Linux
@@ -53,79 +81,7 @@ By default the build will use the native image server. This speeds up the build,
 not being invalidated correctly in some cases. To run a build with a new instance of the server you can use
 `mvn install -Dnative-image.new-server=true`.
 
-## How to use Shamrock
-
-At the moment Shamrock requires the use of Maven. To use Shamrock add the following to your `pom.xml`:
-
-```
-<plugin>
-    <groupId>${project.groupId}</groupId>
-    <artifactId>shamrock-maven-plugin</artifactId>
-    <version>${project.version}</version>
-    <executions>
-        <execution>
-            <goals>
-                <goal>build</goal>
-            </goals>
-        </execution>
-    </executions>
-</plugin>
-```
-
-In addition to this you need to add some Shamrock `deployment` artifacts to your project. These must have `provided`
-scope, as this stops deployment time code ending up in the final image. For example for a REST app you might add:
-
-```
-<dependency>
-    <groupId>org.jboss.shamrock</groupId>
-    <artifactId>shamrock-jaxrs-deployment</artifactId>
-    <scope>provided</scope>
-</dependency>
-```
-
-This will enable the Shamrock JVM build. The output of this will be the runner jar, and the support libraries:
-
-```
-target/${build.finalName}-runner.jar
-target/lib/*.jar
-```
-
-The runner jar has the appropriate `Class-Path` entries in `MANIFEST.MF` so all that is required to run the app
-is:
-
-```
-java -jar target/${build.finalName}-runner.jar
-```
-
-If you also want to generate a native image as part of the build process you need to add the native image plugin
-to your pom:
-
-```
-<plugin>
-    <groupId>${project.groupId}</groupId>
-    <artifactId>shamrock-maven-plugin</artifactId>
-    <version>${project.version}</version>
-    <executions>
-        <execution>
-            <id>native-image</id>
-            <goals>
-                <goal>native-image</goal>
-            </goals>
-        </execution>
-    </executions>
-</plugin>
-```
-
-To just build the native image you can then just run:
-
-    mvn package
-
-If you just want to run the native image task you can do:
-
-    mvn shamrock:native-image
-
-
-## Architecture Overview
+### Architecture Overview
 
 Shamrock runs in two distinct phases. The first phase is build time processing, which is done by instances of ResourceProcessor:
 
@@ -146,7 +102,7 @@ It is also why Weld can work without modification, as proxy generation etc is do
 
 As part of the build process shamrock generates a main method that invokes all generated startup tasks in order.
 
-## Runtime/deployment split
+### Runtime/deployment split
 
 In general there will be two distinct artifacts, a runtime and a deployment time artifact. 
 
@@ -173,7 +129,7 @@ by the Maven dependencies plugin:
 
 This file tells the build plugin which dependencies are actually needed at runtime.
 
-### Packaging and dependencies
+#### Packaging and dependencies
 
 The deployment time artifact should have a dependency on the runtime artifact. When using Shamrock you just declare a
 dependency on the deployment time artifacts for the features you want. This dependency *must* be scope `provided`.
@@ -188,7 +144,7 @@ selected it will still be included).
 This mechanism means that you only need to declare a single dependency per feature, but Shamrock still has enough information
 to only include necessary runtime components.
 
-## The Deployment Framework
+### The Deployment Framework
 
 The deployment framework allows you to process metadata from the application, and output resources (usually generated
 bytecode) that will actually bootstrap the application at runtime. The idea of this is that all code related to
@@ -209,7 +165,7 @@ that indicate that a jar has application components and as such it should be ind
 By default jar files on the class path are not indexed unless they contain such a marker, or indexing has been specifically
 configured.
 
-### ResourceProcessor and Bytecode recording
+#### ResourceProcessor and Bytecode recording
 
 These startup tasks are generated by the bytecode recorder.
 This recorder works by creating proxies of classes that contain deployment logic, and then recoding the invocations.
@@ -279,9 +235,9 @@ to pass in class objects. It is a work around for the classes you need not being
 You just pass in the class name, and it returns a Class object that is a proxy for the real Class.
 There are examples in the Undertow one.
 
-## Testing
+### Testing
 
-### JVM Based Testing
+#### JVM Based Testing
 
 In order to support IDE usage Shamrock also has a 'runtime mode' that performs the build steps at runtime.
 This will also be needed for Fakereplace support, to allow the new metadata to be computed at runtime.
@@ -298,9 +254,9 @@ present there is no support for Arquillian style 'micro deployments', the whole 
 Both the application and the test itself run in the same JVM, so in addition to integration testing over HTTP it is
 also possible to directly test application components. 
 
-### Native Image Based Testing
+#### Native Image Based Testing
 
-To test the native image you can use the `org.jboss.shamrock.junit.GraalTest` runner.
+To test the native image you can use the `org.jboss.shamrock.junit.SubstrateTest` runner.
 
 These tests must be integration tests, as the image is generally built during the packaging phase.
 As such they should follow the Maven Failsafe naming convention (\*ITCase). 
@@ -314,7 +270,7 @@ To run the tests from an IDE you will need to make sure the image has been built
 assuming that the image name is `*-runner` and is located in the parent directory of the `test-classes` classpath entry.
 
 
-## Reflection
+### Reflection
 
 In order to make reflection work Shamrock provides an API to easily register classes for reflection.
 If you call `ProcessorContext.addReflectiveClass()` then a Graal AutoFeature will be written out that contains the bytecode to
@@ -328,7 +284,7 @@ As it has just been a bit of an experiment some of the code is not that great,
 but if we did decide to use this as the basis for the PoC it would be easy enough to clean up.
 
 
-## Plugin Output
+### Plugin Output
 
 The Shamrock build plugin generating wiring metadata for you application. The end result of this
 is:
@@ -343,7 +299,7 @@ is:
 *   lib/\*
     A directory that contains all runtime dependencies. These are referenced by the `class-path` manifest entry in the runner jar.
     
-## Shamrock Run Modes
+### Shamrock Run Modes
 
 Shamrock supports a few different run modes, to meet the various use cases. The core of how it works is the same in each
 mode, however there are some differences. The two basic modes are:
@@ -358,12 +314,12 @@ mode, however there are some differences. The two basic modes are:
     as it allows you to test and run things without a full maven. This is currently used for the JUnit test runner, 
     and for the `mvn shamrock:run` command.
     
-## Build Time Config
+### Build Time Config
 
 Build time configuration is provided by `shamrock-build.yaml`. At the moment the only options present relate to indexing,
 however this will probably be expanded over time.    
     
-### Indexing and Application Classes
+#### Indexing and Application Classes
 
 Shamrock has the concept of 'application classes'. These are classes that should be indexed via jandex, and acted on
 via deployment processors.

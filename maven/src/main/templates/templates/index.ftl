@@ -105,7 +105,7 @@
 
 <div class="container">
     <div class="left-column">
-        <p class="lead"> Congratulations, you have created a new Shamrock application.
+        <p class="lead"> Congratulations, you have created a new Shamrock application.</p>
 
         <h2>Why do you see this?</h2>
 
@@ -124,7 +124,7 @@
         </ul>
 
         <h2>How do I get rid of this page?</h2>
-        <p>Just delete the <code>src/main/resources/META-INF/resources/index.html</code>.</p>
+        <p>Just delete the <code>src/main/resources/META-INF/resources/index.html</code> file.</p>
     </div>
     <div class="right-column">
         <div class="right-section">

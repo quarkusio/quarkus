@@ -156,7 +156,7 @@ public class CreateProjectMojo extends AbstractMojo {
 
     private void addVersionProperty(Model model) {
         //Set  a property at maven project level for Shamrock maven plugin versions
-        shamrockVersion = shamrockVersion == null ? MojoUtils.getVersion(VERSION_PROP) : shamrockVersion;
+        shamrockVersion = shamrockVersion == null ? MojoUtils.get(VERSION_PROP) : shamrockVersion;
         model.getProperties().putIfAbsent(PLUGIN_VERSION_PROPERTY_NAME, shamrockVersion);
     }
 
@@ -203,7 +203,7 @@ public class CreateProjectMojo extends AbstractMojo {
                 // Ask for maven version if not set
                 if (shamrockVersion == null) {
                     shamrockVersion = prompter.promptWithDefaultValue("Set the Shamrock version",
-                            MojoUtils.getVersion(VERSION_PROP));
+                            MojoUtils.get(VERSION_PROP));
                 }
 
                 if (className == null) {
@@ -251,7 +251,8 @@ public class CreateProjectMojo extends AbstractMojo {
             context.put("mProjectGroupId", projectGroupId);
             context.put("mProjectArtifactId", projectArtifactId);
             context.put("mProjectVersion", projectVersion);
-            context.put("shamrockVersion", shamrockVersion != null ? shamrockVersion : MojoUtils.getVersion(VERSION_PROP));
+            context.put("shamrockVersion", shamrockVersion != null ? shamrockVersion : MojoUtils.get(VERSION_PROP));
+            context.put("docRoot", MojoUtils.get("doc-root"));
 
             context.put("className", className);
             context.put("root", root);

@@ -9,7 +9,6 @@ import org.jboss.shamrock.maven.utilities.MojoUtils;
 import org.junit.BeforeClass;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,7 +23,7 @@ public class MojoTestBase {
 
     @BeforeClass
     public static void init() {
-        VERSION = MojoUtils.getVersion(CreateProjectMojo.VERSION_PROP);
+        VERSION = MojoUtils.get(CreateProjectMojo.VERSION_PROP);
         assertThat(VERSION).isNotNull();
 
         VARIABLES = ImmutableMap.of(

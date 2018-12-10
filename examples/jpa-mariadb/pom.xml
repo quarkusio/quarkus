@@ -164,7 +164,7 @@
                     <plugin>
                         <groupId>io.fabric8</groupId>
                         <artifactId>docker-maven-plugin</artifactId>
-                        <version>0.26.1</version>
+                        <version>0.27.2</version>
                         <configuration>
                             <images>
                                 <image>
@@ -180,14 +180,21 @@
                                             <MYSQL_DATABASE>hibernate_orm_test</MYSQL_DATABASE>
                                             <MYSQL_RANDOM_ROOT_PASSWORD>true</MYSQL_RANDOM_ROOT_PASSWORD>
                                         </env>
+                                        <log>
+                                            <prefix>MariaDB:</prefix>
+                                            <date>default</date>
+                                            <color>cyan</color>
+                                        </log>
                                         <wait>
+                                            <!-- good docs found at: http://dmp.fabric8.io/#build-healthcheck -->
                                             <tcp>
-                                                <mode>mapped</mode>
+                                                <mode>direct</mode>
                                                 <ports>
                                                     <port>3306</port>
                                                 </ports>
                                             </tcp>
-                                            <time>10000</time>
+                                            <!-- Unfortunately booting MariaDB is slow, needs to set a generous timeout: -->
+                                            <time>40000</time>
                                         </wait>
                                     </run>
                                 </image>

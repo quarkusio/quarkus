@@ -34,6 +34,13 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- EL implementation -->
+        <dependency>
+           <groupId>org.glassfish</groupId>
+           <artifactId>javax.el</artifactId>
+           <version>3.0.1-b09</version>
+        </dependency>
+
         <!-- test dependencies -->
         <dependency>
             <groupId>org.jboss.shamrock</groupId>

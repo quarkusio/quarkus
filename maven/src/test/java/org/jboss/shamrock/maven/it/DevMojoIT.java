@@ -101,7 +101,7 @@ public class DevMojoIT extends MojoTestBase {
     @Test
     @Ignore("Issue https://github.com/protean-project/shamrock/issues/245")
     public void testThatTheApplicationIsReloadedOnNewServlet() throws MavenInvocationException, IOException {
-        testDir = initProject("projects/classic", "projects/project-classic-run-new-resource");
+        testDir = initProject("projects/classic", "projects/project-classic-run-new-servlet");
         runAndCheck();
 
         File source = new File(testDir, "src/main/java/org/acme/MySimpleServlet.java");
@@ -215,7 +215,7 @@ public class DevMojoIT extends MojoTestBase {
 
     @Test
     public void testThatApplicationRecoversCompilationIssue() throws MavenInvocationException, IOException {
-        testDir = initProject("projects/classic", "projects/project-classic-run-java-change");
+        testDir = initProject("projects/classic", "projects/project-classic-run-compilation-issue");
         runAndCheck();
 
         // Edit the "Hello" message.
@@ -244,6 +244,46 @@ public class DevMojoIT extends MojoTestBase {
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains("carambar"));
+    }
+
+    @Test
+    public void testThatNewBeanAreDiscovered() throws IOException, MavenInvocationException {
+        testDir = initProject("projects/classic", "projects/project-classic-run-new-bean");
+        runAndCheck();
+
+        // Edit the "Hello" message.
+        File source = new File(testDir, "src/main/java/org/acme/MyBean.java");
+        String content = "package org.acme;\n" +
+                "\n" +
+                "import javax.enterprise.context.ApplicationScoped;\n" +
+                "\n" +
+                "@ApplicationScoped\n" +
+                "public class MyBean {\n" +
+                "\n" +
+                "    public String get() {\n" +
+                "        return \"message\";\n" +
+                "    }\n" +
+                "    \n" +
+                "}";
+        FileUtils.write(source, content, "UTF-8");
+
+        // Update the resource ot use the bean
+        File resource = new File(testDir, "src/main/java/org/acme/HelloResource.java");
+        filter(resource, Collections.singletonMap("String greeting;", "String greeting;\n @Inject MyBean bean;"));
+        filter(resource, Collections.singletonMap("\"hello\"", "bean.get()"));
+
+        // Wait until we get "uuid"
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains("message"));
+
+        sleep();
+
+        filter(source, ImmutableMap.of("message", "foobarbaz"));
+
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains("foobarbaz"));
     }
 
 

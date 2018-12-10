@@ -16,7 +16,7 @@ To complete this guide, you need:
 == Architecture
 
 The application built in this guide is quite simple. The user fills a form on a web page.
-The web page send the form content to the `BookResource` as JSON (using Ajax). The `BookResource` validates the user input and returns the
+The web page sends the form content to the `BookResource` as JSON (using Ajax). The `BookResource` validates the user input and returns the
 _result_ as JSON.
 
 image:validation-guide-architecture.png[alt=Architecture,width=640,height=480]
@@ -45,9 +45,9 @@ mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
 
 This command generates a Maven structure importing the JSON and validation support.
 
-== Accessing the validator
+== Accessing the Validator
 
-Edit the `org.acme.validation.BookResource` class, and inject the `validator` object as follows:
+Edit the `org.acme.validation.BookResource` class, and inject the `Validator` object as follows:
 
 [source,java]
 ----
@@ -55,11 +55,11 @@ Edit the `org.acme.validation.BookResource` class, and inject the `validator` ob
 Validator validator;
 ----
 
-The `validator` allows checking constraints on a specific object.
+The `Validator` allows checking constraints on a specific object.
 
 == Constraints
 
-In this application, we are going to test an elementary object, but it supports complicated constraints and can validate graphs of objects.
+In this application, we are going to test an elementary object, but we support complicated constraints and can validate graphs of objects.
 Create the `org.acme.validation.Book` class with the following content:
 
 [source, java]
@@ -70,11 +70,10 @@ import javax.validation.constraints.*;
 
 public class Book {
 
-
-    @NotBlank(message="Title cannot be blank")
+    @NotBlank(message="Title may not be blank")
     private String title;
 
-    @NotBlank(message="Author cannot be blank")
+    @NotBlank(message="Author may not be blank")
     private String author;
 
     @Min(message="Author has been very lazy", value=1)
@@ -103,7 +102,6 @@ public class Book {
     public void setPages(double pages) {
         this.pages = pages;
     }
-
 }
 ----
 
@@ -128,7 +126,9 @@ public Result tryMe(Book book) {
         res.message = "woohoo!";
     } else {
         res.success = false;
-        res.message = violations.iterator().next().getMessage();
+        res.message = violations.stream()
+            .map(cv -> cv.getMessage())
+            .collect(Collectors.joining(", "));
     }
     return res;
 }
@@ -139,9 +139,10 @@ First, let's explain this method.
 It indicates it consumes and produces JSON.
 The method parameter (`book`) is created from the JSON payload automatically.
 
-The method uses the `validator` to check the payload.
+The method uses the `Validator` to check the payload.
 It returns a set of violations.
 If this set is empty, it means the object is valid.
+In case of failures, the messages are concatenated and sent back to the browser.
 
 Let's now create the `Result` class as an inner class:
 

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.instrument.ClassDefinition;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -32,6 +33,7 @@ import java.util.stream.Stream;
 
 import org.fakereplace.core.Fakereplace;
 import org.fakereplace.replacement.AddedClass;
+import org.jboss.logging.Logger;
 
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -51,6 +53,8 @@ public class RuntimeUpdatesProcessor {
 
     private volatile Set<String> configFilePaths = Collections.emptySet();
     private final Map<String, Long> configFileTimestamps = new ConcurrentHashMap<>();
+
+    private static final Logger log = Logger.getLogger(RuntimeUpdatesProcessor.class.getPackage().getName());
 
     static {
         UpdateHandler fr;
@@ -98,9 +102,22 @@ public class RuntimeUpdatesProcessor {
         next.handleRequest(exchange);
     }
 
-    private void doScan() throws IOException {
-        final Set<File> changedSourceFiles;
+    void doScan() throws IOException {
         final long start = System.currentTimeMillis();
+        final ConcurrentMap<String, byte[]> changedClasses = scanForChangedClasses();
+        if (changedClasses == null) return;
+
+        if (FAKEREPLACE_HANDLER == null) {
+            DevModeMain.restartApp(false);
+        } else {
+            FAKEREPLACE_HANDLER.handle(changedClasses);
+            DevModeMain.restartApp(true);
+        }
+        log.info("Hot replace total time: " + (System.currentTimeMillis() - start) + "ms");
+    }
+
+    ConcurrentMap<String, byte[]> scanForChangedClasses() throws IOException {
+        final Set<File> changedSourceFiles;
 
         if (sourcesDir != null) {
             try (final Stream<Path> sourcesStream = Files.walk(sourcesDir)) {
@@ -116,11 +133,13 @@ public class RuntimeUpdatesProcessor {
             changedSourceFiles = Collections.EMPTY_SET;
         }
         if (!changedSourceFiles.isEmpty()) {
+            log.info("Changes source files detected, recompiling " + changedSourceFiles);
+
             try {
                 compiler.compile(changedSourceFiles);
             } catch (Exception e) {
                 DevModeMain.deploymentProblem = e;
-                return;
+                return null;
             }
         }
         final ConcurrentMap<String, byte[]> changedClasses;
@@ -135,18 +154,11 @@ public class RuntimeUpdatesProcessor {
                     );
         }
         if (changedClasses.isEmpty() && !configFilesChanged()) {
-            return;
+            return null;
         }
 
         lastChange = System.currentTimeMillis();
-
-        if (FAKEREPLACE_HANDLER == null) {
-            DevModeMain.restartApp(false);
-        } else {
-            FAKEREPLACE_HANDLER.handle(changedClasses);
-            DevModeMain.restartApp(true);
-        }
-        System.out.println("Hot replace total time: " + (System.currentTimeMillis() - start) + "ms");
+        return changedClasses;
     }
 
     private boolean configFilesChanged() {
@@ -174,7 +186,22 @@ public class RuntimeUpdatesProcessor {
 
     private boolean wasRecentlyModified(final Path p) {
         try {
-            return Files.getLastModifiedTime(p).toMillis() > lastChange;
+            long sourceMod = Files.getLastModifiedTime(p).toMillis();
+            boolean recent = sourceMod > lastChange;
+            if(recent) {
+                return true;
+            }
+            if(p.toString().endsWith(".java")) {
+                String pathName = sourcesDir.relativize(p).toString();
+                String classFileName = pathName.substring(0, pathName.length() - 5) + ".class";
+                Path classFile = classesDir.resolve(classFileName);
+                if (!Files.exists(classFile)) {
+                    return true;
+                }
+                return sourceMod > Files.getLastModifiedTime(classFile).toMillis();
+            } else {
+                return false;
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

@@ -160,7 +160,9 @@ public class DevMojo extends AbstractMojo {
             classPath.append(((JarURLConnection) classFile.openConnection()).getJarFileURL().getFile());
 
             //now we need to build a temporary jar to actually run
-            File tempFile = File.createTempFile("shamrock", "-runner.jar");
+
+            File tempFile = new File(buildDir, project.getArtifactId()+"-dev.jar");
+            tempFile.delete();
             tempFile.deleteOnExit();
 
             try (ZipOutputStream out = new ZipOutputStream(new FileOutputStream(tempFile))) {
@@ -178,6 +180,8 @@ public class DevMojo extends AbstractMojo {
                 resources = i.getDirectory();
                 break;
             }
+
+            outputDirectory.mkdirs();
 
             args.add("-Dshamrock.runner.classes=" + outputDirectory.getAbsolutePath());
             args.add("-Dshamrock.runner.sources=" + sourceDir.getAbsolutePath());

@@ -4,7 +4,7 @@
 == Shamrock addon for JBoss Forge
 
 This addon lets you create a Shamrock project.
-By default it will add a simple greeing service in addition to a test class to test you're new Shamrock service.
+By default it will add a simple greeting service in addition to a test class to test your new Shamrock service.
 
 === Installation
 
@@ -17,20 +17,20 @@ addon-install --coordinate org.jboss.shamrock.forge:shamrock-forge-addon,1.0.0.A
 
 === Create a new project
 
-To create a Shamrock project, we create a new project and choose the shamrock type:
+To create a Shamrock project, we create a new project and choose the 'shamrock' type:
 
 ----
 project-new --named shamrock-prototype --type shamrock
 ----
 
-Build the project using maven:
-Note that this will also build a native image using graal.
+Build the project using Maven:
+Note that this will also build a native image using GraalVM.
 
 ----
 mvn install
 ----
 
-Run shamrock with:
+Run Shamrock with:
 
 ----
 java -cp target/shamrock-test-runner.jar
@@ -42,4 +42,4 @@ To run the native image:
 target/shamrock-test-runner
 ----
 
-Note that maven expects a graal installation to be found by the '$GRAALVM_HOME' variable.
+Note that Maven expects a GraalVM installation to be found by the '$GRAALVM_HOME' variable.

@@ -42,6 +42,7 @@ import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
 import org.jboss.shamrock.deployment.builditem.InjectionFactoryBuildItem;
+import org.jboss.shamrock.deployment.builditem.SystemPropertyBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveFieldBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveMethodBuildItem;
@@ -51,6 +52,12 @@ import org.jboss.shamrock.deployment.recording.RecorderContext;
 class BeanValidationProcessor {
 
     private static final DotName VALIDATE_ON_EXECUTION = DotName.createSimple("javax.validation.executable.ValidateOnExecution");
+
+    @BuildStep
+    SystemPropertyBuildItem disableJavaFXIntegrations() {
+        // Bug in GraalVM rc10: see https://github.com/oracle/graal/issues/851
+        return new SystemPropertyBuildItem("org.hibernate.validator.force-disable-javafx-integration", "true");
+    }
 
     @BuildStep
     HotDeploymentConfigFileBuildItem configFile() {

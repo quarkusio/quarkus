@@ -52,7 +52,7 @@ public class RuntimeCompilationSetup {
                 log.log(Level.SEVERE, "Failed to create compiler, runtime compilation will be unavailable", e);
                 return null;
             }
-            RuntimeUpdatesProcessor processor = new RuntimeUpdatesProcessor(Paths.get(classesDir), Paths.get(sourcesDir), Paths.get(resourcesDir), compiler);
+            RuntimeUpdatesProcessor processor = new RuntimeUpdatesProcessor(Paths.get(classesDir), sourcesDir == null ? null : Paths.get(sourcesDir), resourcesDir == null ? null : Paths.get(resourcesDir), compiler);
             HandlerWrapper wrapper = createHandlerWrapper(processor);
             //TODO: we need to get these values from the config in runtime mode
             HttpConfig config = new HttpConfig();

@@ -1,14 +1,20 @@
 package org.jboss.shamrock.maven.it;
 
 import com.google.common.base.Charsets;
-import com.google.common.io.CharSource;
 import com.google.common.io.Files;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.*;
 import org.jboss.shamrock.maven.CreateProjectMojo;
+import org.jboss.shamrock.maven.it.verifier.RunningInvoker;
+import org.junit.After;
 import org.junit.Test;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Properties;
 
@@ -20,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class CreateProjectMojoIT extends MojoTestBase {
 
     private Invoker invoker;
+    private RunningInvoker running;
     private File testDir;
 
     private void init(File root) {
@@ -66,7 +73,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         setup(new Properties());
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
-            .contains(CreateProjectMojo.PLUGIN_ARTIFACTID, CreateProjectMojo.PLUGIN_VERSION_PROPERTY, CreateProjectMojo.PLUGIN_GROUPID);
+                .contains(CreateProjectMojo.PLUGIN_ARTIFACTID, CreateProjectMojo.PLUGIN_VERSION_PROPERTY, CreateProjectMojo.PLUGIN_GROUPID);
         assertThat(new File(testDir, "src/main/java")).isDirectory();
 
         assertThat(new File(testDir, "src/main/resources/META-INF/microprofile-config.properties")).doesNotExist();
@@ -101,7 +108,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         setup(properties);
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
-            .contains("shamrock.version");
+                .contains("shamrock.version");
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/main/java/org/acme/MyResource.java")).isFile();
         assertThat(new File(testDir, "src/main/java/org/acme/ShamrockApplication.java")).isFile();
@@ -124,7 +131,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(new File(testDir, "src/main/java/org/acme/MyResource.java")).isFile();
         assertThat(new File(testDir, "src/main/java/org/acme/ShamrockApplication.java")).isFile();
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
-            .contains("shamrock-jaxrs-deployment", "shamrock-metrics-deployment").doesNotContain("missing");
+                .contains("shamrock-jaxrs-deployment", "shamrock-metrics-deployment").doesNotContain("missing");
     }
 
     @Test
@@ -148,7 +155,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
     @Test
     public void testProjectGenerationFromMinimalPomWithDependencies() throws Exception {
         testDir = initProject("projects/simple-pom-it",
-            "projects/project-generation-from-minimal-pom-with-extensions");
+                "projects/project-generation-from-minimal-pom-with-extensions");
         assertThat(testDir).isDirectory();
         init(testDir);
         Properties properties = new Properties();
@@ -162,6 +169,39 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(new File(testDir, "src/main/java/org/acme/ShamrockApplication.java")).isFile();
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
                 .contains("commons-io");
+    }
+
+    @After
+    public void cleanup() {
+        if (running != null) {
+            running.stop();
+        }
+    }
+
+    @Test
+    public void generateNewProjectAndRun() throws MavenInvocationException, FileNotFoundException, InterruptedException {
+        testDir = initEmptyProject("projects/project-generation-and-run");
+
+        // Scaffold the new project
+        assertThat(testDir).isDirectory();
+        init(testDir);
+        Properties properties = new Properties();
+        properties.put("projectGroupId", "org.acme");
+        properties.put("projectArtifactId", "acme");
+        properties.put("className", "org.acme.HelloResource");
+        setup(properties);
+
+        // Run
+        running = new RunningInvoker(testDir, false);
+        running.execute(Arrays.asList("compile", "shamrock:dev"), Collections.emptyMap());
+
+        String resp = getHttpResponse();
+
+        assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.acme")
+                .containsIgnoringCase("1.0-SNAPSHOT");
+
+        String greeting = getHttpResponse("/app/hello");
+        assertThat(greeting).containsIgnoringCase("hello");
     }
 
     private void setup(Properties params) throws MavenInvocationException, FileNotFoundException {

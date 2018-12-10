@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.logging.deployment;
+package org.jboss.shamrock.deployment.logging;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.shamrock.runtime.ConfigGroup;
 
 @ConfigGroup
-public class FileConfig {
+public class ConsoleConfig {
 
     /**
-     * If file logging should be enabled
+     * If console logging should be enabled
      */
     @ConfigProperty(name = "enable", defaultValue = "true")
     boolean enable;
@@ -35,15 +35,15 @@ public class FileConfig {
     String format;
 
     /**
-     * The file log level
+     * The console log level
      */
-    @ConfigProperty(name = "level", defaultValue = "ALL")
+    @ConfigProperty(name = "level", defaultValue = "INFO")
     String level;
 
     /**
-     * The file logging log level
+     * If the console logging should be in color
      */
-    @ConfigProperty(name = "path", defaultValue = "shamrock.log")
-    String path;
+    @ConfigProperty(name = "color", defaultValue = "true")
+    boolean color;
 
 }

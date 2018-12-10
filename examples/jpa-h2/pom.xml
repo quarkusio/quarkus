@@ -41,11 +41,6 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-logging-deployment</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-agroal-deployment</artifactId>
             <scope>provided</scope>
         </dependency>

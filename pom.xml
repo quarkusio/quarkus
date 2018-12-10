@@ -125,7 +125,6 @@
         <module>jaxrs</module>
         <module>test-framework</module>
         <module>health</module>
-        <module>logging</module>
         <module>metrics</module>
         <module>openapi</module>
         <module>opentracing</module>
@@ -452,16 +451,6 @@
             </dependency>
             <dependency>
                 <groupId>org.jboss.shamrock</groupId>
-                <artifactId>shamrock-logging-deployment</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jboss.shamrock</groupId>
-                <artifactId>shamrock-logging-runtime</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jboss.shamrock</groupId>
                 <artifactId>shamrock-openssl-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -565,8 +554,6 @@
                 <artifactId>shamrock-scheduler-runtime</artifactId>
                 <version>${project.version}</version>
             </dependency>
-
-
             <dependency>
                 <groupId>org.jboss.logging</groupId>
                 <artifactId>jboss-logging-embedded</artifactId>

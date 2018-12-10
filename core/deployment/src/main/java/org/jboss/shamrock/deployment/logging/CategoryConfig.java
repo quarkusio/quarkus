@@ -14,36 +14,23 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.logging.deployment;
+package org.jboss.shamrock.deployment.logging;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.shamrock.runtime.ConfigGroup;
 
 @ConfigGroup
-public class ConsoleConfig {
+public class CategoryConfig {
 
     /**
-     * If console logging should be enabled
+     * The minimum level that this category can be set to
      */
-    @ConfigProperty(name = "enable", defaultValue = "true")
-    boolean enable;
+    @ConfigProperty(name = "min-level", defaultValue = "inherit")
+    String minLevel;
 
     /**
-     * The log format
+     * The log level level for this category
      */
-    @ConfigProperty(name = "format", defaultValue = "%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c{1.}] (%t) %s%e%n")
-    String format;
-
-    /**
-     * The console log level
-     */
-    @ConfigProperty(name = "level", defaultValue = "INFO")
+    @ConfigProperty(name = "level", defaultValue = "inherit")
     String level;
-
-    /**
-     * If the console logging should be in color
-     */
-    @ConfigProperty(name = "color", defaultValue = "true")
-    boolean color;
-
 }

@@ -25,11 +25,6 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-logging-deployment</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-arc-deployment</artifactId>
             <scope>provided</scope>
         </dependency>

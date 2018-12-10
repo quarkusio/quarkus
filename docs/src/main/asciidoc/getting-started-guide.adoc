@@ -117,17 +117,10 @@ As we are going to create a JAX-RS endpoint, you also need to add the following 
         <scope>provided</scope>
         <version>${shamrock.version}</version>
     </dependency>
-    <dependency>
-        <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-logging-deployment</artifactId>
-        <scope>provided</scope>
-        <version>${shamrock.version}</version>
-    </dependency>
 </dependencies>
 ----
 
 ARC is a CDI-lite implementation providing dependency injection.
-The logging dependency provides access to logging facilities using your favorite API.
 
 == Creating the Application class
 

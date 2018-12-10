@@ -225,12 +225,22 @@ public interface BytecodeCreator extends AutoCloseable {
     ResultHandle load(boolean val);
 
     /**
+     * Returns a {@link ResultHandle} representing the specified value
+     *
+     * @param val The value
+     * @return A {@link ResultHandle} representing the specified value
+     */
+    default ResultHandle load(Enum<?> val) {
+        return readStaticField(FieldDescriptor.of(val.getDeclaringClass(), val.name(), val.getDeclaringClass()));
+    }
+
+    /**
      * Returns a {@link ResultHandle} representing the specified class
      *
      * @param val The class to load
      * @return A {@link ResultHandle} representing the specified class
      */
-    default ResultHandle loadClass(Class val) {
+    default ResultHandle loadClass(Class<?> val) {
         return loadClass(val.getName());
     }
 

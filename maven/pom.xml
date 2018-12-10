@@ -30,7 +30,6 @@
 
     <properties>
         <shamrock.version>${project.version}</shamrock.version>
-
     </properties>
     <dependencies>
 
@@ -115,9 +114,10 @@
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
-                <excludes>
-                    <exclude>*.ftl</exclude>
-                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/templates</directory>
+                <filtering>false</filtering>
             </resource>
         </resources>
         <plugins>

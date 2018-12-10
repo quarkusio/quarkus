@@ -90,7 +90,7 @@ public class MojoUtils {
         }
     }
 
-    public static String getVersion(String key) {
+    public static String get(String key) {
         return properties.getProperty(key);
     }
 

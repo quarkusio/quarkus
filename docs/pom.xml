@@ -61,6 +61,7 @@
                         <surefire-version>${version.surefire.plugin}</surefire-version>
                         <graal-version>${graal-sdk.version}</graal-version>
                         <restassured-version>3.2.0</restassured-version>
+                        <project-name>Protean</project-name>
                     </attributes>
                 </configuration>
                 <executions>
@@ -81,6 +82,9 @@
                                 <idprefix/>
                                 <idseparator>-</idseparator>
                                 <docinfo1>true</docinfo1>
+                                <!-- avoid content security policy violations -->
+                                <linkcss>true</linkcss>
+                                <copycss>true</copycss>
                             </attributes>
                         </configuration>
                     </execution>

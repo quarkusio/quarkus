@@ -19,6 +19,8 @@ For this guide you need:
 * having access to a Kubernetes and/or OpenShift cluster. Minikube and Minishift are valid options.
 * have been able to package the docker image from the link:building-native-image-guide.html[native application guide]
 
+Remember, you need to configure Maven as indicated on the link:maven-config.html[Maven configuration page].
+
 == Solution
 
 We recommend you to follow the instructions in the next sections and application the app step by step.

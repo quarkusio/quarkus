@@ -29,6 +29,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>jdbc-postgresql</module>
+        <module>jdbc-h2</module>
     </modules>
 
 </project>

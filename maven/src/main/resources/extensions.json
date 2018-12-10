@@ -26,7 +26,7 @@
       "validation"
     ],
     "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-bean-validation"
+    "artifactId": "shamrock-bean-validation-deployment"
   },
   {
     "name": "Fault Tolerance",
@@ -181,5 +181,15 @@
     ],
     "groupId": "org.jboss.shamrock",
     "artifactId": "shamrock-websockets-deployment"
+  },
+  {
+    "name": "JSON",
+    "labels": [
+      "json",
+      "jackson"
+    ],
+    "groupId": "org.jboss.resteasy",
+    "artifactId": "resteasy-jackson2-provider",
+    "version": "${resteasy.version}"
   }
 ]

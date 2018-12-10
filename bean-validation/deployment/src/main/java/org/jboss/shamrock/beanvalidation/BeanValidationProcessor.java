@@ -27,6 +27,7 @@ import java.util.Set;
 import javax.validation.Constraint;
 
 import org.hibernate.validator.internal.metadata.core.ConstraintHelper;
+import org.hibernate.validator.messageinterpolation.AbstractMessageInterpolator;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -49,12 +50,12 @@ import org.jboss.shamrock.deployment.recording.RecorderContext;
 
 class BeanValidationProcessor {
 
+    private static final DotName VALIDATE_ON_EXECUTION = DotName.createSimple("javax.validation.executable.ValidateOnExecution");
 
     @BuildStep
     HotDeploymentConfigFileBuildItem configFile() {
         return new HotDeploymentConfigFileBuildItem("META-INF/validation.xml");
     }
-
 
     @BuildStep
     AdditionalBeanBuildItem registerBean() {
@@ -71,19 +72,22 @@ class BeanValidationProcessor {
 
         IndexView indexView = combinedIndexBuildItem.getIndex();
 
-        Set<DotName> constraintAnnotations = new HashSet<>();
+        Set<DotName> consideredAnnotations = new HashSet<>();
 
         // Collect the constraint annotations provided by Hibernate Validator and Bean Validation
-        contributeBuiltinConstraints(constraintAnnotations);
+        contributeBuiltinConstraints(consideredAnnotations);
 
         // Add the constraint annotations present in the application itself
         for (AnnotationInstance constraint : indexView.getAnnotations(DotName.createSimple(Constraint.class.getName()))) {
-            constraintAnnotations.add(constraint.target().asClass().name());
+            consideredAnnotations.add(constraint.target().asClass().name());
         }
+
+        // Also consider elements that are marked with @ValidateOnExecution
+        consideredAnnotations.add(VALIDATE_ON_EXECUTION);
 
         Set<Class<?>> classesToBeValidated = new HashSet<>();
 
-        for (DotName constraint : constraintAnnotations) {
+        for (DotName constraint : consideredAnnotations) {
             Collection<AnnotationInstance> annotationInstances = indexView.getAnnotations(constraint);
 
             for (AnnotationInstance annotation : annotationInstances) {
@@ -92,13 +96,14 @@ class BeanValidationProcessor {
                     reflectiveFields.produce(new ReflectiveFieldBuildItem(annotation.target().asField()));
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
                     contributeClass(classesToBeValidated, recorder, indexView, annotation.target().asMethod().declaringClass());
+                    // we need to register the method for reflection as it could be a getter
                     reflectiveMethods.produce(new ReflectiveMethodBuildItem(annotation.target().asMethod()));
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
                     contributeClass(classesToBeValidated, recorder, indexView, annotation.target().asMethodParameter().method().declaringClass());
-                    reflectiveMethods.produce(new ReflectiveMethodBuildItem(annotation.target().asMethodParameter().method()));
+                    // a getter does not have parameters so it's a pure method: no need for reflection in this case
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
                     contributeClass(classesToBeValidated, recorder, indexView, annotation.target().asClass());
-                    reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, annotation.target().asClass().name().toString()));
+                    // no need for reflection in the case of a class level constraint
                 }
             }
         }
@@ -109,8 +114,9 @@ class BeanValidationProcessor {
     @BuildStep
     SubstrateConfigBuildItem substrateConfig() {
         return SubstrateConfigBuildItem.builder()
-                .addRuntimeInitializedClass("javax.el.ELUtil")
-                .addResourceBundle("org.hibernate.validator.ValidationMessages")
+                .addResourceBundle(AbstractMessageInterpolator.DEFAULT_VALIDATION_MESSAGES)
+                .addResourceBundle(AbstractMessageInterpolator.USER_VALIDATION_MESSAGES)
+                .addResourceBundle(AbstractMessageInterpolator.CONTRIBUTOR_VALIDATION_MESSAGES)
                 .build();
     }
 

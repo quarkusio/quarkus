@@ -1,4 +1,4 @@
-= Creating your first Shamrock application
+= Creating your first {project-name} application
 
 :toc: macro
 :toclevels: 4
@@ -29,6 +29,8 @@ To complete this guide, you need:
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.5+
 
+include::./maven-config.adoc[tag=repositories]
+
 == Architecture
 
 In this guide, we create a straightforward application serving a `hello` endpoint. To demonstrate,
@@ -51,8 +53,6 @@ The solution is located in the `getting-started` directory.
 
 In your favorite IDE, create a new Maven project.
 It should generate a `pom.xml` file with a content similar to:
-
-// TODO Use the create mojo once merged
 
 [source,xml]
 ----
@@ -93,6 +93,12 @@ Add the Shamrock Maven plugin to the `pom.xml` file:
     </plugins>
 </build>
 ----
+
+[NOTE]
+.What's Shamrock?
+====
+Shamrock can be seen as {project-name} core.
+====
 
 As we are going to create a JAX-RS endpoint, you also need to add the following dependencies:
 
@@ -190,7 +196,7 @@ Nov 23, 2018 10:48:57 AM org.xnio.Xnio <clinit>
 INFO: XNIO version 3.3.8.Final
 Nov 23, 2018 10:48:57 AM org.xnio.nio.NioXnio <clinit>
 INFO: XNIO NIO Implementation Version 3.3.8.Final
-Nov 23, 2018 10:48:57 AM org.jboss.shamrock.deployment.ShamrockAugumentor run
+Nov 23, 2018 10:48:57 AM org.jboss.shamrock.deployment.ShamrockAugmentor run
 INFO: Beginning shamrock augmentation
 Nov 23, 2018 10:48:57 AM org.jboss.threads.Version <clinit>
 INFO: JBoss Threads version 3.0.0.Alpha3
@@ -200,7 +206,7 @@ Nov 23, 2018 10:48:57 AM org.jboss.protean.arc.processor.BeanDeployment init
 INFO: Bean deployment initialized in 7 ms
 Nov 23, 2018 10:48:57 AM org.jboss.protean.arc.processor.BeanProcessor process
 INFO: 27 resources generated/written in 48 ms
-Nov 23, 2018 10:48:57 AM org.jboss.shamrock.deployment.ShamrockAugumentor run
+Nov 23, 2018 10:48:57 AM org.jboss.shamrock.deployment.ShamrockAugmentor run
 INFO: Shamrock augmentation completed in 382ms
 Nov 23, 2018 10:48:57 AM org.jboss.protean.arc.ArcContainerImpl init
 INFO: ArC DI container initialized [beans=12, observers=0]
@@ -384,4 +390,9 @@ This guide covered the creation of an application using Shamrock.
 However, there is much more.
 We recommend continuing the journey with the link:building-native-image-guide.html[building a native image guide], where you learn about the native executable creation and the packaging in a container.
 
+In addition, the link:ide-configuration.html[developer guide] document explains how to:
+
+* scaffold a project in a single command line,
+* enable the _development model_ (hot reload)
+* import the project in your favorite IDE
 

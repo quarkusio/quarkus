@@ -20,6 +20,7 @@ import com.google.common.base.Strings;
 import freemarker.cache.ClassTemplateLoader;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
+import org.apache.maven.model.Model;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
@@ -27,7 +28,11 @@ import org.codehaus.plexus.component.annotations.Component;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -57,7 +62,7 @@ public class SetupTemplates {
         }
     }
 
-    public void generate(MavenProject project, String rootPath, String path, String className, Log log) throws MojoExecutionException {
+    public void generate(MavenProject project, Model model, String rootPath, String path, String className, Log log) throws MojoExecutionException {
         if (Strings.isNullOrEmpty(className)) {
             return;
         }
@@ -79,18 +84,9 @@ public class SetupTemplates {
 
         if (packageName != null) {
             File packageDir = new File(root, packageName.replace('.', '/'));
-            if (!packageDir.exists()) {
-                packageDir.mkdirs();
-                log.info("Creating directory " + packageDir.getAbsolutePath());
-            }
-            root = packageDir;
-
             File testPackageDir = new File(testRoot, packageName.replace('.', '/'));
-            if (!testPackageDir.exists()) {
-                testPackageDir.mkdirs();
-                log.info("Creating directory " + packageDir.getAbsolutePath());
-            }
-            testRoot = testPackageDir;
+            root = mkdirs(packageDir, log);
+            testRoot = mkdirs(testPackageDir, log);
         }
 
         File classFile = new File(root, className + JAVA_EXTENSION);
@@ -129,6 +125,45 @@ public class SetupTemplates {
             throw new MojoExecutionException("Unable to generate Application class", e);
         }
 
+
     }
 
+    public void createIndexPage(Map<String, String> context, File basedir, Log log) throws MojoExecutionException {
+        // Generate index page
+        File resources = new File(basedir, "src/main/resources/META-INF/resources");
+        File index = new File(mkdirs(resources, log), "index.html");
+        if (!index.exists()) {
+            try (Writer out = new FileWriter(index)) {
+                Template temp = cfg.getTemplate("templates/index.ftl");
+                temp.process(context, out);
+                log.info("Welcome page created in src/main/resources/META-INF/resources/" + index.getName());
+            } catch (Exception e) {
+                throw new MojoExecutionException("Unable to generate the welcome page", e);
+            }
+        }
+
+    }
+
+    public void createConfiguration(File basedir, Log log) throws MojoExecutionException {
+        File meta = new File(basedir, "src/main/resources/META-INF");
+        File file = new File(mkdirs(meta, log), "microprofile-config.properties");
+        if (!file.exists()) {
+            try {
+                Files.write(file.toPath(), Arrays.asList("# Configuration file", "key = value"), StandardOpenOption.CREATE_NEW);
+                log.info("Configuration file created in src/main/resources/META-INF/" + file.getName());
+            } catch (IOException e) {
+                throw new MojoExecutionException("Unable to generate the configuration file", e);
+            }
+        }
+
+    }
+
+    private File mkdirs(File dir, Log log) {
+        if (! dir.exists()) {
+            boolean created = dir.mkdirs();
+            log.debug("Directory " + dir.getAbsolutePath() + " created: " + created);
+            log.info("Creating directory " + dir.getAbsolutePath());
+        }
+        return dir;
+    }
 }

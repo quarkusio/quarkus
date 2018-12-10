@@ -14,11 +14,24 @@ import org.junit.runner.RunWith;
 public class BeanValidationFunctionalityTest {
 
     @Test
-    public void testBeanValidationFunctionalityFromServlet() throws Exception {
+    public void testBasicFeatures() throws Exception {
         StringBuilder expected = new StringBuilder();
-        expected.append("failed: email (must be a well-formed email address)").append("\n");
+        expected.append("failed: additionalEmails[0].<list element> (must be a well-formed email address)").append(", ")
+                .append("categorizedEmails<K>[a].<map key> (length must be between 3 and 2147483647)").append(", ")
+                .append("categorizedEmails[a].<map value>[0].<list element> (must be a well-formed email address)").append(", ")
+                .append("email (must be a well-formed email address)").append(", ")
+                .append("score (must be greater than or equal to 0)").append("\n");
         expected.append("passed");
 
-        assertEquals(expected.toString(), URLTester.relative("bean-validation/testfunctionality").invokeURL().asString());
+        assertEquals(expected.toString(), URLTester.relative("bean-validation/test/basic-features").invokeURL().asString());
+    }
+
+    @Test
+    public void testCustomClassLevelConstraint() throws Exception {
+        StringBuilder expected = new StringBuilder();
+        expected.append("failed:  (invalid MyOtherBean)").append("\n");
+        expected.append("passed");
+
+        assertEquals(expected.toString(), URLTester.relative("bean-validation/test/custom-class-level-constraint").invokeURL().asString());
     }
 }

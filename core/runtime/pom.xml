@@ -70,6 +70,10 @@
             <groupId>org.jboss.logmanager</groupId>
             <artifactId>jboss-logmanager-embedded</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.wildfly.common</groupId>
+            <artifactId>wildfly-common</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

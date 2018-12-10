@@ -12,6 +12,8 @@ To complete this guide, you need:
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.5+
 
+Remember, you need to configure Maven as indicated on the link:maven-config.html[Maven configuration page].
+
 == Architecture
 
 In this guide, we create a straightforward application accessible using HTTP to get the current value of a counter.

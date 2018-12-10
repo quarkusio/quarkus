@@ -1,4 +1,4 @@
-= What is Protean
+= What is {project-name}
 
 :toc: macro
 :toclevels: 4
@@ -9,11 +9,12 @@
 :numbered:
 :sectnums:
 :sectnumlevels: 4
-:project-name: Protean
+
+// tag::intro[]
 
 [quote]
 --
-{project-name} is a Cloud Native, Container First framework for Java applications.
+{project-name} is a Cloud Native, Container First framework for writing Java applications.
 --
 
 Container First::
@@ -30,6 +31,8 @@ Developer Joy::
 Development centric experience without compromise to bring your amazing apps to life in no time
 
 All under one framework.
+
+// end::intro[]
 
 == Scratch pad
 

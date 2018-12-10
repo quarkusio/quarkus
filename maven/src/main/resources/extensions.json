@@ -71,17 +71,6 @@
     "artifactId": "shamrock-jpa-deployment"
   },
   {
-    "name": "Logging",
-    "labels": [
-      "log",
-      "logging",
-      "slf4j",
-      "log4j"
-    ],
-    "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-logging-deployment"
-  },
-  {
     "name": "Metrics",
     "labels": [
       "metrics",

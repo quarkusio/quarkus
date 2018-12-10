@@ -49,9 +49,6 @@ public class DevMojo extends AbstractMojo {
 
     private static final String RESOURCES_PROP = "shamrock.undertow.resources";
 
-    private static final String LOGGING_ARTIFACT = "shamrock-logging-deployment";
-    private static final String LOGGING_GROUP = "org.jboss.shamrock";
-
     /**
      * The directory for compiled classes.
      */
@@ -110,18 +107,11 @@ public class DevMojo extends AbstractMojo {
             //build a class-path string for the base platform
             //this stuff does not change
             StringBuilder classPath = new StringBuilder();
-            boolean logmanager = false;
             for (Artifact artifact : project.getArtifacts()) {
                 classPath.append(artifact.getFile().getAbsolutePath());
                 classPath.append(" ");
-                if(artifact.getArtifactId().equals(LOGGING_ARTIFACT) &&
-                        artifact.getGroupId().equals(LOGGING_GROUP)) {
-                    logmanager = true;
-                }
             }
-            if(logmanager) {
-                args.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
-            }
+            args.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
             File wiringClassesDirectory = Files.createTempDirectory("wiring-classes").toFile();
             wiringClassesDirectory.deleteOnExit();
 

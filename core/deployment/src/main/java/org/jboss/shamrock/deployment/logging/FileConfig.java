@@ -14,23 +14,36 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.logging.deployment;
+package org.jboss.shamrock.deployment.logging;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.shamrock.runtime.ConfigGroup;
 
 @ConfigGroup
-public class CategoryConfig {
+public class FileConfig {
 
     /**
-     * The minimum level that this category can be set to
+     * If file logging should be enabled
      */
-    @ConfigProperty(name = "min-level", defaultValue = "inherit")
-    String minLevel;
+    @ConfigProperty(name = "enable", defaultValue = "true")
+    boolean enable;
 
     /**
-     * The log level level for this category
+     * The log format
      */
-    @ConfigProperty(name = "level", defaultValue = "inherit")
+    @ConfigProperty(name = "format", defaultValue = "%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c{1.}] (%t) %s%e%n")
+    String format;
+
+    /**
+     * The file log level
+     */
+    @ConfigProperty(name = "level", defaultValue = "ALL")
     String level;
+
+    /**
+     * The file logging log level
+     */
+    @ConfigProperty(name = "path", defaultValue = "shamrock.log")
+    String path;
+
 }

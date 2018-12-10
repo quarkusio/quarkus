@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.logging.deployment;
+package org.jboss.shamrock.deployment.logging;
 
 import java.io.Console;
 import java.io.File;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.logging.runtime;
+package org.jboss.shamrock.runtime.graal;
 
 import java.util.logging.Handler;
 
@@ -45,4 +45,4 @@ final class Target_org_slf4j_LoggerFactory {
     }
 }
 
-final class Substitutions {}
+final class LoggingSubstitutions {}

@@ -38,6 +38,7 @@ public abstract class Application {
     private static final int ST_STARTED = 2;
     private static final int ST_STOPPING = 3;
     private static final int ST_STOPPED = 4;
+    private static final int ST_EXIT = 5;
 
     private final Lock stateLock = Locks.reentrantLock();
     private final Condition stateCond = stateLock.newCondition();
@@ -137,7 +138,8 @@ public abstract class Application {
                     }
                     break;
                 }
-                case ST_STOPPED: return; // all good
+                case ST_STOPPED:
+                case ST_EXIT: return; // all good
                 default: throw Assert.impossibleSwitchCase(state);
             }
             state = ST_STOPPING;
@@ -151,11 +153,11 @@ public abstract class Application {
             stateLock.lock();
             try {
                 state = ST_STOPPED;
+                final long time = System.nanoTime() - mark;
+                Logger.getLogger("org.jboss.shamrock").infof("Shamrock stopped in %d.%03dms", Long.valueOf(time / 1_000_000), Long.valueOf(time % 1_000_000 / 1_000));
                 stateCond.signalAll();
             } finally {
                 stateLock.unlock();
-                final long time = System.nanoTime() - mark;
-                Logger.getLogger("org.jboss.shamrock").infof("Shamrock stopped in %d.%03dms", Long.valueOf(time / 1_000_000), Long.valueOf(time % 1_000_000 / 1_000));
             }
         }
     }
@@ -193,8 +195,20 @@ public abstract class Application {
                 stop();
             }
         } finally {
+            exit();
+        }
+    }
+
+    private void exit() {
+        stateLock.lock();
+        try {
             System.out.flush();
             System.err.flush();
+            state = ST_EXIT;
+            stateCond.signalAll();
+            // code beyond this point may not run
+        } finally {
+            stateLock.unlock();
         }
     }
 
@@ -222,7 +236,7 @@ public abstract class Application {
             final Condition stateCond = Application.this.stateCond;
             stateLock.lock();
             try {
-                while (state != ST_STOPPED) {
+                while (state != ST_EXIT) {
                     stateCond.awaitUninterruptibly();
                 }
             } finally {

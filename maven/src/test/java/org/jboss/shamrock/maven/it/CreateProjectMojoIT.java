@@ -1,14 +1,14 @@
 package org.jboss.shamrock.maven.it;
 
+import com.google.common.base.Charsets;
+import com.google.common.io.CharSource;
+import com.google.common.io.Files;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.*;
 import org.jboss.shamrock.maven.CreateProjectMojo;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.util.Collections;
 import java.util.Properties;
 
@@ -34,7 +34,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
     }
 
     @Test
-    public void testProjectGenerationFromScratch() throws MavenInvocationException, FileNotFoundException {
+    public void testProjectGenerationFromScratch() throws MavenInvocationException, IOException {
         testDir = initEmptyProject("projects/project-generation");
         assertThat(testDir).isDirectory();
         init(testDir);
@@ -44,6 +44,18 @@ public class CreateProjectMojoIT extends MojoTestBase {
         setup(properties);
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(new File(testDir, "src/main/java")).isDirectory();
+        assertThat(new File(testDir, "src/main/resources/META-INF/microprofile-config.properties")).isFile();
+        assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).isFile();
+
+        String config = Files.asCharSource(new File(testDir, "src/main/resources/META-INF/microprofile-config.properties"), Charsets.UTF_8)
+                .read();
+        assertThat(config).contains("key = value");
+
+        String index = Files.asCharSource(new File(testDir, "src/main/resources/META-INF/resources/index.html"), Charsets.UTF_8)
+                .read();
+        assertThat(index).contains("org.acme");
+        assertThat(index).contains("1.0-SNAPSHOT");
+        assertThat(index).contains(VERSION);
     }
 
     @Test
@@ -56,6 +68,9 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
             .contains(CreateProjectMojo.PLUGIN_ARTIFACTID, CreateProjectMojo.PLUGIN_VERSION_PROPERTY, CreateProjectMojo.PLUGIN_GROUPID);
         assertThat(new File(testDir, "src/main/java")).isDirectory();
+
+        assertThat(new File(testDir, "src/main/resources/META-INF/microprofile-config.properties")).doesNotExist();
+        assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).doesNotExist();
     }
 
     @Test

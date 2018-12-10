@@ -1,4 +1,4 @@
-package org.jboss.shamrock.maven.it;
+package org.jboss.shamrock.maven.it.assertions;
 
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;

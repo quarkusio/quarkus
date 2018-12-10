@@ -82,6 +82,9 @@
                                 <idprefix/>
                                 <idseparator>-</idseparator>
                                 <docinfo1>true</docinfo1>
+                                <!-- avoid content security policy violations -->
+                                <linkcss>true</linkcss>
+                                <copycss>true</copycss>
                             </attributes>
                         </configuration>
                     </execution>

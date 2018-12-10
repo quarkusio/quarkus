@@ -7,6 +7,7 @@ include::protean-intro.adoc[tag=intro]
 * link:getting-started-guide.html[Getting Started]
 * link:building-native-image-guide.html[Building Native Image]
 * link:kubernetes-guide.html[Deploy your application on Kubernetes]
+* link:ide-configuration.html[Project scaffolding and IDE]
 
 == Other guides
 

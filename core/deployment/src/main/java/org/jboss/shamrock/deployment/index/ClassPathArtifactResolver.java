@@ -94,7 +94,7 @@ public class ClassPathArtifactResolver implements ArtifactResolver {
                 }
             }
         }
-        throw new RuntimeException("Could not resolve artifact " + groupId + ":" + artifactId + ":" + classifier);
+        throw new RuntimeException("Could not resolve artifact " + groupId + ":" + artifactId + ":" + classifier + ". Please make sure it is present and contains a META-INF/MANIFEST.MF file. Note that artifacts that are part of the same project may not always be resolvable, in this case you should generate a META-INF/jandex.idx file instead using the Jandex Maven plugin.");
     }
 
     static class StoredUrl {
@@ -106,6 +106,13 @@ public class ClassPathArtifactResolver implements ArtifactResolver {
             this.path = path;
             this.fileName = fileName;
             this.reverseParts = reverseParts;
+        }
+
+        @Override
+        public String toString() {
+            return "StoredUrl{" +
+                    "path=" + path +
+                    '}';
         }
     }
 }

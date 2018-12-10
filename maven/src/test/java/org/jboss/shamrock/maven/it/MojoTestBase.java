@@ -11,10 +11,12 @@ import org.junit.BeforeClass;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -101,10 +103,10 @@ public class MojoTestBase {
         }
 
         File plugin = new File("target", CreateProjectMojo.PLUGIN_ARTIFACTID + "-" + MojoTestBase.VERSION + ".jar");
-        if (! plugin.isFile()) {
+        if (!plugin.isFile()) {
             File[] files = new File("target").listFiles(
                     file -> file.getName().startsWith(CreateProjectMojo.PLUGIN_ARTIFACTID) && file.getName().endsWith(".jar"));
-            if (files != null  && files.length != 0) {
+            if (files != null && files.length != 0) {
                 plugin = files[0];
             }
         }
@@ -167,7 +169,7 @@ public class MojoTestBase {
     }
 
     static void awaitUntilServerDown() {
-        await().atMost(5, TimeUnit.MINUTES).until(() -> {
+        await().atMost(1, TimeUnit.MINUTES).until(() -> {
             try {
                 get(); // Ignore result on purpose
                 return false;
@@ -181,7 +183,7 @@ public class MojoTestBase {
         AtomicReference<String> resp = new AtomicReference<>();
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(5, TimeUnit.MINUTES).until(() -> {
+                .atMost(1, TimeUnit.MINUTES).until(() -> {
             try {
                 String content = get();
                 resp.set(content);
@@ -197,7 +199,7 @@ public class MojoTestBase {
         AtomicReference<String> resp = new AtomicReference<>();
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(5, TimeUnit.MINUTES).until(() -> {
+                .atMost(1, TimeUnit.MINUTES).until(() -> {
             try {
                 URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
                 String content = IOUtils.toString(url, "UTF-8");
@@ -211,8 +213,36 @@ public class MojoTestBase {
         return resp.get();
     }
 
+    static boolean getHttpResponse(String path, int expectedStatus) {
+        AtomicBoolean code = new AtomicBoolean();
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(5, TimeUnit.MINUTES).until(() -> {
+            try {
+                URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                if (connection.getResponseCode() == expectedStatus) {
+                    code.set(true);
+                    return true;
+                }
+                return false;
+            } catch (Exception e) {
+                return false;
+            }
+        });
+        return code.get();
+    }
+
     public static String get() throws IOException {
         URL url = new URL("http://localhost:8080");
         return IOUtils.toString(url, "UTF-8");
+    }
+
+    protected void sleep() {
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }

@@ -146,6 +146,7 @@
         <module>jdbc</module>
         <module>examples</module>
         <module>devmode</module>
+        <module>docs</module>
 
         <!-- Do not add modules after legacy. JVM state will fail CI -->
         <module>legacy</module>

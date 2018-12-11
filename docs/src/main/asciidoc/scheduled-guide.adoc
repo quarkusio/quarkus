@@ -1,6 +1,6 @@
 = Schedule periodic tasks
 
-Modern applications often need to run specific task periodically.
+Modern applications often need to run specific tasks periodically.
 In this guide, you learn how to schedule periodic tasks.
 
 == Prerequisites
@@ -12,7 +12,7 @@ To complete this guide, you need:
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.5+
 
-Remember, you need to configure Maven as indicated on the link:maven-config.html[Maven configuration page].
+Remember, you need to configure Maven as indicated in the link:maven-config.html[Maven configuration page].
 
 == Architecture
 
@@ -81,9 +81,9 @@ public class CounterBean {
 }
 ----
 1. Declare the bean in the _application_ scope
-2. Use the `@Scheduled` annotation to instruct shamrock to runs this method every 10 seconds
+2. Use the `@Scheduled` annotation to instruct Shamrock to runs this method every 10 seconds
 
-The code is pretty straightforward. Every 10 seconds, the counter in incremented.
+The code is pretty straightforward. Every 10 seconds, the counter is incremented.
 The `get()` method allows retrieving the current value.
 
 == Updating the resource and the test

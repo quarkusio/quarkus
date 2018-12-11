@@ -12,7 +12,7 @@ It goes without saying but it's better when you say it.
 
 When measuring the footprint of a {project-name} application, we measure https://fr.wikipedia.org/wiki/Resident_set_size[Resident Set Size (RSS)]
 and not the JVM heap size which is only a small part of the overall problem.
-The JVM, not only allocate the heap size (`-Xms`, `-Xmx`) but also some native structure (class meta data etc).
+The JVM not only allocates the heap size (`-Xms`, `-Xmx`) but also some native structure (class meta data etc).
 
 It is important to measure the whole memory to see the impact of a Cloud Native application.
 It is particularly true of containers which will kill a process based on its full memory usage.
@@ -33,7 +33,7 @@ TODO
 == How do we measure startup time
 
 Some frameworks use aggressive lazy initialization techniques.
-It is important to measure the startup time to first request to most accurately reflect how long a framework need to start.
-Otherwise, you will miss the time the framework _actually_ take to initialize.
+It is important to measure the startup time to first request to most accurately reflect how long a framework needs to start.
+Otherwise, you will miss the time the framework _actually_ takes to initialize.
 
 Here is how we measure startup time in our tests.

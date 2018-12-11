@@ -13,6 +13,7 @@ include::protean-intro.adoc[tag=intro]
 
 * link:application-configuration-guide.html[Configuring your application]
 * link:application-lifecycle-events-guide.html[Application initialization and termination]
+* link:json-and-validation-guide.html[Using JSON and validation]
 * link:scheduled-guide.html[Schedule periodic tasks]
 * link:websocket-guide.html[Using websockets]
 * link:extension-authors-guide.html[Write your own extension] _(advanced)_
@@ -38,7 +39,7 @@ You can contact the project team using:
 * email using the http://post-office.corp.redhat.com/mailman/listinfo/protean-dev[protean-dev@redhat.com] mailing list
 * chat using https://protean.zulipchat.com[Zulip]
 
-You help is more than welcome! Don't hesitate to join the crowd.
+Your help is more than welcome! Don't hesitate to join the crowd.
 
 == Contributing
 

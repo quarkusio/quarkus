@@ -2,7 +2,7 @@
 
 // tag::repositories[]
 {project-name} releases are not yet available on Maven Central, so you need to configure the repositories.
-It's recommended to add the following repositories in the `~/.m2/settings.xml` file (using a auto-activated profile):
+It is recommended to add the following repositories in the `~/.m2/settings.xml` file (using an auto-activated profile):
 
 [source, xml, subs=attributes+]
 ----
@@ -46,6 +46,10 @@ It's recommended to add the following repositories in the `~/.m2/settings.xml` f
     </profile>
     ...
 </profiles>
+
+<activeProfiles>
+    <activeProfile>{project-name}</activeProfile>
+</activeProfiles>
 ----
 
 Alternatively you add the repositories in your `pom.xml` file.

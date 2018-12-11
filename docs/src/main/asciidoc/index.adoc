@@ -13,6 +13,7 @@ include::protean-intro.adoc[tag=intro]
 
 * link:application-configuration-guide.html[Configuring your application]
 * link:application-lifecycle-events-guide.html[Application initialization and termination]
+* link:json-and-validation-guide.html[Using JSON and validation]
 * link:scheduled-guide.html[Schedule periodic tasks]
 * link:websocket-guide.html[Using websockets]
 * link:extension-authors-guide.html[Write your own extension] _(advanced)_

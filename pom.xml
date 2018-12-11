@@ -68,7 +68,6 @@
         <asm.version>6.2.1</asm.version>
         <cdi-api.version>2.0.SP1</cdi-api.version>
         <fakereplace.version>1.0.0.Alpha7</fakereplace.version>
-        <hibernate-orm.version>1.0.0-SNAPSHOT</hibernate-orm.version>
         <jboss-metadata-web.version>11.0.0.Final</jboss-metadata-web.version>
         <maven-core.version>3.5.4</maven-core.version>
         <guava.version>23.0</guava.version>
@@ -136,7 +135,7 @@
         <module>arc</module>
         <module>ext/gizmo</module>
         <module>ext/arc</module>
-        <module>ext/hibernate-protean</module>
+        <module>ext/hibernate-orm-protean</module>
         <module>bean-validation</module>
         <module>transactions</module>
         <module>agroal</module>
@@ -950,7 +949,7 @@
             <dependency>
                 <groupId>org.hibernate.protean</groupId>
                 <artifactId>hibernate-orm-protean</artifactId>
-                <version>${hibernate-orm.version}</version>
+                <version>${project.version}</version>
                 <exclusions>
                     <!-- JAXB is now an explicit dependency to help JDK11 users,
                       but we don't really need it on JDK8 -->

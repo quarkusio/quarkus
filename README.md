@@ -111,7 +111,7 @@ by the Maven dependencies plugin:
 
 ```
 <plugin>
-    <artifactId>maven-dependency-plugin</artifactId>
+    <artifactId>Maven-dependency-plugin</artifactId>
     <executions>
         <execution>
             <goals>
@@ -309,20 +309,54 @@ mode, however there are some differences. The two basic modes are:
     separate step. This mode is the basis for native image generation, as native images are generated from the output
     of this command. This is the only mode that is supported for production use.
 
-*   Runtime Mode
+*   Development Mode
     Runtime mode involves generating the wiring bytecode at startup time. This is useful when developing apps with Shamrock,
-    as it allows you to test and run things without a full maven. This is currently used for the JUnit test runner, 
-    and for the `mvn shamrock:run` command.
-    
-### Build Time Config
+    as it allows you to test and run things without a full Maven. This is currently used for the JUnit test runner, 
+    and for the `mvn compile shamrock:dev` command.
 
-Build time configuration is provided by `shamrock-build.yaml`. At the moment the only options present relate to indexing,
-however this will probably be expanded over time.    
-    
 #### Indexing and Application Classes
 
 Shamrock has the concept of 'application classes'. These are classes that should be indexed via jandex, and acted on
 via deployment processors.
 
 By default only the classes in the current application are indexed, however it is possible to include additional classes
-by pre-indexing with the Jandex maven plugin.
+through a few different methods.
+
+The preferred way to index additional classes is to pre-generate the index using the Jandex Maven plugin. This will
+create a serialized index in `META-INF/jandex.idx`, which will be loaded at augmentation time. This can be done
+via the following configuration:
+
+    <build>
+      <plugins>
+        <plugin>
+          <groupId>org.jboss.jandex</groupId>
+          <artifactId>jandex-maven-plugin</artifactId>
+          <version>1.0.5</version>
+          <executions>
+            <execution>
+              <id>make-index</id>
+              <goals>
+                <goal>jandex</goal>
+              </goals>
+              <!-- phase is 'process-classes by default' -->
+              <configuration>
+                <!-- Nothing needed here for simple cases -->
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </build>
+
+
+In addition to this if an archive contains a `META-INF/beans.xml` file then it will also be indexed. 
+
+It is also possible to force an artifact to be indexed via MicroProfile config:
+
+    shamrock.index-dependency.somename.artifactId=common-jpa-entities
+    shamrock.index-dependency.somename.groupId=org.jboss.shamrock
+    
+In this case the `somename` part of the config is an arbitrary name, and the artifact and group id's are the Maven artifact and group
+ids. For now this will only work for artifacts that have a `META-INF/MANIFEST.MF` file, and that are layed out in a 
+standard Maven repository structure. This means that if you have a multi-module Maven project this approach will currently
+not work for dependencies that are part of the project itself, so in this case you should choose one of the other methods.

@@ -444,14 +444,15 @@ public class BuildAnnotationProcessor extends AbstractProcessor {
                     if (isAnnotationPresent(e, CONFIG_PROPERTY_ANNOTATION)) {
                         ResultHandle sb = func.getBytecode().newInstance(ofConstructor(StringBuilder.class));
                         func.getBytecode().invokeVirtualMethod(ofMethod(StringBuilder.class, "append", StringBuilder.class, String.class), sb, keyPrefix);
+                        func.getBytecode().invokeVirtualMethod(ofMethod(StringBuilder.class, "append", StringBuilder.class, String.class), sb, bc.load(val.name + "."));
                         func.getBytecode().invokeVirtualMethod(ofMethod(StringBuilder.class, "append", StringBuilder.class, String.class), sb, func.getBytecode().getMethodParam(0));
-                        func.getBytecode().invokeVirtualMethod(ofMethod(StringBuilder.class, "append", StringBuilder.class, String.class), sb, bc.load("." + val.name + "."));
+                        func.getBytecode().invokeVirtualMethod(ofMethod(StringBuilder.class, "append", StringBuilder.class, String.class), sb, func.getBytecode().load("."));
                         ResultHandle handle = func.getBytecode().invokeVirtualMethod(ofMethod(Object.class, "toString", String.class), sb);
                         injectConfigField(func.getBytecode(), mi, (VariableElement) e, val.customTypeName, handle, configProperties, currentKeyDesc + ".*");
                     }
                 }
-                func.getBytecode().returnValue(mi);
                 func.getBytecode().invokeVirtualMethod(ofMethod(HashMap.class, "put", Object.class, Object.class, Object.class), instance, func.getBytecode().getMethodParam(0), mi);
+                func.getBytecode().returnValue(null);
                 return instance;
             default:
                 throw new RuntimeException("unknown type " + val.type);

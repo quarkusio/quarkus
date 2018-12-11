@@ -151,9 +151,12 @@ public class NativeImageMojo extends AbstractMojo {
             if (cleanupServer) {
                 List<String> cleanup = new ArrayList<>(nativeImage);
                 cleanup.add("--server-shutdown");
-                Process process = Runtime.getRuntime().exec(cleanup.toArray(new String[0]), null, outputDirectory);
-                new Thread(new ProcessReader(process.getInputStream(), false)).start();
-                new Thread(new ProcessReader(process.getErrorStream(), true)).start();
+                ProcessBuilder pb = new ProcessBuilder(cleanup.toArray(new String[0]));
+                pb.directory(outputDirectory);
+                pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
+                pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+                pb.redirectError(ProcessBuilder.Redirect.INHERIT);
+                Process process = pb.start();
                 process.waitFor();
             }
             // TODO this is a temp hack
@@ -263,8 +266,14 @@ public class NativeImageMojo extends AbstractMojo {
 
             System.out.println(command);
             CountDownLatch errorReportLatch = new CountDownLatch(1);
-            Process process = Runtime.getRuntime().exec(command.toArray(new String[0]), null, outputDirectory);
-            new Thread(new ProcessReader(process.getInputStream(), false)).start();
+
+
+            ProcessBuilder pb = new ProcessBuilder(command.toArray(new String[0]));
+            pb.directory(outputDirectory);
+            pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
+            pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+
+            Process process = pb.start();
             new Thread(new ErrorReplacingProcessReader(process.getErrorStream(), new File(outputDirectory, "reports"), errorReportLatch)).start();
             errorReportLatch.await();
             if (process.waitFor() != 0) {

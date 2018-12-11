@@ -17,7 +17,7 @@ There are three distinct phases of the bootstrap of a Shamrock app:
 Augmentation::
     This is the first phase, and is done by the build step processors. These processors have access to Jandex annotation
     information and can parse any descriptors, but should not attempt to load any application classes. The output of these
-    build steps is some recorded bytecode, that is used to actually bootstrap the app at runtime. Depending on the mode
+    build steps is some recorded bytecode, that is used to actually bootstrap the application at runtime. Depending on the mode
     this step may be run in a different JVM to the following two steps.
 
 Static Init::
@@ -27,29 +27,29 @@ Static Init::
     This means that if a framework can boot in this phase then it will have its booted state directly written to the
     image, so the boot code does not need to be executed when the image is started.
 
-    There are some restrictions on what can be done in this stage as substrate disallows some objects in the native image,
+    There are some restrictions on what can be done in this stage as Substrate disallows some objects in the native image,
     for example you should not attempt to listen on a port or start threads in this phase.
 
     In JVM mode there is no real difference between this and runtime init, except that this is always executed first.
 
 Runtime Init::
-    If bytecode is recorded with `@Record(RUNTIME_INIT)` then it is executed from the applications main method. This code
+    If bytecode is recorded with `@Record(RUNTIME_INIT)` then it is executed from the application's main method. This code
     will be run on native image boot. In general as little code as possible should be executed in this phase, and should
     be restricted to code that needs to open ports etc.
 
-This means that there are really two different optimisations we are trying to make, for native image we want to boot
+This means that there are really two different optimizations we are trying to make, for native image we want to boot
 as much as possible in static init, so that the resulting native image will start as fast as possible. When running on
 the JVM we want to push as much code as possible into offline processing, so that as few classes as possible are loaded
-on application start, and so that as little processing as possible is done as part of app startup. In servers like
-WildFly deployment related classes such as XML parsers hang around for the life of the application, using up valuable
+on application start, and so that as little processing as possible is done as part of application startup. In servers like
+WildFly, deployment related classes such as XML parsers hang around for the life of the application, using up valuable
 memory. Shamrock aims to eliminate this, so that the only classes loaded at runtime are actually used at runtime.
 
-As an example the only reason that a Shamrock app should load an XML parser is if the user is using XML in their
+As an example, the only reason that a Shamrock application should load an XML parser is if the user is using XML in their
 application. Any XML parsing of configuration should be done in the Augmentation phase.
 
-Another advantage of this approach is that it means substrate can more easily eliminate features that are not used.
-If features are directly initialized via bytecode substrate can detect that a method is never called and eliminate
-that method. If config is read at runtime substrate cannot reason about the contents of the config and so needs to
+Another advantage of this approach is that it means Substrate can more easily eliminate features that are not used.
+If features are directly initialized via bytecode, Substrate can detect that a method is never called and eliminate
+that method. If config is read at runtime, Substrate cannot reason about the contents of the config and so needs to
 keep all features in case they are required.
 
 
@@ -57,7 +57,7 @@ keep all features in case they are required.
 
 Your runtime artifact should depend on shamrock-core-runtime, and possibly the runtime artifacts of other Shamrock
 modules if you want to use functionality provided by them. You will also need to include the `maven-dependency-plugin`
-to write out the needed runtime dependencies, if you are using the shamrock parent pom it will automatically
+to write out the needed runtime dependencies, if you are using the Shamrock parent pom it will automatically
 inherit the correct configuration.
 
 [source%nowrap,xml]
@@ -79,9 +79,11 @@ inherit the correct configuration.
 </build>
 ----
 
-WARNING: Under no circumstances can the runtime module depend on a deployment artifact. This would result
+[WARNING]
+====
+Under no circumstances can the runtime module depend on a deployment artifact. This would result
 in pulling all the deployment time code into runtime scope, which defeats the purpose of having the split.
-
+====
 
 Your deployment time module should depend on `shamrock-core-deployment`, your runtime artifact,
 and possibly the deployment artifacts of other Shamrock modules if you want to use functionality provided by them.
@@ -115,7 +117,7 @@ method invocation, once the method is complete they are no longer valid.
 
 The following items are valid for injection:
 
-- `SimpleBuildItem` instances to(at some point we may support `Optional<SimpleBuildItem>`, but it is not implemented yet)
+- `SimpleBuildItem` instances (at some point we may support `Optional<SimpleBuildItem>`, but it is not implemented yet)
 - `List<? extension MultiBuildItem>` instances
 - `BuildProducer<? extends BuildItem>` instances
 
@@ -125,7 +127,7 @@ while if it injects the item or list of items it is a consumer.
 Note that a `@BuildStep` method will only be called if it produces something that another consumer or the final output
 requires. If there is no consumer for a particular item then it will not be produced. What is required will depend on
 the final target that is being produced, for example when running in developer mode the final output will not ask
-for substrate specific build items such as `ReflectiveClassBuildItem` so methods that only produce substrate specific
+for Substrate-specific build items such as `ReflectiveClassBuildItem` so methods that only produce Substrate specific
 items will not be invoked.
 
 Note that private methods and fields are not allowed, as injection is resolved at compile time via an annotation processor,
@@ -149,12 +151,12 @@ are made on proxy instances of template objects that contain the actual runtime 
 including the value of method parameters. Bytecode is then created to do these same invocations on the actual template
 object at runtime.
 
-This is done by adding a `@Record` annotation to an `@BuildStep` method, and injecting an `@Template` annotated class
+This is done by adding a `@Record` annotation to a `@BuildStep` method, and injecting a `@Template` annotated class
 from the runtime module. A proxy of the template will be injected into the method, and any method invocations that are
 made will be recorded, and will be run at application startup.
 
 Methods on a template can return a value, which must be proxiable (if you want to return a non-proxiable item wrap it
-in `org.jboss.shamrock.runtime.RuntimeValue`). These proxies may not be invoked on directly, however they can be passed
+in `org.jboss.shamrock.runtime.RuntimeValue`). These proxies may not be invoked directly, however they can be passed
 into other template methods. This can be any template method, including from other `@Record` methods, so a common pattern
 is to produce `BuildItem` instances that wrap the results of these template invocations.
 
@@ -162,7 +164,7 @@ For instance in order to make arbitrary changes to the Servlet deployment Undert
 that is a `MultiBuildItem` that wraps a `ServletExtension` instance. I can return a `ServletExtension` from a template
 in another module, and Undertow will consume it and pass it into the template method that starts Undertow.
 
-At run time the bytecode will be invoked in the order it is generated. This means that build step dependencies implicitly
+At runtime the bytecode will be invoked in the order it is generated. This means that build step dependencies implicitly
 control the order that generated bytecode is run. In the example above we know that the bytecode that produces a
 `ServletExtensionBuildItem` will be run before the bytecode that consumes it.
 
@@ -170,12 +172,12 @@ control the order that generated bytecode is run. In the example above we know t
 ==== RecorderContext
 
 `org.jboss.shamrock.deployment.recording.RecorderContext` provides some convenience methods to enhance bytecode recording,
-this includes the ability to register creation functions for classes without a no-arg constructor, to register an object
-substitution (basically a transformer from a non-serializable object to a serializable one and vis versa), and to create
+this includes the ability to register creation functions for classes without a no-args constructor, to register an object
+substitution (basically a transformer from a non-serializable object to a serializable one and vice versa), and to create
 a class proxy. This interface can be directly injected as a method parameter into any `@Recorder` method.
 
 Calling `classProxy` with a given class name will create a `Class` that can be passed into template
-methods, and at runtime will be substituted with the class whose name was passing in to `classProxy`. This is basically a
+methods, and at runtime will be substituted with the class whose name was passed in to `classProxy`. This is basically a
 convenience to avoid the need to explicitly load classes in the templates.
 
 
@@ -184,20 +186,19 @@ TODO: config integration
 
 === Testing Extensions
 
-Testing of extensions should be done with the `org.jboss.shamrock.test.ShamrockUnitTest` runner. This runner is allows
-for arquillian style tests that test specific functionality. It is not intended for testing user applications, this
+Testing of extensions should be done with the `org.jboss.shamrock.test.ShamrockUnitTest` runner. This runner allows
+for Arquillian-style tests that test specific functionalities. It is not intended for testing user applications, this
 should be done via `org.jboss.shamrock.test.ShamrockTest`. The main difference between these test runners is that
 `ShamrockTest` simply boots the application once at the start of the run, while `ShamrockUnitTest` deploys a custom
-shamrock application for each test class.
+Shamrock application for each test class.
 
-These tests should be placed in the augmentation module, if additional shamrock modules are required for testing
+These tests should be placed in the augmentation module, if additional Shamrock modules are required for testing
 their augment modules should also be added as test scoped dependencies.
 
-An example test class may book like:
+An example test class may look like:
 
 [source,java]
 ----
-
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 
@@ -244,9 +245,9 @@ public class FailingUnitTest {
 
 
 <1> This tells JUnit to use the Shamrock unit test runner
-<2> This deployment method is used to build the app to be tested. It uses Shrinkwrap to create an JavaArchive to test
+<2> This deployment method is used to build the application to be tested. It uses Shrinkwrap to create a JavaArchive to test
 <3> It is possible to inject beans from our test deployment directly into the test case
-<4> This method direcly invokes the health check Servlet and verifies the response
+<4> This method directly invokes the health check Servlet and verifies the response
 <5> This method uses the injected health check bean to verify it is returning the expected result
 
 

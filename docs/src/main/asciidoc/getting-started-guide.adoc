@@ -33,7 +33,7 @@ include::./maven-config.adoc[tag=repositories]
 
 == Architecture
 
-In this guide, we create a straightforward application serving a `hello` endpoint. To demonstrate,
+In this guide, we create a straightforward application serving a `hello` endpoint. To demonstrate
 dependency injection, this endpoint uses a `greeting` bean.
 
 image::getting-started-architecture.png[alt=Architecture,width=640,height=480]
@@ -120,7 +120,7 @@ As we are going to create a JAX-RS endpoint, you also need to add the following 
 </dependencies>
 ----
 
-ARC is a CDI-lite implementation providing dependency injection.
+Arc is a CDI-lite implementation providing dependency injection.
 
 == Creating the Application class
 
@@ -139,7 +139,7 @@ public class MyApplication extends Application {
 }
 ----
 
-=== Creating the JaxRS resource
+=== Creating the JAX-RS resource
 
 Create the `src/main/java/org/acme/quickstart/GreetingResource.java` file with the following content:
 
@@ -281,7 +281,7 @@ Start the application and check that http://localhost:8080/app/hello/greeting/sh
 
 == Testing
 
-All right, so far so good, but wouldn't it be better with a few tests; just in case.
+All right, so far so good, but wouldn't it be better with a few tests, just in case.
 
 Edit the `pom.xml` file to add the 2 following dependencies:
 

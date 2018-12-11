@@ -12,7 +12,7 @@ To complete this guide, you need:
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.5+
 
-Remember, you need to configure Maven as indicated on the link:maven-config.html[Maven configuration page].
+Remember, you need to configure Maven as indicated in the link:maven-config.html[Maven configuration page].
 
 == Solution
 
@@ -39,7 +39,7 @@ mvn org.jboss.shamrock:shamrock-maven-plugin:1.0.0.Alpha1-SNAPSHOT:create \
 It generates:
 
 * the Maven structure
-* an `org.acme.scheduling.GreetingResource` resource
+* an `org.acme.config.GreetingResource` resource
 * an associated test
 
 == Injecting configuration value
@@ -102,7 +102,7 @@ greeting.name = shamrock
 
 == Update the test
 
-We also need to update the functional test to reflect the change made to endpoint.
+We also need to update the functional test to reflect the changes made to endpoint.
 Edit the `src/test/java/org/acme/config/GreetingResourceTest.java` file and change the content of the `testHelloEndpoint` method to:
 
 

@@ -8,8 +8,8 @@ This guide covers:
 This guide takes as input the application developed in the link:building-native-image-guide.html[native application guide].
 So, you should have been able to package your application as a binary executable, copied it in a Docker image and run this image.
 
-Depending on whether you are a _bare_ Kubernetes user or an OpenShift user, pick the section you are need.
-The OpenShift section leverage OpenShift build and route which are not available in _bare_ Kubernetes.
+Depending on whether you are a _bare_ Kubernetes user or an OpenShift user, pick the section you need.
+The OpenShift section leverages OpenShift build and route features which are not available in _bare_ Kubernetes.
 
 == Prerequisites
 
@@ -17,13 +17,13 @@ For this guide you need:
 
 * roughly 10 minutes (20 minutes if you want to deploy the application on both platforms)
 * having access to a Kubernetes and/or OpenShift cluster. Minikube and Minishift are valid options.
-* have been able to package the docker image from the link:building-native-image-guide.html[native application guide]
+* having been able to package the docker image from the link:building-native-image-guide.html[native application guide]
 
-Remember, you need to configure Maven as indicated on the link:maven-config.html[Maven configuration page].
+Remember, you need to configure Maven as indicated in the link:maven-config.html[Maven configuration page].
 
 == Solution
 
-We recommend you to follow the instructions in the next sections and application the app step by step.
+We recommend you to follow the instructions in the next sections and build the application step by step.
 However, you can go right to the completed example.
 
 Clone the Git repository: `git clone https://github.com/protean-project/quickstarts.git`, or download an https://github.com/protean-project/quickstarts/archive/master.zip[archive].
@@ -59,7 +59,7 @@ curl $(minikube service shamrock-quickstart --url)/app/hello/greeting/shamrock
 
 == Deploying the application in OpenShift
 
-In this section, we are going to leverage the build mechanism from OpenShift.
+In this section, we are going to leverage the build mechanism of OpenShift.
 As we have a `Dockerfile` available, we are going to create an OpenShift `build` executing it:
 
 [source]
@@ -84,6 +84,6 @@ Your application is accessible at the printed URL.
 == Going further
 
 This guide covered the deployment of a Shamrock application on Kubernetes and OpenShift.
-However, there is much more, and the integration with these environments has been tailored to make shamrock applications execution very smooth.
-For instance, the health extension can be used for health check; the configuration support allows mounting the application configuration using config map, the metric extension produces data _scrapable_ by Prometheus and so on.
+However, there is much more, and the integration with these environments has been tailored to make Shamrock applications execution very smooth.
+For instance, the health extension can be used for health check; the configuration support allows mounting the application configuration using config map, the metric extension produces data _scrappable_ by Prometheus and so on.
 

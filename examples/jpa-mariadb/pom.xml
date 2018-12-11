@@ -200,7 +200,7 @@
                                         </wait>
                                         <volumes>
                                             <bind>
-                                                <volume>${project.basedir}/custom-mariadbconfig:/etc/mysql/conf.d/</volume>
+                                                <volume>${project.basedir}/custom-mariadbconfig:/etc/mysql/conf.d/:Z</volume>
                                             </bind>
                                         </volumes>
                                     </run>

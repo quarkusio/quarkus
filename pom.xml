@@ -88,7 +88,7 @@
         <agroal.version>1.2</agroal.version>
         <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
         <javax.persistence-api.version>2.2</javax.persistence-api.version>
-        <rxjava.version>2.2.3</rxjava.version>
+        <rxjava.version>2.2.4</rxjava.version>
         <microprofile-rest-client-api.version>1.0</microprofile-rest-client-api.version>
         <microprofile-opentracing-api.version>1.2</microprofile-opentracing-api.version>
         <microprofile-reactive-streams-operators.version>1.0-RC3</microprofile-reactive-streams-operators.version>
@@ -387,6 +387,11 @@
             <dependency>
                 <groupId>org.jboss.shamrock</groupId>
                 <artifactId>shamrock-reactive-streams-operators-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-reactive-streams-operators-runtime</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

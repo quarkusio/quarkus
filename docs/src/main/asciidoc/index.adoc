@@ -39,7 +39,7 @@ You can contact the project team using:
 * email using the http://post-office.corp.redhat.com/mailman/listinfo/protean-dev[protean-dev@redhat.com] mailing list
 * chat using https://protean.zulipchat.com[Zulip]
 
-You help is more than welcome! Don't hesitate to join the crowd.
+Your help is more than welcome! Don't hesitate to join the crowd.
 
 == Contributing
 

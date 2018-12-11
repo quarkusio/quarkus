@@ -25,18 +25,44 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-reactive-streams-operators-deployment</artifactId>
+    <artifactId>shamrock-reactive-streams-operators-runtime</artifactId>
 
     <dependencies>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-core-deployment</artifactId>
+            <groupId>org.eclipse.microprofile.reactive.streams</groupId>
+            <artifactId>microprofile-reactive-streams-operators</artifactId>
+            <version>${microprofile-reactive-streams-operators.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-reactive-streams-operators-runtime</artifactId>
+            <groupId>org.eclipse.microprofile.reactive.streams</groupId>
+            <artifactId>microprofile-reactive-streams-operators-core</artifactId>
+            <version>${microprofile-reactive-streams-operators.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-reactive-streams-operators</artifactId>
+            <version>${smallrye-reactive-streams-operators.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
+
+    <build>
+        <!-- Mark this as a runtime dependency, so to make sure it's included on the final classpath during native-image -->
+        <plugins>
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 
     <repositories>
         <repository>

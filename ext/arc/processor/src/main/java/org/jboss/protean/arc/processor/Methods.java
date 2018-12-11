@@ -18,6 +18,7 @@ package org.jboss.protean.arc.processor;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -26,7 +27,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.IndexView;
@@ -115,8 +115,10 @@ final class Methods {
             if (skipForSubclass(method)) {
                 continue;
             }
-            List<AnnotationInstance> methodLevelBindings = method.annotations().stream().filter(a -> a.target().kind().equals(Kind.METHOD))
-                    .filter(a -> beanDeployment.getInterceptorBinding(a.name()) != null).collect(Collectors.toList());
+            Collection<AnnotationInstance> methodAnnnotations = beanDeployment.getAnnotations(method);
+            List<AnnotationInstance> methodLevelBindings = methodAnnnotations.stream()
+                    .filter(a -> beanDeployment.getInterceptorBinding(a.name()) != null)
+                    .collect(Collectors.toList());
             Set<AnnotationInstance> merged = new HashSet<>();
             merged.addAll(methodLevelBindings);
             for (AnnotationInstance classLevelBinding : classLevelBindings) {

@@ -390,11 +390,17 @@ public class BeanInfo {
     }
 
     private void addClassLevelBindings(ClassInfo classInfo, Collection<AnnotationInstance> bindings) {
-        beanDeployment.getAnnotations(classInfo).stream()
-                .filter(a -> beanDeployment.getInterceptorBinding(a.name()) != null && bindings.stream().noneMatch(e -> e.name().equals(a.name())))
+        beanDeployment.getAnnotations(classInfo)
+                .stream()
+                .filter(a -> beanDeployment.getInterceptorBinding(a.name()) != null && bindings.stream()
+                        .noneMatch(e -> e.name()
+                                .equals(a.name())))
                 .forEach(a -> bindings.add(a));
-        if (classInfo.superClassType() != null && !classInfo.superClassType().name().equals(DotNames.OBJECT)) {
-            ClassInfo superClass = beanDeployment.getIndex().getClassByName(classInfo.superName());
+        if (classInfo.superClassType() != null && !classInfo.superClassType()
+                .name()
+                .equals(DotNames.OBJECT)) {
+            ClassInfo superClass = beanDeployment.getIndex()
+                    .getClassByName(classInfo.superName());
             if (superClass != null) {
                 addClassLevelBindings(superClass, bindings);
             }

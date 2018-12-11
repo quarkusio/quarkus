@@ -95,7 +95,7 @@ public class AnnotationStore {
             case CLASS:
                 return target.asClass().classAnnotations();
             case METHOD:
-                // TODO filter method params?
+                // Note that the returning collection also contains method params annotations
                 return target.asMethod().annotations();
             case FIELD:
                 return target.asField().annotations();

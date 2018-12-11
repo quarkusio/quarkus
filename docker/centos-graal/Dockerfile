@@ -1,7 +1,7 @@
 FROM centos:latest
 
 ARG GRAAL_VERSION
-ENV GRAAL_VERSION=${GRAAL_VERSION:-1.0.0-rc9}
+ENV GRAAL_VERSION=${GRAAL_VERSION:-1.0.0-rc10}
 ENV GRAAL_CE_URL=https://github.com/oracle/graal/releases/download/vm-${GRAAL_VERSION}/graalvm-ce-${GRAAL_VERSION}-linux-amd64.tar.gz
 
 ENV JAVA_HOME=/opt/graalvm

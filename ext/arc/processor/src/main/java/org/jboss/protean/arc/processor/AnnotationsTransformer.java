@@ -61,6 +61,10 @@ public interface AnnotationsTransformer extends BuildExtension {
             return getTarget().kind() == Kind.FIELD;
         }
         
+        default boolean isMethod() {
+            return getTarget().kind() == Kind.METHOD;
+        }
+        
         default boolean isMethodParameter() {
             return getTarget().kind() == Kind.METHOD_PARAMETER;
         }

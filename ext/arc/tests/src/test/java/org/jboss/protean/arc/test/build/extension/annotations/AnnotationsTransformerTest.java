@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.test.build.processor;
+package org.jboss.protean.arc.test.build.extension.annotations;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

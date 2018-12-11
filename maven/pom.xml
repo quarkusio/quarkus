@@ -27,6 +27,7 @@
 
     <artifactId>shamrock-maven-plugin</artifactId>
     <packaging>maven-plugin</packaging>
+    <name>Shamrock - Maven plugin</name>
 
     <properties>
         <shamrock.version>${project.version}</shamrock.version>

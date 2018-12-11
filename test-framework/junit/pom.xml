@@ -28,6 +28,7 @@
     </parent>
 
     <artifactId>shamrock-junit</artifactId>
+    <name>Shamrock - Test framework - JUnit</name>
 
     <dependencies>
         <dependency>

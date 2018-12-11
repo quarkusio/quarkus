@@ -28,6 +28,7 @@
     </parent>
 
     <artifactId>shamrock-core-runtime</artifactId>
+    <name>Shamrock - Core - Runtime</name>
 
     <dependencies>
         <dependency>

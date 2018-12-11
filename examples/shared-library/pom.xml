@@ -27,11 +27,10 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>shamrock-shared-library-example</artifactId>
+    <name>Shamrock - Examples - Shared library</name>
     <description>
-
-        An example/test of a componentised application. This is indexed at build time by shamrock
+        An example/test of a componentized application. This is indexed at build time by Shamrock
         and components it provides should be included as normal.
-
     </description>
     <dependencies>
         <dependency>

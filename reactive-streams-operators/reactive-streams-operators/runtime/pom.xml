@@ -26,6 +26,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>shamrock-reactive-streams-operators-runtime</artifactId>
+    <name>Shamrock - Reactive Streams Operators - Runtime</name>
 
     <dependencies>
         <dependency>

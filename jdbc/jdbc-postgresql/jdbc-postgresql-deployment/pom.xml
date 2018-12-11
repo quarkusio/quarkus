@@ -26,6 +26,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>jdbc-postgresql-deployment</artifactId>
+    <name>Shamrock - JDBC - PostgreSQL - Deployment</name>
+
     <dependencies>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>

@@ -27,6 +27,7 @@
   </parent>
 
   <artifactId>arc-tests</artifactId>
+  <name>Arc - Tests</name>
 
   <dependencies>
 

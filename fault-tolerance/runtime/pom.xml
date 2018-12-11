@@ -27,6 +27,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>shamrock-fault-tolerance-runtime</artifactId>
+  <name>Shamrock - Fault tolerance - Runtime</name>
 
   <dependencies>
     <dependency>

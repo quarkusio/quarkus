@@ -26,6 +26,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>shamrock-arc</artifactId>
+    <name>Shamrock - Arc</name>
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>

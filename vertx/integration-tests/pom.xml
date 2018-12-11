@@ -12,6 +12,7 @@
     </parent>
 
     <artifactId>shamrock-vertx-integration-tests</artifactId>
+    <name>Shamrock - Vert.x - Integration tests</name>
 
     <dependencies>
         <dependency>

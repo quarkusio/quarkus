@@ -27,6 +27,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>shamrock-strict-example</artifactId>
+    <name>Shamrock - Examples - Strict</name>
     <description>An example that only contains features that can be run
     without using -H:+ReportUnsupportedElementsAtRuntime</description>
     <dependencies>

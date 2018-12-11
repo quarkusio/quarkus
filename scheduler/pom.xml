@@ -10,6 +10,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>shamrock-scheduler</artifactId>
+  <name>Shamrock - Scheduler</name>
   <packaging>pom</packaging>
 
   <modules>

@@ -27,6 +27,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>shamrock-bean-validation-deployment</artifactId>
+    <name>Shamrock - Bean Validation - Deployment</name>
 
     <dependencies>
         <dependency>

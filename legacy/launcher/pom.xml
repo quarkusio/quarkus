@@ -28,6 +28,7 @@
     </parent>
 
     <artifactId>shamrock-legacy-launcher</artifactId>
+    <name>Shamrock - Legacy - Launcher</name>
 
     <dependencies>
         <dependency>

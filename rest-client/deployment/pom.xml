@@ -27,6 +27,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>shamrock-rest-client-deployment</artifactId>
+    <name>Shamrock - REST client - Deployment</name>
 
     <dependencies>
         <dependency>

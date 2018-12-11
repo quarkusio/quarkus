@@ -26,6 +26,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>jdbc-h2-deployment</artifactId>
+    <name>Shamrock - JDBC - H2 - Deployment</name>
+
     <dependencies>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>

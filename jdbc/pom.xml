@@ -26,6 +26,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>jdbc</artifactId>
+    <name>Shamrock - JDBC</name>
     <packaging>pom</packaging>
     <modules>
         <module>jdbc-postgresql</module>

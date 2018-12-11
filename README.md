@@ -68,7 +68,7 @@ At the moment is has the following features:
             * Otherwise `sudo apt-get install libz-dev`
     * macOS
         * `xcode-select --install`
-* Install GraalVM (minimum RC9)
+* Install GraalVM (minimum RC10)
 * Set `GRAALVM_HOME` to your GraalVM Home directory e.g. `/opt/graalvm` on Linux or `/Users/emmanuel/JDK/GraalVM/Contents/Home` on macOS
 * `mvn install`
 

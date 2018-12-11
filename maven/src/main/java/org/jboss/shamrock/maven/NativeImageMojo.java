@@ -126,7 +126,7 @@ public class NativeImageMojo extends AbstractMojo {
 
         Config config = SmallRyeConfigProviderResolver.instance().getConfig();
         
-        boolean vmVersionOutOfDate = isThisGraalVMRC7();
+        boolean vmVersionOutOfDate = isThisGraalVMRCObsolete();
 
         HashMap<String, String> env = new HashMap<>(System.getenv());
         List<String> nativeImage;
@@ -246,16 +246,12 @@ public class NativeImageMojo extends AbstractMojo {
                 command.add("-H:+AllowVMInspection");
             }
             if (autoServiceLoaderRegistration) {
-                if (!vmVersionOutOfDate) {
-                    command.add( "-H:+UseServiceLoaderFeature" );
-                    //When enabling, at least print what exactly is being added:
-                    command.add( "-H:+TraceServiceLoaderFeature" );
-                }
+                command.add( "-H:+UseServiceLoaderFeature" );
+                //When enabling, at least print what exactly is being added:
+                command.add( "-H:+TraceServiceLoaderFeature" );
             }
             else {
-                if (!vmVersionOutOfDate) {
-                    command.add( "-H:-UseServiceLoaderFeature" );
-                }
+                command.add( "-H:-UseServiceLoaderFeature" );
             }
             if (fullStackTraces) {
                 command.add("-H:+StackTrace");
@@ -287,11 +283,11 @@ public class NativeImageMojo extends AbstractMojo {
     }
 
     //FIXME remove after transition period
-    private boolean isThisGraalVMRC7() {
+    private boolean isThisGraalVMRCObsolete() {
         final String vmName = System.getProperty( "java.vm.name" );
         getLog().info( "Running Shamrock native-image plugin on " + vmName );
-        if ( vmName.contains( "-rc7" ) ) {
-            getLog().error( "GraalVM rc7 detected! Please upgrade" );
+        if (vmName.contains( "-rc9" ) || vmName.contains( "-rc8")) {
+            getLog().error( "Out of date RC build of GraalVM detected! Please upgrade to RC10" );
             return true;
         }
         return false;

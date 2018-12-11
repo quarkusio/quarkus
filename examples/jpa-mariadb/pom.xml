@@ -185,6 +185,8 @@
                                             <date>default</date>
                                             <color>cyan</color>
                                         </log>
+                                        <!-- Speed things up a bit by not actually flushing writes to disk -->
+                                        <tmpfs>/var/lib/mysql</tmpfs>
                                         <wait>
                                             <!-- good docs found at: http://dmp.fabric8.io/#build-healthcheck -->
                                             <tcp>
@@ -196,6 +198,11 @@
                                             <!-- Unfortunately booting MariaDB is slow, needs to set a generous timeout: -->
                                             <time>40000</time>
                                         </wait>
+                                        <volumes>
+                                            <bind>
+                                                <volume>${project.basedir}/custom-mariadbconfig:/etc/mysql/conf.d/</volume>
+                                            </bind>
+                                        </volumes>
                                     </run>
                                 </image>
                             </images>

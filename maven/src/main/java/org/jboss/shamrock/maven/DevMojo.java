@@ -183,12 +183,14 @@ public class DevMojo extends AbstractMojo {
             args.add(outputDirectory.getAbsolutePath());
             args.add(wiringClassesDirectory.getAbsolutePath());
             args.add(new File(buildDir, "transformer-cache").getAbsolutePath());
-            Process p = Runtime.getRuntime().exec(args.toArray(new String[0]), null, outputDirectory);
-            new Thread(new ProcessReader(p.getErrorStream(), true)).start();
-            new Thread(new ProcessReader(p.getInputStream(), false)).start();
+            ProcessBuilder pb = new ProcessBuilder(args.toArray(new String[0]));
+            pb.redirectError(ProcessBuilder.Redirect.INHERIT);
+            pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+            pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
+            pb.directory(outputDirectory);
+            Process p = pb.start();
 
             int val = p.waitFor();
-
         } catch (Exception e) {
             throw new MojoFailureException("Failed to run", e);
         }

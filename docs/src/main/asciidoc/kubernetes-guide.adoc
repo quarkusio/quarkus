@@ -17,13 +17,13 @@ For this guide you need:
 
 * roughly 10 minutes (20 minutes if you want to deploy the application on both platforms)
 * having access to a Kubernetes and/or OpenShift cluster. Minikube and Minishift are valid options.
-* having been able to package the docker image from the link:building-native-image-guide.html[native application guide]
+* being able to package the docker image from the link:building-native-image-guide.html[native application guide]
 
 Remember, you need to configure Maven as indicated in the link:maven-config.html[Maven configuration page].
 
 == Solution
 
-We recommend you to follow the instructions in the next sections and build the application step by step.
+We recommend to follow the instructions in the next sections and build the application step by step.
 However, you can go right to the completed example.
 
 Clone the Git repository: `git clone https://github.com/protean-project/quickstarts.git`, or download an https://github.com/protean-project/quickstarts/archive/master.zip[archive].

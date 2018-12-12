@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.MavenInvocationException;
+import org.jboss.shamrock.maven.it.verifier.MavenProcessInvocationResult;
 import org.jboss.shamrock.maven.it.verifier.RunningInvoker;
 import org.junit.After;
 import org.junit.Ignore;
@@ -286,5 +287,38 @@ public class DevMojoIT extends MojoTestBase {
     }
 
 
+
+    @Test
+    public void testErrorMessageWhenNoJavaSources() throws IOException, MavenInvocationException {
+        testDir = initProject("projects/classic", "projects/project-no-sources");
+        FileUtils.deleteQuietly(new File(testDir, "src/main/java"));
+        running = new RunningInvoker(testDir, false);
+        MavenProcessInvocationResult result = running.execute(Arrays.asList("compile", "shamrock:dev"), Collections.emptyMap());
+        await().until(() -> result.getProcess() != null  && ! result.getProcess().isAlive());
+        assertThat(running.log()).containsIgnoringCase("The `src/main/java` directory is required");
+    }
+
+    @Test
+    public void testErrorMessageWhenNoTarget() throws IOException, MavenInvocationException {
+        testDir = initProject("projects/classic", "projects/project-no-target");
+        FileUtils.deleteQuietly(new File(testDir, "target"));
+        running = new RunningInvoker(testDir, false);
+        MavenProcessInvocationResult result = running.execute(Collections.singletonList("shamrock:dev"), Collections.emptyMap());
+        await().until(() -> result.getProcess() != null  && ! result.getProcess().isAlive());
+        assertThat(running.log()).containsIgnoringCase("`mvn compile shamrock:dev`");
+    }
+
+    @Test
+    public void testErrorMessageWhenNoTargetClasses() throws IOException, MavenInvocationException {
+        testDir = initProject("projects/classic", "projects/project-no-classes");
+        new File(testDir, "target").mkdirs();
+        // Be sure we don't have classes.
+        FileUtils.deleteQuietly(new File(testDir, "target/classes"));
+
+        running = new RunningInvoker(testDir, false);
+        MavenProcessInvocationResult result = running.execute(Collections.singletonList("shamrock:dev"), Collections.emptyMap());
+        await().until(() -> result.getProcess() != null  && ! result.getProcess().isAlive());
+        assertThat(running.log()).containsIgnoringCase("`mvn compile shamrock:dev`");
+    }
 
 }

@@ -130,7 +130,7 @@ class FunctionCreatorImpl implements FunctionCreator {
             }
         }
 
-        ResultHandle[] resolve(ResultHandle[] handle) {
+        ResultHandle[] resolve(ResultHandle... handle) {
             ResultHandle[] ret = new ResultHandle[handle.length];
             for (int i = 0; i < handle.length; ++i) {
                 ret[i] = resolve(handle[i]);

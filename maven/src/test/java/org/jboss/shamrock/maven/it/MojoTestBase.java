@@ -3,6 +3,7 @@ package org.jboss.shamrock.maven.it;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.maven.shared.utils.StringUtils;
 import org.jboss.shamrock.maven.CreateProjectMojo;
 import org.jboss.shamrock.maven.utilities.MojoUtils;
@@ -10,12 +11,18 @@ import org.junit.BeforeClass;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 public class MojoTestBase {
     static String VERSION;
@@ -75,10 +82,18 @@ public class MojoTestBase {
         } catch (IOException e) {
             throw new RuntimeException("Cannot copy project resources", e);
         }
+
+        File pom = new File(out, "pom.xml");
+        try {
+            filter(pom, VARIABLES);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
+
         return out;
     }
 
-    static void installPluginToLocalRepository(File local) {
+    public static void installPluginToLocalRepository(File local) {
         File repo = new File(local, CreateProjectMojo.PLUGIN_GROUPID.replace(".", "/") + "/"
                 + CreateProjectMojo.PLUGIN_ARTIFACTID + "/" + MojoTestBase.VERSION);
         if (!repo.isDirectory()) {
@@ -88,10 +103,10 @@ public class MojoTestBase {
         }
 
         File plugin = new File("target", CreateProjectMojo.PLUGIN_ARTIFACTID + "-" + MojoTestBase.VERSION + ".jar");
-        if (! plugin.isFile()) {
+        if (!plugin.isFile()) {
             File[] files = new File("target").listFiles(
                     file -> file.getName().startsWith(CreateProjectMojo.PLUGIN_ARTIFACTID) && file.getName().endsWith(".jar"));
-            if (files != null  && files.length != 0) {
+            if (files != null && files.length != 0) {
                 plugin = files[0];
             }
         }
@@ -151,5 +166,83 @@ public class MojoTestBase {
             env.put("MAVEN_OPTS", opts);
         }
         return env;
+    }
+
+    static void awaitUntilServerDown() {
+        await().atMost(1, TimeUnit.MINUTES).until(() -> {
+            try {
+                get(); // Ignore result on purpose
+                return false;
+            } catch (Exception e) {
+                return true;
+            }
+        });
+    }
+
+    static String getHttpResponse() {
+        AtomicReference<String> resp = new AtomicReference<>();
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> {
+            try {
+                String content = get();
+                resp.set(content);
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+        });
+        return resp.get();
+    }
+
+    static String getHttpResponse(String path) {
+        AtomicReference<String> resp = new AtomicReference<>();
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> {
+            try {
+                URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
+                String content = IOUtils.toString(url, "UTF-8");
+                System.out.println("Content: " + content);
+                resp.set(content);
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
+        });
+        return resp.get();
+    }
+
+    static boolean getHttpResponse(String path, int expectedStatus) {
+        AtomicBoolean code = new AtomicBoolean();
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(5, TimeUnit.MINUTES).until(() -> {
+            try {
+                URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                if (connection.getResponseCode() == expectedStatus) {
+                    code.set(true);
+                    return true;
+                }
+                return false;
+            } catch (Exception e) {
+                return false;
+            }
+        });
+        return code.get();
+    }
+
+    public static String get() throws IOException {
+        URL url = new URL("http://localhost:8080");
+        return IOUtils.toString(url, "UTF-8");
+    }
+
+    protected void sleep() {
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }

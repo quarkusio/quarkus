@@ -1,6 +1,4 @@
-package org.jboss.shamrock.maven.it;
-
-import sun.tools.jar.resources.jar;
+package org.jboss.shamrock.maven.it.assertions;
 
 import java.io.*;
 import java.util.jar.JarFile;
@@ -24,20 +22,20 @@ class JarVerifier {
     }
 
     void assertThatJarHasManifest() throws Exception {
-        try (JarFile jf = new JarFile(jarFile)){
+        try (JarFile jf = new JarFile(jarFile)) {
             Manifest manifest = jf.getManifest();
             assertThat(manifest).isNotNull();
         }
     }
 
     void assertThatFileIsContained(String file) throws Exception {
-        try (JarFile jf = new JarFile(jarFile)){
+        try (JarFile jf = new JarFile(jarFile)) {
             assertThat(jf.getJarEntry(file)).isNotNull();
         }
     }
 
     void assertThatFileIsNotContained(String file) throws Exception {
-        try (JarFile jf = new JarFile(jarFile)){
+        try (JarFile jf = new JarFile(jarFile)) {
             assertThat(jf.getJarEntry(file)).isNull();
         }
     }

@@ -35,13 +35,13 @@ import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.runtime.ShutdownContext;
 import org.jboss.shamrock.runtime.Template;
-import org.jboss.shamrock.runtime.cdi.BeanContainer;
 
 import io.undertow.Undertow;
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.CanonicalPathHandler;
+import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.resource.ClassPathResourceManager;
 import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.session.SessionIdGenerator;
@@ -77,7 +77,7 @@ public class UndertowDeploymentTemplate {
     private static final String RESOURCES_PROP = "shamrock.undertow.resources";
 
     private static volatile Undertow undertow;
-    private static volatile HttpHandler currentRoot;
+    private static volatile HttpHandler currentRoot = ResponseCodeHandler.HANDLE_404;
 
     public RuntimeValue<DeploymentInfo> createDeployment(String name, Set<String> knownFile, Set<String> knownDirectories) {
         DeploymentInfo d = new DeploymentInfo();
@@ -241,7 +241,7 @@ public class UndertowDeploymentTemplate {
                 @Override
                 public <T> InstanceFactory<T> createInstanceFactory(Class<T> clazz) throws NoSuchMethodException {
                     InjectionInstance<T> res = injectionFactory.create(clazz);
-                    if(res == null) {
+                    if (res == null) {
                         return defaultVal.createInstanceFactory(clazz);
                     }
                     return new InstanceFactory<T>() {

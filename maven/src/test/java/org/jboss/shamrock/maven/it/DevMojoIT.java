@@ -156,7 +156,6 @@ public class DevMojoIT extends MojoTestBase {
     }
 
     @Test
-    @Ignore("TO BE CHECKED")
     public void testThatTheApplicationIsReloadedOnConfigChange() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-run-config-change");
         assertThat(testDir).isDirectory();

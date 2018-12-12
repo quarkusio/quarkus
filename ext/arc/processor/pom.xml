@@ -27,7 +27,7 @@
   </parent>
 
   <artifactId>arc-processor</artifactId>
-  <name>Arc - Processor</name>
+  <name>ArC - Processor</name>
 
   <dependencies>
 

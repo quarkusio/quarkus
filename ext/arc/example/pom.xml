@@ -27,7 +27,7 @@
   </parent>
 
   <artifactId>arc-example</artifactId>
-  <name>Arc - Examples</name>
+  <name>ArC - Examples</name>
 
   <properties>
     <version.weld>3.0.5.Final</version.weld>

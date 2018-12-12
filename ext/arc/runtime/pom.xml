@@ -27,7 +27,7 @@
   </parent>
 
   <artifactId>arc-runtime</artifactId>
-  <name>Arc - Runtime</name>
+  <name>ArC - Runtime</name>
 
   <dependencies>
 

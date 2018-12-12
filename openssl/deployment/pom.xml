@@ -26,6 +26,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>shamrock-openssl-deployment</artifactId>
+    <name>Shamrock - OpenSSL - Deployment</name>
 
     <dependencies>
         <dependency>

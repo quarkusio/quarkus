@@ -27,6 +27,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>shamrock-health-runtime</artifactId>
+    <name>Shamrock - Health check - Runtime</name>
 
     <dependencies>
 

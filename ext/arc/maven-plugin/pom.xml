@@ -27,6 +27,7 @@
   </parent>
 
   <artifactId>arc-maven-plugin</artifactId>
+  <name>Arc - Maven plugin</name>
   <packaging>maven-plugin</packaging>
 
   <properties>

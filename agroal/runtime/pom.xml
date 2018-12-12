@@ -27,6 +27,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>shamrock-agroal-runtime</artifactId>
+    <name>Shamrock - Agroal - Runtime</name>
 
     <dependencies>
         <dependency>

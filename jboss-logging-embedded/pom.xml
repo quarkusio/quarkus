@@ -28,9 +28,9 @@
 
     <groupId>org.jboss.logging</groupId>
     <artifactId>jboss-logging-embedded</artifactId>
+    <name>Shamrock - JBoss Logging (embedded version)</name>
 
     <packaging>jar</packaging>
-    <name>JBoss Logging (Embedded version)</name>
 
     <dependencies>
         <!-- log4j backend -->

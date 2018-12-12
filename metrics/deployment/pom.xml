@@ -27,6 +27,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>shamrock-metrics-deployment</artifactId>
+    <name>Shamrock - Metrics - Deployment</name>
 
     <dependencies>
         <dependency>

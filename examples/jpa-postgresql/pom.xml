@@ -26,8 +26,9 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-strict-jpa-example</artifactId>
-    <description>An example that only contains JPA related tests running in strict mode</description>
+    <artifactId>shamrock-strict-jpa-postgresql-example</artifactId>
+    <name>Shamrock - Examples - JPA - PostgreSQL</name>
+    <description>An example that only contains JPA related tests running in strict mode with the PostgreSQL database</description>
     <dependencies>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>

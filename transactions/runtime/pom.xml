@@ -27,6 +27,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>shamrock-transactions-runtime</artifactId>
+    <name>Shamrock - Transactions - Runtime</name>
 
     <dependencies>
         <dependency>

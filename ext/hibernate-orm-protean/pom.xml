@@ -22,8 +22,9 @@
 
     <groupId>org.hibernate.protean</groupId>
     <artifactId>hibernate-orm-protean</artifactId>
+    <name>Hibernate ORM - Protean</name>
     <version>1.0.0.Alpha1-SNAPSHOT</version>
-    
+
     <properties>
 
         <!-- Dependency versions -->

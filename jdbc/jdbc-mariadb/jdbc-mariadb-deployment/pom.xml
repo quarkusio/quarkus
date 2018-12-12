@@ -26,6 +26,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>jdbc-mariadb-deployment</artifactId>
+    <name>Shamrock - JDBC - MariaDB - Deployment</name>
 
     <dependencies>
         <dependency>

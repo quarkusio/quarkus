@@ -28,6 +28,7 @@
     </parent>
 
     <artifactId>shamrock-legacy-runner</artifactId>
+    <name>Shamrock - Legacy - Runner</name>
 
     <dependencies>
         <dependency>

@@ -36,7 +36,7 @@
         <asciidoctorj-pdf.version>1.5.0-alpha.16</asciidoctorj-pdf.version>
     </properties>
 
-    <name>Shamrock Documentation</name>
+    <name>Shamrock - Documentation</name>
     <description>The shamrock documentation</description>
 
     <dependencies>

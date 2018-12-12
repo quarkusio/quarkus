@@ -27,6 +27,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>shamrock-arc-runtime</artifactId>
+  <name>Shamrock - Arc - Runtime</name>
 
   <dependencies>
     <dependency>

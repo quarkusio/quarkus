@@ -28,7 +28,7 @@
     </parent>
 
     <artifactId>shamrock-core-deployment</artifactId>
-
+    <name>Shamrock - Core - Deployment</name>
 
     <dependencies>
         <dependency>

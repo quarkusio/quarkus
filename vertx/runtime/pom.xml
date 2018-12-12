@@ -27,6 +27,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>shamrock-vertx-runtime</artifactId>
+    <name>Shamrock - Vert.x - Runtime</name>
 
     <dependencies>
         <dependency>

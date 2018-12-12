@@ -27,6 +27,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>shamrock-strict-jpa-mariadb-example</artifactId>
+    <name>Shamrock - Examples - JPA - MariaDB</name>
     <description>An example that only contains JPA related tests running in strict mode with the MariaDB database</description>
     <dependencies>
         <dependency>

@@ -26,11 +26,11 @@
         <version>1.0.0.Alpha1-SNAPSHOT</version>
     </parent>
 
-    <name>JBoss Log Manager (embedded version)</name>
-    <description>An implementation of java.util.logging.LogManager</description>
-
     <groupId>org.jboss.logmanager</groupId>
     <artifactId>jboss-logmanager-embedded</artifactId>
+    <name>Shamrock - JBoss Log Manager (embedded version)</name>
+    <description>An implementation of java.util.logging.LogManager</description>
+
     <packaging>jar</packaging>
 
     <properties>

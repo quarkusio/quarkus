@@ -27,6 +27,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>shamrock-bean-validation-runtime</artifactId>
+    <name>Shamrock - Bean Validation - Runtime</name>
 
     <dependencies>
         <dependency>

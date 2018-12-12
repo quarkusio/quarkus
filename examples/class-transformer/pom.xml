@@ -27,6 +27,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>shamrock-class-transformer-example</artifactId>
+    <name>Shamrock - Examples - Class tranformer</name>
     <description>
 
         An example deployment time processor that tests

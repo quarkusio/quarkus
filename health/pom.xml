@@ -26,6 +26,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>shamrock-health</artifactId>
+    <name>Shamrock - Health check</name>
+
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>

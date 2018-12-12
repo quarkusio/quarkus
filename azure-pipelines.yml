@@ -30,13 +30,6 @@ jobs:
       docker logout
     displayName: Publishing Strict Example Container Image
 
-- job: OpenShift_Verify
-  dependsOn: Build
-  pool:
-    vmImage: 'Ubuntu 16.04'
-
-  steps:
-  - checkout: none
   - script: |
        curl https://github.com/openshift/origin/releases/download/v3.10.0/openshift-origin-client-tools-v3.10.0-dd10d17-linux-64bit.tar.gz --location --output oc-client.tgz
        tar -xzvf oc-client.tgz
@@ -48,7 +41,7 @@ jobs:
        sudo systemctl restart docker
        ./oc cluster up
     displayName: 'Launch OpenShift'
-  
+
   - script: |
       function wait_for_pod() {
         echo -n "Waiting for $1."
@@ -75,11 +68,11 @@ jobs:
       ./oc create secret docker-registry jtgdocker1 --docker-username=jtgdocker1 --docker-password=uEo-NTv-5YT-kk6 --docker-email='bogus@bogus.com'
       ./oc secrets link default jtgdocker1  --for=pull
       ./oc new-app -e "POSTGRESQL_USER=hibernate_orm_test" -e "POSTGRESQL_PASSWORD=hibernate_orm_test" -e "POSTGRESQL_DATABASE=hibernate_orm_test" centos/postgresql-10-centos7
-      wait_for_pod postgres 
-      ./oc new-app -e "DATASOURCE_URL=jdbc:postgresql://postgresql-10-centos7/hibernate_orm_test" jtgdocker1/shamrock-strict-example     
-      wait_for_pod shamrock 
+      wait_for_pod postgres
+      ./oc new-app -e "DATASOURCE_URL=jdbc:postgresql://postgresql-10-centos7/hibernate_orm_test" jtgdocker1/shamrock-strict-example
+      wait_for_pod shamrock
       ./oc status
       VAL=`./oc get service shamrock-strict-example -o "custom-columns=IP:.spec.clusterIP" --no-headers=true`
       VAL2=`curl -v http://$VAL:8080/jpa/testjpaeminjection`
       test "$VAL2" = "OK"
-    displayName: 'Deploy and Test'
+    displayName: 'Deploy and Test On Openshift'

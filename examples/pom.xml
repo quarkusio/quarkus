@@ -39,7 +39,18 @@
         <module>strict</module>
         <module>jpa-postgresql</module>
         <module>jpa-h2</module>
-        <module>jpa-mariadb</module>
     </modules>
 
+    <profiles>
+        <profile>
+            <activation>
+                <property>
+                    <name>mariadb-example</name>
+                </property>
+            </activation>
+            <modules>
+                <module>jpa-mariadb</module>
+            </modules>
+        </profile>
+    </profiles>
 </project>

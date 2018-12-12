@@ -76,7 +76,7 @@ public class ShamrockFacetTest {
         checkDependency(dependencies, "org.jboss.shamrock", "shamrock-arc-deployment",
                 ShamrockFacet.SHAMROCK_VERSION, "provided");
 
-        assertThat(dependencies.getDependencies()).hasSize(5);
+        assertThat(dependencies.getDependencies()).hasSize(3);
 
         // Check maven compiler
         hasPlugin(plugins, "maven-compiler-plugin");

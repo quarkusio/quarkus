@@ -189,11 +189,6 @@ public class ShamrockFacet extends AbstractFacet<Project> implements ProjectFace
     private void addShamrockDependencies() {
         ForgeUtils.getOrAddDependency(getFaceted(), "org.jboss.shamrock", "shamrock-jaxrs-deployment",
                 ShamrockFacet.SHAMROCK_VERSION_VARIABLE, null, "provided");
-        ForgeUtils.getOrAddDependency(getFaceted(), "org.jboss.shamrock", "shamrock-arc-deployment",
-                ShamrockFacet.SHAMROCK_VERSION_VARIABLE, null, "provided");
-        ForgeUtils.getOrAddDependency(getFaceted(), "org.jboss.shamrock", "shamrock-logging-deployment",
-                ShamrockFacet.SHAMROCK_VERSION_VARIABLE, null, "provided");
-
         //tests
         ForgeUtils.getOrAddDependency(getFaceted(), "org.jboss.shamrock", "shamrock-junit",
                 ShamrockFacet.SHAMROCK_VERSION_VARIABLE, null, "test");

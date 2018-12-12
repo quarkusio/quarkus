@@ -10,21 +10,74 @@ It goes without saying but it's better when you say it.
 
 == How do we measure memory usage
 
-When measuring the footprint of a {project-name} application, we measure https://fr.wikipedia.org/wiki/Resident_set_size[Resident Set Size (RSS)]
+When measuring the footprint of a {project-name} application, we measure https://en.wikipedia.org/wiki/Resident_set_size[Resident Set Size (RSS)]
 and not the JVM heap size which is only a small part of the overall problem.
-The JVM not only allocates the heap size (`-Xms`, `-Xmx`) but also some native structure (class meta data etc).
+The JVM not only allocates native memory for heap (`-Xms`, `-Xmx`) but also structures required by the jvm to run your application. Depending on the JVM implementation, the total memory allocated for an application will include, be not limited to;
+
+ * Heap space
+ * Class metadata
+ * Thread stacks
+ * Compiled code
+ * Garbage collection
+
+=== Native Memory Tracking
+
+In order to view the native memory used by the JVM, you can enable the https://docs.oracle.com/javase/8/docs/technotes/guides/vm/nmt-8.html[Native Memory Tracking] (NMT) feature in hotspot;
+
+Enable NMT on the command line;
+
+ -XX:NativeMemoryTracking=[off | summary | detail] <1>
+
+<1> NOTE: this feature will add cause an approximately 5-10% performance overhead
+
+It is then possible to use jcmd to dump a report of the native memory usage of the Hotspot JVM running your application;
+
+ jcmd <pid> VM.native_memory [summary | detail | baseline | summary.diff | detail.diff | shutdown] [scale= KB | MB | GB]
+
+=== Cloud Native Memory Limits
 
 It is important to measure the whole memory to see the impact of a Cloud Native application.
-It is particularly true of containers which will kill a process based on its full memory usage.
+It is particularly true of container environments which will kill a process based on its full RSS memory usage.
 
 Likewise, don't fall into the trap of only measuring private memory which is what the process uses that is not shareable with other processes.
 While private memory might be useful in a environment deploying many different applications (and thus sharing memory a lot),
 it is very misleading in environments like Kubernetes/OpenShift.
 
-Here is how we measure memory usage in various operating systems:
+=== Platform Specific Memory Reporting
+
+In order to not incur the performance overhead of running with NVM enabled, we measure the total RSS of an JVM application using tools specific to each platform.
 
 Linux::
-TODO
+
+ The linux https://linux.die.net/man/1/pmap[pmap] tool provides a report on the native memory map for a process
+
+ pmap -x <pid>
+
+ 13150:   /data/shamrock-application -Xmx100m -Xmn70m
+ Address           Kbytes     RSS   Dirty Mode  Mapping
+ 0000000000400000   55652   30592       0 r-x-- shamrock-application
+ 0000000003c58000       4       4       4 r-x-- shamrock-application
+ 0000000003c59000    5192    4628     748 rwx-- shamrock-application
+ 00000000054c0000     912     156     156 rwx--   [ anon ]
+ ...
+ 00007fcd13400000    1024    1024    1024 rwx--   [ anon ]
+ ...
+ 00007fcd13952000       8       4       0 r-x-- libfreebl3.so
+ ...
+ ---------------- ------- ------- -------
+ total kB         9726508  256092  220900
+
+Each Memory region that has been allocated for the process is listed;
+
+- Address: Start address of virtual address space
+- Kbytes:  Size (kilobytes) of virtual address space reserved for region
+- RSS:     Resident set size (kilobytes).  This is the measure of how much memory space is actually being used
+- Dirty:   dirty pages (both shared and private) in kilobytes
+- Mode:    Access mode for memory region
+- Mapping: Includes application regions and Shared Object (.so) mappings for process
+
+The Total RSS (kB) line reports the total native memory the process is using.
+
 Windows::
 TODO
 macOS::

@@ -1,12 +1,14 @@
 package org.jboss.shamrock.maven.it.verifier;
 
 
+import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.*;
 import org.jutils.jprocesses.JProcesses;
 import org.jutils.jprocesses.model.ProcessInfo;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +24,8 @@ public class RunningInvoker extends MavenProcessInvoker {
 
     private final boolean debug;
     private MavenProcessInvocationResult result;
+    private final File log;
+    private final PrintStreamHandler logHandler;
 
     public RunningInvoker(File basedir, boolean debug) throws FileNotFoundException {
         this.debug = debug;
@@ -32,10 +36,11 @@ public class RunningInvoker extends MavenProcessInvoker {
         }
         installPluginToLocalRepository(new File(repo));
         setLocalRepositoryDirectory(new File(repo));
-        File log = new File(basedir.getParentFile(), "build-" + basedir.getName() + ".log");
+        log = new File(basedir.getParentFile(), "build-" + basedir.getName() + ".log");
         PrintStream stream = new PrintStream(log);
-        setErrorHandler(new PrintStreamHandler(stream, true));
-        setOutputHandler(new PrintStreamHandler(stream, true));
+        logHandler = new PrintStreamHandler(stream, true);
+        setErrorHandler(logHandler);
+        setOutputHandler(logHandler);
         setLogger(new PrintStreamLogger(stream, InvokerLogger.DEBUG));
     }
 
@@ -47,7 +52,6 @@ public class RunningInvoker extends MavenProcessInvoker {
                 // Kill all process using the live reload and the live reload process.
                 // This might be too much
                 pi.getCommand().contains("shamrock:dev") || pi.getCommand().contains(getWorkingDirectory().getAbsolutePath()))
-                .peek(pi -> System.out.println("Selected:" + pi.getCommand()))
                 .collect(Collectors.toList());
 
         list.stream()
@@ -69,7 +73,8 @@ public class RunningInvoker extends MavenProcessInvoker {
 
         request.setShellEnvironmentInherited(true);
         envVars.forEach(request::addShellEnvironment);
-
+        request.setOutputHandler(logHandler);
+        request.setErrorHandler(logHandler);
         this.result = (MavenProcessInvocationResult) execute(request);
         return result;
     }
@@ -77,5 +82,9 @@ public class RunningInvoker extends MavenProcessInvoker {
     @Override
     public InvocationResult execute(InvocationRequest request) throws MavenInvocationException {
         return super.execute(request);
+    }
+
+    public String log() throws IOException {
+        return FileUtils.readFileToString(log, "UTF-8");
     }
 }

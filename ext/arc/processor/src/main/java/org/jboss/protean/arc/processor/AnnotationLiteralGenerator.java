@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 import javax.enterprise.util.AnnotationLiteral;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
@@ -163,25 +164,7 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
                         retValue = valueMethod.loadClass(value.asClass().toString());
                         break;
                     case ARRAY:
-                        switch (value.componentKind()) {
-                            case CLASS:
-                                Type[] classArray = value.asClassArray();
-                                retValue = valueMethod.newArray(componentType(method), valueMethod.load(classArray.length));
-                                for (int i = 0; i < classArray.length; i++) {
-                                    valueMethod.writeArrayValue(retValue, i, valueMethod.loadClass(classArray[i].name().toString()));
-                                }
-                                break;
-                            // TODO other types of array components
-                            // Note that array members should be Nonbinding in CDI
-                            default:
-                                // For an empty array component kind is UNKNOWN
-
-                                String arrayType = componentType(method);
-                                if (!arrayType.equals(Class.class.getName())) {
-                                    LOGGER.warnf("Unsupported array component type %s on %s - literal returns an empty array", method, annotationClass);
-                                }
-                                retValue = valueMethod.newArray(arrayType, valueMethod.load(0));
-                        }
+                        retValue = arrayValue(value, valueMethod, method, annotationClass);
                         break;
                     case ENUM:
                         retValue = valueMethod
@@ -195,7 +178,70 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
             valueMethod.returnValue(retValue);
         }
         annotationLiteral.close();
-        LOGGER.debugf("Annotation literal generated: " + literalName);
+        LOGGER.debugf("Annotation literal generated: %s", literalName);
+    }
+
+    private static ResultHandle arrayValue(AnnotationValue value, MethodCreator valueMethod, MethodInfo method, ClassInfo annotationClass) {
+        ResultHandle retValue;
+        switch (value.componentKind()) {
+            case CLASS:
+                Type[] classArray = value.asClassArray();
+                retValue = valueMethod.newArray(componentType(method), valueMethod.load(classArray.length));
+                for (int i = 0; i < classArray.length; i++) {
+                    valueMethod.writeArrayValue(retValue, i, valueMethod.loadClass(classArray[i].name()
+                            .toString()));
+                }
+                break;
+            case STRING:
+                String[] stringArray = value.asStringArray();
+                retValue = valueMethod.newArray(componentType(method), valueMethod.load(stringArray.length));
+                for (int i = 0; i < stringArray.length; i++) {
+                    valueMethod.writeArrayValue(retValue, i, valueMethod.load(stringArray[i]));
+                }
+                break;
+            case INTEGER:
+                int[] intArray = value.asIntArray();
+                retValue = valueMethod.newArray(componentType(method), valueMethod.load(intArray.length));
+                for (int i = 0; i < intArray.length; i++) {
+                    valueMethod.writeArrayValue(retValue, i, valueMethod.load(intArray[i]));
+                }
+                break;
+            case LONG:
+                long[] longArray = value.asLongArray();
+                retValue = valueMethod.newArray(componentType(method), valueMethod.load(longArray.length));
+                for (int i = 0; i < longArray.length; i++) {
+                    valueMethod.writeArrayValue(retValue, i, valueMethod.load(longArray[i]));
+                }
+                break;
+            case BYTE:
+                byte[] byteArray = value.asByteArray();
+                retValue = valueMethod.newArray(componentType(method), valueMethod.load(byteArray.length));
+                for (int i = 0; i < byteArray.length; i++) {
+                    valueMethod.writeArrayValue(retValue, i, valueMethod.load(byteArray[i]));
+                }
+                break;
+            case CHARACTER:
+                char[] charArray = value.asCharArray();
+                retValue = valueMethod.newArray(componentType(method), valueMethod.load(charArray.length));
+                for (int i = 0; i < charArray.length; i++) {
+                    valueMethod.writeArrayValue(retValue, i, valueMethod.load(charArray[i]));
+                }
+                break;
+            // TODO: handle other less common types of array components
+            default:
+                // Return empty array for empty arrays and unsupported types
+                // For an empty array the component kind is UNKNOWN
+                if (value.componentKind() != org.jboss.jandex.AnnotationValue.Kind.UNKNOWN) {
+                    // Unsupported type - check if it is @Nonbinding, @Nonbinding array members should not be a problem in CDI
+                    AnnotationInstance nonbinding = method.annotation(DotNames.NONBINDING);
+                    if (nonbinding == null || nonbinding.target()
+                            .kind() != Kind.METHOD) {
+                        LOGGER.warnf("Unsupported array component type %s on %s - literal returns an empty array", method, annotationClass);
+                    }
+                }
+                retValue = valueMethod.newArray(componentType(method), valueMethod.load(0));
+        }
+        return retValue;
     }
 
     static String componentType(MethodInfo method) {

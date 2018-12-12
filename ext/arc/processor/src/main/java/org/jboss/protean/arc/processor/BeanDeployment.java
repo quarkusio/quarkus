@@ -160,7 +160,7 @@ public class BeanDeployment {
         this.observers = observers;
         this.interceptorResolver = new InterceptorResolver(this);
 
-        LOGGER.infof("Build deployment created in %s ms", System.currentTimeMillis() - start);
+        LOGGER.infof("Bean deployment created in %s ms", System.currentTimeMillis() - start);
     }
     
     public Collection<BeanInfo> getBeans() {

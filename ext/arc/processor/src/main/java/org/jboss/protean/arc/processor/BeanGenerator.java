@@ -311,7 +311,7 @@ public class BeanGenerator extends AbstractGenerator {
             sigBuilder.append(i.name().toString());
         }
 
-        String baseName = declaringClassBase + PRODUCER_METHOD_SUFFIX + producerMethod.name() + Hashes.sha1(sigBuilder.toString());
+        String baseName = declaringClassBase + PRODUCER_METHOD_SUFFIX + "_" + producerMethod.name() + "_" + Hashes.sha1(sigBuilder.toString());
         String providerTypeName = providerType.name().toString();
         String targetPackage = DotNames.packageName(declaringClass.name());
         String generatedName = targetPackage.replace('.', '/') + "/" + baseName + BEAN_SUFFIX;
@@ -381,7 +381,7 @@ public class BeanGenerator extends AbstractGenerator {
         }
 
         Type providerType = bean.getProviderType();
-        String baseName = declaringClassBase + PRODUCER_FIELD_SUFFIX + producerField.name();
+        String baseName = declaringClassBase + PRODUCER_FIELD_SUFFIX + "_" + producerField.name();
         String providerTypeName = providerType.name().toString();
         String targetPackage = DotNames.packageName(declaringClass.name());
         String generatedName = targetPackage.replace('.', '/') + "/" + baseName + BEAN_SUFFIX;

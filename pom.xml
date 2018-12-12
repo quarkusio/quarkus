@@ -1374,7 +1374,6 @@
     </repositories>
 
     <distributionManagement>
-
         <repository>
             <id>protean-nexus-release</id>
             <name>Protean AWS Nexus - Releases</name>

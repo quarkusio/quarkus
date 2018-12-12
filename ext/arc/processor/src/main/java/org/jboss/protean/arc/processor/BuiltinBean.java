@@ -45,6 +45,7 @@ import org.jboss.protean.gizmo.ResultHandle;
 enum BuiltinBean {
 
     INSTANCE(DotNames.INSTANCE, new Generator() {
+        @Override
         void generate(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint, ClassCreator clazzCreator,
                 MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals) {
 
@@ -75,6 +76,7 @@ enum BuiltinBean {
 
         }
     }), INJECTION_POINT(DotNames.INJECTION_POINT, new Generator() {
+        @Override
         void generate(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint, ClassCreator clazzCreator,
                 MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals) {
             // this.injectionPointProvider1 = new InjectionPointProvider();
@@ -82,6 +84,7 @@ enum BuiltinBean {
                     constructor.getThis(), constructor.newInstance(MethodDescriptor.ofConstructor(InjectionPointProvider.class)));
         }
     }), BEAN(DotNames.BEAN, new Generator() {
+        @Override
         void generate(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint, ClassCreator clazzCreator,
                 MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals) {
             // this.beanProvider1 = new BeanMetadataProvider<>();
@@ -89,6 +92,7 @@ enum BuiltinBean {
                     constructor.getThis(), constructor.newInstance(MethodDescriptor.ofConstructor(BeanMetadataProvider.class)));
         }
     }), BEAN_MANAGER(DotNames.BEAN_MANAGER, new Generator() {
+        @Override
         void generate(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint, ClassCreator clazzCreator,
                 MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals) {
             constructor.writeInstanceField(FieldDescriptor.of(clazzCreator.getClassName(), providerName, InjectableReferenceProvider.class.getName()),

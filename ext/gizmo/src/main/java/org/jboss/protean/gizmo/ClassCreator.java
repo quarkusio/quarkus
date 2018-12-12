@@ -136,6 +136,7 @@ public class ClassCreator implements AutoCloseable, AnnotatedElement {
         return ctor.getMethodDescriptor();
     }
 
+    @Override
     public void close() {
         ClassWriter file = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
         String[] interfaces = new String[this.interfaces.length];

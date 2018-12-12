@@ -27,6 +27,7 @@ class CatchBlockCreatorImpl extends BytecodeCreatorImpl implements CatchBlockCre
         this.handle = new ResultHandle("L" + exceptionType + ";", this);
     }
 
+    @Override
     protected void writeInteriorOperations(final MethodVisitor visitor) {
         //we need to save the exception into a local var
         storeResultHandle(visitor, handle);

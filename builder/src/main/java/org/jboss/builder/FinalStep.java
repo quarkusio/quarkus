@@ -19,6 +19,7 @@ package org.jboss.builder;
 /**
  */
 final class FinalStep implements BuildStep {
+    @Override
     public void execute(final BuildContext context) {
 
     }

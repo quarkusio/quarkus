@@ -44,6 +44,7 @@ final class ItemId {
         return MultiBuildItem.class.isAssignableFrom(itemType) || NamedMultiBuildItem.class.isAssignableFrom(itemType);
     }
 
+    @Override
     public boolean equals(Object obj) {
         return obj instanceof ItemId && equals((ItemId) obj);
     }
@@ -52,10 +53,12 @@ final class ItemId {
         return this == obj || obj != null && itemType == obj.itemType && Objects.equals(name, obj.name);
     }
 
+    @Override
     public int hashCode() {
         return Objects.hashCode(name) * 31 + Objects.hashCode(itemType);
     }
 
+    @Override
     public String toString() {
         final Object name = this.name;
         final Class<? extends BuildItem> itemType = this.itemType;

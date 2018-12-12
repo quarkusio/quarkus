@@ -40,6 +40,7 @@ public class TransactionalInterceptorMandatory extends TransactionalInterceptorB
         super(false);
     }
 
+    @Override
     @AroundInvoke
     public Object intercept(InvocationContext ic) throws Exception {
         return super.intercept(ic);

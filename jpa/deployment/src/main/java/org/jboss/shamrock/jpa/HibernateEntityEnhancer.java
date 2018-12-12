@@ -74,6 +74,7 @@ public final class HibernateEntityEnhancer implements BiFunction<String, ClassVi
             this.outputClassVisitor = outputClassVisitor;
         }
 
+        @Override
         public void visitEnd() {
             super.visitEnd();
             final ClassWriter writer = (ClassWriter) this.cv; //safe cast: cv is the the ClassWriter instance we passed to the super constructor

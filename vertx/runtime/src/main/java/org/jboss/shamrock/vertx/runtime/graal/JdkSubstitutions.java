@@ -53,6 +53,7 @@ final class Target_sun_misc_URLClassPath {
         try {
             return java.security.AccessController.doPrivileged(
                 new java.security.PrivilegedExceptionAction<Target_sun_misc_URLClassPath$Loader>() {
+                @Override
                 public Target_sun_misc_URLClassPath$Loader run() throws IOException {
                     String file = url.getFile();
                     if (file != null && file.endsWith("/")) {

@@ -33,6 +33,7 @@ class TryBlockImpl extends BytecodeCreatorImpl implements TryBlock {
         super(enclosing);
     }
 
+    @Override
     public CatchBlockCreator addCatch(final String exceptionType) {
         String name = exceptionType.replace('.', '/');
         if (catchBlocks.containsKey(name)) {
@@ -43,6 +44,7 @@ class TryBlockImpl extends BytecodeCreatorImpl implements TryBlock {
         return catchBlock;
     }
 
+    @Override
     protected void writeOperations(final MethodVisitor visitor) {
         // this is everything between top & bottom labels
         super.writeOperations(visitor);
@@ -61,6 +63,7 @@ class TryBlockImpl extends BytecodeCreatorImpl implements TryBlock {
         }
     }
 
+    @Override
     void findActiveResultHandles(final Set<ResultHandle> handlesToAllocate) {
         super.findActiveResultHandles(handlesToAllocate);
         for (CatchBlockCreatorImpl value : catchBlocks.values()) {

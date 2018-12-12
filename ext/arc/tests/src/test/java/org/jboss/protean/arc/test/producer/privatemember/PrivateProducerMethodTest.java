@@ -58,6 +58,7 @@ public class PrivateProducerMethodTest {
         @Produces
         private Head produce() {
             return new Head() {
+                @Override
                 public String name() {
                     return name;
                 }

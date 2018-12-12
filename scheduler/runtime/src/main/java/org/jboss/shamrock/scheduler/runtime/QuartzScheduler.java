@@ -78,6 +78,7 @@ public class QuartzScheduler implements Scheduler {
 
     private final Map<String, Runnable> timers = new ConcurrentHashMap<>();
 
+    @Override
     public void pause() {
         if (running.get()) {
             try {
@@ -88,6 +89,7 @@ public class QuartzScheduler implements Scheduler {
         }
     }
 
+    @Override
     public void resume() {
         if (running.get()) {
             try {

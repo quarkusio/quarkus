@@ -294,6 +294,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
         this.bytecodeTransformers = functions;
     }
 
+    @Override
     public void writeResource(String name, byte[] data) throws IOException {
         resources.put(name, data);
     }

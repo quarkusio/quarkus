@@ -57,6 +57,7 @@ public class ExecutorTemplate {
         builder.setKeepAliveTime(getIntConfigVal("executor.keep-alive-millis", defaultKeepAliveMillis), TimeUnit.MILLISECONDS);
         final EnhancedQueueExecutor executor = builder.build();
         shutdownContext.addShutdownTask(new Runnable() {
+            @Override
             public void run() {
                 executor.shutdown();
                 for (;;) try {

@@ -31,10 +31,12 @@ public abstract class Location {
         return parent;
     }
 
+    @Override
     public boolean equals(final Object obj) {
         return obj instanceof Location && Objects.equals(parent, ((Location) obj).getParent());
     }
 
+    @Override
     public int hashCode() {
         return Objects.hashCode(parent);
     }

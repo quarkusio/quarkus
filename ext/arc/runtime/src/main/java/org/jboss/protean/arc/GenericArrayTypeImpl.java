@@ -35,6 +35,7 @@ public class GenericArrayTypeImpl implements GenericArrayType {
         this.genericComponentType = new ParameterizedTypeImpl(rawType, actualTypeArguments);
     }
 
+    @Override
     public Type getGenericComponentType() {
         return genericComponentType;
     }

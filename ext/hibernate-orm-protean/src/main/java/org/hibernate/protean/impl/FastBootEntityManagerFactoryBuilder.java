@@ -180,6 +180,7 @@ final class FastBootEntityManagerFactoryBuilder implements EntityManagerFactoryB
 
 	private static class JpaEntityNotFoundDelegate implements EntityNotFoundDelegate, Serializable {
 
+		@Override
 		public void handleEntityNotFound(String entityName, Serializable id) {
 			throw new EntityNotFoundException( "Unable to find " + entityName  + " with id " + id );
 		}

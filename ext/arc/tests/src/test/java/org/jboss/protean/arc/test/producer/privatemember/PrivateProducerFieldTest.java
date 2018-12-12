@@ -49,6 +49,7 @@ public class PrivateProducerFieldTest {
 
         @Produces
         private Head head = new Head() {
+            @Override
             public String name() {
                 return "foo";
             }

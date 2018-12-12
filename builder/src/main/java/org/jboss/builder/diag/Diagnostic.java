@@ -60,6 +60,7 @@ public final class Diagnostic {
         os.println();
     }
 
+    @Override
     public String toString() {
         StringBuilder b = new StringBuilder();
         if (location != null) {
@@ -93,6 +94,7 @@ public final class Diagnostic {
             this.name = name;
         }
 
+        @Override
         public String toString() {
             return name;
         }

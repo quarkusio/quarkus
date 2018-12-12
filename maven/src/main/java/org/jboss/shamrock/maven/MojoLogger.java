@@ -37,8 +37,10 @@ public class MojoLogger implements LoggerProvider {
 
     public static volatile Supplier<Log> logSupplier;
 
+    @Override
     public Logger getLogger(final String name) {
         return new Logger(name) {
+            @Override
             protected void doLog(final Level level, final String loggerClassName, final Object message, final Object[] parameters, final Throwable thrown) {
                 final Supplier<Log> logSupplier = MojoLogger.logSupplier;
                 if (logSupplier != null) {
@@ -55,6 +57,7 @@ public class MojoLogger implements LoggerProvider {
                 }
             }
 
+            @Override
             protected void doLogf(final Level level, final String loggerClassName, final String format, final Object[] parameters, final Throwable thrown) {
                 final Supplier<Log> logSupplier = MojoLogger.logSupplier;
                 if (logSupplier != null) {
@@ -74,6 +77,7 @@ public class MojoLogger implements LoggerProvider {
                 }
             }
 
+            @Override
             public boolean isEnabled(final Level level) {
                 final Supplier<Log> logSupplier = MojoLogger.logSupplier;
                 if (logSupplier == null) return false;
@@ -124,48 +128,60 @@ public class MojoLogger implements LoggerProvider {
         return b.toString();
     }
 
+    @Override
     public void clearMdc() {
     }
 
+    @Override
     public Object putMdc(final String key, final Object value) {
         //throw Assert.unsupported();
         return null;
     }
 
+    @Override
     public Object getMdc(final String key) {
         return null;
     }
 
+    @Override
     public void removeMdc(final String key) {
     }
 
+    @Override
     public Map<String, Object> getMdcMap() {
         return Collections.emptyMap();
     }
 
+    @Override
     public void clearNdc() {
     }
 
+    @Override
     public String getNdc() {
         return "";
     }
 
+    @Override
     public int getNdcDepth() {
         return 0;
     }
 
+    @Override
     public String popNdc() {
         return "";
     }
 
+    @Override
     public String peekNdc() {
         return "";
     }
 
+    @Override
     public void pushNdc(final String message) {
         throw Assert.unsupported();
     }
 
+    @Override
     public void setNdcMaxDepth(final int maxDepth) {
     }
 }

@@ -24,22 +24,27 @@ import org.wildfly.common.flags.Flags;
  */
 public final class ProduceFlags extends Flags<ProduceFlag, ProduceFlags> {
 
+    @Override
     protected ProduceFlags value(final int bits) {
         return values[bits & enumValues.length - 1];
     }
 
+    @Override
     protected ProduceFlags this_() {
         return this;
     }
 
+    @Override
     protected ProduceFlag itemOf(final int index) {
         return enumValues[index];
     }
 
+    @Override
     protected ProduceFlag castItemOrNull(final Object obj) {
         return obj instanceof ProduceFlag ? (ProduceFlag) obj : null;
     }
 
+    @Override
     protected ProduceFlags castThis(final Object obj) {
         return (ProduceFlags) obj;
     }

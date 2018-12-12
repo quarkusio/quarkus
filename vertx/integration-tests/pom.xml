@@ -14,6 +14,10 @@
     <artifactId>shamrock-vertx-integration-tests</artifactId>
     <name>Shamrock - Vert.x - Integration tests</name>
 
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>

@@ -177,7 +177,7 @@ Executing /Users/starksm/Dev/JBoss/Protean/get-started/target/shamrock-quickstar
 
 == Producing a Docker container
 
-You can run the application in a Docker container using the _über-jar_ produced by the Shamrock Maven Plugin.
+You can run the application in a Docker container using the jar produced by the Shamrock Maven Plugin.
 However, in this guide we focus on creating a Docker image using the produced native executable.
 Because the Docker container may not use the same _executable_ format as the one produced by default, we must instruct the Maven build to produce an
  executable from inside a Docker container:

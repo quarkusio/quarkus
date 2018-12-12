@@ -1129,6 +1129,11 @@
                         <groupId>org.jboss.logging</groupId>
                         <artifactId>jboss-logging</artifactId>
                     </exclusion>
+                    <!-- The JBoss JAXB API artifact is used instead -->
+                    <exclusion>
+                        <groupId>javax.xml.bind</groupId>
+                        <artifactId>jaxb-api</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
             <dependency>

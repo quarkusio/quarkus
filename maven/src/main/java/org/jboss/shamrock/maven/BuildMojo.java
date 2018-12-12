@@ -33,6 +33,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -74,8 +75,6 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 
 import io.smallrye.config.PropertiesConfigSource;
-import io.smallrye.config.SmallRyeConfig;
-import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 @Mojo(name = "build", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
@@ -83,6 +82,18 @@ public class BuildMojo extends AbstractMojo {
 
     private static final String DEPENDENCIES_RUNTIME = "dependencies.runtime";
     private static final String PROVIDED = "provided";
+    private static final Set<String> UBER_JAR_IGNORED_FILES = new HashSet<>(Arrays.asList(
+            "META-INF/MANIFEST.MF",
+            "META-INF/INDEX.LIST",
+            "META-INF/LICENSE",
+            "META-INF/LICENSE.txt",
+            "META-INF/NOTICE",
+            "META-INF/NOTICE.txt",
+            "META-INF/DEPENDENCIES",
+            "META-INF/README",
+            "dependencies.runtime",
+            "module-info.class"));
+
     /**
      * The directory for compiled classes.
      */
@@ -205,7 +216,7 @@ public class BuildMojo extends AbstractMojo {
                                 if (e.getName().startsWith("META-INF/services/") && e.getName().length() > 18) {
                                     services.computeIfAbsent(e.getName(), (u) -> new ArrayList<>()).add(read(in));
                                     continue;
-                                } else if (e.getName().equals("META-INF/MANIFEST.MF")) {
+                                } else if (UBER_JAR_IGNORED_FILES.contains(e.getName())) {
                                     continue;
                                 }
                                 if (!seen.add(e.getName())) {

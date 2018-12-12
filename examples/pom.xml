@@ -49,11 +49,12 @@
     <profiles>
         <profile>
             <activation>
-                <property>
-                    <name>mariadb-example</name>
-                </property>
+                <os>
+                    <family>!mac</family>
+                </os>
             </activation>
             <modules>
+                <!-- waiting on the availability of the port does not work on macOS so disabling the module -->
                 <module>jpa-mariadb</module>
             </modules>
         </profile>

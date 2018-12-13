@@ -20,7 +20,6 @@ import static org.jboss.protean.gizmo.MethodDescriptor.ofConstructor;
 import static org.jboss.protean.gizmo.MethodDescriptor.ofMethod;
 
 import java.beans.PropertyDescriptor;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -42,12 +41,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import org.apache.commons.beanutils.PropertyUtils;
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.invocation.proxy.ProxyConfiguration;
 import org.jboss.invocation.proxy.ProxyFactory;
 import org.jboss.protean.gizmo.AssignableResultHandle;
-import org.jboss.protean.gizmo.BranchResult;
 import org.jboss.protean.gizmo.CatchBlockCreator;
 import org.jboss.protean.gizmo.ClassCreator;
 import org.jboss.protean.gizmo.FieldDescriptor;
@@ -85,10 +81,10 @@ import org.jboss.shamrock.runtime.StartupTask;
 public class BytecodeRecorderImpl implements RecorderContext {
 
     private static final AtomicInteger COUNT = new AtomicInteger();
+    private static final AtomicInteger OUTPUT_COUNT = new AtomicInteger();
+    private static final String BASE_PACKAGE = "org.jboss.shamrock.deployment.steps.";
 
     private static final String PROXY_KEY = "proxykey";
-
-    private static final Map<Object, String> proxyMap = new IdentityHashMap<>();
 
     private static final MethodDescriptor COLLECTION_ADD = ofMethod(Collection.class, "add", boolean.class, Object.class);
     private static final MethodDescriptor MAP_PUT = ofMethod(Map.class, "put", Object.class, Object.class, Object.class);
@@ -101,14 +97,17 @@ public class BytecodeRecorderImpl implements RecorderContext {
     private final IdentityHashMap<Class<?>, String> classProxies = new IdentityHashMap<>();
     private final Map<Class<?>, SubstitutionHolder> substitutions = new HashMap<>();
     private final Map<Class<?>, NonDefaultConstructorHolder> nonDefaulConstructors = new HashMap<>();
+    private final String className;
 
-    public BytecodeRecorderImpl(ClassLoader classLoader, boolean staticInit) {
+
+    public BytecodeRecorderImpl(ClassLoader classLoader, boolean staticInit, String className) {
         this.classLoader = classLoader;
         this.staticInit = staticInit;
+        this.className = className;
     }
 
-    public BytecodeRecorderImpl(boolean staticInit) {
-        this(Thread.currentThread().getContextClassLoader(), staticInit);
+    public BytecodeRecorderImpl(boolean staticInit, String buildStepName, String methodName) {
+        this(Thread.currentThread().getContextClassLoader(), staticInit, BASE_PACKAGE + buildStepName + "$" + methodName + OUTPUT_COUNT.incrementAndGet());
     }
 
     public boolean isEmpty() {
@@ -235,7 +234,11 @@ public class BytecodeRecorderImpl implements RecorderContext {
         }
     }
 
-    public void writeBytecode(ClassOutput classOutput, String className) {
+    public String getClassName() {
+        return className;
+    }
+
+    public void writeBytecode(ClassOutput classOutput) {
         ClassCreator file = ClassCreator.builder().classOutput(ClassOutput.gizmoAdaptor(classOutput, true)).className(className).superClass(Object.class).interfaces(StartupTask.class).build();
         MethodCreator method = file.getMethodCreator("deploy", void.class, StartupContext.class);
         //now create instances of all the classes we invoke on and store them in variables as well

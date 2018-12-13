@@ -266,7 +266,7 @@ public class BuildAnnotationProcessor extends AbstractProcessor {
                             List<ResultHandle> args = new ArrayList<>();
                             ResultHandle bytecodeRecorder = null;
                             if (templatePresent) {
-                                bytecodeRecorder = buildStepMc.newInstance(ofConstructor("org.jboss.shamrock.deployment.recording.BytecodeRecorderImpl", boolean.class), buildStepMc.load(recordAnnotation.value() == ExecutionTime.STATIC_INIT));
+                                bytecodeRecorder = buildStepMc.newInstance(ofConstructor("org.jboss.shamrock.deployment.recording.BytecodeRecorderImpl", boolean.class, String.class, String.class), buildStepMc.load(recordAnnotation.value() == ExecutionTime.STATIC_INIT), buildStepMc.load(method.getEnclosingElement().getSimpleName().toString()), buildStepMc.load(method.getSimpleName().toString()));
                             }
 
                             for (InjectedBuildResource i : methodInjection) {

@@ -295,7 +295,7 @@ public class DevMojoIT extends MojoTestBase {
         running = new RunningInvoker(testDir, false);
         MavenProcessInvocationResult result = running.execute(Arrays.asList("compile", "shamrock:dev"), Collections.emptyMap());
         await().until(() -> result.getProcess() != null  && ! result.getProcess().isAlive());
-        assertThat(running.log()).containsIgnoringCase("The `src/main/java` directory is required");
+        assertThat(running.log()).containsIgnoringCase("BUILD FAILURE");
     }
 
     @Test
@@ -305,7 +305,7 @@ public class DevMojoIT extends MojoTestBase {
         running = new RunningInvoker(testDir, false);
         MavenProcessInvocationResult result = running.execute(Collections.singletonList("shamrock:dev"), Collections.emptyMap());
         await().until(() -> result.getProcess() != null  && ! result.getProcess().isAlive());
-        assertThat(running.log()).containsIgnoringCase("`mvn compile shamrock:dev`");
+        assertThat(running.log()).containsIgnoringCase("BUILD FAILURE");
     }
 
     @Test
@@ -318,7 +318,7 @@ public class DevMojoIT extends MojoTestBase {
         running = new RunningInvoker(testDir, false);
         MavenProcessInvocationResult result = running.execute(Collections.singletonList("shamrock:dev"), Collections.emptyMap());
         await().until(() -> result.getProcess() != null  && ! result.getProcess().isAlive());
-        assertThat(running.log()).containsIgnoringCase("`mvn compile shamrock:dev`");
+        assertThat(running.log()).containsIgnoringCase("BUILD FAILURE");
     }
 
 }

@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
+import java.util.stream.Collectors;
 
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -267,9 +268,8 @@ public class NativeImageMojo extends AbstractMojo {
                 command.add("-H:-StackTrace");
             }
 
-            System.out.println(command);
+            getLog().info(command.stream().collect(Collectors.joining(" ")));
             CountDownLatch errorReportLatch = new CountDownLatch(1);
-
 
             ProcessBuilder pb = new ProcessBuilder(command.toArray(new String[0]));
             pb.directory(outputDirectory);

@@ -36,7 +36,6 @@
 
     <modules>
         <module>class-transformer</module>
-        <module>permissive</module>
         <module>shared-library</module>
         <module>undertow</module>
         <module>bean-validation-strict</module>

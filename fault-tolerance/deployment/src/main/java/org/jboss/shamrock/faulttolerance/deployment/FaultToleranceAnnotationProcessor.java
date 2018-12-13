@@ -70,6 +70,10 @@ public class FaultToleranceAnnotationProcessor {
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
 
+    SubstrateSystemPropertyBuildItem disableJmx() {
+        return new SubstrateSystemPropertyBuildItem("archaius.dynamicPropertyFactory.registerConfigWithJMX", "false");
+    }
+
     @BuildStep
     public void build(BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) throws Exception {
 

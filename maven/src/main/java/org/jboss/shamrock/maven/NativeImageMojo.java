@@ -63,6 +63,7 @@ public class NativeImageMojo extends AbstractMojo {
     @Parameter(defaultValue = "${native-image.debug-build-process}")
     private boolean debugBuildProcess;
 
+
     @Parameter(readonly = true, required = true, defaultValue = "${project.build.finalName}")
     private String finalName;
 
@@ -83,6 +84,9 @@ public class NativeImageMojo extends AbstractMojo {
 
     @Parameter
     private boolean enableCodeSizeReporting;
+
+    @Parameter
+    private boolean enableIsolates;
 
     @Parameter(defaultValue = "${env.GRAALVM_HOME}")
     private String graalvmHome;
@@ -232,6 +236,9 @@ public class NativeImageMojo extends AbstractMojo {
             }
             if (enableCodeSizeReporting) {
                 command.add("-H:+PrintCodeSizeReport");
+            }
+            if (! enableIsolates) {
+                command.add("-H:-SpawnIsolates");
             }
             if (enableJni) {
                 command.add("-H:+JNI");

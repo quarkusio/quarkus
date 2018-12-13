@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.validation.ConstraintViolation;
+import javax.validation.Valid;
 import javax.validation.Validator;
 import javax.validation.constraints.DecimalMin;
 import javax.validation.constraints.Email;
@@ -96,12 +97,16 @@ public class BeanValidationTestResource {
 
         private Map<@Length(min = 3) String, List<@Email String>> categorizedEmails;
 
+        @Valid
+        private NestedBeanWithoutConstraints nestedBeanWithoutConstraints;
+
         public MyBean(String name, String email, List<String> additionalEmails, Double score, Map<String, List<String>> categorizedEmails) {
             this.name = name;
             this.email = email;
             this.additionalEmails = additionalEmails;
             this.score = score;
             this.categorizedEmails = categorizedEmails;
+            this.nestedBeanWithoutConstraints = new NestedBeanWithoutConstraints();
         }
 
         public String getName() {
@@ -160,5 +165,11 @@ public class BeanValidationTestResource {
         public String build() {
             return builder.toString();
         }
+    }
+
+    private static class NestedBeanWithoutConstraints {
+
+        @SuppressWarnings("unused")
+        private String property;
     }
 }

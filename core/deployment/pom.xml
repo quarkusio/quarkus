@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.jboss.shamrock</groupId>
         <artifactId>shamrock-core-parent</artifactId>
-        <version>1.0.0.Alpha1-SNAPSHOT</version>
+        <version>0.1.0</version>
         <relativePath>../</relativePath>
     </parent>
 

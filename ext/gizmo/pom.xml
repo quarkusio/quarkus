@@ -33,7 +33,7 @@
     <groupId>org.jboss.protean.gizmo</groupId>
     <artifactId>gizmo</artifactId>
     <name>Gizmo</name>
-    <version>1.0.0.Alpha1-SNAPSHOT</version>
+    <version>0.1.0</version>
 
     <dependencies>
         <dependency>

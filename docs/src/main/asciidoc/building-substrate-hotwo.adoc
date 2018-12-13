@@ -75,6 +75,6 @@ For a stock CE build the following will do:
 
 [source,bash]
 ----
-mx --dy /substratevm,/tools,sulong,/graal-nodejs build
+mx --dy /substratevm,/tools,/sulong,/graal-nodejs build
 tar -czvf my-custom-graal.tgz -C latest_graalvm .
 ----

@@ -27,7 +27,7 @@
   </parent>
 
   <artifactId>arc-tests</artifactId>
-  <name>Arc - Tests</name>
+  <name>ArC - Tests</name>
 
   <properties>
     <maven.deploy.skip>true</maven.deploy.skip>

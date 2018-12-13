@@ -26,7 +26,7 @@
   </parent>
   <groupId>org.jboss.protean.arc</groupId>
   <artifactId>arc-parent</artifactId>
-  <name>Arc - Parent pom</name>
+  <name>ArC - Parent pom</name>
   <packaging>pom</packaging>
   <version>1.0.0.Alpha1-SNAPSHOT</version>
 

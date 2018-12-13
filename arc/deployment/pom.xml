@@ -27,7 +27,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>shamrock-arc-deployment</artifactId>
-  <name>Shamrock - Arc - Deployment</name>
+  <name>Shamrock - ArC - Deployment</name>
 
   <dependencies>
     <dependency>

@@ -1,6 +1,6 @@
 # Shamrock
 
-[![Build Status](https://dev.azure.com/protean-ci/Shamrock/_apis/build/status/protean-project.shamrock)](https://dev.azure.com/protean-ci/Shamrock/_build/latest?definitionId=1)
+[![Build Status](https://dev.azure.com/protean-ci/Shamrock/_apis/build/status/jbossas.protean-shamrock)](https://dev.azure.com/protean-ci/Shamrock/_build/latest?definitionId=5)
 
 > Protean is a Cloud Native, Container First framework for writing Java applications.
 

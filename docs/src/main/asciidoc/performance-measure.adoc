@@ -81,7 +81,17 @@ The Total RSS (kB) line reports the total native memory the process is using.
 Windows::
 TODO
 macOS::
-TODO
+On macOS, you can use `ps x -o pid,rss,command -p <PID>` which list the RSS for a given process in KB (1024 bytes).
+
+[source,bash]
+--
+$ ps x -o pid,rss,command -p 57160
+
+  PID    RSS COMMAND
+57160 288548 /Applications/IntelliJ IDEA CE.app/Contents/jdk/Contents/Home/jre/bin/java
+--
+
+Which means IntelliJ IDEA consumes 281,8 MB of resident memory.
 
 == How do we measure startup time
 

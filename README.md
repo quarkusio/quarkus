@@ -22,8 +22,8 @@ _All under ONE framework._
 
 ## Getting Started
 
-* [Documentation](https://vertx-jenkins.rhev-ci-vms.eng.rdu2.redhat.com//userContent/protean/index.html)
-* [Getting Started](https://vertx-jenkins.rhev-ci-vms.eng.rdu2.redhat.com//userContent/protean/getting-started-guide.html)
+* [Documentation](http://10.8.247.58/nfs/protean/index.html)
+* [Getting Started](http://10.8.247.58/nfs/protean/getting-started-guide.html)
 
 ---
 

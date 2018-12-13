@@ -78,6 +78,3 @@ For a stock CE build the following will do:
 mx --dy /substratevm,/tools,sulong,/graal-nodejs build
 tar -czvf my-custom-graal.tgz -C latest_graalvm .
 ----
-pandoc 2.5
-
-https://pandoc.org

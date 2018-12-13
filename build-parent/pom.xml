@@ -113,6 +113,7 @@
       <junit4.version>4.12</junit4.version>
       <junit.jupiter.version>5.3.2</junit.jupiter.version>
       <assertj.version>3.11.1</assertj.version>
+      <infinispan.version>10.0.0.Alpha3</infinispan.version>
    </properties>
 
    <dependencyManagement>
@@ -455,6 +456,16 @@
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-security-runtime</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-infinispan-client-runtime</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-infinispan-client-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
@@ -1261,6 +1272,21 @@
             <groupId>io.smallrye.reactive</groupId>
             <artifactId>smallrye-reactive-messaging-provider</artifactId>
             <version>${smallrye-reactive-messaging.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.infinispan</groupId>
+            <artifactId>infinispan-client-hotrod</artifactId>
+            <version>${infinispan.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.infinispan</groupId>
+            <artifactId>infinispan-remote-query-client</artifactId>
+            <version>${infinispan.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.infinispan</groupId>
+            <artifactId>infinispan-query-dsl</artifactId>
+            <version>${infinispan.version}</version>
          </dependency>
 
       </dependencies>

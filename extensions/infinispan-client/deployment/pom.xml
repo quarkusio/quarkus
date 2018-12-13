@@ -19,34 +19,27 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>shamrock-build-parent</artifactId>
+        <artifactId>shamrock-infinispan-client</artifactId>
         <groupId>org.jboss.shamrock</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
-        <relativePath>../build-parent/pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-integration-tests-parent</artifactId>
-    <name>Shamrock - Integration Tests</name>
+    <artifactId>shamrock-infinispan-client-deployment</artifactId>
+    <name>Shamrock - Infinispan - Client - Deployment</name>
 
-    <packaging>pom</packaging>
-
-    <properties>
-        <maven.deploy.skip>true</maven.deploy.skip>
-    </properties>
-
-    <modules>
-        <module>class-transformer</module>
-        <module>shared-library</module>
-        <module>bean-validation</module>
-        <module>common-jpa-entities</module>
-        <module>infinispan-client</module>
-        <module>main</module>
-        <module>jpa</module>
-        <module>jpa-postgresql</module>
-        <module>jpa-mariadb</module>
-        <module>jpa-h2</module>
-        <module>vertx</module>
-        <module>spring-di</module>
-    </modules>
+    <dependencies>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-core-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-arc-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-infinispan-client-runtime</artifactId>
+        </dependency>
+    </dependencies>
 </project>

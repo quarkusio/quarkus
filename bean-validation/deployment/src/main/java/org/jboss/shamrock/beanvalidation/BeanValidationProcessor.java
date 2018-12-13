@@ -44,9 +44,7 @@ import org.jboss.shamrock.beanvalidation.runtime.ValidatorTemplate;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
-import org.jboss.shamrock.deployment.builditem.InjectionFactoryBuildItem;
 import org.jboss.shamrock.deployment.builditem.SystemPropertyBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveFieldBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveMethodBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildItem;
@@ -76,11 +74,10 @@ class BeanValidationProcessor {
 
     @BuildStep
     @Record(STATIC_INIT)
-    public void build(ValidatorTemplate template, RecorderContext recorder, InjectionFactoryBuildItem factory,
+    public void build(ValidatorTemplate template, RecorderContext recorder,
                       BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
                       BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
-                      CombinedIndexBuildItem combinedIndexBuildItem,
-                      BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws Exception {
+                      CombinedIndexBuildItem combinedIndexBuildItem) throws Exception {
 
         IndexView indexView = combinedIndexBuildItem.getIndex();
 

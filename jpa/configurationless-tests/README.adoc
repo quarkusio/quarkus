@@ -1,0 +1,108 @@
+= Read me
+:project-name: Protean
+:config-file: microprofile-config.properties
+:toc:
+
+== Documentation
+
+=== JPA with no `persistence.xml`
+
+In {project-name}, you can set a `META-INF/persistence.xml` to set your JPA configuration.
+This is useful for:
+
+* migrating existing code
+* when you have relatively complex settings requiring the full flexibility of the configuration
+
+But often, you simply need one _persistence unit_ with few configuration options.
+In that mode, you can simply:
+
+* add your configuration in `{config-file}`
+* annotate your entities with `@Entity`
+
+In your `pom.xml`, add the following dependencies
+
+[source,xml]
+--
+<dependencies>
+    <!-- Hibernate ORM specific dependencies -->
+    <dependency>
+        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>shamrock-jpa-deployment</artifactId>
+        <scope>provided</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>shamrock-agroal-deployment</artifactId>
+        <scope>provided</scope>
+    </dependency>
+
+    <!-- JDBC driver dependencies -->
+    <dependency>
+        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>jdbc-postgresql-deployment</artifactId>
+        <scope>provided</scope>
+    </dependency>
+
+    <!-- General Protean dependencies -->
+    <dependency>
+        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>shamrock-arc-deployment</artifactId>
+        <scope>provided</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>shamrock-logging-deployment</artifactId>
+        <scope>provided</scope>
+    </dependency>
+</dependencies>
+--
+
+You need the following extensions:
+
+* JPA
+* Agroal (the database connection pool)
+* your JDBC driver extension (`jdbc-postgresql-deployment`, `jdbc-h2-deployment`, `mjdbc-mariadb-deployment`, ...)
+* and generic {project-name} extensions: CDI (arc) and logging
+
+Finally add the relevant configuration properties in `{config-file}`.
+
+[source,properties]
+--
+shamrock.datasource.url: jdbc:postgresql://localhost:5432/jpa-configurationless
+shamrock.datasource.driver: org.postgresql.Driver
+shamrock.datasource.username: sarah
+shamrock.datasource.password: connor
+--
+
+A `EntityManagerFactory` will be created based on {project-name} `datasource` configuration as long as the Hibernate ORM extension is declared in your `pom.xml`.
+The dialect will be selected based on the JDBC driver.
+
+There are optional properties useful to refine your `EntityManagerFactory` or guide guesses of {project-name}.
+
+`shamrock.hibernate.dialect`:: (e.g. `org.hibernate.dialect.PostgreSQL95Dialect`) Class name of the Hibernate ORM dialect.
+
+`shamrock.hibernate.schema-generation.database.action`::
+(e.g. `drop-and-create` which is awesome in development mode) Select whether the database schema is generated or not.
+Options are `none`, `create`, `drop-and-create`, `drop`
+
+== Design questions
+
+* Is it appropriate to prioritize `persistence.xml` when it is present and ignore otherwise (i.e. disable automatic PU generation when `persistence.xml` is there
+* Is it appropriate to select `JTA` as the transaction type strategy
+* Is is appropriate to detect the dialect from the driver
+* Which properties are the most useful for Hibernate ORM?
+* Do we have a pass through of properties under something like `shamrock.hibernate`
+* which prefix do we want? `shamrock.hibernate`, `hibernate`, `jpa` etc
+** what about `javax.persistence properties`?
+** I'm leaning on supporting but not advertizing classical JPA and Hibernate ORM properties (no prefix).
+
+
+
+== How to run tests from the IDE
+
+Start the database first.
+
+[source]
+--
+docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name postgres-protean-jpa -e POSTGRES_USER=jpa-configurationless -e POSTGRES_PASSWORD=jpa-configurationless -e POSTGRES_DB=jpa-configurationless -p 5431:5432 postgres:10.5
+--

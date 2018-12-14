@@ -20,17 +20,19 @@ import static org.jboss.shamrock.annotations.ExecutionTime.RUNTIME_INIT;
 import static org.jboss.shamrock.annotations.ExecutionTime.STATIC_INIT;
 
 import java.net.URL;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import javax.enterprise.inject.Produces;
 import javax.persistence.PersistenceContext;
 import javax.persistence.PersistenceUnit;
+import javax.persistence.spi.PersistenceUnitTransactionType;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
+import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.cfg.Environment;
+import org.hibernate.dialect.PostgreSQL95Dialect;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.protean.impl.PersistenceUnitsHolder;
 import org.jboss.jandex.AnnotationInstance;
@@ -74,6 +76,17 @@ public final class HibernateResourceProcessor {
     private static final DotName PERSISTENCE_UNIT = DotName.createSimple(PersistenceUnit.class.getName());
     private static final DotName PRODUCES = DotName.createSimple(Produces.class.getName());
 
+    /**
+     * TODO why document this, is it exposed
+     */
+    @ConfigProperty(name = "shamrock.datasource.driver")
+    Optional<String> driver;
+
+    /**
+     * Hibernate ORM configuration
+     */
+    @ConfigProperty(name = "shamrock.hibernate")
+    Optional<HibernateOrmConfig> hibernateOrmConfig;
 
     @BuildStep
     HotDeploymentConfigFileBuildItem configFile() {
@@ -83,9 +96,36 @@ public final class HibernateResourceProcessor {
     @BuildStep
     void doParse(BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceProducer) {
         List<ParsedPersistenceXmlDescriptor> descriptors = PersistenceUnitsHolder.loadOriginalXMLParsedDescriptors();
+        if ( descriptors.isEmpty() ) {
+            //we have no persistence.xml so we will create a default one
+            Optional<String> dialect = hibernateOrmConfig.flatMap(c -> c.dialect);
+            if (!dialect.isPresent()) {
+                dialect = guessDialect(driver);
+            }
+            dialect.ifPresent(s -> {
+                // we found one
+                ParsedPersistenceXmlDescriptor desc = new ParsedPersistenceXmlDescriptor(null); //todo URL
+                desc.setName("default");
+                desc.setTransactionType(PersistenceUnitTransactionType.JTA);
+                desc.getProperties().setProperty(AvailableSettings.DIALECT, s);
+                hibernateOrmConfig
+                        .flatMap(c -> c.schemaGeneration)
+                        .ifPresent( p -> desc.getProperties().setProperty(AvailableSettings.HBM2DDL_DATABASE_ACTION, p) );
+                descriptors.add(desc);
+            });
+
+        }
         for (ParsedPersistenceXmlDescriptor i : descriptors) {
             persistenceProducer.produce(new PersistenceUnitDescriptorBuildItem(i));
         }
+    }
+
+    private Optional<String> guessDialect(Optional<String> driver) {
+        String resolvedDriver = driver.orElse("NODRIVER");
+        if ( resolvedDriver.contains("postgresql")) {
+            return Optional.of(PostgreSQL95Dialect.class.getName());
+        }
+        return Optional.empty();
     }
 
     @BuildStep

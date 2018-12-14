@@ -36,18 +36,6 @@
             <artifactId>shamrock-jpa-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
-        <!-- Agroal is a modern high performance connection pool -->
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-agroal-deployment</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <!-- Allow some basic support for @Inject -->
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-arc-deployment</artifactId>
-            <scope>provided</scope>
-        </dependency>
         <!-- We'll be using the H2 database -->
         <dependency>
             <groupId>org.jboss.shamrock</groupId>

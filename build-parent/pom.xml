@@ -42,6 +42,7 @@
       <smallrye-opentracing.version>1.2.1</smallrye-opentracing.version>
       <smallrye-fault-tolerance.version>1.1.0</smallrye-fault-tolerance.version>
       <smallrye-reactive-streams-operators.version>0.4.0</smallrye-reactive-streams-operators.version>
+      <smallrye-reactive-messaging.version>0.0.2</smallrye-reactive-messaging.version>
       <javax.activation.version>1.1.1</javax.activation.version>
       <javax.inject.version>1</javax.inject.version>
       <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
@@ -377,6 +378,16 @@
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-scheduler-runtime</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-reactive-messaging-deployment</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-reactive-messaging-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
@@ -1121,6 +1132,12 @@
             <groupId>org.quartz-scheduler</groupId>
             <artifactId>quartz</artifactId>
             <version>${quartz.version}</version>
+         </dependency>
+         
+         <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-reactive-messaging-provider</artifactId>
+            <version>${smallrye-reactive-messaging.version}</version>
          </dependency>
 
       </dependencies>

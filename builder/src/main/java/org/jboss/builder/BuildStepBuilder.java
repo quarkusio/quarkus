@@ -375,4 +375,13 @@ public final class BuildStepBuilder {
         map.entrySet().removeIf(e -> e.getValue().getConstraint() == Constraint.ORDER_ONLY);
         return map.keySet();
     }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append("BuildStep [");
+        builder.append(buildStep);
+        builder.append("]");
+        return builder.toString();
+    }
 }

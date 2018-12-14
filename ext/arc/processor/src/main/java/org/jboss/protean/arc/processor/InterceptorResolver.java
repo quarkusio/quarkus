@@ -36,6 +36,9 @@ public class InterceptorResolver {
     }
 
     public List<InterceptorInfo> resolve(InterceptionType interceptionType, Set<AnnotationInstance> bindings) {
+        if (bindings.isEmpty()) {
+            return Collections.emptyList();
+        }
         List<InterceptorInfo> interceptors = new ArrayList<>();
         for (InterceptorInfo interceptor : beanDeployment.getInterceptors()) {
             if (!interceptor.intercepts(interceptionType)) {

@@ -113,8 +113,19 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         Map<BeanInfo, ResultHandle> beanToResultHandle = new HashMap<>();
         List<BeanInfo> processed = new ArrayList<>();
 
-        // TODO handle circular dependencies
+        boolean stuck = false;
         while (!beanToInjections.isEmpty()) {
+            if (stuck) {
+                throw new IllegalStateException("Circular dependencies not supported: \n" + beanToInjections.entrySet()
+                        .stream()
+                        .map(e -> "\t " + e.getKey() + " injected into: " + e.getValue()
+                                .stream()
+                                .map(b -> b.getBeanClass()
+                                        .toString())
+                                .collect(Collectors.joining(", ")))
+                        .collect(Collectors.joining("\n")));
+            }
+            stuck = true;
             for (Iterator<Entry<BeanInfo, List<BeanInfo>>> iterator = beanToInjections.entrySet().iterator(); iterator.hasNext();) {
                 Entry<BeanInfo, List<BeanInfo>> entry = iterator.next();
                 BeanInfo bean = entry.getKey();
@@ -122,6 +133,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                     addBean(getComponents, beansHandle, bean, beanToGeneratedName, beanToResultHandle);
                     iterator.remove();
                     processed.add(bean);
+                    stuck = false;
                 }
             }
         }

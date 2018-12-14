@@ -27,6 +27,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.protean.arc.processor.AnnotationStore.TransformationContextImpl;
+import org.jboss.protean.arc.processor.AnnotationsTransformer.TransformationContext;
 
 /**
  * Convenient helper class.
@@ -77,6 +78,11 @@ public final class Transformation {
         return this;
     }
 
+    /**
+     * Applies the transformation.
+     * 
+     * @see TransformationContext#getAnnotations()
+     */
     public void done() {
         transformationContext.setAnnotations(modified);
     }

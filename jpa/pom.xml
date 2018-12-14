@@ -32,6 +32,7 @@
     <modules>
         <module>deployment</module>
         <module>runtime</module>
+        <module>configurationless-tests</module>
     </modules>
 
 

@@ -41,6 +41,10 @@
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-transactions-deployment</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-agroal-deployment</artifactId>
+        </dependency>
 
         <!--
            Re-import this so to dodge the Byte Buddy exclusion we declared in shamrock-jpa-runtime
@@ -62,6 +66,5 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
 
 </project>

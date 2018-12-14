@@ -19,6 +19,8 @@ package org.jboss.protean.arc.processor;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.enterprise.inject.spi.DefinitionException;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 
@@ -42,6 +44,9 @@ final class Interceptors {
             } else if (annotation.name().equals(DotNames.PRIORITY)) {
                 priority = annotation.value().asInt();
             }
+        }
+        if (bindings.isEmpty()) {
+            throw new DefinitionException("Interceptor has no bindings: " + interceptorClass);
         }
         return new InterceptorInfo(interceptorClass, beanDeployment, bindings, Injection.forBean(interceptorClass, beanDeployment), priority);
     }

@@ -149,6 +149,7 @@
                                             <!-- Use Jakarta Activation -->
                                             <exclude>javax.activation:javax-activation-api</exclude>
                                             <exclude>javax.activation:activation</exclude>
+                                            <exclude>org.jboss.marshalling:jboss-marshalling-osgi</exclude>
                                         </excludes>
                                     </bannedDependencies>
                                 </rules>

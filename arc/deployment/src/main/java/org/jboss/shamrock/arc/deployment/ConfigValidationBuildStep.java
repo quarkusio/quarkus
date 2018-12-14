@@ -6,6 +6,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.Type;
 import org.jboss.protean.arc.processor.BeanDeploymentValidator;
 import org.jboss.protean.arc.processor.DotNames;
 import org.jboss.protean.arc.processor.InjectionPointInfo;
@@ -29,7 +30,7 @@ public class ConfigValidationBuildStep {
 
         @Override
         public void validate(ValidationContext validationContext) {
-            
+
             Config config = ConfigProvider.getConfig();
             ClassLoader tccl = Thread.currentThread().getContextClassLoader();
             
@@ -51,7 +52,17 @@ public class ConfigValidationBuildStep {
                     // TODO: collection types
                     Class<?> type;
                     try {
-                        type = tccl.loadClass(injectionPoint.getRequiredType().name().toString());
+                        if (injectionPoint.getRequiredType().kind() == Type.Kind.PRIMITIVE) {
+                            switch (injectionPoint.getRequiredType().asPrimitiveType().primitive()) {
+                                case INT: type = Integer.TYPE; break;
+                                case LONG: type = Long.TYPE; break;
+                                case CHAR: type = Character.TYPE; break;
+                                default: throw new IllegalArgumentException("Not yet supported: " + injectionPoint.getRequiredType().asPrimitiveType().primitive());
+                            }
+
+                        } else {
+                            type = tccl.loadClass(injectionPoint.getRequiredType().name().toString());
+                        }
                         if (!config.getOptionalValue(key, type).isPresent()) {
                             AnnotationValue defaultValue = configProperty.value("defaultValue");
                             if (defaultValue == null || ConfigProperty.UNCONFIGURED_VALUE.equals(defaultValue.asString())) {

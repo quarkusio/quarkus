@@ -261,7 +261,7 @@ To test the native image you can use the `org.jboss.shamrock.junit.SubstrateTest
 These tests must be integration tests, as the image is generally built during the packaging phase.
 As such they should follow the Maven Failsafe naming convention (\*ITCase). 
 
-These tests work by simply booting the native image, and then allowing you to evecute remote requests against it.
+These tests work by simply booting the native image, and then allowing you to execute remote requests against it.
 At present unit testing type functionality is supported (i.e. you cannot run test logic directly in the native image), 
 although this will likely change. 
 

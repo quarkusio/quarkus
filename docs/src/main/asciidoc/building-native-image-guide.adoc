@@ -212,7 +212,7 @@ And finally, run it with:
 
 [source]
 ----
-docker run -i -p 8080:8080 shamrock-quickstart/quickstart
+docker run -i --rm -p 8080:8080 shamrock-quickstart/quickstart
 ----
 
 == What's next?

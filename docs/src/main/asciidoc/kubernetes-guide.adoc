@@ -38,7 +38,9 @@ For `minikube`, execute:
 
 [source, bash]
 ----
-eval $(minikube docker-env) # For minishift run: eval $(minishift docker-env)
+# For minishift use "eval $(minishift docker-env)" instead
+eval $(minikube docker-env)
+
 docker build -t shamrock-quickstart/quickstart .
 ----
 

@@ -279,10 +279,6 @@ register this class for reflection.
 The reason why bytecode is used instead of JSON is that this does not require any arguments to the native-image command, it 'just works'.
 It would also work better in a multiple jar scenario, as each jar could just have its own reflection wiring baked in.
 
-I think that pretty much covers most of what is in there.
-As it has just been a bit of an experiment some of the code is not that great,
-but if we did decide to use this as the basis for the PoC it would be easy enough to clean up.
-
 
 ### Plugin Output
 

@@ -8,7 +8,7 @@
 * **Container First**: 
 Minimal footprint Java applications optimal for running in containers
 * **Cloud Native**:
-Embraces 12 factor architecture in environments like Kubernetes.
+Embraces [12 factor architecture](https://12factor.net) in environments like Kubernetes.
 * **Unify imperative and reactive**:
 Brings under one programming model non blocking and imperative styles of development.
 * **Standards-based**:

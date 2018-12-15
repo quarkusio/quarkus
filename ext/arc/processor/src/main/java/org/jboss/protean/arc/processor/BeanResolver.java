@@ -133,14 +133,39 @@ class BeanResolver {
                 return true;
             }
         } else if (PRIMITIVE.equals(requiredType.kind())) {
-            PrimitiveType.Primitive primitive = requiredType.asPrimitiveType().primitive();
-            switch (primitive) {
-                case INT: return (beanType.kind() == CLASS  && beanType.asClassType().name().equals(DotName.createSimple(Integer.class.getName())))
-                        || (beanType.kind() == PRIMITIVE  && beanType.asPrimitiveType().primitive() == PrimitiveType.Primitive.INT);
-                default: throw new IllegalArgumentException("Not supported yet");
-            }
+            return primitiveMatch(requiredType.asPrimitiveType().primitive(), beanType);
         }
         return false;
+    }
+
+    static boolean primitiveMatch(PrimitiveType.Primitive requiredType, Type beanType) {
+        switch (requiredType) {
+            case INT: return (beanType.kind() == CLASS  && beanType.asClassType().name().equals(DotName.createSimple(Integer.class.getName())))
+                    || (beanType.kind() == PRIMITIVE  && beanType.asPrimitiveType().primitive() == PrimitiveType.Primitive.INT);
+
+            case LONG: return (beanType.kind() == CLASS  && beanType.asClassType().name().equals(DotName.createSimple(Long.class.getName())))
+                    ||  (beanType.kind() == PRIMITIVE  && beanType.asPrimitiveType().primitive() == PrimitiveType.Primitive.LONG);
+
+            case SHORT: return (beanType.kind() == CLASS  && beanType.asClassType().name().equals(DotName.createSimple(Short.class.getName())))
+                    ||  (beanType.kind() == PRIMITIVE  && beanType.asPrimitiveType().primitive() == PrimitiveType.Primitive.SHORT);
+
+            case BYTE: return (beanType.kind() == CLASS  && beanType.asClassType().name().equals(DotName.createSimple(Byte.class.getName())))
+                    ||  (beanType.kind() == PRIMITIVE  && beanType.asPrimitiveType().primitive() == PrimitiveType.Primitive.BYTE);
+
+            case FLOAT: return (beanType.kind() == CLASS  && beanType.asClassType().name().equals(DotName.createSimple(Float.class.getName())))
+                    ||  (beanType.kind() == PRIMITIVE  && beanType.asPrimitiveType().primitive() == PrimitiveType.Primitive.FLOAT);
+
+            case DOUBLE: return (beanType.kind() == CLASS  && beanType.asClassType().name().equals(DotName.createSimple(Double.class.getName())))
+                    ||  (beanType.kind() == PRIMITIVE  && beanType.asPrimitiveType().primitive() == PrimitiveType.Primitive.DOUBLE);
+
+            case CHAR: return (beanType.kind() == CLASS  && beanType.asClassType().name().equals(DotName.createSimple(Character.class.getName())))
+                    ||  (beanType.kind() == PRIMITIVE  && beanType.asPrimitiveType().primitive() == PrimitiveType.Primitive.CHAR);
+
+            case BOOLEAN: return (beanType.kind() == CLASS  && beanType.asClassType().name().equals(DotName.createSimple(Boolean.class.getName())))
+                    ||  (beanType.kind() == PRIMITIVE  && beanType.asPrimitiveType().primitive() == PrimitiveType.Primitive.BOOLEAN);
+
+            default: throw new IllegalArgumentException("Not supported yet");
+        }
     }
 
     boolean parametersMatch(Type requiredParameter, Type beanParameter) {

@@ -54,10 +54,16 @@ public class ConfigValidationBuildStep {
                     try {
                         if (injectionPoint.getRequiredType().kind() == Type.Kind.PRIMITIVE) {
                             switch (injectionPoint.getRequiredType().asPrimitiveType().primitive()) {
-                                case INT: type = Integer.TYPE; break;
-                                case LONG: type = Long.TYPE; break;
+                                case BOOLEAN: type = Boolean.TYPE; break;
+                                case BYTE: type = Byte.TYPE; break;
                                 case CHAR: type = Character.TYPE; break;
-                                default: throw new IllegalArgumentException("Not yet supported: " + injectionPoint.getRequiredType().asPrimitiveType().primitive());
+                                case DOUBLE: type = Double.TYPE; break;
+                                case INT: type = Integer.TYPE; break;
+                                case FLOAT: type = Float.TYPE; break;
+                                case LONG: type = Long.TYPE; break;
+                                case SHORT: type = Short.TYPE; break;
+                                default: throw new IllegalArgumentException("Not a supported primitive type: "
+                                        + injectionPoint.getRequiredType().asPrimitiveType().primitive());
                             }
 
                         } else {

@@ -42,7 +42,7 @@ If you have not done so on this machine, you need to:
 * Install Git and configure your Github access
 * Install Java SDK (OpenJDK recommended)
 * Download and Apache Maven (3.5+) 
-* Install [http://www.graalvm.org/downloads/](GraalVM) (community edition is enough)
+* Install [GraalVM](http://www.graalvm.org/downloads/) (community edition is enough)
 * Install platform C developer tools:
     * Linux
         * Make sure headers are available on your system (you'll hit 'Basic header file missing (<zlib.h>)' error if they aren't).

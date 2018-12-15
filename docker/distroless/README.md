@@ -16,6 +16,35 @@ It contains:
 
 The final image is about 17Mb.
 
+## Using the image
+
+Build the native executable using:
+
+```bash
+mvn package -Pnative -Dnative-image.docker-build=true
+```
+
+Then, create the following `Dockerfile`:
+
+```dockerfile
+FROM cescoffier/native-base:latest
+COPY target/*-runner /application
+EXPOSE 8080
+CMD ["./application", "-Dshamrock.http.host=0.0.0.0"]
+```
+
+Build the docker image using (change the namespace/name):
+
+```bash
+docker build -t protean-demo/demo . 
+```
+
+You can then run your application using:
+
+```bash
+docker run -i --rm -p 8080:8080 protean-demo/demo
+```
+
 ## Build
 
 The build requires [bazel](https://bazel.build/). 

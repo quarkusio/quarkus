@@ -89,7 +89,7 @@ We use a profile because, you will see very soon, packaging the native image tak
 Now run: `mvn package -Pnative`
 
 In addition to the regular files, the build also produces `target/shamrock-quickstart-1.0-SNAPSHOT-runner`.
-You can run it using: `target/shamrock-quickstart-1.0-SNAPSHOT-runner`.
+You can run it using: `target/shamrock-quickstart-native-1.0-SNAPSHOT-runner`.
 
 == Testing the native executable
 

@@ -14,11 +14,11 @@ Don't forget to indicate your Java, Maven and GraalVM version.
 
 ## Before you contribute
 
-To contribute, use Github Pull Requests. 
+To contribute, use Github Pull Requests, from your **own** fork.
 
 ### Code reviews
 
-All submissions, including submissions by project members, require review.
+All submissions, including submissions by project members, need to be reviewed before being merged.
 
 ### Continuous Integration
 

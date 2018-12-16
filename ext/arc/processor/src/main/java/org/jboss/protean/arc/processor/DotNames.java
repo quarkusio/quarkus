@@ -85,6 +85,15 @@ public final class DotNames {
     public static final DotName EXTENSION = create(Extension.class);
     public static final DotName OPTIONAL = create(Optional.class);
 
+    public static final DotName BOOLEAN = create(Boolean.class.getName());
+    public static final DotName BYTE = create(Byte.class.getName());
+    public static final DotName CHARACTER = create(Character.class.getName());
+    public static final DotName DOUBLE = create(Double.class.getName());
+    public static final DotName FLOAT = create(Float.class.getName());
+    public static final DotName INTEGER = create(Integer.class.getName());
+    public static final DotName LONG = create(Long.class.getName());
+    public static final DotName SHORT = create(Short.class.getName());
+
     private DotNames() {
     }
 

@@ -61,27 +61,7 @@ At the moment is has the following features:
 
 ### How to build Shamrock
 
-* Install platform C developer tools:
-    * Linux
-        * Make sure headers are available on your system (you'll hit 'Basic header file missing (<zlib.h>)' error if they aren't).
-            * On Fedora `sudo dnf install zlib-devel`
-            * Otherwise `sudo apt-get install libz-dev`
-    * macOS
-        * `xcode-select --install`
-* Install GraalVM (minimum RC10)
-* Set `GRAALVM_HOME` to your GraalVM Home directory e.g. `/opt/graalvm` on Linux or `/Users/emmanuel/JDK/GraalVM/Contents/Home` on macOS
-* `git clone https://github.com/jbossas/protean-shamrock.git`
-* `cd protean-shamrock`
-* `mvn install`
-
-The default build will create two different native images, which is quite time consuming. You can skip this
-by disabling the `native-image` profile: `mvn install -Dno-native`.
-
-Wait. Success!
-
-By default the build will use the native image server. This speeds up the build, but can cause problems due to the cache
-not being invalidated correctly in some cases. To run a build with a new instance of the server you can use
-`mvn install -Dnative-image.new-server=true`.
+The build instructions are available in the [contribution guide](CONTRIBUTING.md).
 
 ### Architecture Overview
 

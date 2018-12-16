@@ -1,0 +1,13 @@
+workspace(name = "org_jboss_shamrock_distroless")
+
+
+load("//:dependencies.bzl", "distroless_bazel_repositories")
+distroless_bazel_repositories()
+
+load("//:packages.bzl", "debian_dependencies")
+debian_dependencies()
+
+load("//:container.bzl", "container_dependencies")
+container_dependencies()
+
+

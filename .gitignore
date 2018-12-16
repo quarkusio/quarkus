@@ -24,3 +24,5 @@ dumps
 .factorypath
 graph-output.dot
 
+
+docker/distroless/bazel-*

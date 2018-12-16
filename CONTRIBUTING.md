@@ -14,11 +14,11 @@ Don't forget to indicate your Java, Maven and GraalVM version.
 
 ## Before you contribute
 
-To contribute, use Github Pull Requests. 
+To contribute, use Github Pull Requests, from your **own** fork.
 
 ### Code reviews
 
-All submissions, including submissions by project members, require review.
+All submissions, including submissions by project members, need to be reviewed before being merged.
 
 ### Continuous Integration
 
@@ -50,12 +50,30 @@ If you have not done so on this machine, you need to:
             * Otherwise `sudo apt-get install libz-dev`
     * macOS
         * `xcode-select --install` 
-* Set `GRAALVM_HOME` to your GraalVM Home directory e.g. `/opt/graalvm` on Linux or `$location/JDK/GraalVM/Contents/Home` on macOS         
+* Set `GRAALVM_HOME` to your GraalVM Home directory e.g. `/opt/graalvm` on Linux or `$location/JDK/GraalVM/Contents/Home` on macOS
+* To build Shamrock, you also need Docker running. Check [the installation guide](https://docs.docker.com/install/), and [the MacOS installation guide](https://docs.docker.com/docker-for-mac/install/)
+* If you just install docker, be sure that your current user can run a container (no root required). 
+On Linux, check [the post-installation guide](https://docs.docker.com/install/linux/linux-postinstall/)         
         
 ## Build
 
-* Clone the repository
+* Clone the repository: `git clone https://github.com/jbossas/protean-shamrock.git`
+* Navigate to the directory: `cd protean-shamrock`
 * Invoke `mvn clean install` from the root directory
+
+```bash
+git clone https://github.com/jbossas/protean-shamrock.git
+cd protean-shamrock
+mvn clean install
+# Wait... success!
+```
+
+The default build will create two different native images, which is quite time consuming. You can skip this
+by disabling the `native-image` profile: `mvn install -Dno-native`.
+
+By default the build will use the native image server. This speeds up the build, but can cause problems due to the cache
+not being invalidated correctly in some cases. To run a build with a new instance of the server you can use
+`mvn install -Dnative-image.new-server=true`.
 
 ## The small print
 

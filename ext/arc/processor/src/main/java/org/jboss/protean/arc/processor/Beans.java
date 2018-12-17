@@ -68,16 +68,7 @@ final class Beans {
                     if (nameValue != null) {
                         name = nameValue.asString();
                     } else {
-                        // Default bean name
-                        StringBuilder defaultName = new StringBuilder();
-                        if (beanClass.simpleName() == null) {
-                            name = DotNames.simpleName(beanClass.name());
-                        } else {
-                            defaultName.append(beanClass.simpleName());
-                        }
-                        // URLMatcher becomes uRLMatcher
-                        defaultName.setCharAt(0, Character.toLowerCase(defaultName.charAt(0)));
-                        name = defaultName.toString();
+                        name = getDefaultName(beanClass);
                     }
                 }
             } else if (annotation.name()
@@ -103,6 +94,9 @@ final class Beans {
         }
         if (!isAlternative) {
             isAlternative = initStereotypeAlternative(stereotypes);
+        }
+        if (name == null) {
+            name = initStereotypeName(stereotypes, beanClass);
         }
 
         BeanInfo bean = new BeanInfo(beanClass, beanDeployment, scope, types, qualifiers, Injection.forBean(beanClass, beanDeployment), null, null,
@@ -135,13 +129,7 @@ final class Beans {
                     if (nameValue != null) {
                         name = nameValue.asString();
                     } else {
-                        String propertyName = getPropertyName(producerMethod.name());
-                        if (propertyName != null) {
-                         // getURLMatcher() becomes URLMatcher
-                            name = propertyName;
-                        } else {
-                            name = producerMethod.name();
-                        }
+                        name = getDefaultName(producerMethod);
                     }
                 }
             } else if (DotNames.ALTERNATIVE.equals(annotation.name())) {
@@ -162,6 +150,9 @@ final class Beans {
         }
         if (!isAlternative) {
             isAlternative = initStereotypeAlternative(stereotypes);
+        }
+        if (name == null) {
+            name = initStereotypeName(stereotypes, producerMethod);
         }
 
         if (isAlternative) {
@@ -223,6 +214,9 @@ final class Beans {
         if (!isAlternative) {
             isAlternative = initStereotypeAlternative(stereotypes);
         }
+        if (name == null) {
+            name = initStereotypeName(stereotypes, producerField);
+        }
 
         if (isAlternative) {
             alternativePriority = declaringBean.getAlternativePriority();
@@ -265,6 +259,28 @@ final class Beans {
             }
         }
         return false;
+    }
+    
+    private static String initStereotypeName(List<StereotypeInfo> stereotypes, AnnotationTarget target) {
+        if (stereotypes.isEmpty()) {
+            return null;
+        }
+        for (StereotypeInfo stereotype : stereotypes) {
+            if (stereotype.isNamed()) {
+                switch (target.kind()) {
+                    case CLASS:
+                        return getDefaultName(target.asClass());
+                    case FIELD:
+                        return target.asField()
+                                .name();
+                    case METHOD:
+                        return getDefaultName(target.asMethod());
+                    default:
+                        break;
+                }
+            }
+        }
+        return null;
     }
 
     static boolean matches(BeanInfo bean, TypeAndQualifiers typeAndQualifiers) {
@@ -454,6 +470,29 @@ final class Beans {
         decapitalized.setCharAt(0, Character.toLowerCase(decapitalized.charAt(0)));
         return decapitalized.toString();
     }
+    
+    
+    private static String getDefaultName(ClassInfo beanClass) {
+        StringBuilder defaultName = new StringBuilder();
+        if (beanClass.simpleName() == null) {
+            defaultName.append(DotNames.simpleName(beanClass.name()));
+        } else {
+            defaultName.append(beanClass.simpleName());
+        }
+        // URLMatcher becomes uRLMatcher
+        defaultName.setCharAt(0, Character.toLowerCase(defaultName.charAt(0)));
+        return defaultName.toString();
+    }
 
+    private static String getDefaultName(MethodInfo producerMethod) {
+        String propertyName = getPropertyName(producerMethod.name());
+        if (propertyName != null) {
+            // getURLMatcher() becomes URLMatcher
+            return propertyName;
+        } else {
+            return producerMethod.name();
+        }
+    }
+    
 
 }

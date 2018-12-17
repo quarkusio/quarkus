@@ -63,6 +63,7 @@ public class ArcTestContainer implements TestRule {
         private final List<AnnotationsTransformer> annotationsTransformers;
         private final List<DeploymentEnhancer> deploymentEnhancers;
         private final List<BeanDeploymentValidator> beanDeploymentValidators;
+        private boolean shouldFail = false;
 
         public Builder() {
             resourceReferenceProviders = new ArrayList<>();
@@ -110,13 +111,18 @@ public class ArcTestContainer implements TestRule {
             return this;
         }
         
+        public Builder shouldFail() {
+            this.shouldFail = true;
+            return this;
+        }
+        
         public ArcTestContainer build() {
             return new ArcTestContainer(resourceReferenceProviders, beanClasses, resourceAnnotations, beanRegistrars, annotationsTransformers,
-                    deploymentEnhancers, beanDeploymentValidators);
+                    deploymentEnhancers, beanDeploymentValidators, shouldFail);
         }
 
     }
-
+    
     private final List<Class<?>> resourceReferenceProviders;
 
     private final List<Class<?>> beanClasses;
@@ -131,16 +137,17 @@ public class ArcTestContainer implements TestRule {
 
     private final List<BeanDeploymentValidator> beanDeploymentValidators;
     
+    private final boolean shouldFail;
     private final AtomicReference<Throwable> buildFailure;
 
     public ArcTestContainer(Class<?>... beanClasses) {
         this(Collections.emptyList(), Arrays.asList(beanClasses), Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
-                Collections.emptyList(), Collections.emptyList());
+                Collections.emptyList(), Collections.emptyList(), false);
     }
 
     public ArcTestContainer(List<Class<?>> resourceReferenceProviders, List<Class<?>> beanClasses, List<Class<? extends Annotation>> resourceAnnotations,
             List<BeanRegistrar> beanRegistrars, List<AnnotationsTransformer> annotationsTransformers, List<DeploymentEnhancer> deploymentEnhancers,
-            List<BeanDeploymentValidator> beanDeploymentValidators) {
+            List<BeanDeploymentValidator> beanDeploymentValidators, boolean shouldFail) {
         this.resourceReferenceProviders = resourceReferenceProviders;
         this.beanClasses = beanClasses;
         this.resourceAnnotations = resourceAnnotations;
@@ -149,6 +156,7 @@ public class ArcTestContainer implements TestRule {
         this.deploymentEnhancers = deploymentEnhancers;
         this.beanDeploymentValidators = beanDeploymentValidators;
         this.buildFailure = new AtomicReference<Throwable>(null);
+        this.shouldFail = shouldFail;
     }
 
     @Override
@@ -285,7 +293,11 @@ public class ArcTestContainer implements TestRule {
             Arc.initialize();
 
         } catch (Throwable e) {
-            buildFailure.set(e);
+            if (shouldFail) {
+                buildFailure.set(e);    
+            } else {
+                throw e;
+            }
         }
         return old;
     }

@@ -28,29 +28,36 @@ public class StereotypeInfo {
     private final List<AnnotationInstance> interceptorBindings;
 
     private final boolean isAlternative;
+    
+    private final boolean isNamed;
 
     private final ClassInfo target;
 
-    public StereotypeInfo(ScopeInfo defaultScope, List<AnnotationInstance> interceptorBindings, boolean isAlternative, ClassInfo target) {
+    public StereotypeInfo(ScopeInfo defaultScope, List<AnnotationInstance> interceptorBindings, boolean isAlternative, boolean isNamed, ClassInfo target) {
         this.defaultScope = defaultScope;
         this.interceptorBindings = interceptorBindings;
         this.isAlternative = isAlternative;
+        this.isNamed = isNamed;
         this.target = target;
     }
 
-    ScopeInfo getDefaultScope() {
+    public ScopeInfo getDefaultScope() {
         return defaultScope;
     }
 
-    List<AnnotationInstance> getInterceptorBindings() {
+    public List<AnnotationInstance> getInterceptorBindings() {
         return interceptorBindings;
     }
 
-    boolean isAlternative() {
+    public boolean isAlternative() {
         return isAlternative;
     }
+    
+    public boolean isNamed() {
+        return isNamed;
+    }
 
-    ClassInfo getTarget() {
+    public ClassInfo getTarget() {
         return target;
     }
 

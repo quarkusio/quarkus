@@ -291,17 +291,25 @@ public class BeanDeployment {
                 boolean isAlternative = false;
                 ScopeInfo scope = null;
                 List<AnnotationInstance> bindings = new ArrayList<>();
+                boolean isNamed = false;
 
                 for (AnnotationInstance annotation : stereotypeClass.classAnnotations()) {
-                    if (annotation.name().equals(DotNames.ALTERNATIVE)) {
+                    if (DotNames.ALTERNATIVE.equals(annotation.name())) {
                         isAlternative = true;
                     } else if (interceptorBindings.containsKey(annotation.name())) {
                         bindings.add(annotation);
+                    } else if (DotNames.NAMED.equals(annotation.name())) {
+                        if (annotation.value() != null && !annotation.value()
+                                .asString()
+                                .isEmpty()) {
+                            throw new DefinitionException("Stereotype must not declare @Named with a non-empty value: " + stereotypeClass);
+                        }
+                        isNamed = true;
                     } else if (scope == null) {
                         scope = ScopeInfo.from(annotation.name());
                     }
                 }
-                stereotypes.put(stereotype.target().asClass().name(), new StereotypeInfo(scope, bindings, isAlternative, stereotypeClass));
+                stereotypes.put(stereotype.target().asClass().name(), new StereotypeInfo(scope, bindings, isAlternative, isNamed, stereotypeClass));
             }
         }
         return stereotypes;

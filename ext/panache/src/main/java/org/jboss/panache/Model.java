@@ -21,7 +21,6 @@ public class Model {
     public void save() {
     	EntityManager em = getEntityManager();
         if (!em.contains(this)) {
-        	System.err.println("persist");
             em.persist(this);
         }
         em.flush();

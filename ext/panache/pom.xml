@@ -38,6 +38,7 @@
         <version.vertx>3.5.4</version.vertx>
         <version.smallrye-config>1.3.1</version.smallrye-config>
         <version.rxjava>2.2.4</version.rxjava>
+        <version.jboss-jaxrs-api_2.1_spec>1.0.0.Final</version.jboss-jaxrs-api_2.1_spec>
     </properties>
 
     <dependencies>
@@ -72,11 +73,17 @@
             <version>${version.smallrye-config}</version>
         </dependency>
 
-         <dependency>
+        <dependency>
             <groupId>io.reactivex.rxjava2</groupId>
             <artifactId>rxjava</artifactId>
             <version>${version.rxjava}</version>
-         </dependency>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jboss.spec.javax.ws.rs</groupId>
+            <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
+            <version>${version.jboss-jaxrs-api_2.1_spec}</version>
+        </dependency>
 
     </dependencies>
 

@@ -106,7 +106,7 @@ public class CreateProjectMojo extends AbstractMojo {
         model = project.getOriginalModel().clone();
 
         createDirectories();
-        templates.generate(project, model, root, path, className, getLog());
+        templates.generate(project, root, path, className, getLog());
         Optional<Plugin> maybe = MojoUtils.hasPlugin(project, PLUGIN_KEY);
 
         if (maybe.isPresent()) {
@@ -269,6 +269,7 @@ public class CreateProjectMojo extends AbstractMojo {
 
             templates.createNewProjectPomFile(context, pomFile);
             templates.createIndexPage(context, project.getBasedir(), getLog());
+            templates.createDockerFile(context, project.getBasedir(), getLog());
             templates.createConfiguration(project.getBasedir(), getLog());
 
             //The project should be recreated and set with right model

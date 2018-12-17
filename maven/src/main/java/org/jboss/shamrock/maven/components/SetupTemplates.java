@@ -62,7 +62,7 @@ public class SetupTemplates {
         }
     }
 
-    public void generate(MavenProject project, Model model, String rootPath, String path, String className, Log log) throws MojoExecutionException {
+    public void generate(MavenProject project, String rootPath, String path, String className, Log log) throws MojoExecutionException {
         if (Strings.isNullOrEmpty(className)) {
             return;
         }
@@ -124,8 +124,6 @@ public class SetupTemplates {
         } catch (Exception e) {
             throw new MojoExecutionException("Unable to generate Application class", e);
         }
-
-
     }
 
     public void createIndexPage(Map<String, String> context, File basedir, Log log) throws MojoExecutionException {
@@ -142,6 +140,18 @@ public class SetupTemplates {
             }
         }
 
+    }
+
+    public void createDockerFile(Map<String, String> context, File basedir, Log log) throws MojoExecutionException {
+        File dockerRoot = new File(basedir, "src/main/docker");
+        File docker = new File(mkdirs(dockerRoot, log), "Dockerfile");
+        try {
+            Template temp = cfg.getTemplate("templates/dockerfile.ftl");
+            Writer out = new FileWriter(docker);
+            temp.process(context, out);
+        } catch (Exception e) {
+            throw new MojoExecutionException("Unable to generate the docker file", e);
+        }
     }
 
     public void createConfiguration(File basedir, Log log) throws MojoExecutionException {

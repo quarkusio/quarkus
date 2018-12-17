@@ -59,6 +59,8 @@ public final class BeanConfigurator<T> {
     private ScopeInfo scope;
 
     private Integer alternativePriority;
+    
+    private String name;
 
     private Consumer<MethodCreator> creatorConsumer;
 
@@ -84,6 +86,7 @@ public final class BeanConfigurator<T> {
         this.qualifiers = new HashSet<>();
         this.scope = ScopeInfo.DEPENDENT;
         this.params = new HashMap<>();
+        this.name = null;
     }
 
     public BeanConfigurator<T> param(String name, Class<?> value) {
@@ -139,6 +142,11 @@ public final class BeanConfigurator<T> {
         this.scope = scope;
         return this;
     }
+    
+    public BeanConfigurator<T> name(String name) {
+        this.name = name;
+        return this;
+    }
 
     public BeanConfigurator<T> alternativePriority(int priority) {
         this.alternativePriority = priority;
@@ -191,7 +199,7 @@ public final class BeanConfigurator<T> {
     public void done() {
         // TODO sanity checks
         beanConsumer.accept(new BeanInfo.Builder().implClazz(implClass).beanDeployment(beanDeployment).scope(scope).types(types).qualifiers(qualifiers)
-                .alternativePriority(alternativePriority).creator(creatorConsumer).destroyer(destroyerConsumer).params(params).build());
+                .alternativePriority(alternativePriority).name(name).creator(creatorConsumer).destroyer(destroyerConsumer).params(params).build());
     }
 
     @SuppressWarnings("unchecked")

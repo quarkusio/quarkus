@@ -221,11 +221,11 @@ public class SchedulerProcessor {
                 .build();
 
         MethodCreator invoke = invokerCreator.getMethodCreator("invoke", void.class, ScheduledExecution.class);
-        // InstanceHandle<Foo> handle = Arc.container().instance("1");
+        // InstanceHandle<Foo> handle = Arc.container().instanceByBeanId("1");
         // handle.get().ping();
         ResultHandle containerHandle = invoke.invokeStaticMethod(MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
         ResultHandle instanceHandle = invoke.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, String.class), containerHandle,
+                MethodDescriptor.ofMethod(ArcContainer.class, "instanceByBeanId", InstanceHandle.class, String.class), containerHandle,
                 invoke.load(bean.getIdentifier()));
         ResultHandle beanHandle = invoke.invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class), instanceHandle);
         if (method.parameters().isEmpty()) {

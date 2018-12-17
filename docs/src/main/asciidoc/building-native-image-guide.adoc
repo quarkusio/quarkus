@@ -189,7 +189,7 @@ mvn package -Pnative -Dnative-image.docker-build=true
 
 The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.
 However, it's not an issue as we are going to copy it to a Docker container.
-Create the following `Dockerfile`:
+Create the following `Dockerfile` in the `src/main/docker` (or wherever you want):
 
 [source]
 ----
@@ -205,7 +205,7 @@ Then, if you didn't delete the generated native executable, you can build the do
 
 [source]
 ----
-docker build -t shamrock-quickstart/quickstart .
+docker build -f src/main/docker/Dockerfile -t shamrock-quickstart/quickstart .
 ----
 
 And finally, run it with:
@@ -214,6 +214,8 @@ And finally, run it with:
 ----
 docker run -i --rm -p 8080:8080 shamrock-quickstart/quickstart
 ----
+
+NOTE: Interested by tiny Docker images, check the https://github.com/jbossas/protean-shamrock/tree/master/docker/distroless[distroless] version.
 
 == What's next?
 

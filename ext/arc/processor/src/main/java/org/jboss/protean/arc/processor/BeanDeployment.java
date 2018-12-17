@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -104,7 +105,7 @@ public class BeanDeployment {
         List<ObserverInfo> observers = new ArrayList<>();
         List<InjectionPointInfo> injectionPoints = new ArrayList<>();
         this.beans = findBeans(initBeanDefiningAnnotations(additionalBeanDefiningAnnotations, stereotypes.keySet()), observers, injectionPoints);
-
+        
         if (buildContext != null) {
             buildContext.putInternal(Key.INJECTION_POINTS.asString(), Collections.unmodifiableList(injectionPoints));
             buildContext.putInternal(Key.OBSERVERS.asString(), Collections.unmodifiableList(observers));
@@ -137,14 +138,22 @@ public class BeanDeployment {
         }
 
         // Validate the bean deployment
+        List<Throwable> errors = new ArrayList<>();
+        validateBeanNames(errors);
         ValidationContextImpl validationContext = new ValidationContextImpl(buildContext);
         for (BeanDeploymentValidator validator : validators) {
             validator.validate(validationContext);
         }
-        List<Throwable> errors = validationContext.getErrors();
+        errors.addAll(validationContext.getErrors());
+
         if (!errors.isEmpty()) {
             if (errors.size() == 1) {
-                throw new DeploymentException(errors.get(0));
+                Throwable error = errors.get(0);
+                if (error instanceof DeploymentException) {
+                    throw (DeploymentException) error;
+                } else {
+                    throw new DeploymentException(errors.get(0));
+                }
             } else {
                 DeploymentException deploymentException = new DeploymentException("Multiple deployment problems occured: " + errors.stream()
                         .map(e -> e.getMessage())
@@ -161,6 +170,33 @@ public class BeanDeployment {
         this.interceptorResolver = new InterceptorResolver(this);
 
         LOGGER.infof("Bean deployment created in %s ms", System.currentTimeMillis() - start);
+    }
+    
+    private void validateBeanNames(List<Throwable> errors) {
+        Map<String, List<BeanInfo>> namedBeans = new HashMap<>();
+        for (BeanInfo bean : beans) {
+            if (bean.getName() != null) {
+                List<BeanInfo> named = namedBeans.get(bean.getName());
+                if (named == null) {
+                    named = new ArrayList<>();
+                    namedBeans.put(bean.getName(), named);
+                }
+                named.add(bean);
+            }
+        }
+        if (!namedBeans.isEmpty()) {
+            for (Entry<String, List<BeanInfo>> entry : namedBeans.entrySet()) {
+                if (entry.getValue()
+                        .size() > 1) {
+                    if (Beans.resolveAmbiguity(entry.getValue()) == null) {
+                        errors.add(new DeploymentException("Unresolvable ambiguous bean name detected: " + entry.getKey() + "\nBeans:\n" + entry.getValue()
+                                .stream()
+                                .map(Object::toString)
+                                .collect(Collectors.joining("\n"))));
+                    }
+                }
+            }
+        }
     }
     
     public Collection<BeanInfo> getBeans() {
@@ -255,17 +291,25 @@ public class BeanDeployment {
                 boolean isAlternative = false;
                 ScopeInfo scope = null;
                 List<AnnotationInstance> bindings = new ArrayList<>();
+                boolean isNamed = false;
 
                 for (AnnotationInstance annotation : stereotypeClass.classAnnotations()) {
-                    if (annotation.name().equals(DotNames.ALTERNATIVE)) {
+                    if (DotNames.ALTERNATIVE.equals(annotation.name())) {
                         isAlternative = true;
                     } else if (interceptorBindings.containsKey(annotation.name())) {
                         bindings.add(annotation);
+                    } else if (DotNames.NAMED.equals(annotation.name())) {
+                        if (annotation.value() != null && !annotation.value()
+                                .asString()
+                                .isEmpty()) {
+                            throw new DefinitionException("Stereotype must not declare @Named with a non-empty value: " + stereotypeClass);
+                        }
+                        isNamed = true;
                     } else if (scope == null) {
                         scope = ScopeInfo.from(annotation.name());
                     }
                 }
-                stereotypes.put(stereotype.target().asClass().name(), new StereotypeInfo(scope, bindings, isAlternative, stereotypeClass));
+                stereotypes.put(stereotype.target().asClass().name(), new StereotypeInfo(scope, bindings, isAlternative, isNamed, stereotypeClass));
             }
         }
         return stereotypes;

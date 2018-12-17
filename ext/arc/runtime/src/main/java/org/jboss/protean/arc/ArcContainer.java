@@ -23,7 +23,8 @@ import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.util.TypeLiteral;
 
 /**
- *
+ * TODO: consolidate {@link ArcContainer} and {@link InstanceHandle} API 
+ * 
  * @author Martin Kouba
  */
 public interface ArcContainer {
@@ -36,6 +37,7 @@ public interface ArcContainer {
     InjectableContext getContext(Class<? extends Annotation> scopeType);
 
     /**
+     * Never returns null. However, the handle is empty if no bean matches/multiple beans match the specified type and qualifiers.
      *
      * @param type
      * @param qualifiers
@@ -44,6 +46,7 @@ public interface ArcContainer {
     <T> InstanceHandle<T> instance(Class<T> type, Annotation... qualifiers);
 
     /**
+     * Never returns null. However, the handle is empty if no bean matches/multiple beans match the specified type and qualifiers.
      *
      * @param type
      * @param qualifiers
@@ -51,6 +54,15 @@ public interface ArcContainer {
      */
     <T> InstanceHandle<T> instance(TypeLiteral<T> type, Annotation... qualifiers);
 
+    /**
+    * Never returns null. However, the handle is empty if no bean matches/multiple beans match the specified name.
+    * 
+    * @param name
+    * @return a new instance handle
+    * @see InjectableBean#getName()
+    */
+   <T> InstanceHandle<T> instance(String name);
+    
     /**
      * Returns a supplier that can be used to create new instances, or null if no matching bean can be found.
      *
@@ -67,8 +79,8 @@ public interface ArcContainer {
      * @return a new instance handle
      * @see InjectableBean#getIdentifier()
      */
-    <T> InstanceHandle<T> instance(String beanIdentifier);
-
+    <T> InstanceHandle<T> instanceByBeanId(String beanIdentifier);
+    
     /**
      *
      * @return the context for {@link javax.enterprise.context.RequestScoped}

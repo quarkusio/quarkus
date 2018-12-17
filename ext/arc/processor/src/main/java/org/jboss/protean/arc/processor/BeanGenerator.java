@@ -217,6 +217,7 @@ public class BeanGenerator extends AbstractGenerator {
             implementGetStereotypes(bean, beanCreator, stereotypes.getFieldDescriptor());
         }
         implementGetBeanClass(bean, beanCreator);
+        implementGetName(bean, beanCreator);
 
         beanCreator.close();
         return classOutput.getResources();
@@ -286,6 +287,7 @@ public class BeanGenerator extends AbstractGenerator {
             implementGetStereotypes(bean, beanCreator, stereotypes.getFieldDescriptor());
         }
         implementGetBeanClass(bean, beanCreator);
+        implementGetName(bean, beanCreator);
 
         beanCreator.close();
         return classOutput.getResources();
@@ -364,6 +366,7 @@ public class BeanGenerator extends AbstractGenerator {
             implementGetStereotypes(bean, beanCreator, stereotypes.getFieldDescriptor());
         }
         implementGetBeanClass(bean, beanCreator);
+        implementGetName(bean, beanCreator);
 
         beanCreator.close();
         return classOutput.getResources();
@@ -430,6 +433,7 @@ public class BeanGenerator extends AbstractGenerator {
             implementGetStereotypes(bean, beanCreator, stereotypes.getFieldDescriptor());
         }
         implementGetBeanClass(bean, beanCreator);
+        implementGetName(bean, beanCreator);
 
         beanCreator.close();
         return classOutput.getResources();
@@ -1275,6 +1279,15 @@ public class BeanGenerator extends AbstractGenerator {
     protected void implementGetBeanClass(BeanInfo bean, ClassCreator beanCreator) {
         MethodCreator getBeanClass = beanCreator.getMethodCreator("getBeanClass", Class.class).setModifiers(ACC_PUBLIC);
         getBeanClass.returnValue(getBeanClass.loadClass(bean.getBeanClass().toString()));
+    }
+    
+
+    protected void implementGetName(BeanInfo bean, ClassCreator beanCreator) {
+        if (bean.getName() != null) {
+            MethodCreator getName = beanCreator.getMethodCreator("getName", String.class)
+                    .setModifiers(ACC_PUBLIC);
+            getName.returnValue(getName.load(bean.getName()));
+        }
     }
 
 }

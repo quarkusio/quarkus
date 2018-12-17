@@ -81,13 +81,12 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public Set<Bean<?>> getBeans(Type beanType, Annotation... qualifiers) {
-        Objects.requireNonNull(beanType);
-        return ArcContainerImpl.instance().getBeans(beanType, qualifiers);
+        return ArcContainerImpl.instance().getBeans(Objects.requireNonNull(beanType), qualifiers);
     }
 
     @Override
     public Set<Bean<?>> getBeans(String name) {
-        throw new UnsupportedOperationException();
+        return ArcContainerImpl.instance().getBeans(Objects.requireNonNull(name));
     }
 
     @Override
@@ -97,7 +96,7 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public <X> Bean<? extends X> resolve(Set<Bean<? extends X>> beans) {
-        return ArcContainerImpl.instance().resolve(beans);
+        return ArcContainerImpl.resolve(beans);
     }
 
     @Override
@@ -272,7 +271,7 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public Instance<Object> createInstance() {
-        throw new UnsupportedOperationException();
+        return new InstanceImpl<>(Object.class, null, new CreationalContextImpl<>());
     }
 
 }

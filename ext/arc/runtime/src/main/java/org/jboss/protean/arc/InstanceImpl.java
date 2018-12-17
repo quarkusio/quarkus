@@ -50,12 +50,12 @@ class InstanceImpl<T> implements Instance<T> {
         if (type instanceof ParameterizedType) {
             this.type = ((ParameterizedType) type).getActualTypeArguments()[0];
         } else {
-            throw new IllegalArgumentException();
+            this.type = type;
         }
         this.qualifiers = qualifiers != null ? qualifiers : Collections.emptySet();
         this.creationalContext = creationalContext;
 
-        if (qualifiers.isEmpty() && Object.class.equals(type)) {
+        if (this.qualifiers.isEmpty() && Object.class.equals(type)) {
             // Do not prefetch the beans for Instance<Object> with no qualifiers
             this.beans = null;
         } else {

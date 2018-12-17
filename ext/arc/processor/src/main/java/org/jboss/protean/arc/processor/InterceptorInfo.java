@@ -56,7 +56,7 @@ class InterceptorInfo extends BeanInfo implements Comparable<InterceptorInfo> {
      */
     InterceptorInfo(AnnotationTarget target, BeanDeployment beanDeployment, Set<AnnotationInstance> bindings, List<Injection> injections, int priority) {
         super(target, beanDeployment, ScopeInfo.DEPENDENT, Collections.singleton(Type.create(target.asClass().name(), Kind.CLASS)), new HashSet<>(), injections,
-                null, null, null, Collections.emptyList());
+                null, null, null, Collections.emptyList(), null);
         this.bindings = bindings;
         this.priority = priority;
         MethodInfo aroundInvoke = null;

@@ -74,6 +74,8 @@ public class BeanInfo {
     private final Integer alternativePriority;
 
     private final List<StereotypeInfo> stereotypes;
+    
+    private final String name;
 
     // Gizmo consumers are only used by synthetic beans
 
@@ -84,13 +86,13 @@ public class BeanInfo {
     private final Map<String, Object> params;
 
     BeanInfo(AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope, Set<Type> types, Set<AnnotationInstance> qualifiers,
-            List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer, Integer alternativePriority, List<StereotypeInfo> stereotypes) {
-        this(null, target, beanDeployment, scope, types, qualifiers, injections, declaringBean, disposer, alternativePriority, stereotypes, null, null,
+            List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer, Integer alternativePriority, List<StereotypeInfo> stereotypes, String name) {
+        this(null, target, beanDeployment, scope, types, qualifiers, injections, declaringBean, disposer, alternativePriority, stereotypes, name, null, null,
                 Collections.emptyMap());
     }
 
     BeanInfo(ClassInfo implClazz, AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope, Set<Type> types, Set<AnnotationInstance> qualifiers,
-            List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer, Integer alternativePriority, List<StereotypeInfo> stereotypes,
+            List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer, Integer alternativePriority, List<StereotypeInfo> stereotypes, String name,
             Consumer<MethodCreator> creatorConsumer, Consumer<MethodCreator> destroyerConsumer, Map<String, Object> params) {
         this.target = Optional.ofNullable(target);
         if (implClazz == null && target != null) {
@@ -121,7 +123,8 @@ public class BeanInfo {
         for (Type type : types) {
             Beans.analyzeType(type, beanDeployment);
         }
-        if (qualifiers.isEmpty()) {
+        if (qualifiers.isEmpty() || (qualifiers.size() <= 2 && qualifiers.stream()
+                .allMatch(a -> DotNames.NAMED.equals(a.name()) || DotNames.ANY.equals(a.name())))) {
             qualifiers.add(BuiltinQualifier.DEFAULT.getInstance());
         }
         qualifiers.add(BuiltinQualifier.ANY.getInstance());
@@ -131,6 +134,7 @@ public class BeanInfo {
         this.disposer = disposer;
         this.alternativePriority = alternativePriority;
         this.stereotypes = stereotypes;
+        this.name = name;
         this.creatorConsumer = creatorConsumer;
         this.destroyerConsumer = destroyerConsumer;
         this.params = params;
@@ -301,6 +305,10 @@ public class BeanInfo {
     public List<StereotypeInfo> getStereotypes() {
         return stereotypes;
     }
+    
+    public String getName() {
+        return name;
+    }
 
     Consumer<MethodCreator> getCreatorConsumer() {
         return creatorConsumer;
@@ -467,6 +475,8 @@ public class BeanInfo {
         private Integer alternativePriority;
 
         private List<StereotypeInfo> stereotypes;
+        
+        private String name;
 
         private Consumer<MethodCreator> creatorConsumer;
 
@@ -533,6 +543,11 @@ public class BeanInfo {
             this.stereotypes = stereotypes;
             return this;
         }
+        
+        Builder name(String name) {
+            this.name = name;
+            return this;
+        }
 
         Builder creator(Consumer<MethodCreator> creatorConsumer) {
             this.creatorConsumer = creatorConsumer;
@@ -551,7 +566,7 @@ public class BeanInfo {
 
         BeanInfo build() {
             return new BeanInfo(implClazz, target, beanDeployment, scope, types, qualifiers, injections, declaringBean, disposer, alternativePriority,
-                    stereotypes, creatorConsumer, destroyerConsumer, params);
+                    stereotypes, name, creatorConsumer, destroyerConsumer, params);
         }
 
     }

@@ -76,7 +76,7 @@ public class ClassLoaderCompiler {
                 File file = new File(s);
                 if (file.exists() && file.getName().endsWith(".jar")) {
                     classPathElements.add(file);
-                    if(!file.isDirectory()) {
+                    if(!file.isDirectory() && file.getName().endsWith(".jar")) {
                         try (JarFile jar = new JarFile(file)) {
                             Manifest mf = jar.getManifest();
                             if(mf == null || mf.getMainAttributes() == null) {

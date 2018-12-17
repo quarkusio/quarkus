@@ -20,6 +20,8 @@ import static org.junit.Assert.assertEquals;
 
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Produces;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.jboss.protean.arc.Arc;
 import org.jboss.protean.arc.test.ArcTestContainer;
@@ -29,12 +31,15 @@ import org.junit.Test;
 public class PrimitiveProducerTest {
 
     @Rule
-    public ArcTestContainer container = new ArcTestContainer(IntProducer.class, LongProducer.class);
+    public ArcTestContainer container = new ArcTestContainer(IntProducer.class, LongProducer.class, PrimitiveConsumer.class);
 
     @Test
     public void testPrimitiveProducers() {
         assertEquals(Long.valueOf(10), Arc.container().instance(Long.class).get());
         assertEquals(Integer.valueOf(10), Arc.container().instance(Integer.class).get());
+        PrimitiveConsumer consumer = Arc.container().instance(PrimitiveConsumer.class).get();
+        assertEquals(10, consumer.getIntFoo());
+        assertEquals(10l, consumer.getLongFoo());
     }
 
     @Dependent
@@ -53,5 +58,24 @@ public class PrimitiveProducerTest {
             return 10;
         }
 
+    }
+    
+    @Singleton
+    static class PrimitiveConsumer {
+        
+        @Inject
+        int intFoo;
+        
+        @Inject
+        long longFoo;
+
+        int getIntFoo() {
+            return intFoo;
+        }
+
+        long getLongFoo() {
+            return longFoo;
+        }
+        
     }
 }

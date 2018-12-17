@@ -17,11 +17,9 @@
 package org.jboss.protean.arc.processor;
 
 import static java.util.Collections.singletonList;
-import static org.jboss.jandex.Type.Kind.ARRAY;
+import static org.jboss.jandex.Type.Kind.*;
 import static org.jboss.jandex.Type.Kind.CLASS;
-import static org.jboss.jandex.Type.Kind.PARAMETERIZED_TYPE;
-import static org.jboss.jandex.Type.Kind.TYPE_VARIABLE;
-import static org.jboss.jandex.Type.Kind.WILDCARD_TYPE;
+import static org.jboss.protean.arc.processor.DotNames.*;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,13 +32,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.ClassType;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.Type;
+import org.jboss.jandex.*;
 import org.jboss.jandex.Type.Kind;
-import org.jboss.jandex.TypeVariable;
-import org.jboss.jandex.WildcardType;
 import org.jboss.protean.arc.processor.InjectionPointInfo.TypeAndQualifiers;
 
 /**
@@ -141,8 +134,40 @@ class BeanResolver {
                 }
                 return true;
             }
+        } else if (PRIMITIVE.equals(requiredType.kind())) {
+            return primitiveMatch(requiredType.asPrimitiveType().primitive(), beanType);
         }
         return false;
+    }
+
+    static boolean primitiveMatch(PrimitiveType.Primitive requiredType, Type beanType) {
+        switch (requiredType) {
+            case INT: return (beanType.kind() == CLASS  && beanType.asClassType().name().equals(INTEGER))
+                    || (beanType.kind() == PRIMITIVE  && beanType.asPrimitiveType().primitive() == PrimitiveType.Primitive.INT);
+
+            case LONG: return (beanType.kind() == CLASS  && beanType.asClassType().name().equals(LONG))
+                    ||  (beanType.kind() == PRIMITIVE  && beanType.asPrimitiveType().primitive() == PrimitiveType.Primitive.LONG);
+
+            case SHORT: return (beanType.kind() == CLASS  && beanType.asClassType().name().equals(SHORT))
+                    ||  (beanType.kind() == PRIMITIVE  && beanType.asPrimitiveType().primitive() == PrimitiveType.Primitive.SHORT);
+
+            case BYTE: return (beanType.kind() == CLASS  && beanType.asClassType().name().equals(BYTE))
+                    ||  (beanType.kind() == PRIMITIVE  && beanType.asPrimitiveType().primitive() == PrimitiveType.Primitive.BYTE);
+
+            case FLOAT: return (beanType.kind() == CLASS  && beanType.asClassType().name().equals(FLOAT))
+                    ||  (beanType.kind() == PRIMITIVE  && beanType.asPrimitiveType().primitive() == PrimitiveType.Primitive.FLOAT);
+
+            case DOUBLE: return (beanType.kind() == CLASS  && beanType.asClassType().name().equals(DOUBLE))
+                    ||  (beanType.kind() == PRIMITIVE  && beanType.asPrimitiveType().primitive() == PrimitiveType.Primitive.DOUBLE);
+
+            case CHAR: return (beanType.kind() == CLASS  && beanType.asClassType().name().equals(CHARACTER))
+                    ||  (beanType.kind() == PRIMITIVE  && beanType.asPrimitiveType().primitive() == PrimitiveType.Primitive.CHAR);
+
+            case BOOLEAN: return (beanType.kind() == CLASS  && beanType.asClassType().name().equals(BOOLEAN))
+                    ||  (beanType.kind() == PRIMITIVE  && beanType.asPrimitiveType().primitive() == PrimitiveType.Primitive.BOOLEAN);
+
+            default: throw new IllegalArgumentException("Not supported yet");
+        }
     }
 
     boolean parametersMatch(Type requiredParameter, Type beanParameter) {

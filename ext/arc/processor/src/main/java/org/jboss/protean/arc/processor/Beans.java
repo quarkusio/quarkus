@@ -28,7 +28,15 @@ import java.util.stream.Collectors;
 import javax.enterprise.inject.AmbiguousResolutionException;
 import javax.enterprise.inject.UnsatisfiedResolutionException;
 
-import org.jboss.jandex.*;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.protean.arc.processor.InjectionPointInfo.TypeAndQualifiers;
 
@@ -291,28 +299,7 @@ final class Beans {
             throw new UnsatisfiedResolutionException(injectionPoint + " on " + bean);
         } else if (resolved.size() > 1) {
             // Try to resolve the ambiguity
-            List<BeanInfo> resolvedAmbiguity = new ArrayList<>(resolved);
-            for (Iterator<BeanInfo> iterator = resolvedAmbiguity.iterator(); iterator.hasNext();) {
-                BeanInfo beanInfo = iterator.next();
-                if (!beanInfo.isAlternative() && (beanInfo.getDeclaringBean() == null || !beanInfo.getDeclaringBean().isAlternative())) {
-                    iterator.remove();
-                }
-            }
-            if (resolvedAmbiguity.size() == 1) {
-                selected = resolvedAmbiguity.get(0);
-            } else if (resolvedAmbiguity.size() > 1) {
-                // Keep only the highest priorities
-                resolvedAmbiguity.sort(Beans::compareAlternativeBeans);
-                Integer highest = getAlternativePriority(resolvedAmbiguity.get(0));
-                for (Iterator<BeanInfo> iterator = resolvedAmbiguity.iterator(); iterator.hasNext();) {
-                    if (!highest.equals(getAlternativePriority(iterator.next()))) {
-                        iterator.remove();
-                    }
-                }
-                if (resolved.size() == 1) {
-                    selected = resolvedAmbiguity.get(0);
-                }
-            }
+            selected = resolveAmbiguity(resolved);
             if (selected == null) {
                 throw new AmbiguousResolutionException(
                         injectionPoint + " on " + bean + "\nBeans:\n" + resolved.stream().map(Object::toString).collect(Collectors.joining("\n")));
@@ -321,6 +308,34 @@ final class Beans {
             selected = resolved.get(0);
         }
         injectionPoint.resolve(selected);
+    }
+    
+    static BeanInfo resolveAmbiguity(List<BeanInfo> resolved) {
+        BeanInfo selected = null;
+        List<BeanInfo> resolvedAmbiguity = new ArrayList<>(resolved);
+        for (Iterator<BeanInfo> iterator = resolvedAmbiguity.iterator(); iterator.hasNext();) {
+            BeanInfo beanInfo = iterator.next();
+            if (!beanInfo.isAlternative() && (beanInfo.getDeclaringBean() == null || !beanInfo.getDeclaringBean()
+                    .isAlternative())) {
+                iterator.remove();
+            }
+        }
+        if (resolvedAmbiguity.size() == 1) {
+            selected = resolvedAmbiguity.get(0);
+        } else if (resolvedAmbiguity.size() > 1) {
+            // Keep only the highest priorities
+            resolvedAmbiguity.sort(Beans::compareAlternativeBeans);
+            Integer highest = getAlternativePriority(resolvedAmbiguity.get(0));
+            for (Iterator<BeanInfo> iterator = resolvedAmbiguity.iterator(); iterator.hasNext();) {
+                if (!highest.equals(getAlternativePriority(iterator.next()))) {
+                    iterator.remove();
+                }
+            }
+            if (resolved.size() == 1) {
+                selected = resolvedAmbiguity.get(0);
+            }
+        }
+        return selected;
     }
 
     private static Integer getAlternativePriority(BeanInfo bean) {

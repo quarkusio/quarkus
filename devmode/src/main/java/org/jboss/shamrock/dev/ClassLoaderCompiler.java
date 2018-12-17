@@ -74,7 +74,7 @@ public class ClassLoaderCompiler {
             if (!parsedFiles.contains(s)) {
                 parsedFiles.add(s);
                 File file = new File(s);
-                if (file.exists()) {
+                if (file.exists() && file.getName().endsWith(".jar")) {
                     classPathElements.add(file);
                     if(!file.isDirectory()) {
                         try (JarFile jar = new JarFile(file)) {
@@ -91,6 +91,8 @@ public class ClassLoaderCompiler {
                                     }
                                 }
                             }
+                        } catch (Exception e) {
+                            throw new RuntimeException("Failed to open class path file " + file, e);
                         }
                     }
                 }

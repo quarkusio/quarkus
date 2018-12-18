@@ -164,7 +164,7 @@ final class JpaJandexScavenger {
         }
         ClassInfo classInfo = index.getClassByName(className);
         if (classInfo == null) {
-            if (className == ClassType.OBJECT_TYPE.name() || className.toString().equals(Serializable.class.getName())) {
+            if (className.equals(ClassType.OBJECT_TYPE.name()) || className.toString().equals(Serializable.class.getName())) {
                 return;
             } else {
                 throw new IllegalStateException("The Jandex index is not complete, missing: " + className.toString());

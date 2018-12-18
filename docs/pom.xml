@@ -27,7 +27,6 @@
         <relativePath>../build-parent/pom.xml</relativePath>
     </parent>
 
-    <groupId>org.shamrock.documentation</groupId>
     <artifactId>shamrock-documentation</artifactId>
 
     <packaging>pom</packaging>

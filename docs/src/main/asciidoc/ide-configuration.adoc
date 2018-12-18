@@ -63,6 +63,9 @@ If you use the default `root` and `path`, the URL is: http://localhost:8080/app/
 The project is either generated in the current directory or in a directory named after the passed artifactId.
 If the current directory is empty, the project is generated in-place.
 
+A `Dockerfile` is also generated in `src/main/docker`.
+Instructions to build the image and run the container are written in the `Dockerfile`.
+
 == Dealing with extensions
 
 You can list extensions with: `mvn shamrock:list-extensions`.

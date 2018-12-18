@@ -32,7 +32,8 @@ public class RxModelEnhancer implements BiFunction<String, ClassVisitor, ClassVi
         
         @Override
         public void visitEnd() {
-            // no-arg constructor
+            // no-arg constructor 
+            // FIXME: should actually use the proper superclass
             MethodVisitor mv;
             if(!defaultConstructorPresent) {
                 mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC, 
@@ -74,8 +75,8 @@ public class RxModelEnhancer implements BiFunction<String, ClassVisitor, ClassVi
             // getModelInfo
             mv = super.visitMethod(Opcodes.ACC_PROTECTED | Opcodes.ACC_SYNTHETIC, 
                                                  "getModelInfo", 
-                                                 "()Lorg/jboss/panache/RxModel$RxModelInfo;", 
-                                                 "()Lorg/jboss/panache/RxModel$RxModelInfo<+Lorg/jboss/panache/RxModel;>;", 
+                                                 "()Lorg/jboss/panache/RxEntityBase$RxModelInfo;", 
+                                                 "()Lorg/jboss/panache/RxEntityBase$RxModelInfo<+Lorg/jboss/panache/RxEntityBase;>;", 
                                                  null);
             mv.visitCode();
             mv.visitFieldInsn(Opcodes.GETSTATIC, thisName.replace('.', '/'), fieldName, modelDesc);
@@ -87,16 +88,16 @@ public class RxModelEnhancer implements BiFunction<String, ClassVisitor, ClassVi
             mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, 
                                                  "findById", 
                                                  "(Ljava/lang/Integer;)Lio/reactivex/Maybe;", 
-                                                 "(Ljava/lang/Integer;)Lio/reactivex/Maybe<Lorg/jboss/panache/Model;>;", 
+                                                 "(Ljava/lang/Integer;)Lio/reactivex/Maybe<Lorg/jboss/panache/RxEntityBase;>;", 
                                                  null);
             mv.visitParameter("id", 0);
             mv.visitCode();
             mv.visitFieldInsn(Opcodes.GETSTATIC, thisName.replace('.', '/'), fieldName, modelDesc);
             mv.visitIntInsn(Opcodes.ALOAD, 0);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                               "org/jboss/panache/RxModel", 
+                               "org/jboss/panache/RxEntityBase", 
                                "findById", 
-                               "(Lorg/jboss/panache/RxModel$RxModelInfo;Ljava/lang/Integer;)Lio/reactivex/Maybe;", false);
+                               "(Lorg/jboss/panache/RxEntityBase$RxModelInfo;Ljava/lang/Integer;)Lio/reactivex/Maybe;", false);
             mv.visitInsn(Opcodes.ARETURN);
             mv.visitMaxs(0, 0);
             mv.visitEnd();
@@ -105,14 +106,14 @@ public class RxModelEnhancer implements BiFunction<String, ClassVisitor, ClassVi
             mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, 
                                                  "findAll", 
                                                  "()Lio/reactivex/Observable;", 
-                                                 "()Lio/reactivex/Observable<Lorg/jboss/panache/RxModel;>;", 
+                                                 "()Lio/reactivex/Observable<Lorg/jboss/panache/RxEntityBase;>;", 
                                                  null);
             mv.visitCode();
             mv.visitFieldInsn(Opcodes.GETSTATIC, thisName.replace('.', '/'), fieldName, modelDesc);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                               "org/jboss/panache/RxModel", 
+                               "org/jboss/panache/RxEntityBase", 
                                "findAll", 
-                               "(Lorg/jboss/panache/RxModel$RxModelInfo;)Lio/reactivex/Observable;", false);
+                               "(Lorg/jboss/panache/RxEntityBase$RxModelInfo;)Lio/reactivex/Observable;", false);
             mv.visitInsn(Opcodes.ARETURN);
             mv.visitMaxs(0, 0);
             mv.visitEnd();

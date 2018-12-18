@@ -17,12 +17,16 @@
 package org.jboss.shamrock.panache;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.panache.EntityBase;
 import org.jboss.panache.Model;
 import org.jboss.panache.PgPoolProducer;
+import org.jboss.panache.RxEntityBase;
 import org.jboss.panache.RxModel;
 import org.jboss.protean.gizmo.AssignableResultHandle;
 import org.jboss.protean.gizmo.BranchResult;
@@ -47,6 +51,8 @@ import net.bytebuddy.jar.asm.Opcodes;
  */
 public final class ModelResourceProcessor {
 
+    private static final DotName DOTNAME_ENTITY_BASE = DotName.createSimple(EntityBase.class.getName());
+    private static final DotName DOTNAME_RX_ENTITY_BASE = DotName.createSimple(RxEntityBase.class.getName());
     private static final DotName DOTNAME_MODEL = DotName.createSimple(Model.class.getName());
     private static final DotName DOTNAME_RX_MODEL = DotName.createSimple(RxModel.class.getName());
     
@@ -69,21 +75,39 @@ public final class ModelResourceProcessor {
                BuildProducer<GeneratedClassBuildItem> generatedClasses) throws Exception {
 
         ModelEnhancer modelEnhancer = new ModelEnhancer();
-        for (ClassInfo classInfo : index.getIndex().getKnownDirectSubclasses(DOTNAME_MODEL)) {
-            System.err.println("Scanning model class for bytecode work: "+classInfo);
-            transformers.produce(new BytecodeTransformerBuildItem(classInfo.name().toString(), modelEnhancer));
+        Set<String> modelClasses = new HashSet<>();
+        for (ClassInfo classInfo : index.getIndex().getKnownDirectSubclasses(DOTNAME_ENTITY_BASE)) {
+            // skip Model
+            if(classInfo.name().equals(DOTNAME_MODEL))
+                continue;
+            modelClasses.add(classInfo.name().toString());
         }
+        for (ClassInfo classInfo : index.getIndex().getKnownDirectSubclasses(DOTNAME_MODEL)) {
+            modelClasses.add(classInfo.name().toString());
+        }
+        for (String modelClass : modelClasses) {
+            transformers.produce(new BytecodeTransformerBuildItem(modelClass, modelEnhancer));
+        }
+        
         RxModelEnhancer rxModelEnhancer = new RxModelEnhancer();
+        Set<String> rxModelClasses = new HashSet<>();
+        for (ClassInfo classInfo : index.getIndex().getAllKnownSubclasses(DOTNAME_RX_ENTITY_BASE)) {
+            // skip RxModel
+            if(classInfo.name().equals(DOTNAME_RX_MODEL))
+                continue;
+            rxModelClasses.add(classInfo.name().toString());
+        }
         for (ClassInfo classInfo : index.getIndex().getKnownDirectSubclasses(DOTNAME_RX_MODEL)) {
-            System.err.println("Scanning RX model class for bytecode work: "+classInfo);
-            transformers.produce(new BytecodeTransformerBuildItem(classInfo.name().toString(), rxModelEnhancer));
-            generateModelClass(classInfo, generatedClasses);
+            rxModelClasses.add(classInfo.name().toString());
+        }
+        for (String rxModelClass : rxModelClasses) {
+            transformers.produce(new BytecodeTransformerBuildItem(rxModelClass, rxModelEnhancer));
+            generateModelClass(rxModelClass, generatedClasses);
         }
     }
 
-    private void generateModelClass(ClassInfo classInfo, BuildProducer<GeneratedClassBuildItem> generatedClasses) {
+    private void generateModelClass(String modelClassName, BuildProducer<GeneratedClassBuildItem> generatedClasses) {
         
-        String modelClassName = classInfo.name().toString();
         String modelType = modelClassName.replace('.', '/');
         String modelSignature = "L"+modelType+";";
         // FIXME
@@ -94,12 +118,12 @@ public final class ModelResourceProcessor {
         else
             tableName = modelClassName;
         
-        String modelInfoClassName = classInfo.name().toString()+"$__MODEL";
+        String modelInfoClassName = modelClassName+"$__MODEL";
         
         ClassCreator modelClass = ClassCreator.builder().className(modelInfoClassName)
             .classOutput(new ProcessorClassOutput(generatedClasses))
-            .interfaces(RxModel.RxModelInfo.class)
-            .signature("Ljava/lang/Object;Lorg/jboss/panache/RxModel$RxModelInfo<"+modelSignature+">;")
+            .interfaces(RxEntityBase.RxModelInfo.class)
+            .signature("Ljava/lang/Object;Lorg/jboss/panache/RxEntityBase$RxModelInfo<"+modelSignature+">;")
             .build();
         
         // no arg constructor is auto-created by gizmo
@@ -153,14 +177,14 @@ public final class ModelResourceProcessor {
                                                                                  branch.falseBranch().readInstanceField(FieldDescriptor.of(modelClassName, "name", String.class), 
                                                                                                                         branch.falseBranch().getMethodParam(0))));
         // Bridge methods
-        MethodCreator toTupleBridge = modelClass.getMethodCreator("toTuple", Tuple.class, RxModel.class);
+        MethodCreator toTupleBridge = modelClass.getMethodCreator("toTuple", Tuple.class, RxEntityBase.class);
         toTupleBridge.setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC | Opcodes.ACC_BRIDGE);
         toTupleBridge.returnValue(toTupleBridge.invokeVirtualMethod(MethodDescriptor.ofMethod(modelInfoClassName, "toTuple", 
                                                                                               Tuple.class.getName(), modelClassName), 
                                                                     toTupleBridge.getThis(), 
                                                                     toTupleBridge.checkCast(toTupleBridge.getMethodParam(0), modelClassName)));
         
-        MethodCreator fromRowBridge = modelClass.getMethodCreator("fromRow", RxModel.class, Row.class);
+        MethodCreator fromRowBridge = modelClass.getMethodCreator("fromRow", RxEntityBase.class, Row.class);
         fromRowBridge.setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC | Opcodes.ACC_BRIDGE);
         fromRowBridge.returnValue(fromRowBridge.invokeVirtualMethod(MethodDescriptor.ofMethod(modelInfoClassName, "fromRow", 
                                                                                               modelClassName, Row.class.getName()), 

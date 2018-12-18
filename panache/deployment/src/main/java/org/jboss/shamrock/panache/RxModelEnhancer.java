@@ -87,8 +87,8 @@ public class RxModelEnhancer implements BiFunction<String, ClassVisitor, ClassVi
             // findById
             mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, 
                                                  "findById", 
-                                                 "(Ljava/lang/Integer;)Lio/reactivex/Maybe;", 
-                                                 "(Ljava/lang/Integer;)Lio/reactivex/Maybe<Lorg/jboss/panache/RxEntityBase;>;", 
+                                                 "(Ljava/lang/Object;)Lio/reactivex/Maybe;", 
+                                                 "(Ljava/lang/Object;)Lio/reactivex/Maybe<Lorg/jboss/panache/RxEntityBase;>;", 
                                                  null);
             mv.visitParameter("id", 0);
             mv.visitCode();
@@ -97,7 +97,7 @@ public class RxModelEnhancer implements BiFunction<String, ClassVisitor, ClassVi
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
                                "org/jboss/panache/RxEntityBase", 
                                "findById", 
-                               "(Lorg/jboss/panache/RxEntityBase$RxModelInfo;Ljava/lang/Integer;)Lio/reactivex/Maybe;", false);
+                               "(Lorg/jboss/panache/RxEntityBase$RxModelInfo;Ljava/lang/Object;)Lio/reactivex/Maybe;", false);
             mv.visitInsn(Opcodes.ARETURN);
             mv.visitMaxs(0, 0);
             mv.visitEnd();

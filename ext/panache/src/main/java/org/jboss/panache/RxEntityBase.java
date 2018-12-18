@@ -77,11 +77,11 @@ public abstract class RxEntityBase<T extends RxEntityBase<?>> {
                 });
     }
 
-    public static <T extends RxEntityBase<?>> Maybe<T> findById(Integer id) {
+    public static <T extends RxEntityBase<?>> Maybe<T> findById(Object id) {
         throw new RuntimeException("Should never be called");
     }
     
-    protected static <T extends RxEntityBase<?>> Maybe<T> findById(RxModelInfo<T> modelInfo, Integer id) {
+    protected static <T extends RxEntityBase<?>> Maybe<T> findById(RxModelInfo<T> modelInfo, Object id) {
         PgPool pool = getPgPool();
         // FIXME: id column name from model info
         return pool.rxPreparedQuery("SELECT * FROM "+modelInfo.getTableName()+" WHERE id = $1", Tuple.of(id))

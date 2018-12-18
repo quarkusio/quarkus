@@ -33,8 +33,8 @@ public class ModelEnhancer implements BiFunction<String, ClassVisitor, ClassVisi
         public void visitEnd() {
             MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, 
                                                  "findById", 
-                                                 "(Ljava/lang/Integer;)Lorg/jboss/panache/EntityBase;", 
-                                                 "<T:Lorg/jboss/panache/EntityBase;>(Ljava/lang/Integer;)TT;", 
+                                                 "(Ljava/lang/Object;)Lorg/jboss/panache/EntityBase;", 
+                                                 "<T:Lorg/jboss/panache/EntityBase;>(Ljava/lang/Object;)TT;", 
                                                  null);
             mv.visitParameter("id", 0);
             mv.visitCode();
@@ -43,7 +43,7 @@ public class ModelEnhancer implements BiFunction<String, ClassVisitor, ClassVisi
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
                                "org/jboss/panache/EntityBase", 
                                "findById", 
-                               "(Ljava/lang/Class;Ljava/lang/Integer;)Lorg/jboss/panache/EntityBase;", false);
+                               "(Ljava/lang/Class;Ljava/lang/Object;)Lorg/jboss/panache/EntityBase;", false);
             mv.visitInsn(Opcodes.ARETURN);
             mv.visitMaxs(0, 0);
             mv.visitEnd();

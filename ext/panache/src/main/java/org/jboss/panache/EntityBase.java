@@ -34,11 +34,11 @@ public class EntityBase {
 
     // Queries
     
-    public static <T extends EntityBase> T findById(Integer id) {
+    public static <T extends EntityBase> T findById(Object id) {
         throw new RuntimeException("Should never be called");
     }
 
-    protected static <T extends EntityBase> T findById(Class<T> entityClass, Integer id) {
+    protected static <T extends EntityBase> T findById(Class<T> entityClass, Object id) {
         return getEntityManager().find(entityClass, id);
     }
 

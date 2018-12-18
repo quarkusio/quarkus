@@ -46,6 +46,13 @@ public class JaxRSTestCase {
     }
 
     @Test
+    public void testNonCdiBeansAreApplicationScoped() {
+        Assert.assertEquals("1", URLTester.relative("rest/test/count").invokeURL().asString());
+        Assert.assertEquals("2", URLTester.relative("rest/test/count").invokeURL().asString());
+        Assert.assertEquals("3", URLTester.relative("rest/test/count").invokeURL().asString());
+    }
+
+    @Test
     public void testContextInjection() {
         Assert.assertEquals("/rest/test/request-test", URLTester.relative("rest/test/request-test").invokeURL().asString());
     }

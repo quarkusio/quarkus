@@ -71,7 +71,7 @@ public class BeanProcessor {
 
     private final IndexView index;
 
-    private final Collection<DotName> additionalBeanDefiningAnnotations;
+    private final Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations;
 
     private final ResourceOutput output;
 
@@ -89,7 +89,7 @@ public class BeanProcessor {
 
     private final Predicate<DotName> applicationClassPredicate;
 
-    private BeanProcessor(String name, IndexView index, Collection<DotName> additionalBeanDefiningAnnotations, ResourceOutput output,
+    private BeanProcessor(String name, IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations, ResourceOutput output,
                           boolean sharedAnnotationLiterals, ReflectionRegistration reflectionRegistration, List<AnnotationsTransformer> annotationTransformers,
                           Collection<DotName> resourceAnnotations, List<BeanRegistrar> beanRegistrars, List<DeploymentEnhancer> deploymentEnhancers,
                           List<BeanDeploymentValidator> beanDeploymentValidators, Predicate<DotName> applicationClassPredicate) {
@@ -247,7 +247,7 @@ public class BeanProcessor {
 
         private IndexView index;
 
-        private Collection<DotName> additionalBeanDefiningAnnotations = Collections.emptySet();
+        private Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations = Collections.emptySet();
 
         private ResourceOutput output;
 
@@ -278,7 +278,8 @@ public class BeanProcessor {
             return this;
         }
 
-        public Builder setAdditionalBeanDefiningAnnotations(Collection<DotName> additionalBeanDefiningAnnotations) {
+        public Builder setAdditionalBeanDefiningAnnotations(Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations) {
+            Objects.requireNonNull(additionalBeanDefiningAnnotations);
             this.additionalBeanDefiningAnnotations = additionalBeanDefiningAnnotations;
             return this;
         }

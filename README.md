@@ -32,7 +32,7 @@ _All under ONE framework._
 Shamrock, aka the core of Protean, is a framework that allows you to process Java EE and Eclipse MicroProfile metadata at build time,
 and use it to create low overhead jar files, as well as native images using Graal/Substrate VM.
 
-At the moment is has the following features:
+At the moment it has the following features:
 
 - Clean build/runtime separation of components
 - Bytecode recorders to allow for the generation of bytecode without knowledge of the class file format
@@ -86,7 +86,7 @@ As part of the build process shamrock generates a main method that invokes all g
 
 ### Runtime/deployment split
 
-In general there will be two distinct artifacts, a runtime and a deployment time artifact. 
+In general there will be two distinct artifacts, a runtime and a deployment time artifact.
 
 The runtime artifact should have a `dependencies.runtime` file in the root of the jar. This is a file that is produced
 by the Maven dependencies plugin:
@@ -130,17 +130,17 @@ to only include necessary runtime components.
 
 The deployment framework allows you to process metadata from the application, and output resources (usually generated
 bytecode) that will actually bootstrap the application at runtime. The idea of this is that all code related to
-annotation/configuration parsing can run in a separate JVM, so the app can start faster and use less memory. 
+annotation/configuration parsing can run in a separate JVM, so the app can start faster and use less memory.
 
 To extend Shamrock you need to include a class that implements:
 
     org.jboss.shamrock.deployment.ShamrockSetup
-    
+
 This class can then be used to all implementation of the following:
 
     org.jboss.shamrock.deployment.ResourceProcessor
     org.jboss.shamrock.deployment.InjectionProvider
-    
+
 In addition to this it can be used to specify resources files that indicate that an archive should be processed
 through the use of the `addApplicationArchiveMarker` call. Marker files are files such as `META-INF/beans.xml`
 that indicate that a jar has application components and as such it should be indexed and handled by the processors.
@@ -267,16 +267,16 @@ It would also work better in a multiple jar scenario, as each jar could just hav
 The Shamrock build plugin generating wiring metadata for you application. The end result of this
 is:
 
-*   ${project.build.finalName}-runner.jar 
+*   ${project.build.finalName}-runner.jar
     The jar that contains all wiring metadata, as well as a manifest that correctly sets up the classpath.
     This jar can be executed directly using `java -jar`, or can be turned into a native image in the same manner.
-     
+
 *   ${project.build.finalName}.jar 
     The unmodified project jar, the Shamrock plugin does not modify this.
-    
+
 *   lib/\*
     A directory that contains all runtime dependencies. These are referenced by the `class-path` manifest entry in the runner jar.
-    
+
 ### Shamrock Run Modes
 
 Shamrock supports a few different run modes, to meet the various use cases. The core of how it works is the same in each
@@ -289,7 +289,7 @@ mode, however there are some differences. The two basic modes are:
 
 *   Development Mode
     Runtime mode involves generating the wiring bytecode at startup time. This is useful when developing apps with Shamrock,
-    as it allows you to test and run things without a full Maven. This is currently used for the JUnit test runner, 
+    as it allows you to test and run things without a full Maven. This is currently used for the JUnit test runner,
     and for the `mvn compile shamrock:dev` command.
 
 #### Indexing and Application Classes
@@ -327,14 +327,14 @@ via the following configuration:
     </build>
 
 
-In addition to this if an archive contains a `META-INF/beans.xml` file then it will also be indexed. 
+In addition to this if an archive contains a `META-INF/beans.xml` file then it will also be indexed.
 
 It is also possible to force an artifact to be indexed via MicroProfile config:
 
     shamrock.index-dependency.somename.artifactId=common-jpa-entities
     shamrock.index-dependency.somename.groupId=org.jboss.shamrock
-    
+
 In this case the `somename` part of the config is an arbitrary name, and the artifact and group id's are the Maven artifact and group
-ids. For now this will only work for artifacts that have a `META-INF/MANIFEST.MF` file, and that are layed out in a 
+ids. For now this will only work for artifacts that have a `META-INF/MANIFEST.MF` file, and that are layed out in a
 standard Maven repository structure. This means that if you have a multi-module Maven project this approach will currently
 not work for dependencies that are part of the project itself, so in this case you should choose one of the other methods.

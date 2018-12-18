@@ -19,6 +19,7 @@ package org.jboss.shamrock.creator.phase.nativeimage;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -210,8 +211,32 @@ public class NativeImagePhase implements AppCreationPhase {
     public void process(AppCreationContext ctx) throws AppCreatorException {
 
         outputDir = outputDir == null ? ctx.getWorkPath() : IoUtils.mkdirs(outputDir);
-        final Path runnerJar = ctx.getOutcome(RunnerJarOutcome.class).getRunnerJar();
+
+        final RunnerJarOutcome runnerJarOutcome = ctx.getOutcome(RunnerJarOutcome.class);
+        Path runnerJar = runnerJarOutcome.getRunnerJar();
+        boolean runnerJarCopied = false;
+        // this trick is here because docker needs the jar in the project dir
+        if(!runnerJar.getParent().equals(outputDir)) {
+            try {
+                runnerJar = IoUtils.copy(runnerJar, outputDir.resolve(runnerJar.getFileName()));
+            } catch (IOException e) {
+                throw new AppCreatorException("Failed to copy the runnable jar to the output dir", e);
+            }
+            runnerJarCopied = true;
+        }
         final String runnerJarName = runnerJar.getFileName().toString();
+
+        Path outputLibDir = outputDir.resolve(runnerJarOutcome.getLibDir().getFileName());
+        if (Files.exists(outputLibDir)) {
+            outputLibDir = null;
+        } else {
+            try {
+                IoUtils.copy(runnerJarOutcome.getLibDir(), outputLibDir);
+            } catch (IOException e) {
+                throw new AppCreatorException("Failed to copy the runnable jar and the lib to the docker project dir", e);
+            }
+        }
+
         final Config config = SmallRyeConfigProviderResolver.instance().getConfig();
 
         boolean vmVersionOutOfDate = isThisGraalVMRCObsolete();
@@ -224,13 +249,15 @@ public class NativeImagePhase implements AppCreationPhase {
             nativeImage = new ArrayList<>();
             //TODO: use an 'official' image
             Collections.addAll(nativeImage, "docker", "run", "-v", outputDir.toAbsolutePath() + ":/project:z", "--rm", "swd847/centos-graal-native-image");
-        } else if(graalvmHome != null) {
-            env.put(GRAALVM_HOME, graalvmHome);
-            nativeImage = Collections.singletonList(graalvmHome + File.separator + "bin" + File.separator + "native-image");
         } else {
-            final String graalvmHome = env.get(GRAALVM_HOME);
-            if (graalvmHome == null) {
-                throw new AppCreatorException("GRAALVM_HOME was not set");
+            String graalvmHome = this.graalvmHome;
+            if (graalvmHome != null) {
+                env.put(GRAALVM_HOME, graalvmHome);
+            } else {
+                graalvmHome = env.get(GRAALVM_HOME);
+                if (graalvmHome == null) {
+                    throw new AppCreatorException("GRAALVM_HOME was not set");
+                }
             }
             nativeImage = Collections.singletonList(graalvmHome + File.separator + "bin" + File.separator + "native-image");
         }
@@ -355,7 +382,7 @@ public class NativeImagePhase implements AppCreationPhase {
             CountDownLatch errorReportLatch = new CountDownLatch(1);
 
             ProcessBuilder pb = new ProcessBuilder(command.toArray(new String[0]));
-            pb.directory(runnerJar.getParent().toFile());
+            pb.directory(outputDir.toFile());
             pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
             pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);
 
@@ -369,6 +396,13 @@ public class NativeImagePhase implements AppCreationPhase {
 
         } catch (Exception e) {
             throw new AppCreatorException("Failed to build native image", e);
+        } finally {
+            if(runnerJarCopied) {
+                IoUtils.recursiveDelete(runnerJar);
+            }
+            if(outputLibDir != null) {
+                IoUtils.recursiveDelete(outputLibDir);
+            }
         }
     }
 

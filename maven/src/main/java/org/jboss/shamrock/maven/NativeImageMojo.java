@@ -150,6 +150,10 @@ public class NativeImageMojo extends AbstractMojo {
                 public Path getRunnerJar() {
                     return runnerJar;
                 }
+                @Override
+                public Path getLibDir() {
+                    return runnerJar.getParent().resolve("lib");
+                }
             })
 
             // add the native phase

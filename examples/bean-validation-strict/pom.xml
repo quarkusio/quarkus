@@ -86,7 +86,7 @@
             <id>native-image</id>
             <activation>
                 <property>
-                    <name>!no-native</name>
+                    <name>native</name>
                 </property>
             </activation>
             <build>

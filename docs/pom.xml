@@ -27,7 +27,6 @@
         <relativePath>../</relativePath>
     </parent>
 
-    <groupId>org.shamrock.documentation</groupId>
     <artifactId>shamrock-documentation</artifactId>
 
     <packaging>pom</packaging>

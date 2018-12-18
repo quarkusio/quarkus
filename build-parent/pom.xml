@@ -56,6 +56,7 @@
       <fakereplace.version>1.0.0.Alpha7</fakereplace.version>
       <jboss-metadata-web.version>11.0.0.Final</jboss-metadata-web.version>
       <maven-core.version>3.5.4</maven-core.version>
+      <maven-resolver.version>1.1.1</maven-resolver.version>
       <guava.version>23.0</guava.version>
       <plexus-utils.version>3.0.24</plexus-utils.version>
       <maven-plugin-annotations.version>3.5.2</maven-plugin-annotations.version>
@@ -146,6 +147,11 @@
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-core-runtime</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>shamrock-creator</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
@@ -676,6 +682,17 @@
             <version>${maven-core.version}</version>
          </dependency>
          <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-resolver-provider</artifactId>
+            <version>${maven-core.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-settings-builder</artifactId>
+            <version>${maven-core.version}</version>
+         </dependency>
+         
+         <dependency>
             <groupId>org.apache.maven.plugin-tools</groupId>
             <artifactId>maven-plugin-annotations</artifactId>
             <version>${maven-plugin-annotations.version}</version>
@@ -686,6 +703,22 @@
                </exclusion>
             </exclusions>
          </dependency>
+         <dependency>
+            <groupId>org.apache.maven.resolver</groupId>
+            <artifactId>maven-resolver-connector-basic</artifactId>
+            <version>${maven-resolver.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.apache.maven.resolver</groupId>
+            <artifactId>maven-resolver-transport-file</artifactId>
+            <version>${maven-resolver.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.apache.maven.resolver</groupId>
+            <artifactId>maven-resolver-transport-http</artifactId>
+            <version>${maven-resolver.version}</version>
+         </dependency>
+         
          <dependency>
             <groupId>org.codehaus.plexus</groupId>
             <artifactId>plexus-utils</artifactId>

@@ -105,7 +105,7 @@ public class IoUtils {
         }
     }
 
-    public static void copy(Path source, Path target) throws IOException {
+    public static Path copy(Path source, Path target) throws IOException {
         if(Files.isDirectory(source)) {
             Files.createDirectories(target);
         } else {
@@ -133,6 +133,7 @@ public class IoUtils {
                         return FileVisitResult.CONTINUE;
                     }
                 });
+        return target;
     }
 
     public static String readFile(Path file) throws IOException {

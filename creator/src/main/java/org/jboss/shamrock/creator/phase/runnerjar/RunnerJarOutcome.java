@@ -28,4 +28,6 @@ import org.jboss.shamrock.creator.AppCreationPhaseOutcome;
 public interface RunnerJarOutcome extends AppCreationPhaseOutcome {
 
     Path getRunnerJar();
+
+    Path getLibDir();
 }

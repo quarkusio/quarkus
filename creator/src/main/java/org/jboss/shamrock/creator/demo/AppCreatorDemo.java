@@ -104,7 +104,10 @@ public class AppCreatorDemo {
         //.setWorkDir(outputDir)
 
         .addPhase(new AugmentPhase())
-        .addPhase(new NativeImagePhase().setOutputDir(outputDir))
+        .addPhase(new NativeImagePhase()
+                .setOutputDir(outputDir)
+                .setDockerBuild(true)
+                )
         .create(userApp);
     }
 

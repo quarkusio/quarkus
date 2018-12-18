@@ -203,6 +203,11 @@ public class AugmentPhase implements AppCreationPhase, AugmentOutcome, RunnerJar
     }
 
     @Override
+    public Path getLibDir() {
+        return libDir;
+    }
+
+    @Override
     public void process(AppCreationContext ctx) throws AppCreatorException {
         outputDir = outputDir == null ? ctx.getWorkPath() : IoUtils.mkdirs(outputDir);
 

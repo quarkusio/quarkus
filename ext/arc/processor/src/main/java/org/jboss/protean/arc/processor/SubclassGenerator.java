@@ -65,6 +65,10 @@ import org.jboss.protean.gizmo.TryBlock;
  */
 public class SubclassGenerator extends AbstractGenerator {
 
+    private static final DotName JAVA_LANG_THROWABLE = DotNames.create(Throwable.class.getName());
+    private static final DotName JAVA_LANG_EXCEPTION = DotNames.create(Exception.class.getName());
+    private static final DotName JAVA_LANG_RUNTIME_EXCEPTION = DotNames.create(RuntimeException.class.getName());
+
     static final String SUBCLASS_SUFFIX = "_Subclass";
 
     private final Predicate<DotName> applicationClassPredicate;
@@ -264,14 +268,40 @@ public class SubclassGenerator extends AbstractGenerator {
                         method.parameters().stream().map(p -> p.name().toString()).collect(Collectors.toList()).toArray(new String[0])),
                 forwardMethod.getThis(), superParamHandles);
         funcBytecode.returnValue(superResult != null ? superResult : funcBytecode.loadNull());
+        for (Type declaredException : method.exceptions()) {
+            forwardMethod.addException(declaredException.name().toString());
+        }
 
         // InvocationContext
         // (java.lang.String) InvocationContextImpl.aroundInvoke(this, methods.get("m1"), params, interceptorChains.get("m1"), forward).proceed()
         TryBlock tryCatch = forwardMethod.tryBlock();
-        // catch (Exception e)
-        CatchBlockCreator exception = tryCatch.addCatch(Exception.class);
-        // throw new RuntimeException(e)
-        exception.throwException(RuntimeException.class, "Error invoking subclass", exception.getCaughtException());
+        // catch exceptions declared on the original method
+        boolean addCatchRuntimeException = true;
+        boolean addCatchException = true;
+        for (Type declaredException : method.exceptions()) {
+            CatchBlockCreator catchDeclaredException = tryCatch.addCatch(declaredException.name().toString());
+            catchDeclaredException.throwException(catchDeclaredException.getCaughtException());
+
+            if (JAVA_LANG_RUNTIME_EXCEPTION.equals(declaredException.name()) ||
+                    JAVA_LANG_THROWABLE.equals(declaredException.name())) {
+                addCatchRuntimeException = false;
+            }
+            if (JAVA_LANG_EXCEPTION.equals(declaredException.name()) ||
+                    JAVA_LANG_THROWABLE.equals(declaredException.name())) {
+                addCatchException = false;
+            }
+        }
+        // catch (RuntimeException e) if not already caught
+        if (addCatchRuntimeException) {
+            CatchBlockCreator catchRuntimeException = tryCatch.addCatch(RuntimeException.class);
+            catchRuntimeException.throwException(catchRuntimeException.getCaughtException());
+        }
+        // now catch the rest (Exception e) if not already caught
+        if (addCatchException) {
+            CatchBlockCreator catchOtherExceptions = tryCatch.addCatch(Exception.class);
+            // and wrap them in a new RuntimeException(e)
+            catchOtherExceptions.throwException(RuntimeException.class, "Error invoking subclass method", catchOtherExceptions.getCaughtException());
+        }
         // InvocationContextImpl.aroundInvoke(this, methods.get("m1"), params, interceptorChains.get("m1"), forward)
         ResultHandle methodIdHandle = tryCatch.load(methodId);
         ResultHandle interceptedMethodHandle = tryCatch.invokeInterfaceMethod(MethodDescriptors.MAP_GET,

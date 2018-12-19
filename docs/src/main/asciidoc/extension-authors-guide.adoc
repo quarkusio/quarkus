@@ -1,56 +1,55 @@
 = Extension Authors Guide
 
-Shamrock extensions consist of two distinct parts, augmentation and runtime. The augmentation part is responsible for
-all metadata processing, such as reading annotation, XML descriptors etc. The output of this augmentation phase
-is recorded bytecode which is responsible for directly instantiating the relevant runtime services.
+Shamrock extensions add a new developer focused behavior to the core offering, and consist of two distinct parts, buildtime augmentation and runtime container. The augmentation part is responsible for all metadata processing, such as reading annotations, XML descriptors etc. The output of this augmentation phase is recorded bytecode which is responsible for directly instantiating the relevant runtime services.
 
-This means that metadata is only processed once at build time, which both saves on startup time, but also on memory
+This means that metadata is only processed once at build time, which both saves on startup time, and also on memory
 usage as the classes etc that are used for processing are not loaded (or even present) in the runtime JVM.
 
 == Three Phases of Bootstrap and Shamrock Philosophy
 
-There are three distinct phases of the bootstrap of a Shamrock app:
+There are three distinct bootstrap phases of a Shamrock app:
 
 Augmentation::
-    This is the first phase, and is done by the build step processors. These processors have access to Jandex annotation
-    information and can parse any descriptors, but should not attempt to load any application classes. The output of these
-    build steps is some recorded bytecode, that is used to actually bootstrap the application at runtime. Depending on the mode
-    this step may be run in a different JVM to the following two steps.
+    This is the first phase, and is done by the <<Build Step Processors>>. These processors have access to Jandex annotation
+    information and can parse any descriptors and read annotations, but should not attempt to load any application classes. The output of these
+    build steps is some recorded bytecode, using an extension of the ObjectWeb ASM project called Gizmo(ext/gizmo), that is used to actually bootstrap the application at runtime. Depending on the `org.jboss.shamrock.annotations.ExecutionTime` value of the `@org.jboss.shamrock.annotations.Record` annotation associated with the build step, 
+    the step may be run in a different JVM based on the following two modes.
 
 Static Init::
     If bytecode is recorded with `@Record(STATIC_INIT)` then it will be executed from a static init method on the main
-    class. This means that for a native image build this code is executed in a normal JVM as part of the image build
-    process. Any retained objects that are produced in this stage will be directly serialized into the native image.
+    class. For a native image build, this code is executed in a normal JVM as part of the image build
+    process, and any retained objects that are produced in this stage will be directly serialized into the native image via an image mapped file.
     This means that if a framework can boot in this phase then it will have its booted state directly written to the
-    image, so the boot code does not need to be executed when the image is started.
+    image, and so the boot code does not need to be executed when the image is started.
 +
-There are some restrictions on what can be done in this stage as Substrate disallows some objects in the native image,
-for example you should not attempt to listen on a port or start threads in this phase.
+There are some restrictions on what can be done in this stage as the Substrate VM disallows some objects in the native image. For example you should not attempt to listen on a port or start threads in this phase.
 +
-In JVM mode there is no real difference between this and runtime init, except that this is always executed first.
+In non-native pure JVM mode, there is no real difference between this and runtime init, except that this is always executed first. This mode benefits from the same build phase augmentation as native mode as the descriptor parsing and annotaiton scanning are done
+at build time, and any associated class/framework dependencies can be removed from the build output jar. In servers like
+WildFly, deployment related classes such as XML parsers hang around for the life of the application, using up valuable
+memory. Shamrock aims to eliminate this, so that the only classes loaded at runtime are actually used at runtime.
++
+As an example, the only reason that a Shamrock application should load an XML parser is if the user is using XML in their
+application. Any XML parsing of configuration should be done in the Augmentation phase.
 
 Runtime Init::
     If bytecode is recorded with `@Record(RUNTIME_INIT)` then it is executed from the application's main method. This code
     will be run on native image boot. In general as little code as possible should be executed in this phase, and should
     be restricted to code that needs to open ports etc.
 
-This means that there are really two different optimizations we are trying to make, for native image we want to boot
-as much as possible in static init, so that the resulting native image will start as fast as possible. When running on
-the JVM we want to push as much code as possible into offline processing, so that as few classes as possible are loaded
-on application start, and so that as little processing as possible is done as part of application startup. In servers like
-WildFly, deployment related classes such as XML parsers hang around for the life of the application, using up valuable
-memory. Shamrock aims to eliminate this, so that the only classes loaded at runtime are actually used at runtime.
+Pushing as much as possible into the `@Record(STATIC_INIT)` phase allows for two different optimizations:
 
-As an example, the only reason that a Shamrock application should load an XML parser is if the user is using XML in their
-application. Any XML parsing of configuration should be done in the Augmentation phase.
+1. In both native image and pure JVM mode this allows the app to start as fast as possible since processing was done during build time. This also minimizes the classes/native code needed in the application to pure runtime related behaviors.
 
-Another advantage of this approach is that it means Substrate can more easily eliminate features that are not used.
-If features are directly initialized via bytecode, Substrate can detect that a method is never called and eliminate
-that method. If config is read at runtime, Substrate cannot reason about the contents of the config and so needs to
-keep all features in case they are required.
+2. Another benefit with native image mode is that is Substrate can more easily eliminate features that are not used. If features are directly initialized via bytecode, Substrate can detect that a method is never called and eliminate
+that method. If config is read at runtime, Substrate cannot reason about the contents of the config and so needs to keep all features in case they are required.
 
 
 == Maven setup
+
+Your extension project should be setup as a multi-module project with two submodules:
+1. A deployment time submodule that handles the build time processing and bytecode recording.
+2. A runtime submodule that contains the runtime behavior that will provide the exentsion behavior in the native image or runtime JVM.
 
 Your runtime artifact should depend on shamrock-core-runtime, and possibly the runtime artifacts of other Shamrock
 modules if you want to use functionality provided by them. You will also need to include the `maven-dependency-plugin`
@@ -135,30 +134,118 @@ ordered. This is not enforced but failure to adhere to this can result in race c
 
 == Configuration
 
-Configuration is done via `@ConfigProperty`, this section is TBD.
+Simple configuration is done via the  https://github.com/eclipse/microprofile-config[MicroProfile Config] `@org.eclipse.microprofile.config.inject.ConfigProperty` annotations.
+
+[source%nowrap,java]
+----
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+public class MetricsProcessor {
+
+    /**
+     * The path to the metrics Servlet
+     */
+    // <1>
+    @ConfigProperty(name = "shamrock.metrics.path", defaultValue = "/metrics")
+    String path;
+----
+<1> Note that there is no @Inject qualifier here. This is a feature of the CDI implementation used by the Shamrock core to process @ConfigProperty only available to the deployment time extension.
+
+The value of these properties is configured in a META-INF/microprofile-config.properties file that conforms to the MicroProfile config format.
+
+An extension of MicroProfile config to allow configuration objects to be injected is available using the `@org.jboss.shamrock.runtime.ConfigGroup` annotation. You place this annotation on the configuration object which in turn uses @ConfigProperty for it's configurable values as follows:
+
+[source%nowrap,java]
+----
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.shamrock.runtime.ConfigGroup;
+
+@ConfigGroup <1>
+public class FileConfig {
+
+    /**
+     * If file logging should be enabled
+     */
+    @ConfigProperty(name = "enable", defaultValue = "true")
+    boolean enable;
+
+    /**
+     * The log format
+     */
+    @ConfigProperty(name = "format", defaultValue = "%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c{1.}] (%t) %s%e%n")
+    String format;
+
+    /**
+     * The file log level
+     */
+    @ConfigProperty(name = "level", defaultValue = "ALL")
+    String level;
+
+    /**
+     * The file logging log level
+     */
+    @ConfigProperty(name = "path", defaultValue = "shamrock.log")
+    String path;
+
+}
+
+public class LoggingProcessor {
+...
+    /**
+     * File logging config
+     */
+    <2>
+    @ConfigProperty(name = "shamrock.log.file")
+    FileConfig file;
+}
+----
+<1> The FileConfig object is annotated with @ConfigGroup to indcate that this is an aggregate
+configuration object containing a collection of configurable properties.
+<2> Here the LoggingProcessor injects a FileConfig instance using the MicroProfile Config annotation with the property name "shamrock.log.file". 
+
+A corresponding META-INF/microprofile-config.properties file for the FileConfig values could be:
+[source%nowrap,properties]
+----
+shamrock.log.file.enable=true
+shamrock.log.file.level=DEBUG
+shamrock.log.file.path=/tmp/debug.log
+----
+
+The full property name in the configuraiton file is the property name used to inject the @ConfigGroup annotated object + the local property names in the configuration object.
+
+[WARNING]
+====
+The support for @ConfigProperty in deployment time extensions may change in the future.
+====
+
+[NOTE]
+====
+Relationship between @GroupConfig and generated META-INF/shamrock-descriptions.properties needed?
+====
 
 == Bytecode Recording
 
-One of the main outputs of the build process is recorded bytecode. This bytecode actually sets up the runtime environment,
-for example in order to start Undertow the resulting application will have some bytecode that directly registers all
+One of the main outputs of the build process is recorded bytecode. This bytecode actually sets up the runtime environment. For example, in order to start Undertow, the resulting application will have some bytecode that directly registers all
 Servlet instances and then starts Undertow.
 
-As writing bytecode directly is incredibly complex this is instead done via bytecode recorders. At deployment time invocations
+As writing bytecode directly is incredibly complex, this is instead done via bytecode recorders. At deployment time, invocations
 are made on proxy instances of template objects that contain the actual runtime logic, and these invocations are recorded,
 including the value of method parameters. Bytecode is then created to do these same invocations on the actual template
 object at runtime.
 
-This is done by adding a `@Record` annotation to a `@BuildStep` method, and injecting a `@Template` annotated class
-from the runtime module. A proxy of the template will be injected into the method, and any method invocations that are
-made will be recorded, and will be run at application startup.
+In more detail, a processor class from the extensions deployment module gathers the configuration
+information within a @BuildStep` method that is also annotated with a `@Record(STATIC_INIT)` or  `@Record(RUNTIME_INIT)` annotation along with injection of a `@Template` annotated class
+from the runtime module. A class annotated with `@Template` is known as a template because it
+provides a template of methods to configure a runtime service. The value of template that is
+injected into the deployment class is a proxy of the template, and any method invocations that are made will be recorded, and output as bytecode that will be run at application startup.
 
 Methods on a template can return a value, which must be proxiable (if you want to return a non-proxiable item wrap it
 in `org.jboss.shamrock.runtime.RuntimeValue`). These proxies may not be invoked directly, however they can be passed
 into other template methods. This can be any template method, including from other `@Record` methods, so a common pattern
 is to produce `BuildItem` instances that wrap the results of these template invocations.
 
-For instance in order to make arbitrary changes to the Servlet deployment Undertow has a `ServletExtensionBuildItem`,
-that is a `MultiBuildItem` that wraps a `ServletExtension` instance. I can return a `ServletExtension` from a template
+For instance, in order to make arbitrary changes to a Servlet deployment Undertow has a `ServletExtensionBuildItem`,
+which is a `MultiBuildItem` that wraps a `ServletExtension` instance. I can return a `ServletExtension` from a template
 in another module, and Undertow will consume it and pass it into the template method that starts Undertow.
 
 At runtime the bytecode will be invoked in the order it is generated. This means that build step dependencies implicitly
@@ -169,7 +256,7 @@ control the order that generated bytecode is run. In the example above we know t
 === RecorderContext
 
 `org.jboss.shamrock.deployment.recording.RecorderContext` provides some convenience methods to enhance bytecode recording,
-this includes the ability to register creation functions for classes without a no-args constructor, to register an object
+this includes the ability to register creation functions for classes without no-arg constructors, to register an object
 substitution (basically a transformer from a non-serializable object to a serializable one and vice versa), and to create
 a class proxy. This interface can be directly injected as a method parameter into any `@Recorder` method.
 
@@ -184,13 +271,13 @@ TODO: config integration
 == Testing Extensions
 
 Testing of extensions should be done with the `org.jboss.shamrock.test.ShamrockUnitTest` runner. This runner allows
-for Arquillian-style tests that test specific functionalities. It is not intended for testing user applications, this
+for Arquillian-style tests that test specific functionalities. It is not intended for testing user applications, as this
 should be done via `org.jboss.shamrock.test.ShamrockTest`. The main difference between these test runners is that
 `ShamrockTest` simply boots the application once at the start of the run, while `ShamrockUnitTest` deploys a custom
 Shamrock application for each test class.
 
-These tests should be placed in the augmentation module, if additional Shamrock modules are required for testing
-their augment modules should also be added as test scoped dependencies.
+These tests should be placed in the deployment module, if additional Shamrock modules are required for testing
+their deployment modules should also be added as test scoped dependencies.
 
 An example test class may look like:
 

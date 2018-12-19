@@ -62,6 +62,7 @@ import org.hibernate.jpa.spi.IdentifierGeneratorStrategyProvider;
 import org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorBuilderImpl;
 import org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorBuilderImpl;
 import org.hibernate.service.internal.AbstractServiceRegistryImpl;
+import org.infinispan.protean.hibernate.cache.InfinispanRegionFactory;
 import org.jboss.shamrock.jpa.runtime.recording.RecordableBootstrap;
 import org.jboss.shamrock.jpa.runtime.recording.RecordedState;
 import org.jboss.shamrock.jpa.runtime.recording.RecordingDialectFactory;
@@ -241,6 +242,9 @@ public class FastBootMetadataBuilder {
                 }
             }
         }
+
+        mergedSettings.configurationValues.put( org.hibernate.cfg.AvailableSettings.CACHE_REGION_FACTORY, InfinispanRegionFactory.class.getName());
+
         return mergedSettings;
     }
 

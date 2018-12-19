@@ -57,11 +57,7 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractorInitiator;
 import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 import org.jboss.shamrock.jpa.runtime.recording.RecordedState;
-import org.jboss.shamrock.jpa.runtime.service.CfgXmlAccessServiceInitiatorProtean;
-import org.jboss.shamrock.jpa.runtime.service.DisabledJMXInitiator;
-import org.jboss.shamrock.jpa.runtime.service.FlatClassLoaderService;
-import org.jboss.shamrock.jpa.runtime.service.ProteanJdbcEnvironmentInitiator;
-import org.jboss.shamrock.jpa.runtime.service.ProteanJtaPlatformResolver;
+import org.jboss.shamrock.jpa.runtime.service.*;
 
 /**
  * Helps to instantiate a ServiceRegistryBuilder from a previous state. This
@@ -219,7 +215,8 @@ public class PreconfiguredServiceRegistryBuilder {
 
         serviceInitiators.add(SessionFactoryServiceRegistryFactoryInitiator.INSTANCE);
 
-        serviceInitiators.add(RegionFactoryInitiator.INSTANCE);
+        // Replaces RegionFactoryInitiator.INSTANCE
+        serviceInitiators.add(ProteanRegionFactoryInitiator.INSTANCE);
 
         serviceInitiators.add(TransactionCoordinatorBuilderInitiator.INSTANCE);
 

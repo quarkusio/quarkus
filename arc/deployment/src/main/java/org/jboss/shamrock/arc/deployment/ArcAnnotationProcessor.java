@@ -41,6 +41,7 @@ import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 import org.jboss.protean.arc.ArcContainer;
+import org.jboss.protean.arc.processor.BeanDefiningAnnotation;
 import org.jboss.protean.arc.processor.BeanProcessor;
 import org.jboss.protean.arc.processor.BeanProcessor.Builder;
 import org.jboss.protean.arc.processor.ReflectionRegistration;
@@ -154,7 +155,7 @@ public class ArcAnnotationProcessor {
         });
         builder.setIndex(index);
         builder.setAdditionalBeanDefiningAnnotations(additionalBeanDefiningAnnotations.stream()
-                .map(BeanDefiningAnnotationBuildItem::getName)
+                .map((s) -> new BeanDefiningAnnotation(s.getName(), s.getDefaultScope()))
                 .collect(Collectors.toList()));
         builder.setSharedAnnotationLiterals(false);
         builder.addResourceAnnotations(resourceAnnotations.stream()

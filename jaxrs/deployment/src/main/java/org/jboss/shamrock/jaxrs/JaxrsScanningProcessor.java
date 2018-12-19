@@ -32,8 +32,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import javax.inject.Singleton;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.container.DynamicFeature;
@@ -62,6 +64,7 @@ import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.deployment.builditem.BeanContainerBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
+import org.jboss.shamrock.deployment.builditem.ProxyUnwrapperBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
@@ -124,6 +127,18 @@ public class JaxrsScanningProcessor {
             new ProviderDiscoverer(POST, true, true),
             new ProviderDiscoverer(PUT, true, false)
     };
+    private static final DotName SINGLETON_SCOPE = DotName.createSimple(Singleton.class.getName());
+
+    /**
+     * If this is true then JAX-RS will use only a single instance of a resource class to service all requests.
+     *
+     * If this is false then it will create a new instance of the resource per request.
+     *
+     * If the resource class has an explicit CDI scope annotation then the value of this annotation will always
+     * be used to control the lifecycle of the resource class.
+     */
+    @ConfigProperty(name = "shamrock.jaxrs.singleton-resources", defaultValue = "true")
+    boolean singletonResources;
 
     /**
      * Enable gzip support for JAX-RS services.
@@ -283,13 +298,13 @@ public class JaxrsScanningProcessor {
 
     @BuildStep
     void registerProviders(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<ServletInitParamBuildItem> servletContextParams,
-            CombinedIndexBuildItem combinedIndexBuildItem,
-            List<JaxrsProviderBuildItem> contributedProviderBuildItems) throws Exception {
+                           BuildProducer<ServletInitParamBuildItem> servletContextParams,
+                           CombinedIndexBuildItem combinedIndexBuildItem,
+                           List<JaxrsProviderBuildItem> contributedProviderBuildItems) throws Exception {
         IndexView index = combinedIndexBuildItem.getIndex();
 
         Set<String> contributedProviders = new HashSet<>();
-        for ( JaxrsProviderBuildItem contributedProviderBuildItem : contributedProviderBuildItems ) {
+        for (JaxrsProviderBuildItem contributedProviderBuildItem : contributedProviderBuildItems) {
             contributedProviders.add(contributedProviderBuildItem.getName());
         }
 
@@ -340,13 +355,17 @@ public class JaxrsScanningProcessor {
 
     @Record(STATIC_INIT)
     @BuildStep
-    void integrate(JaxrsTemplate template, BeanContainerBuildItem beanContainerBuildItem) {
-        template.setupIntegration(beanContainerBuildItem.getValue());
+    void integrate(JaxrsTemplate template, BeanContainerBuildItem beanContainerBuildItem, List<ProxyUnwrapperBuildItem> proxyUnwrappers) {
+        List<Function<Object, Object>> unwrappers = new ArrayList<>();
+        for (ProxyUnwrapperBuildItem i : proxyUnwrappers) {
+            unwrappers.add(i.getUnwrapper());
+        }
+        template.setupIntegration(beanContainerBuildItem.getValue(), unwrappers);
     }
 
     @BuildStep
     List<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations() {
-        return Collections.singletonList(new BeanDefiningAnnotationBuildItem(PATH));
+        return Collections.singletonList(new BeanDefiningAnnotationBuildItem(PATH, singletonResources ? SINGLETON_SCOPE : null));
     }
 
     private Set<String> getAvailableProviders() throws Exception {
@@ -375,8 +394,8 @@ public class JaxrsScanningProcessor {
     }
 
     private static void categorizeProviders(Set<String> availableProviders, MediaTypeMap<String> categorizedReaders,
-            MediaTypeMap<String> categorizedWriters, MediaTypeMap<String> categorizedContextResolvers,
-            Set<String> otherProviders) {
+                                            MediaTypeMap<String> categorizedWriters, MediaTypeMap<String> categorizedContextResolvers,
+                                            Set<String> otherProviders) {
         for (String availableProvider : availableProviders) {
             try {
                 Class<?> providerClass = Class.forName(availableProvider);
@@ -421,8 +440,8 @@ public class JaxrsScanningProcessor {
     }
 
     private static boolean collectDeclaredProviders(Set<String> providersToRegister,
-            MediaTypeMap<String> categorizedReaders, MediaTypeMap<String> categorizedWriters,
-            MediaTypeMap<String> categorizedContextResolvers, IndexView index) {
+                                                    MediaTypeMap<String> categorizedReaders, MediaTypeMap<String> categorizedWriters,
+                                                    MediaTypeMap<String> categorizedContextResolvers, IndexView index) {
         for (ProviderDiscoverer providerDiscoverer : PROVIDER_DISCOVERERS) {
             Collection<AnnotationInstance> getMethods = index.getAnnotations(providerDiscoverer.getMethodAnnotation());
             for (AnnotationInstance getMethod : getMethods) {
@@ -447,16 +466,16 @@ public class JaxrsScanningProcessor {
     }
 
     private static boolean collectDeclaredProvidersForMethodAndMediaTypeAnnotation(Set<String> providersToRegister,
-            MediaTypeMap<String> categorizedProviders, MethodInfo methodTarget, DotName mediaTypeAnnotation,
-            boolean defaultsToAll) {
+                                                                                   MediaTypeMap<String> categorizedProviders, MethodInfo methodTarget, DotName mediaTypeAnnotation,
+                                                                                   boolean defaultsToAll) {
         AnnotationInstance mediaTypeAnnotationInstance = methodTarget.annotation(mediaTypeAnnotation);
         if (mediaTypeAnnotationInstance == null) {
             // let's consider the class
             Collection<AnnotationInstance> classAnnotations = methodTarget.declaringClass().classAnnotations();
             for (AnnotationInstance classAnnotation : classAnnotations) {
                 if (mediaTypeAnnotation.equals(classAnnotation.name())) {
-                    if( collectDeclaredProvidersForMediaTypeAnnotationInstance(providersToRegister, categorizedProviders,
-                            classAnnotation) ) {
+                    if (collectDeclaredProvidersForMediaTypeAnnotationInstance(providersToRegister, categorizedProviders,
+                            classAnnotation)) {
                         return true;
                     }
                     return false;
@@ -465,7 +484,7 @@ public class JaxrsScanningProcessor {
             return defaultsToAll;
         }
         if (collectDeclaredProvidersForMediaTypeAnnotationInstance(providersToRegister, categorizedProviders,
-                mediaTypeAnnotationInstance) ) {
+                mediaTypeAnnotationInstance)) {
             return true;
         }
 
@@ -473,7 +492,7 @@ public class JaxrsScanningProcessor {
     }
 
     private static boolean collectDeclaredProvidersForMediaTypeAnnotationInstance(Set<String> providersToRegister,
-            MediaTypeMap<String> categorizedProviders, AnnotationInstance mediaTypeAnnotationInstance) {
+                                                                                  MediaTypeMap<String> categorizedProviders, AnnotationInstance mediaTypeAnnotationInstance) {
         for (String media : mediaTypeAnnotationInstance.value().asStringArray()) {
             MediaType mediaType = MediaType.valueOf(media);
             if (MediaType.WILDCARD_TYPE.equals(mediaType)) {
@@ -494,7 +513,7 @@ public class JaxrsScanningProcessor {
         private final boolean noProducesDefaultsToAll;
 
         private ProviderDiscoverer(DotName methodAnnotation, boolean noConsumesDefaultsToAll,
-                boolean noProducesDefaultsToAll) {
+                                   boolean noProducesDefaultsToAll) {
             this.methodAnnotation = methodAnnotation;
             this.noConsumesDefaultsToAll = noConsumesDefaultsToAll;
             this.noProducesDefaultsToAll = noProducesDefaultsToAll;

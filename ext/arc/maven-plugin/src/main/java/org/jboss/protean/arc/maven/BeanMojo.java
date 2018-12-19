@@ -46,6 +46,7 @@ import org.apache.maven.project.MavenProject;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
+import org.jboss.protean.arc.processor.BeanDefiningAnnotation;
 import org.jboss.protean.arc.processor.BeanProcessor;
 import org.jboss.protean.arc.processor.ResourceOutput;
 
@@ -83,7 +84,7 @@ public class BeanMojo extends AbstractMojo {
             throw new MojoFailureException("Failed to create index", e);
         }
 
-        BeanProcessor beanProcessor = BeanProcessor.builder().setIndex(index).setAdditionalBeanDefiningAnnotations(getAdditionalBeanDefiningAnnotations())
+        BeanProcessor beanProcessor = BeanProcessor.builder().setIndex(index).setAdditionalBeanDefiningAnnotations(getAdditionalBeanDefiningAnnotations().stream().map((s) -> new BeanDefiningAnnotation(s, null)).collect(Collectors.toSet()))
                 .setOutput(new ResourceOutput() {
 
                     @Override

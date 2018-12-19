@@ -18,6 +18,7 @@ package org.jboss.shamrock.example.rest;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -37,9 +38,17 @@ public class TestResource {
     @Context
     HttpServletRequest request;
 
+    private final AtomicInteger count = new AtomicInteger(0);
+
     @GET
     public String getTest() {
         return "TEST";
+    }
+
+    @GET
+    @Path("/count")
+    public int count() {
+        return count.incrementAndGet();
     }
 
     @GET

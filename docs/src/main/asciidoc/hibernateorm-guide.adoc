@@ -67,17 +67,13 @@ The dialect will be selected based on the JDBC driver.
 
 You can then happily inject your `EntityManager`
 
-[WARNING]
---
-Discuss transaction boundaries
---
-
 [source,java]
 --
+@ApplicationScoped
 public class SantaClausService {
     @Inject private EntityManager em; <1>
-    @Inject UserTransaction transaction; <2>
 
+    @Transactional <2>
     public void createGift(String giftDescription) {
         Gift gift = new Gift();
         gift.setName(giftDescription);
@@ -87,7 +83,7 @@ public class SantaClausService {
 --
 
 <1> Inject your entity manager and have fun
-<2> You can also inject transaction objects
+<2> Mark your CDI bean method as `@Transactional` and the EntityManager will enlist and flush at commit and the `EntityManager` will enlist and flush at commit.
 
 === Properties to refine your Hibernate ORM configuration
 
@@ -214,17 +210,13 @@ The dialect will be selected based on the JDBC driver.
 
 You can then happily inject your `EntityManager`
 
-[WARNING]
---
-Discuss transaction boundaries
---
-
 [source,java]
 --
+@ApplicationScoped
 public class SantaClausService {
     @Inject private EntityManager em; <1>
-    @Inject UserTransaction transaction; <2>
 
+    @Transactional <2>
     public void createGift(String giftDescription) {
         Gift gift = new Gift();
         gift.setName(giftDescription);
@@ -234,6 +226,6 @@ public class SantaClausService {
 --
 
 <1> Inject your entity manager and have fun
-<2> You can also inject transaction objects
+<2> Mark your CDI bean method as `@Transactional` and the EntityManager will enlist and flush at commit and the `EntityManager` will enlist and flush at commit.
 
 

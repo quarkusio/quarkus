@@ -18,5 +18,7 @@ public class JPAConfigurationlessTest {
     public void testInjection() {
         String result = URLTester.relative("jpa-test").invokeURL().asString();
         Assert.assertThat(result.contains("jpa=OK"), is(true));
+        result = URLTester.relative("jpa-test/user-tx").invokeURL().asString();
+        Assert.assertThat(result.contains("jpa=OK"), is(true));
     }
 }

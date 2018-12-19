@@ -60,7 +60,7 @@ Finally add the relevant configuration properties in `{config-file}`.
 
 [source,properties]
 --
-shamrock.datasource.url: jdbc:postgresql://localhost:5432/jpa-configurationless
+shamrock.datasource.url: jdbc:postgresql://localhost:5432/mydatabase
 shamrock.datasource.driver: org.postgresql.Driver
 shamrock.datasource.username: sarah
 shamrock.datasource.password: connor
@@ -270,5 +270,5 @@ Start the database first.
 
 [source]
 --
-docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name postgres-protean-jpa -e POSTGRES_USER=jpa-configurationless -e POSTGRES_PASSWORD=jpa-configurationless -e POSTGRES_DB=jpa-configurationless -p 5431:5432 postgres:10.5
+docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name postgres-protean-jpa -e POSTGRES_USER=jpa-integrationtests -e POSTGRES_PASSWORD=jpa-integrationtests -e POSTGRES_DB=jpa-integrationtests -p 5431:5432 postgres:10.5
 --

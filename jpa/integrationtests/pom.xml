@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-jpa-configurationless-tests</artifactId>
+    <artifactId>shamrock-jpa-integration-tests</artifactId>
 
     <dependencies>
         <dependency>
@@ -124,7 +124,7 @@
                 </property>
             </activation>
             <properties>
-                <postgres.url>jdbc:postgresql://localhost:5431/jpa-configurationless</postgres.url>
+                <postgres.url>jdbc:postgresql://localhost:5431/jpa-integrationtests</postgres.url>
             </properties>
             <build>
                 <plugins>
@@ -139,9 +139,9 @@
                                     <alias>postgresql</alias>
                                     <run>
                                         <env>
-                                            <POSTGRES_USER>jpa-configurationless</POSTGRES_USER>
-                                            <POSTGRES_PASSWORD>jpa-configurationless</POSTGRES_PASSWORD>
-                                            <POSTGRES_DB>jpa-configurationless</POSTGRES_DB>
+                                            <POSTGRES_USER>jpa-integrationtests</POSTGRES_USER>
+                                            <POSTGRES_PASSWORD>jpa-integrationtests</POSTGRES_PASSWORD>
+                                            <POSTGRES_DB>jpa-integrationtests</POSTGRES_DB>
                                         </env>
                                         <ports>
                                             <port>5431:5432</port>

@@ -3,23 +3,27 @@
 :config-file: microprofile-config.properties
 :toc:
 
-== Documentation
+== Using Hibernate ORM and JPA to persist your data
 
-=== JPA with no `persistence.xml`
+Hibernate ORM is the de facto JPA implementation and offers you the full breath of a Object Relational Mapper.
+It works beautifully in {project-name}.
 
-In {project-name}, you can set a `META-INF/persistence.xml` to set your JPA configuration.
-This is useful for:
+=== Setting up and configuring Hibernate ORM without `persistence.xml` (recommended)
 
-* migrating existing code
-* when you have relatively complex settings requiring the full flexibility of the configuration
-
-But often, you simply need one _persistence unit_ with few configuration options.
-In that mode, you can simply:
+More often than not, you need one _persistence unit_ with few configuration options.
+In {project-name}, you just need to:
 
 * add your settings in `{config-file}`
 * annotate your entities with `@Entity` and friends
 
-In your `pom.xml`, add the following dependencies
+and we make some opinionated choices and educated guesses.
+
+In your `pom.xml`, add the following dependencies:
+
+* JPA extension
+* Agroal extension (the database connection pool)
+* your JDBC driver extension (`jdbc-postgresql-deployment`, `jdbc-h2-deployment`, `jdbc-mariadb-deployment`, ...)
+* and generic {project-name} extensions: CDI (arc)
 
 [source,xml]
 --
@@ -52,13 +56,6 @@ In your `pom.xml`, add the following dependencies
 </dependencies>
 --
 
-You need the following extensions:
-
-* JPA
-* Agroal (the database connection pool)
-* your JDBC driver extension (`jdbc-postgresql-deployment`, `jdbc-h2-deployment`, `jdbc-mariadb-deployment`, ...)
-* and generic {project-name} extensions: CDI (arc)
-
 Finally add the relevant configuration properties in `{config-file}`.
 
 [source,properties]
@@ -72,14 +69,43 @@ shamrock.datasource.password: connor
 A `EntityManagerFactory` will be created based on {project-name} `datasource` configuration as long as the Hibernate ORM extension is declared in your `pom.xml`.
 The dialect will be selected based on the JDBC driver.
 
+You can then happily inject your `EntityManager`
+
+[WARNING]
+--
+Discuss transaction boundaries
+--
+
+[source,java]
+--
+public class SantaClausService {
+    @Inject private EntityManager em; <1>
+    @Inject UserTransaction transaction; <2>
+
+    public void createGift(String giftDescription) {
+        Gift gift = new Gift();
+        gift.setName(giftDescription);
+        em.persist(gift);
+    }
+}
+--
+
+<1> Inject your entity manager and have fun
+<2> You can also inject transaction objects
+
+==== Properties to refine your Hibernate ORM configuration
 
 There are optional properties useful to refine your `EntityManagerFactory` or guide guesses of {project-name}.
 
-`shamrock.hibernate.dialect`:: (e.g. `org.hibernate.dialect.PostgreSQL95Dialect`) Class name of the Hibernate ORM dialect.
+`shamrock.hibernate.dialect`:: (e.g. `org.hibernate.dialect.PostgreSQL95Dialect`).
+Class name of the Hibernate ORM dialect.
 
 `shamrock.hibernate.schema-generation.database.action`::
-(e.g. `drop-and-create` which is awesome in development mode) Select whether the database schema is generated or not.
+(e.g. `drop-and-create` which is awesome in development mode). Select whether the database schema is generated or not.
 Options are `none`, `create`, `drop-and-create`, `drop`
+
+`shamrock.hibernate.show_sql`:: (defaults to `false`).
+Show SQL logs and format them nicely.
 
 [NOTE]
 --
@@ -88,18 +114,155 @@ Do not mix `persistence.xml` and `shamrock.hibernate.*` properties in `{config-f
 Make up your mind on which approach you want to use
 --
 
+=== Setting up and configuring Hibernate ORM with a `persistence.xml`
+
+
+Alternatively, you can set a `META-INF/persistence.xml` to setup Hibernate ORM.
+This is useful or:
+
+* migrating existing code
+* when you have relatively complex settings requiring the full flexibility of the configuration
+* or if you like it the good old way
+
+[NOTE]
+--
+If you have a `persistence.xml`, then you cannot use the `shamrock.hibernate.*` properties
+and only persistence units defined in `persistence.xml` will be taken into account.
+--
+
+In your `pom.xml`, add the following dependencies:
+
+* JPA extension
+* Agroal extension (the database connection pool)
+* your JDBC driver extension (`jdbc-postgresql-deployment`, `jdbc-h2-deployment`, `jdbc-mariadb-deployment`, ...)
+* and generic {project-name} extensions: CDI (arc)
+
+[source,xml]
+--
+<dependencies>
+    <!-- Hibernate ORM specific dependencies -->
+    <dependency>
+        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>shamrock-jpa-deployment</artifactId>
+        <scope>provided</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>shamrock-agroal-deployment</artifactId>
+        <scope>provided</scope>
+    </dependency>
+
+    <!-- JDBC driver dependencies -->
+    <dependency>
+        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>jdbc-postgresql-deployment</artifactId>
+        <scope>provided</scope>
+    </dependency>
+
+    <!-- General Protean dependencies -->
+    <dependency>
+        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>shamrock-arc-deployment</artifactId>
+        <scope>provided</scope>
+    </dependency>
+</dependencies>
+--
+
+Then add your `persistence.xml` in `META-INF`
+
+[source,xml]
+--
+<persistence xmlns="http://xmlns.jcp.org/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence
+             http://xmlns.jcp.org/xml/ns/persistence/persistence_2_1.xsd"
+             version="2.1">
+
+    <persistence-unit name="CustomerPU" transaction-type="JTA">
+
+        <description>My customer entities</description>
+
+        <properties>
+            <!-- Connection specific -->
+            <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQL95Dialect"/>
+
+            <property name="hibernate.show_sql" value="true"/>
+            <property name="hibernate.format_sql" value="true"/>
+
+            <!--
+                Optimistically create the tables;
+                will cause background errors being logged if they already exist,
+                but is practical to retain existing data across runs (or create as needed) -->
+            <property name="javax.persistence.schema-generation.database.action" value="drop-and-create"/>
+
+            <property name="javax.persistence.validation.mode" value="NONE"/>
+        </properties>
+
+    </persistence-unit>
+</persistence>
+--
+
+A `EntityManagerFactory` will be created based on {project-name} `datasource` configuration as long as the Hibernate ORM extension is declared in your `pom.xml`.
+The dialect will be selected based on the JDBC driver.
+
+You can then happily inject your `EntityManager`
+
+[WARNING]
+--
+Discuss transaction boundaries
+--
+
+[source,java]
+--
+public class SantaClausService {
+    @Inject private EntityManager em; <1>
+    @Inject UserTransaction transaction; <2>
+
+    public void createGift(String giftDescription) {
+        Gift gift = new Gift();
+        gift.setName(giftDescription);
+        em.persist(gift);
+    }
+}
+--
+
+<1> Inject your entity manager and have fun
+<2> You can also inject transaction objects
+
 == Design questions
 
 * Is it appropriate to prioritize `persistence.xml` when it is present and ignore otherwise (i.e. disable automatic PU generation when `persistence.xml` is there
+** [SOLVED] we go for not allowing both
 * Is it appropriate to select `JTA` as the transaction type strategy
-* Is is appropriate to detect the dialect from the driver
+* Is it appropriate to detect the dialect from the driver
+** [SOLVED] we start from that and can add runtime refinement of the dialect based on JDBC metadata and enlist all dialects of a family to avoid DCE
 * Which properties are the most useful for Hibernate ORM?
+** see section below
 * Do we have a pass through of properties under something like `shamrock.hibernate`
+** [SOLVED] we start with that
 * which prefix do we want? `shamrock.hibernate`, `hibernate`, `jpa` etc
 ** what about `javax.persistence properties`?
-** I'm leaning on supporting but not advertizing classical JPA and Hibernate ORM properties (no prefix).
+** [SOLVED] we start with `shamrock.hibernate`
 
+=== List of properties
 
+I am doing a first pass on the properties and I want to propose the following properties (and nothing else):
+
+* `hibernate.dialect`
+* `hibernate.show_sql` (and then `hibernate.format_sql` ?)
+    * should show_sql not do System.out but rather a proper log
+* `javax.persistence.schema-generation.database.action`
+
+Anything else?
+
+I would force the following:
+
+* `javax.persistence.sharedCache.mode` to yes
+*  `javax.persistence.sql-load-script-source` set to a default file name
+
+Questions do we need:
+
+* `javax.persistence.transactionType`
 
 == How to run tests from the IDE
 

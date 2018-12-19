@@ -126,7 +126,7 @@ public class Extension {
         return list;
     }
 
-    public Dependency toDependency() {
+    public Dependency toDependency(boolean stripVersion) {
         Dependency dependency = new Dependency();
         dependency.setGroupId(groupId);
         dependency.setArtifactId(artifactId);
@@ -136,7 +136,7 @@ public class Extension {
         if (classifier != null && !classifier.isEmpty()) {
             dependency.setClassifier(classifier);
         }
-        if (version != null  && ! version.isEmpty()) {
+        if (version != null  && ! version.isEmpty()  && ! stripVersion) {
             dependency.setVersion(version);
         }
         return dependency;

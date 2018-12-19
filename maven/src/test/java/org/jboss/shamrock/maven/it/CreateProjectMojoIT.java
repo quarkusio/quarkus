@@ -3,20 +3,21 @@ package org.jboss.shamrock.maven.it;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import org.apache.commons.io.FileUtils;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.shared.invoker.*;
+import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.jboss.shamrock.maven.CreateProjectMojo;
 import org.jboss.shamrock.maven.it.verifier.RunningInvoker;
+import org.jboss.shamrock.maven.utilities.MojoUtils;
 import org.junit.After;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.io.*;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -65,6 +66,32 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(index).contains(VERSION);
 
         assertThat(new File(testDir, "src/main/docker/Dockerfile")).isFile();
+
+        Model model = load(testDir);
+        assertThat(model.getDependencyManagement().getDependencies().stream().anyMatch(d ->
+                d.getArtifactId().equalsIgnoreCase(MojoUtils.get("bom-artifactId"))
+                        && d.getVersion().equalsIgnoreCase("${shamrock.version}")
+                        && d.getScope().equalsIgnoreCase("import")
+                        && d.getType().equalsIgnoreCase("pom"))).isTrue();
+
+        assertThat(model.getDependencies().stream().anyMatch(d ->
+                d.getArtifactId().equalsIgnoreCase("shamrock-jaxrs-deployment")
+                        && d.getVersion() == null)).isTrue();
+    }
+
+    private Model load(File directory) {
+        File pom = new File(directory, "pom.xml");
+        assertThat(pom).isFile();
+        MavenXpp3Reader reader = new MavenXpp3Reader();
+        try (FileReader fr = new FileReader(pom)) {
+            return reader.read(fr);
+        } catch (FileNotFoundException e) {
+            throw new IllegalArgumentException("Cannot find the pom.xml file", e);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Cannot read the pom.xml file", e);
+        } catch (XmlPullParserException e) {
+            throw new IllegalArgumentException("Malformed pom.xml file", e);
+        }
     }
 
     @Test
@@ -80,6 +107,17 @@ public class CreateProjectMojoIT extends MojoTestBase {
 
         assertThat(new File(testDir, "src/main/resources/META-INF/microprofile-config.properties")).doesNotExist();
         assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).doesNotExist();
+
+        assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8")).containsIgnoringCase(MojoUtils.get("bom-artifactId"));
+
+        Model model = load(testDir);
+        assertThat(model.getDependencyManagement().getDependencies().stream().anyMatch(d ->
+                d.getArtifactId().equalsIgnoreCase(MojoUtils.get("bom-artifactId"))
+                        && d.getVersion().equalsIgnoreCase("${shamrock.version}")
+                        && d.getScope().equalsIgnoreCase("import")
+                        && d.getType().equalsIgnoreCase("pom"))).isTrue();
+
+        assertThat(model.getDependencies()).isEmpty();
     }
 
     @Test
@@ -134,6 +172,23 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(new File(testDir, "src/main/java/org/acme/ShamrockApplication.java")).isFile();
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
                 .contains("shamrock-jaxrs-deployment", "shamrock-metrics-deployment").doesNotContain("missing");
+
+        Model model = load(testDir);
+        assertThat(model.getDependencyManagement().getDependencies().stream().anyMatch(d ->
+                d.getArtifactId().equalsIgnoreCase(MojoUtils.get("bom-artifactId"))
+                        && d.getVersion().equalsIgnoreCase("${shamrock.version}")
+                        && d.getScope().equalsIgnoreCase("import")
+                        && d.getType().equalsIgnoreCase("pom"))).isTrue();
+
+        System.out.println(model.getDependencies().stream().map(d -> d.getManagementKey() + "[" + d.getVersion() + "]").collect(Collectors.toList()));
+
+        assertThat(model.getDependencies().stream().anyMatch(d ->
+                d.getArtifactId().equalsIgnoreCase("shamrock-jaxrs-deployment")
+                        && d.getVersion() == null)).isTrue();
+
+        assertThat(model.getDependencies().stream().anyMatch(d ->
+                d.getArtifactId().equalsIgnoreCase("shamrock-metrics-deployment")
+                        && d.getVersion() == null)).isTrue();
     }
 
     @Test
@@ -152,6 +207,21 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(new File(testDir, "src/main/java/org/acme/ShamrockApplication.java")).isFile();
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
                 .contains("commons-io");
+
+        Model model = load(testDir);
+        assertThat(model.getDependencyManagement().getDependencies().stream().anyMatch(d ->
+                d.getArtifactId().equalsIgnoreCase(MojoUtils.get("bom-artifactId"))
+                        && d.getVersion().equalsIgnoreCase("${shamrock.version}")
+                        && d.getScope().equalsIgnoreCase("import")
+                        && d.getType().equalsIgnoreCase("pom"))).isTrue();
+
+        assertThat(model.getDependencies().stream().anyMatch(d ->
+                d.getArtifactId().equalsIgnoreCase("shamrock-jaxrs-deployment")
+                        && d.getVersion() == null)).isTrue();
+
+        assertThat(model.getDependencies().stream().anyMatch(d ->
+                d.getArtifactId().equalsIgnoreCase("commons-io")
+                        && d.getVersion().equalsIgnoreCase("2.5"))).isTrue();
     }
 
     @Test

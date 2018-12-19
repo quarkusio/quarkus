@@ -42,11 +42,13 @@ import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Default;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
+import javax.enterprise.inject.spi.CDI;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.util.TypeLiteral;
 import javax.inject.Singleton;
 
 import org.jboss.logging.Logger;
+import org.jboss.protean.arc.ArcCDIProvider.ArcCDI;
 
 /**
  *
@@ -71,7 +73,7 @@ class ArcContainerImpl implements ArcContainer {
     private final ComputingCache<String, Set<InjectableBean<?>>> beansByName;
 
     private final List<ResourceReferenceProvider> resourceProviders;
-
+    
     public ArcContainerImpl() {
         id = UUID.randomUUID().toString();
         running = new AtomicBoolean(true);
@@ -102,6 +104,8 @@ class ArcContainerImpl implements ArcContainer {
         qualifiers.add(Initialized.Literal.APPLICATION);
         qualifiers.add(Any.Literal.INSTANCE);
         EventImpl.createNotifier(Object.class, Object.class, qualifiers, this).notify(toString());
+        // Configure CDIProvider used for CDI.current()
+        CDI.setCDIProvider(new ArcCDIProvider());
         LOGGER.infof("ArC DI container initialized [beans=%s, observers=%s]", beans.size(), observers.size());
     }
 
@@ -226,9 +230,19 @@ class ArcContainerImpl implements ArcContainer {
     void shutdown() {
         if (running.compareAndSet(true, false)) {
             synchronized (this) {
-                contexts.get(ApplicationScoped.class).destroy();
-                contexts.get(Singleton.class).destroy();
+                // Make sure all dependent bean instances obtained via CDI.current() are destroyed correctly
+                CDI<?> cdi = CDI.current();
+                if (cdi instanceof ArcCDI) {
+                    ArcCDI arcCdi = (ArcCDI) cdi;
+                    arcCdi.destroy();
+                }
+                // Destroy contexts
+                contexts.get(ApplicationScoped.class)
+                        .destroy();
+                contexts.get(Singleton.class)
+                        .destroy();
                 ((RequestContext) contexts.get(RequestScoped.class)).terminate();
+                // Clear caches
                 contexts.clear();
                 beans.clear();
                 resolved.clear();

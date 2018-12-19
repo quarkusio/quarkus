@@ -32,6 +32,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Environment;
+import org.hibernate.dialect.H2Dialect;
+import org.hibernate.dialect.MariaDB103Dialect;
 import org.hibernate.dialect.PostgreSQL95Dialect;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.protean.impl.PersistenceUnitsHolder;
@@ -132,9 +134,18 @@ public final class HibernateResourceProcessor {
     }
 
     private Optional<String> guessDialect(Optional<String> driver) {
+        // For now select the latest dialect from the driver
+        // later, we can keep doing that but also avoid DCE
+        // of all the dialects we want in so that people can override them
         String resolvedDriver = driver.orElse("NODRIVER");
-        if ( resolvedDriver.contains("postgresql")) {
+        if (resolvedDriver.contains("postgresql")) {
             return Optional.of(PostgreSQL95Dialect.class.getName());
+        }
+        if (resolvedDriver.contains("org.h2.Driver")) {
+            return Optional.of(H2Dialect.class.getName());
+        }
+        if ( resolvedDriver.contains("org.mariadb.jdbc.Driver")) {
+            return Optional.of(MariaDB103Dialect.class.getName());
         }
         return Optional.empty();
     }

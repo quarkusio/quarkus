@@ -49,11 +49,6 @@ In your `pom.xml`, add the following dependencies
         <artifactId>shamrock-arc-deployment</artifactId>
         <scope>provided</scope>
     </dependency>
-    <dependency>
-        <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-logging-deployment</artifactId>
-        <scope>provided</scope>
-    </dependency>
 </dependencies>
 --
 
@@ -61,8 +56,8 @@ You need the following extensions:
 
 * JPA
 * Agroal (the database connection pool)
-* your JDBC driver extension (`jdbc-postgresql-deployment`, `jdbc-h2-deployment`, `mjdbc-mariadb-deployment`, ...)
-* and generic {project-name} extensions: CDI (arc) and logging
+* your JDBC driver extension (`jdbc-postgresql-deployment`, `jdbc-h2-deployment`, `jdbc-mariadb-deployment`, ...)
+* and generic {project-name} extensions: CDI (arc)
 
 Finally add the relevant configuration properties in `{config-file}`.
 

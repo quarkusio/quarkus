@@ -23,6 +23,8 @@ dumps
 *.rej
 .factorypath
 graph-output.dot
+*.swp
+*.swo
 
 
 docker/distroless/bazel-*

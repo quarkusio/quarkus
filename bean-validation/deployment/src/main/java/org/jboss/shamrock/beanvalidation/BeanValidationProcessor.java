@@ -39,8 +39,10 @@ import org.jboss.jandex.Type;
 import org.jboss.shamrock.annotations.BuildProducer;
 import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.annotations.Record;
+import org.jboss.shamrock.arc.deployment.AnnotationsTransformerBuildItem;
 import org.jboss.shamrock.beanvalidation.runtime.ValidatorProvider;
 import org.jboss.shamrock.beanvalidation.runtime.ValidatorTemplate;
+import org.jboss.shamrock.beanvalidation.runtime.interceptor.ValidationInterceptor;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
@@ -68,8 +70,12 @@ class BeanValidationProcessor {
     }
 
     @BuildStep
-    AdditionalBeanBuildItem registerBean() {
-        return new AdditionalBeanBuildItem(ValidatorProvider.class);
+    void registerAdditionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        // The bean encapsulating the Validator and ValidatorFactory
+        additionalBeans.produce(new AdditionalBeanBuildItem(ValidatorProvider.class));
+
+        // The CDI interceptor which will validate the methods annotated with @MethodValidated
+        additionalBeans.produce(new AdditionalBeanBuildItem(ValidationInterceptor.class));
     }
 
     @BuildStep
@@ -77,6 +83,7 @@ class BeanValidationProcessor {
     public void build(ValidatorTemplate template, RecorderContext recorder,
                       BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
                       BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
+                      BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformers,
                       CombinedIndexBuildItem combinedIndexBuildItem) throws Exception {
 
         IndexView indexView = combinedIndexBuildItem.getIndex();
@@ -126,6 +133,9 @@ class BeanValidationProcessor {
         }
 
         template.initializeValidatorFactory(classesToBeValidated);
+
+        // Add the annotations transformer to add @MethodValidated annotations on the methods requiring validation
+        annotationsTransformers.produce(new AnnotationsTransformerBuildItem(new MethodValidatedAnnotationsTransformer(consideredAnnotations)));
     }
 
     @BuildStep

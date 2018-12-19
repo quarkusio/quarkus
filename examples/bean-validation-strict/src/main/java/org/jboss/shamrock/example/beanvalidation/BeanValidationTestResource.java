@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import javax.validation.Valid;
 import javax.validation.Validator;
 import javax.validation.constraints.DecimalMin;
@@ -27,6 +28,9 @@ public class BeanValidationTestResource {
     @Inject
     Validator validator;
 
+    @Inject
+    GreetingService greetingService;
+
     @GET
     @Path("/basic-features")
     @Produces(MediaType.TEXT_PLAIN)
@@ -36,24 +40,24 @@ public class BeanValidationTestResource {
         Map<String, List<String>> invalidCategorizedEmails = new HashMap<>();
         invalidCategorizedEmails.put("a", Collections.singletonList("b"));
 
-        result.append(validate(new MyBean(
+        result.append(formatViolations(validator.validate(new MyBean(
                 "Bill Jones",
                 "b",
                 Collections.singletonList("c"),
                 -4d,
                 invalidCategorizedEmails
-        )));
+        ))));
 
         Map<String, List<String>> validCategorizedEmails = new HashMap<>();
         validCategorizedEmails.put("Professional", Collections.singletonList("bill.jones@example.com"));
 
-        result.append(validate(new MyBean(
+        result.append(formatViolations(validator.validate(new MyBean(
                 "Bill Jones",
                 "bill.jones@example.com",
                 Collections.singletonList("biji@example.com"),
                 5d,
                 validCategorizedEmails
-        )));
+        ))));
 
         return result.build();
     }
@@ -64,15 +68,32 @@ public class BeanValidationTestResource {
     public String testCustomClassLevelConstraint() {
         ResultBuilder result = new ResultBuilder();
 
-        result.append(validate(new MyOtherBean(null)));
-        result.append(validate(new MyOtherBean("name")));
+        result.append(formatViolations(validator.validate(new MyOtherBean(null))));
+        result.append(formatViolations(validator.validate(new MyOtherBean("name"))));
 
         return result.build();
     }
 
-    private <T> String validate(T bean) {
-        Set<ConstraintViolation<T>> violations = validator.validate(bean);
+    @GET
+    @Path("/cdi-bean-method-validation")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String testCDIBeanMethodValidation() {
+        ResultBuilder result = new ResultBuilder();
 
+        greetingService.greeting("test");
+
+        result.append(formatViolations(Collections.emptySet()));
+
+        try {
+            greetingService.greeting(null);
+        } catch (ConstraintViolationException e) {
+            result.append(formatViolations(e.getConstraintViolations()));
+        }
+
+        return result.build();
+    }
+
+    private String formatViolations(Set<? extends ConstraintViolation<?>> violations) {
         if (violations.isEmpty()) {
             return "passed";
         }

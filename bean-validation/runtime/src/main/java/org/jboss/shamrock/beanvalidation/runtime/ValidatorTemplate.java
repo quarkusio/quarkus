@@ -48,7 +48,8 @@ public class ValidatorTemplate {
 
         configuration
                 .initializeBeanMetaData(classesToBeValidated)
-                .initializeLocales(localesToInitialize);
+                .initializeLocales(localesToInitialize)
+                .beanMetaDataClassNormalizer(new ArcProxyBeanMetaDataClassNormalizer());
 
         ValidatorHolder.initialize(configuration.buildValidatorFactory());
     }

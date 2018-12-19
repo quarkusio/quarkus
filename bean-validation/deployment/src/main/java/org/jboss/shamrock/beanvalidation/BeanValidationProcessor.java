@@ -42,7 +42,7 @@ import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.arc.deployment.AnnotationsTransformerBuildItem;
 import org.jboss.shamrock.beanvalidation.runtime.ValidatorProvider;
 import org.jboss.shamrock.beanvalidation.runtime.ValidatorTemplate;
-import org.jboss.shamrock.beanvalidation.runtime.interceptor.ValidationInterceptor;
+import org.jboss.shamrock.beanvalidation.runtime.interceptor.MethodValidationInterceptor;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
@@ -75,7 +75,12 @@ class BeanValidationProcessor {
         additionalBeans.produce(new AdditionalBeanBuildItem(ValidatorProvider.class));
 
         // The CDI interceptor which will validate the methods annotated with @MethodValidated
-        additionalBeans.produce(new AdditionalBeanBuildItem(ValidationInterceptor.class));
+        additionalBeans.produce(new AdditionalBeanBuildItem(MethodValidationInterceptor.class));
+
+        if (isResteasyInClasspath()) {
+            // The CDI interceptor which will validate the methods annotated with @JaxrsEndPointValidated
+            additionalBeans.produce(new AdditionalBeanBuildItem("org.jboss.shamrock.beanvalidation.runtime.jaxrs.JaxrsEndPointValidationInterceptor"));
+        }
     }
 
     @BuildStep
@@ -188,6 +193,15 @@ class BeanValidationProcessor {
             return getClassName( type.asArrayType().component() );
         default:
             return null;
+        }
+    }
+
+    private static boolean isResteasyInClasspath() {
+        try {
+            Class.forName("org.jboss.resteasy.core.ResteasyContext");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
         }
     }
 }

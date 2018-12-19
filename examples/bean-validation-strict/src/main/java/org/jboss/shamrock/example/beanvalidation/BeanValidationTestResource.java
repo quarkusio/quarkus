@@ -13,9 +13,11 @@ import javax.validation.ConstraintViolationException;
 import javax.validation.Valid;
 import javax.validation.Validator;
 import javax.validation.constraints.DecimalMin;
+import javax.validation.constraints.Digits;
 import javax.validation.constraints.Email;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
@@ -91,6 +93,13 @@ public class BeanValidationTestResource {
         }
 
         return result.build();
+    }
+
+    @GET
+    @Path("/rest-end-point-validation/{id}/")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String testRestEndPointValidation(@Digits(integer = 5, fraction = 0) @PathParam("id") String id) {
+        return id;
     }
 
     private String formatViolations(Set<? extends ConstraintViolation<?>> violations) {

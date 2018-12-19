@@ -7,11 +7,14 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.protean.arc.processor.AnnotationsTransformer;
 import org.jboss.shamrock.beanvalidation.runtime.interceptor.MethodValidated;
+import org.jboss.shamrock.beanvalidation.runtime.jaxrs.JaxrsEndPointValidated;
 
 /**
  * Add {@link MethodValidated} annotations to the methods requiring validation.
  */
 public class MethodValidatedAnnotationsTransformer implements AnnotationsTransformer {
+
+    private static final DotName JAXRS_PATH = DotName.createSimple("javax.ws.rs.Path");
 
     private final Set<DotName> consideredAnnotations;
 
@@ -26,8 +29,14 @@ public class MethodValidatedAnnotationsTransformer implements AnnotationsTransfo
 
     @Override
     public void transform(TransformationContext transformationContext) {
-        if (requiresValidation(transformationContext.getTarget().asMethod())) {
-            transformationContext.transform().add(DotName.createSimple(MethodValidated.class.getName())).done();
+        MethodInfo method = transformationContext.getTarget().asMethod();
+
+        if (requiresValidation(method)) {
+            if (method.hasAnnotation(JAXRS_PATH) || method.declaringClass().annotations().containsKey(JAXRS_PATH)) {
+                transformationContext.transform().add(DotName.createSimple(JaxrsEndPointValidated.class.getName())).done();
+            } else {
+                transformationContext.transform().add(DotName.createSimple(MethodValidated.class.getName())).done();
+            }
         }
     }
 

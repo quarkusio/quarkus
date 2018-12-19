@@ -6,11 +6,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Set;
 
-import javax.annotation.Priority;
 import javax.inject.Inject;
-import javax.interceptor.AroundConstruct;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
@@ -31,12 +27,7 @@ import javax.validation.executable.ExecutableValidator;
  * @author Gunnar Morling
  * @author Hardy Ferentschik
  */
-@MethodValidated
-@Interceptor
-@Priority(Interceptor.Priority.PLATFORM_AFTER + 800)
-public class ValidationInterceptor implements Serializable {
-
-    private static final long serialVersionUID = 604440259030722151L;
+public abstract class AbstractMethodValidationInterceptor implements Serializable {
 
     /**
      * The validator to be used for method validation.
@@ -63,8 +54,7 @@ public class ValidationInterceptor implements Serializable {
      *                   constraint violation occurred either during parameter or
      *                   return value validation.
      */
-    @AroundInvoke
-    public Object validateMethodInvocation(InvocationContext ctx) throws Exception {
+    protected Object validateMethodInvocation(InvocationContext ctx) throws Exception {
         ExecutableValidator executableValidator = validator.forExecutables();
         Set<ConstraintViolation<Object>> violations = executableValidator.validateParameters(ctx.getTarget(),
                 ctx.getMethod(), ctx.getParameters());
@@ -97,8 +87,7 @@ public class ValidationInterceptor implements Serializable {
      *                   at least one constraint violation occurred either during
      *                   parameter or return value validation.
      */
-    @AroundConstruct
-    public void validateConstructorInvocation(InvocationContext ctx) throws Exception {
+    protected void validateConstructorInvocation(InvocationContext ctx) throws Exception {
         ExecutableValidator executableValidator = validator.forExecutables();
         Set<? extends ConstraintViolation<?>> violations = executableValidator
                 .validateConstructorParameters(ctx.getConstructor(), ctx.getParameters());

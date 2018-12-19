@@ -130,13 +130,21 @@ public class JaxrsScanningProcessor {
     private static final DotName SINGLETON_SCOPE = DotName.createSimple(Singleton.class.getName());
 
     /**
-     * If this is true then JAX-RS will use only a single instance of a resource class to service all requests.
-     *
-     * If this is false then it will create a new instance of the resource per request.
-     *
-     * If the resource class has an explicit CDI scope annotation then the value of this annotation will always
-     * be used to control the lifecycle of the resource class.
-     */
+	 * If this is true then JAX-RS will use only a single instance of a resource
+	 * class to service all requests.
+	 *
+	 * If this is false then it will create a new instance of the resource per
+	 * request.
+	 *
+	 * If the resource class has an explicit CDI scope annotation then the value of
+	 * this annotation will always be used to control the lifecycle of the resource
+	 * class.
+	 * 
+	 * IMPLEMENTATION NOTE: {@code javax.ws.rs.Path} turns into a CDI stereotype
+	 * with singleton scope. As a result, if a user annotates a JAX-RS resource with
+	 * a stereotype which has a different default scope the deployment fails with
+	 * IllegalStateException.
+	 */
     @ConfigProperty(name = "shamrock.jaxrs.singleton-resources", defaultValue = "true")
     boolean singletonResources;
 

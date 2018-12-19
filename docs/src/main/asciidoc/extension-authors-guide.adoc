@@ -333,3 +333,41 @@ public class FailingUnitTest {
 <3> It is possible to inject beans from our test deployment directly into the test case
 <4> This method directly invokes the health check Servlet and verifies the response
 <5> This method uses the injected health check bean to verify it is returning the expected result
+
+If you want to test that an extension properly fails at build time, use `@BuildShouldFailWith`
+
+[source,java]
+----
+import org.jboss.shamrock.deployment.configuration.ConfigurationError;
+import org.jboss.shamrock.test.BuildShouldFailWith;
+import org.jboss.shamrock.test.Deployment;
+import org.jboss.shamrock.test.ShamrockUnitTest;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import static org.junit.Assert.fail;
+
+@RunWith(ShamrockUnitTest.class)
+public class PersistenceAndShamrockConfigTest {
+
+    @Deployment
+    @BuildShouldFailWith(ConfigurationError.class) <1>
+    public static JavaArchive deploy() {
+        return ShrinkWrap.create(JavaArchive.class)
+                .addClasses(Gift.class, CRUDResource.class, ConfigurationlessApp.class)
+                .addAsManifestResource("META-INF/some-persistence.xml", "persistence.xml")
+                .addAsManifestResource("META-INF/microprofile-config.properties");
+    }
+
+    @Test
+    public void testPersistenceAndConfigTest() {
+        // should not be called, deployment exception should happen first.
+        fail();
+    }
+
+}
+----
+
+<1> This tells JUnit that the Protean deployment should fail with a specific exception

@@ -119,6 +119,10 @@ class InstanceImpl<T> implements Instance<T> {
         // Try to destroy a dependent instance
         creationalContext.destroyDependentInstance(instance);
     }
+    
+    void destroy() {
+        creationalContext.release();
+    }
 
     private T getBeanInstance(InjectableBean<T> bean) {
         CreationalContextImpl<T> ctx = creationalContext.child();

@@ -30,6 +30,7 @@ import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.protean.arc.processor.BeanDefiningAnnotation;
 import org.jboss.protean.arc.processor.BeanDeployment;
 import org.jboss.protean.arc.processor.DotNames;
 import org.jboss.shamrock.annotations.BuildProducer;
@@ -72,7 +73,7 @@ public class BeanArchiveProcessor {
         }
 
         Collection<DotName> beanDefiningAnnotations = BeanDeployment.initBeanDefiningAnnotations(additionalBeanDefiningAnnotations.stream()
-                .map(bda -> bda.getName())
+                .map(bda -> new BeanDefiningAnnotation(bda.getName(), bda.getDefaultScope()))
                 .collect(Collectors.toList()), stereotypes);
 
         List<IndexView> indexes = new ArrayList<>();

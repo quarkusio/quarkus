@@ -16,8 +16,8 @@ This is useful for:
 But often, you simply need one _persistence unit_ with few configuration options.
 In that mode, you can simply:
 
-* add your configuration in `{config-file}`
-* annotate your entities with `@Entity`
+* add your settings in `{config-file}`
+* annotate your entities with `@Entity` and friends
 
 In your `pom.xml`, add the following dependencies
 
@@ -77,6 +77,7 @@ shamrock.datasource.password: connor
 A `EntityManagerFactory` will be created based on {project-name} `datasource` configuration as long as the Hibernate ORM extension is declared in your `pom.xml`.
 The dialect will be selected based on the JDBC driver.
 
+
 There are optional properties useful to refine your `EntityManagerFactory` or guide guesses of {project-name}.
 
 `shamrock.hibernate.dialect`:: (e.g. `org.hibernate.dialect.PostgreSQL95Dialect`) Class name of the Hibernate ORM dialect.
@@ -84,6 +85,13 @@ There are optional properties useful to refine your `EntityManagerFactory` or gu
 `shamrock.hibernate.schema-generation.database.action`::
 (e.g. `drop-and-create` which is awesome in development mode) Select whether the database schema is generated or not.
 Options are `none`, `create`, `drop-and-create`, `drop`
+
+[NOTE]
+--
+Do not mix `persistence.xml` and `shamrock.hibernate.*` properties in `{config-file}`.
+{project-name} will raise an exception.
+Make up your mind on which approach you want to use
+--
 
 == Design questions
 

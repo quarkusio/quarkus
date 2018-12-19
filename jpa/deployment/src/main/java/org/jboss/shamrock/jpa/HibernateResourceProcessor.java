@@ -53,6 +53,7 @@ import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildIte
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import org.jboss.shamrock.deployment.cdi.BeanContainerListenerBuildItem;
 import org.jboss.shamrock.deployment.cdi.ResourceAnnotationBuildItem;
+import org.jboss.shamrock.deployment.configuration.ConfigurationError;
 import org.jboss.shamrock.deployment.recording.RecorderContext;
 import org.jboss.shamrock.jpa.runtime.DefaultEntityManagerFactoryProducer;
 import org.jboss.shamrock.jpa.runtime.DefaultEntityManagerProducer;
@@ -96,6 +97,13 @@ public final class HibernateResourceProcessor {
     @BuildStep
     void doParse(BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceProducer) {
         List<ParsedPersistenceXmlDescriptor> descriptors = PersistenceUnitsHolder.loadOriginalXMLParsedDescriptors();
+        handleHibernateORMWithNoPersistenceXml(descriptors);
+        for (ParsedPersistenceXmlDescriptor i : descriptors) {
+            persistenceProducer.produce(new PersistenceUnitDescriptorBuildItem(i));
+        }
+    }
+
+    private void handleHibernateORMWithNoPersistenceXml(List<ParsedPersistenceXmlDescriptor> descriptors) {
         if ( descriptors.isEmpty() ) {
             //we have no persistence.xml so we will create a default one
             Optional<String> dialect = hibernateOrmConfig.flatMap(c -> c.dialect);
@@ -115,8 +123,11 @@ public final class HibernateResourceProcessor {
             });
 
         }
-        for (ParsedPersistenceXmlDescriptor i : descriptors) {
-            persistenceProducer.produce(new PersistenceUnitDescriptorBuildItem(i));
+        else {
+            hibernateOrmConfig.ifPresent(c -> {
+                throw new ConfigurationError("Hibernate ORM configuration present in persistence.xml and Shamrock config file at the same time\n"
+                        + "If you use persistence.xml remove all shamrock.hibernate.* properties from the Shamrock config file.");
+            });
         }
     }
 

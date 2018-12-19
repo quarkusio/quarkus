@@ -30,7 +30,7 @@ public class JaxrsTemplate {
 
     public void setupIntegration(BeanContainer container, List<Function<Object, Object>> propertyUnwrappers) {
         ShamrockInjectorFactory.CONTAINER = container;
-        ShamrockInjectorFactory.PROXY_UNWRAPER = new Function<Object, Object>() {
+        ShamrockInjectorFactory.PROXY_UNWRAPPER = new Function<Object, Object>() {
             @Override
             public Object apply(Object o) {
                 Object res = o;

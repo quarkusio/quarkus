@@ -134,10 +134,12 @@ public final class HibernateResourceProcessor {
 
         }
         else {
-            hibernateOrmConfig.ifPresent(c -> {
-                throw new ConfigurationError("Hibernate ORM configuration present in persistence.xml and Shamrock config file at the same time\n"
-                        + "If you use persistence.xml remove all shamrock.hibernate.* properties from the Shamrock config file.");
-            });
+            if (hibernateOrmConfig.isPresent() && hibernateOrmConfig.get().isAnyPropertySet()) {
+                hibernateOrmConfig.ifPresent(c -> {
+                    throw new ConfigurationError("Hibernate ORM configuration present in persistence.xml and Shamrock config file at the same time\n"
+                            + "If you use persistence.xml remove all shamrock.hibernate.* properties from the Shamrock config file.");
+                });
+            }
         }
     }
 

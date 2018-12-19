@@ -31,4 +31,8 @@ public class HibernateOrmConfig {
     @ConfigProperty(name="show_sql")
     public Optional<Boolean> showSql;
 
+    public boolean isAnyPropertySet() {
+        return dialect.isPresent() || schemaGeneration.isPresent() || showSql.isPresent();
+    }
+
 }

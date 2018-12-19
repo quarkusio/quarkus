@@ -24,4 +24,11 @@ public class HibernateOrmConfig {
      */
     @ConfigProperty(name = "schema-generation.database.action")
     public Optional<String> schemaGeneration;
+
+    /**
+     * Enable SQL logging (default to false)
+     */
+    @ConfigProperty(name="show_sql")
+    public Optional<Boolean> showSql;
+
 }

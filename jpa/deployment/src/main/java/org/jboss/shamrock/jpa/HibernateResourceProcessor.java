@@ -121,6 +121,14 @@ public final class HibernateResourceProcessor {
                 hibernateOrmConfig
                         .flatMap(c -> c.schemaGeneration)
                         .ifPresent( p -> desc.getProperties().setProperty(AvailableSettings.HBM2DDL_DATABASE_ACTION, p) );
+                hibernateOrmConfig
+                        .flatMap(c -> c.showSql)
+                        .ifPresent( sql -> {
+                            if (sql.equals(Boolean.TRUE)) {
+                                desc.getProperties().setProperty(AvailableSettings.SHOW_SQL, "true");
+                                desc.getProperties().setProperty(AvailableSettings.FORMAT_SQL, "true");
+                            }
+                        });
                 descriptors.add(desc);
             });
 

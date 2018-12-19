@@ -21,7 +21,7 @@
     <parent>
         <artifactId>shamrock-websockets</artifactId>
         <groupId>org.jboss.shamrock</groupId>
-        <version>1.0.0.Alpha1-SNAPSHOT</version>
+        <version>0.2.0</version>
         <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>

@@ -28,7 +28,7 @@
     <groupId>org.jboss.shamrock</groupId>
     <artifactId>shamrock-parent</artifactId>
     <name>Shamrock - Parent pom</name>
-    <version>1.0.0.Alpha1-SNAPSHOT</version>
+    <version>0.2.0</version>
     <packaging>pom</packaging>
 
     <licenses>

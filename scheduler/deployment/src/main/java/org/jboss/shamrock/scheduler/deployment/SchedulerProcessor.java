@@ -35,6 +35,7 @@ import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
 import org.jboss.protean.arc.Arc;
 import org.jboss.protean.arc.ArcContainer;
+import org.jboss.protean.arc.InjectableBean;
 import org.jboss.protean.arc.InstanceHandle;
 import org.jboss.protean.arc.processor.AnnotationStore;
 import org.jboss.protean.arc.processor.AnnotationsTransformer;
@@ -221,18 +222,20 @@ public class SchedulerProcessor {
                 .build();
 
         MethodCreator invoke = invokerCreator.getMethodCreator("invoke", void.class, ScheduledExecution.class);
-        // InstanceHandle<Foo> handle = Arc.container().instanceByBeanId("1");
+        // InjectableBean<Foo: bean = Arc.container().bean("1");
+        // InstanceHandle<Foo> handle = Arc.container().instance(bean);
         // handle.get().ping();
         ResultHandle containerHandle = invoke.invokeStaticMethod(MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
+        ResultHandle beanHandle = invoke.invokeInterfaceMethod(MethodDescriptor.ofMethod(ArcContainer.class, "bean", InjectableBean.class, String.class),
+                containerHandle, invoke.load(bean.getIdentifier()));
         ResultHandle instanceHandle = invoke.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(ArcContainer.class, "instanceByBeanId", InstanceHandle.class, String.class), containerHandle,
-                invoke.load(bean.getIdentifier()));
-        ResultHandle beanHandle = invoke.invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class), instanceHandle);
+                MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, InjectableBean.class), containerHandle, beanHandle);
+        ResultHandle beanInstanceHandle = invoke.invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class), instanceHandle);
         if (method.parameters().isEmpty()) {
-            invoke.invokeVirtualMethod(MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(), void.class), beanHandle);
+            invoke.invokeVirtualMethod(MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(), void.class), beanInstanceHandle);
         } else {
             invoke.invokeVirtualMethod(MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(), void.class, ScheduledExecution.class),
-                    beanHandle, invoke.getMethodParam(0));
+                    beanInstanceHandle, invoke.getMethodParam(0));
         }
         // handle.destroy() - destroy dependent instance afterwards
         if (bean.getScope() == ScopeInfo.DEPENDENT) {

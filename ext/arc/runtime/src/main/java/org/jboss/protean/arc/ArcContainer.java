@@ -75,11 +75,18 @@ public interface ArcContainer {
 
     /**
      *
-     * @param beanIdentifier
-     * @return a new instance handle
-     * @see InjectableBean#getIdentifier()
+     * @param bean
+     * @return a new bean instance handle
      */
-    <T> InstanceHandle<T> instanceByBeanId(String beanIdentifier);
+    <T> InstanceHandle<T> instance(InjectableBean<T> bean);
+
+    /**
+    *
+    * @param beanIdentifier
+    * @return an injectable bean or null
+    * @see InjectableBean#getIdentifier()
+    */
+    <T> InjectableBean<T> bean(String beanIdentifier);
     
     /**
      *

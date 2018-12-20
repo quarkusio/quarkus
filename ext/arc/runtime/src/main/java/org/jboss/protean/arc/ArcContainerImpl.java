@@ -154,15 +154,22 @@ class ArcContainerImpl implements ArcContainer {
         };
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public <T> InstanceHandle<T> instanceByBeanId(String beanIdentifier) {
-        Objects.requireNonNull(beanIdentifier);
+    public <T> InstanceHandle<T> instance(InjectableBean<T> bean) {
+        Objects.requireNonNull(bean);
         requireRunning();
-        InjectableBean<?> bean = beansById.getValue(beanIdentifier);
         return bean != null ? (InstanceHandle<T>) beanInstanceHandle(bean, null) : InstanceHandleImpl.unavailable();
     }
     
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> InjectableBean<T> bean(String beanIdentifier) {
+        Objects.requireNonNull(beanIdentifier);
+        requireRunning();
+        return (InjectableBean<T>) beansById.getValue(beanIdentifier);
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public <T> InstanceHandle<T> instance(String name) {    

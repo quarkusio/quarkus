@@ -188,7 +188,6 @@ public final class BuildChainBuilder {
             final Map<ItemId, Consume> stepConsumes = stepBuilder.getConsumes();
             for (Map.Entry<ItemId, Consume> entry : stepConsumes.entrySet()) {
                 final ItemId id = entry.getKey();
-                System.err.println("consumes: "+id+" <- "+entry.getValue());
                 final List<Consume> list = allConsumes.computeIfAbsent(id, x -> new ArrayList<>(4));
                 list.add(entry.getValue());
             }
@@ -196,7 +195,6 @@ public final class BuildChainBuilder {
             for (Map.Entry<ItemId, Produce> entry : stepProduces.entrySet()) {
                 final ItemId id = entry.getKey();
                 final List<Produce> list = allProduces.computeIfAbsent(id, x -> new ArrayList<>(2));
-                System.err.println("produces: "+list +" multi "+id.isMulti());
                 if (! id.isMulti() && entry.getValue().getConstraint() == Constraint.REAL) {
                     // ensure only one producer
                     if (initialIds.contains(id)) {

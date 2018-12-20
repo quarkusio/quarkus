@@ -13,26 +13,32 @@
         <shamrock.version>${shamrockVersion}</shamrock.version>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-bom</artifactId>
+                <version>${r"${shamrock.version}"}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-jaxrs-deployment</artifactId>
-            <scope>provided</scope>
-            <version>${r"${shamrock.version}"}</version>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-arc-deployment</artifactId>
-            <scope>provided</scope>
-            <version>${r"${shamrock.version}"}</version>
         </dependency>
 
         <!-- Test extensions -->
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-junit</artifactId>
-            <version>${r"${shamrock.version}"}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.rest-assured</groupId>

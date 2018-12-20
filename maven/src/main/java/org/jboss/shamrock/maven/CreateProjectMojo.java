@@ -108,7 +108,6 @@ public class CreateProjectMojo extends AbstractMojo {
         createDirectories();
         templates.generate(project, root, path, className, getLog());
         Optional<Plugin> maybe = MojoUtils.hasPlugin(project, PLUGIN_KEY);
-
         if (maybe.isPresent()) {
             printUserInstructions(pomFile);
             return;
@@ -116,10 +115,27 @@ public class CreateProjectMojo extends AbstractMojo {
 
         // The plugin is not configured, add it.
         addVersionProperty(model);
+        addBom(model);
         addMainPluginConfig(model);
         addExtensions(model, extensions, getLog());
         addNativeProfile(model);
         save(pomFile, model);
+    }
+
+    private void addBom(Model model) {
+        Dependency bom = new Dependency();
+        bom.setArtifactId(MojoUtils.get("bom-artifactId"));
+        bom.setGroupId(PLUGIN_GROUPID);
+        bom.setVersion("${shamrock.version}");
+        bom.setType("pom");
+        bom.setScope("import");
+
+        DependencyManagement dm = model.getDependencyManagement();
+        if (dm == null) {
+            dm = new DependencyManagement();
+        }
+        dm.addDependency(bom);
+        model.setDependencyManagement(dm);
     }
 
     private void printUserInstructions(File pomFile) {

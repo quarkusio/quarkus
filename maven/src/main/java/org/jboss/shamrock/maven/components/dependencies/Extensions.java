@@ -80,17 +80,23 @@ public class Extensions {
         List<Extension> exts = Extensions.get();
         for (String dependency : extensions) {
             Optional<Extension> optional = exts.stream()
-                    .filter(d ->{
+                    .filter(d -> {
                         boolean hasTag = d.labels().contains(dependency.trim().toLowerCase());
                         boolean machName = d.getName().toLowerCase().contains(dependency.trim().toLowerCase());
-                        return hasTag  || machName;
+                        return hasTag || machName;
                     })
                     .findAny();
 
             if (optional.isPresent()) {
-                if (! MojoUtils.hasDependency(model, optional.get().getGroupId(), optional.get().getArtifactId())) {
+                if (!MojoUtils.hasDependency(model, optional.get().getGroupId(), optional.get().getArtifactId())) {
                     log.info("Adding extension " + optional.get().toCoordinates());
-                    model.addDependency(optional.get().toDependency());
+
+                    if (containsBOM(model)) {
+                        model.addDependency(optional.get().toDependency(true));
+                    } else {
+                        model.addDependency(optional.get().toDependency(false));
+                    }
+
                     updated = true;
                 } else {
                     log.info("Extension already present - skipping");
@@ -111,6 +117,16 @@ public class Extensions {
         }
 
         return updated;
+    }
+
+    private static boolean containsBOM(Model model) {
+        List<Dependency> dependencies = model.getDependencyManagement().getDependencies();
+        return dependencies.stream()
+                // Find bom
+                .filter(dependency -> "import".equalsIgnoreCase(dependency.getScope()))
+                .filter(dependency -> "pom".equalsIgnoreCase(dependency.getType()))
+                // Does it matches the bom artifact name
+                .anyMatch(dependency -> dependency.getArtifactId().equalsIgnoreCase(MojoUtils.get("bom-artifactId")));
     }
 
 }

@@ -43,7 +43,7 @@ public class ShamrockInjectorFactory extends InjectorFactoryImpl {
 
     private static final Logger log = Logger.getLogger("org.jboss.shamrock.jaxrs.runtime");
     static volatile BeanContainer CONTAINER = null;
-    static volatile Function<Object, Object> PROXY_UNWRAPER;
+    static volatile Function<Object, Object> PROXY_UNWRAPPER;
 
     @Override
     public ConstructorInjector createConstructor(Constructor constructor, ResteasyProviderFactory providerFactory) {
@@ -78,12 +78,12 @@ public class ShamrockInjectorFactory extends InjectorFactoryImpl {
 
         @Override
         public CompletionStage<Void> inject(Object target, boolean unwrapAsync) {
-            return delegate.inject(PROXY_UNWRAPER.apply(target), unwrapAsync);
+            return delegate.inject(PROXY_UNWRAPPER.apply(target), unwrapAsync);
         }
 
         @Override
         public CompletionStage<Void> inject(HttpRequest request, HttpResponse response, Object target, boolean unwrapAsync) throws Failure, WebApplicationException, ApplicationException {
-            return delegate.inject(request, response, PROXY_UNWRAPER.apply(target), unwrapAsync);
+            return delegate.inject(request, response, PROXY_UNWRAPPER.apply(target), unwrapAsync);
         }
     }
 }

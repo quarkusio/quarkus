@@ -388,7 +388,7 @@ class RestClientBuilderImpl implements RestClientBuilder {
     }
 
     @Override
-    public RestClientBuilder register(Class<?> aClass, Class<?>[] classes) {
+    public RestClientBuilder register(Class<?> aClass, Class<?>... classes) {
         this.register(newInstanceOf(aClass), classes);
         return this;
     }
@@ -443,7 +443,7 @@ class RestClientBuilderImpl implements RestClientBuilder {
     }
 
     @Override
-    public RestClientBuilder register(Object o, Class<?>[] classes) {
+    public RestClientBuilder register(Object o, Class<?>... classes) {
 
         // local
         for (Class<?> aClass : classes) {

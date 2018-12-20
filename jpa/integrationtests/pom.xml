@@ -25,7 +25,7 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>jdbc-postgresql-deployment</artifactId>
+            <artifactId>shamrock-jdbc-postgresql-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
 

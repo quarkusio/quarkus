@@ -41,21 +41,21 @@
 
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>jdbc-postgresql-deployment</artifactId>
+            <artifactId>shamrock-jdbc-postgresql-deployment</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
          </dependency>
 
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>jdbc-h2-deployment</artifactId>
+            <artifactId>shamrock-jdbc-h2-deployment</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
          </dependency>
 
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>jdbc-mariadb-deployment</artifactId>
+            <artifactId>shamrock-jdbc-mariadb-deployment</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
          </dependency>

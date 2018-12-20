@@ -9,7 +9,7 @@ Start the database first.
 
 [source]
 --
-docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name postgres-protean-jpa -e POSTGRES_USER=jpa-integrationtests -e POSTGRES_PASSWORD=jpa-integrationtests -e POSTGRES_DB=jpa-integrationtests -p 5431:5432 postgres:10.5
+docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name postgres-protean-jpa -e POSTGRES_USER=hibernate_orm_test -e POSTGRES_PASSWORD=hibernate_orm_test -e POSTGRES_DB=hibernate_orm_test -p 5431:5432 postgres:10.5
 --
 
 == Documentation

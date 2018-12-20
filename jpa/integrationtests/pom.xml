@@ -125,7 +125,7 @@
                 </property>
             </activation>
             <properties>
-                <postgres.url>jdbc:postgresql://localhost:5431/jpa-integrationtests</postgres.url>
+                <postgres.url>jdbc:postgresql://localhost:5431/hibernate_orm_test</postgres.url>
             </properties>
             <build>
                 <plugins>
@@ -140,9 +140,9 @@
                                     <alias>postgresql</alias>
                                     <run>
                                         <env>
-                                            <POSTGRES_USER>jpa-integrationtests</POSTGRES_USER>
-                                            <POSTGRES_PASSWORD>jpa-integrationtests</POSTGRES_PASSWORD>
-                                            <POSTGRES_DB>jpa-integrationtests</POSTGRES_DB>
+                                            <POSTGRES_USER>hibernate_orm_test</POSTGRES_USER>
+                                            <POSTGRES_PASSWORD>hibernate_orm_test</POSTGRES_PASSWORD>
+                                            <POSTGRES_DB>hibernate_orm_test</POSTGRES_DB>
                                         </env>
                                         <ports>
                                             <port>5431:5432</port>

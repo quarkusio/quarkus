@@ -16,9 +16,8 @@ and we make some opinionated choices and educated guesses.
 
 In your `pom.xml`, add the following dependencies:
 
-* JPA extension
+* the JPA extension
 * your JDBC driver extension (`jdbc-postgresql-deployment`, `jdbc-h2-deployment`, `jdbc-mariadb-deployment`, ...)
-* and generic {project-name} extensions: CDI (arc)
 
 [source,xml]
 --
@@ -34,13 +33,6 @@ In your `pom.xml`, add the following dependencies:
     <dependency>
         <groupId>org.jboss.shamrock</groupId>
         <artifactId>jdbc-postgresql-deployment</artifactId>
-        <scope>provided</scope>
-    </dependency>
-
-    <!-- General Protean dependencies -->
-    <dependency>
-        <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-arc-deployment</artifactId>
         <scope>provided</scope>
     </dependency>
 </dependencies>
@@ -153,9 +145,8 @@ and only persistence units defined in `persistence.xml` will be taken into accou
 
 In your `pom.xml`, add the following dependencies:
 
-* JPA extension
+* the JPA extension
 * your JDBC driver extension (`jdbc-postgresql-deployment`, `jdbc-h2-deployment`, `jdbc-mariadb-deployment`, ...)
-* and generic {project-name} extensions: CDI (arc)
 
 [source,xml]
 --
@@ -171,13 +162,6 @@ In your `pom.xml`, add the following dependencies:
     <dependency>
         <groupId>org.jboss.shamrock</groupId>
         <artifactId>jdbc-postgresql-deployment</artifactId>
-        <scope>provided</scope>
-    </dependency>
-
-    <!-- General Protean dependencies -->
-    <dependency>
-        <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-arc-deployment</artifactId>
         <scope>provided</scope>
     </dependency>
 </dependencies>

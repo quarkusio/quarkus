@@ -41,7 +41,7 @@ Pushing as much as possible into the `@Record(STATIC_INIT)` phase allows for two
 
 1. In both native image and pure JVM mode this allows the app to start as fast as possible since processing was done during build time. This also minimizes the classes/native code needed in the application to pure runtime related behaviors.
 
-2. Another benefit with native image mode is that is Substrate can more easily eliminate features that are not used. If features are directly initialized via bytecode, Substrate can detect that a method is never called and eliminate
+2. Another benefit with native image mode is that Substrate can more easily eliminate features that are not used. If features are directly initialized via bytecode, Substrate can detect that a method is never called and eliminate
 that method. If config is read at runtime, Substrate cannot reason about the contents of the config and so needs to keep all features in case they are required.
 
 

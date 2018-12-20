@@ -154,7 +154,6 @@
                     <plugin>
                         <groupId>io.fabric8</groupId>
                         <artifactId>docker-maven-plugin</artifactId>
-                        <version>0.26.1</version>
                         <configuration>
                             <images>
                                 <image>

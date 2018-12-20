@@ -24,8 +24,8 @@ Static Init::
 +
 There are some restrictions on what can be done in this stage as the Substrate VM disallows some objects in the native image. For example you should not attempt to listen on a port or start threads in this phase.
 +
-In non-native pure JVM mode, there is no real difference between this and runtime init, except that this is always executed first. This mode benefits from the same build phase augmentation as native mode as the descriptor parsing and annotaiton scanning are done
-at build time, and any associated class/framework dependencies can be removed from the build output jar. In servers like
+In non-native pure JVM mode, there is no real difference between Static and Runtime Init, except that Static Init is always executed first. This mode benefits from the same build phase augmentation as native mode as the descriptor parsing and annotation scanning are done
+at build time and any associated class/framework dependencies can be removed from the build output jar. In servers like
 WildFly, deployment related classes such as XML parsers hang around for the life of the application, using up valuable
 memory. Shamrock aims to eliminate this, so that the only classes loaded at runtime are actually used at runtime.
 +
@@ -48,7 +48,9 @@ that method. If config is read at runtime, Substrate cannot reason about the con
 == Maven setup
 
 Your extension project should be setup as a multi-module project with two submodules:
+
 1. A deployment time submodule that handles the build time processing and bytecode recording.
+
 2. A runtime submodule that contains the runtime behavior that will provide the exentsion behavior in the native image or runtime JVM.
 
 Your runtime artifact should depend on shamrock-core-runtime, and possibly the runtime artifacts of other Shamrock
@@ -151,7 +153,7 @@ public class MetricsProcessor {
 ----
 <1> Note that there is no @Inject qualifier here. This is a feature of the CDI implementation used by the Shamrock core to process @ConfigProperty only available to the deployment time extension.
 
-The value of these properties is configured in a META-INF/microprofile-config.properties file that conforms to the MicroProfile config format.
+The value of these properties is configured in a `META-INF/microprofile-config.properties` file that conforms to the MicroProfile config format.
 
 An extension of MicroProfile config to allow configuration objects to be injected is available using the `@org.jboss.shamrock.runtime.ConfigGroup` annotation. You place this annotation on the configuration object which in turn uses @ConfigProperty for it's configurable values as follows:
 
@@ -203,7 +205,7 @@ public class LoggingProcessor {
 configuration object containing a collection of configurable properties.
 <2> Here the LoggingProcessor injects a FileConfig instance using the MicroProfile Config annotation with the property name "shamrock.log.file". 
 
-A corresponding META-INF/microprofile-config.properties file for the FileConfig values could be:
+A corresponding `META-INF/microprofile-config.properties` file for the FileConfig values could be:
 [source%nowrap,properties]
 ----
 shamrock.log.file.enable=true
@@ -234,7 +236,7 @@ including the value of method parameters. Bytecode is then created to do these s
 object at runtime.
 
 In more detail, a processor class from the extensions deployment module gathers the configuration
-information within a @BuildStep` method that is also annotated with a `@Record(STATIC_INIT)` or  `@Record(RUNTIME_INIT)` annotation along with injection of a `@Template` annotated class
+information within a `@BuildStep` method that is also annotated with a `@Record(STATIC_INIT)` or  `@Record(RUNTIME_INIT)` annotation along with injection of a `@Template` annotated class
 from the runtime module. A class annotated with `@Template` is known as a template because it
 provides a template of methods to configure a runtime service. The value of template that is
 injected into the deployment class is a proxy of the template, and any method invocations that are made will be recorded, and output as bytecode that will be run at application startup.

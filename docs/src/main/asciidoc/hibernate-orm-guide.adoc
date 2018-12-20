@@ -1,7 +1,7 @@
 = Using Hibernate ORM and JPA
 :config-file: microprofile-config.properties
 
-Hibernate ORM is the de facto JPA implementation and offers you the full breath of a Object Relational Mapper.
+Hibernate ORM is the de facto JPA implementation and offers you the full breath of an Object Relational Mapper.
 It works beautifully in {project-name}.
 
 == Setting up and configuring Hibernate ORM without `persistence.xml` (recommended)
@@ -63,10 +63,10 @@ shamrock.datasource.username: sarah
 shamrock.datasource.password: connor
 --
 
-A `EntityManagerFactory` will be created based on {project-name} `datasource` configuration as long as the Hibernate ORM extension is declared in your `pom.xml`.
+An `EntityManagerFactory` will be created based on {project-name} `datasource` configuration as long as the Hibernate ORM extension is declared in your `pom.xml`.
 The dialect will be selected based on the JDBC driver.
 
-You can then happily inject your `EntityManager`
+You can then happily inject your `EntityManager`:
 
 [source,java]
 --
@@ -108,7 +108,7 @@ public class Gift {
 --
 
 <1> Inject your entity manager and have fun
-<2> Mark your CDI bean method as `@Transactional` and the EntityManager will enlist and flush at commit and the `EntityManager` will enlist and flush at commit.
+<2> Mark your CDI bean method as `@Transactional` and the `EntityManager` will enlist and flush at commit.
 
 === Properties to refine your Hibernate ORM configuration
 
@@ -128,12 +128,12 @@ Show SQL logs and format them nicely.
 --
 Do not mix `persistence.xml` and `shamrock.hibernate.*` properties in `{config-file}`.
 {project-name} will raise an exception.
-Make up your mind on which approach you want to use
+Make up your mind on which approach you want to use.
 --
 
 [TIP]
 ====
-Want to start a postgresql on the side with Docker?
+Want to start a PostgreSQL server on the side with Docker?
 
 [source]
 --
@@ -144,9 +144,8 @@ docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name pos
 
 == Setting up and configuring Hibernate ORM with a `persistence.xml`
 
-
 Alternatively, you can set a `META-INF/persistence.xml` to setup Hibernate ORM.
-This is useful or:
+This is useful for:
 
 * migrating existing code
 * when you have relatively complex settings requiring the full flexibility of the configuration
@@ -197,7 +196,7 @@ In your `pom.xml`, add the following dependencies:
 --
 
 Annotate your persistent objects with `@Entity`
-then add your `persistence.xml` in `META-INF`
+then add your `persistence.xml` in `META-INF`:
 
 [source,xml]
 --
@@ -232,9 +231,8 @@ then add your `persistence.xml` in `META-INF`
 --
 
 A `EntityManagerFactory` will be created based on {project-name} `datasource` configuration as long as the Hibernate ORM extension is declared in your `pom.xml`.
-The dialect will be selected based on the JDBC driver.
 
-You can then happily inject your `EntityManager`
+You can then happily inject your `EntityManager`:
 
 [source,java]
 --
@@ -276,6 +274,6 @@ public class Gift {
 --
 
 <1> Inject your entity manager and have fun
-<2> Mark your CDI bean method as `@Transactional` and the EntityManager will enlist and flush at commit and the `EntityManager` will enlist and flush at commit.
+<2> Mark your CDI bean method as `@Transactional` and the `EntityManager` will enlist and flush at commit.
 
 

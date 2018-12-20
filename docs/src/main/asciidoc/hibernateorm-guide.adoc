@@ -52,7 +52,8 @@ In your `pom.xml`, add the following dependencies:
 </dependencies>
 --
 
-Finally add the relevant configuration properties in `{config-file}`.
+Annotate your persistent objects with `@Entity`,
+then add the relevant configuration properties in `{config-file}`.
 
 [source,properties]
 --
@@ -78,6 +79,30 @@ public class SantaClausService {
         Gift gift = new Gift();
         gift.setName(giftDescription);
         em.persist(gift);
+    }
+}
+
+//and of course our entity
+@Entity
+public class Gift {
+    private Long id;
+    private String name;
+
+    @Id @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="personSeq")
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }
 --
@@ -171,7 +196,8 @@ In your `pom.xml`, add the following dependencies:
 </dependencies>
 --
 
-Then add your `persistence.xml` in `META-INF`
+Annotate your persistent objects with `@Entity`
+then add your `persistence.xml` in `META-INF`
 
 [source,xml]
 --
@@ -221,6 +247,30 @@ public class SantaClausService {
         Gift gift = new Gift();
         gift.setName(giftDescription);
         em.persist(gift);
+    }
+}
+
+//and of course our entity
+@Entity
+public class Gift {
+    private Long id;
+    private String name;
+
+    @Id @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="personSeq")
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }
 --

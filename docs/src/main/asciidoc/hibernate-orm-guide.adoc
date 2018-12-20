@@ -17,7 +17,6 @@ and we make some opinionated choices and educated guesses.
 In your `pom.xml`, add the following dependencies:
 
 * JPA extension
-* Agroal extension (the database connection pool)
 * your JDBC driver extension (`jdbc-postgresql-deployment`, `jdbc-h2-deployment`, `jdbc-mariadb-deployment`, ...)
 * and generic {project-name} extensions: CDI (arc)
 
@@ -28,11 +27,6 @@ In your `pom.xml`, add the following dependencies:
     <dependency>
         <groupId>org.jboss.shamrock</groupId>
         <artifactId>shamrock-jpa-deployment</artifactId>
-        <scope>provided</scope>
-    </dependency>
-    <dependency>
-        <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-agroal-deployment</artifactId>
         <scope>provided</scope>
     </dependency>
 
@@ -135,7 +129,6 @@ and only persistence units defined in `persistence.xml` will be taken into accou
 In your `pom.xml`, add the following dependencies:
 
 * JPA extension
-* Agroal extension (the database connection pool)
 * your JDBC driver extension (`jdbc-postgresql-deployment`, `jdbc-h2-deployment`, `jdbc-mariadb-deployment`, ...)
 * and generic {project-name} extensions: CDI (arc)
 
@@ -146,11 +139,6 @@ In your `pom.xml`, add the following dependencies:
     <dependency>
         <groupId>org.jboss.shamrock</groupId>
         <artifactId>shamrock-jpa-deployment</artifactId>
-        <scope>provided</scope>
-    </dependency>
-    <dependency>
-        <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-agroal-deployment</artifactId>
         <scope>provided</scope>
     </dependency>
 

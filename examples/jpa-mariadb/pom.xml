@@ -42,7 +42,7 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>jdbc-mariadb-deployment</artifactId>
+            <artifactId>shamrock-jdbc-mariadb-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
 

@@ -17,7 +17,7 @@ and we make some opinionated choices and educated guesses.
 In your `pom.xml`, add the following dependencies:
 
 * the JPA extension
-* your JDBC driver extension (`jdbc-postgresql-deployment`, `jdbc-h2-deployment`, `jdbc-mariadb-deployment`, ...)
+* your JDBC driver extension (`shamrock-jdbc-postgresql-deployment`, `shamrock-jdbc-h2-deployment`, `shamrock-jdbc-mariadb-deployment`, ...)
 
 [source,xml]
 --
@@ -32,7 +32,7 @@ In your `pom.xml`, add the following dependencies:
     <!-- JDBC driver dependencies -->
     <dependency>
         <groupId>org.jboss.shamrock</groupId>
-        <artifactId>jdbc-postgresql-deployment</artifactId>
+        <artifactId>shamrock-jdbc-postgresql-deployment</artifactId>
         <scope>provided</scope>
     </dependency>
 </dependencies>
@@ -146,7 +146,7 @@ and only persistence units defined in `persistence.xml` will be taken into accou
 In your `pom.xml`, add the following dependencies:
 
 * the JPA extension
-* your JDBC driver extension (`jdbc-postgresql-deployment`, `jdbc-h2-deployment`, `jdbc-mariadb-deployment`, ...)
+* your JDBC driver extension (`shamrock-jdbc-postgresql-deployment`, `shamrock-jdbc-h2-deployment`, `shamrock-jdbc-mariadb-deployment`, ...)
 
 [source,xml]
 --
@@ -161,7 +161,7 @@ In your `pom.xml`, add the following dependencies:
     <!-- JDBC driver dependencies -->
     <dependency>
         <groupId>org.jboss.shamrock</groupId>
-        <artifactId>jdbc-postgresql-deployment</artifactId>
+        <artifactId>shamrock-jdbc-postgresql-deployment</artifactId>
         <scope>provided</scope>
     </dependency>
 </dependencies>

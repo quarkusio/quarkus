@@ -10,6 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>shamrock-jpa-integration-tests</artifactId>
+    <name>Shamrock - JPA - Integration tests</name>
 
     <dependencies>
         <dependency>

@@ -140,10 +140,10 @@
         </profile>
 
         <profile>
-            <id>postgres</id>
+            <id>docker-postgres</id>
             <activation>
                 <property>
-                    <name>!no-postgres</name>
+                    <name>!no-docker</name>
                 </property>
             </activation>
             <properties>

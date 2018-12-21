@@ -141,10 +141,10 @@
         </profile>
 
         <profile>
-            <id>mariadb</id>
+            <id>docker-mariadb</id>
             <activation>
                 <property>
-                    <name>!no-mariadb</name>
+                    <name>!no-docker</name>
                 </property>
             </activation>
             <properties>

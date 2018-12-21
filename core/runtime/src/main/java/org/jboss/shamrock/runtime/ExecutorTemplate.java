@@ -56,14 +56,12 @@ public class ExecutorTemplate {
         builder.setGrowthResistance(getFloatConfigVal(GROWTH_RESISTANCE, defaultGrowthResistance));
         builder.setKeepAliveTime(getIntConfigVal("executor.keep-alive-millis", defaultKeepAliveMillis), TimeUnit.MILLISECONDS);
         final EnhancedQueueExecutor executor = builder.build();
-        shutdownContext.addShutdownTask(new Runnable() {
-            public void run() {
-                executor.shutdown();
-                for (;;) try {
-                    executor.awaitTermination(Long.MAX_VALUE, TimeUnit.HOURS);
-                    return;
-                } catch (InterruptedException ignored) {
-                }
+        shutdownContext.addShutdownTask(() -> {
+            executor.shutdown();
+            for (;;) try {
+                executor.awaitTermination(Long.MAX_VALUE, TimeUnit.HOURS);
+                return;
+            } catch (InterruptedException ignored) {
             }
         });
         return executor;

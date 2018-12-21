@@ -27,12 +27,7 @@ public class StartupContext implements Closeable {
 
     private final Map<String, Object> values = new HashMap<>();
     private final List<Runnable> shutdownTasks = new ArrayList<>();
-    private final ShutdownContext shutdownContext = new ShutdownContext() {
-        @Override
-        public void addShutdownTask(Runnable runnable) {
-            shutdownTasks.add(runnable);
-        }
-    };
+    private final ShutdownContext shutdownContext = shutdownTasks::add;
 
     public StartupContext() {
         values.put(ShutdownContext.class.getName(), shutdownContext);

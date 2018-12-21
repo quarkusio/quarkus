@@ -244,7 +244,7 @@ public class BeanInfo {
     }
 
     Optional<Injection> getConstructorInjection() {
-        return injections.isEmpty() ? Optional.empty() : injections.stream().filter(i -> i.isConstructor()).findAny();
+        return injections.isEmpty() ? Optional.empty() : injections.stream().filter(Injection::isConstructor).findAny();
     }
 
     Map<MethodInfo, InterceptionInfo> getInterceptedMethods() {
@@ -285,7 +285,7 @@ public class BeanInfo {
             bound.addAll(interception.interceptors);
         }
         if (!interceptedMethods.isEmpty()) {
-            bound.addAll(interceptedMethods.values().stream().map(m -> m.interceptors).flatMap(list -> list.stream()).collect(Collectors.toList()));
+            bound.addAll(interceptedMethods.values().stream().map(m -> m.interceptors).flatMap(Collection::stream).collect(Collectors.toList()));
         }
         return bound.isEmpty() ? Collections.emptyList() : bound.stream().distinct().sorted().collect(Collectors.toList());
     }
@@ -403,7 +403,7 @@ public class BeanInfo {
                 .filter(a -> beanDeployment.getInterceptorBinding(a.name()) != null && bindings.stream()
                         .noneMatch(e -> e.name()
                                 .equals(a.name())))
-                .forEach(a -> bindings.add(a));
+                .forEach(bindings::add);
         if (classInfo.superClassType() != null && !classInfo.superClassType()
                 .name()
                 .equals(DotNames.OBJECT)) {

@@ -261,12 +261,7 @@ public class BeanProcessor {
         private final List<BeanRegistrar> beanRegistrars = new ArrayList<>();
         private final List<DeploymentEnhancer> deploymentEnhancers = new ArrayList<>();
         private final List<BeanDeploymentValidator> beanDeploymentValidators = new ArrayList<>();
-        private Predicate<DotName> applicationClassPredicate = new Predicate<DotName>() {
-            @Override
-            public boolean test(DotName dotName) {
-                return true;
-            }
-        };
+        private Predicate<DotName> applicationClassPredicate = dotName -> true;
 
         public Builder setName(String name) {
             this.name = name;
@@ -337,11 +332,7 @@ public class BeanProcessor {
     }
 
     private static <E extends BuildExtension> List<E> initAndSort(List<E> extentions, BuildContext buildContext) {
-        for (Iterator<E> iterator = extentions.iterator(); iterator.hasNext();) {
-            if (!iterator.next().initialize(buildContext)) {
-                iterator.remove();
-            }
-        }
+        extentions.removeIf(e -> !e.initialize(buildContext));
         extentions.sort(BuildExtension::compare);
         return extentions;
     }

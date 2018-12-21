@@ -37,14 +37,11 @@ public interface ClassOutput {
 
     //TODO: we should not need both these classes
     static org.jboss.protean.gizmo.ClassOutput gizmoAdaptor(ClassOutput out, boolean applicationClass) {
-        return new org.jboss.protean.gizmo.ClassOutput() {
-            @Override
-            public void write(String name, byte[] data) {
-                try {
-                    out.writeClass(applicationClass, name, data);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+        return (name, data) -> {
+            try {
+                out.writeClass(applicationClass, name, data);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
         };
     }

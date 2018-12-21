@@ -135,20 +135,17 @@ class ArcContainerImpl implements ArcContainer {
         if (bean == null) {
             return null;
         }
-        return new Supplier<InstanceHandle<T>>() {
-            @Override
-            public InstanceHandle<T> get() {
-                CreationalContextImpl<T> creationalContext = new CreationalContextImpl<>();
-                InjectionPoint prev = InjectionPointProvider.CURRENT.get();
-                InjectionPointProvider.CURRENT.set(CurrentInjectionPointProvider.EMPTY);
-                try {
-                    return new InstanceHandleImpl<T>(bean, bean.get(creationalContext), creationalContext, creationalContext);
-                } finally {
-                    if (prev != null) {
-                        InjectionPointProvider.CURRENT.set(prev);
-                    } else {
-                        InjectionPointProvider.CURRENT.remove();
-                    }
+        return () -> {
+            CreationalContextImpl<T> creationalContext = new CreationalContextImpl<>();
+            InjectionPoint prev = InjectionPointProvider.CURRENT.get();
+            InjectionPointProvider.CURRENT.set(CurrentInjectionPointProvider.EMPTY);
+            try {
+                return new InstanceHandleImpl<T>(bean, bean.get(creationalContext), creationalContext, creationalContext);
+            } finally {
+                if (prev != null) {
+                    InjectionPointProvider.CURRENT.set(prev);
+                } else {
+                    InjectionPointProvider.CURRENT.remove();
                 }
             }
         };
@@ -352,11 +349,7 @@ class ArcContainerImpl implements ArcContainer {
             } else {
                 // The set contains non-Arc beans - give our best effort
                 Set<Bean<? extends X>> resolved = new HashSet<>(beans);
-                for (Iterator<Bean<? extends X>> iterator = resolved.iterator(); iterator.hasNext();) {
-                    if (!iterator.next().isAlternative()) {
-                        iterator.remove();
-                    }
-                }
+                resolved.removeIf(bean -> !bean.isAlternative());
                 if (resolved.size() != 1) {
                     throw new AmbiguousResolutionException(resolved.toString());
                 }
@@ -373,24 +366,16 @@ class ArcContainerImpl implements ArcContainer {
         }
         // Try to resolve the ambiguity
         List<InjectableBean<?>> resolved = new ArrayList<>(matching);
-        for (Iterator<InjectableBean<?>> iterator = resolved.iterator(); iterator.hasNext();) {
-            InjectableBean<?> bean = iterator.next();
-            if (bean.getAlternativePriority() == null && (bean.getDeclaringBean() == null || bean.getDeclaringBean().getAlternativePriority() == null)) {
-                // Remove non-alternatives
-                iterator.remove();
-            }
-        }
+        // Remove non-alternatives
+        resolved.removeIf(bean ->
+                bean.getAlternativePriority() == null && (bean.getDeclaringBean() == null || bean.getDeclaringBean().getAlternativePriority() == null));
         if (resolved.size() == 1) {
             return Collections.singleton(resolved.get(0));
         } else if (resolved.size() > 1) {
             resolved.sort(ArcContainerImpl::compareAlternativeBeans);
             // Keep only the highest priorities
             Integer highest = getAlternativePriority(resolved.get(0));
-            for (Iterator<InjectableBean<?>> iterator = resolved.iterator(); iterator.hasNext();) {
-                if (!highest.equals(getAlternativePriority(iterator.next()))) {
-                    iterator.remove();
-                }
-            }
+            resolved.removeIf(injectableBean -> !highest.equals(getAlternativePriority(injectableBean)));
             if (resolved.size() == 1) {
                 return Collections.singleton(resolved.get(0));
             }

@@ -170,15 +170,12 @@ public class ApplicationArchiveBuildStep {
         }
 
         Indexer indexer = new Indexer();
-        Files.walk(path).forEach(new Consumer<Path>() {
-            @Override
-            public void accept(Path path) {
-                if (path.toString().endsWith(".class")) {
-                    try (FileInputStream in = new FileInputStream(path.toFile())) {
-                        indexer.index(in);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
+        Files.walk(path).forEach(path1 -> {
+            if (path1.toString().endsWith(".class")) {
+                try (FileInputStream in = new FileInputStream(path1.toFile())) {
+                    indexer.index(in);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
             }
         });

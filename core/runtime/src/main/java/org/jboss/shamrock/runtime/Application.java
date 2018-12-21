@@ -170,11 +170,7 @@ public abstract class Application {
     public final void run(String[] args) {
         try {
             if (ImageInfo.inImageRuntimeCode()) {
-                final SignalHandler handler = new SignalHandler() {
-                    public void handle(final Signal signal) {
-                        System.exit(0);
-                    }
-                };
+                final SignalHandler handler = signal -> System.exit(0);
                 Signal.handle(new Signal("INT"), handler);
                 Signal.handle(new Signal("TERM"), handler);
                 Signal.handle(new Signal("QUIT"), new SignalHandler() {

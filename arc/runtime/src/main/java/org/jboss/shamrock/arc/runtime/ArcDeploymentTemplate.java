@@ -46,12 +46,7 @@ public class ArcDeploymentTemplate {
 
     public ArcContainer getContainer(ShutdownContext shutdown) throws Exception {
         ArcContainer container = Arc.initialize();
-        shutdown.addShutdownTask(new Runnable() {
-            @Override
-            public void run() {
-                Arc.shutdown();
-            }
-        });
+        shutdown.addShutdownTask(Arc::shutdown);
         return container;
     }
 
@@ -64,12 +59,7 @@ public class ArcDeploymentTemplate {
                 if (handle == null) {
                     return null;
                 }
-                return new Factory<T>() {
-                    @Override
-                    public T get() {
-                        return handle.get().get();
-                    }
-                };
+                return () -> handle.get().get();
             }
         };
         for(BeanContainerListener i : beanConfigurators) {
@@ -79,28 +69,20 @@ public class ArcDeploymentTemplate {
     }
 
     public ServletExtension setupRequestScope(ArcContainer arcContainer) {
-        return new ServletExtension() {
+        return (deploymentInfo, servletContext) -> deploymentInfo.addThreadSetupAction(new ThreadSetupHandler() {
             @Override
-            public void handleDeployment(DeploymentInfo deploymentInfo, ServletContext servletContext) {
-                deploymentInfo.addThreadSetupAction(new ThreadSetupHandler() {
-                    @Override
-                    public <T, C> Action<T, C> create(Action<T, C> action) {
-                        return new Action<T, C>() {
-                            @Override
-                            public T call(HttpServerExchange exchange, C context) throws Exception {
-                                ManagedContext requestContext = arcContainer.requestContext();
-                                requestContext.activate();
-                                try {
-                                    return action.call(exchange, context);
-                                } finally {
-                                    requestContext.terminate();
-                                }
-                            }
-                        };
+            public <T, C> Action<T, C> create(Action<T, C> action) {
+                return (exchange, context) -> {
+                    ManagedContext requestContext = arcContainer.requestContext();
+                    requestContext.activate();
+                    try {
+                        return action.call(exchange, context);
+                    } finally {
+                        requestContext.terminate();
                     }
-                });
+                };
             }
-        };
+        });
     }
 
     public InjectionFactory setupInjection(ArcContainer container) {
@@ -109,21 +91,13 @@ public class ArcDeploymentTemplate {
             public <T> InjectionInstance<T> create(Class<T> type) {
                 Supplier<InstanceHandle<T>> instance = container.instanceSupplier(type);
                 if (instance != null) {
-                    return new InjectionInstance<T>() {
-                        @Override
-                        public T newInstance() {
-                            return instance.get().get();
-                        }
-                    };
+                    return () -> instance.get().get();
                 } else {
-                    return new InjectionInstance<T>() {
-                        @Override
-                        public T newInstance() {
-                            try {
-                                return type.newInstance();
-                            } catch (Exception e) {
-                                throw new RuntimeException(e);
-                            }
+                    return () -> {
+                        try {
+                            return type.newInstance();
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
                         }
                     };
                 }
@@ -134,12 +108,7 @@ public class ArcDeploymentTemplate {
     public void handleLifecycleEvents(ShutdownContext context, BeanContainer beanContainer) {
         LifecycleEventRunner instance = beanContainer.instance(LifecycleEventRunner.class);
         instance.fireStartupEvent();
-        context.addShutdownTask(new Runnable() {
-            @Override
-            public void run() {
-                instance.fireShutdownEvent();
-            }
-        });
+        context.addShutdownTask(instance::fireShutdownEvent);
     }
 
 }

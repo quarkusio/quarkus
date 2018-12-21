@@ -61,16 +61,13 @@ public class ShamrockAugmentor {
         BuildChainBuilder chainBuilder = BuildChain.builder()
 
                 .loadProviders(Thread.currentThread().getContextClassLoader())
-                .addBuildStep(new BuildStep() {
-                    @Override
-                    public void execute(BuildContext context) {
-                        //TODO: this should not be here
-                        context.produce(new SubstrateResourceBuildItem("META-INF/microprofile-config.properties"));
-                        context.produce(ShamrockConfig.INSTANCE);
-                        context.produce(new ArchiveRootBuildItem(root));
-                        context.produce(new ClassOutputBuildItem(output));
-                        context.produce(new ShutdownContextBuildItem());
-                    }
+                .addBuildStep(context -> {
+                    //TODO: this should not be here
+                    context.produce(new SubstrateResourceBuildItem("META-INF/microprofile-config.properties"));
+                    context.produce(ShamrockConfig.INSTANCE);
+                    context.produce(new ArchiveRootBuildItem(root));
+                    context.produce(new ClassOutputBuildItem(output));
+                    context.produce(new ShutdownContextBuildItem());
                 })
                 .produces(ShamrockConfig.class)
                 .produces(SubstrateResourceBuildItem.class)

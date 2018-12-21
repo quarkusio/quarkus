@@ -234,11 +234,7 @@ final class Types {
             for (Type type : typed.value().asClassArray()) {
                 typedClasses.add(type.name());
             }
-            for (Iterator<Type> iterator = types.iterator(); iterator.hasNext();) {
-                if (!typedClasses.contains(iterator.next().name())) {
-                    iterator.remove();
-                }
-            }
+            types.removeIf(type -> !typedClasses.contains(type.name()));
         }
         return types;
     }

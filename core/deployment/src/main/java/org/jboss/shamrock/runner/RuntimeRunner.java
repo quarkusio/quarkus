@@ -87,15 +87,12 @@ public class RuntimeRunner implements Runnable, Closeable {
                     //TODO: do we need this? apparently there have been big perf fixes
                     ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
                     for (Map.Entry<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> entry : functions.entrySet()) {
-                        executorService.submit(new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-                                    loader.loadClass(entry.getKey(), true);
-                                } catch (ClassNotFoundException e) {
-                                    //ignore
-                                    //this will show up at runtime anyway
-                                }
+                        executorService.submit(() -> {
+                            try {
+                                loader.loadClass(entry.getKey(), true);
+                            } catch (ClassNotFoundException e) {
+                                //ignore
+                                //this will show up at runtime anyway
                             }
                         });
                     }
@@ -117,12 +114,7 @@ public class RuntimeRunner implements Runnable, Closeable {
                 Thread.currentThread().setContextClassLoader(old);
             }
 
-            closeTask = new Closeable() {
-                @Override
-                public void close() {
-                    application.stop();
-                }
-            };
+            closeTask = application::stop;
 
         } catch (Exception e) {
             throw new RuntimeException(e);

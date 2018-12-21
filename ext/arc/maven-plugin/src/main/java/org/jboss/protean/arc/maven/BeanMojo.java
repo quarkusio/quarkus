@@ -85,19 +85,15 @@ public class BeanMojo extends AbstractMojo {
         }
 
         BeanProcessor beanProcessor = BeanProcessor.builder().setIndex(index).setAdditionalBeanDefiningAnnotations(getAdditionalBeanDefiningAnnotations().stream().map((s) -> new BeanDefiningAnnotation(s, null)).collect(Collectors.toSet()))
-                .setOutput(new ResourceOutput() {
-
-                    @Override
-                    public void writeResource(Resource resource) throws IOException {
-                        switch (resource.getType()) {
-                            case JAVA_CLASS:
-                                resource.writeTo(outputDirectory);
-                                break;
-                            case SERVICE_PROVIDER:
-                                resource.writeTo(new File(outputDirectory, "/META-INF/services/"));
-                            default:
-                                break;
-                        }
+                .setOutput(resource -> {
+                    switch (resource.getType()) {
+                        case JAVA_CLASS:
+                            resource.writeTo(outputDirectory);
+                            break;
+                        case SERVICE_PROVIDER:
+                            resource.writeTo(new File(outputDirectory, "/META-INF/services/"));
+                        default:
+                            break;
                     }
                 }).build();
         try {

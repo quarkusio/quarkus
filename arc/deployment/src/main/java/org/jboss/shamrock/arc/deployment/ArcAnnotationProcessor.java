@@ -141,17 +141,14 @@ public class ArcAnnotationProcessor {
         }
         CompositeIndex index = CompositeIndex.create(indexer.complete(), beanArchiveIndex.getIndex());
         Builder builder = BeanProcessor.builder();
-        builder.setApplicationClassPredicate(new Predicate<DotName>() {
-            @Override
-            public boolean test(DotName dotName) {
-                if(applicationArchivesBuildItem.getRootArchive().getIndex().getClassByName(dotName) != null) {
-                    return true;
-                }
-                if(generatedClassNames.contains(dotName)) {
-                    return true;
-                }
-                return false;
+        builder.setApplicationClassPredicate(dotName -> {
+            if(applicationArchivesBuildItem.getRootArchive().getIndex().getClassByName(dotName) != null) {
+                return true;
             }
+            if(generatedClassNames.contains(dotName)) {
+                return true;
+            }
+            return false;
         });
         builder.setIndex(index);
         builder.setAdditionalBeanDefiningAnnotations(additionalBeanDefiningAnnotations.stream()
@@ -176,19 +173,16 @@ public class ArcAnnotationProcessor {
             builder.addAnnotationTransformer(transformerItem.getAnnotationsTransformer());
         }
 
-        builder.setOutput(new ResourceOutput() {
-            @Override
-            public void writeResource(Resource resource) throws IOException {
-                switch (resource.getType()) {
-                    case JAVA_CLASS:
-                        log.debugf("Add %s class: %s", (resource.isApplicationClass() ? "APP" : "FWK"), resource.getFullyQualifiedName());
-                        generatedClass.produce(new GeneratedClassBuildItem(resource.isApplicationClass(), resource.getName(), resource.getData()));
-                        break;
-                    case SERVICE_PROVIDER:
-                        generatedResource.produce(new GeneratedResourceBuildItem("META-INF/services/" + resource.getName(), resource.getData()));
-                    default:
-                        break;
-                }
+        builder.setOutput(resource -> {
+            switch (resource.getType()) {
+                case JAVA_CLASS:
+                    log.debugf("Add %s class: %s", (resource.isApplicationClass() ? "APP" : "FWK"), resource.getFullyQualifiedName());
+                    generatedClass.produce(new GeneratedClassBuildItem(resource.isApplicationClass(), resource.getName(), resource.getData()));
+                    break;
+                case SERVICE_PROVIDER:
+                    generatedResource.produce(new GeneratedResourceBuildItem("META-INF/services/" + resource.getName(), resource.getData()));
+                default:
+                    break;
             }
         });
         for (BeanRegistrarBuildItem item : beanRegistrars) {

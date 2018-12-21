@@ -156,7 +156,7 @@ public class BeanDeployment {
                 }
             } else {
                 DeploymentException deploymentException = new DeploymentException("Multiple deployment problems occured: " + errors.stream()
-                        .map(e -> e.getMessage())
+                        .map(Throwable::getMessage)
                         .collect(Collectors.toList())
                         .toString());
                 for (Throwable error : errors) {
@@ -176,11 +176,7 @@ public class BeanDeployment {
         Map<String, List<BeanInfo>> namedBeans = new HashMap<>();
         for (BeanInfo bean : beans) {
             if (bean.getName() != null) {
-                List<BeanInfo> named = namedBeans.get(bean.getName());
-                if (named == null) {
-                    named = new ArrayList<>();
-                    namedBeans.put(bean.getName(), named);
-                }
+                List<BeanInfo> named = namedBeans.computeIfAbsent(bean.getName(), k -> new ArrayList<>());
                 named.add(bean);
             }
         }

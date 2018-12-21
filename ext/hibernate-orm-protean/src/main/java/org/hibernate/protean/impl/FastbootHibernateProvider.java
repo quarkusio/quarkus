@@ -146,7 +146,6 @@ final class FastbootHibernateProvider implements PersistenceProvider  {
 
 			RecordedState rs = PersistenceUnitsHolder.getMetadata( persistenceUnitName );
 
-			final Dialect dialect = rs.getDialect();
 			final MetadataImplementor metadata = rs.getFullMeta();
 
 			final Map<String,Object> configurationValues = rs.getConfigurationProperties();

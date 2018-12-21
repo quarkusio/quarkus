@@ -244,7 +244,6 @@ public class BytecodeRecorderImpl implements RecorderContext {
         //now create instances of all the classes we invoke on and store them in variables as well
         Map<Class, ResultHandle> classInstanceVariables = new HashMap<>();
         Map<Object, ResultHandle> returnValueResults = new IdentityHashMap<>();
-        Map<String, ResultHandle> contextResults = new HashMap<>();
         for (BytecodeInstruction set : this.methodRecorder.storedMethodCalls) {
             if (set instanceof StoredMethodCall) {
                 StoredMethodCall call = (StoredMethodCall) set;

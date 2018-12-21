@@ -84,6 +84,7 @@
       <microprofile-opentracing-api.version>1.2</microprofile-opentracing-api.version>
       <microprofile-reactive-streams-operators.version>1.0-RC3</microprofile-reactive-streams-operators.version>
       <wildfly.openssl.version>1.0.6.Final</wildfly.openssl.version>
+      <jboss-logging-annotations.version>2.1.0.Final</jboss-logging-annotations.version>
       <log4j.version>1.2.16</log4j.version>
       <log4j2.version>2.0</log4j2.version>
       <slf4j.version>1.7.25</slf4j.version>
@@ -824,6 +825,11 @@
             <groupId>org.jboss.invocation</groupId>
             <artifactId>jboss-invocation</artifactId>
             <version>${jboss-invocation.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.logging</groupId>
+            <artifactId>jboss-logging-annotations</artifactId>
+            <version>${jboss-logging-annotations.version}</version>
          </dependency>
          <dependency>
             <groupId>org.jboss.metadata</groupId>

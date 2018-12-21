@@ -69,6 +69,12 @@ import org.jboss.builder.item.BuildItem;
 @Target(ElementType.METHOD)
 public @interface BuildStep {
 
+    /**
+     *
+     * A list of capabilitites that are provided by this build step.
+     *
+     * @return The capabilitities provided by this build step
+     */
     String[] providesCapabilities() default {};
 
     /**

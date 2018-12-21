@@ -31,7 +31,7 @@ public class SampleTest {
         }
         Class<?> clazz = cl.loadClass("com.MyTest");
         Assert.assertTrue(clazz.isSynthetic());
-        MyInterface myInterface = (MyInterface) clazz.newInstance();
+        MyInterface myInterface = (MyInterface) clazz.getDeclaredConstructor().newInstance();
         Assert.assertEquals("MESSAGE", myInterface.transform("ignored"));
     }
 

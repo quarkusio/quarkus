@@ -56,7 +56,7 @@ public class Main {
         try {
             List<URL> urls = new ArrayList<>();
             for (File i : libDir.listFiles()) {
-                urls.add(i.toURL());
+                urls.add(i.toURI().toURL());
             }
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             URLClassLoader ucl = new URLClassLoader(urls.toArray(new URL[urls.size()]));

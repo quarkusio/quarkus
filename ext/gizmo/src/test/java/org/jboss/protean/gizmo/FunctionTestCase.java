@@ -43,7 +43,7 @@ public class FunctionTestCase {
         }
         Class<?> clazz = cl.loadClass("com.MyTest");
         Assert.assertTrue(clazz.isSynthetic());
-        MyInterface myInterface = (MyInterface) clazz.newInstance();
+        MyInterface myInterface = (MyInterface) clazz.getDeclaredConstructor().newInstance();
         Assert.assertEquals("input-func", myInterface.transform("input"));
     }
 
@@ -65,7 +65,7 @@ public class FunctionTestCase {
         }
         Class<?> clazz = cl.loadClass("com.MyTest");
         Assert.assertTrue(clazz.isSynthetic());
-        MyInterface myInterface = (MyInterface) clazz.newInstance();
+        MyInterface myInterface = (MyInterface) clazz.getDeclaredConstructor().newInstance();
         Assert.assertEquals("input-func", myInterface.transform("input"));
     }
 
@@ -88,7 +88,7 @@ public class FunctionTestCase {
         }
         Class<?> clazz = cl.loadClass("com.MyTest");
         Assert.assertTrue(clazz.isSynthetic());
-        Superclass superclass = (Superclass) clazz.newInstance();
+        Superclass superclass = (Superclass) clazz.getDeclaredConstructor().newInstance();
         Assert.assertEquals("Superclass-func", superclass.getMessage());
     }
 
@@ -111,7 +111,7 @@ public class FunctionTestCase {
             bc.returnValue(bc.invokeInterfaceMethod(getAsInt, f1.getInstance()));
         }
         Class<? extends IntSupplier> clazz = cl.loadClass("com.MyTest").asSubclass(IntSupplier.class);
-        IntSupplier supplier = clazz.newInstance();
+        IntSupplier supplier = clazz.getDeclaredConstructor().newInstance();
         Assert.assertEquals(11, supplier.getAsInt());
     }
 }

@@ -15,6 +15,7 @@
  */
 package org.jboss.shamrock.scheduler.runtime;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,8 +52,8 @@ public class SchedulerConfiguration {
     ScheduledInvoker createInvoker(String invokerClassName) {
         try {
             Class<? extends ScheduledInvoker> invokerClazz = (Class<? extends ScheduledInvoker>) Thread.currentThread().getContextClassLoader().loadClass(invokerClassName);
-            return invokerClazz.newInstance();
-        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+            return invokerClazz.getDeclaredConstructor().newInstance();
+        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | NoSuchMethodException | InvocationTargetException e) {
             throw new IllegalStateException("Unable to create invoker: " + invokerClassName, e);
         }
     }

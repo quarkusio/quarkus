@@ -32,7 +32,7 @@ public class ArrayTestCase {
             method.returnValue(arrayHandle);
         }
         Class<?> clazz = cl.loadClass("com.MyTest");
-        Supplier myInterface = (Supplier) clazz.newInstance();
+        Supplier myInterface = (Supplier) clazz.getDeclaredConstructor().newInstance();
         Object o = myInterface.get();
         Assert.assertEquals(String[].class, o.getClass());
         String[] res = (String[]) o;
@@ -50,7 +50,7 @@ public class ArrayTestCase {
             method.returnValue(arrayHandle);
         }
         Class<?> clazz = cl.loadClass("com.MyTest");
-        Supplier myInterface = (Supplier) clazz.newInstance();
+        Supplier myInterface = (Supplier) clazz.getDeclaredConstructor().newInstance();
         Object o = myInterface.get();
         Assert.assertEquals(String[].class, o.getClass());
         String[] res = (String[]) o;

@@ -58,8 +58,8 @@ final class Slf4jLoggerProvider extends AbstractLoggerProvider implements Logger
         MDC.remove(key);
     }
 
+    @SuppressWarnings({"unchecked"})
     public Map<String, Object> getMdcMap() {
-        @SuppressWarnings({"unchecked"})
         final Map<String, String> map = MDC.getCopyOfContextMap();
         return map == null ? Collections.emptyMap() : (Map) map;
     }

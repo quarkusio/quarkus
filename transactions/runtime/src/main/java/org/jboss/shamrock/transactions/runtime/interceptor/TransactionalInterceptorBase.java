@@ -119,13 +119,13 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
         Transactional transactional = getTransactional(ic);
 
-        for (Class dontRollbackOnClass : transactional.dontRollbackOn()) {
+        for (Class<?> dontRollbackOnClass : transactional.dontRollbackOn()) {
             if (dontRollbackOnClass.isAssignableFrom(e.getClass())) {
                 throw e;
             }
         }
 
-        for (Class rollbackOnClass : transactional.rollbackOn()) {
+        for (Class<?> rollbackOnClass : transactional.rollbackOn()) {
             if (rollbackOnClass.isAssignableFrom(e.getClass())) {
                 tx.setRollbackOnly();
                 throw e;

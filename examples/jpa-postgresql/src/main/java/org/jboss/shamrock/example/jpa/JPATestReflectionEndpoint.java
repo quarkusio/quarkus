@@ -48,7 +48,7 @@ public class JPATestReflectionEndpoint extends HttpServlet {
             className = getTrickedClassName(className);
 
             Class<?> custClass = Class.forName(className);
-            Object instance = custClass.newInstance();
+            Object instance = custClass.getDeclaredConstructor().newInstance();
         }
         catch (Exception e) {
             reportException(errorMessage, e, resp);
@@ -60,7 +60,7 @@ public class JPATestReflectionEndpoint extends HttpServlet {
             String className = getTrickedClassName(org.jboss.shamrock.example.jpa.Customer.class.getName());
 
             Class<?> custClass = Class.forName(className);
-            Object instance = custClass.newInstance();
+            Object instance = custClass.getDeclaredConstructor().newInstance();
             Field id = custClass.getDeclaredField("id");
             id.setAccessible(true);
             if (id.get(instance) != null) {
@@ -83,7 +83,7 @@ public class JPATestReflectionEndpoint extends HttpServlet {
             String className = getTrickedClassName(org.jboss.shamrock.example.jpa.WorkAddress.class.getName());
 
             Class<?> custClass = Class.forName(className);
-            Object instance = custClass.newInstance();
+            Object instance = custClass.getDeclaredConstructor().newInstance();
             Method setter = custClass.getDeclaredMethod("setCompany", String.class);
             Method getter = custClass.getDeclaredMethod("getCompany");
             setter.invoke(instance, "Red Hat");
@@ -100,7 +100,7 @@ public class JPATestReflectionEndpoint extends HttpServlet {
             String className = getTrickedClassName(org.jboss.shamrock.example.jpa.Address.class.getName());
 
             Class<?> custClass = Class.forName(className);
-            Object instance = custClass.newInstance();
+            Object instance = custClass.getDeclaredConstructor().newInstance();
             Method setter = custClass.getDeclaredMethod("setStreet1", String.class);
             Method getter = custClass.getDeclaredMethod("getStreet1");
             setter.invoke(instance, "1 rue du General Leclerc");
@@ -119,7 +119,7 @@ public class JPATestReflectionEndpoint extends HttpServlet {
 
             Class<?> custClass = Class.forName(className);
             resp.getWriter().write("Should not be able to find a non referenced non entity class");
-            Object instance = custClass.newInstance();
+            Object instance = custClass.getDeclaredConstructor().newInstance();
         }
         catch (Exception e) {
             // Expected outcome

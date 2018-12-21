@@ -34,7 +34,7 @@ public class TryCatchTestCase {
         }
         Class<?> clazz = cl.loadClass("com.MyTest");
         Assert.assertTrue(clazz.isSynthetic());
-        MyInterface myInterface = (MyInterface) clazz.newInstance();
+        MyInterface myInterface = (MyInterface) clazz.getDeclaredConstructor().newInstance();
         Assert.assertEquals("caught-exception", myInterface.transform("ignored"));
     }
 
@@ -51,7 +51,7 @@ public class TryCatchTestCase {
         }
         Class<?> clazz = cl.loadClass("com.MyTest");
         Assert.assertTrue(clazz.isSynthetic());
-        MyInterface myInterface = (MyInterface) clazz.newInstance();
+        MyInterface myInterface = (MyInterface) clazz.getDeclaredConstructor().newInstance();
         Assert.assertEquals("complete", myInterface.transform("ignored"));
     }
 }

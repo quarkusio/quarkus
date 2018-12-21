@@ -32,7 +32,7 @@ public class LoadClassTestCase {
             method.returnValue(stringHandle);
         }
         Class<?> clazz = cl.loadClass("com.MyTest");
-        Supplier myInterface = (Supplier) clazz.newInstance();
+        Supplier myInterface = (Supplier) clazz.getDeclaredConstructor().newInstance();
         Assert.assertEquals(String.class, myInterface.get());
     }
 

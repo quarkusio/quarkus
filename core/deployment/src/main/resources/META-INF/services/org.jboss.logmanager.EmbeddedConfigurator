@@ -14,4 +14,4 @@
 # limitations under the License.
 #
 
-org.jboss.shamrock.dev.DevModeLogging
+org.jboss.shamrock.runner.RuntimeLoggingConfigurator

@@ -47,6 +47,10 @@ import org.junit.runners.model.Statement;
 
 public class ShamrockUnitTest extends BlockJUnit4ClassRunner {
 
+    static {
+        System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
+    }
+
     private static Path deploymentDir;
     private static RuntimeRunner runtimeRunner;
 

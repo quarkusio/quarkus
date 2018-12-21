@@ -24,7 +24,6 @@ import static org.junit.Assert.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Filter;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 

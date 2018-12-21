@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 import javax.persistence.PersistenceException;
 
 import org.hibernate.boot.archive.scan.spi.Scanner;
-import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;

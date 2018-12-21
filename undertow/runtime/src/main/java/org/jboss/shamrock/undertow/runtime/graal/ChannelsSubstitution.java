@@ -23,9 +23,7 @@ import java.nio.channels.ReadableByteChannel;
 
 import org.xnio.channels.StreamSourceChannel;
 
-import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Delete;
-import com.oracle.svm.core.annotate.Inject;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 

@@ -18,7 +18,6 @@ package org.jboss.shamrock.example.web;
 
 import java.io.IOException;
 
-import javax.enterprise.context.Dependent;
 import javax.inject.Inject;
 import javax.servlet.annotation.WebInitParam;
 import javax.servlet.annotation.WebServlet;

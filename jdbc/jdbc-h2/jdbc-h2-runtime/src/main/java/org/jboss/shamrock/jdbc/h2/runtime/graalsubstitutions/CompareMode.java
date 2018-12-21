@@ -3,7 +3,6 @@ package org.jboss.shamrock.jdbc.h2.runtime.graalsubstitutions;
 import org.h2.engine.SysProperties;
 
 import com.oracle.svm.core.annotate.Alias;
-import com.oracle.svm.core.annotate.Inject;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 

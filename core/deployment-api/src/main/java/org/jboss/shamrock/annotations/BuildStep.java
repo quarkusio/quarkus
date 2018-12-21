@@ -21,8 +21,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.jboss.builder.item.BuildItem;
-
 /**
  * Indicates that a given method is a build step that is run at deployment time to
  * create the runtime output.

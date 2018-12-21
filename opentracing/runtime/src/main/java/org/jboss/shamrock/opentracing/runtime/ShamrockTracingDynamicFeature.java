@@ -20,14 +20,11 @@ package org.jboss.shamrock.opentracing.runtime;
 import java.util.Optional;
 import java.util.logging.Logger;
 
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.spi.CDI;
 import javax.ws.rs.container.DynamicFeature;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.FeatureContext;
 import javax.ws.rs.ext.Provider;
 
-import io.opentracing.Tracer;
 import io.opentracing.contrib.jaxrs2.server.OperationNameProvider;
 import io.opentracing.contrib.jaxrs2.server.ServerTracingDynamicFeature;
 import org.eclipse.microprofile.config.Config;

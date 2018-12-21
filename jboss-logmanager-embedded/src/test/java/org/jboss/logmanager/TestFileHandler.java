@@ -16,7 +16,6 @@
 
 package org.jboss.logmanager;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 
 import org.jboss.logmanager.handlers.FileHandler;

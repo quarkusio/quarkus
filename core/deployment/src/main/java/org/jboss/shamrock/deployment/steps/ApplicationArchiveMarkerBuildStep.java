@@ -19,7 +19,6 @@ package org.jboss.shamrock.deployment.steps;
 import org.jboss.builder.BuildContext;
 import org.jboss.builder.BuildStep;
 import org.jboss.shamrock.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
-import org.jboss.shamrock.deployment.builditem.CapabilityBuildItem;
 
 public class ApplicationArchiveMarkerBuildStep implements BuildStep {
 

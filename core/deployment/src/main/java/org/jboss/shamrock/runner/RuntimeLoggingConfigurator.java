@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.dev;
+package org.jboss.shamrock.runner;
 
 import java.util.Optional;
 import java.util.logging.Handler;
@@ -27,7 +27,11 @@ import org.jboss.logmanager.formatters.ColorPatternFormatter;
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.jboss.logmanager.handlers.ConsoleHandler;
 
-public class DevModeLogging implements EmbeddedConfigurator {
+/**
+ * Embedded configurator that can be used to configure logging in a similar
+ * manner to the auto generated configurator.
+ */
+public class RuntimeLoggingConfigurator implements EmbeddedConfigurator {
 
     static final Config config = ConfigProvider.getConfig();
 
@@ -43,7 +47,22 @@ public class DevModeLogging implements EmbeddedConfigurator {
         }
         level = config.getOptionalValue("shamrock.log.level", String.class);
         if (level.isPresent()) {
-            return Level.parse(level.get());
+            switch (level.get()) {
+                case "FATAL":
+                    return org.jboss.logmanager.Level.FATAL;
+                case "ERROR":
+                    return org.jboss.logmanager.Level.ERROR;
+                case "WARN":
+                    return org.jboss.logmanager.Level.WARN;
+                case "INFO":
+                    return org.jboss.logmanager.Level.INFO;
+                case "DEBUG":
+                    return org.jboss.logmanager.Level.DEBUG;
+                case "TRACE":
+                    return org.jboss.logmanager.Level.TRACE;
+                default:
+                    return org.jboss.logmanager.Level.parse((level.get()));
+            }
         }
         return Level.INFO;
     }
@@ -56,18 +75,18 @@ public class DevModeLogging implements EmbeddedConfigurator {
                 .orElse(true);
 
         if (color) {
-            return loggerName.isEmpty() ? new Handler[] {
+            return loggerName.isEmpty() ? new Handler[]{
                     new ConsoleHandler(new ColorPatternFormatter(format))
             } : NO_HANDLERS;
         } else {
-            return loggerName.isEmpty() ? new Handler[] {
+            return loggerName.isEmpty() ? new Handler[]{
                     new ConsoleHandler(new PatternFormatter(format))
             } : NO_HANDLERS;
         }
     }
 
     static Config getConfig() {
-        if(Thread.currentThread().getContextClassLoader() == null) {
+        if (Thread.currentThread().getContextClassLoader() == null) {
             return config;
         } else {
             return ConfigProvider.getConfig();

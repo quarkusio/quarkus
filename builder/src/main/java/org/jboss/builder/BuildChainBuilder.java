@@ -130,7 +130,6 @@ public final class BuildChainBuilder {
     }
 
     public BuildChainBuilder loadProviders(ClassLoader classLoader) throws ChainBuildException {
-        final ArrayList<BuildProvider> list = new ArrayList<>();
         final ServiceLoader<BuildProvider> serviceLoader = ServiceLoader.load(BuildProvider.class, classLoader);
         for (final BuildProvider provider : serviceLoader) {
             provider.installInto(this);

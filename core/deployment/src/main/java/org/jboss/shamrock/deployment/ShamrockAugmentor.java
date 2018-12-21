@@ -55,7 +55,6 @@ public class ShamrockAugmentor {
     public BuildResult run() throws Exception {
         long time = System.currentTimeMillis();
         log.info("Beginning shamrock augmentation");
-        ClassLoader old = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(classLoader);
 
         BuildChainBuilder chainBuilder = BuildChain.builder()

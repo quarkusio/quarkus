@@ -23,6 +23,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+import org.jboss.shamrock.creator.phase.nativeimage.ReportAnalyzer;
 
 @Mojo(name = "analyze-call-tree")
 public class AnalyseCallTreeMojo extends AbstractMojo {

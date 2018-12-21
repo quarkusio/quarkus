@@ -25,6 +25,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import javax.validation.Constraint;
+import javax.validation.Valid;
+import javax.validation.executable.ValidateOnExecution;
 
 import org.hibernate.validator.internal.metadata.core.ConstraintHelper;
 import org.hibernate.validator.messageinterpolation.AbstractMessageInterpolator;
@@ -33,17 +35,18 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.Type;
 import org.jboss.shamrock.annotations.BuildProducer;
 import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.annotations.Record;
+import org.jboss.shamrock.arc.deployment.AnnotationsTransformerBuildItem;
 import org.jboss.shamrock.beanvalidation.runtime.ValidatorProvider;
 import org.jboss.shamrock.beanvalidation.runtime.ValidatorTemplate;
+import org.jboss.shamrock.beanvalidation.runtime.interceptor.MethodValidationInterceptor;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
-import org.jboss.shamrock.deployment.builditem.InjectionFactoryBuildItem;
 import org.jboss.shamrock.deployment.builditem.SystemPropertyBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveFieldBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveMethodBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildItem;
@@ -51,7 +54,9 @@ import org.jboss.shamrock.deployment.recording.RecorderContext;
 
 class BeanValidationProcessor {
 
-    private static final DotName VALIDATE_ON_EXECUTION = DotName.createSimple("javax.validation.executable.ValidateOnExecution");
+    private static final DotName VALIDATE_ON_EXECUTION = DotName.createSimple(ValidateOnExecution.class.getName());
+
+    private static final DotName VALID = DotName.createSimple(Valid.class.getName());
 
     @BuildStep
     SystemPropertyBuildItem disableJavaFXIntegrations() {
@@ -65,17 +70,26 @@ class BeanValidationProcessor {
     }
 
     @BuildStep
-    AdditionalBeanBuildItem registerBean() {
-        return new AdditionalBeanBuildItem(ValidatorProvider.class);
+    void registerAdditionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        // The bean encapsulating the Validator and ValidatorFactory
+        additionalBeans.produce(new AdditionalBeanBuildItem(ValidatorProvider.class));
+
+        // The CDI interceptor which will validate the methods annotated with @MethodValidated
+        additionalBeans.produce(new AdditionalBeanBuildItem(MethodValidationInterceptor.class));
+
+        if (isResteasyInClasspath()) {
+            // The CDI interceptor which will validate the methods annotated with @JaxrsEndPointValidated
+            additionalBeans.produce(new AdditionalBeanBuildItem("org.jboss.shamrock.beanvalidation.runtime.jaxrs.JaxrsEndPointValidationInterceptor"));
+        }
     }
 
     @BuildStep
     @Record(STATIC_INIT)
-    public void build(ValidatorTemplate template, RecorderContext recorder, InjectionFactoryBuildItem factory,
+    public void build(ValidatorTemplate template, RecorderContext recorder,
                       BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
                       BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
-                      CombinedIndexBuildItem combinedIndexBuildItem,
-                      BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws Exception {
+                      BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformers,
+                      CombinedIndexBuildItem combinedIndexBuildItem) throws Exception {
 
         IndexView indexView = combinedIndexBuildItem.getIndex();
 
@@ -89,33 +103,44 @@ class BeanValidationProcessor {
             consideredAnnotations.add(constraint.target().asClass().name());
         }
 
+        // Also consider elements that are marked with @Valid
+        consideredAnnotations.add(VALID);
+
         // Also consider elements that are marked with @ValidateOnExecution
         consideredAnnotations.add(VALIDATE_ON_EXECUTION);
 
         Set<Class<?>> classesToBeValidated = new HashSet<>();
 
-        for (DotName constraint : consideredAnnotations) {
-            Collection<AnnotationInstance> annotationInstances = indexView.getAnnotations(constraint);
+        for (DotName consideredAnnotation : consideredAnnotations) {
+            Collection<AnnotationInstance> annotationInstances = indexView.getAnnotations(consideredAnnotation);
 
             for (AnnotationInstance annotation : annotationInstances) {
                 if (annotation.target().kind() == AnnotationTarget.Kind.FIELD) {
-                    contributeClass(classesToBeValidated, recorder, indexView, annotation.target().asField().declaringClass());
+                    contributeClass(classesToBeValidated, recorder, indexView, annotation.target().asField().declaringClass().name());
                     reflectiveFields.produce(new ReflectiveFieldBuildItem(annotation.target().asField()));
+                    contributeClassMarkedForCascadingValidation(classesToBeValidated, recorder, indexView, consideredAnnotation, annotation.target().asField().type());
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
-                    contributeClass(classesToBeValidated, recorder, indexView, annotation.target().asMethod().declaringClass());
+                    contributeClass(classesToBeValidated, recorder, indexView, annotation.target().asMethod().declaringClass().name());
                     // we need to register the method for reflection as it could be a getter
                     reflectiveMethods.produce(new ReflectiveMethodBuildItem(annotation.target().asMethod()));
+                    contributeClassMarkedForCascadingValidation(classesToBeValidated, recorder, indexView, consideredAnnotation, annotation.target().asMethod().returnType());
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
-                    contributeClass(classesToBeValidated, recorder, indexView, annotation.target().asMethodParameter().method().declaringClass());
+                    contributeClass(classesToBeValidated, recorder, indexView, annotation.target().asMethodParameter().method().declaringClass().name());
                     // a getter does not have parameters so it's a pure method: no need for reflection in this case
+                    contributeClassMarkedForCascadingValidation(classesToBeValidated, recorder, indexView, consideredAnnotation,
+                            // FIXME this won't work in the case of synthetic parameters
+                            annotation.target().asMethodParameter().method().parameters().get(annotation.target().asMethodParameter().position()));
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
-                    contributeClass(classesToBeValidated, recorder, indexView, annotation.target().asClass());
+                    contributeClass(classesToBeValidated, recorder, indexView, annotation.target().asClass().name());
                     // no need for reflection in the case of a class level constraint
                 }
             }
         }
 
         template.initializeValidatorFactory(classesToBeValidated);
+
+        // Add the annotations transformer to add @MethodValidated annotations on the methods requiring validation
+        annotationsTransformers.produce(new AnnotationsTransformerBuildItem(new MethodValidatedAnnotationsTransformer(consideredAnnotations)));
     }
 
     @BuildStep
@@ -134,9 +159,9 @@ class BeanValidationProcessor {
         }
     }
 
-    private static void contributeClass(Set<Class<?>> classCollector, RecorderContext recorder, IndexView indexView, ClassInfo classInfo) {
-        classCollector.add(recorder.classProxy(classInfo.name().toString()));
-        for (ClassInfo subclass : indexView.getAllKnownSubclasses(classInfo.name())) {
+    private static void contributeClass(Set<Class<?>> classCollector, RecorderContext recorder, IndexView indexView, DotName className) {
+        classCollector.add(recorder.classProxy(className.toString()));
+        for (ClassInfo subclass : indexView.getAllKnownSubclasses(className)) {
             if (Modifier.isAbstract(subclass.flags())) {
                 // we can avoid adding the abstract classes here: either they are parent classes
                 // and they will be dealt with by Hibernate Validator or they are child classes
@@ -144,6 +169,39 @@ class BeanValidationProcessor {
                 continue;
             }
             classCollector.add(recorder.classProxy(subclass.name().toString()));
+        }
+    }
+
+    private static void contributeClassMarkedForCascadingValidation(Set<Class<?>> classCollector, RecorderContext recorder, IndexView indexView,
+            DotName consideredAnnotation, Type type) {
+        if (VALID != consideredAnnotation) {
+            return;
+        }
+
+        DotName className = getClassName(type);
+        if (className != null) {
+            contributeClass(classCollector, recorder, indexView, className);
+        }
+    }
+
+    private static DotName getClassName(Type type) {
+        switch (type.kind()) {
+        case CLASS:
+        case PARAMETERIZED_TYPE:
+            return type.name();
+        case ARRAY:
+            return getClassName( type.asArrayType().component() );
+        default:
+            return null;
+        }
+    }
+
+    private static boolean isResteasyInClasspath() {
+        try {
+            Class.forName("org.jboss.resteasy.core.ResteasyContext");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
         }
     }
 }

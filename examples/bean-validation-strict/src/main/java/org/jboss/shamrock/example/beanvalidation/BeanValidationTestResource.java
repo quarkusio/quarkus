@@ -9,11 +9,15 @@ import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
+import javax.validation.Valid;
 import javax.validation.Validator;
 import javax.validation.constraints.DecimalMin;
+import javax.validation.constraints.Digits;
 import javax.validation.constraints.Email;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
@@ -26,6 +30,9 @@ public class BeanValidationTestResource {
     @Inject
     Validator validator;
 
+    @Inject
+    GreetingService greetingService;
+
     @GET
     @Path("/basic-features")
     @Produces(MediaType.TEXT_PLAIN)
@@ -35,24 +42,24 @@ public class BeanValidationTestResource {
         Map<String, List<String>> invalidCategorizedEmails = new HashMap<>();
         invalidCategorizedEmails.put("a", Collections.singletonList("b"));
 
-        result.append(validate(new MyBean(
+        result.append(formatViolations(validator.validate(new MyBean(
                 "Bill Jones",
                 "b",
                 Collections.singletonList("c"),
                 -4d,
                 invalidCategorizedEmails
-        )));
+        ))));
 
         Map<String, List<String>> validCategorizedEmails = new HashMap<>();
         validCategorizedEmails.put("Professional", Collections.singletonList("bill.jones@example.com"));
 
-        result.append(validate(new MyBean(
+        result.append(formatViolations(validator.validate(new MyBean(
                 "Bill Jones",
                 "bill.jones@example.com",
                 Collections.singletonList("biji@example.com"),
                 5d,
                 validCategorizedEmails
-        )));
+        ))));
 
         return result.build();
     }
@@ -63,15 +70,39 @@ public class BeanValidationTestResource {
     public String testCustomClassLevelConstraint() {
         ResultBuilder result = new ResultBuilder();
 
-        result.append(validate(new MyOtherBean(null)));
-        result.append(validate(new MyOtherBean("name")));
+        result.append(formatViolations(validator.validate(new MyOtherBean(null))));
+        result.append(formatViolations(validator.validate(new MyOtherBean("name"))));
 
         return result.build();
     }
 
-    private <T> String validate(T bean) {
-        Set<ConstraintViolation<T>> violations = validator.validate(bean);
+    @GET
+    @Path("/cdi-bean-method-validation")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String testCDIBeanMethodValidation() {
+        ResultBuilder result = new ResultBuilder();
 
+        greetingService.greeting("test");
+
+        result.append(formatViolations(Collections.emptySet()));
+
+        try {
+            greetingService.greeting(null);
+        } catch (ConstraintViolationException e) {
+            result.append(formatViolations(e.getConstraintViolations()));
+        }
+
+        return result.build();
+    }
+
+    @GET
+    @Path("/rest-end-point-validation/{id}/")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String testRestEndPointValidation(@Digits(integer = 5, fraction = 0) @PathParam("id") String id) {
+        return id;
+    }
+
+    private String formatViolations(Set<? extends ConstraintViolation<?>> violations) {
         if (violations.isEmpty()) {
             return "passed";
         }
@@ -96,12 +127,16 @@ public class BeanValidationTestResource {
 
         private Map<@Length(min = 3) String, List<@Email String>> categorizedEmails;
 
+        @Valid
+        private NestedBeanWithoutConstraints nestedBeanWithoutConstraints;
+
         public MyBean(String name, String email, List<String> additionalEmails, Double score, Map<String, List<String>> categorizedEmails) {
             this.name = name;
             this.email = email;
             this.additionalEmails = additionalEmails;
             this.score = score;
             this.categorizedEmails = categorizedEmails;
+            this.nestedBeanWithoutConstraints = new NestedBeanWithoutConstraints();
         }
 
         public String getName() {
@@ -160,5 +195,11 @@ public class BeanValidationTestResource {
         public String build() {
             return builder.toString();
         }
+    }
+
+    private static class NestedBeanWithoutConstraints {
+
+        @SuppressWarnings("unused")
+        private String property;
     }
 }

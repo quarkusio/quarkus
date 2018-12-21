@@ -34,4 +34,21 @@ public class BeanValidationFunctionalityTest {
 
         assertEquals(expected.toString(), URLTester.relative("bean-validation/test/custom-class-level-constraint").invokeURL().asString());
     }
+
+    @Test
+    public void testCDIBeanMethodValidation() {
+        StringBuilder expected = new StringBuilder();
+        expected.append("passed").append("\n");
+        expected.append("failed: greeting.arg0 (must not be null)");
+
+        assertEquals(expected.toString(), URLTester.relative("bean-validation/test/cdi-bean-method-validation").invokeURL().asString());
+    }
+
+    @Test
+    public void testRestEndPointValidation() {
+        // we can't test the content of the response as accessing the input stream throws an IOException
+        assertEquals(400, URLTester.relative("bean-validation/test/rest-end-point-validation/plop/").invokeURL().statusCode());
+
+        assertEquals("42", URLTester.relative("bean-validation/test/rest-end-point-validation/42/").invokeURL().asString() );
+    }
 }

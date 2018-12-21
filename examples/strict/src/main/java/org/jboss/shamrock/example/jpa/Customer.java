@@ -34,16 +34,6 @@ public class Customer extends Human {
     private Address address;
     private WorkAddress workAddress;
 
-    private String name;
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
     // Address is referenced but not marked as @Embeddable
     @Embedded
     public Address getAddress() {

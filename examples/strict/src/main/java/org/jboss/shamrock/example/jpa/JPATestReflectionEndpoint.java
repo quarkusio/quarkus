@@ -66,8 +66,8 @@ public class JPATestReflectionEndpoint extends HttpServlet {
             if (id.get(instance) != null) {
                 resp.getWriter().write("id should be reachable and null");
             }
-            Method setter = custClass.getDeclaredMethod("setName", String.class);
-            Method getter = custClass.getDeclaredMethod("getName");
+            Method setter = custClass.getMethod("setName", String.class);
+            Method getter = custClass.getMethod("getName");
             setter.invoke(instance, "Emmanuel");
             if (! "Emmanuel".equals(getter.invoke(instance))) {
                 resp.getWriter().write("getter / setter should be reachable and usable");

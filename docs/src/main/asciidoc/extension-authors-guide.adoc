@@ -134,6 +134,25 @@ and the resulting code does not have permission to inject private fields or invo
 `BuildItem` instances should be immutable, as the producer/consumer model does not allow for mutation to be correctly
 ordered. This is not enforced but failure to adhere to this can result in race conditions.
 
+=== Capabilities
+
+The `@BuildStep` annotation has a `providesCapabilities` property that can be used to provide capability information
+to other extensions about what is present in the current application. Capabilities are simply strings that are used to
+describe an extension. Capabilities should generally be named after an extensions root package, for example the transactions
+extension will provide `org.jboss.shamrock.transactions`.
+
+To check if a capability is present you can inject the `org.jboss.shamrock.deployment.Capabilities` object and call
+`isCapabilityPresent`.
+
+Capabilities should be used when checking for the presence of an extension rather than class path based checks.
+
+=== Application Archives
+
+The `@BuildStep` annotation can also register marker files that determine which archives on the class path are considered
+to be 'Application Archives', and will therefore get indexed. This is done via the `applicationArchiveMarkers`. For
+example the ArC extension registers `META-INF/beans.xml`, which means that all archives on the class path with a `beans.xml`
+file will be indexed.
+
 == Configuration
 
 Simple configuration is done via the  https://github.com/eclipse/microprofile-config[MicroProfile Config] `@org.eclipse.microprofile.config.inject.ConfigProperty` annotations.

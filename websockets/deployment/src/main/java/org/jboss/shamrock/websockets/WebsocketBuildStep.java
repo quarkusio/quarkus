@@ -38,7 +38,6 @@ import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.ServiceStartBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.undertow.ServletContextAttributeBuildItem;
-import org.jboss.shamrock.undertow.ServletDeploymentBuildItem;
 import org.jboss.shamrock.undertow.UndertowBuildItem;
 import org.jboss.shamrock.websockets.runtime.WebsocketTemplate;
 

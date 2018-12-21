@@ -17,7 +17,6 @@
 package org.jboss.shamrock.jaxrs.runtime.graal;
 
 import java.lang.reflect.Constructor;
-import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 

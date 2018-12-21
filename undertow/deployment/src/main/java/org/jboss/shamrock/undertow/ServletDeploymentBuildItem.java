@@ -18,7 +18,6 @@ package org.jboss.shamrock.undertow;
 
 import org.jboss.builder.item.SimpleBuildItem;
 
-import io.undertow.server.HttpHandler;
 import io.undertow.servlet.api.Deployment;
 
 public final class ServletDeploymentBuildItem extends SimpleBuildItem {

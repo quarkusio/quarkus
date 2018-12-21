@@ -6,7 +6,6 @@ import javax.json.JsonReader;
 
 import org.jboss.shamrock.test.Deployment;
 import org.jboss.shamrock.test.ShamrockUnitTest;
-import org.jboss.shamrock.test.URLResponse;
 import org.jboss.shamrock.test.URLTester;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;

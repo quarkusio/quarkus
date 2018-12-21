@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import java.util.function.Predicate;
 
 import javax.annotation.Priority;
 import javax.enterprise.context.Dependent;

@@ -18,7 +18,6 @@ package org.jboss.shamrock.example.web;
 
 import java.io.IOException;
 
-import javax.servlet.DispatcherType;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebFilter;

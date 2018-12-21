@@ -7,8 +7,6 @@ import org.apache.maven.shared.utils.cli.StreamConsumer;
 import org.apache.maven.shared.utils.cli.StreamPumper;
 
 import java.io.File;
-import java.io.PrintStream;
-import java.util.stream.Collectors;
 
 /**
  * An implementation of {@link DefaultInvoker} launching Maven, but does not wait for the termination of the process.

@@ -33,16 +33,6 @@
     <dependencies>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>common-jpa-entities</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jaxrs-deployment</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-class-transformer-example</artifactId>
             <scope>provided</scope>
         </dependency>
@@ -63,27 +53,6 @@
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-opentracing-deployment</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-json-p-provider</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-jackson2-provider</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-jaxb-provider</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish</groupId>
-            <artifactId>javax.json</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jpa-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -116,6 +85,39 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-fault-tolerance-deployment</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-scheduler-deployment</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        
+        <!-- JAX-RS -->
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-jaxrs-deployment</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-json-p-provider</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-jackson2-provider</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-jaxb-provider</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish</groupId>
+            <artifactId>javax.json</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-rxjava2</artifactId>
         </dependency>
@@ -124,9 +126,11 @@
             <artifactId>shamrock-rest-client-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
+
+        <!-- JPA -->
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-fault-tolerance-deployment</artifactId>
+            <artifactId>shamrock-jpa-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -136,8 +140,8 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-scheduler-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>common-jpa-entities</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- test dependencies -->

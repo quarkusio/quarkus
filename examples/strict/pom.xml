@@ -135,7 +135,7 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jdbc-postgresql-deployment</artifactId>
+            <artifactId>shamrock-jdbc-h2-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -171,6 +171,52 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <configuration>
+                    <includeProjectDependencies>false</includeProjectDependencies>
+                    <includePluginDependencies>true</includePluginDependencies>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>start-h2</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>org.h2.tools.Server</mainClass>
+                            <cleanupDaemonThreads>false</cleanupDaemonThreads>
+                            <arguments>
+                                <argument>-tcp</argument>
+                                <argument>-tcpDaemon</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>stop-h2</id>
+                        <phase>post-integration-test</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>org.h2.tools.Server</mainClass>
+                            <arguments>
+                                <argument>-tcpShutdown</argument>
+                                <argument>tcp://localhost:9092</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.h2database</groupId>
+                        <artifactId>h2</artifactId>
+                        <version>${h2.version}</version>
+                    </dependency>
+                </dependencies>
             </plugin>
         </plugins>
     </build>
@@ -227,73 +273,6 @@
                 </plugins>
             </build>
         </profile>
-        <profile>
-            <id>postgres</id>
-            <activation>
-                <property>
-                    <name>!no-postgres</name>
-                </property>
-            </activation>
-            <properties>
-                <postgres.url>jdbc:postgresql://localhost:5431/hibernate_orm_test</postgres.url>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>io.fabric8</groupId>
-                        <artifactId>docker-maven-plugin</artifactId>
-                        <configuration>
-                            <images>
-                                <image>
-                                    <name>postgres:10.5</name>
-                                    <alias>postgresql</alias>
-                                    <run>
-                                        <env>
-                                            <POSTGRES_USER>hibernate_orm_test</POSTGRES_USER>
-                                            <POSTGRES_PASSWORD>hibernate_orm_test</POSTGRES_PASSWORD>
-                                            <POSTGRES_DB>hibernate_orm_test</POSTGRES_DB>
-                                        </env>
-                                        <ports>
-                                            <port>5431:5432</port>
-                                        </ports>
-                                        <wait>
-                                            <tcp>
-                                                <mode>mapped</mode>
-                                                <ports>
-                                                    <port>5432</port>
-                                                </ports>
-                                            </tcp>
-                                            <time>10000</time>
-                                        </wait>
-                                    </run>
-                                </image>
-                            </images>
-                            <!--Stops all postgres:10.5 images currently running, not just those we just started.
-                              Useful to stop processes still running from a previously failed integration test run -->
-                            <allContainers>true</allContainers>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>docker-start</id>
-                                <phase>compile</phase>
-                                <goals>
-                                    <goal>stop</goal>
-                                    <goal>start</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>docker-stop</id>
-                                <phase>post-integration-test</phase>
-                                <goals>
-                                    <goal>stop</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
     </profiles>
-
 
 </project>

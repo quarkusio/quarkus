@@ -173,6 +173,11 @@
                         <show>package</show>
                     </configuration>
                 </plugin>
+                <plugin>
+                    <groupId>org.jboss.jandex</groupId>
+                    <artifactId>jandex-maven-plugin</artifactId>
+                    <version>1.0.5</version>
+                </plugin>
                 <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
                 <plugin>
                     <groupId>org.eclipse.m2e</groupId>
@@ -231,6 +236,25 @@
                                         </versionRange>
                                         <goals>
                                             <goal>resolve</goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <ignore></ignore>
+                                    </action>
+                                </pluginExecution>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>
+                                            org.jboss.jandex
+                                        </groupId>
+                                        <artifactId>
+                                            jandex-maven-plugin
+                                        </artifactId>
+                                        <versionRange>
+                                            [1.0.5,)
+                                        </versionRange>
+                                        <goals>
+                                            <goal>jandex</goal>
                                         </goals>
                                     </pluginExecutionFilter>
                                     <action>

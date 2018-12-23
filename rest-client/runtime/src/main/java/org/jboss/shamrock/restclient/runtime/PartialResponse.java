@@ -73,6 +73,7 @@ public class PartialResponse extends Response implements Serializable {
 
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T readEntity(Class<T> entityType) {
 
         if (entityType.isAssignableFrom(String.class)) {

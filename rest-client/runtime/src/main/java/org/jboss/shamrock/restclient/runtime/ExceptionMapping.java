@@ -46,7 +46,7 @@ class ExceptionMapping implements ClientResponseFilter {
         Map<ResponseExceptionMapper, Integer> mappers = new HashMap<>();
         for (Object o : instances) {
             if (o instanceof ResponseExceptionMapper) {
-                ResponseExceptionMapper candiate = (ResponseExceptionMapper) o;
+                ResponseExceptionMapper<?> candiate = (ResponseExceptionMapper) o;
                 if (candiate.handles(response.getStatus(), response.getHeaders())) {
                     mappers.put(candiate, candiate.getPriority());
                 }

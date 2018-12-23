@@ -32,7 +32,7 @@ public class LoadNullTestCase {
             method.returnValue(method.loadNull());
         }
         Class<?> clazz = cl.loadClass("com.MyTest");
-        Supplier myInterface = (Supplier) clazz.newInstance();
+        Supplier myInterface = (Supplier) clazz.getDeclaredConstructor().newInstance();
         assertNull(myInterface.get());
     }
 

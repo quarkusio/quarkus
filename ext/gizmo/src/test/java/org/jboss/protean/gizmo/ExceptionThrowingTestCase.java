@@ -31,7 +31,7 @@ public class ExceptionThrowingTestCase {
         }
         Class<?> clazz = cl.loadClass("com.MyTest");
         Assert.assertTrue(clazz.isSynthetic());
-        MyInterface myInterface = (MyInterface) clazz.newInstance();
+        MyInterface myInterface = (MyInterface) clazz.getDeclaredConstructor().newInstance();
         try {
             myInterface.transform("ignored");
             Assert.fail();

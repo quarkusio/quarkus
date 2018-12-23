@@ -368,7 +368,7 @@ class RestClientBuilderImpl implements RestClientBuilder {
 
     private static Object newInstanceOf(Class<?> clazz) {
         try {
-            return clazz.newInstance();
+            return clazz.getDeclaredConstructor().newInstance();
         } catch (Throwable t) {
             throw new RuntimeException("Failed to register " + clazz, t);
         }

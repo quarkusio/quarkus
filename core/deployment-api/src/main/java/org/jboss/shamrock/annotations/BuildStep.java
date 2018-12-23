@@ -69,19 +69,19 @@ public @interface BuildStep {
 
     /**
      *
-     * A list of capabilitites that are provided by this build step.
+     * A list of capabilities that are provided by this build step.
      *
-     * @return The capabilitities provided by this build step
+     * @return The capabilities provided by this build step
      */
     String[] providesCapabilities() default {};
 
     /**
-     * Indicates that the provided file names should be considered to be application index markers
+     * Indicates that the provided file names should be considered to be application index markers.
      *
      * If these are present in library on the class path then the library will be indexed, and this index will be
-     * used when evaluating application components
+     * used when evaluating application components.
      *
-     * TODO: this this be a different annotation?
+     * TODO: this should be a different annotation?
      */
     String[] applicationArchiveMarkers() default {};
 }

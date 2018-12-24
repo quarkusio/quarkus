@@ -100,6 +100,7 @@
       <postgresql-jdbc.version>42.2.5</postgresql-jdbc.version>
       <mariadb-jdbc.version>2.3.0</mariadb-jdbc.version>
       <shrinkwrap.version>1.2.6</shrinkwrap.version>
+      <rest-assured.version>3.2.0</rest-assured.version>
    </properties>
 
    <dependencyManagement>
@@ -525,6 +526,18 @@
             <artifactId>opentracing-tracerresolver</artifactId>
             <version>${opentracing-tracerresolver.version}</version>
          </dependency>
+         <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <version>${rest-assured.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.activation</groupId>
+                    <artifactId>activation</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
          <dependency>
             <groupId>io.undertow</groupId>
             <artifactId>undertow-servlet</artifactId>

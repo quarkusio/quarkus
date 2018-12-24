@@ -45,7 +45,7 @@ public class ReflectiveHierarchyStep {
     private static final Logger log = Logger.getLogger(ReflectiveHierarchyStep.class);
 
     @Inject
-    List<ReflectiveHierarchyBuildItem> heiracy;
+    List<ReflectiveHierarchyBuildItem> hierarchy;
 
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
@@ -56,7 +56,7 @@ public class ReflectiveHierarchyStep {
     @BuildStep
     public void build() throws Exception {
         Set<DotName> processedReflectiveHierarchies = new HashSet<>();
-        for (ReflectiveHierarchyBuildItem i : heiracy) {
+        for (ReflectiveHierarchyBuildItem i : hierarchy) {
             addReflectiveHierarchy(i.getType(), processedReflectiveHierarchies);
         }
     }
@@ -89,7 +89,8 @@ public class ReflectiveHierarchyStep {
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, name.toString()));
         ClassInfo info = combinedIndexBuildItem.getIndex().getClassByName(name);
         if (info == null) {
-            log.warn("Unable to find annotation info for " + name + ", it may not be correctly registered for reflection");
+            log.warn("Unable to find annotation info for " + name
+                    + ", either it should be added to the Jandex index or it might be incorrectly registered for reflection.");
         } else {
             addClassTypeHierarchy(info.superName(), processedReflectiveHierarchies);
             for (FieldInfo i : info.fields()) {

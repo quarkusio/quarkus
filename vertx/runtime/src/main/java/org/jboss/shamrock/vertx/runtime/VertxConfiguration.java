@@ -15,6 +15,12 @@ public class VertxConfiguration {
     public boolean fileResolverCachingEnabled;
 
     /**
+     * Enables or disabled the Vert.x classpath resource resolver.
+     */
+    @ConfigProperty(name = "classpathResolving", defaultValue = "true")
+    public boolean classpathResolvingEnabled;
+
+    /**
      * The number of event loops. 2 x the number of core by default.
      */
     @ConfigProperty(name = "eventLoopsPoolSize", defaultValue = "-1")

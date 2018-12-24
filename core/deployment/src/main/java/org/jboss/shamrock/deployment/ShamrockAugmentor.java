@@ -55,48 +55,52 @@ public class ShamrockAugmentor {
     public BuildResult run() throws Exception {
         long time = System.currentTimeMillis();
         log.info("Beginning shamrock augmentation");
-        ClassLoader old = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(classLoader);
+        ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
+        try {
+            Thread.currentThread().setContextClassLoader(classLoader);
 
-        BuildChainBuilder chainBuilder = BuildChain.builder()
+            BuildChainBuilder chainBuilder = BuildChain.builder()
 
-                .loadProviders(Thread.currentThread().getContextClassLoader())
-                .addBuildStep(new BuildStep() {
-                    @Override
-                    public void execute(BuildContext context) {
-                        //TODO: this should not be here
-                        context.produce(new SubstrateResourceBuildItem("META-INF/microprofile-config.properties"));
-                        context.produce(ShamrockConfig.INSTANCE);
-                        context.produce(new ArchiveRootBuildItem(root));
-                        context.produce(new ClassOutputBuildItem(output));
-                        context.produce(new ShutdownContextBuildItem());
-                    }
-                })
-                .produces(ShamrockConfig.class)
-                .produces(SubstrateResourceBuildItem.class)
-                .produces(ArchiveRootBuildItem.class)
-                .produces(ShutdownContextBuildItem.class)
-                .produces(ClassOutputBuildItem.class)
-                .build();
-        for (Class<? extends BuildItem> i : finalResults) {
-            chainBuilder.addFinal(i);
+                    .loadProviders(Thread.currentThread().getContextClassLoader())
+                    .addBuildStep(new BuildStep() {
+                        @Override
+                        public void execute(BuildContext context) {
+                            //TODO: this should not be here
+                            context.produce(new SubstrateResourceBuildItem("META-INF/microprofile-config.properties"));
+                            context.produce(ShamrockConfig.INSTANCE);
+                            context.produce(new ArchiveRootBuildItem(root));
+                            context.produce(new ClassOutputBuildItem(output));
+                            context.produce(new ShutdownContextBuildItem());
+                        }
+                    })
+                    .produces(ShamrockConfig.class)
+                    .produces(SubstrateResourceBuildItem.class)
+                    .produces(ArchiveRootBuildItem.class)
+                    .produces(ShutdownContextBuildItem.class)
+                    .produces(ClassOutputBuildItem.class)
+                    .build();
+            for (Class<? extends BuildItem> i : finalResults) {
+                chainBuilder.addFinal(i);
+            }
+            chainBuilder.addFinal(GeneratedClassBuildItem.class)
+                    .addFinal(GeneratedResourceBuildItem.class);
+
+            BuildChain chain = chainBuilder
+                    .build();
+            BuildResult buildResult = chain.createExecutionBuilder("main").execute();
+
+            //TODO: this seems wrong
+            for (GeneratedClassBuildItem i : buildResult.consumeMulti(GeneratedClassBuildItem.class)) {
+                output.writeClass(i.isApplicationClass(), i.getName(), i.getClassData());
+            }
+            for (GeneratedResourceBuildItem i : buildResult.consumeMulti(GeneratedResourceBuildItem.class)) {
+                output.writeResource(i.getName(), i.getClassData());
+            }
+            log.info("Shamrock augmentation completed in " + (System.currentTimeMillis() - time) + "ms");
+            return buildResult;
+        } finally {
+            Thread.currentThread().setContextClassLoader(originalClassLoader);
         }
-        chainBuilder.addFinal(GeneratedClassBuildItem.class)
-                .addFinal(GeneratedResourceBuildItem.class);
-
-        BuildChain chain = chainBuilder
-                .build();
-        BuildResult buildResult = chain.createExecutionBuilder("main").execute();
-
-        //TODO: this seems wrong
-        for (GeneratedClassBuildItem i : buildResult.consumeMulti(GeneratedClassBuildItem.class)) {
-            output.writeClass(i.isApplicationClass(), i.getName(), i.getClassData());
-        }
-        for (GeneratedResourceBuildItem i : buildResult.consumeMulti(GeneratedResourceBuildItem.class)) {
-            output.writeResource(i.getName(), i.getClassData());
-        }
-        log.info("Shamrock augmentation completed in " + (System.currentTimeMillis() - time) + "ms");
-        return buildResult;
     }
 
 

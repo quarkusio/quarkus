@@ -4,6 +4,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.EventBusOptions;
+import io.vertx.core.file.FileSystemOptions;
 import io.vertx.core.http.ClientAuth;
 import io.vertx.core.net.JksOptions;
 import io.vertx.core.net.PemKeyCertOptions;
@@ -13,6 +14,7 @@ import io.vertx.core.net.PfxOptions;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -77,7 +79,9 @@ public class VertxProducer {
         setEventBusOptions(options);
         initializeClusterOptions(options);
 
-        options.setFileResolverCachingEnabled(conf.fileResolverCachingEnabled);
+        options.setFileSystemOptions(new FileSystemOptions()
+                .setFileCachingEnabled(conf.fileResolverCachingEnabled)
+                .setClassPathResolvingEnabled(conf.classpathResolvingEnabled));
         options.setWorkerPoolSize(conf.workerPoolSize);
         options.setBlockedThreadCheckInterval(conf.warningExceptionTime);
         options.setInternalBlockingPoolSize(conf.internalBlockingPoolSize);
@@ -198,7 +202,7 @@ public class VertxProducer {
         options.setEventBusOptions(opts);
     }
 
-    @ApplicationScoped
+    @Singleton
     @Produces
     public synchronized Vertx vertx() {
         if (vertx != null) {
@@ -208,7 +212,7 @@ public class VertxProducer {
         return this.vertx;
     }
 
-    @ApplicationScoped
+    @Singleton
     @Produces
     public synchronized EventBus eventbus() {
         if (vertx == null) {

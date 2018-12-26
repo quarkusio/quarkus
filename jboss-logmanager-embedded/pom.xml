@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.jboss.shamrock</groupId>
         <artifactId>shamrock-build-parent</artifactId>
-        <version>1.0.0.Alpha1-SNAPSHOT</version>
+        <version>0.3.0</version>
         <relativePath>../build-parent/pom.xml</relativePath>
     </parent>
 

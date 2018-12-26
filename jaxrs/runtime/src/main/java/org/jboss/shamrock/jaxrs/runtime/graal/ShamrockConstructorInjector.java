@@ -29,15 +29,15 @@ import org.jboss.resteasy.spi.HttpRequest;
 import org.jboss.resteasy.spi.HttpResponse;
 import org.jboss.shamrock.runtime.cdi.BeanContainer;
 
-/**
- * Created by bob on 7/31/18.
- */
 public class ShamrockConstructorInjector implements ConstructorInjector {
 
     private volatile BeanContainer.Factory<?> factory;
 
+    private final ConstructorInjector delegate;
 
-    public ShamrockConstructorInjector(Constructor ctor, ConstructorInjector delegate) {
+    private final Constructor<?> ctor;
+
+    public ShamrockConstructorInjector(Constructor<?> ctor, ConstructorInjector delegate) {
         this.ctor = ctor;
         this.delegate = delegate;
     }
@@ -72,8 +72,4 @@ public class ShamrockConstructorInjector implements ConstructorInjector {
             throws Failure {
         return this.delegate.injectableArguments(request, response, unwrapAsync);
     }
-
-    private final ConstructorInjector delegate;
-
-    private final Constructor ctor;
 }

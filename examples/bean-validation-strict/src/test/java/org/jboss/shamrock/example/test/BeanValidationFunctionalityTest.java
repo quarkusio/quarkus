@@ -1,11 +1,15 @@
 package org.jboss.shamrock.example.test;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 
 import org.jboss.shamrock.test.ShamrockTest;
 import org.jboss.shamrock.test.URLTester;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import io.restassured.RestAssured;
 
 /**
  * Test various Bean Validation operations running in Shamrock
@@ -23,7 +27,10 @@ public class BeanValidationFunctionalityTest {
                 .append("score (must be greater than or equal to 0)").append("\n");
         expected.append("passed");
 
-        assertEquals(expected.toString(), URLTester.relative("bean-validation/test/basic-features").invokeURL().asString());
+        RestAssured.when()
+                .get("/bean-validation/test/basic-features")
+                .then()
+                        .body(is(expected.toString()));
     }
 
     @Test
@@ -32,7 +39,10 @@ public class BeanValidationFunctionalityTest {
         expected.append("failed:  (invalid MyOtherBean)").append("\n");
         expected.append("passed");
 
-        assertEquals(expected.toString(), URLTester.relative("bean-validation/test/custom-class-level-constraint").invokeURL().asString());
+        RestAssured.when()
+                .get("/bean-validation/test/custom-class-level-constraint")
+                .then()
+                        .body(is(expected.toString()));
     }
 
     @Test
@@ -41,14 +51,25 @@ public class BeanValidationFunctionalityTest {
         expected.append("passed").append("\n");
         expected.append("failed: greeting.arg0 (must not be null)");
 
-        assertEquals(expected.toString(), URLTester.relative("bean-validation/test/cdi-bean-method-validation").invokeURL().asString());
+        RestAssured.when()
+                .get("/bean-validation/test/cdi-bean-method-validation")
+                .then()
+                        .body(is(expected.toString()));
     }
 
     @Test
     public void testRestEndPointValidation() {
         // we can't test the content of the response as accessing the input stream throws an IOException
         assertEquals(400, URLTester.relative("bean-validation/test/rest-end-point-validation/plop/").invokeURL().statusCode());
+        RestAssured.when()
+                .get("/bean-validation/test/rest-end-point-validation/plop/")
+                .then()
+                        .statusCode(400)
+                        .body(containsString("numeric value out of bounds"));
 
-        assertEquals("42", URLTester.relative("bean-validation/test/rest-end-point-validation/42/").invokeURL().asString() );
+        RestAssured.when()
+                .get("/bean-validation/test/rest-end-point-validation/42/")
+                .then()
+                        .body(is("42"));
     }
 }

@@ -35,15 +35,13 @@ import org.jboss.resteasy.spi.metadata.ResourceClass;
 import org.jboss.resteasy.spi.metadata.ResourceConstructor;
 import org.jboss.shamrock.runtime.cdi.BeanContainer;
 
-/**
- * Created by bob on 7/31/18.
- */
 public class ShamrockInjectorFactory extends InjectorFactoryImpl {
 
     private static final Logger log = Logger.getLogger("org.jboss.shamrock.jaxrs.runtime");
     static volatile BeanContainer CONTAINER = null;
     static volatile Function<Object, Object> PROXY_UNWRAPPER;
 
+    @SuppressWarnings("rawtypes")
     @Override
     public ConstructorInjector createConstructor(Constructor constructor, ResteasyProviderFactory providerFactory) {
         log.debugf("Create constructor: %s", constructor);
@@ -56,6 +54,7 @@ public class ShamrockInjectorFactory extends InjectorFactoryImpl {
         return new ShamrockConstructorInjector(constructor.getConstructor(), super.createConstructor(constructor, providerFactory));
     }
 
+    @SuppressWarnings("rawtypes")
     @Override
     public PropertyInjector createPropertyInjector(Class resourceClass, ResteasyProviderFactory providerFactory) {
         PropertyInjector delegate = super.createPropertyInjector(resourceClass, providerFactory);

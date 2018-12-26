@@ -53,6 +53,8 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.resteasy.api.validation.ResteasyConstraintViolation;
+import org.jboss.resteasy.api.validation.ViolationReport;
 import org.jboss.resteasy.core.MediaTypeMap;
 import org.jboss.resteasy.plugins.interceptors.AcceptEncodingGZIPFilter;
 import org.jboss.resteasy.plugins.interceptors.GZIPDecodingInterceptor;
@@ -139,7 +141,7 @@ public class JaxrsScanningProcessor {
 	 * If the resource class has an explicit CDI scope annotation then the value of
 	 * this annotation will always be used to control the lifecycle of the resource
 	 * class.
-	 * 
+	 *
 	 * IMPLEMENTATION NOTE: {@code javax.ws.rs.Path} turns into a CDI stereotype
 	 * with singleton scope. As a result, if a user annotates a JAX-RS resource with
 	 * a stereotype which has a different default scope the deployment fails with
@@ -302,6 +304,10 @@ public class JaxrsScanningProcessor {
                 }
             }
         }
+
+        // In the case of a constraint violation, these elements might be returned as entities and will be serialized
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ViolationReport.class.getName()));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ResteasyConstraintViolation.class.getName()));
     }
 
     @BuildStep

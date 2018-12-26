@@ -115,15 +115,16 @@ Add the following method:
 
 [source, java]
 ----
+@Path("/manual-validation")
 @POST
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public Result tryMe(Book book) {
+public Result tryMeManualValidation(Book book) {
     Set<ConstraintViolation<Book>> violations = validator.validate(book);
     Result res = new Result();
     if (violations.isEmpty()) {
         res.success = true;
-        res.message = "woohoo!";
+        res.message = "Book is valid! It was validated by manual validation.";
     } else {
         res.success = false;
         res.message = violations.stream()
@@ -174,6 +175,85 @@ private class Result {
 The class is very simple and only contains 2 fields and the associated getters and setters.
 Because we indicate that we produce JSON, the mapping to JSON is made automatically.
 
+== REST end point validation
+
+While using the `Validator` manually might be useful for some advanced usage,
+if you simply want to validate the parameters or the return value or your REST end point,
+you can annotate it directly, either with constraints (`@NotNull`, `@Digits`...)
+or with `@Valid` (which will cascade the validation to the bean).
+
+Let's create an end point validating the `Book` provided in the request:
+
+[source, java]
+----
+@Path("/end-point-method-validation")
+@POST
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+public Result tryMeEndPointMethodValidation(@Valid Book book) {
+    Result res = new Result();
+    res.success = true;
+    res.message = "Book is valid! It was validated by end point method validation.";
+    return res;
+}
+----
+
+As you can see, we don't have to manually validate the provided `Book` anymore as it is automatically validated.
+
+If a validation error is triggered, a violation report is generated and serialized as JSON as our end point produces a JSON output.
+It can be extracted and manipulated to display a proper error message.
+
+== Service method validation
+
+It might not always be handy to have the validation rules declared at the end point level as it could duplicate some business validation.
+
+The best option is then to annotate a method of your business service with your constraints (or in our particular case with `@Valid`):
+
+[source, java]
+----
+@ApplicationScoped
+public class BookService {
+
+    public void validateBook(@Valid Book book) {
+        // your business logic here
+    }
+}
+----
+
+Calling the service in your rest end point triggers the `Book` validation automatically:
+
+[source, java]
+----
+@Path("/service-method-validation")
+@POST
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+public Result tryMeServiceMethodValidation(Book book) {
+    Result res = new Result();
+
+    try {
+        bookService.validateBook(book);
+
+        res.success = true;
+        res.message = "Book is valid! It was validated by service method validation.";
+    }
+    catch (ConstraintViolationException e) {
+        res.success = false;
+        res.message = e.getConstraintViolations().stream()
+            .map(cv -> cv.getMessage())
+            .collect(Collectors.joining(", "));
+    }
+
+    return res;
+}
+----
+
+Note that, if you want to push the validation errors to the frontend, you have to catch the exception and push the information yourselves
+as they will not be automatically pushed to the JSON output.
+
+Keep in mind that you usually don't want to expose to the public the internals of your services
+- and especially not the validated value contained in the violation object.
+
 == A frontend
 
 Now let's add the simple web page to interact with our `BookResource`.
@@ -188,10 +268,10 @@ Now, let's see our application in action. Run it with:
 mvn compile shamrock:dev
 ```
 
-Then, open your browser to http://localhost:8080
+Then, open your browser to http://localhost:8080/:
 
 1. Enter the book details (valid or invalid)
-2. Click on the _try me_ button to check if your data is valid.
+2. Click on the _Try me..._ buttons to check if your data is valid using one of the methods we presented above.
 
 image:validation-guide-screenshot.png[alt=Application,width=800]
 

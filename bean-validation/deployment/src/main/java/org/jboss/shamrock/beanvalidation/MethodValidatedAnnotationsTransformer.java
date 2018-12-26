@@ -14,7 +14,15 @@ import org.jboss.shamrock.beanvalidation.runtime.jaxrs.JaxrsEndPointValidated;
  */
 public class MethodValidatedAnnotationsTransformer implements AnnotationsTransformer {
 
-    private static final DotName JAXRS_PATH = DotName.createSimple("javax.ws.rs.Path");
+    private static final DotName[] JAXRS_METHOD_ANNOTATIONS = {
+            DotName.createSimple("javax.ws.rs.GET"),
+            DotName.createSimple("javax.ws.rs.HEAD"),
+            DotName.createSimple("javax.ws.rs.DELETE"),
+            DotName.createSimple("javax.ws.rs.OPTIONS"),
+            DotName.createSimple("javax.ws.rs.PATCH"),
+            DotName.createSimple("javax.ws.rs.POST"),
+            DotName.createSimple("javax.ws.rs.PUT"),
+    };
 
     private final Set<DotName> consideredAnnotations;
 
@@ -32,7 +40,7 @@ public class MethodValidatedAnnotationsTransformer implements AnnotationsTransfo
         MethodInfo method = transformationContext.getTarget().asMethod();
 
         if (requiresValidation(method)) {
-            if (method.hasAnnotation(JAXRS_PATH) || method.declaringClass().annotations().containsKey(JAXRS_PATH)) {
+            if (isJaxrsMethod(method)) {
                 transformationContext.transform().add(DotName.createSimple(JaxrsEndPointValidated.class.getName())).done();
             } else {
                 transformationContext.transform().add(DotName.createSimple(MethodValidated.class.getName())).done();
@@ -51,6 +59,15 @@ public class MethodValidatedAnnotationsTransformer implements AnnotationsTransfo
             }
         }
 
+        return false;
+    }
+
+    private boolean isJaxrsMethod(MethodInfo method) {
+        for (DotName jaxrsMethodAnnotation : JAXRS_METHOD_ANNOTATIONS) {
+            if (method.hasAnnotation(jaxrsMethodAnnotation)) {
+                return true;
+            }
+        }
         return false;
     }
 }

@@ -39,14 +39,17 @@ public class ParameterizedTypeImpl implements ParameterizedType, Serializable {
         this.ownerType = ownerType;
     }
 
+    @Override
     public Type[] getActualTypeArguments() {
         return Arrays.copyOf(actualTypeArguments, actualTypeArguments.length);
     }
 
+    @Override
     public Type getOwnerType() {
         return ownerType;
     }
 
+    @Override
     public Type getRawType() {
         return rawType;
     }

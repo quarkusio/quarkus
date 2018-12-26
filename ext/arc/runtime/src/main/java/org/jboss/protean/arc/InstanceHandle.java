@@ -57,6 +57,7 @@ public interface InstanceHandle<T> extends AutoCloseable {
     /**
      * Delegates to {@link #destroy()}.
      */
+    @Override
     default void close() {
         destroy();
     }

@@ -39,8 +39,10 @@ import org.objectweb.asm.Opcodes;
 public class StaticInitDebugStep {
 
     private static final BiFunction<String, ClassVisitor, ClassVisitor> TRANSFORMER = new BiFunction<String, ClassVisitor, ClassVisitor>() {
+        @Override
         public ClassVisitor apply(final String className, final ClassVisitor classVisitor) {
             return new ClassVisitor(Opcodes.ASM6, classVisitor) {
+                @Override
                 public MethodVisitor visitMethod(final int access, final String name, final String descriptor, final String signature, final String[] exceptions) {
                     final MethodVisitor outer = super.visitMethod(access, name, descriptor, signature, exceptions);
                     if (name.equals("<clinit>")) {

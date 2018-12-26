@@ -35,10 +35,12 @@ public class RuntimeLoggingConfigurator implements EmbeddedConfigurator {
 
     static final Config config = ConfigProvider.getConfig();
 
+    @Override
     public Level getMinimumLevelOf(final String loggerName) {
         return Level.ALL;
     }
 
+    @Override
     public Level getLevelOf(final String loggerName) {
         Config config = getConfig();
         Optional<String> level = config.getOptionalValue("shamrock.log.category." + loggerName + ".level", String.class);
@@ -67,6 +69,7 @@ public class RuntimeLoggingConfigurator implements EmbeddedConfigurator {
         return Level.INFO;
     }
 
+    @Override
     public Handler[] getHandlersOf(final String loggerName) {
         Config config = getConfig();
         String format = config.getOptionalValue("shamrock.log.console.format", String.class)

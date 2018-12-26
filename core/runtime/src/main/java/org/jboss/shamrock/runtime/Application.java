@@ -171,6 +171,7 @@ public abstract class Application {
         try {
             if (ImageInfo.inImageRuntimeCode()) {
                 final SignalHandler handler = new SignalHandler() {
+                    @Override
                     public void handle(final Signal signal) {
                         System.exit(0);
                     }
@@ -178,6 +179,7 @@ public abstract class Application {
                 Signal.handle(new Signal("INT"), handler);
                 Signal.handle(new Signal("TERM"), handler);
                 Signal.handle(new Signal("QUIT"), new SignalHandler() {
+                    @Override
                     public void handle(final Signal signal) {
                         DiagnosticPrinter.printDiagnostics(System.out);
                     }
@@ -229,6 +231,7 @@ public abstract class Application {
             setDaemon(false);
         }
 
+        @Override
         public void run() {
             shutdownRequested = true;
             LockSupport.unpark(mainThread);
@@ -244,6 +247,7 @@ public abstract class Application {
             }
         }
 
+        @Override
         public String toString() {
             return getName();
         }

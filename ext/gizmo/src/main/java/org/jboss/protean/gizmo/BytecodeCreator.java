@@ -547,5 +547,6 @@ public interface BytecodeCreator extends AutoCloseable {
      * Indicate that the scope is no longer in use.  The scope may refuse additional instructions after this method
      * is called.
      */
+    @Override
     default void close() {}
 }

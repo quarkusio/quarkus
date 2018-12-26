@@ -52,6 +52,7 @@ public class PropertyUtils {
        final SecurityManager sm = System.getSecurityManager();
        if(sm != null) {
            return AccessController.doPrivileged(new PrivilegedAction<String>(){
+               @Override
                public String run() {
                    return System.getProperty(name);
                }});

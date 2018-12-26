@@ -102,6 +102,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 	/**
 	 * Intended for internal testing use only!!
 	 */
+	@Override
 	public LoadedConfig getAggregatedCfgXml() {
 		return aggregatedCfgXml;
 	}
@@ -157,6 +158,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 		return Collections.unmodifiableList( serviceInitiators );
 	}
 
+	@Override
 	public BootstrapServiceRegistry getBootstrapServiceRegistry() {
 		return bootstrapServiceRegistry;
 	}
@@ -174,6 +176,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 	 * @see #configure()
 	 * @see #configure(String)
 	 */
+	@Override
 	@SuppressWarnings({"unchecked"})
 	public StandardServiceRegistryBuilder loadProperties(String resourceName) {
 		settings.putAll( configLoader.loadProperties( resourceName ) );
@@ -193,6 +196,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 	 * @see #configure()
 	 * @see #configure(String)
 	 */
+	@Override
 	@SuppressWarnings({"unchecked"})
 	public StandardServiceRegistryBuilder loadProperties(File file) {
 		settings.putAll( configLoader.loadProperties( file ) );
@@ -208,6 +212,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 	 * @see #configure(String)
 	 * @see #loadProperties(String)
 	 */
+	@Override
 	public StandardServiceRegistryBuilder configure() {
 		return configure( DEFAULT_CFG_RESOURCE_NAME );
 	}
@@ -219,18 +224,22 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 	 *
 	 * @return this, for method chaining
 	 */
+	@Override
 	public StandardServiceRegistryBuilder configure(String resourceName) {
 		return configure( configLoader.loadConfigXmlResource( resourceName ) );
 	}
 
+	@Override
 	public StandardServiceRegistryBuilder configure(File configurationFile) {
 		return configure( configLoader.loadConfigXmlFile( configurationFile ) );
 	}
 
+	@Override
 	public StandardServiceRegistryBuilder configure(URL url) {
 		return configure( configLoader.loadConfigXmlUrl( url ) );
 	}
 
+	@Override
 	@SuppressWarnings({"unchecked"})
 	public StandardServiceRegistryBuilder configure(LoadedConfig loadedConfig) {
 		aggregatedCfgXml.merge( loadedConfig );
@@ -247,6 +256,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 	 *
 	 * @return this, for method chaining
 	 */
+	@Override
 	@SuppressWarnings({"unchecked", "UnusedDeclaration"})
 	public StandardServiceRegistryBuilder applySetting(String settingName, Object value) {
 		settings.put( settingName, value );
@@ -260,12 +270,14 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 	 *
 	 * @return this, for method chaining
 	 */
+	@Override
 	@SuppressWarnings({"unchecked", "UnusedDeclaration"})
 	public StandardServiceRegistryBuilder applySettings(Map settings) {
 		this.settings.putAll( settings );
 		return this;
 	}
 
+	@Override
 	public void clearSettings() {
 		settings.clear();
 	}
@@ -277,6 +289,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 	 *
 	 * @return this, for method chaining
 	 */
+	@Override
 	@SuppressWarnings({"UnusedDeclaration"})
 	public StandardServiceRegistryBuilder addInitiator(StandardServiceInitiator initiator) {
 		initiators.add( initiator );
@@ -291,6 +304,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 	 *
 	 * @return this, for method chaining
 	 */
+	@Override
 	@SuppressWarnings({"unchecked"})
 	public StandardServiceRegistryBuilder addService(final Class serviceRole, final Service service) {
 		providedServices.add( new ProvidedService( serviceRole, service ) );
@@ -310,6 +324,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 	 *
 	 * @return this, for method chaining
 	 */
+	@Override
 	public StandardServiceRegistryBuilder disableAutoClose() {
 		this.autoCloseRegistry = false;
 		return this;
@@ -321,6 +336,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 	 *
 	 * @return this, for method chaining
 	 */
+	@Override
 	public StandardServiceRegistryBuilder enableAutoClose() {
 		this.autoCloseRegistry = true;
 		return this;
@@ -331,6 +347,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 	 *
 	 * @return The StandardServiceRegistry.
 	 */
+	@Override
 	@SuppressWarnings("unchecked")
 	public StandardServiceRegistry build() {
 		applyServiceContributingIntegrators();
@@ -381,6 +398,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 	 * @deprecated Temporarily exposed since Configuration is still around and much code still uses Configuration.
 	 * This allows code to configure the builder and access that to configure Configuration object.
 	 */
+	@Override
 	@Deprecated
 	public Map getSettings() {
 		return settings;

@@ -37,6 +37,7 @@ public class TransactionalInterceptorRequiresNew extends TransactionalIntercepto
         super(false);
     }
 
+    @Override
     @AroundInvoke
     public Object intercept(InvocationContext ic) throws Exception {
         return super.intercept(ic);

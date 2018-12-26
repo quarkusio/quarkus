@@ -46,6 +46,7 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
      *
      * @return the scope
      */
+    @Override
     default Class<? extends Annotation> getScope() {
         return Dependent.class;
     }
@@ -54,12 +55,14 @@ public interface InjectableBean<T> extends Bean<T>, InjectableReferenceProvider<
      *
      * @return the set of bean types
      */
+    @Override
     Set<Type> getTypes();
 
     /**
      *
      * @return the set of qualifiers
      */
+    @Override
     default Set<Annotation> getQualifiers() {
         return Qualifiers.DEFAULT_QUALIFIERS;
     }

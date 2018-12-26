@@ -71,6 +71,7 @@ public class AppDependency {
         return true;
     }
 
+    @Override
     public String toString() {
         return artifact.toString() + '(' + scope + ')';
     }

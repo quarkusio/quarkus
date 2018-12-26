@@ -36,6 +36,7 @@ public class BasicTests {
         final BuildChainBuilder builder = BuildChain.builder();
         final AtomicBoolean ran = new AtomicBoolean();
         BuildStepBuilder stepBuilder = builder.addBuildStep(new BuildStep() {
+            @Override
             public void execute(final BuildContext context) {
                 ran.set(true);
                 context.produce(new DummyItem());
@@ -54,6 +55,7 @@ public class BasicTests {
     public void testLinked() throws ChainBuildException, BuildException {
         final BuildChainBuilder builder = BuildChain.builder();
         BuildStepBuilder stepBuilder = builder.addBuildStep(new BuildStep() {
+            @Override
             public void execute(final BuildContext context) {
                 context.produce(new DummyItem());
             }
@@ -61,6 +63,7 @@ public class BasicTests {
         stepBuilder.produces(DummyItem.class);
         stepBuilder.build();
         stepBuilder = builder.addBuildStep(new BuildStep() {
+            @Override
             public void execute(final BuildContext context) {
                 assertNotNull(context.consume(DummyItem.class));
                 context.produce(new DummyItem2());
@@ -80,6 +83,7 @@ public class BasicTests {
         final BuildChainBuilder builder = BuildChain.builder();
         builder.addInitial(DummyItem.class);
         BuildStepBuilder stepBuilder = builder.addBuildStep(new BuildStep() {
+            @Override
             public void execute(final BuildContext context) {
                 assertNotNull(context.consume(DummyItem.class));
                 context.produce(new DummyItem2());
@@ -100,6 +104,7 @@ public class BasicTests {
     public void testPruning() throws ChainBuildException, BuildException {
         final BuildChainBuilder builder = BuildChain.builder();
         BuildStepBuilder stepBuilder = builder.addBuildStep(new BuildStep() {
+            @Override
             public void execute(final BuildContext context) {
                 context.produce(new DummyItem());
             }
@@ -108,6 +113,7 @@ public class BasicTests {
         stepBuilder.build();
         final AtomicBoolean ran = new AtomicBoolean();
         stepBuilder = builder.addBuildStep(new BuildStep() {
+            @Override
             public void execute(final BuildContext context) {
                 assertNotNull(context.consume(DummyItem.class));
                 context.produce(new DummyItem2());
@@ -129,6 +135,7 @@ public class BasicTests {
         final BuildChainBuilder builder = BuildChain.builder();
         builder.addFinal(DummyItem.class);
         BuildStepBuilder stepBuilder = builder.addBuildStep(new BuildStep() {
+            @Override
             public void execute(final BuildContext context) {
                 context.consume(DummyItem2.class);
                 context.produce(new DummyItem());
@@ -138,6 +145,7 @@ public class BasicTests {
         stepBuilder.consumes(DummyItem2.class);
         stepBuilder.build();
         stepBuilder = builder.addBuildStep(new BuildStep() {
+            @Override
             public void execute(final BuildContext context) {
                 context.consume(DummyItem.class);
                 context.produce(new DummyItem2());

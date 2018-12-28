@@ -63,7 +63,7 @@
       <plexus-component-annotations.version>1.7.1</plexus-component-annotations.version>
       <!-- What we actually depend on for the annotations, as latest Graal 
          is not available in Maven fast enough: -->
-      <graal-sdk.version>1.0.0-rc9</graal-sdk.version>
+      <graal-sdk.version>1.0.0-rc10</graal-sdk.version>
       <!-- The Graal version we suggest using in documentation - as that's 
          what we work with by self downloading it: -->
       <graal-sdk.version-for-documentation>1.0.0-rc10</graal-sdk.version-for-documentation>

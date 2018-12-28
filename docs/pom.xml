@@ -95,6 +95,7 @@
                         </goals>
                         <configuration>
                             <backend>pdf</backend>
+                            <sourceHighlighter>coderay</sourceHighlighter>
                         </configuration>
                     </execution>
                 </executions>

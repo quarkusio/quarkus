@@ -20,7 +20,7 @@ import java.util.Map;
 public class CRUDResource {
 
     @Inject
-    private EntityManager em;
+    EntityManager em;
 
     @Inject
     UserTransaction transaction;

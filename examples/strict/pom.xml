@@ -30,17 +30,15 @@
     <name>Shamrock - Examples - Strict</name>
     <description>An example that only contains features that can be run
     without using -H:+ReportUnsupportedElementsAtRuntime</description>
+
+    <properties>
+        <datasource.url>jdbc:h2:tcp://localhost/mem:test</datasource.url>
+        <datasource.driver>org.h2.Driver</datasource.driver>
+        <datasource.username></datasource.username>
+        <datasource.password></datasource.password>
+    </properties>
+
     <dependencies>
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>common-jpa-entities</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jaxrs-deployment</artifactId>
-            <scope>provided</scope>
-        </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-class-transformer-example</artifactId>
@@ -63,27 +61,6 @@
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-opentracing-deployment</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-json-p-provider</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-jackson2-provider</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-jaxb-provider</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish</groupId>
-            <artifactId>javax.json</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jpa-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -116,6 +93,39 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-fault-tolerance-deployment</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-scheduler-deployment</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        
+        <!-- JAX-RS -->
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-jaxrs-deployment</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-json-p-provider</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-jackson2-provider</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-jaxb-provider</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish</groupId>
+            <artifactId>javax.json</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-rxjava2</artifactId>
         </dependency>
@@ -124,20 +134,22 @@
             <artifactId>shamrock-rest-client-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
+
+        <!-- JPA -->
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-fault-tolerance-deployment</artifactId>
+            <artifactId>shamrock-jpa-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jdbc-postgresql-deployment</artifactId>
+            <artifactId>shamrock-jdbc-h2-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-scheduler-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>common-jpa-entities</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- test dependencies -->
@@ -172,6 +184,27 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>test-postgresql</id>
+            <activation>
+                <property>
+                    <name>test-postgresql</name>
+                </property>
+            </activation>
+            <properties>
+                <datasource.url>${postgres.url}</datasource.url>
+                <datasource.driver>org.postgresql.Driver</datasource.driver>
+                <datasource.username>hibernate_orm_test</datasource.username>
+                <datasource.password>hibernate_orm_test</datasource.password>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.jboss.shamrock</groupId>
+                    <artifactId>shamrock-jdbc-postgresql-deployment</artifactId>
+                    <scope>provided</scope>
+                </dependency>
+            </dependencies>
+        </profile>
         <profile>
             <id>native-image</id>
             <activation>
@@ -223,11 +256,12 @@
                 </plugins>
             </build>
         </profile>
+
         <profile>
-            <id>postgres</id>
+            <id>docker-postgresql</id>
             <activation>
                 <property>
-                    <name>!no-postgres</name>
+                    <name>docker</name>
                 </property>
             </activation>
             <properties>
@@ -290,6 +324,5 @@
             </build>
         </profile>
     </profiles>
-
 
 </project>

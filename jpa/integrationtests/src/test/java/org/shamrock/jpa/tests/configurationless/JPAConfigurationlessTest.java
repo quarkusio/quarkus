@@ -6,7 +6,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.StringContains.containsString;
 
 /**
  * @author Emmanuel Bernard emmanuel@hibernate.org
@@ -17,8 +17,8 @@ public class JPAConfigurationlessTest {
     @Test
     public void testInjection() {
         String result = URLTester.relative("jpa-test").invokeURL().asString();
-        Assert.assertThat(result.contains("jpa=OK"), is(true));
+        Assert.assertThat(result, containsString("jpa=OK"));
         result = URLTester.relative("jpa-test/user-tx").invokeURL().asString();
-        Assert.assertThat(result.contains("jpa=OK"), is(true));
+        Assert.assertThat(result, containsString("jpa=OK"));
     }
 }

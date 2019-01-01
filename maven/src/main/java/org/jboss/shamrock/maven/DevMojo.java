@@ -106,7 +106,7 @@ public class DevMojo extends AbstractMojo {
                 File servletRes = new File(f, "META-INF/resources");
                 if (servletRes.exists()) {
                     args.add("-D" + RESOURCES_PROP + "=" + servletRes.getAbsolutePath());
-                    System.out.println("Using servlet resources " + servletRes.getAbsolutePath());
+                    getLog().info("Using servlet resources " + servletRes.getAbsolutePath());
                     break;
                 }
             }
@@ -120,10 +120,10 @@ public class DevMojo extends AbstractMojo {
                 classPath.append(" ");
             }
             args.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
-            File wiringClassesDirectory = Files.createTempDirectory("wiring-classes").toFile();
-            wiringClassesDirectory.deleteOnExit();
+            File wiringClassesDirectory = new File(buildDir, "wiring-classes");
+            wiringClassesDirectory.mkdirs();
 
-            classPath.append(wiringClassesDirectory.getAbsolutePath() + "/");
+            classPath.append(wiringClassesDirectory.getAbsolutePath()).append("/");
             classPath.append(' ');
 
             if (fakereplace) {

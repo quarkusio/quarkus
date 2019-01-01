@@ -106,7 +106,7 @@ public class DevMojo extends AbstractMojo {
                 File servletRes = new File(f, "META-INF/resources");
                 if (servletRes.exists()) {
                     args.add("-D" + RESOURCES_PROP + "=" + servletRes.getAbsolutePath());
-                    System.out.println("Using servlet resources " + servletRes.getAbsolutePath());
+                    getLog().info("Using servlet resources " + servletRes.getAbsolutePath());
                     break;
                 }
             }

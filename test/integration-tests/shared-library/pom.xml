@@ -19,15 +19,15 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>shamrock-examples-parent</artifactId>
+        <artifactId>shamrock-integration-tests-parent</artifactId>
         <groupId>org.jboss.shamrock</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-shared-library-example</artifactId>
-    <name>Shamrock - Examples - Shared library</name>
+    <artifactId>shamrock-shared-library-integration-test</artifactId>
+    <name>Shamrock - Integration Tests - Shared library</name>
     <description>
         An example/test of a componentized application. This is indexed at build time by Shamrock
         and components it provides should be included as normal.

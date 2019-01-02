@@ -50,7 +50,7 @@
     
         <!-- Core components -->
         <module>core</module>
-        <module>test-framework</module>
+        <module>test</module>
 
         <!-- Extensions -->
         <module>extensions</module>
@@ -64,7 +64,6 @@
         <module>maven</module>
 
         <!-- Misc. -->
-        <module>examples</module>
         <module>docs</module>
 
         <!-- Do not add modules after legacy. JVM state will fail CI -->

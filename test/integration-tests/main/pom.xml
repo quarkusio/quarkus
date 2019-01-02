@@ -19,22 +19,122 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>shamrock-examples-parent</artifactId>
+        <artifactId>shamrock-integration-tests-parent</artifactId>
         <groupId>org.jboss.shamrock</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-strict-jpa-mariadb-example</artifactId>
-    <name>Shamrock - Examples - JPA - MariaDB</name>
-    <description>An example that only contains JPA related tests running in strict mode with the MariaDB database</description>
+    <artifactId>shamrock-main-integration-test</artifactId>
+    <name>Shamrock - Integration Tests - Main</name>
+    <description>The main integration tests module</description>
+
+    <properties>
+        <datasource.url>jdbc:h2:tcp://localhost/mem:test</datasource.url>
+        <datasource.driver>org.h2.Driver</datasource.driver>
+        <datasource.username></datasource.username>
+        <datasource.password></datasource.password>
+    </properties>
+
     <dependencies>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-class-transformer-integration-test</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-shared-library-integration-test</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-metrics-deployment</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-openapi-deployment</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-opentracing-deployment</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-arc-deployment</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-health-deployment</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-reactive-streams-operators-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-bean-validation-deployment</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-transactions-deployment</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-websockets-deployment</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-fault-tolerance-deployment</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-scheduler-deployment</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        
+        <!-- JAX-RS -->
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-jaxrs-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-json-p-provider</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-jackson2-provider</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-jaxb-provider</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish</groupId>
+            <artifactId>javax.json</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-rxjava2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-rest-client-deployment</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- JPA -->
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-jpa-deployment</artifactId>
@@ -42,19 +142,19 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jdbc-mariadb-deployment</artifactId>
+            <artifactId>shamrock-jdbc-h2-deployment</artifactId>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>common-jpa-entities</artifactId>
+            <version>${project.version}</version>
         </dependency>
 
         <!-- test dependencies -->
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-junit</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish</groupId>
-            <artifactId>javax.json</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -67,18 +167,6 @@
             </resource>
         </resources>
         <plugins>
-            <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-failsafe-plugin</artifactId>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>shamrock-maven-plugin</artifactId>
@@ -96,35 +184,31 @@
 
     <profiles>
         <profile>
-            <id>test-mariadb</id>
+            <id>test-postgresql</id>
             <activation>
                 <property>
-                    <name>test-mariadb</name>
+                    <name>test-postgresql</name>
                 </property>
             </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <skip>false</skip>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <configuration>
-                            <skip>false</skip>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
+            <properties>
+                <datasource.url>${postgres.url}</datasource.url>
+                <datasource.driver>org.postgresql.Driver</datasource.driver>
+                <datasource.username>hibernate_orm_test</datasource.username>
+                <datasource.password>hibernate_orm_test</datasource.password>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.jboss.shamrock</groupId>
+                    <artifactId>shamrock-jdbc-postgresql-deployment</artifactId>
+                    <scope>provided</scope>
+                </dependency>
+            </dependencies>
         </profile>
-    
         <profile>
             <id>native-image</id>
             <activation>
                 <property>
-                    <name>native</name>
+                    <name>!no-native</name>
                 </property>
             </activation>
             <build>
@@ -157,18 +241,13 @@
                                     <goal>native-image</goal>
                                 </goals>
                                 <configuration>
-                                    <reportErrorsAtRuntime>false</reportErrorsAtRuntime>
                                     <cleanupServer>true</cleanupServer>
                                     <enableHttpUrlHandler>true</enableHttpUrlHandler>
-                                    <enableServer>false</enableServer>
-                                    <dumpProxies>false</dumpProxies>
                                     <!-- Requires Protean Graal fork to work, will fail otherwise
                                       <enableRetainedHeapReporting>true</enableRetainedHeapReporting>
                                       <enableCodeSizeReporting>true</enableCodeSizeReporting>
                                     -->
                                     <graalvmHome>${graalvmHome}</graalvmHome>
-                                    <enableJni>false</enableJni>
-                                    <debugBuildProcess>false</debugBuildProcess>
                                 </configuration>
                             </execution>
                         </executions>
@@ -178,14 +257,14 @@
         </profile>
 
         <profile>
-            <id>docker-mariadb</id>
+            <id>docker-postgresql</id>
             <activation>
                 <property>
                     <name>docker</name>
                 </property>
             </activation>
             <properties>
-                <mariadb.url>jdbc:mariadb://localhost:3308/hibernate_orm_test</mariadb.url>
+                <postgres.url>jdbc:postgresql://localhost:5431/hibernate_orm_test</postgres.url>
             </properties>
             <build>
                 <plugins>
@@ -195,45 +274,30 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>mariadb:10.4</name>
-                                    <alias>shamrock-test-mariadb</alias>
+                                    <name>postgres:10.5</name>
+                                    <alias>postgresql</alias>
                                     <run>
-                                        <ports>
-                                            <port>3308:3306</port>
-                                        </ports>
                                         <env>
-                                            <MYSQL_USER>hibernate_orm_test</MYSQL_USER>
-                                            <MYSQL_PASSWORD>hibernate_orm_test</MYSQL_PASSWORD>
-                                            <MYSQL_DATABASE>hibernate_orm_test</MYSQL_DATABASE>
-                                            <MYSQL_RANDOM_ROOT_PASSWORD>true</MYSQL_RANDOM_ROOT_PASSWORD>
+                                            <POSTGRES_USER>hibernate_orm_test</POSTGRES_USER>
+                                            <POSTGRES_PASSWORD>hibernate_orm_test</POSTGRES_PASSWORD>
+                                            <POSTGRES_DB>hibernate_orm_test</POSTGRES_DB>
                                         </env>
-                                        <log>
-                                            <prefix>MariaDB:</prefix>
-                                            <date>default</date>
-                                            <color>cyan</color>
-                                        </log>
-                                        <!-- Speed things up a bit by not actually flushing writes to disk -->
-                                        <tmpfs>/var/lib/mysql</tmpfs>
+                                        <ports>
+                                            <port>5431:5432</port>
+                                        </ports>
                                         <wait>
-                                            <!-- good docs found at: http://dmp.fabric8.io/#build-healthcheck -->
                                             <tcp>
-                                                <mode>direct</mode>
+                                                <mode>mapped</mode>
                                                 <ports>
-                                                    <port>3306</port>
+                                                    <port>5432</port>
                                                 </ports>
                                             </tcp>
-                                            <!-- Unfortunately booting MariaDB is slow, needs to set a generous timeout: -->
-                                            <time>40000</time>
+                                            <time>10000</time>
                                         </wait>
-                                        <volumes>
-                                            <bind>
-                                                <volume>${project.basedir}/custom-mariadbconfig:/etc/mysql/conf.d/:Z</volume>
-                                            </bind>
-                                        </volumes>
                                     </run>
                                 </image>
                             </images>
-                            <!--Stops all mariadb:10.4 images currently running, not just those we just started.
+                            <!--Stops all postgres:10.5 images currently running, not just those we just started.
                               Useful to stop processes still running from a previously failed integration test run -->
                             <allContainers>true</allContainers>
                         </configuration>
@@ -258,7 +322,6 @@
                 </plugins>
             </build>
         </profile>
-
     </profiles>
 
 </project>

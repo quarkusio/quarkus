@@ -19,29 +19,31 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>shamrock-examples-parent</artifactId>
+        <artifactId>shamrock-build-parent</artifactId>
         <groupId>org.jboss.shamrock</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
-        <relativePath>../</relativePath>
+        <relativePath>../../build-parent/pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-class-transformer-example</artifactId>
-    <name>Shamrock - Examples - Class tranformer</name>
-    <description>
+    <artifactId>shamrock-integration-tests-parent</artifactId>
+    <name>Shamrock - Integration Tests</name>
 
-        An example deployment time processor that tests
-        out the class transformation ability by adding an additional
-        route to all JAX-RS endpoints.
+    <packaging>pom</packaging>
 
-        This should probably be deleted once we have a proper test framework.
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
 
-    </description>
-    <dependencies>
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-core-deployment</artifactId>
-        </dependency>
-    </dependencies>
-
+    <modules>
+        <module>class-transformer</module>
+        <module>shared-library</module>
+        <module>undertow</module>
+        <module>bean-validation-strict</module>
+        <module>common-jpa-entities</module>
+        <module>main</module>
+        <module>jpa-postgresql</module>
+        <module>jpa-mariadb</module>
+        <module>jpa-h2</module>
+    </modules>
 </project>

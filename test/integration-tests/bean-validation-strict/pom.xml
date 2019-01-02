@@ -3,15 +3,15 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>shamrock-examples-parent</artifactId>
+        <artifactId>shamrock-integration-tests-parent</artifactId>
         <groupId>org.jboss.shamrock</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-strict-bean-validation-example</artifactId>
-    <name>Shamrock - Examples - Bean Validation</name>
+    <artifactId>shamrock-strict-bean-validation-integration-test</artifactId>
+    <name>Shamrock - Integration Tests - Bean Validation</name>
     <description>An example that only contains Bean Validation related tests running in strict mode</description>
     <dependencies>
         <dependency>

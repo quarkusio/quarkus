@@ -158,7 +158,7 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-class-transformer-example</artifactId>
+            <artifactId>shamrock-class-transformer-integration-test</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
@@ -294,7 +294,7 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-shared-library-example</artifactId>
+            <artifactId>shamrock-shared-library-integration-test</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>

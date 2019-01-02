@@ -175,8 +175,20 @@ public class JaxrsScanningProcessor {
     @ConfigProperty(name = "shamrock.jaxrs.enable-gzip")
     Optional<Boolean> isGzipSupportEnabled;
 
+    /**
+     * Set this to override the default path for JAX-RS resources if there are no
+     * annotated application classes. The default value is `/rest`. 
+     */
+    @ConfigProperty(name = "shamrock.jaxrs.path", defaultValue = "/rest")
+    String defaultPath;
+
     private static final Logger log = Logger.getLogger("org.jboss.shamrock.jaxrs");
 
+    @BuildStep
+    JaxrsConfig exportConfig() {
+        return new JaxrsConfig(defaultPath);
+    }
+    
     @BuildStep
     ServletInitParamBuildItem registerProviders(List<JaxrsProviderBuildItem> providers) {
         StringBuilder sb = new StringBuilder();
@@ -219,9 +231,6 @@ public class JaxrsScanningProcessor {
         IndexView index = combinedIndexBuildItem.getIndex();
 
         Collection<AnnotationInstance> app = index.getAnnotations(APPLICATION_PATH);
-        if (app.isEmpty()) {
-            return;
-        }
         Collection<AnnotationInstance> xmlRoot = index.getAnnotations(XML_ROOT);
         if (!xmlRoot.isEmpty()) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "com.sun.xml.bind.v2.ContextFactory",
@@ -274,10 +283,16 @@ public class JaxrsScanningProcessor {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, implementation.name().toString()));
         }
 
-        AnnotationInstance appPath = app.iterator().next();
-        String path = appPath.value().asString();
-        String appClass = appPath.target().asClass().name().toString();
         String mappingPath;
+        String path = null;
+        String appClass = null;
+        if(!app.isEmpty()) {
+            AnnotationInstance appPath = app.iterator().next();
+            path = appPath.value().asString();
+            appClass = appPath.target().asClass().name().toString();
+        } else {
+            path = defaultPath;
+        }
         if (path.endsWith("/")) {
             mappingPath = path + "*";
         } else {
@@ -285,7 +300,7 @@ public class JaxrsScanningProcessor {
         }
         servletProducer.produce(new ServletBuildItem(JAX_RS_SERVLET_NAME, HttpServlet30Dispatcher.class.getName()).setLoadOnStartup(1).addMapping(mappingPath).setAsyncSupported(true));
         Collection<AnnotationInstance> paths = index.getAnnotations(PATH);
-        if (paths != null) {
+        if (paths != null && !paths.isEmpty()) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, HttpServlet30Dispatcher.class.getName()));
             StringBuilder sb = new StringBuilder();
             boolean first = true;
@@ -310,9 +325,14 @@ public class JaxrsScanningProcessor {
             }
             servletContextParams.produce(new ServletInitParamBuildItem("resteasy.servlet.mapping.prefix", path));
             servletContextParams.produce(new ServletInitParamBuildItem("resteasy.injector.factory", ShamrockInjectorFactory.class.getName()));
-            servletContextParams.produce(new ServletInitParamBuildItem(JAX_RS_APPLICATION_PARAMETER_NAME, appClass));
-
+            if(appClass != null) {
+                servletContextParams.produce(new ServletInitParamBuildItem(JAX_RS_APPLICATION_PARAMETER_NAME, appClass));
+            }
+        } else {
+            // no @Application class and no detected @Path resources, bail out
+            return;
         }
+        
         for (DotName annotationType : METHOD_ANNOTATIONS) {
             Collection<AnnotationInstance> instances = index.getAnnotations(annotationType);
             for (AnnotationInstance instance : instances) {

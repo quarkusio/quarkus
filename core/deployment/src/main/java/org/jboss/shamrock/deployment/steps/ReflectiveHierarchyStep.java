@@ -32,8 +32,8 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.UnresolvedTypeVariable;
 import org.jboss.jandex.VoidType;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.annotations.BuildStep;
-import org.jboss.shamrock.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import javax.inject.Inject;
 
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;

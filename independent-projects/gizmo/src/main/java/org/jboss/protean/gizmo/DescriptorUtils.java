@@ -38,7 +38,7 @@ public class DescriptorUtils {
             void.class
     };
 
-    public static String methodSignitureToDescriptor(String returnType, String... params) {
+    public static String methodSignatureToDescriptor(String returnType, String... params) {
         StringBuilder sb = new StringBuilder("(");
         for (String i : params) {
             sb.append(i);

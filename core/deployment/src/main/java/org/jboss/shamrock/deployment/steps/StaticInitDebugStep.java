@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.function.BiFunction;
 
 import org.graalvm.nativeimage.ImageInfo;
-import org.jboss.shamrock.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.builditem.BytecodeTransformerBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
 import org.objectweb.asm.ClassVisitor;

@@ -32,9 +32,20 @@
     <modules>
         <module>deployment</module>
         <module>runtime</module>
-        <module>deployment-api</module>
+        <module>processor</module>
         <module>devmode</module>
         <module>builder</module>
         <module>creator</module>
     </modules>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <parameters>true</parameters>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

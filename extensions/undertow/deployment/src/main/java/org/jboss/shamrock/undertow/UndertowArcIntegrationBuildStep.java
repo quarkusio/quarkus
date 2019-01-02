@@ -16,10 +16,10 @@
 
 package org.jboss.shamrock.undertow;
 
-import org.jboss.shamrock.annotations.BuildProducer;
-import org.jboss.shamrock.annotations.BuildStep;
-import org.jboss.shamrock.annotations.ExecutionTime;
-import org.jboss.shamrock.annotations.Record;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.ExecutionTime;
+import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.arc.deployment.BeanContainerBuildItem;
 import org.jboss.shamrock.arc.deployment.BeanDefiningAnnotationBuildItem;
 import org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate;

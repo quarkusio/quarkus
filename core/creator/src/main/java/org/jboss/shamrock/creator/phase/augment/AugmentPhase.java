@@ -25,6 +25,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -79,6 +80,7 @@ import io.smallrye.config.SmallRyeConfigProviderResolver;
 public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutcome {
 
     private static final String DEPENDENCIES_RUNTIME = "dependencies.runtime";
+    private static final String FILENAME_STEP_CLASSES = "META-INF/shamrock-build-steps.list";
     private static final String PROVIDED = "provided";
 
     private static final Logger log = Logger.getLogger(AugmentPhase.class);
@@ -234,11 +236,11 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                         }
                         problems.add("Artifact " + appDep + " is a deployment artifact, however it does not have scope required. This will result in unnecessary jars being included in the final image");
                     }
-                    ZipEntry deps = zip.getEntry(DEPENDENCIES_RUNTIME);
-                    if (deps != null) {
+                    ZipEntry entry = zip.getEntry(DEPENDENCIES_RUNTIME);
+                    if (entry != null) {
                         whitelist.add(getDependencyConflictId(appDep.getArtifact()));
-                        try (InputStream in = zip.getInputStream(deps)) {
-                            BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                        try (InputStream in = zip.getInputStream(entry)) {
+                            BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
                             String line;
                             while ((line = reader.readLine()) != null) {
                                 String[] parts = line.trim().split(":");

@@ -23,8 +23,8 @@ import java.util.List;
 import javax.enterprise.inject.spi.ObserverMethod;
 import javax.servlet.DispatcherType;
 
-import org.jboss.shamrock.annotations.BuildProducer;
-import org.jboss.shamrock.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveMethodBuildItem;

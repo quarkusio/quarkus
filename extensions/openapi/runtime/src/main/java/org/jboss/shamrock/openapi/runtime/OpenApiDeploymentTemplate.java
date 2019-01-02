@@ -23,7 +23,7 @@ import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.jboss.shamrock.arc.runtime.BeanContainer;
 import org.jboss.shamrock.arc.runtime.BeanContainerListener;
 import org.jboss.shamrock.runtime.Shamrock;
-import org.jboss.shamrock.runtime.Template;
+import org.jboss.shamrock.runtime.annotations.Template;
 
 import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.OpenApiConfigImpl;

@@ -47,7 +47,23 @@
       <groupId>org.jboss.shamrock</groupId>
       <artifactId>shamrock-junit5-internal</artifactId>
     </dependency>
-    
+
   </dependencies>
 
+  <build>
+    <plugins>
+      <plugin>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <configuration>
+              <annotationProcessorPaths>
+                  <path>
+                      <groupId>org.jboss.shamrock</groupId>
+                      <artifactId>shamrock-extension-processor</artifactId>
+                      <version>${project.version}</version>
+                  </path>
+              </annotationProcessorPaths>
+          </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

@@ -16,8 +16,8 @@
 
 package org.jboss.shamrock.jdbc.mariadb.deployment;
 
-import org.jboss.shamrock.annotations.BuildProducer;
-import org.jboss.shamrock.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 
 public final class MariaDBJDBCReflections {

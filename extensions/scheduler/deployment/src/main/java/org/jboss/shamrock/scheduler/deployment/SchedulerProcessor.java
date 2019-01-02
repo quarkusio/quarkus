@@ -15,7 +15,7 @@
  */
 package org.jboss.shamrock.scheduler.deployment;
 
-import static org.jboss.shamrock.annotations.ExecutionTime.STATIC_INIT;
+import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.text.ParseException;
 import java.time.Duration;
@@ -52,9 +52,9 @@ import org.jboss.protean.gizmo.ClassOutput;
 import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
-import org.jboss.shamrock.annotations.BuildProducer;
-import org.jboss.shamrock.annotations.BuildStep;
-import org.jboss.shamrock.annotations.Record;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
 import org.jboss.shamrock.arc.deployment.AnnotationsTransformerBuildItem;
 import org.jboss.shamrock.arc.deployment.BeanContainerBuildItem;

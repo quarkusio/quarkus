@@ -16,7 +16,7 @@
 
 package org.jboss.shamrock.beanvalidation;
 
-import static org.jboss.shamrock.annotations.ExecutionTime.STATIC_INIT;
+import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
@@ -36,9 +36,9 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
-import org.jboss.shamrock.annotations.BuildProducer;
-import org.jboss.shamrock.annotations.BuildStep;
-import org.jboss.shamrock.annotations.Record;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
 import org.jboss.shamrock.arc.deployment.AnnotationsTransformerBuildItem;
 import org.jboss.shamrock.beanvalidation.runtime.ValidatorProvider;

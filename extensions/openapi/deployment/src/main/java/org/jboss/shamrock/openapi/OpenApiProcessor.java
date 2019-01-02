@@ -16,7 +16,7 @@
 
 package org.jboss.shamrock.openapi;
 
-import static org.jboss.shamrock.annotations.ExecutionTime.STATIC_INIT;
+import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,12 +29,11 @@ import java.util.stream.Stream;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.jboss.jandex.IndexView;
-import org.jboss.shamrock.annotations.BuildProducer;
-import org.jboss.shamrock.annotations.BuildStep;
-import org.jboss.shamrock.annotations.Record;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
 import org.jboss.shamrock.arc.deployment.BeanContainerListenerBuildItem;
 import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
@@ -45,6 +44,8 @@ import org.jboss.shamrock.jaxrs.JaxrsConfig;
 import org.jboss.shamrock.openapi.runtime.OpenApiDeploymentTemplate;
 import org.jboss.shamrock.openapi.runtime.OpenApiDocumentProducer;
 import org.jboss.shamrock.openapi.runtime.OpenApiServlet;
+import org.jboss.shamrock.runtime.annotations.ConfigGroup;
+import org.jboss.shamrock.runtime.annotations.ConfigItem;
 import org.jboss.shamrock.undertow.ServletBuildItem;
 
 import io.smallrye.openapi.api.OpenApiConfig;
@@ -64,11 +65,17 @@ public class OpenApiProcessor {
     private static final String WEB_INF_CLASSES_META_INF_OPENAPI_YML = "WEB-INF/classes/META-INF/openapi.yml";
     private static final String META_INF_OPENAPI_JSON = "META-INF/openapi.json";
     private static final String WEB_INF_CLASSES_META_INF_OPENAPI_JSON = "WEB-INF/classes/META-INF/openapi.json";
-    /**
-     * The path to register the OpenAPI Servlet
-     */
-    @ConfigProperty(name = "shamrock.openapi.path", defaultValue = "/openapi")
-    String path;
+
+    Configuration openapi;
+
+    @ConfigGroup
+    static final class Configuration {
+        /**
+         * The path at which to register the OpenAPI Servlet.
+         */
+        @ConfigItem(defaultValue = "/openapi")
+        String path;
+    }
 
     List<HotDeploymentConfigFileBuildItem> configFiles() {
         return Stream.of(META_INF_OPENAPI_YAML, WEB_INF_CLASSES_META_INF_OPENAPI_YAML,
@@ -79,7 +86,7 @@ public class OpenApiProcessor {
     @BuildStep
     ServletBuildItem servlet() {
         ServletBuildItem servletBuildItem = new ServletBuildItem("openapi", OpenApiServlet.class.getName());
-        servletBuildItem.getMappings().add(path);
+        servletBuildItem.getMappings().add(openapi.path);
         return servletBuildItem;
     }
 

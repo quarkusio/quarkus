@@ -33,8 +33,8 @@ import org.jboss.jandex.IndexView;
 import org.jboss.protean.arc.processor.BeanDefiningAnnotation;
 import org.jboss.protean.arc.processor.BeanDeployment;
 import org.jboss.protean.arc.processor.DotNames;
-import org.jboss.shamrock.annotations.BuildProducer;
-import org.jboss.shamrock.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.ApplicationArchive;
 import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
 

@@ -37,7 +37,7 @@ import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
 import org.jboss.protean.gizmo.TryBlock;
-import org.jboss.shamrock.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.ClassOutput;
 import org.jboss.shamrock.deployment.builditem.ClassOutputBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.*;

@@ -1,7 +1,7 @@
 package org.jboss.shamrock.vertx.runtime;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shamrock.runtime.ConfigGroup;
+import org.jboss.shamrock.runtime.annotations.ConfigGroup;
+import org.jboss.shamrock.runtime.annotations.ConfigItem;
 
 import java.util.Optional;
 
@@ -11,7 +11,7 @@ public class PemTrustCertConfiguration {
     /**
      * Comma-separated list of the trust certificate files (Pem format).
      */
-    @ConfigProperty(name = "certs")
+    @ConfigItem
     public Optional<String> certs;
 
 }

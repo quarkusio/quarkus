@@ -1,7 +1,7 @@
 package org.jboss.shamrock.vertx.runtime;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shamrock.runtime.ConfigGroup;
+import org.jboss.shamrock.runtime.annotations.ConfigGroup;
+import org.jboss.shamrock.runtime.annotations.ConfigItem;
 
 import java.util.Optional;
 
@@ -11,12 +11,12 @@ public class PfxConfiguration {
     /**
      * Path to the key file (PFX format)
      */
-    @ConfigProperty(name = "path")
+    @ConfigItem
     public Optional<String> path;
 
     /**
      * Password of the key.
      */
-    @ConfigProperty(name = "password")
+    @ConfigItem
     public Optional<String> password;
 }

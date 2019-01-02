@@ -15,9 +15,9 @@ import javax.annotation.PreDestroy;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
@@ -80,18 +80,18 @@ public class VertxProducer {
         initializeClusterOptions(options);
 
         options.setFileSystemOptions(new FileSystemOptions()
-                .setFileCachingEnabled(conf.fileResolverCachingEnabled)
-                .setClassPathResolvingEnabled(conf.classpathResolvingEnabled));
+                .setFileCachingEnabled(conf.caching)
+                .setClassPathResolvingEnabled(conf.classpathResolving));
         options.setWorkerPoolSize(conf.workerPoolSize);
-        options.setBlockedThreadCheckInterval(conf.warningExceptionTime);
+        options.setBlockedThreadCheckInterval(conf.warningExceptionTime.toMillis());
         options.setInternalBlockingPoolSize(conf.internalBlockingPoolSize);
-        if (conf.eventLoopsPoolSize > 0) {
-            options.setEventLoopPoolSize(conf.eventLoopsPoolSize);
+        if (conf.eventLoopsPoolSize.isPresent()) {
+            options.setEventLoopPoolSize(conf.eventLoopsPoolSize.getAsInt());
         }
         // TODO - Add the ability to configure these times in ns when long will be supported
         //  options.setMaxEventLoopExecuteTime(conf.maxEventLoopExecuteTime)
         //         .setMaxWorkerExecuteTime(conf.maxWorkerExecuteTime)
-        options.setWarningExceptionTime(conf.warningExceptionTime);
+        options.setWarningExceptionTime(conf.warningExceptionTime.toNanos());
 
         return options;
     }
@@ -104,58 +104,51 @@ public class VertxProducer {
     }
 
     private void initializeClusterOptions(VertxOptions options) {
-        Optional<ClusterConfiguration> cc = conf.clusterConfiguration;
-        if (!cc.isPresent()) {
-            return;
-        }
-        ClusterConfiguration cluster = cc.get();
+        ClusterConfiguration cluster = conf.cluster;
         options.setClustered(cluster.clustered);
-        options.setClusterPingReplyInterval(cluster.pingReplyInterval);
-        options.setClusterPingReplyInterval(cluster.pingInterval);
+        options.setClusterPingReplyInterval(cluster.pingReplyInterval.toMillis());
+        options.setClusterPingInterval(cluster.pingInterval.toMillis());
         if (cluster.host != null) {
             options.setClusterHost(cluster.host);
         }
-        if (cluster.port > 0) {
-            options.setClusterPort(cluster.port);
+        if (cluster.port.isPresent()) {
+            options.setClusterPort(cluster.port.getAsInt());
         }
         cluster.publicHost.ifPresent(options::setClusterPublicHost);
-        if (cluster.publicPort > 0) {
-            options.setClusterPort(cluster.publicPort);
+        if (cluster.publicPort.isPresent()) {
+            options.setClusterPort(cluster.publicPort.getAsInt());
         }
     }
 
     private void setEventBusOptions(VertxOptions options) {
-        Optional<EventBusConfiguration> optional = conf.eventBusConfiguration;
-        if (!optional.isPresent()) {
-            return;
-        }
-        EventBusConfiguration eb = optional.get();
+        EventBusConfiguration eb = conf.eventbus;
         EventBusOptions opts = new EventBusOptions();
-        opts.setAcceptBacklog(eb.acceptBacklog);
+        opts.setAcceptBacklog(eb.acceptBacklog.orElse(-1));
         opts.setClientAuth(ClientAuth.valueOf(eb.clientAuth.toUpperCase()));
-        opts.setConnectTimeout(eb.connectTimeout);
-        opts.setIdleTimeout(eb.idleTimeout);
-        opts.setSendBufferSize(eb.sendBufferSize);
-        opts.setSoLinger(eb.soLinger);
+        opts.setConnectTimeout((int) (Math.min(Integer.MAX_VALUE, eb.connectTimeout.toMillis())));
+        // todo: use timeUnit cleverly
+        opts.setIdleTimeout(eb.idleTimeout.isPresent() ? (int) Math.max(1, Math.min(Integer.MAX_VALUE, eb.idleTimeout.get().getSeconds())) : 0);
+        opts.setSendBufferSize(eb.sendBufferSize.orElse(-1));
+        opts.setSoLinger(eb.soLinger.orElse(-1));
         opts.setSsl(eb.ssl);
-        opts.setReceiveBufferSize(eb.receiveBufferSize);
+        opts.setReceiveBufferSize(eb.receiveBufferSize.orElse(-1));
         opts.setReconnectAttempts(eb.reconnectAttempts);
-        opts.setReconnectInterval(eb.reconnectInterval);
+        opts.setReconnectInterval(eb.reconnectInterval.toMillis());
         opts.setReuseAddress(eb.reuseAddress);
         opts.setReusePort(eb.reusePort);
-        opts.setTrafficClass(eb.trafficClass);
+        opts.setTrafficClass(eb.trafficClass.orElse(-1));
         opts.setTcpKeepAlive(eb.tcpKeepAlive);
         opts.setTcpNoDelay(eb.tcpNoDelay);
         opts.setTrustAll(eb.trustAll);
 
         // Certificates and trust.
-        if (eb.keyPem != null) {
+        if (eb.keyCertificatePem != null) {
             List<String> certs = new ArrayList<>();
             List<String> keys = new ArrayList<>();
-            eb.keyPem.certs.ifPresent(s ->
+            eb.keyCertificatePem.certs.ifPresent(s ->
                     certs.addAll(Pattern.compile(",").splitAsStream(s).map(String::trim).collect(Collectors.toList()))
             );
-            eb.keyPem.keys.ifPresent(s ->
+            eb.keyCertificatePem.keys.ifPresent(s ->
                     keys.addAll(Pattern.compile(",").splitAsStream(s).map(String::trim).collect(Collectors.toList()))
             );
             PemKeyCertOptions o = new PemKeyCertOptions()
@@ -164,39 +157,39 @@ public class VertxProducer {
             opts.setPemKeyCertOptions(o);
         }
 
-        if (eb.keyJks != null) {
+        if (eb.keyCertificateJks != null) {
             JksOptions o = new JksOptions();
-            eb.keyJks.path.ifPresent(o::setPath);
-            eb.keyJks.password.ifPresent(o::setPassword);
+            eb.keyCertificateJks.path.ifPresent(o::setPath);
+            eb.keyCertificateJks.password.ifPresent(o::setPassword);
             opts.setKeyStoreOptions(o);
         }
 
-        if (eb.keyPfx != null) {
+        if (eb.keyCertificatePfx != null) {
             PfxOptions o = new PfxOptions();
-            eb.keyPfx.path.ifPresent(o::setPath);
-            eb.keyPfx.password.ifPresent(o::setPassword);
+            eb.keyCertificatePfx.path.ifPresent(o::setPath);
+            eb.keyCertificatePfx.password.ifPresent(o::setPassword);
             opts.setPfxKeyCertOptions(o);
         }
 
-        if (eb.trustPem != null) {
-            eb.trustPem.certs.ifPresent(s -> {
+        if (eb.trustCertificatePem != null) {
+            eb.trustCertificatePem.certs.ifPresent(s -> {
                 PemTrustOptions o = new PemTrustOptions();
                 Pattern.compile(",").splitAsStream(s).map(String::trim).forEach(o::addCertPath);
                 opts.setPemTrustOptions(o);
             });
         }
 
-        if (eb.trustJks != null) {
+        if (eb.trustCertificateJks != null) {
             JksOptions o = new JksOptions();
-            eb.trustJks.path.ifPresent(o::setPath);
-            eb.trustJks.password.ifPresent(o::setPassword);
+            eb.trustCertificateJks.path.ifPresent(o::setPath);
+            eb.trustCertificateJks.password.ifPresent(o::setPassword);
             opts.setTrustStoreOptions(o);
         }
 
-        if (eb.trustPfx != null) {
+        if (eb.trustCertificatePfx != null) {
             PfxOptions o = new PfxOptions();
-            eb.trustPfx.path.ifPresent(o::setPath);
-            eb.trustPfx.password.ifPresent(o::setPassword);
+            eb.trustCertificatePfx.path.ifPresent(o::setPath);
+            eb.trustCertificatePfx.password.ifPresent(o::setPassword);
             opts.setPfxTrustOptions(o);
         }
         options.setEventBusOptions(opts);

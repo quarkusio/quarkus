@@ -25,7 +25,7 @@ import javax.websocket.server.ServerEndpointConfig;
 
 import org.jboss.logging.Logger;
 import org.jboss.shamrock.runtime.RuntimeValue;
-import org.jboss.shamrock.runtime.Template;
+import org.jboss.shamrock.runtime.annotations.Template;
 
 import io.undertow.Undertow;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;

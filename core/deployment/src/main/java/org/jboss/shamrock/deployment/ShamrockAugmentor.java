@@ -25,9 +25,7 @@ import java.util.function.Consumer;
 
 import org.jboss.builder.BuildChain;
 import org.jboss.builder.BuildChainBuilder;
-import org.jboss.builder.BuildContext;
 import org.jboss.builder.BuildResult;
-import org.jboss.builder.BuildStep;
 import org.jboss.builder.item.BuildItem;
 import org.jboss.logging.Logger;
 import org.jboss.shamrock.deployment.builditem.ArchiveRootBuildItem;
@@ -62,38 +60,36 @@ public class ShamrockAugmentor {
         try {
             Thread.currentThread().setContextClassLoader(classLoader);
 
-            BuildChainBuilder chainBuilder = BuildChain.builder()
+            final BuildChainBuilder chainBuilder = BuildChain.builder();
 
-                    .loadProviders(Thread.currentThread().getContextClassLoader())
-                    .addBuildStep(new BuildStep() {
-                        @Override
-                        public void execute(BuildContext context) {
-                            //TODO: this should not be here
-                            context.produce(new SubstrateResourceBuildItem("META-INF/microprofile-config.properties"));
-                            context.produce(ShamrockConfig.INSTANCE);
-                            context.produce(new ArchiveRootBuildItem(root));
-                            context.produce(new ClassOutputBuildItem(output));
-                            context.produce(new ShutdownContextBuildItem());
-                        }
-                    })
-                    .produces(ShamrockConfig.class)
-                    .produces(SubstrateResourceBuildItem.class)
-                    .produces(ArchiveRootBuildItem.class)
-                    .produces(ShutdownContextBuildItem.class)
-                    .produces(ClassOutputBuildItem.class)
-                    .build();
-            for (Consumer<BuildChainBuilder> i : buildChainCustomizers) {
-                i.accept(chainBuilder);
-            }
+            ExtensionStepLoader.loadStepsFrom(classLoader).accept(chainBuilder);
+            chainBuilder.loadProviders(classLoader);
+
+            chainBuilder
+                .addInitial(ShamrockConfig.class)
+                .addInitial(SubstrateResourceBuildItem.class)
+                .addInitial(ArchiveRootBuildItem.class)
+                .addInitial(ShutdownContextBuildItem.class)
+                .addInitial(ClassOutputBuildItem.class);
             for (Class<? extends BuildItem> i : finalResults) {
                 chainBuilder.addFinal(i);
             }
             chainBuilder.addFinal(GeneratedClassBuildItem.class)
                     .addFinal(GeneratedResourceBuildItem.class);
 
+            for (Consumer<BuildChainBuilder> i : buildChainCustomizers) {
+                i.accept(chainBuilder);
+            }
+
             BuildChain chain = chainBuilder
                     .build();
-            BuildResult buildResult = chain.createExecutionBuilder("main").execute();
+            BuildResult buildResult = chain.createExecutionBuilder("main")
+                .produce(new SubstrateResourceBuildItem("META-INF/microprofile-config.properties"))
+                .produce(ShamrockConfig.INSTANCE)
+                .produce(new ArchiveRootBuildItem(root))
+                .produce(new ClassOutputBuildItem(output))
+                .produce(new ShutdownContextBuildItem())
+                .execute();
 
             //TODO: this seems wrong
             for (GeneratedClassBuildItem i : buildResult.consumeMulti(GeneratedClassBuildItem.class)) {

@@ -37,7 +37,7 @@ import org.objectweb.asm.Type;
 
 class BytecodeCreatorImpl implements BytecodeCreator {
 
-    public static final String DEBUG_HELPERS_PROPERTY = "org.jboss.protean.gizmo.DEBUG_HELPERS_ON";
+    private static final boolean DEBUG_SCOPES = true;
 
     private static final AtomicInteger functionCount = new AtomicInteger();
 
@@ -51,6 +51,7 @@ class BytecodeCreatorImpl implements BytecodeCreator {
 
     private final Label top = new Label();
     private final Label bottom = new Label();
+    private final StackTraceElement[] stack;
 
     private static final Map<String, String> boxingMap;
     private static final Map<String, String> boxingMethodMap;
@@ -90,11 +91,13 @@ class BytecodeCreatorImpl implements BytecodeCreator {
     BytecodeCreatorImpl(BytecodeCreatorImpl enclosing, MethodCreatorImpl methodCreator) {
         this.method = methodCreator;
         this.owner = enclosing;
+        stack = DEBUG_SCOPES ? new Throwable().getStackTrace() : null;
     }
 
     BytecodeCreatorImpl(BytecodeCreatorImpl enclosing, boolean useThisMethod) {
         this.method = useThisMethod ? (MethodCreatorImpl) this : enclosing.getMethod();
         this.owner = enclosing;
+        stack = DEBUG_SCOPES ? new Throwable().getStackTrace() : null;
     }
 
     BytecodeCreatorImpl(BytecodeCreatorImpl enclosing) {
@@ -110,6 +113,8 @@ class BytecodeCreatorImpl implements BytecodeCreator {
 
     @Override
     public ResultHandle invokeVirtualMethod(MethodDescriptor descriptor, ResultHandle object, ResultHandle... args) {
+        Objects.requireNonNull(descriptor);
+        Objects.requireNonNull(object);
         ResultHandle ret = allocateResult(descriptor.getReturnType());
         operations.add(new InvokeOperation(ret, descriptor, resolve(checkScope(object)), resolve(checkScope(args)), false, false));
         return ret;
@@ -117,6 +122,8 @@ class BytecodeCreatorImpl implements BytecodeCreator {
 
     @Override
     public ResultHandle invokeInterfaceMethod(MethodDescriptor descriptor, ResultHandle object, ResultHandle... args) {
+        Objects.requireNonNull(descriptor);
+        Objects.requireNonNull(object);
         ResultHandle ret = allocateResult(descriptor.getReturnType());
         operations.add(new InvokeOperation(ret, descriptor, resolve(checkScope(object)), resolve(checkScope(args)), true, false));
         return ret;
@@ -124,6 +131,7 @@ class BytecodeCreatorImpl implements BytecodeCreator {
 
     @Override
     public ResultHandle invokeStaticMethod(MethodDescriptor descriptor, ResultHandle... args) {
+        Objects.requireNonNull(descriptor);
         ResultHandle ret = allocateResult(descriptor.getReturnType());
         operations.add(new InvokeOperation(ret, descriptor, resolve(checkScope(args))));
         return ret;
@@ -132,6 +140,8 @@ class BytecodeCreatorImpl implements BytecodeCreator {
 
     @Override
     public ResultHandle invokeSpecialMethod(MethodDescriptor descriptor, ResultHandle object, ResultHandle... args) {
+        Objects.requireNonNull(descriptor);
+        Objects.requireNonNull(object);
         ResultHandle ret = allocateResult(descriptor.getReturnType());
         operations.add(new InvokeOperation(ret, descriptor, resolve(checkScope(object)), resolve(checkScope(args)), false, true));
         return ret;
@@ -140,6 +150,7 @@ class BytecodeCreatorImpl implements BytecodeCreator {
 
     @Override
     public ResultHandle newInstance(MethodDescriptor descriptor, ResultHandle... args) {
+        Objects.requireNonNull(descriptor);
         ResultHandle ret = allocateResult("L" + descriptor.getDeclaringClass() + ";");
         operations.add(new NewInstanceOperation(ret, descriptor, resolve(checkScope(args))));
         return ret;
@@ -147,6 +158,7 @@ class BytecodeCreatorImpl implements BytecodeCreator {
 
     @Override
     public ResultHandle newArray(String type, ResultHandle length) {
+        Objects.requireNonNull(length);
         String resultType;
         if (!type.startsWith("[")) {
             //assume a single dimension array
@@ -249,6 +261,7 @@ class BytecodeCreatorImpl implements BytecodeCreator {
 
     @Override
     public ResultHandle load(String val) {
+        Objects.requireNonNull(val);
         return new ResultHandle("Ljava/lang/String;", this, val);
     }
 
@@ -294,6 +307,7 @@ class BytecodeCreatorImpl implements BytecodeCreator {
 
     @Override
     public ResultHandle loadClass(String className) {
+        Objects.requireNonNull(className);
         Class primtiveType = null;
         if (className.equals("boolean")) {
             primtiveType = Boolean.class;
@@ -350,6 +364,8 @@ class BytecodeCreatorImpl implements BytecodeCreator {
 
     @Override
     public void writeInstanceField(FieldDescriptor fieldDescriptor, ResultHandle instance, ResultHandle value) {
+        Objects.requireNonNull(instance);
+        Objects.requireNonNull(value);
         final ResultHandle resolvedInstance = resolve(checkScope(instance));
         final ResultHandle resolvedValue = resolve(checkScope(value));
         operations.add(new Operation() {
@@ -379,6 +395,8 @@ class BytecodeCreatorImpl implements BytecodeCreator {
 
     @Override
     public ResultHandle readInstanceField(FieldDescriptor fieldDescriptor, ResultHandle instance) {
+        Objects.requireNonNull(fieldDescriptor);
+        Objects.requireNonNull(instance);
         ResultHandle resultHandle = allocateResult(fieldDescriptor.getType());
         ResultHandle resolvedInstance = resolve(checkScope(instance));
         operations.add(new Operation() {
@@ -409,6 +427,8 @@ class BytecodeCreatorImpl implements BytecodeCreator {
 
     @Override
     public void writeStaticField(FieldDescriptor fieldDescriptor, ResultHandle value) {
+        Objects.requireNonNull(fieldDescriptor);
+        Objects.requireNonNull(value);
         ResultHandle resolvedValue = resolve(checkScope(value));
         operations.add(new Operation() {
             @Override
@@ -436,6 +456,7 @@ class BytecodeCreatorImpl implements BytecodeCreator {
 
     @Override
     public ResultHandle readStaticField(FieldDescriptor fieldDescriptor) {
+        Objects.requireNonNull(fieldDescriptor);
         ResultHandle result = allocateResult(fieldDescriptor.getType());
         operations.add(new Operation() {
             @Override
@@ -563,6 +584,8 @@ class BytecodeCreatorImpl implements BytecodeCreator {
 
     @Override
     public ResultHandle checkCast(final ResultHandle resultHandle, final String castTarget) {
+        Objects.requireNonNull(resultHandle);
+        Objects.requireNonNull(castTarget);
         final String intName = castTarget.replace('.', '/');
         // seems like a waste of local vars but it's the safest approach since result type can't be mutated
         final ResultHandle result = allocateResult("L" + intName + ";");
@@ -841,6 +864,7 @@ class BytecodeCreatorImpl implements BytecodeCreator {
 
     @Override
     public void throwException(ResultHandle exception) {
+        Objects.requireNonNull(exception);
         ResultHandle resolvedException = resolve(checkScope(exception));
         operations.add(new Operation() {
             @Override
@@ -941,6 +965,16 @@ class BytecodeCreatorImpl implements BytecodeCreator {
 
     private void dumpScope(final StringBuilder builder) {
         builder.append("\tat ").append(this).append('\n');
+        final StackTraceElement[] stack = this.stack;
+        if (stack != null) {
+            final int length = stack.length;
+            for (int i = 0; i < 8 && i < length; i ++) {
+                builder.append("\t\tat ").append(stack[i]).append('\n');
+            }
+            if (length > 8) {
+                builder.append("\t\t...\n");
+            }
+        }
         if (owner != null) owner.dumpScope(builder);
     }
 

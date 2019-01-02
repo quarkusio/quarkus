@@ -29,7 +29,7 @@ import org.jboss.protean.arc.ManagedContext;
 import org.jboss.shamrock.runtime.InjectionFactory;
 import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.runtime.ShutdownContext;
-import org.jboss.shamrock.runtime.Template;
+import org.jboss.shamrock.runtime.annotations.Template;
 
 /**
  * @author Martin Kouba

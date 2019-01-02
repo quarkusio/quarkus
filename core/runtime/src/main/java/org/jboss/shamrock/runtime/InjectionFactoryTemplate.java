@@ -16,6 +16,8 @@
 
 package org.jboss.shamrock.runtime;
 
+import org.jboss.shamrock.runtime.annotations.Template;
+
 @Template
 public class InjectionFactoryTemplate {
 

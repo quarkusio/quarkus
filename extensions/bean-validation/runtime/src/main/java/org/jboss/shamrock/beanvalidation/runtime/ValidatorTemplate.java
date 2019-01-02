@@ -26,7 +26,7 @@ import javax.validation.Validation;
 import org.hibernate.validator.PredefinedScopeHibernateValidator;
 import org.hibernate.validator.PredefinedScopeHibernateValidatorConfiguration;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
-import org.jboss.shamrock.runtime.Template;
+import org.jboss.shamrock.runtime.annotations.Template;
 
 @Template
 public class ValidatorTemplate {

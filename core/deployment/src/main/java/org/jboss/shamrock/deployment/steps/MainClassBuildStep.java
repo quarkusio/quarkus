@@ -33,10 +33,11 @@ import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
 import org.jboss.protean.gizmo.TryBlock;
-import org.jboss.shamrock.annotations.BuildProducer;
-import org.jboss.shamrock.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.ClassOutput;
 import org.jboss.shamrock.deployment.builditem.ApplicationClassNameBuildItem;
+import org.jboss.shamrock.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
 import org.jboss.shamrock.deployment.builditem.ClassOutputBuildItem;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.HttpServerBuiltItem;
@@ -44,6 +45,7 @@ import org.jboss.shamrock.deployment.builditem.MainBytecodeRecorderBuildItem;
 import org.jboss.shamrock.deployment.builditem.MainClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import org.jboss.shamrock.deployment.builditem.SystemPropertyBuildItem;
+import org.jboss.shamrock.deployment.recording.BytecodeRecorderImpl;
 import org.jboss.shamrock.runtime.Application;
 import org.jboss.shamrock.runtime.StartupContext;
 import org.jboss.shamrock.runtime.StartupTask;
@@ -64,6 +66,7 @@ class MainClassBuildStep {
                              Optional<HttpServerBuiltItem> httpServer,
                              List<FeatureBuildItem> features,
                              BuildProducer<ApplicationClassNameBuildItem> appClassNameProducer,
+                             List<BytecodeRecorderObjectLoaderBuildItem> loaders,
                              ClassOutputBuildItem classOutput) {
 
         String appClassName = APP_CLASS + COUNT.incrementAndGet();
@@ -90,10 +93,14 @@ class MainClassBuildStep {
         mv.writeStaticField(scField.getFieldDescriptor(), startupContext);
         TryBlock tryBlock = mv.tryBlock();
         for (StaticBytecodeRecorderBuildItem holder : staticInitTasks) {
-            if (!holder.getBytecodeRecorder().isEmpty()) {
-                holder.getBytecodeRecorder().writeBytecode(classOutput.getClassOutput());
+            final BytecodeRecorderImpl recorder = holder.getBytecodeRecorder();
+            if (! recorder.isEmpty()) {
+                for (BytecodeRecorderObjectLoaderBuildItem item : loaders) {
+                    recorder.registerObjectLoader(item.getObjectLoader());
+                }
+                recorder.writeBytecode(classOutput.getClassOutput());
 
-                ResultHandle dup = tryBlock.newInstance(ofConstructor(holder.getBytecodeRecorder().getClassName()));
+                ResultHandle dup = tryBlock.newInstance(ofConstructor(recorder.getClassName()));
                 tryBlock.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup, startupContext);
             }
         }
@@ -118,9 +125,13 @@ class MainClassBuildStep {
         startupContext = mv.readStaticField(scField.getFieldDescriptor());
         tryBlock = mv.tryBlock();
         for (MainBytecodeRecorderBuildItem holder : mainMethod) {
-            if (!holder.getBytecodeRecorder().isEmpty()) {
-                holder.getBytecodeRecorder().writeBytecode(classOutput.getClassOutput());
-                ResultHandle dup = tryBlock.newInstance(ofConstructor(holder.getBytecodeRecorder().getClassName()));
+            final BytecodeRecorderImpl recorder = holder.getBytecodeRecorder();
+            if (! recorder.isEmpty()) {
+                for (BytecodeRecorderObjectLoaderBuildItem item : loaders) {
+                    recorder.registerObjectLoader(item.getObjectLoader());
+                }
+                recorder.writeBytecode(classOutput.getClassOutput());
+                ResultHandle dup = tryBlock.newInstance(ofConstructor(recorder.getClassName()));
                 tryBlock.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup, startupContext);
             }
         }

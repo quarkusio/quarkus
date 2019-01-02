@@ -36,7 +36,7 @@ public class MethodDescriptor {
         this.name = name;
         this.returnType = returnType;
         this.parameterTypes = parameterTypes;
-        this.descriptor = DescriptorUtils.methodSignitureToDescriptor(returnType, parameterTypes);
+        this.descriptor = DescriptorUtils.methodSignatureToDescriptor(returnType, parameterTypes);
         for (String p : parameterTypes) {
             if (p.length() != 1) {
                 if (!(p.startsWith("L") && p.endsWith(";") || p.startsWith("["))) {
@@ -60,7 +60,7 @@ public class MethodDescriptor {
         }
         this.parameterTypes = paramTypes;
         this.declaringClass = info.declaringClass().toString().replace('.', '/');
-        this.descriptor = DescriptorUtils.methodSignitureToDescriptor(returnType, parameterTypes);
+        this.descriptor = DescriptorUtils.methodSignatureToDescriptor(returnType, parameterTypes);
     }
 
     public static MethodDescriptor ofMethod(String declaringClass, String name, String returnType, String... parameterTypes) {
@@ -117,20 +117,19 @@ public class MethodDescriptor {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        MethodDescriptor that = (MethodDescriptor) o;
-        return Objects.equals(name, that.name) &&
-                Objects.equals(returnType, that.returnType) &&
-                Arrays.equals(parameterTypes, that.parameterTypes);
+        return o instanceof MethodDescriptor && equals((MethodDescriptor) o);
+    }
+
+    public boolean equals(MethodDescriptor o) {
+        return o == this || o != null
+            && declaringClass.equals(o.declaringClass)
+            && name.equals(o.name)
+            && descriptor.equals(o.descriptor);
     }
 
     @Override
     public int hashCode() {
-
-        int result = Objects.hash(name, returnType);
-        result = 31 * result + Arrays.hashCode(parameterTypes);
-        return result;
+        return Objects.hash(declaringClass, name, descriptor);
     }
 
     @Override

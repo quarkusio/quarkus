@@ -32,7 +32,7 @@ import javax.servlet.ServletContext;
 
 import org.jboss.logging.Logger;
 import org.jboss.shamrock.runtime.RuntimeValue;
-import org.jboss.shamrock.runtime.Template;
+import org.jboss.shamrock.runtime.annotations.Template;
 import org.wildfly.security.WildFlyElytronProvider;
 import org.wildfly.security.auth.realm.LegacyPropertiesSecurityRealm;
 import org.wildfly.security.auth.realm.SimpleMapBackedSecurityRealm;

@@ -23,7 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Properties;
 
-import org.jboss.shamrock.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.builditem.ArchiveRootBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateOutputBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;

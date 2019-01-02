@@ -19,11 +19,12 @@ package org.jboss.shamrock.health;
 import java.util.Arrays;
 import java.util.List;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shamrock.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
 import org.jboss.shamrock.health.runtime.HealthServlet;
+import org.jboss.shamrock.runtime.annotations.ConfigGroup;
+import org.jboss.shamrock.runtime.annotations.ConfigItem;
 import org.jboss.shamrock.undertow.ServletBuildItem;
 
 import io.smallrye.health.SmallRyeHealthReporter;
@@ -31,16 +32,24 @@ import io.smallrye.health.SmallRyeHealthReporter;
 class HealthProcessor {
 
     /**
-     * The path to the health check servlet
+     * The configuration for health checking.
      */
-    @ConfigProperty(name = "shamrock.health.path", defaultValue = "/health")
-    String path;
+    Config health;
+
+    @ConfigGroup
+    static final class Config {
+        /**
+         * The path of the health-checking servlet.
+         */
+        @ConfigItem(defaultValue = "/health")
+        String path;
+    }
 
 
     @BuildStep
     ServletBuildItem produceServlet() {
         ServletBuildItem servletBuildItem = new ServletBuildItem("health", HealthServlet.class.getName());
-        servletBuildItem.getMappings().add(path);
+        servletBuildItem.getMappings().add(health.path);
         return servletBuildItem;
     }
 

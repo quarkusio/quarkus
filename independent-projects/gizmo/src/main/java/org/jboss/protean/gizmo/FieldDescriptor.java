@@ -16,6 +16,9 @@
 
 package org.jboss.protean.gizmo;
 
+import java.lang.reflect.Field;
+import java.util.Objects;
+
 import org.jboss.jandex.FieldInfo;
 
 public class FieldDescriptor {
@@ -56,6 +59,10 @@ public class FieldDescriptor {
         return new FieldDescriptor(fieldInfo);
     }
 
+    public static FieldDescriptor of(Field field) {
+        return of(field.getDeclaringClass(), field.getName(), field.getType());
+    }
+
     public String getName() {
         return name;
     }
@@ -66,5 +73,17 @@ public class FieldDescriptor {
 
     public String getType() {
         return type;
+    }
+
+    public boolean equals(final Object obj) {
+        return obj instanceof FieldDescriptor && equals((FieldDescriptor) obj);
+    }
+
+    public boolean equals(final FieldDescriptor obj) {
+        return obj == this || obj != null && declaringClass.equals(obj.declaringClass) && name.equals(obj.name) && type.equals(obj.type);
+    }
+
+    public int hashCode() {
+        return Objects.hash(declaringClass, name, type);
     }
 }

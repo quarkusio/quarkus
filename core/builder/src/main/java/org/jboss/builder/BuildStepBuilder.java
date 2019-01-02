@@ -190,6 +190,25 @@ public final class BuildStepBuilder {
      * build step may produce an actual value for this item, which will be shared to all consumers during deployment.
      *
      * @param type the item type (must not be {@code null})
+     * @param flags the producer flag to apply (must not be {@code null})
+     * @return this builder
+     */
+    public BuildStepBuilder produces(Class<? extends BuildItem> type, ProduceFlags flags) {
+        Assert.checkNotNullParam("type", type);
+        Assert.checkNotNullParam("flag", flags);
+        if (NamedBuildItem.class.isAssignableFrom(type)) {
+            throw new IllegalArgumentException("Cannot produce a named build item without a name");
+        }
+        addProduces(new ItemId(type, null), Constraint.REAL, flags);
+        return this;
+    }
+
+    /**
+     * Similarly to {@link #beforeConsume(Class)}, establish that this build step must come before the consumer(s) of the
+     * given item {@code type}; however, only one {@code producer} may exist for the given item.  In addition, the
+     * build step may produce an actual value for this item, which will be shared to all consumers during deployment.
+     *
+     * @param type the item type (must not be {@code null})
      * @param name the build item name (must not be {@code null})
      * @return this builder
      */

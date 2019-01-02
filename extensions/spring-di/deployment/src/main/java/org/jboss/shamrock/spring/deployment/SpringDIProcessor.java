@@ -23,7 +23,7 @@ import org.jboss.protean.arc.processor.AnnotationsTransformer;
 import org.jboss.protean.arc.processor.DotNames;
 import org.jboss.protean.arc.processor.ScopeInfo;
 import org.jboss.protean.arc.processor.Transformation;
-import org.jboss.shamrock.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.arc.deployment.AnnotationsTransformerBuildItem;
 
 import java.util.ArrayList;

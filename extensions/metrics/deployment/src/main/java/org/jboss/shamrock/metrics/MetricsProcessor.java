@@ -16,14 +16,13 @@
 
 package org.jboss.shamrock.metrics;
 
-import static org.jboss.shamrock.annotations.ExecutionTime.RUNTIME_INIT;
-import static org.jboss.shamrock.annotations.ExecutionTime.STATIC_INIT;
+import static org.jboss.shamrock.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.util.Collection;
 
 import javax.interceptor.Interceptor;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.metrics.annotation.Counted;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -32,9 +31,9 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.shamrock.annotations.BuildProducer;
-import org.jboss.shamrock.annotations.BuildStep;
-import org.jboss.shamrock.annotations.Record;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
 import org.jboss.shamrock.arc.deployment.BeanArchiveIndexBuildItem;
 import org.jboss.shamrock.arc.deployment.BeanContainerBuildItem;
@@ -43,6 +42,8 @@ import org.jboss.shamrock.deployment.builditem.ShutdownContextBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.metrics.runtime.MetricsDeploymentTemplate;
 import org.jboss.shamrock.metrics.runtime.MetricsServlet;
+import org.jboss.shamrock.runtime.annotations.ConfigGroup;
+import org.jboss.shamrock.runtime.annotations.ConfigItem;
 import org.jboss.shamrock.undertow.ServletBuildItem;
 
 import io.smallrye.metrics.MetricProducer;
@@ -57,16 +58,22 @@ import io.smallrye.metrics.interceptors.TimedInterceptor;
 
 public class MetricsProcessor {
 
-    /**
-     * The path to the metrics Servlet
-     */
-    @ConfigProperty(name = "shamrock.metrics.path", defaultValue = "/metrics")
-    String path;
+    Config metrics;
+
+    @ConfigGroup
+    static final class Config {
+
+        /**
+         * The path to the metrics Servlet.
+         */
+        @ConfigItem(defaultValue = "/metrics")
+        String path;
+    }
 
     @BuildStep
     ServletBuildItem createServlet() {
         ServletBuildItem servletBuildItem = new ServletBuildItem("metrics", MetricsServlet.class.getName());
-        servletBuildItem.getMappings().add(path);
+        servletBuildItem.getMappings().add(metrics.path);
         return servletBuildItem;
     }
 

@@ -16,21 +16,21 @@
 
 package org.jboss.shamrock.transactions;
 
-import static org.jboss.shamrock.annotations.ExecutionTime.STATIC_INIT;
+import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.util.Properties;
 
 import javax.inject.Inject;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shamrock.annotations.BuildProducer;
-import org.jboss.shamrock.annotations.BuildStep;
-import org.jboss.shamrock.annotations.Record;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.Capabilities;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
+import org.jboss.shamrock.transactions.runtime.TransactionConfiguration;
 import org.jboss.shamrock.transactions.runtime.TransactionProducers;
 import org.jboss.shamrock.transactions.runtime.TransactionTemplate;
 import org.jboss.shamrock.transactions.runtime.interceptor.TransactionalInterceptorMandatory;
@@ -59,10 +59,9 @@ class TransactionsProcessor {
     BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit;
 
     /**
-     * The node name used by the transaction manager
+     * The transactions configuration.
      */
-    @ConfigProperty(name = "shamrock.transactions.node-name", defaultValue = "shamrock")
-    String nodeName;
+    TransactionConfiguration transactions;
 
     @BuildStep(providesCapabilities = Capabilities.TRANSACTIONS)
     @Record(STATIC_INIT)
@@ -86,7 +85,7 @@ class TransactionsProcessor {
         //we want to force Arjuna to init at static init time
         Properties defaultProperties = PropertiesFactory.getDefaultProperties();
         tt.setDefaultProperties(defaultProperties);
-        tt.setNodeName(nodeName);
+        tt.initialize(transactions);
 
     }
 }

@@ -25,8 +25,8 @@ import java.util.function.BiFunction;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
-import org.jboss.shamrock.annotations.BuildStep;
-import org.jboss.shamrock.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import javax.inject.Inject;
 
 import org.jboss.shamrock.deployment.builditem.BytecodeTransformerBuildItem;

@@ -16,8 +16,8 @@
 
 package org.jboss.shamrock.deployment.index;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shamrock.runtime.ConfigGroup;
+import org.jboss.shamrock.runtime.annotations.ConfigGroup;
+import org.jboss.shamrock.runtime.annotations.ConfigItem;
 
 @ConfigGroup
 public class IndexDependencyConfig {
@@ -25,19 +25,19 @@ public class IndexDependencyConfig {
     /**
      * The maven groupId of the artifact to index
      */
-    @ConfigProperty(name = "groupId")
+    @ConfigItem
     String groupId;
 
     /**
      * The maven artifactId of the artifact to index
      */
-    @ConfigProperty(name = "artifactId")
+    @ConfigItem
     String artifactId;
 
     /**
      * The maven classifier of the artifact to index
      */
-    @ConfigProperty(name = "classifier", defaultValue = "")
+    @ConfigItem
     String classifier;
 
 }

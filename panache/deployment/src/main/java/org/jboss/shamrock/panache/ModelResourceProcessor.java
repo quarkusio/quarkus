@@ -104,6 +104,37 @@ public final class ModelResourceProcessor {
             transformers.produce(new BytecodeTransformerBuildItem(rxModelClass, rxModelEnhancer));
             generateModelClass(rxModelClass, generatedClasses);
         }
+
+        // this just deadlocks, probably fighting with JPA
+//        System.out.println("EXPORT C");
+//        try {
+//            final BootstrapServiceRegistry bsr = new BootstrapServiceRegistryBuilder().build();
+//            System.out.println("EXPORT1aa");
+//            final StandardServiceRegistryBuilder ssrBuilder = new StandardServiceRegistryBuilder( bsr );
+//            System.out.println("EXPORT1a");
+//            Properties properties = new Properties();
+//            System.out.println("EXPORT1b");
+//            properties.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQL95Dialect");
+//            System.out.println("EXPORT1c");
+//            ssrBuilder.applySettings(properties);
+//            
+//            SchemaExport export = new SchemaExport();
+//            System.out.println("EXPORT1");
+//            MetadataSources sources = new MetadataSources(ssrBuilder.build());
+//            System.out.println("EXPORT2");
+//            sources.addAnnotatedClass(RxModel.class);
+//            System.out.println("EXPORT3");
+//            for (String rxModelClass : rxModelClasses) {
+//                sources.addAnnotatedClassName(rxModelClass);
+//            }
+//            System.out.println("EXPORT4");
+//            Metadata metadata = sources.getMetadataBuilder().build();
+//            System.out.println("EXPORT5");
+//            export.create(EnumSet.of(TargetType.STDOUT), metadata);
+//        }catch(Throwable t) {
+//            t.printStackTrace();
+//        }
+//        System.out.println("EXPORT END");
     }
 
     private void generateModelClass(String modelClassName, BuildProducer<GeneratedClassBuildItem> generatedClasses) {

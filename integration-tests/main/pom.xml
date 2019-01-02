@@ -40,12 +40,12 @@
     <dependencies>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-class-transformer-integration-test</artifactId>
+            <artifactId>shamrock-integration-test-class-transformer</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-shared-library-integration-test</artifactId>
+            <artifactId>shamrock-integration-test-shared-library</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
@@ -147,7 +147,7 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>common-jpa-entities</artifactId>
+            <artifactId>shamrock-integration-test-common-jpa-entities</artifactId>
             <version>${project.version}</version>
         </dependency>
 

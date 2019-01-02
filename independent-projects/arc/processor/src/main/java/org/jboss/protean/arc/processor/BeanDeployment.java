@@ -169,7 +169,7 @@ public class BeanDeployment {
         this.observers = observers;
         this.interceptorResolver = new InterceptorResolver(this);
 
-        LOGGER.infof("Bean deployment created in %s ms", System.currentTimeMillis() - start);
+        LOGGER.debugf("Bean deployment created in %s ms", System.currentTimeMillis() - start);
     }
     
     private void validateBeanNames(List<Throwable> errors) {

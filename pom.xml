@@ -50,7 +50,10 @@
     
         <!-- Core components -->
         <module>core</module>
-        <module>test</module>
+        <module>test-framework</module>
+
+        <!-- Integration Tests -->
+        <module>integration-tests</module>
 
         <!-- Extensions -->
         <module>extensions</module>

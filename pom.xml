@@ -49,59 +49,30 @@
         <module>build-parent</module>
     
         <!-- Core components -->
-        <module>builder</module>
-        <module>jboss-logmanager-embedded</module>
-        <module>jboss-logging-embedded</module>
         <module>core</module>
-        <module>creator</module>
         <module>test-framework</module>
 
+        <!-- Integration Tests -->
+        <module>integration-tests</module>
+
+        <!-- Extensions -->
+        <module>extensions</module>
+
         <!-- External projects -->
-        <module>ext/gizmo</module>
-        <module>ext/arc</module>
-        <module>ext/hibernate-orm-protean</module>
-
-        <!-- Plumbing -->
-        <module>arc</module>
-        <module>scheduler</module>
-
-        <!-- HTTP -->
-        <module>undertow</module>
-        <module>openssl</module>
-        <module>websockets</module>
-
-        <!-- Monitoring -->
-        <module>health</module>
-        <module>metrics</module>
-        <module>opentracing</module>
-        <module>fault-tolerance</module>
-
-        <!-- REST services -->
-        <module>jaxrs</module>
-        <module>rest-client</module>
-        <module>openapi</module>
-
-        <!-- Reactive -->
-        <module>vertx</module>
-        <module>reactive-streams-operators</module>
-
-        <!-- Data access and validation -->
-        <module>transactions</module>
-        <module>agroal</module>
-        <module>jdbc</module>
-        <module>jpa</module>
-        <module>bean-validation</module>
+        <module>independent-projects/gizmo</module>
+        <module>independent-projects/arc</module>
+        <module>independent-projects/hibernate-orm-protean</module>
+        <module>independent-projects/jboss-logmanager-embedded</module>
+        <module>independent-projects/jboss-logging-embedded</module>
 
         <!-- Maven -->
         <module>maven</module>
-        <module>devmode</module>
 
         <!-- Misc. -->
-        <module>examples</module>
         <module>docs</module>
 
-        <!-- Do not add modules after legacy. JVM state will fail CI -->
-        <module>legacy</module>
+        <!-- Do not add modules after war-launcher. JVM state will fail CI -->
+        <module>war-launcher</module>
     </modules>
     <build>
         <pluginManagement>

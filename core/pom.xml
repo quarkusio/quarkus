@@ -33,5 +33,8 @@
         <module>deployment</module>
         <module>runtime</module>
         <module>deployment-api</module>
+        <module>devmode</module>
+        <module>builder</module>
+        <module>creator</module>
     </modules>
 </project>

@@ -18,40 +18,28 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-
     <parent>
+        <artifactId>shamrock-integration-tests-parent</artifactId>
         <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-test-framework</artifactId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
+    <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-junit</artifactId>
-    <name>Shamrock - Test framework - JUnit</name>
-
+    <artifactId>shamrock-integration-test-shared-library</artifactId>
+    <name>Shamrock - Integration Tests - Shared library</name>
+    <description>
+        An example/test of a componentized application. This is indexed at build time by Shamrock
+        and components it provides should be included as normal.
+    </description>
     <dependencies>
         <dependency>
-            <groupId>org.jboss.shrinkwrap</groupId>
-            <artifactId>shrinkwrap-depchain</artifactId>
-            <type>pom</type>
+            <groupId>org.jboss.spec.javax.servlet</groupId>
+            <artifactId>jboss-servlet-api_4.0_spec</artifactId>
         </dependency>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-core-deployment</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish</groupId>
-            <artifactId>javax.json</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss</groupId>
-            <artifactId>jandex</artifactId>
+            <groupId>org.jboss.spec.javax.ws.rs</groupId>
+            <artifactId>jboss-jaxrs-api_2.1_spec</artifactId>
         </dependency>
     </dependencies>
 

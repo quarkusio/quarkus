@@ -26,11 +26,13 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-test-framework</artifactId>
-    <name>Shamrock - Test Framework</name>
+    <artifactId>shamrock-war-launcher-parent</artifactId>
+    <name>Shamrock - WAR Launcher</name>
     <packaging>pom</packaging>
     <modules>
-        <module>junit</module>
+        <module>launcher</module>
+        <module>runner</module>
     </modules>
+
 
 </project>

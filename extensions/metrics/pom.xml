@@ -22,15 +22,15 @@
         <artifactId>shamrock-build-parent</artifactId>
         <groupId>org.jboss.shamrock</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
-        <relativePath>../build-parent/pom.xml</relativePath>
+        <relativePath>../../build-parent/pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-test-framework</artifactId>
-    <name>Shamrock - Test Framework</name>
+    <artifactId>shamrock-metrics</artifactId>
+    <name>Shamrock - Metrics</name>
     <packaging>pom</packaging>
     <modules>
-        <module>junit</module>
+        <module>deployment</module>
+        <module>runtime</module>
     </modules>
-
 </project>

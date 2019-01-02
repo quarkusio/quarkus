@@ -18,41 +18,40 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>shamrock-build-parent</artifactId>
+        <groupId>org.jboss.shamrock</groupId>
+        <version>1.0.0.Alpha1-SNAPSHOT</version>
+        <relativePath>../../build-parent/pom.xml</relativePath>
+    </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-test-framework</artifactId>
-        <version>1.0.0.Alpha1-SNAPSHOT</version>
-        <relativePath>../</relativePath>
-    </parent>
-
-    <artifactId>shamrock-junit</artifactId>
-    <name>Shamrock - Test framework - JUnit</name>
+    <artifactId>shamrock-development-mode</artifactId>
+    <name>Shamrock - Development mode</name>
 
     <dependencies>
-        <dependency>
-            <groupId>org.jboss.shrinkwrap</groupId>
-            <artifactId>shrinkwrap-depchain</artifactId>
-            <type>pom</type>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>compile</scope>
-        </dependency>
+
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-core-deployment</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.glassfish</groupId>
-            <artifactId>javax.json</artifactId>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-undertow-runtime</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss</groupId>
-            <artifactId>jandex</artifactId>
+            <groupId>io.undertow</groupId>
+            <artifactId>undertow-servlet</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.fakereplace</groupId>
+            <artifactId>fakereplace</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.logmanager</groupId>
+            <artifactId>jboss-logmanager-embedded</artifactId>
         </dependency>
     </dependencies>
+
 
 </project>

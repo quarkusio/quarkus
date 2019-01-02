@@ -22,15 +22,15 @@
         <artifactId>shamrock-build-parent</artifactId>
         <groupId>org.jboss.shamrock</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
-        <relativePath>../build-parent/pom.xml</relativePath>
+        <relativePath>../../build-parent/pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-test-framework</artifactId>
-    <name>Shamrock - Test Framework</name>
+    <artifactId>shamrock-reactive-streams-operators-project</artifactId>
+    <name>Shamrock - Reactive Streams Operators - Project</name>
     <packaging>pom</packaging>
     <modules>
-        <module>junit</module>
+        <module>reactive-streams-operators</module>
+        <!-- we should also add support for the vertx execution model -->
     </modules>
-
 </project>

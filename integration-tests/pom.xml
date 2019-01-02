@@ -26,11 +26,24 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-test-framework</artifactId>
-    <name>Shamrock - Test Framework</name>
-    <packaging>pom</packaging>
-    <modules>
-        <module>junit</module>
-    </modules>
+    <artifactId>shamrock-integration-tests-parent</artifactId>
+    <name>Shamrock - Integration Tests</name>
 
+    <packaging>pom</packaging>
+
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
+    <modules>
+        <module>class-transformer</module>
+        <module>shared-library</module>
+        <module>undertow</module>
+        <module>bean-validation-strict</module>
+        <module>common-jpa-entities</module>
+        <module>main</module>
+        <module>jpa-postgresql</module>
+        <module>jpa-mariadb</module>
+        <module>jpa-h2</module>
+    </modules>
 </project>

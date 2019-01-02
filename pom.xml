@@ -56,9 +56,9 @@
         <module>extensions</module>
 
         <!-- External projects -->
-        <module>ext/gizmo</module>
-        <module>ext/arc</module>
-        <module>ext/hibernate-orm-protean</module>
+        <module>independent-projects/gizmo</module>
+        <module>independent-projects/arc</module>
+        <module>independent-projects/hibernate-orm-protean</module>
 
         <!-- Maven -->
         <module>maven</module>

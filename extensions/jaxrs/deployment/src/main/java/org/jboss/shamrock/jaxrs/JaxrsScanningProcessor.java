@@ -52,7 +52,9 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
 import org.jboss.resteasy.api.validation.ResteasyConstraintViolation;
 import org.jboss.resteasy.api.validation.ViolationReport;
 import org.jboss.resteasy.core.MediaTypeMap;
@@ -108,6 +110,13 @@ public class JaxrsScanningProcessor {
     private static final DotName POST = DotName.createSimple("javax.ws.rs.POST");
     private static final DotName PUT = DotName.createSimple("javax.ws.rs.PUT");
 
+    private static final DotName RESTEASY_QUERY_PARAM = DotName.createSimple("org.jboss.resteasy.annotations.jaxrs.QueryParam");
+    private static final DotName RESTEASY_FORM_PARAM = DotName.createSimple("org.jboss.resteasy.annotations.jaxrs.FormParam");
+    private static final DotName RESTEASY_COOKIE_PARAM = DotName.createSimple("org.jboss.resteasy.annotations.jaxrs.CookieParam");
+    private static final DotName RESTEASY_PATH_PARAM = DotName.createSimple("org.jboss.resteasy.annotations.jaxrs.PathParam");
+    private static final DotName RESTEASY_HEADER_PARAM = DotName.createSimple("org.jboss.resteasy.annotations.jaxrs.HeaderParam");
+    private static final DotName RESTEASY_MATRIX_PARAM = DotName.createSimple("org.jboss.resteasy.annotations.jaxrs.MatrixParam");
+
     private static final DotName CONSUMES = DotName.createSimple("javax.ws.rs.Consumes");
     private static final DotName PRODUCES = DotName.createSimple("javax.ws.rs.Produces");
 
@@ -119,6 +128,15 @@ public class JaxrsScanningProcessor {
             PATCH,
             POST,
             PUT,
+    };
+
+    private static final DotName[] RESTEASY_PARAM_ANNOTATIONS = {
+            RESTEASY_QUERY_PARAM,
+            RESTEASY_FORM_PARAM,
+            RESTEASY_COOKIE_PARAM,
+            RESTEASY_PATH_PARAM,
+            RESTEASY_HEADER_PARAM,
+            RESTEASY_MATRIX_PARAM,
     };
 
     private static final ProviderDiscoverer[] PROVIDER_DISCOVERERS = {
@@ -156,6 +174,8 @@ public class JaxrsScanningProcessor {
      */
     @ConfigProperty(name = "shamrock.jaxrs.enable-gzip")
     Optional<Boolean> isGzipSupportEnabled;
+
+    private static final Logger log = Logger.getLogger("org.jboss.shamrock.jaxrs");
 
     @BuildStep
     ServletInitParamBuildItem registerProviders(List<JaxrsProviderBuildItem> providers) {
@@ -306,6 +326,21 @@ public class JaxrsScanningProcessor {
             }
         }
 
+        OUTER:
+        for (DotName annotationType : RESTEASY_PARAM_ANNOTATIONS) {
+            Collection<AnnotationInstance> instances = index.getAnnotations(annotationType);
+            for (AnnotationInstance instance : instances) {
+                MethodParameterInfo param = instance.target().asMethodParameter();
+                if(param.name() == null) {
+                    log.warnv("Detected RESTEasy annotation {0} on method parameter {1}.{2} with no name. Either specify its name,"
+                             +" or tell your compiler to enable debug info (-g) or parameter names (-parameters). This message is only"
+                            +" logged for the first such parameter.", instance.name(), 
+                             param.method().declaringClass(), param.method().name());
+                    break OUTER;
+                }
+            }
+        }
+        
         // In the case of a constraint violation, these elements might be returned as entities and will be serialized
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ViolationReport.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ResteasyConstraintViolation.class.getName()));

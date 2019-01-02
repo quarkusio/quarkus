@@ -26,7 +26,7 @@ import io.smallrye.openapi.runtime.scanner.OpenApiAnnotationScanner;
 import io.smallrye.openapi.runtime.util.JandexUtil;
 import io.smallrye.openapi.runtime.util.JandexUtil.JaxRsParameterInfo;
 
-public class RESTEasyExtension extends AnnotationScannerExtension {
+public class RESTEasyExtension implements AnnotationScannerExtension {
 	
     public static final DotName DOTNAME_QUERY_PARAM = DotName.createSimple("org.jboss.resteasy.annotations.jaxrs.QueryParam");
     public static final DotName DOTNAME_FORM_PARAM = DotName.createSimple("org.jboss.resteasy.annotations.jaxrs.FormParam");
@@ -188,7 +188,7 @@ public class RESTEasyExtension extends AnnotationScannerExtension {
 	        if(pType.arguments().size() == 1)
 	            return pType.arguments().get(0);
 	    }
-	    return super.resolveAsyncType(type);
+	    return AnnotationScannerExtension.super.resolveAsyncType(type);
 	}
 	
 	@Override

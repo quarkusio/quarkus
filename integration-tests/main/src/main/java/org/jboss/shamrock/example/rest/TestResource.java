@@ -18,15 +18,22 @@ package org.jboss.shamrock.example.rest;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.CookieParam;
+import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
+import javax.ws.rs.HeaderParam;
+import javax.ws.rs.MatrixParam;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.xml.bind.annotation.XmlRootElement;
 
@@ -93,6 +100,12 @@ public class TestResource {
     }
 
     @GET
+    @Path("/cs")
+    public CompletionStage<String> cs() {
+        return CompletableFuture.completedFuture("Hello");
+    }
+
+    @GET
     @Path("/rx")
     public Single<String> rx() {
         return Single.just("Hello");
@@ -149,4 +162,23 @@ public class TestResource {
         }
     }
 
+    @Path("params/{path}")
+    @GET
+    public void regularParams(@PathParam("path") String path,
+                              @FormParam("form") String form,
+                              @CookieParam("cookie") String cookie,
+                              @HeaderParam("header") String header,
+                              @MatrixParam("matrix") String matrix,
+                              @QueryParam("query") String query) {
+    }
+
+    @Path("params2/{path}")
+    @GET
+    public void resteasyParams(@org.jboss.resteasy.annotations.jaxrs.PathParam String path,
+                               @org.jboss.resteasy.annotations.jaxrs.FormParam String form,
+                               @org.jboss.resteasy.annotations.jaxrs.CookieParam String cookie,
+                               @org.jboss.resteasy.annotations.jaxrs.HeaderParam String header,
+                               @org.jboss.resteasy.annotations.jaxrs.MatrixParam String matrix,
+                               @org.jboss.resteasy.annotations.jaxrs.QueryParam String query) {
+    }
 }

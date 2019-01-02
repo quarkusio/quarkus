@@ -26,9 +26,9 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-strict-undertow-integration-test</artifactId>
-    <name>Shamrock - Examples - Undertow - Strict</name>
-    <description>An example that only contains Undertow related tests running in strict mode</description>
+    <artifactId>shamrock-integration-test-undertow</artifactId>
+    <name>Shamrock - Examples - Undertow</name>
+    <description>Integration tests for Undertow</description>
     <dependencies>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>

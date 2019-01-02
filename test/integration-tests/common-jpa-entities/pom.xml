@@ -26,7 +26,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>common-jpa-entities</artifactId>
+    <artifactId>shamrock-integration-test-common-jpa-entities</artifactId>
     <name>Shamrock - Integration Tests - Strict - Common JPA entities</name>
     <description>Shared classes outside of the module compilation running Shamrock. Used to test `class` references in `persistence.xml`</description>
 

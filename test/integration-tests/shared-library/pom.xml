@@ -26,7 +26,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-shared-library-integration-test</artifactId>
+    <artifactId>shamrock-integration-test-shared-library</artifactId>
     <name>Shamrock - Integration Tests - Shared library</name>
     <description>
         An example/test of a componentized application. This is indexed at build time by Shamrock

@@ -27,13 +27,12 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
-import org.jboss.shamrock.creator.AppArtifact;
 import org.jboss.shamrock.creator.AppCreator;
 import org.jboss.shamrock.creator.AppCreatorException;
 import org.jboss.shamrock.creator.phase.augment.AugmentOutcome;
+import org.jboss.shamrock.creator.phase.nativeimage.NativeImageOutcome;
 import org.jboss.shamrock.creator.phase.nativeimage.NativeImagePhase;
 import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarOutcome;
-import org.jboss.shamrock.creator.resolver.maven.ResolvedMavenArtifactDeps;
 
 @Mojo(name = "native-image", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.RUNTIME)
 public class NativeImageMojo extends AbstractMojo {
@@ -125,12 +124,37 @@ public class NativeImageMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-        try {
-            new AppCreator()
-            // init the resolver with the project dependencies
-            .setArtifactResolver(new ResolvedMavenArtifactDeps(project.getGroupId(), project.getArtifactId(),
-                    project.getVersion(), project.getArtifacts()))
 
+        try(AppCreator appCreator = AppCreator.builder()
+                // configure the build phase we want the app to go through
+                .addPhase(new NativeImagePhase()
+                        .setAdditionalBuildArgs(additionalBuildArgs)
+                        .setAutoServiceLoaderRegistration(autoServiceLoaderRegistration)
+                        .setOutputDir(buildDir.toPath())
+                        .setCleanupServer(cleanupServer)
+                        .setDebugBuildProcess(debugBuildProcess)
+                        .setDebugSymbols(debugSymbols)
+                        .setDisableReports(disableReports)
+                        .setDockerBuild(dockerBuild)
+                        .setDumpProxies(dumpProxies)
+                        .setEnableAllSecurityServices(enableAllSecurityServices)
+                        .setEnableCodeSizeReporting(enableCodeSizeReporting)
+                        .setEnableHttpsUrlHandler(enableHttpsUrlHandler)
+                        .setEnableHttpUrlHandler(enableHttpUrlHandler)
+                        .setEnableIsolates(enableIsolates)
+                        .setEnableJni(enableJni)
+                        .setEnableRetainedHeapReporting(enableRetainedHeapReporting)
+                        .setEnableServer(enableServer)
+                        .setEnableVMInspection(enableVMInspection)
+                        .setFullStackTraces(fullStackTraces)
+                        .setGraalvmHome(graalvmHome)
+                        .setNativeImageXmx(nativeImageXmx)
+                        .setReportErrorsAtRuntime(reportErrorsAtRuntime)
+                        )
+
+                .build()) {
+
+            appCreator
             // this mojo runs on the assumption that the outcomes of the augmentation and runner jar building phases
             // are already available
             .pushOutcome(AugmentOutcome.class, new AugmentOutcome() {
@@ -155,35 +179,11 @@ public class NativeImageMojo extends AbstractMojo {
                     return runnerJar.getParent().resolve("lib");
                 }
             })
+            // resolve the outcome of the native image phase
+            .resolveOutcome(NativeImageOutcome.class);
 
-            // add the native phase
-            .addPhase(new NativeImagePhase()
-                    .setAdditionalBuildArgs(additionalBuildArgs)
-                    .setAutoServiceLoaderRegistration(autoServiceLoaderRegistration)
-                    .setOutputDir(buildDir.toPath())
-                    .setCleanupServer(cleanupServer)
-                    .setDebugBuildProcess(debugBuildProcess)
-                    .setDebugSymbols(debugSymbols)
-                    .setDisableReports(disableReports)
-                    .setDockerBuild(dockerBuild)
-                    .setDumpProxies(dumpProxies)
-                    .setEnableAllSecurityServices(enableAllSecurityServices)
-                    .setEnableCodeSizeReporting(enableCodeSizeReporting)
-                    .setEnableHttpsUrlHandler(enableHttpsUrlHandler)
-                    .setEnableHttpUrlHandler(enableHttpUrlHandler)
-                    .setEnableIsolates(enableIsolates)
-                    .setEnableJni(enableJni)
-                    .setEnableRetainedHeapReporting(enableRetainedHeapReporting)
-                    .setEnableServer(enableServer)
-                    .setEnableVMInspection(enableVMInspection)
-                    .setFullStackTraces(fullStackTraces)
-                    .setGraalvmHome(graalvmHome)
-                    .setNativeImageXmx(nativeImageXmx)
-                    .setReportErrorsAtRuntime(reportErrorsAtRuntime)
-                    )
-            .create(new AppArtifact(project.getGroupId(), project.getArtifactId(), project.getVersion()));
         } catch (AppCreatorException e) {
-            throw new MojoExecutionException("Failed to create application", e);
+            throw new MojoExecutionException("Failed to generate a native image", e);
         }
     }
 }

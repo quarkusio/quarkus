@@ -30,6 +30,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -56,10 +57,14 @@ import org.jboss.builder.BuildResult;
 import org.jboss.logging.Logger;
 import org.jboss.shamrock.creator.AppArtifact;
 import org.jboss.shamrock.creator.AppArtifactResolver;
-import org.jboss.shamrock.creator.AppCreationContext;
 import org.jboss.shamrock.creator.AppCreationPhase;
+import org.jboss.shamrock.creator.AppCreator;
 import org.jboss.shamrock.creator.AppCreatorException;
 import org.jboss.shamrock.creator.AppDependency;
+import org.jboss.shamrock.creator.config.reader.MappedPropertiesHandler;
+import org.jboss.shamrock.creator.config.reader.PropertiesHandler;
+import org.jboss.shamrock.creator.outcome.OutcomeProviderRegistration;
+import org.jboss.shamrock.creator.phase.curate.CurateOutcome;
 import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarOutcome;
 import org.jboss.shamrock.creator.util.IoUtils;
 import org.jboss.shamrock.creator.util.ZipUtils;
@@ -68,7 +73,6 @@ import org.jboss.shamrock.deployment.ShamrockAugmentor;
 import org.jboss.shamrock.deployment.builditem.BytecodeTransformerBuildItem;
 import org.jboss.shamrock.deployment.builditem.MainClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateOutputBuildItem;
-import org.jboss.shamrock.deployment.index.ResolvedArtifact;
 import org.jboss.shamrock.dev.CopyUtils;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -82,7 +86,7 @@ import io.smallrye.config.SmallRyeConfigProviderResolver;
  *
  * @author Alexey Loubyansky
  */
-public class AugmentPhase implements AppCreationPhase, AugmentOutcome, RunnerJarOutcome {
+public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutcome, RunnerJarOutcome {
 
     private static final String DEFAULT_MAIN_CLASS = "org.jboss.shamrock.runner.GeneratedMain";
     private static final String DEPENDENCIES_RUNTIME = "dependencies.runtime";
@@ -208,12 +212,20 @@ public class AugmentPhase implements AppCreationPhase, AugmentOutcome, RunnerJar
     }
 
     @Override
-    public void process(AppCreationContext ctx) throws AppCreatorException {
+    public void register(OutcomeProviderRegistration registration) throws AppCreatorException {
+        registration.provides(AugmentOutcome.class);
+        registration.provides(RunnerJarOutcome.class);
+    }
+
+    @Override
+    public void provideOutcome(AppCreator ctx) throws AppCreatorException {
+        final CurateOutcome appState = ctx.resolveOutcome(CurateOutcome.class);
+
         outputDir = outputDir == null ? ctx.getWorkPath() : IoUtils.mkdirs(outputDir);
 
         if (appClassesDir == null) {
             appClassesDir = ctx.createWorkDir("classes");
-            final Path appJar = ctx.getArtifactResolver().resolve(ctx.getAppArtifact());
+            final Path appJar = appState.getArtifactResolver().resolve(appState.getAppArtifact());
             try {
                 ZipUtils.unzip(appJar, appClassesDir);
             } catch (IOException e) {
@@ -230,20 +242,20 @@ public class AugmentPhase implements AppCreationPhase, AugmentOutcome, RunnerJar
         libDir = IoUtils.mkdirs(libDir == null ? outputDir.resolve("lib") : libDir);
 
         if (finalName == null) {
-            final String name = ctx.getArtifactResolver().resolve(ctx.getAppArtifact()).getFileName().toString();
+            final String name = appState.getArtifactResolver().resolve(appState.getAppArtifact()).getFileName().toString();
             int i = name.lastIndexOf('.');
             if (i > 0) {
                 finalName = name.substring(0, i);
             }
         }
 
-        doProcess(ctx);
+        doProcess(appState);
 
         ctx.pushOutcome(AugmentOutcome.class, this);
         ctx.pushOutcome(RunnerJarOutcome.class, this);
     }
 
-    private void doProcess(AppCreationContext ctx) throws AppCreatorException {
+    private void doProcess(CurateOutcome appState) throws AppCreatorException {
         //first lets look for some config, as it is not on the current class path
         //and we need to load it to run the build process
         Path config = appClassesDir.resolve("META-INF").resolve("microprofile-config.properties");
@@ -260,8 +272,8 @@ public class AugmentPhase implements AppCreationPhase, AugmentOutcome, RunnerJar
             }
         }
 
-        final AppArtifactResolver depResolver = ctx.getArtifactResolver();
-        final List<AppDependency> appDeps = depResolver.collectDependencies(ctx.getAppArtifact());
+        final AppArtifactResolver depResolver = appState.getArtifactResolver();
+        final List<AppDependency> appDeps = appState.getEffectiveDeps();
 
         try {
             StringBuilder classPath = new StringBuilder();
@@ -574,5 +586,27 @@ public class AugmentPhase implements AppCreationPhase, AugmentOutcome, RunnerJar
             this.data = data;
             this.location = location;
         }
+    }
+
+    @Override
+    public String getConfigPropertyName() {
+        return "augment";
+    }
+
+    @Override
+    public PropertiesHandler<AugmentPhase> getPropertiesHandler() {
+        return new MappedPropertiesHandler<AugmentPhase>() {
+            @Override
+            public AugmentPhase getTarget() {
+                return AugmentPhase.this;
+            }
+        }
+        .map("output", (AugmentPhase t, String value) -> t.setOutputDir(Paths.get(value)))
+        .map("classes", (AugmentPhase t, String value) -> t.setAppClassesDir(Paths.get(value)))
+        .map("wiring-classes", (AugmentPhase t, String value) -> t.setWiringClassesDir(Paths.get(value)))
+        .map("lib", (AugmentPhase t, String value) -> t.setLibDir(Paths.get(value)))
+        .map("final-name", AugmentPhase::setFinalName)
+        .map("main-class", AugmentPhase::setMainClass)
+        .map("uber-jar", (AugmentPhase t, String value) -> t.setUberJar(Boolean.parseBoolean(value)));
     }
 }

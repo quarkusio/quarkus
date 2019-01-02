@@ -15,16 +15,23 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.config.reader;
+package org.jboss.shamrock.creator.demo;
+
+import org.jboss.shamrock.creator.AppCreator;
+import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarOutcome;
 
 /**
  *
  * @author Alexey Loubyansky
  */
-public class MultirootedConfigHandler extends MappedPropertiesHandler<Object> {
+public class RunnerJarOutcomeDemo extends ConfigDemoBase {
+
+    public static void main(String[] args) throws Exception {
+        new RunnerJarOutcomeDemo().run();
+    }
 
     @Override
-    public Object getTarget() {
-        return null;
+    public void demo(AppCreator creator) throws Exception {
+        creator.resolveOutcome(RunnerJarOutcome.class);
     }
 }

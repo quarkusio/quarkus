@@ -15,13 +15,12 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator;
+package org.jboss.shamrock.creator.phase.nativeimage;
 
 /**
- * Application creation phase outcome base interface.
  *
  * @author Alexey Loubyansky
  */
-public interface AppCreationPhaseOutcome {
+public interface NativeImageOutcome {
 
 }

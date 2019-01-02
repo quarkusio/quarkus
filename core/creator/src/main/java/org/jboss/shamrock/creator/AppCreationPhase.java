@@ -17,22 +17,13 @@
 
 package org.jboss.shamrock.creator;
 
+import org.jboss.shamrock.creator.config.Configurable;
+import org.jboss.shamrock.creator.outcome.OutcomeProvider;
+
 /**
- * Application creation phase.
+ * A phase in the application build flow
  *
  * @author Alexey Loubyansky
  */
-public interface AppCreationPhase {
-
-    /**
-     * Phase processing.
-     *
-     * <p>Phase processing may push an instance (or a few) of
-     * {@link AppCreationPhaseOutcome} to the context that other phases
-     * depend upon.
-     *
-     * @param ctx  application creation context
-     * @throws AppCreatorException  in case the phase could not be processed
-     */
-    void process(AppCreationContext ctx) throws AppCreatorException;
+public interface AppCreationPhase<T extends AppCreationPhase<T>> extends Configurable<T>, OutcomeProvider<AppCreator> {
 }

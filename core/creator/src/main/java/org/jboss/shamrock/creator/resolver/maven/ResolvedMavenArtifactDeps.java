@@ -33,7 +33,7 @@ import org.jboss.shamrock.creator.AppDependency;
  *
  * @author Alexey Loubyansky
  */
-public class ResolvedMavenArtifactDeps extends AppArtifactResolverBase<ResolvedMavenArtifactDeps> {
+public class ResolvedMavenArtifactDeps extends AppArtifactResolverBase {
 
     private final String groupId;
     private final String artifactId;
@@ -85,6 +85,11 @@ public class ResolvedMavenArtifactDeps extends AppArtifactResolverBase<ResolvedM
         return deps;
     }
 
+    @Override
+    public List<AppDependency> collectDependencies(AppArtifact root, List<AppDependency> deps) throws AppCreatorException {
+        throw new UnsupportedOperationException();
+    }
+
     private static AppArtifact toMvnArtifact(Artifact artifact) {
         final AppArtifact mvn = new AppArtifact(artifact.getGroupId(), artifact.getArtifactId(), artifact.getClassifier(), artifact.getType(), artifact.getVersion());
         final File file = artifact.getFile();
@@ -92,5 +97,20 @@ public class ResolvedMavenArtifactDeps extends AppArtifactResolverBase<ResolvedM
             setPath(mvn, file.toPath());
         }
         return mvn;
+    }
+
+    @Override
+    public List<String> listLaterVersions(AppArtifact artifact, String upToVersion, boolean inclusive) throws AppCreatorException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String getNextVersion(AppArtifact artifact, String upToVersion, boolean inclusive) throws AppCreatorException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String getLatestVersion(AppArtifact artifact, String upToVersion, boolean inclusive) throws AppCreatorException {
+        throw new UnsupportedOperationException();
     }
 }

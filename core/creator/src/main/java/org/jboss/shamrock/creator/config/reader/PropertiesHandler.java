@@ -23,7 +23,12 @@ package org.jboss.shamrock.creator.config.reader;
  */
 public interface PropertiesHandler<T> {
 
-    T newInstance();
+    /**
+     * An instance that will receive configuration.
+     *
+     * @return  instance that will receive configuration
+     */
+    T getTarget() throws PropertiesConfigReaderException;
 
     @SuppressWarnings("unchecked")
     default boolean setOnObject(PropertyContext ctx) throws PropertiesConfigReaderException {

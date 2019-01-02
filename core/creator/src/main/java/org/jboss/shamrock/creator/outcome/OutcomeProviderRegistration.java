@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Red Hat, Inc. and/or its affiliates
+ * Copyright 2019 Red Hat, Inc. and/or its affiliates
  * and other contributors as indicated by the @author tags.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,16 +15,25 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.config.reader;
+package org.jboss.shamrock.creator.outcome;
+
+import org.jboss.shamrock.creator.AppCreatorException;
 
 /**
+ * Phase registration callback.
+ *
+ * Allows phase handlers to declare what they consume and what they provide.
  *
  * @author Alexey Loubyansky
  */
-public class MultirootedConfigHandler extends MappedPropertiesHandler<Object> {
+public interface OutcomeProviderRegistration {
 
-    @Override
-    public Object getTarget() {
-        return null;
-    }
+    /**
+     * Invoked by a phase handler to declare it provides an outcome
+     * of a specific type.
+     *
+     * @param outcomeType  outcome type the handler provides
+     * @throws AppCreatorException  in case of a failure
+     */
+    void provides(Class<?> outcomeType) throws AppCreatorException;
 }

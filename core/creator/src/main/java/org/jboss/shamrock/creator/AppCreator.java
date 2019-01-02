@@ -1,211 +1,353 @@
-/**
+/*
+ * Copyright 2018 Red Hat, Inc. and/or its affiliates
+ * and other contributors as indicated by the @author tags.
  *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
 package org.jboss.shamrock.creator;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.DirectoryStream;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-import org.apache.maven.settings.Settings;
-import org.eclipse.aether.DefaultRepositorySystemSession;
-import org.eclipse.aether.RepositorySystem;
-import org.eclipse.aether.repository.LocalRepository;
-import org.jboss.shamrock.creator.resolver.aether.AetherArtifactResolver;
-import org.jboss.shamrock.creator.resolver.aether.MavenRepoInitializer;
-import org.jboss.shamrock.creator.resolver.aether.AppCreatorDependencySelector;
-import org.jboss.shamrock.creator.resolver.aether.AppCreatorLocalRepositoryManager;
+import java.util.ServiceLoader;
+
+import org.jboss.shamrock.creator.config.reader.MappedPropertiesHandler;
+import org.jboss.shamrock.creator.config.reader.PropertiesConfigReaderException;
+import org.jboss.shamrock.creator.config.reader.PropertiesHandler;
+import org.jboss.shamrock.creator.outcome.OutcomeResolver;
+import org.jboss.shamrock.creator.outcome.OutcomeResolverFactory;
 import org.jboss.shamrock.creator.util.IoUtils;
 
 /**
  *
  * @author Alexey Loubyansky
  */
-public class AppCreator {
+public class AppCreator implements AutoCloseable {
 
+    public static class Builder {
+
+        @SuppressWarnings("rawtypes")
+        private List<AppCreationPhase> phases = Collections.emptyList();
+        private Path appJar;
+        private Path workDir;
+        private AppArtifactResolver artifactResolver;
+
+        private Builder() {
+        }
+
+        /**
+         * Adds a creation phase to the application creation flow.
+         * In the current implementation the phases are processed in the order
+         * they are added.
+         *
+         * <p/>NOTE: if user does not provide any phases, Java ServiceLoader mechanism
+         * will be used to load phases from the classpath.
+         *
+         * @param phase  application creation phase
+         * @return  this builder instance
+         */
+        public Builder addPhase(AppCreationPhase<?> provider) {
+            switch(phases.size()) {
+                case 0:
+                    phases = Collections.singletonList(provider);
+                    break;
+                case 1:
+                    final AppCreationPhase<?> first = phases.get(0);
+                    phases = new ArrayList<>(2);
+                    phases.add(first);
+                default:
+                    phases.add(provider);
+            }
+            return this;
+        }
+
+        /**
+         * Work directory used to store various data when processing phases.
+         * If it's not set by the user, a temporary directory will be created
+         * which will be automatically removed after the application have passed
+         * through all the phases necessary to produce the requested outcome.
+         *
+         * @param p  work directory
+         * @return  this AppCreator instance
+         */
+        public Builder setWorkDir(Path dir) {
+            this.workDir = dir;
+            return this;
+        }
+
+        /**
+         * Artifact resolver which should be used to resolve application
+         * dependencies.
+         * If artifact resolver is not set by the user, the default one will be
+         * created based on the user Maven settings.xml file.
+         *
+         * @param resolver  artifact resolver
+         */
+        public Builder setArtifactResolver(AppArtifactResolver resolver) {
+            this.artifactResolver = resolver;
+            return this;
+        }
+
+        /**
+         *
+         * @param appJar  application JAR
+         * @throws AppCreatorException
+         */
+        public Builder setAppJar(Path appJar) throws AppCreatorException {
+            this.appJar = appJar;
+            return this;
+        }
+
+        /**
+         * Builds an instance of an application creator.
+         *
+         * @return  an instance of an application creator
+         * @throws AppCreatorException  in case of a failure
+         */
+        public AppCreator build() throws AppCreatorException {
+            final AppCreator target = initAppCreator();
+            final OutcomeResolverFactory<AppCreator> resolverFactory = OutcomeResolverFactory.<AppCreator> getInstance();
+            @SuppressWarnings("rawtypes")
+            final Iterable<AppCreationPhase> i = phases.isEmpty() ? ServiceLoader.load(AppCreationPhase.class) : phases;
+            for (AppCreationPhase<?> provider : i) {
+                resolverFactory.addProvider(provider);
+            }
+            target.outcomeResolver = resolverFactory.build();
+            return target;
+        }
+
+        /**
+         * Creates an instance of a properties handler initialized with whatever the user provided to this builder instance.
+         * The properties handler is assumed to be used to for reading a properties file which includes application creator
+         * and various phases configurations.
+         *
+         * @return  properties handler
+         * @throws AppCreatorException  in case of a failure
+         */
+        public PropertiesHandler<AppCreator> getPropertiesHandler() throws AppCreatorException {
+
+            final AppCreator target = initAppCreator();
+
+            @SuppressWarnings("rawtypes")
+            final Iterable<AppCreationPhase> i = phases.isEmpty() ? ServiceLoader.load(AppCreationPhase.class) : phases;
+            final MappedPropertiesHandler<AppCreator>  propsHandler = new MappedPropertiesHandler<AppCreator>() {
+                @Override
+                public AppCreator getTarget() throws PropertiesConfigReaderException {
+                    final OutcomeResolverFactory<AppCreator> resolverFactory = OutcomeResolverFactory.<AppCreator> getInstance();
+                    for(AppCreationPhase<?> provider : i) {
+                        try {
+                            resolverFactory.addProvider(provider);
+                        } catch (AppCreatorException e) {
+                            throw new PropertiesConfigReaderException("Failed to initialize outcome resolver", e);
+                        }
+                        map(provider.getConfigPropertyName(), provider.getPropertiesHandler(), (flow, nested) -> {});
+                    }
+                    target.outcomeResolver = resolverFactory.build();
+                    return target;
+                }
+            }.map("output", (t, value) -> { t.setWorkDir(Paths.get(value)); });
+
+            return propsHandler;
+        }
+
+        private AppCreator initAppCreator() throws AppCreatorException {
+            final AppCreator target = new AppCreator();
+            target.setWorkDir(workDir);
+            target.artifactResolver = artifactResolver;
+            target.appJar = appJar;
+            return target;
+        }
+    }
+
+    /**
+     * Returns an instance of a builder that can be used to initialize an application creator.
+     *
+     * @return  application creator builder
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    private OutcomeResolver<AppCreator> outcomeResolver;
     private AppArtifactResolver artifactResolver;
-    private List<AppCreationPhase> phases = new ArrayList<>(1);
-    private boolean debug;
+    private Path appJar;
     private Path workDir;
-    private Map<Class<? extends AppCreationPhaseOutcome>, AppCreationPhaseOutcome> phaseOutcomes;
+    private boolean deleteTmpDir = true;
+    protected Map<Class<?>, Object> outcomes = new HashMap<>();
 
-    /**
-     * Artifact resolver which should be used to resolve application
-     * dependencies.
-     * If artifact resolver is not set by the user, the default one will be
-     * created based on the user Maven settings.xml file.
-     *
-     * @param resolver  artifact resolver
-     * @return  this AppCreator instance
-     */
-    public AppCreator setArtifactResolver(AppArtifactResolver resolver) {
-        this.artifactResolver = resolver;
-        return this;
+    private AppCreator() {
     }
 
-    /**
-     * Adds a creation phase to the application creation flow.
-     * In the current implementation the phases are processed in the order
-     * they are added.
-     *
-     * @param phase  application creation phase
-     * @return  this AppCreator instance
-     */
-    public AppCreator addPhase(AppCreationPhase phase) {
-        phases.add(phase);
-        return this;
-    }
-
-    public AppCreator setDebug(boolean debug) {
-        this.debug = debug;
-        return this;
+    private void setWorkDir(Path workDir) {
+        if(workDir != null) {
+            deleteTmpDir = false;
+            this.workDir = workDir;
+        } else {
+            this.workDir = null;
+            deleteTmpDir = true;
+        }
     }
 
     /**
      * Work directory used by the phases to store various data.
-     * If it's not set by the user, a temporary directory will be created
-     * which also be automatically removed after the application have passed
-     * through all the creation phases.
      *
-     * @param p  work directory
-     * @return  this AppCreator instance
+     * @return  work dir
      */
-    public AppCreator setWorkDir(Path p) {
-        this.workDir = p;
-        return this;
+    public Path getWorkDir() {
+        return workDir;
     }
 
     /**
-     * This method allows to push an already available outcome for a certain
-     * phase before the build process has actually started.
+     * Artifact resolver which can be used to resolve application dependencies.
      *
-     * @param type  type of the outcome
-     * @param outcome  phase outcome
-     * @throws AppCreatorException  in case the outcome couldn't be accepted
+     * @return  artifact resolver for application dependencies
      */
-    public <O extends AppCreationPhaseOutcome> AppCreator pushOutcome(Class<O> type, O outcome) throws AppCreatorException {
-        if(phaseOutcomes == null) {
-            phaseOutcomes = new HashMap<>(1);
-        }
-        if(phaseOutcomes.put(type, outcome) != null) {
-            // let's for now be strict about it
-            throw new AppCreatorException("Phase outcome of type " + type.getName() + " has already been provided");
-        }
-        return this;
+    public AppArtifactResolver getArtifactResolver() {
+        return artifactResolver;
     }
 
     /**
-     * Initiates an application creation process for an application JAR.
+     * User application JAR file
      *
-     * @param appJar  application JAR
-     * @throws AppCreatorException  in case of a failure
-     */
-    public void create(Path appJar) throws AppCreatorException {
-        final Properties props = new Properties();
-        try (FileSystem fs = FileSystems.newFileSystem(appJar, null)) {
-            final Path metaInfMaven = fs.getPath("META-INF", "maven");
-            Path pomProps = null;
-            if (Files.exists(metaInfMaven)) {
-                try (DirectoryStream<Path> groupIds = Files.newDirectoryStream(metaInfMaven)) {
-                    for (Path groupId : groupIds) {
-                        if (!Files.isDirectory(groupId)) {
-                            continue;
-                        }
-                        try (DirectoryStream<Path> artifactIds = Files.newDirectoryStream(groupId)) {
-                            for (Path artifactId : artifactIds) {
-                                if (!Files.isDirectory(artifactId)) {
-                                    continue;
-                                }
-                                final Path tmp = artifactId.resolve("pom.properties");
-                                if (Files.exists(tmp)) {
-                                    pomProps = tmp;
-                                    break;
-                                }
-                            }
-                        }
-                        if (pomProps != null) {
-                            break;
-                        }
-                    }
-                }
-            }
-            if(pomProps == null) {
-                throw new AppCreatorException("Failed to located META-INF/maven/<groupId>/<artifactId>/pom.properties in " + appJar);
-            }
-            try (InputStream is = Files.newInputStream(pomProps)) {
-                props.load(is);
-            }
-        } catch (IOException e) {
-            throw new AppCreatorException("Failed to load pom.properties from " + appJar, e);
-        }
-
-        final AppArtifact appArtifact = new AppArtifact(props.getProperty("groupId"), props.getProperty("artifactId"), props.getProperty("version"));
-
-        Path tmpDir = null;
-        AppArtifactResolver artifactResolver = this.artifactResolver;
-        if(artifactResolver == null) {
-            tmpDir = workDir == null ? IoUtils.createRandomTmpDir() : workDir;
-            artifactResolver = getDefaultArtifactResolver(tmpDir.resolve("repo"));
-        }
-        artifactResolver.relink(appArtifact, appJar);
-
-        create(appArtifact, artifactResolver, tmpDir, workDir == null);
-    }
-
-    /**
-     * Initiates an application creation process for an application artifact
-     * coordinates.
-     *
-     * @param appArtifact  application artifact coordinates
+     * @return  user application JAR file
      * @throws AppCreatorException
      */
-    public void create(AppArtifact appArtifact) throws AppCreatorException {
-        Path tmpDir = null;
-        AppArtifactResolver artifactResolver = this.artifactResolver;
-        if(artifactResolver == null) {
-            tmpDir = workDir == null ? IoUtils.createRandomTmpDir() : workDir;
-            artifactResolver = getDefaultArtifactResolver(tmpDir.resolve("repo"));
-        }
-        create(appArtifact, artifactResolver, tmpDir, workDir == null);
+    public Path getAppJar() throws AppCreatorException {
+        return appJar;
     }
 
-    private void create(AppArtifact appArtifact, AppArtifactResolver artifactResolver, Path workDir, boolean deleteWorkDir) throws AppCreatorException {
-        try (AppCreationContext ctx = new AppCreationContext(appArtifact, artifactResolver)) {
-            ctx.setWorkDir(workDir);
-            if(phaseOutcomes != null) {
-                for(Map.Entry<Class<? extends AppCreationPhaseOutcome>, AppCreationPhaseOutcome> entry : phaseOutcomes.entrySet()) {
-                    ctx.protectedPushOutcome(entry.getKey(), entry.getValue());
-                }
-            }
-            for (AppCreationPhase phase : phases) {
-                phase.process(ctx);
-            }
-        } finally {
-            if(deleteWorkDir) {
-                IoUtils.recursiveDelete(workDir);
-            }
+    /**
+     * Resolve a phase outcome of a specific type. The creator will figure out
+     * which phases need to be processed to deliver the result.
+     *
+     * @param outcomeType  type of the outcome to deliver
+     * @return  resolved phase outcome
+     * @throws AppCreatorException  in case of a failure
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T resolveOutcome(Class<T> outcomeType) throws AppCreatorException {
+        Object o = outcomes.get(outcomeType);
+        if(o != null || outcomes.containsKey(outcomeType)) {
+            return (T) o;
         }
+        outcomeResolver.resolve(this, outcomeType);
+        o = outcomes.get(outcomeType);
+        if(o != null || outcomes.containsKey(outcomeType)) {
+            return (T) o;
+        }
+        throw new AppCreatorException("Outcome of type " + outcomeType + " has not been provided");
     }
 
-    private AppArtifactResolver getDefaultArtifactResolver(Path repoHome) throws AppCreatorException {
-        final RepositorySystem repoSystem = MavenRepoInitializer.getRepositorySystem();
-        final Settings settings = MavenRepoInitializer.getSettings();
-        final DefaultRepositorySystemSession repoSession = MavenRepoInitializer.newSession(repoSystem, settings);
-        final AppCreatorLocalRepositoryManager appCreatorLocalRepoManager = new AppCreatorLocalRepositoryManager(repoSystem.newLocalRepositoryManager(repoSession,
-                new LocalRepository(repoHome.toString())), Paths.get(MavenRepoInitializer.getLocalRepo(settings)));
-        repoSession.setLocalRepositoryManager(appCreatorLocalRepoManager);
-        repoSession.setDependencySelector(new AppCreatorDependencySelector(debug));
-        final AetherArtifactResolver resolver = new AetherArtifactResolver(repoSystem, repoSession, MavenRepoInitializer.getRemoteRepos(settings));
-        resolver.setLocalRepositoryManager(appCreatorLocalRepoManager);
-        return resolver;
+    /**
+     * Checks whether an outcome of the type is already available, i.e.
+     * whether it has already been resolved using this instance of the creator
+     * or pushed by the user.
+     *
+     * @param outcomeType  type of the outcome
+     * @return  true if the outcome is already available
+     */
+    public boolean isAvailable(Class<?> outcomeType) {
+        return outcomes.containsKey(outcomeType);
+    }
+
+    /**
+     * Returns an already resolved outcome or null in case the outcome is not available yet.
+     *
+     * @param outcomeType  type of the outcome
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    public <T> T getOutcome(Class<T> outcomeType) {
+        return (T) outcomes.get(outcomeType);
+    }
+
+    /**
+     * This method simply calls {@link #pushOutcome(Class, Object) pushOutcome(outcome.getClass(), outcome)}
+     *
+     * @param outcome  outcome instance
+     * @return  this application creator instance
+     * @throws AppCreatorException  in case an outcome of this type is already available
+     */
+    @SuppressWarnings("unchecked")
+    public <T> AppCreator pushOutcome(T outcome) throws AppCreatorException {
+        pushOutcome((Class<T>)outcome.getClass(), outcome);
+        return this;
+    }
+
+    /**
+     * Pushes an outcome of a specific type which can be used by phases that depend on it.
+     *
+     * @param type  type of the outcome
+     * @param value  outcome instance
+     * @return  this application creator instance
+     * @throws AppCreatorException  in case an outcome of this type is already available
+     */
+    public <T> AppCreator pushOutcome(Class<T> type, T value) throws AppCreatorException {
+        if(outcomes.containsKey(type)) {
+            throw new AppCreatorException("Outcome of type " + type.getName() + " has already been provided");
+        }
+        outcomes.put(type, value);
+        return this;
+    }
+
+    /**
+     * Creates a directory from a path relative to the creator's work directory.
+     *
+     * @param names  represents a path relative to the creator's work directory
+     * @return  created directory
+     * @throws AppCreatorException  in case the directory could not be created
+     */
+    public Path createWorkDir(String... names) throws AppCreatorException {
+        final Path p = getWorkPath(names);
+        try {
+            Files.createDirectories(p);
+        } catch (IOException e) {
+            throw new AppCreatorException("Failed to create directory " + p, e);
+        }
+        return p;
+    }
+
+    /**
+     * Creates a path object from path relative to the creator's work directory.
+     *
+     * @param names  represents a path relative to the creator's work directory
+     * @return  path object
+     */
+    public Path getWorkPath(String... names) {
+        if(workDir == null) {
+            workDir = IoUtils.createRandomTmpDir();
+        }
+        if(names.length == 0) {
+            return workDir;
+        }
+        Path p = workDir;
+        for(String name : names) {
+            p = p.resolve(name);
+        }
+        return p;
+    }
+
+    @Override
+    public void close() {
+        if(deleteTmpDir) {
+            IoUtils.recursiveDelete(workDir);
+        }
     }
 }

@@ -30,7 +30,11 @@ import java.util.Set;
 
 import org.jboss.shamrock.creator.AppCreator;
 import org.jboss.shamrock.creator.phase.augment.AugmentPhase;
+import org.jboss.shamrock.creator.phase.curate.PomStateCreationPhase;
+import org.jboss.shamrock.creator.phase.curate.PomStateReadingPhase;
+import org.jboss.shamrock.creator.phase.nativeimage.NativeImageOutcome;
 import org.jboss.shamrock.creator.phase.nativeimage.NativeImagePhase;
+import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarOutcome;
 import org.jboss.shamrock.creator.util.IoUtils;
 import org.jboss.shamrock.creator.util.PropertyUtils;
 
@@ -49,10 +53,10 @@ public class AppCreatorDemo {
      */
 
     public static void main(String[] args) throws Exception {
-        final Path shamrockRoot = Paths.get("").toAbsolutePath().getParent();
-        final Path exampleTarget = shamrockRoot.resolve("examples").resolve("bean-validation-strict").resolve("target");
+        final Path shamrockRoot = Paths.get("").toAbsolutePath().getParent().getParent();
+        final Path exampleTarget = shamrockRoot.resolve("integration-tests").resolve("bean-validation-strict").resolve("target");
 
-        final Path appJar = exampleTarget.resolve("shamrock-strict-bean-validation-example-1.0.0.Alpha1-SNAPSHOT.jar");
+        final Path appJar = exampleTarget.resolve("shamrock-integration-test-bean-validation-1.0.0.Alpha1-SNAPSHOT.jar");
         if (!Files.exists(appJar)) {
             throw new Exception("Failed to locate user app " + appJar);
         }
@@ -60,55 +64,65 @@ public class AppCreatorDemo {
         final Path demoDir = Paths.get(PropertyUtils.getUserHome()).resolve("shamrock-creator-demo");
         IoUtils.recursiveDelete(demoDir);
 
-        //buildRunnableJar(appJar, demoDir);
-        buildNativeImage(appJar, demoDir);
+        buildRunnableJar(appJar, demoDir);
+        //buildNativeImage(appJar, demoDir);
+        //curateRunnableJar(appJar, demoDir);
 
+        logLibDiff(exampleTarget, demoDir);
+    }
+
+    private static void curateRunnableJar(Path userApp, Path outputDir) throws Exception {
+
+        try (AppCreator appCreator = AppCreator.builder()
+                .addPhase(new PomStateCreationPhase())
+                .addPhase(new PomStateReadingPhase())
+                .setAppJar(userApp)
+                .setWorkDir(outputDir)
+                .build()) {
+            appCreator.resolveOutcome(PomStateReadingPhase.Outcome.class);
+        }
 /*
         new AppCreator()
-                .setDebug(false)
-                .setWorkDir(demoDir)
-                //.addPhase(new CuratePhase())
-                .addPhase(new AugmentPhase()
-                        //.setBuildDir(testBuildDir)
-                        )
-                //.addPhase(new NativeImagePhase()
-                        //.setBuildDir(testBuildDir)
-                        //)
-                .create(appJar);
-*/
-        //logLibDiff(exampleTarget, testBuildDir);
+
+        // enabling debug allows to see resolved application dependencies in the terminal
+        .setDebug(true)
+
+        // setting a work dir can be useful if you want to see the temporary content used
+        // by various phases during app building
+        .setWorkDir(outputDir)
+
+        .addPhase(new PomStateCreationPhase())
+        .addPhase(new PomStateReadingPhase())
+        //.addPhase(new CuratePhase())
+        //.addPhase(new AugmentPhase().setOutputDir(outputDir))
+        .create(userApp);
+        */
     }
 
     private static void buildRunnableJar(Path userApp, Path outputDir) throws Exception {
-        new AppCreator()
 
-        // enabling debug allows to see resolved application dependencies in the terminal
-        //.setDebug(false)
-
-        // setting a work dir can be useful if you want to see the temporary content used
-        // by various phases during app building
-        //.setWorkDir(outputDir)
-
-        .addPhase(new AugmentPhase().setOutputDir(outputDir))
-        .create(userApp);
+        final RunnerJarOutcome runnerJar;
+        try (AppCreator appCreator = AppCreator.builder()
+                .addPhase(new AugmentPhase()/*.setOutputDir(outputDir)*/)
+                .addPhase(new NativeImagePhase())
+                .setAppJar(userApp)
+                .build()) {
+            runnerJar = appCreator.resolveOutcome(RunnerJarOutcome.class);
+            System.out.println("Runner JAR: " + runnerJar.getRunnerJar() + " exists=" + Files.exists(runnerJar.getRunnerJar()));
+        }
+        System.out.println("Runner JAR: " + runnerJar.getRunnerJar() + " exists=" + Files.exists(runnerJar.getRunnerJar()));
     }
 
     private static void buildNativeImage(Path userApp, Path outputDir) throws Exception {
-        new AppCreator()
 
-        // enabling debug allows to see resolved application dependencies in the terminal
-        //.setDebug(true)
-
-        // setting a work dir can be useful if you want to see the temporary content used
-        // by various phases during app building
-        //.setWorkDir(outputDir)
-
-        .addPhase(new AugmentPhase())
-        .addPhase(new NativeImagePhase()
-                .setOutputDir(outputDir)
-                .setDockerBuild(true)
-                )
-        .create(userApp);
+        try (AppCreator appCreator = AppCreator.builder()
+                //.setOutput(outputDir)
+                .addPhase(new AugmentPhase())
+                .addPhase(new NativeImagePhase().setOutputDir(outputDir))
+                .setAppJar(userApp)
+                .build()) {
+            appCreator.resolveOutcome(NativeImageOutcome.class);
+        }
     }
 
     private static void logLibDiff(final Path exampleTarget, final Path testBuildDir) throws IOException {

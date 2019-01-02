@@ -23,7 +23,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -33,9 +35,12 @@ import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.creator.AppCreationContext;
 import org.jboss.shamrock.creator.AppCreationPhase;
+import org.jboss.shamrock.creator.AppCreator;
 import org.jboss.shamrock.creator.AppCreatorException;
+import org.jboss.shamrock.creator.config.reader.PropertiesHandler;
+import org.jboss.shamrock.creator.config.reader.PropertyContext;
+import org.jboss.shamrock.creator.outcome.OutcomeProviderRegistration;
 import org.jboss.shamrock.creator.phase.augment.AugmentOutcome;
 import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarOutcome;
 import org.jboss.shamrock.creator.util.IoUtils;
@@ -46,7 +51,7 @@ import io.smallrye.config.SmallRyeConfigProviderResolver;
  *
  * @author Alexey Loubyansky
  */
-public class NativeImagePhase implements AppCreationPhase {
+public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, NativeImageOutcome {
 
     private static final Logger log = Logger.getLogger(NativeImagePhase.class);
 
@@ -208,11 +213,16 @@ public class NativeImagePhase implements AppCreationPhase {
     }
 
     @Override
-    public void process(AppCreationContext ctx) throws AppCreatorException {
+    public void register(OutcomeProviderRegistration registration) throws AppCreatorException {
+        registration.provides(NativeImageOutcome.class);
+    }
+
+    @Override
+    public void provideOutcome(AppCreator ctx) throws AppCreatorException {
 
         outputDir = outputDir == null ? ctx.getWorkPath() : IoUtils.mkdirs(outputDir);
 
-        final RunnerJarOutcome runnerJarOutcome = ctx.getOutcome(RunnerJarOutcome.class);
+        final RunnerJarOutcome runnerJarOutcome = ctx.resolveOutcome(RunnerJarOutcome.class);
         Path runnerJar = runnerJarOutcome.getRunnerJar();
         boolean runnerJarCopied = false;
         // this trick is here because docker needs the jar in the project dir
@@ -277,7 +287,7 @@ public class NativeImagePhase implements AppCreationPhase {
                 process.waitFor();
             }
             // TODO this is a temp hack
-            final Path propsFile = ctx.getOutcome(AugmentOutcome.class).getAppClassesDir().resolve("native-image.properties");
+            final Path propsFile = ctx.resolveOutcome(AugmentOutcome.class).getAppClassesDir().resolve("native-image.properties");
             if (Files.exists(propsFile)) {
                 final Properties properties = new Properties();
                 try (BufferedReader reader = Files.newBufferedReader(propsFile, StandardCharsets.UTF_8)) {
@@ -394,6 +404,7 @@ public class NativeImagePhase implements AppCreationPhase {
             }
             System.setProperty("native.image.path", runnerJarName.substring(0, runnerJarName.lastIndexOf('.')));
 
+            ctx.pushOutcome(NativeImageOutcome.class, this);
         } catch (Exception e) {
             throw new AppCreatorException("Failed to build native image", e);
         } finally {
@@ -415,5 +426,97 @@ public class NativeImagePhase implements AppCreationPhase {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public String getConfigPropertyName() {
+        return "native-image";
+    }
+
+    @Override
+    public PropertiesHandler<NativeImagePhase> getPropertiesHandler() {
+        return new PropertiesHandler<NativeImagePhase>() {
+            @Override
+            public NativeImagePhase getTarget() {
+                return NativeImagePhase.this;
+            }
+
+            @Override
+            public boolean set(NativeImagePhase t, PropertyContext ctx) {
+                //System.out.println("native-image.set " + ctx.getRelativeName() + "=" + ctx.getValue());
+                final String value = ctx.getValue();
+                switch(ctx.getRelativeName()) {
+                    case "output":
+                        t.setOutputDir(Paths.get(value));
+                        break;
+                    case "report-errors-at-runtime":
+                        t.setReportErrorsAtRuntime(Boolean.parseBoolean(value));
+                        break;
+                    case "debug-symbols":
+                        t.setDebugSymbols(Boolean.parseBoolean(value));
+                        break;
+                    case "debug-build-process":
+                        t.setDebugBuildProcess(Boolean.parseBoolean(value));
+                        break;
+                    case "cleanup-server":
+                        t.setCleanupServer(Boolean.parseBoolean(value));
+                        break;
+                    case "enable-http-url-handler":
+                        t.setEnableHttpUrlHandler(Boolean.parseBoolean(value));
+                        break;
+                    case "enable-https-url-handler":
+                        t.setEnableHttpsUrlHandler(Boolean.parseBoolean(value));
+                        break;
+                    case "enable-all-security-services":
+                        t.setEnableAllSecurityServices(Boolean.parseBoolean(value));
+                        break;
+                    case "enable-retained-heap-reporting":
+                        t.setEnableRetainedHeapReporting(Boolean.parseBoolean(value));
+                        break;
+                    case "enable-code-size-reporting":
+                        t.setEnableCodeSizeReporting(Boolean.parseBoolean(value));
+                        break;
+                    case "enable-isolates":
+                        t.setEnableIsolates(Boolean.parseBoolean(value));
+                        break;
+                    case "graalvm-home":
+                        t.setGraalvmHome(value);
+                        break;
+                    case "enable-server":
+                        t.setEnableServer(Boolean.parseBoolean(value));
+                        break;
+                    case "enable-jni":
+                        t.setEnableJni(Boolean.parseBoolean(value));
+                        break;
+                    case "auto-service-loader-registration":
+                        t.setAutoServiceLoaderRegistration(Boolean.parseBoolean(value));
+                        break;
+                    case "dump-proxies":
+                        t.setDumpProxies(Boolean.parseBoolean(value));
+                        break;
+                    case "native-image-xmx":
+                        t.setNativeImageXmx(value);
+                        break;
+                    case "docker-build":
+                        t.setDockerBuild(Boolean.parseBoolean(value));
+                        break;
+                    case "enable-vm-inspection":
+                        t.setEnableVMInspection(Boolean.parseBoolean(value));
+                        break;
+                    case "full-stack-traces":
+                        t.setFullStackTraces(Boolean.parseBoolean(value));
+                        break;
+                    case "disable-reports":
+                        t.setDisableReports(Boolean.parseBoolean(value));
+                        break;
+                    case "additional-build-args":
+                        t.setAdditionalBuildArgs(Arrays.asList(value.split(",")));
+                        break;
+                    default:
+                        return false;
+                }
+                return true;
+            }
+        };
     }
 }

@@ -15,16 +15,22 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.config.reader;
+package org.jboss.shamrock.creator.phase.curate;
+
+import java.util.List;
+
+import org.jboss.shamrock.creator.AppArtifact;
+import org.jboss.shamrock.creator.AppCreatorException;
 
 /**
  *
  * @author Alexey Loubyansky
  */
-public class MultirootedConfigHandler extends MappedPropertiesHandler<Object> {
+public interface UpdateDiscovery {
 
-    @Override
-    public Object getTarget() {
-        return null;
-    }
+    List<String> listUpdates(AppArtifact artifact) throws AppCreatorException;
+
+    String getNextVersion(AppArtifact artifact) throws AppCreatorException;
+
+    String getLatestVersion(AppArtifact artifact) throws AppCreatorException;
 }

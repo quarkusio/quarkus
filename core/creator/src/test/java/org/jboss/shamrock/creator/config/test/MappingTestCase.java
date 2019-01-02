@@ -35,7 +35,7 @@ public class MappingTestCase extends PersonAddressTestBase {
          */
         final PropertiesHandler<Address.Builder> addressHandler = new MappedPropertiesHandler<Address.Builder>() {
             @Override
-            public Address.Builder newInstance() {
+            public Address.Builder getTarget() {
                 return Address.builder();
             }
         }
@@ -48,7 +48,7 @@ public class MappingTestCase extends PersonAddressTestBase {
          */
         final PropertiesHandler<Person> personHandler = new MappedPropertiesHandler<Person>() {
             @Override
-            public Person newInstance() {
+            public Person getTarget() {
                 return new Person();
             }
         }

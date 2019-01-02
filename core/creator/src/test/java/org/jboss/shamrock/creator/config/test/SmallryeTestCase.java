@@ -48,7 +48,7 @@ public class SmallryeTestCase {
          */
         final PropertiesHandler<User> userHandler = new MappedPropertiesHandler<User>() {
             @Override
-            public User newInstance() {
+            public User getTarget() {
                 return new User();
             }
         }
@@ -64,7 +64,7 @@ public class SmallryeTestCase {
          */
         final PropertiesHandler<JavaVmSpec> javaVmSpecHandler = new MappedPropertiesHandler<JavaVmSpec>() {
             @Override
-            public JavaVmSpec newInstance() {
+            public JavaVmSpec getTarget() {
                 return new JavaVmSpec();
             }
         }
@@ -77,7 +77,7 @@ public class SmallryeTestCase {
          */
         final PropertiesHandler<JavaVm> javaVmHandler = new MappedPropertiesHandler<JavaVm>() {
             @Override
-            public JavaVm newInstance() {
+            public JavaVm getTarget() {
                 return new JavaVm();
             }
         }
@@ -91,7 +91,7 @@ public class SmallryeTestCase {
          */
         final PropertiesHandler<JavaInfo> javaHandler = new MappedPropertiesHandler<JavaInfo>() {
             @Override
-            public JavaInfo newInstance() {
+            public JavaInfo getTarget() {
                 return new JavaInfo();
             }
         }

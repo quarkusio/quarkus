@@ -22,13 +22,13 @@
 
     <parent>
         <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-legacy</artifactId>
+        <artifactId>shamrock-war-launcher-parent</artifactId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
-    <artifactId>shamrock-legacy-launcher</artifactId>
-    <name>Shamrock - Legacy - Launcher</name>
+    <artifactId>shamrock-war-launcher</artifactId>
+    <name>Shamrock - WAR Launcher - Launcher</name>
 
     <dependencies>
         <dependency>
@@ -37,7 +37,7 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-legacy-runner</artifactId>
+            <artifactId>shamrock-war-launcher-runner</artifactId>
         </dependency>
 
         <dependency>

@@ -264,7 +264,7 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-legacy-runner</artifactId>
+            <artifactId>shamrock-war-launcher-runner</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>

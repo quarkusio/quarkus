@@ -22,21 +22,16 @@
         <artifactId>shamrock-build-parent</artifactId>
         <groupId>org.jboss.shamrock</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
-        <relativePath>../build-parent/pom.xml</relativePath>
+        <relativePath>../../build-parent/pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-core-parent</artifactId>
-    <name>Shamrock - Core</name>
+    <artifactId>shamrock-jaxrs</artifactId>
+    <name>Shamrock - JAX-RS</name>
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>
         <module>runtime</module>
-        <module>deployment-api</module>
-        <module>devmode</module>
-        <module>builder</module>
-        <module>creator</module>
-        <module>jboss-logmanager-embedded</module>
-        <module>jboss-logging-embedded</module>
     </modules>
+
 </project>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2018 Red Hat, Inc.
+  ~ Copyright 2019 Red Hat, Inc.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -26,17 +26,40 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-core-parent</artifactId>
-    <name>Shamrock - Core</name>
+    <artifactId>shamrock-extensions-parent</artifactId>
+    <name>Shamrock Extensions Parent Pom</name>
     <packaging>pom</packaging>
     <modules>
-        <module>deployment</module>
-        <module>runtime</module>
-        <module>deployment-api</module>
-        <module>devmode</module>
-        <module>builder</module>
-        <module>creator</module>
-        <module>jboss-logmanager-embedded</module>
-        <module>jboss-logging-embedded</module>
+        <!-- Plumbing -->
+        <module>arc</module>
+        <module>scheduler</module>
+
+        <!-- HTTP -->
+        <module>undertow</module>
+        <module>openssl</module>
+        <module>websockets</module>
+
+        <!-- Monitoring -->
+        <module>health</module>
+        <module>metrics</module>
+        <module>opentracing</module>
+        <module>fault-tolerance</module>
+
+        <!-- REST services -->
+        <module>jaxrs</module>
+        <module>rest-client</module>
+        <module>openapi</module>
+
+        <!-- Reactive -->
+        <module>vertx</module>
+        <module>reactive-streams-operators</module>
+
+        <!-- Data access and validation -->
+        <module>transactions</module>
+        <module>agroal</module>
+        <module>jdbc</module>
+        <module>jpa</module>
+        <module>bean-validation</module>
     </modules>
+
 </project>

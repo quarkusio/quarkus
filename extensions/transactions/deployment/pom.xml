@@ -19,24 +19,26 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>shamrock-build-parent</artifactId>
+        <artifactId>shamrock-transactions</artifactId>
         <groupId>org.jboss.shamrock</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
-        <relativePath>../build-parent/pom.xml</relativePath>
+        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-core-parent</artifactId>
-    <name>Shamrock - Core</name>
-    <packaging>pom</packaging>
-    <modules>
-        <module>deployment</module>
-        <module>runtime</module>
-        <module>deployment-api</module>
-        <module>devmode</module>
-        <module>builder</module>
-        <module>creator</module>
-        <module>jboss-logmanager-embedded</module>
-        <module>jboss-logging-embedded</module>
-    </modules>
+    <artifactId>shamrock-transactions-deployment</artifactId>
+    <name>Shamrock - Transactions - Deployment</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-core-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-transactions-runtime</artifactId>
+        </dependency>
+    </dependencies>
+
+
 </project>

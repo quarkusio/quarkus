@@ -22,21 +22,36 @@
         <artifactId>shamrock-build-parent</artifactId>
         <groupId>org.jboss.shamrock</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
-        <relativePath>../build-parent/pom.xml</relativePath>
+        <relativePath>../../build-parent/pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-core-parent</artifactId>
-    <name>Shamrock - Core</name>
-    <packaging>pom</packaging>
-    <modules>
-        <module>deployment</module>
-        <module>runtime</module>
-        <module>deployment-api</module>
-        <module>devmode</module>
-        <module>builder</module>
-        <module>creator</module>
-        <module>jboss-logmanager-embedded</module>
-        <module>jboss-logging-embedded</module>
-    </modules>
+    <artifactId>shamrock-development-mode</artifactId>
+    <name>Shamrock - Development mode</name>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-core-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-undertow-runtime</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.undertow</groupId>
+            <artifactId>undertow-servlet</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.fakereplace</groupId>
+            <artifactId>fakereplace</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.logmanager</groupId>
+            <artifactId>jboss-logmanager-embedded</artifactId>
+        </dependency>
+    </dependencies>
+
+
 </project>

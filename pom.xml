@@ -49,52 +49,19 @@
         <module>build-parent</module>
     
         <!-- Core components -->
-        <module>builder</module>
-        <module>jboss-logmanager-embedded</module>
-        <module>jboss-logging-embedded</module>
         <module>core</module>
-        <module>creator</module>
         <module>test-framework</module>
+
+        <!-- Extensions -->
+        <module>extensions</module>
 
         <!-- External projects -->
         <module>ext/gizmo</module>
         <module>ext/arc</module>
         <module>ext/hibernate-orm-protean</module>
 
-        <!-- Plumbing -->
-        <module>arc</module>
-        <module>scheduler</module>
-
-        <!-- HTTP -->
-        <module>undertow</module>
-        <module>openssl</module>
-        <module>websockets</module>
-
-        <!-- Monitoring -->
-        <module>health</module>
-        <module>metrics</module>
-        <module>opentracing</module>
-        <module>fault-tolerance</module>
-
-        <!-- REST services -->
-        <module>jaxrs</module>
-        <module>rest-client</module>
-        <module>openapi</module>
-
-        <!-- Reactive -->
-        <module>vertx</module>
-        <module>reactive-streams-operators</module>
-
-        <!-- Data access and validation -->
-        <module>transactions</module>
-        <module>agroal</module>
-        <module>jdbc</module>
-        <module>jpa</module>
-        <module>bean-validation</module>
-
         <!-- Maven -->
         <module>maven</module>
-        <module>devmode</module>
 
         <!-- Misc. -->
         <module>examples</module>

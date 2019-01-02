@@ -36,7 +36,5 @@
         <module>devmode</module>
         <module>builder</module>
         <module>creator</module>
-        <module>jboss-logmanager-embedded</module>
-        <module>jboss-logging-embedded</module>
     </modules>
 </project>

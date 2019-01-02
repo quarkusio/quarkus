@@ -107,7 +107,7 @@ public class SchedulerProcessor {
                 if (context.getAnnotations().isEmpty()) {
                     // Class with no annotations but with @Scheduled method
                     if (context.getTarget().asClass().annotations().containsKey(SCHEDULED_NAME) || context.getTarget().asClass().annotations().containsKey(SCHEDULEDS_NAME)) {
-                        LOGGER.infof("Found scheduled business methods on a class %s with no annotations - adding @Singleton", context.getTarget());
+                        LOGGER.debugf("Found scheduled business methods on a class %s with no annotations - adding @Singleton", context.getTarget());
                         context.transform().add(Singleton.class).done();
                     }
                 }

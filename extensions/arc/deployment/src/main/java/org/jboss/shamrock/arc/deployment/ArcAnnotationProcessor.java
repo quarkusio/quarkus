@@ -264,7 +264,7 @@ public class ArcAnnotationProcessor {
         }
         ClassInfo beanInfo = shamrockIndex.getClassByName(beanClassName);
         if (beanInfo == null) {
-            log.infof("Index bean class: %s", beanClass);
+            log.debugf("Index bean class: %s", beanClass);
             try (InputStream stream = new ByteArrayInputStream(beanData)) {
                 beanInfo = indexer.index(stream);
                 additionalIndex.add(beanInfo.name());
@@ -279,7 +279,7 @@ public class ArcAnnotationProcessor {
             if (!additionalIndex.contains(annotationName) && shamrockIndex.getClassByName(annotationName) == null) {
                 try (InputStream annotationStream = ArcAnnotationProcessor.class.getClassLoader()
                         .getResourceAsStream(annotationName.toString().replace('.', '/') + ".class")) {
-                    log.infof("Index annotation: %s", annotationName);
+                    log.debugf("Index annotation: %s", annotationName);
                     indexer.index(annotationStream);
                     additionalIndex.add(annotationName);
                 } catch (IOException e) {

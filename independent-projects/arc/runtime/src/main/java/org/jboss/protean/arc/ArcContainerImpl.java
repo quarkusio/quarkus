@@ -106,7 +106,7 @@ class ArcContainerImpl implements ArcContainer {
         EventImpl.createNotifier(Object.class, Object.class, qualifiers, this).notify(toString());
         // Configure CDIProvider used for CDI.current()
         CDI.setCDIProvider(new ArcCDIProvider());
-        LOGGER.infof("ArC DI container initialized [beans=%s, observers=%s]", beans.size(), observers.size());
+        LOGGER.debugf("ArC DI container initialized [beans=%s, observers=%s]", beans.size(), observers.size());
     }
 
     @Override
@@ -254,7 +254,7 @@ class ArcContainerImpl implements ArcContainer {
                 beans.clear();
                 resolved.clear();
                 observers.clear();
-                LOGGER.infof("ArC DI container shut down");
+                LOGGER.debugf("ArC DI container shut down");
             }
         }
     }

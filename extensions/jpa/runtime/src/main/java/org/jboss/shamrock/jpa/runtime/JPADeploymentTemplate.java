@@ -44,7 +44,7 @@ public class JPADeploymentTemplate {
     }
 
     public void enlistPersistenceUnit() {
-        Logger.getLogger("org.jboss.shamrock.jpa").infof("List of entities found by Shamrock deployment:%n%s", entities);
+        Logger.getLogger("org.jboss.shamrock.jpa").debugf("List of entities found by Shamrock deployment:%n%s", entities);
     }
 
     public void callHibernateFeatureInit() {

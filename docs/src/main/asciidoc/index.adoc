@@ -19,6 +19,7 @@ include::protean-intro.adoc[tag=intro]
 * link:hibernate-orm-guide.html[Using Hibernate ORM]
 * link:extension-authors-guide.html[Write your own extension] _(advanced)_
 * link:performance-measure.html[Measuring performance] _(advanced)_
+* link:cdi-reference.html[Contexts and Dependency Injection] _(advanced)_
 
 == Recommended tooling
 

@@ -22,7 +22,6 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.junit.runner.Description;
 import org.junit.runner.Result;
-import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunListener;
 import org.junit.runner.notification.RunNotifier;
 
@@ -66,15 +65,6 @@ abstract class AbstractShamrockRunListener extends RunListener {
                                 System.err.println("Unable to stop Shamrock test resource " + testResource);
                             }
                         }
-
-                        @Override
-                        public void testFailure(Failure failure) throws Exception {
-                           try {
-                               testResource.stop();
-                           } catch (Exception e) {
-                               System.err.println("Unable to stop Shamrock test resource " + testResource);
-                           }
-                        }
                     });
                 }
 
@@ -84,15 +74,6 @@ abstract class AbstractShamrockRunListener extends RunListener {
                     stopListeners.add(0, new RunListener() {
                         @Override
                         public void testRunFinished(Result result) throws Exception {
-                            try {
-                                stopShamrock();
-                            } catch (Exception e) {
-                                System.err.println("Unable to stop Shamrock");
-                            }
-                        }
-
-                        @Override
-                        public void testFailure(Failure failure) throws Exception {
                             try {
                                 stopShamrock();
                             } catch (Exception e) {

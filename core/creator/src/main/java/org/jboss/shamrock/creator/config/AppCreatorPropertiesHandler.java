@@ -45,8 +45,8 @@ public class AppCreatorPropertiesHandler implements PropertiesHandler<AppCreator
     .map("classes", (AugmentPhase t, String value) -> t.setAppClassesDir(Paths.get(value)))
     .map("wiring-classes", (AugmentPhase t, String value) -> t.setWiringClassesDir(Paths.get(value)))
     .map("lib", (AugmentPhase t, String value) -> t.setLibDir(Paths.get(value)))
-    .map("final-name", (AugmentPhase t, String value) -> t.setFinalName(value))
-    .map("main-class", (AugmentPhase t, String value) -> t.setMainClass(value))
+    .map("final-name", AugmentPhase::setFinalName)
+    .map("main-class", AugmentPhase::setMainClass)
     .map("uber-jar", (AugmentPhase t, String value) -> t.setUberJar(Boolean.parseBoolean(value)));
 
     private final PropertiesHandler<NativeImagePhase> nativeImageHandler = new PropertiesHandler<NativeImagePhase>() {
@@ -56,7 +56,7 @@ public class AppCreatorPropertiesHandler implements PropertiesHandler<AppCreator
         }
 
         @Override
-        public boolean set(NativeImagePhase t, PropertyContext ctx) throws PropertiesConfigReaderException {
+        public boolean set(NativeImagePhase t, PropertyContext ctx) {
             //System.out.println("native-image.set " + ctx.getRelativeName() + "=" + ctx.getValue());
             final String value = ctx.getValue();
             switch(ctx.getRelativeName()) {
@@ -139,7 +139,7 @@ public class AppCreatorPropertiesHandler implements PropertiesHandler<AppCreator
     }
 
     @Override
-    public boolean set(AppCreator appCreator, PropertyContext line) throws PropertiesConfigReaderException {
+    public boolean set(AppCreator appCreator, PropertyContext line) {
         switch(line.getRelativeName()) {
             case "augment":
                 if(line.getValue().equals("true")) {
@@ -153,7 +153,7 @@ public class AppCreatorPropertiesHandler implements PropertiesHandler<AppCreator
     }
 
     @Override
-    public PropertiesHandler<?> getNestedHandler(String name) throws PropertiesConfigReaderException {
+    public PropertiesHandler<?> getNestedHandler(String name) {
         //System.out.println("getNestedHandler for " + name);
         switch (name) {
             case "augment":
@@ -165,7 +165,7 @@ public class AppCreatorPropertiesHandler implements PropertiesHandler<AppCreator
     }
 
     @Override
-    public void setNested(AppCreator creator, String name, Object child) throws PropertiesConfigReaderException {
+    public void setNested(AppCreator creator, String name, Object child) {
         creator.addPhase((AppCreationPhase) child);
     }
 }

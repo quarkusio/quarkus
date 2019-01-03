@@ -16,12 +16,13 @@
 
 package org.jboss.shamrock.example.test;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.Matchers.is;
 
-import org.jboss.shamrock.example.testutils.URLTester;
 import org.jboss.shamrock.test.ShamrockTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import io.restassured.RestAssured;
 
 /**
  * Test various JPA operations running in Shamrock
@@ -31,7 +32,7 @@ public class JPAFunctionalityTest {
 
     @Test
     public void testJPAFunctionalityFromServlet() throws Exception {
-        assertEquals("OK", URLTester.relative("jpa-mariadb/testfunctionality").invokeURL().asString());
+        RestAssured.when().get("/jpa-mariadb/testfunctionality").then().body(is("OK"));
     }
 
 }

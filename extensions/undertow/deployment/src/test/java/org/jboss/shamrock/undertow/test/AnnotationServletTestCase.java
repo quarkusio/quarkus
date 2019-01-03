@@ -16,15 +16,16 @@
 
 package org.jboss.shamrock.undertow.test;
 
+import static org.hamcrest.Matchers.is;
+
 import org.jboss.shamrock.test.Deployment;
 import org.jboss.shamrock.test.ShamrockUnitTest;
-import org.jboss.shamrock.test.URLResponse;
-import org.jboss.shamrock.test.URLTester;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import io.restassured.RestAssured;
 
 @RunWith(ShamrockUnitTest.class)
 public class AnnotationServletTestCase {
@@ -37,9 +38,9 @@ public class AnnotationServletTestCase {
 
     @Test
     public void testServlet() {
-        URLResponse resp = URLTester.relative("/test").invokeURL();
-        Assert.assertEquals(200, resp.statusCode());
-        Assert.assertEquals("test servlet", resp.asString());
+        RestAssured.when().get("/test").then()
+                .statusCode(200)
+                .body(is("test servlet"));
     }
 
 }

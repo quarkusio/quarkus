@@ -16,19 +16,21 @@
 
 package org.jboss.shamrock.example.test;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.Matchers.is;
 
-import org.jboss.shamrock.test.URLTester;
 import org.jboss.shamrock.test.SubstrateTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import io.restassured.RestAssured;
 
 @RunWith(SubstrateTest.class)
 public class CoreReflectionInGraalITCase {
 
     @Test
     public void testFieldAndGetterReflectionOnEntityFromServlet() throws Exception {
-        assertEquals("OK", URLTester.relative("core/reflection").invokeURL().asString());
+        RestAssured.when().get("/core/reflection").then()
+                .body(is("OK"));
     }
 
 }

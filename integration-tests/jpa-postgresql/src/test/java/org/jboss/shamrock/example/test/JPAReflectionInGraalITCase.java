@@ -16,12 +16,13 @@
 
 package org.jboss.shamrock.example.test;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.Matchers.is;
 
-import org.jboss.shamrock.example.testutils.URLTester;
 import org.jboss.shamrock.test.SubstrateTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import io.restassured.RestAssured;
 
 /**
  * Test reflection around JPA entities
@@ -33,7 +34,7 @@ public class JPAReflectionInGraalITCase {
 
     @Test
     public void testFieldAndGetterReflectionOnEntityFromServlet() throws Exception {
-        assertEquals("OK", URLTester.relative("jpa/testreflection").invokeURL().asString());
+        RestAssured.when().get("/jpa/testreflection").then().body(is("OK"));
     }
 
 }

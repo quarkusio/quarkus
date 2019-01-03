@@ -77,7 +77,7 @@ public class RuntimeLoggingConfigurator implements EmbeddedConfigurator {
         boolean color = config.getOptionalValue("shamrock.log.console.format", Boolean.class)
                 .orElse(true);
 
-        if (color) {
+        if (color && System.console() != null) {
             return loggerName.isEmpty() ? new Handler[]{
                     new ConsoleHandler(new ColorPatternFormatter(format))
             } : NO_HANDLERS;

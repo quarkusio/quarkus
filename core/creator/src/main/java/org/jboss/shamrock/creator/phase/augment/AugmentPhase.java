@@ -350,13 +350,11 @@ public class AugmentPhase implements AppCreationPhase, AugmentOutcome, RunnerJar
                     }
                 }
 
-                List<ResolvedArtifact> artifactList = new ArrayList<>();
                 List<URL> classPathUrls = new ArrayList<>();
                 for (AppDependency appDep : appDeps) {
                     final AppArtifact depCoords = appDep.getArtifact();
                     final Path p = depResolver.resolve(depCoords);
                     classPathUrls.add(p.toUri().toURL());
-                    artifactList.add(new ResolvedArtifact(depCoords.getGroupId(), depCoords.getArtifactId(), depCoords.getVersion(), depCoords.getClassifier(), p));
                 }
 
                 //we need to make sure all the deployment artifacts are on the class path

@@ -1,0 +1,119 @@
+= Contexts and Dependency Injection
+
+{project-name} DI solution is based on the http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[Contexts and Dependency Injection for Java 2.0, window="_blank"] specification.
+However, it is not a full CDI implementation verified by the TCK.
+Only a subset of the CDI features is implemented - see also <<supported_features,the list of supported features>> and <<limitations,the list of limitations>>.
+
+NOTE: Most of the existing CDI code should work just fine but there are some small differences which follow from the {project-name} architecture and goals.
+
+== Bean Discovery
+
+Bean discovery in CDI is a complex process which involves legacy deployment structures and accessibility requirements of the underlying module architecture.
+{project-name} is using a simplified bean discovery.
+There is only one bean archive with `annotated` bean discovery mode and no visibility boundaries.
+
+The bean archive is synthesized from:
+
+* the application,
+* application dependencies that contain a `beans.xml` descriptor or a generated Jandex index (`META-INF/jandex.idx`),
+* and {project-name} integration code.
+
+Bean classes that don't have a http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#bean_defining_annotations[bean defining annotation, window="_blank"] are not discovered.
+This behavior is defined by CDI.
+But producer methods and fields and observer methods are discovered even if the declaring class is not annotated with a bean defining annotation (this behavior is different to what is defined in CDI).
+In fact, the declaring bean classes are considered annotated with `@Dependent`. 
+
+NOTE: {project-name} extension may declare additional discovery rules. For example `@Scheduled` business methods are registered even if the declaring class is not annotated with a bean defining annotation.
+
+
+== Private Members
+
+{project-name} is designed with Substrate VM in mind.
+One of the limitations is the usage of https://github.com/oracle/graal/blob/master/substratevm/LIMITATIONS.md#user-content-reflection[Reflection, window="_blank"].
+Substrate VM does support reflective calls but for a price of a bigger native image.
+{project-name} must use reflection fallback to access private members.
+That's why {project-name} users are encouraged __not to use private members__ in their beans.
+This involves injection fields, constructors and initializers, observer methods, producer methods and fields, disposers and interceptor methods.
+
+You can use for example package-private modifiers:
+
+[source,java]
+----
+@ApplicationScoped
+public class CounterBean {
+
+    @Inject
+    CounterService counterService; // <1>
+    
+    void onMessage(@Observes Event msg) { // <2>
+    }
+}
+----
+1. A package-private injection field
+2. A package-private observer method
+
+Or constructor injection:
+
+[source,java]
+----
+@ApplicationScoped
+public class CounterBean {
+
+    private final CounterService service;
+
+    CounterBean() { // <1>
+    }
+
+    @Inject
+    CounterBean(CounterService service) { <2>
+      this.service = service;
+    }
+}
+----
+1. Dummy constructor needed for CDI beans with a normal scope
+2. A package-private constructor injection
+
+
+[[supported_features]]
+== Supported Features
+
+* Programming model
+** Managed beans implemented by a Java class
+*** `@PostConstruct` and `@PreDestroy` lifecycle callbacks
+** Producer methods and fields, disposers
+** Qualifiers
+** Alternatives
+** Stereotypes
+* Dependency injection and lookup
+** Field, constructor and initializer/setter injection
+** Type-safe resolution 
+** Programmatic lookup via `javax.enterprise.inject.Instance`
+** Client proxies
+** Injection point metadata footnote:[`InjectionPoint.getMember()` is currently not supported.]
+* Scopes and contexts
+** `@Dependent`, `@ApplicationScoped`, `@Singleton` and `@RequestScoped`
+* Interceptors
+** Business method interceptors: `@AroundInvoke`
+** Interceptors for lifecycle event callbacks: `@PostConstruct`, `@PreDestroy`, `@AroundConstruct`
+* Events and observers, including asynchronous events
+
+[[limitations]]
+== Limitations
+
+* `@SessionScoped` and `@ConversationScoped` are not supported
+* Custom scopes and contexts are not supported
+* Decorators are not supported
+* Portable Extensions are not supported
+* `BeanManager` - only the following methods are implemented: `getBeans()`, `createCreationalContext()`, `getReference()`, `resolve()`, `getContext()`, `getEvent()` and `createInstance()`
+* Specialization is not supported
+* `beans.xml` descriptor content is ignored
+* Passivation and passivating scopes are not supported
+* Transitive interceptor bindings and interceptor methods on superclasses are not implemented yet
+
+[[portable_extensions]]
+== Portable Extensions
+
+{project-name} incorporates build-time optimizations in order to provide instant startup and low memory footprint.
+The downside of this approach is that CDI Portable Extensions cannot be supported.
+Nevertheless, most of the functionality can be achieved using {project-name} link:extension-authors-guide.html[extensions].
+

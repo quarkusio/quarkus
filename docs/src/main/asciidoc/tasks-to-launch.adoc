@@ -1,0 +1,23 @@
+= Tasks between us and a public beta launch of Protean
+
+:toc: macro
+:toclevels: 4
+:doctype: book
+:icons: font
+:docinfo1:
+
+:numbered:
+:sectnums:
+:sectnumlevels: 4
+
+* [ ] Write comprehensive guide on how to write an extension (on-going)
+* [ ] Write a comprehensive guide on how to use shamrock to run an application (log level etc)
+* [ ] Find a public name
+* [ ] Build a website
+* [ ] Rewrite config property handling (ongoing)
+* [ ] Implementation of the dependency model aka the Toronto model
+* [ ] Add more framework extensions (help particularly needed, you know your framework!)
+* [ ] Start working on the CLI prototype to not get cornered
+* [ ] Redo benchmarks with latest release
+* [ ] Reactify Bean Validation
+* [ ] ...

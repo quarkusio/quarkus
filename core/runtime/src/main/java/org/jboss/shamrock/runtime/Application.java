@@ -32,6 +32,7 @@ import sun.misc.SignalHandler;
  * The application base class, which is extended and implemented by a generated class which implements the application
  * setup logic.  The base class does some basic error checking.
  */
+@SuppressWarnings("restriction")
 public abstract class Application {
     private static final int ST_INITIAL = 0;
     private static final int ST_STARTING = 1;

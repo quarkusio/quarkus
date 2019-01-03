@@ -30,12 +30,12 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.eclipse.microprofile.reactive.streams</groupId>
-            <artifactId>microprofile-reactive-streams-operators</artifactId>
+            <groupId>org.eclipse.microprofile.reactive-streams-operators</groupId>
+            <artifactId>microprofile-reactive-streams-operators-api</artifactId>
             <version>${microprofile-reactive-streams-operators.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.eclipse.microprofile.reactive.streams</groupId>
+            <groupId>org.eclipse.microprofile.reactive-streams-operators</groupId>
             <artifactId>microprofile-reactive-streams-operators-core</artifactId>
             <version>${microprofile-reactive-streams-operators.version}</version>
         </dependency>

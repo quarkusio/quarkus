@@ -17,7 +17,7 @@
 package org.jboss.shamrock.example.reactive;
 
 import io.reactivex.Flowable;
-import org.eclipse.microprofile.reactive.streams.ReactiveStreams;
+import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;

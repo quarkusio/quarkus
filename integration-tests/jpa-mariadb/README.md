@@ -10,7 +10,10 @@ To run the tests in a standard JVM with MariaDB started as a Docker container, y
 mvn clean install -Dtest-mariadb -Ddocker
 ```
 
-Additionaly, you can generate a native image and run the tests for this native image by adding `-Dnative`:
+Please note that waiting on the availability of MariaDB port does not work on macOS.
+This module does not work with `-Ddocker` option on this operating system.
+
+Additionally, you can generate a native image and run the tests for this native image by adding `-Dnative`:
 
 ```
 mvn clean install -Dtest-mariadb -Ddocker -Dnative

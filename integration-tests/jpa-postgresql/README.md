@@ -10,7 +10,7 @@ To run the tests in a standard JVM with PostgreSQL started as a Docker container
 mvn clean install -Dtest-postgresql -Ddocker
 ```
 
-Additionaly, you can generate a native image and run the tests for this native image by adding `-Dnative`:
+Additionally, you can generate a native image and run the tests for this native image by adding `-Dnative`:
 
 ```
 mvn clean install -Dtest-postgresql -Ddocker -Dnative

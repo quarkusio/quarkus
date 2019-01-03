@@ -208,7 +208,7 @@ public class QuartzScheduler implements Scheduler {
                             triggerBuilder.startAt(new Date(Instant.now().plusMillis(scheduled.delayUnit().toMillis(scheduled.delay())).toEpochMilli()));
                         }
                         scheduler.scheduleJob(jobBuilder.build(), triggerBuilder.build());
-                        LOGGER.infof("Scheduled business method %s with config %s", schedulerConfig.getDescription(entry.getKey()), scheduled);
+                        LOGGER.debugf("Scheduled business method %s with config %s", schedulerConfig.getDescription(entry.getKey()), scheduled);
                     }
                 }
 

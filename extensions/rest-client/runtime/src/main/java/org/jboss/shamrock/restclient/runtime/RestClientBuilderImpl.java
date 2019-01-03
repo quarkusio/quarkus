@@ -486,7 +486,7 @@ class RestClientBuilderImpl implements RestClientBuilder {
     public void registerLocalProviderInstance(Object provider, Map<Class<?>, Integer> contracts) {
         for (Object registered : getLocalProviderInstances()) {
             if (registered == provider) {
-                log.infof("Provider already registered: %s", provider.getClass());
+                log.debugf("Provider already registered: %s", provider.getClass());
                 return;
             }
         }

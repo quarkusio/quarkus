@@ -646,8 +646,7 @@ public class BeanGenerator extends AbstractGenerator {
                         bean.getDeployment().getIndex());
                 for (MethodInfo callback : preDestroyCallbacks) {
                     if (Modifier.isPrivate(callback.flags())) {
-                        LOGGER.infof("PreDestroy callback %s#%s is private - users are encouraged to avoid using private callbacks",
-                                callback.declaringClass().name(), callback.name());
+                        LOGGER.logf(isApplicationClass ? Level.INFO : Level.DEBUG, "PreDestroy callback %s#%s is private - users are encouraged to avoid using private callbacks", callback.declaringClass().name(), callback.name());
                         reflectionRegistration.registerMethod(callback);
                         destroy.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD, destroy.loadClass(callback.declaringClass().name().toString()),
                                 destroy.load(callback.name()), destroy.newArray(Class.class, destroy.load(0)), destroy.getMethodParam(0),

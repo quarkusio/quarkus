@@ -215,7 +215,7 @@ public class BeanProcessor {
         for (Resource resource : resources) {
             output.writeResource(resource);
         }
-        LOGGER.infof("Generated %s resources in %s ms", resources.size(), System.currentTimeMillis() - start);
+        LOGGER.debugf("Generated %s resources in %s ms", resources.size(), System.currentTimeMillis() - start);
         return beanDeployment;
     }
 

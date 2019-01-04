@@ -69,9 +69,6 @@ public class OpentracingProcessor {
         filterInfo.addFilterUrlMapping("*", DispatcherType.ERROR);
         filterProducer.produce(filterInfo);
 
-        //note that we can't put this into its own method as we need this to be registered before Undertow is started
-        tracing.registerTracer();
-
     }
 
 }

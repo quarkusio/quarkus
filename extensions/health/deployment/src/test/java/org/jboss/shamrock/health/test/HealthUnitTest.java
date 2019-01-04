@@ -1,18 +1,18 @@
 package org.jboss.shamrock.health.test;
 
-import javax.json.JsonArray;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.is;
 
 import org.jboss.shamrock.test.Deployment;
 import org.jboss.shamrock.test.ShamrockUnitTest;
-import org.jboss.shamrock.test.URLTester;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import io.restassured.RestAssured;
+import io.restassured.parsing.Parser;
 
 @RunWith(ShamrockUnitTest.class)
 public class HealthUnitTest {
@@ -26,15 +26,16 @@ public class HealthUnitTest {
 
     @Test
     public void testHealth() {
-        JsonReader parser = URLTester.relative("health").invokeURL().asJsonReader();
-        JsonObject obj = parser.readObject();
-        System.out.println(obj);
-        Assert.assertEquals("UP", obj.getString("outcome"));
-        JsonArray list = obj.getJsonArray("checks");
-        Assert.assertEquals(1, list.size());
-        JsonObject check = list.getJsonObject(0);
-        Assert.assertEquals("UP", check.getString("state"));
-        Assert.assertEquals("basic", check.getString("name"));
+        // the health check does not set a content type so we need to force the parser
+        try {
+            RestAssured.defaultParser = Parser.JSON;
+            RestAssured.when().get("/health").then()
+                    .body("outcome", is("UP"),
+                            "checks.state", contains("UP"),
+                            "checks.name", contains("basic"));
+        } finally {
+            RestAssured.reset();
+        }
     }
 
 }

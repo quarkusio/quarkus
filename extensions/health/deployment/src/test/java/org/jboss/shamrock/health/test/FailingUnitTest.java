@@ -27,14 +27,14 @@ import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.jboss.shamrock.test.Deployment;
 import org.jboss.shamrock.test.ShamrockUnitTest;
-import org.jboss.shamrock.test.URLResponse;
-import org.jboss.shamrock.test.URLTester;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import io.restassured.RestAssured;
 
 @RunWith(ShamrockUnitTest.class)
 public class FailingUnitTest {
@@ -52,8 +52,7 @@ public class FailingUnitTest {
 
     @Test
     public void testHealthServlet() {
-        URLResponse rep = URLTester.relative("health").invokeURL();
-        Assert.assertEquals(503, rep.statusCode());
+        RestAssured.when().get("/health").then().statusCode(503);
     }
 
     @Test

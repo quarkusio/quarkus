@@ -16,25 +16,27 @@
 
 package org.jboss.shamrock.example.test;
 
-import org.jboss.shamrock.test.URLTester;
+import static org.hamcrest.Matchers.is;
+
 import org.jboss.shamrock.test.ShamrockTest;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import io.restassured.RestAssured;
 
 @RunWith(ShamrockTest.class)
 public class ReactiveStreamsOperatorsTestCase {
 
     @Test
     public void testReactiveStreams() {
-        String result = URLTester.relative("rest/reactive/stream-regular").invokeURL().asString();
-        Assert.assertEquals("ABC", result);
+        RestAssured.when().get("/rest/reactive/stream-regular").then()
+                .body(is("ABC"));
     }
 
     @Test
     public void testRxJava2() {
-        String result = URLTester.relative("rest/reactive/stream-rx").invokeURL().asString();
-        Assert.assertEquals("DEF", result);
+        RestAssured.when().get("/rest/reactive/stream-rx").then()
+                .body(is("DEF"));
     }
 
 }

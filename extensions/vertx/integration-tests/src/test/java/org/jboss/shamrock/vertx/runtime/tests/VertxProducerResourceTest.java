@@ -1,12 +1,12 @@
 package org.jboss.shamrock.vertx.runtime.tests;
 
+import static org.hamcrest.Matchers.containsString;
+
 import org.jboss.shamrock.test.ShamrockTest;
-import org.jboss.shamrock.test.URLTester;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import static org.hamcrest.core.Is.is;
+import io.restassured.RestAssured;
 
 @RunWith(ShamrockTest.class)
 public class VertxProducerResourceTest {
@@ -14,15 +14,14 @@ public class VertxProducerResourceTest {
 
     @Test
     public void testInjection() {
-        String result = URLTester.relative("vertx-test").invokeURL().asString();
-        Assert.assertThat(result.contains("vertx=true"), is(true));
-        Assert.assertThat(result.contains("eventbus=true"), is(true));
+        RestAssured.when().get("/vertx-test").then()
+                .body(containsString("vertx=true"), containsString("eventbus=true"));
     }
 
     @Test
     public void testEventBus() {
-        String result = URLTester.relative("vertx-test/eventBus").invokeURL().asString();
-        Assert.assertThat(result.contains("hello shamrock"), is(true));
+        RestAssured.when().get("/vertx-test/eventBus").then()
+                .body(containsString("hello shamrock"));
     }
 
 }

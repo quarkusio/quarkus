@@ -2,10 +2,8 @@ package org.jboss.shamrock.example.test;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
 
 import org.jboss.shamrock.test.ShamrockTest;
-import org.jboss.shamrock.test.URLTester;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -59,8 +57,6 @@ public class BeanValidationFunctionalityTest {
 
     @Test
     public void testRestEndPointValidation() {
-        // we can't test the content of the response as accessing the input stream throws an IOException
-        assertEquals(400, URLTester.relative("bean-validation/test/rest-end-point-validation/plop/").invokeURL().statusCode());
         RestAssured.when()
                 .get("/bean-validation/test/rest-end-point-validation/plop/")
                 .then()

@@ -16,18 +16,21 @@
 
 package org.jboss.shamrock.example.test;
 
-import org.jboss.shamrock.test.URLTester;
+import static org.hamcrest.Matchers.is;
+
 import org.jboss.shamrock.test.ShamrockTest;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import io.restassured.RestAssured;
 
 @RunWith(ShamrockTest.class)
 public class TransactionTestCase {
 
     @Test
     public void testTransaction() {
-        Assert.assertEquals("true", URLTester.relative("rest/txn").invokeURL().asString());
+        RestAssured.when().get("/rest/txn").then()
+                .body(is("true"));
     }
 
 }

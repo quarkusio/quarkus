@@ -1,11 +1,12 @@
 package org.jboss.shamrock.example.test;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.Matchers.is;
 
 import org.jboss.shamrock.test.ShamrockTest;
-import org.jboss.shamrock.test.URLTester;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import io.restassured.RestAssured;
 
 /**
  * Test connecting Hibernate ORM to H2.
@@ -17,7 +18,7 @@ public class JPAFunctionalityTest {
 
     @Test
     public void testJPAFunctionalityFromServlet() throws Exception {
-        assertEquals("OK", URLTester.relative("jpa-h2/testfunctionality").invokeURL().asString());
+        RestAssured.when().get("/jpa-h2/testfunctionality").then().body(is("OK"));
     }
 
 }

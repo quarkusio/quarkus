@@ -16,22 +16,26 @@
 
 package org.jboss.shamrock.example.test;
 
-import org.jboss.shamrock.test.URLTester;
+import static org.hamcrest.Matchers.is;
+
 import org.jboss.shamrock.test.ShamrockTest;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import io.restassured.RestAssured;
 
 @RunWith(ShamrockTest.class)
 public class RestClientTestCase {
 
     @Test
     public void testMicroprofileClient() {
-        Assert.assertEquals("TEST", URLTester.relative("rest/client/manual").invokeURL().asString());
+        RestAssured.when().get("/rest/client/manual").then()
+                .body(is("TEST"));
     }
 
     @Test
     public void testMicroprofileClientCDIIntegration() {
-        Assert.assertEquals("TEST", URLTester.relative("rest/client/cdi").invokeURL().asString());
+        RestAssured.when().get("/rest/client/cdi").then()
+                .body(is("TEST"));
     }
 }

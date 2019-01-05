@@ -25,6 +25,7 @@ dumps
 graph-output.dot
 *.swp
 *.swo
+ObjectStore
 
 
 docker/distroless/bazel-*

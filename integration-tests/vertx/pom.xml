@@ -5,18 +5,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <artifactId>shamrock-vertx</artifactId>
+        <artifactId>shamrock-integration-tests-parent</artifactId>
         <groupId>org.jboss.shamrock</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
-    <artifactId>shamrock-vertx-integration-tests</artifactId>
-    <name>Shamrock - Vert.x - Integration tests</name>
-
-    <properties>
-        <maven.deploy.skip>true</maven.deploy.skip>
-    </properties>
+    <artifactId>shamrock-integration-test-vertx</artifactId>
+    <name>Shamrock - Integration Tests - Vert.x</name>
 
     <dependencies>
         <dependency>

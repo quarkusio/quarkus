@@ -14,18 +14,12 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.jpa.runtime;
+package org.jboss.shamrock.jpa.runtime.graal;
 
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
+import com.oracle.svm.core.annotate.Delete;
+import com.oracle.svm.core.annotate.TargetClass;
 
-@Singleton
-public class DefaultEntityManagerProducer {
-
-    @Produces
-    @PersistenceContext
-    EntityManager entityManager;
-
+@TargetClass(className = "org.hibernate.jpa.HibernatePersistenceProvider")
+@Delete
+public final class Delete_HibernatePersistenceProvider {
 }

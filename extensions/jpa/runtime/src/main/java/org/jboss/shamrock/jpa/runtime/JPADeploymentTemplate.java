@@ -23,8 +23,6 @@ import javax.sql.DataSource;
 
 import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
-import org.hibernate.protean.Hibernate;
-import org.hibernate.protean.impl.PersistenceUnitsHolder;
 import org.jboss.logging.Logger;
 import org.jboss.shamrock.arc.runtime.BeanContainer;
 import org.jboss.shamrock.arc.runtime.BeanContainerListener;

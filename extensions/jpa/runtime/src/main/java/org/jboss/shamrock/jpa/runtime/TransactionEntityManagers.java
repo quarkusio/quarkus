@@ -26,6 +26,8 @@ import javax.persistence.EntityManager;
 import javax.transaction.TransactionManager;
 import javax.transaction.TransactionSynchronizationRegistry;
 
+import org.jboss.shamrock.jpa.runtime.entitymanager.TransactionScopedEntityManager;
+
 @RequestScoped
 public class TransactionEntityManagers {
 
@@ -44,13 +46,13 @@ public class TransactionEntityManagers {
         this.managers = new HashMap<>();
     }
 
-    EntityManager getEntityManager(String unitName) {
+    public EntityManager getEntityManager(String unitName) {
         return managers.computeIfAbsent(unitName,
                 un -> new TransactionScopedEntityManager(tm, tsr, jpaConfig.getEntityManagerFactory(un)));
     }
 
     @PreDestroy
-    void destroy() {
+    public void destroy() {
         for (TransactionScopedEntityManager manager : managers.values()) {
             manager.requestDone();
         }

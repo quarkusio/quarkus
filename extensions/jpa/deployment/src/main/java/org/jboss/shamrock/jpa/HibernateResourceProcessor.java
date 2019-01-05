@@ -39,7 +39,6 @@ import org.hibernate.dialect.H2Dialect;
 import org.hibernate.dialect.MariaDB103Dialect;
 import org.hibernate.dialect.PostgreSQL95Dialect;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
-import org.hibernate.protean.impl.PersistenceUnitsHolder;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
@@ -65,8 +64,9 @@ import org.jboss.shamrock.jpa.runtime.DefaultEntityManagerFactoryProducer;
 import org.jboss.shamrock.jpa.runtime.DefaultEntityManagerProducer;
 import org.jboss.shamrock.jpa.runtime.JPAConfig;
 import org.jboss.shamrock.jpa.runtime.JPADeploymentTemplate;
-import org.jboss.shamrock.jpa.runtime.ShamrockScanner;
+import org.jboss.shamrock.jpa.runtime.PersistenceUnitsHolder;
 import org.jboss.shamrock.jpa.runtime.TransactionEntityManagers;
+import org.jboss.shamrock.jpa.runtime.boot.scan.ShamrockScanner;
 
 /**
  * Simulacrum of JPA bootstrap.

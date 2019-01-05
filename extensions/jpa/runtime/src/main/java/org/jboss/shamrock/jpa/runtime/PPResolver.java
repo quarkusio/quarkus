@@ -16,16 +16,24 @@
 
 package org.jboss.shamrock.jpa.runtime;
 
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
+import java.util.Collections;
+import java.util.List;
+import javax.persistence.spi.PersistenceProvider;
+import javax.persistence.spi.PersistenceProviderResolver;
 
-@Singleton
-public class DefaultEntityManagerProducer {
+final class PPResolver implements PersistenceProviderResolver {
 
-    @Produces
-    @PersistenceContext
-    EntityManager entityManager;
+    private static List<PersistenceProvider> hardcodedProvidersList = Collections
+            .<PersistenceProvider>singletonList(new FastbootHibernateProvider());
+
+    @Override
+    public List<PersistenceProvider> getPersistenceProviders() {
+        return hardcodedProvidersList;
+    }
+
+    @Override
+    public void clearCachedProviders() {
+        // done!
+    }
 
 }

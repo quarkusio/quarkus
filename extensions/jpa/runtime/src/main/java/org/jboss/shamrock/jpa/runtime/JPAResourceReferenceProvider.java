@@ -28,6 +28,7 @@ import javax.persistence.PersistenceUnit;
 import org.jboss.protean.arc.Arc;
 import org.jboss.protean.arc.InstanceHandle;
 import org.jboss.protean.arc.ResourceReferenceProvider;
+import org.jboss.shamrock.jpa.runtime.entitymanager.ForwardingEntityManager;
 
 public class JPAResourceReferenceProvider implements ResourceReferenceProvider {
 

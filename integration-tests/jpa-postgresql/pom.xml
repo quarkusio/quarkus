@@ -28,7 +28,7 @@
 
     <artifactId>shamrock-integration-test-jpa-postgresql</artifactId>
     <name>Shamrock - Integration Tests - JPA - PostgreSQL</name>
-    <description>Module that contains JPA related tests running in strict mode with the PostgreSQL database</description>
+    <description>Module that contains JPA related tests running with the PostgreSQL database</description>
     <dependencies>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>

@@ -39,7 +39,7 @@
         <module>class-transformer</module>
         <module>shared-library</module>
         <module>undertow</module>
-        <module>bean-validation-strict</module>
+        <module>bean-validation</module>
         <module>common-jpa-entities</module>
         <module>main</module>
         <module>jpa</module>

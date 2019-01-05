@@ -28,7 +28,7 @@
 
     <artifactId>shamrock-integration-test-jpa-mariadb</artifactId>
     <name>Shamrock - Integration Tests - JPA - MariaDB</name>
-    <description>Module that contains JPA related tests running in strict mode with the MariaDB database</description>
+    <description>Module that contains JPA related tests running with the MariaDB database</description>
     <dependencies>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>

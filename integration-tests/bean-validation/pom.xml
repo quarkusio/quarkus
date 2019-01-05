@@ -12,7 +12,7 @@
 
     <artifactId>shamrock-integration-test-bean-validation</artifactId>
     <name>Shamrock - Integration Tests - Bean Validation</name>
-    <description>Module that contains Bean Validation related tests running in strict mode</description>
+    <description>Module that contains Bean Validation related tests</description>
     <dependencies>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>

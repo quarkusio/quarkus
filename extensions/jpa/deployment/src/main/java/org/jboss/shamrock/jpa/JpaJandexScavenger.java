@@ -40,7 +40,6 @@ import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 import org.jboss.shamrock.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import org.jboss.shamrock.jpa.runtime.JPADeploymentTemplate;
 
 /**
  * Scan the Jandex index to find JPA entities (and embeddables supporting entity models).
@@ -65,56 +64,57 @@ final class JpaJandexScavenger {
 
     private final List<ParsedPersistenceXmlDescriptor> descriptors;
     private final BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
-    private final IndexView combinedIndex;
-    private final JPADeploymentTemplate template;
+    private final IndexView indexView;
 
-    JpaJandexScavenger(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, List<ParsedPersistenceXmlDescriptor> descriptors, IndexView combinedIndex, JPADeploymentTemplate template) {
+    JpaJandexScavenger(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, List<ParsedPersistenceXmlDescriptor> descriptors, IndexView indexView) {
         this.reflectiveClass = reflectiveClass;
         this.descriptors = descriptors;
-        this.combinedIndex = combinedIndex;
-        this.template = template;
+        this.indexView = indexView;
     }
 
     public KnownDomainObjects discoverModelAndRegisterForReflection() throws IOException {
         // list all entities and create a JPADeploymentTemplate out of it
         // Not functional as we will need one deployment template per persistence unit
-        final IndexView index = combinedIndex;
-        final DomainObjectSet collector = new DomainObjectSet();
+        final DomainObjectSet domainObjectCollector = new DomainObjectSet();
+        final Set<String> enumTypeCollector = new HashSet<>();
 
-        enlistJPAModelClasses(JPA_ENTITY, collector, index);
-        enlistJPAModelClasses(EMBEDDABLE, collector, index);
-        enlistJPAModelClasses(MAPPED_SUPERCLASS, collector, index);
-        enlistReturnType(collector, index);
+        enlistJPAModelClasses(indexView, domainObjectCollector, enumTypeCollector, JPA_ENTITY);
+        enlistJPAModelClasses(indexView, domainObjectCollector, enumTypeCollector, EMBEDDABLE);
+        enlistJPAModelClasses(indexView, domainObjectCollector, enumTypeCollector, MAPPED_SUPERCLASS);
+        enlistReturnType(indexView, domainObjectCollector, enumTypeCollector);
 
         for (PersistenceUnitDescriptor pud : descriptors) {
-            enlistExplicitClasses(pud.getManagedClassNames(), collector, index);
+            enlistExplicitClasses(indexView, domainObjectCollector, enumTypeCollector, pud.getManagedClassNames());
         }
 
-        collector.registerAllForReflection(reflectiveClass);
+        domainObjectCollector.registerAllForReflection(reflectiveClass);
 
-        collector.dumpAllToJPATemplate(template);
-        template.enlistPersistenceUnit();
-        template.callHibernateFeatureInit();
+        if (!enumTypeCollector.isEmpty()) {
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, Enum.class.getName()));
+            for (String className : enumTypeCollector) {
+                reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, className));
+            }
+        }
 
-        return collector;
+        return domainObjectCollector;
     }
 
-    private static void enlistExplicitClasses(List<String> managedClassNames, DomainObjectSet collector, IndexView index) {
+    private static void enlistExplicitClasses(IndexView index, DomainObjectSet domainObjectCollector, Set<String> enumTypeCollector, List<String> managedClassNames) {
         for (String className : managedClassNames) {
             DotName dotName = DotName.createSimple(className);
             boolean isInIndex = index.getClassByName(dotName) != null;
             if (isInIndex) {
-                addClassHierarchyToReflectiveList(collector, index, dotName);
+                addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, dotName);
             } else {
                 // We do lipstick service by manually adding explicitly the <class> reference but not navigating the hierarchy
                 // so a class with a complex hierarchy will fail.
                 log.warnf("Did not find `%s` in the indexed jars. You likely forgot to tell Shamrock to index your dependency jar. See https://github.com/protean-project/shamrock/#indexing-and-application-classes for more info.", className);
-                collector.addEntity(className);
+                domainObjectCollector.addEntity(className);
             }
         }
     }
 
-    private static void enlistReturnType(DomainObjectSet collector, IndexView index) {
+    private static void enlistReturnType(IndexView index, DomainObjectSet domainObjectCollector, Set<String> enumTypeCollector) {
         Collection<AnnotationInstance> annotations = index.getAnnotations(EMBEDDED);
         if (annotations != null && annotations.size() > 0) {
             for (AnnotationInstance annotation : annotations) {
@@ -132,18 +132,18 @@ final class JpaJandexScavenger {
                     default:
                         throw new IllegalStateException("[internal error] @Embedded placed on a unknown element: " + target);
                 }
-                addClassHierarchyToReflectiveList(collector, index, jpaClassName);
+                addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, jpaClassName);
             }
         }
     }
 
-    private static void enlistJPAModelClasses(DotName dotName, DomainObjectSet collector, IndexView index) {
+    private static void enlistJPAModelClasses(IndexView index, DomainObjectSet domainObjectCollector, Set<String> enumTypeCollector, DotName dotName) {
         Collection<AnnotationInstance> jpaAnnotations = index.getAnnotations(dotName);
         if (jpaAnnotations != null && jpaAnnotations.size() > 0) {
             for (AnnotationInstance annotation : jpaAnnotations) {
                 DotName targetDotName = annotation.target().asClass().name();
-                addClassHierarchyToReflectiveList(collector, index, targetDotName);
-                collector.addEntity(targetDotName.toString());
+                addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, targetDotName);
+                domainObjectCollector.addEntity(targetDotName.toString());
             }
         }
     }
@@ -155,7 +155,7 @@ final class JpaJandexScavenger {
      * TODO this approach fails if the Jandex index is not complete (e.g. misses somes interface or super types)
      * TODO should we also return the return types of all methods and fields? It could container Enums for example.
      */
-    private static void addClassHierarchyToReflectiveList(DomainObjectSet collector, IndexView index, DotName className) {
+    private static void addClassHierarchyToReflectiveList(IndexView index, DomainObjectSet domainObjectCollector, Set<String> enumTypeCollector, DotName className) {
         // If type is not Object
         // recursively add superclass and interfaces
         if (className == null) {
@@ -172,63 +172,40 @@ final class JpaJandexScavenger {
         }
         //we need to check for enums
         for (FieldInfo fieldInfo : classInfo.fields()) {
-            DotName type = fieldInfo.type().name();
-            ClassInfo typeCi = index.getClassByName(type);
-            if (typeCi != null && typeCi.superName().equals(ENUM)) {
-                collector.addEnumType(type.toString());
+            DotName fieldType = fieldInfo.type().name();
+            ClassInfo fieldTypeClassInfo = index.getClassByName(fieldType);
+            if (fieldTypeClassInfo != null && ENUM.equals(fieldTypeClassInfo.superName())) {
+                enumTypeCollector.add(fieldType.toString());
             }
         }
 
         //Capture this one (for various needs: Reflective access enablement, Hibernate enhancement, JPA Template)
-        collector.addEntity(className.toString());
+        domainObjectCollector.addEntity(className.toString());
         // add superclass recursively
-        addClassHierarchyToReflectiveList(collector, index, classInfo.superName());
+        addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, classInfo.superName());
         // add interfaces recursively
         for (DotName interfaceDotName : classInfo.interfaceNames()) {
-            addClassHierarchyToReflectiveList(collector, index, interfaceDotName);
+            addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, interfaceDotName);
         }
     }
 
     private static class DomainObjectSet implements KnownDomainObjects {
 
         private final Set<String> classNames = new HashSet<String>();
-        private final Set<String> enumTypes = new HashSet<String>();
 
-        public void addEntity(final String className) {
+        void addEntity(final String className) {
             classNames.add(className);
         }
-
-        void dumpAllToJPATemplate(final JPADeploymentTemplate template) {
-            for (String className : classNames) {
-                template.addEntity(className);
-            }
-        }
-
 
         void registerAllForReflection(final BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
             for (String className : classNames) {
                 reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
             }
-            if (!enumTypes.isEmpty()) {
-                reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, Enum.class.getName()));
-                for (String className : enumTypes) {
-                    reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, className));
-                }
-            }
-        }
-
-        @Override
-        public boolean contains(final String className) {
-            return classNames.contains(className);
         }
 
         @Override
         public Set<String> getClassNames() {
             return classNames;
-        }
-
-        public void addEnumType(String s) {
-            enumTypes.add(s);
         }
     }
 

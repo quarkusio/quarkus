@@ -35,13 +35,13 @@ public class JPAResourceReferenceProvider implements ResourceReferenceProvider {
     @Override
     public InstanceHandle<Object> get(Type type, Set<Annotation> annotations) {
         JPAConfig jpaConfig = Arc.container().instance(JPAConfig.class).get();
+
         if (EntityManagerFactory.class.equals(type)) {
             PersistenceUnit pu = getAnnotation(annotations, PersistenceUnit.class);
             if (pu != null) {
                 return () -> jpaConfig.getEntityManagerFactory(pu.unitName());
             }
-        }
-        if (EntityManager.class.equals(type)) {
+        } else if (EntityManager.class.equals(type)) {
             PersistenceContext pc = getAnnotation(annotations, PersistenceContext.class);
             if (pc != null) {
                 if (jpaConfig.isJtaEnabled()) {
@@ -73,6 +73,7 @@ public class JPAResourceReferenceProvider implements ResourceReferenceProvider {
                 }
             }
         }
+
         return null;
     }
 

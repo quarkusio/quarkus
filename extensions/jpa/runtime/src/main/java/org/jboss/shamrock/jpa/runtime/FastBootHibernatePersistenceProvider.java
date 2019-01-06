@@ -45,12 +45,13 @@ import org.jboss.shamrock.jpa.runtime.recording.RecordedState;
  * that: we need to be able to fully exclude HibernatePersistenceProvider from
  * the native image.
  */
-final class FastbootHibernateProvider implements PersistenceProvider {
+final class FastBootHibernatePersistenceProvider implements PersistenceProvider {
 
-    private static final Logger log = Logger.getLogger(FastbootHibernateProvider.class);
+    private static final Logger log = Logger.getLogger(FastBootHibernatePersistenceProvider.class);
 
     private final PersistenceUtilHelper.MetadataCache cache = new PersistenceUtilHelper.MetadataCache();
 
+    @SuppressWarnings("rawtypes")
     @Override
     public EntityManagerFactory createEntityManagerFactory(String persistenceUnitName, Map properties) {
         log.tracef("Starting createEntityManagerFactory for persistenceUnitName %s", persistenceUnitName);
@@ -64,6 +65,7 @@ final class FastbootHibernateProvider implements PersistenceProvider {
         }
     }
 
+    @SuppressWarnings("rawtypes")
     @Override
     public EntityManagerFactory createContainerEntityManagerFactory(PersistenceUnitInfo info, Map properties) {
         log.tracef("Starting createContainerEntityManagerFactory : %s", info.getPersistenceUnitName());
@@ -71,6 +73,7 @@ final class FastbootHibernateProvider implements PersistenceProvider {
         return getEntityManagerFactoryBuilder(info, properties).build();
     }
 
+    @SuppressWarnings("rawtypes")
     @Override
     public void generateSchema(PersistenceUnitInfo info, Map map) {
         log.tracef("Starting generateSchema : PUI.name=%s", info.getPersistenceUnitName());
@@ -79,6 +82,7 @@ final class FastbootHibernateProvider implements PersistenceProvider {
         builder.generateSchema();
     }
 
+    @SuppressWarnings("rawtypes")
     @Override
     public boolean generateSchema(String persistenceUnitName, Map map) {
         log.tracef("Starting generateSchema for persistenceUnitName %s", persistenceUnitName);
@@ -97,6 +101,7 @@ final class FastbootHibernateProvider implements PersistenceProvider {
         return providerUtil;
     }
 
+    @SuppressWarnings("rawtypes")
     protected EntityManagerFactoryBuilder getEntityManagerFactoryBuilder(PersistenceUnitInfo info, Map integration) {
         throw new UnsupportedOperationException("Not implemented");
     }
@@ -111,6 +116,7 @@ final class FastbootHibernateProvider implements PersistenceProvider {
      * to parse, just take the pre-parsed ones from the static final field - class
      * annotations metadata is also injected
      */
+    @SuppressWarnings("rawtypes")
     private EntityManagerFactoryBuilder getEntityManagerFactoryBuilderOrNull(String persistenceUnitName,
             Map properties) {
         log.tracef("Attempting to obtain correct EntityManagerFactoryBuilder for persistenceUnitName : %s",
@@ -148,22 +154,24 @@ final class FastbootHibernateProvider implements PersistenceProvider {
                 continue;
             }
 
-            RecordedState rs = PersistenceUnitsHolder.getMetadata(persistenceUnitName);
+            RecordedState recordedState = PersistenceUnitsHolder.getRecordedState(persistenceUnitName);
 
-            final MetadataImplementor metadata = rs.getMetadata();
+            final MetadataImplementor metadata = recordedState.getMetadata();
 
-            final Map<String, Object> configurationValues = rs.getConfigurationProperties();
+            final Map<String, Object> configurationValues = recordedState.getConfigurationProperties();
             // TODO:
             final Object validatorFactory = null;
             // TODO:
             final Object cdiBeanManager = null;
 
             StandardServiceRegistry standardServiceRegistry = rewireMetadataAndExtractServiceRegistry(
-                    configurationValues, rs);
+                    configurationValues, recordedState);
 
             return new FastBootEntityManagerFactoryBuilder(
-                    metadata /* Uses the StandardServiceRegistry references by this! */, persistenceUnitName,
-                    standardServiceRegistry /* Mostly ignored! (yet needs to match) */, configurationValues,
+                    metadata /* Uses the StandardServiceRegistry references by this! */,
+                    persistenceUnitName,
+                    standardServiceRegistry /* Mostly ignored! (yet needs to match) */,
+                    configurationValues,
                     validatorFactory, cdiBeanManager);
         }
 
@@ -193,10 +201,11 @@ final class FastbootHibernateProvider implements PersistenceProvider {
             // explicitly asks for a different one.
             return true;
         }
-        return FastbootHibernateProvider.class.getName().equals(requestedProviderName)
+        return FastBootHibernatePersistenceProvider.class.getName().equals(requestedProviderName)
                 || "org.hibernate.jpa.HibernatePersistenceProvider".equals(requestedProviderName);
     }
 
+    @SuppressWarnings("rawtypes")
     public static String extractRequestedProviderName(PersistenceUnitDescriptor persistenceUnit, Map integration) {
         final String integrationProviderName = extractProviderName(integration);
         if (integrationProviderName != null) {
@@ -214,9 +223,10 @@ final class FastbootHibernateProvider implements PersistenceProvider {
         // NOTE : if no provider requested we assume we are the provider (the calls got
         // to us somehow...)
         log.debug("No PersistenceProvider explicitly requested, assuming Hibernate");
-        return FastbootHibernateProvider.class.getName();
+        return FastBootHibernatePersistenceProvider.class.getName();
     }
 
+    @SuppressWarnings("rawtypes")
     private static String extractProviderName(Map integration) {
         if (integration == null) {
             return null;
@@ -230,6 +240,7 @@ final class FastbootHibernateProvider implements PersistenceProvider {
         return persistenceUnitRequestedProvider == null ? null : persistenceUnitRequestedProvider.trim();
     }
 
+    @SuppressWarnings("rawtypes")
     private void verifyProperties(Map properties) {
         if (properties != null && properties.size() != 0) {
             throw new PersistenceException(

@@ -14,13 +14,13 @@ public class HibernateOrmConfig {
      * The hibernate ORM dialect class name
      */
     // TODO should it be dialects
-    //TODO should it be shortcuts like "postgresql" "H2" etc
+    //TODO should it be shortcuts like "postgresql" "h2" etc
     @ConfigProperty(name = "dialect")
     public Optional<String> dialect;
 
     /**
      * Control how schema generation is happening in Hibernate ORM.
-     * Same as JPA's javax.persistence.schema-generation.database.actio.
+     * Same as JPA's javax.persistence.schema-generation.database.action.
      */
     @ConfigProperty(name = "schema-generation.database.action")
     public Optional<String> schemaGeneration;

@@ -33,6 +33,7 @@ import org.jboss.shamrock.runtime.Template;
  */
 @Template
 public class JPADeploymentTemplate {
+
     private List<String> entities = new ArrayList<>();
 
     private static final String CONNECTION_URL = "hibernate.connection.url";
@@ -99,7 +100,7 @@ public class JPADeploymentTemplate {
         };
     }
 
-    public void startAllUnits(BeanContainer beanContainer) {
+    public void startAllPersistenceUnits(BeanContainer beanContainer) {
         beanContainer.instance(JPAConfig.class).startAll();
     }
 }

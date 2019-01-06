@@ -16,7 +16,6 @@
 
 package org.jboss.shamrock.jpa.runtime;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +25,6 @@ import javax.persistence.PersistenceException;
 
 import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
-import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.jboss.shamrock.jpa.runtime.boot.FastBootMetadataBuilder;
 import org.jboss.shamrock.jpa.runtime.boot.LightPersistenceXmlDescriptor;
@@ -34,10 +32,10 @@ import org.jboss.shamrock.jpa.runtime.recording.RecordedState;
 
 public final class PersistenceUnitsHolder {
 
-    // Populated by Shamrock's runtime phase from Shamrock deployment info
-    private static volatile PUStatus COMPACT_UNITS = null;
+    private static final String NO_NAME_TOKEN = "__no_name";
 
-    private static final Object NO_NAME_TOKEN = new Object();
+    // Populated by Shamrock's runtime phase from Shamrock deployment info
+    private static volatile PersistenceUnits persistenceUnits;
 
     /**
      * Initialize JPA for use in Shamrock. In a native image. This must be called
@@ -45,20 +43,35 @@ public final class PersistenceUnitsHolder {
      *
      * In general the <code>parsedPersistenceXmlDescriptors</code> will be provided
      * by calling {@link #loadOriginalXMLParsedDescriptors()} In Shamrock this is
-     * done in Shamrock's JPA ResourceProcessor
+     * done in Shamrock's JPA ResourceProcessor.
      *
-     * The scanner may be null to use to default scanner, or a custom scanner can be
-     * used to stop hibernate scanning It is expected that the scanner will be
+     * The scanner may be null to use the default scanner, or a custom scanner can be
+     * used to stop Hibernate scanning. It is expected that the scanner will be
      * provided by Shamrock via its hold of Jandex info.
      *
      * @param parsedPersistenceXmlDescriptors
      * @param scanner
      */
-    public static void initializeJpa(List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors,
+    static void initializeJpa(List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors,
             Scanner scanner) {
         final List<PersistenceUnitDescriptor> units = convertPersistenceUnits(parsedPersistenceXmlDescriptors);
         final Map<String, RecordedState> metadata = constructMetadataAdvance(units, scanner);
-        COMPACT_UNITS = new PUStatus(units, metadata);
+
+        persistenceUnits = new PersistenceUnits(units, metadata);
+    }
+
+    static List<PersistenceUnitDescriptor> getPersistenceUnitDescriptors() {
+        checkJPAInitialization();
+        return persistenceUnits.units;
+    }
+
+    static RecordedState getRecordedState(String persistenceUnitName) {
+        checkJPAInitialization();
+        Object key = persistenceUnitName;
+        if (persistenceUnitName == null) {
+            key = NO_NAME_TOKEN;
+        }
+        return persistenceUnits.recordedStates.get(key);
     }
 
     private static List<PersistenceUnitDescriptor> convertPersistenceUnits(
@@ -71,47 +84,28 @@ public final class PersistenceUnitsHolder {
         }
     }
 
-    /**
-     * Used by Shamrock's JPA ResourceProcessor to load the descriptors.
-     */
-    public static List<ParsedPersistenceXmlDescriptor> loadOriginalXMLParsedDescriptors() {
-        // Enforce the persistence.xml configuration to be interpreted literally without
-        // allowing runtime overrides;
-        // (check for the runtime provided properties to be empty as well)
-        Map<Object, Object> configurationOverrides = Collections.emptyMap();
-        List<ParsedPersistenceXmlDescriptor> ret = PersistenceXmlParser.locatePersistenceUnits(configurationOverrides);
-        return ret;
-    }
-
     private static Map<String, RecordedState> constructMetadataAdvance(
             final List<PersistenceUnitDescriptor> parsedPersistenceXmlDescriptors, Scanner scanner) {
-        Map all = new HashMap();
+        Map<String, RecordedState> recordedStates = new HashMap<>();
+
         for (PersistenceUnitDescriptor unit : parsedPersistenceXmlDescriptors) {
             RecordedState m = createMetadata(unit, scanner);
-            Object previous = all.put(unitName(unit), m);
+            Object previous = recordedStates.put(unitName(unit), m);
             if (previous != null) {
                 throw new IllegalStateException("Duplicate persistence unit name: " + unit.getName());
             }
         }
-        return all;
-    }
 
-    static RecordedState getMetadata(String persistenceUnitName) {
-        checkJPAInitialization();
-        Object key = persistenceUnitName;
-        if (persistenceUnitName == null) {
-            key = NO_NAME_TOKEN;
-        }
-        return COMPACT_UNITS.metadata.get(key);
+        return recordedStates;
     }
 
     private static void checkJPAInitialization() {
-        if (COMPACT_UNITS == null) {
+        if (persistenceUnits == null) {
             throw new RuntimeException("JPA not initialized yet by Shamrock: this is likely a bug.");
         }
     }
 
-    private static Object unitName(PersistenceUnitDescriptor unit) {
+    private static String unitName(PersistenceUnitDescriptor unit) {
         String name = unit.getName();
         if (name == null) {
             return NO_NAME_TOKEN;
@@ -124,22 +118,16 @@ public final class PersistenceUnitsHolder {
         return fastBootMetadataBuilder.build();
     }
 
-    // Not a public contract but used by Shamrock
-    public static List<PersistenceUnitDescriptor> getPersistenceUnitDescriptors() {
-        checkJPAInitialization();
-        return COMPACT_UNITS.units;
-    }
-
-    private static class PUStatus {
+    private static class PersistenceUnits {
 
         private final List<PersistenceUnitDescriptor> units;
-        private final Map<String, RecordedState> metadata;
 
-        public PUStatus(final List<PersistenceUnitDescriptor> units, final Map<String, RecordedState> metadata) {
+        private final Map<String, RecordedState> recordedStates;
+
+        public PersistenceUnits(final List<PersistenceUnitDescriptor> units, final Map<String, RecordedState> recordedStates) {
             this.units = units;
-            this.metadata = metadata;
+            this.recordedStates = recordedStates;
         }
-
     }
 
 }

@@ -31,8 +31,8 @@ import io.smallrye.faulttolerance.config.FaultToleranceOperation;
 public class ShamrockFaultToleranceOperationProvider implements FaultToleranceOperationProvider {
 
     @Override
-    public FaultToleranceOperation apply(Method method) {
-        return FaultToleranceOperation.of(method);
+    public FaultToleranceOperation get(Class<?> beanClass, Method method) {
+        return FaultToleranceOperation.of(beanClass, method);
     }
 
 }

@@ -47,10 +47,12 @@ import org.jboss.shamrock.faulttolerance.runtime.ShamrockFaultToleranceOperation
 
 import com.netflix.hystrix.HystrixCircuitBreaker;
 
+import io.smallrye.faulttolerance.DefaultCommandListenersProvider;
 import io.smallrye.faulttolerance.DefaultHystrixConcurrencyStrategy;
 import io.smallrye.faulttolerance.HystrixCommandBinding;
 import io.smallrye.faulttolerance.HystrixCommandInterceptor;
 import io.smallrye.faulttolerance.HystrixInitializer;
+import io.smallrye.faulttolerance.MetricsCollectorFactory;
 
 public class FaultToleranceAnnotationProcessor {
 
@@ -121,7 +123,8 @@ public class FaultToleranceAnnotationProcessor {
         }
         // Register bean classes
         additionalBean.produce(new AdditionalBeanBuildItem(HystrixCommandInterceptor.class, HystrixInitializer.class, DefaultHystrixConcurrencyStrategy.class,
-                ShamrockFaultToleranceOperationProvider.class, ShamrockFallbackHandlerProvider.class));
+                ShamrockFaultToleranceOperationProvider.class, ShamrockFallbackHandlerProvider.class, DefaultCommandListenersProvider.class,
+                MetricsCollectorFactory.class));
     }
 
 }

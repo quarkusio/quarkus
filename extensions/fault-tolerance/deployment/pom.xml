@@ -40,6 +40,10 @@
     </dependency>
     <dependency>
       <groupId>org.jboss.shamrock</groupId>
+      <artifactId>shamrock-metrics-deployment</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.shamrock</groupId>
       <artifactId>shamrock-fault-tolerance-runtime</artifactId>
     </dependency>
     <dependency>

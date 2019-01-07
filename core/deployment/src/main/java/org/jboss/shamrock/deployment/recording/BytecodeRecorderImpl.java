@@ -96,7 +96,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
     private final Map<Class, ProxyFactory<?>> returnValueProxy = new HashMap<>();
     private final IdentityHashMap<Class<?>, String> classProxies = new IdentityHashMap<>();
     private final Map<Class<?>, SubstitutionHolder> substitutions = new HashMap<>();
-    private final Map<Class<?>, NonDefaultConstructorHolder> nonDefaulConstructors = new HashMap<>();
+    private final Map<Class<?>, NonDefaultConstructorHolder> nonDefaultConstructors = new HashMap<>();
     private final String className;
 
 
@@ -121,7 +121,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
     @Override
     public <T> void registerNonDefaultConstructor(Constructor<T> constructor, Function<T, List<Object>> parameters) {
-        nonDefaulConstructors.put(constructor.getDeclaringClass(), new NonDefaultConstructorHolder(constructor, (Function<Object, List<Object>>) parameters));
+        nonDefaultConstructors.put(constructor.getDeclaringClass(), new NonDefaultConstructorHolder(constructor, (Function<Object, List<Object>>) parameters));
     }
 
     public <T> T getRecordingProxy(Class<T> theClass) {
@@ -423,8 +423,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 method.writeArrayValue(out, i, component);
             }
         } else {
-            if (nonDefaulConstructors.containsKey(param.getClass())) {
-                NonDefaultConstructorHolder holder = nonDefaulConstructors.get(param.getClass());
+            if (nonDefaultConstructors.containsKey(param.getClass())) {
+                NonDefaultConstructorHolder holder = nonDefaultConstructors.get(param.getClass());
                 List<Object> params = holder.paramGenerator.apply(param);
                 if (params.size() != holder.constructor.getParameterCount()) {
                     throw new RuntimeException("Unable to serialize " + param + " as the wrong number of parameters were generated for " + holder.constructor);

@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.apache.maven.plugin.logging.Log;
+import org.jboss.shamrock.maven.CreateProjectMojo;
 import org.jboss.shamrock.maven.utilities.MojoUtils;
 
 import java.io.IOException;
@@ -91,7 +92,7 @@ public class Extensions {
                 if (!MojoUtils.hasDependency(model, optional.get().getGroupId(), optional.get().getArtifactId())) {
                     log.info("Adding extension " + optional.get().toCoordinates());
 
-                    if (containsBOM(model)) {
+                    if (containsBOM(model)  && optional.get().getGroupId().startsWith(CreateProjectMojo.PLUGIN_GROUPID)) {
                         model.addDependency(optional.get().toDependency(true));
                     } else {
                         model.addDependency(optional.get().toDependency(false));

@@ -2,21 +2,16 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-
     <parent>
-        <artifactId>shamrock-vertx</artifactId>
+        <artifactId>shamrock-integration-tests-parent</artifactId>
         <groupId>org.jboss.shamrock</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
+    <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-vertx-integration-tests</artifactId>
-    <name>Shamrock - Vert.x - Integration tests</name>
-
-    <properties>
-        <maven.deploy.skip>true</maven.deploy.skip>
-    </properties>
+    <artifactId>shamrock-integration-test-jpa</artifactId>
+    <name>Shamrock - Integration Tests - JPA</name>
 
     <dependencies>
         <dependency>
@@ -26,14 +21,16 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-arc-deployment</artifactId>
+            <artifactId>shamrock-jpa-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-vertx-deployment</artifactId>
+            <artifactId>shamrock-jdbc-h2-deployment</artifactId>
+            <scope>provided</scope>
         </dependency>
 
+        <!-- test dependencies -->
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-junit</artifactId>
@@ -47,6 +44,12 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>${project.groupId}</groupId>
@@ -112,4 +115,5 @@
             </build>
         </profile>
     </profiles>
+
 </project>

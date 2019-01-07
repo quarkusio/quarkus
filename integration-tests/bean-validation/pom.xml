@@ -3,15 +3,16 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>shamrock-jpa</artifactId>
+        <artifactId>shamrock-integration-tests-parent</artifactId>
         <groupId>org.jboss.shamrock</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
+        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-jpa-integration-tests</artifactId>
-    <name>Shamrock - JPA - Integration tests</name>
-
+    <artifactId>shamrock-integration-test-bean-validation</artifactId>
+    <name>Shamrock - Integration Tests - Bean Validation</name>
+    <description>Module that contains Bean Validation related tests</description>
     <dependencies>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
@@ -20,13 +21,20 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jpa-deployment</artifactId>
+            <artifactId>shamrock-bean-validation-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jdbc-h2-deployment</artifactId>
+            <artifactId>shamrock-arc-deployment</artifactId>
             <scope>provided</scope>
+        </dependency>
+
+        <!-- EL implementation -->
+        <dependency>
+           <groupId>org.glassfish</groupId>
+           <artifactId>javax.el</artifactId>
+           <version>3.0.1-b09</version>
         </dependency>
 
         <!-- test dependencies -->
@@ -62,6 +70,14 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- force the locale as we want to explicitly test message interpolation -->
+                    <argLine>-Duser.language=en</argLine>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
@@ -85,6 +101,8 @@
                                     <goal>verify</goal>
                                 </goals>
                                 <configuration>
+                                    <!-- force the locale as we want to explicitly test message interpolation -->
+                                    <argLine>-Duser.language=en</argLine>
                                     <systemProperties>
                                         <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
                                     </systemProperties>
@@ -103,9 +121,17 @@
                                     <goal>native-image</goal>
                                 </goals>
                                 <configuration>
+                                    <reportErrorsAtRuntime>false</reportErrorsAtRuntime>
                                     <cleanupServer>true</cleanupServer>
                                     <enableHttpUrlHandler>true</enableHttpUrlHandler>
+                                    <enableServer>false</enableServer>
+                                    <dumpProxies>false</dumpProxies>
+                                    <!-- Requires Protean Graal fork to work, will fail otherwise
+                                      <enableRetainedHeapReporting>true</enableRetainedHeapReporting>
+                                      <enableCodeSizeReporting>true</enableCodeSizeReporting>
+                                    -->
                                     <graalvmHome>${graalvmHome}</graalvmHome>
+                                    <enableJni>false</enableJni>
                                 </configuration>
                             </execution>
                         </executions>

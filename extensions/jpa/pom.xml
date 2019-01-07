@@ -32,8 +32,6 @@
     <modules>
         <module>deployment</module>
         <module>runtime</module>
-        <module>integrationtests</module>
     </modules>
-
 
 </project>

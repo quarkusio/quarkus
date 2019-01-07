@@ -1,19 +1,21 @@
 package org.jboss.shamrock.maven;
 
+import org.apache.maven.artifact.repository.ArtifactRepository;
+import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
+import org.jboss.shamrock.maven.components.dependencies.Extensions;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
-
-import static org.jboss.shamrock.maven.components.dependencies.Extensions.addExtensions;
 
 @Mojo(name = "add-extension", requiresProject = true)
 public class AddExtensionMojo extends AbstractMojo {
@@ -27,11 +29,26 @@ public class AddExtensionMojo extends AbstractMojo {
     @Parameter(property = "extensions")
     private List<String> extensions;
 
+    /**
+     * Remote repositories used for the project.
+     */
+    @Parameter(defaultValue = "${project.remoteArtifactRepositories}", required = true, readonly = true)
+    private List<ArtifactRepository> repositories;
+
+    /**
+     * The current build session instance. This is used for
+     * plugin manager API calls.
+     */
+    @Parameter(defaultValue = "${session}", readonly = true, required = true)
+    private MavenSession session;
+
+    @Component
+    private Extensions ext;
 
     @Override
     public void execute() throws MojoExecutionException {
         Model model = project.getOriginalModel().clone();
-        if (addExtensions(model, extensions, getLog())) {
+        if (ext.addExtensions(model, extensions, session, repositories, getLog())) {
             File pomFile = project.getFile();
             save(pomFile, model);
         }

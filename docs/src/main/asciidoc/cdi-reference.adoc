@@ -1,4 +1,4 @@
-= Contexts and Dependency Injection
+= {project-name} - Contexts and Dependency Injection
 
 {project-name} DI solution is based on the http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[Contexts and Dependency Injection for Java 2.0, window="_blank"] specification.
 However, it is not a full CDI implementation verified by the TCK.

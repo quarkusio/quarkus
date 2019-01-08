@@ -1,4 +1,4 @@
-= How do we measure performance
+= {project-name} - Measuring Performance
 
 This guide covers:
 

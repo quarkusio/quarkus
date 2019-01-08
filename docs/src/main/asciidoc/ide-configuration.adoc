@@ -1,4 +1,4 @@
-= Developing with {project-name}
+= {project-name} - Project Scaffolding and IDE
 
 [[project-creation]]
 == Creating a new project

@@ -1,4 +1,4 @@
-= Schedule periodic tasks
+= {project-name} - Schedule Periodic Tasks
 
 Modern applications often need to run specific tasks periodically.
 In this guide, you learn how to schedule periodic tasks.

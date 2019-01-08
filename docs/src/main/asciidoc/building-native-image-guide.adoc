@@ -1,4 +1,4 @@
-= Building a native image
+= {project-name} - Building a Native Image
 
 This guide covers:
 

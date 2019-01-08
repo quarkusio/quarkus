@@ -1,4 +1,4 @@
-= Executing actions on application startup and termination
+= {project-name} - Application Initialization and Termination
 
 You often need to execute custom actions when the application starts and clean up everything when the application stops.
 This guide explains how to:

@@ -1,4 +1,4 @@
-= Using Hibernate ORM and JPA
+= {project-name} - Using Hibernate ORM and JPA
 :config-file: microprofile-config.properties
 
 Hibernate ORM is the de facto JPA implementation and offers you the full breath of an Object Relational Mapper.

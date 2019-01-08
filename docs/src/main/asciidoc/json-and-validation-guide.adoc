@@ -1,4 +1,4 @@
-= Using JSON and Validation
+= {project-name} - Using JSON and Validation
 
 JSON is now the _lingua franca_ between microservices.
 In this guide, we see how you can consume and produce JSON payloads.

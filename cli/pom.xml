@@ -40,6 +40,11 @@
             <artifactId>aesh</artifactId>
             <version>1.10</version>
         </dependency>
+	<dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-model</artifactId>
+            <version>3.6.0</version>
+        </dependency>
 
     </dependencies>
 

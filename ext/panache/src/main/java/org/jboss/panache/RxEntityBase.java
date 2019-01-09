@@ -1,5 +1,7 @@
 package org.jboss.panache;
 
+import java.util.Objects;
+
 import org.jboss.protean.arc.Arc;
 
 import io.reactiverse.reactivex.pgclient.PgPool;
@@ -93,6 +95,22 @@ public abstract class RxEntityBase<T extends RxEntityBase<?>> {
                 .map(row -> modelInfo.fromRow(row));
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if(obj == null)
+            return false;
+        if(obj == this)
+            return true;
+        if(obj.getClass() != getClass())
+            return false;
+        return Objects.equals(_getId(), ((RxEntityBase)obj)._getId());
+    }
+    
+    @Override
+    public int hashCode() {
+        return Objects.hash(_getId());
+    }
+    
     public interface RxModelInfo<T extends RxEntityBase<?>> {
         Class<T> getEntityClass();
         String getTableName();

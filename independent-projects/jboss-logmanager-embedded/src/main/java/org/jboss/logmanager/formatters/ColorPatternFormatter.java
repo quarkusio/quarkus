@@ -33,33 +33,51 @@ import org.wildfly.common.format.Printf;
  */
 public class ColorPatternFormatter extends PatternFormatter {
 
-    private final Printf printf = new ColorPrintf();
+    private final Printf printf;
 
     public ColorPatternFormatter() {
+        if(isColor())
+            printf = new ColorPrintf();
+        else
+            printf = new Printf();
     }
 
     public ColorPatternFormatter(final String pattern) {
-        super();
+        this();
         setPattern(pattern);
     }
 
     static final boolean trueColor = determineTrueColor();
+    static final boolean isColor = determineColor();
 
     static boolean determineTrueColor() {
         final String colorterm = System.getenv("COLORTERM");
         return (colorterm != null && (colorterm.contains("truecolor") || colorterm.contains("24bit")));
     }
 
+    static boolean determineColor() {
+        final String colorterm = System.getenv("COLORTERM");
+        return (colorterm != null && !colorterm.isEmpty());
+    }
+
     static boolean isTrueColor() {
         return trueColor;
     }
 
+    static boolean isColor() {
+        return isColor;
+    }
+
     public void setSteps(final FormatStep[] steps) {
-        FormatStep[] colorSteps = new FormatStep[steps.length];
-        for (int i = 0; i < steps.length; i++) {
-            colorSteps[i] = colorize(steps[i]);
+        if(isColor()) {
+            FormatStep[] colorSteps = new FormatStep[steps.length];
+            for (int i = 0; i < steps.length; i++) {
+                colorSteps[i] = colorize(steps[i]);
+            }
+            super.setSteps(colorSteps);
+        }else {
+            super.setSteps(steps);
         }
-        super.setSteps(colorSteps);
     }
 
     private FormatStep colorize(final FormatStep step) {
@@ -118,6 +136,8 @@ public class ColorPatternFormatter extends PatternFormatter {
     }
 
     private String colorizePlain(final String str) {
+        if(!isColor())
+            return str;
         return ColorUtil.endFgColor(ColorUtil.startFgColor(new StringBuilder(), isTrueColor(), 0xff, 0xff, 0xff).append(str)).toString();
     }
 
@@ -219,6 +239,7 @@ final class TrueColorHolder {
     private TrueColorHolder() {}
 
     static final boolean trueColor = ColorPatternFormatter.determineTrueColor();
+    static final boolean isColor = ColorPatternFormatter.determineColor();
 }
 
 @TargetClass(ColorPatternFormatter.class)
@@ -227,8 +248,16 @@ final class Target_ColorPatternFormatter {
     @Delete
     static boolean trueColor = false;
 
+    @Delete
+    static boolean isColor = false;
+
     @Substitute
     static boolean isTrueColor() {
         return TrueColorHolder.trueColor;
+    }
+
+    @Substitute
+    static boolean isColor() {
+        return TrueColorHolder.isColor;
     }
 }

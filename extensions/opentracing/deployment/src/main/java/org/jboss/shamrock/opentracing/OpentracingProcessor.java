@@ -28,6 +28,7 @@ import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.annotations.ExecutionTime;
 import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
+import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveMethodBuildItem;
 import org.jboss.shamrock.jaxrs.JaxrsProviderBuildItem;
 import org.jboss.shamrock.opentracing.runtime.ShamrockTracingDynamicFeature;
@@ -55,9 +56,11 @@ public class OpentracingProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void setupFilter(BuildProducer<JaxrsProviderBuildItem> providers,
                      BuildProducer<FilterBuildItem> filterProducer,
-                     TracingDeploymentTemplate tracing) {
+                     TracingDeploymentTemplate tracing,
+                     BuildProducer<FeatureBuildItem> feature) {
 
-        //TODO: this needs to be a BuildItem so that more than one can be registered
+        feature.produce(new FeatureBuildItem(FeatureBuildItem.MP_OPENTRACING));
+        
         providers.produce(new JaxrsProviderBuildItem(ShamrockTracingDynamicFeature.class.getName()));
 
         FilterBuildItem filterInfo = new FilterBuildItem("tracingFilter", SpanFinishingFilter.class.getName());

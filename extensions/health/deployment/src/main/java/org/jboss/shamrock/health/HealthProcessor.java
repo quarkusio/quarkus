@@ -22,6 +22,7 @@ import java.util.List;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
+import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.health.runtime.HealthServlet;
 import org.jboss.shamrock.undertow.ServletBuildItem;
 
@@ -49,6 +50,11 @@ class HealthProcessor {
         return Arrays.asList(
                 new AdditionalBeanBuildItem(SmallRyeHealthReporter.class),
                 new AdditionalBeanBuildItem(HealthServlet.class));
+    }
+    
+    @BuildStep
+    FeatureBuildItem feature() {
+        return new FeatureBuildItem(FeatureBuildItem.MP_HEALTH);
     }
 
 }

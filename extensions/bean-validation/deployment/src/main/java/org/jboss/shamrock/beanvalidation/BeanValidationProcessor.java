@@ -45,6 +45,7 @@ import org.jboss.shamrock.beanvalidation.runtime.ValidatorTemplate;
 import org.jboss.shamrock.beanvalidation.runtime.interceptor.MethodValidationInterceptor;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
+import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
 import org.jboss.shamrock.deployment.builditem.SystemPropertyBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveFieldBuildItem;
@@ -89,8 +90,11 @@ class BeanValidationProcessor {
                       BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
                       BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
                       BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformers,
-                      CombinedIndexBuildItem combinedIndexBuildItem) throws Exception {
+                      CombinedIndexBuildItem combinedIndexBuildItem,
+                      BuildProducer<FeatureBuildItem> feature) throws Exception {
 
+        feature.produce(new FeatureBuildItem(FeatureBuildItem.BEAN_VALIDATION));
+        
         IndexView indexView = combinedIndexBuildItem.getIndex();
 
         Set<DotName> consideredAnnotations = new HashSet<>();

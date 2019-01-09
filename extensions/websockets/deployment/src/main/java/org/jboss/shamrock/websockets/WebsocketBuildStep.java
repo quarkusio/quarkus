@@ -35,6 +35,7 @@ import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.annotations.ExecutionTime;
 import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
+import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.ServiceStartBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.undertow.ServletContextAttributeBuildItem;
@@ -46,7 +47,6 @@ import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
 
 public class WebsocketBuildStep {
 
-
     private static final DotName SERVER_ENDPOINT = DotName.createSimple(ServerEndpoint.class.getName());
     private static final DotName CLIENT_ENDPOINT = DotName.createSimple(ClientEndpoint.class.getName());
     private static final DotName SERVER_APPLICATION_CONFIG = DotName.createSimple(ServerApplicationConfig.class.getName());
@@ -55,8 +55,10 @@ public class WebsocketBuildStep {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    public ServletContextAttributeBuildItem deploy(final CombinedIndexBuildItem indexBuildItem,
-                                                   WebsocketTemplate template, BuildProducer<ReflectiveClassBuildItem> reflection) throws Exception {
+    public ServletContextAttributeBuildItem deploy(final CombinedIndexBuildItem indexBuildItem, WebsocketTemplate template,
+            BuildProducer<ReflectiveClassBuildItem> reflection, BuildProducer<FeatureBuildItem> feature) throws Exception {
+
+        feature.produce(new FeatureBuildItem(FeatureBuildItem.WEBSOCKET));
 
         final Set<String> annotatedEndpoints = new HashSet<>();
         final Set<String> endpoints = new HashSet<>();

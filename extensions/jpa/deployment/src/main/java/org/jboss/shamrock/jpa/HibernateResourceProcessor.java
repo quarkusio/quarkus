@@ -48,6 +48,7 @@ import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.BeanContainerBuildItem;
 import org.jboss.shamrock.deployment.builditem.BytecodeTransformerBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
+import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedResourceBuildItem;
 import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
@@ -177,8 +178,11 @@ public final class HibernateResourceProcessor {
     public BeanContainerListenerBuildItem build(RecorderContext recorder, JPADeploymentTemplate template,
                                                 List<PersistenceUnitDescriptorBuildItem> descItems, CombinedIndexBuildItem index,
                                                 BuildProducer<BytecodeTransformerBuildItem> transformers,
-                                                BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws Exception {
+                                                BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+                                                BuildProducer<FeatureBuildItem> feature) throws Exception {
 
+        feature.produce(new FeatureBuildItem(FeatureBuildItem.JPA));
+        
         List<ParsedPersistenceXmlDescriptor> descriptors = descItems.stream().map(PersistenceUnitDescriptorBuildItem::getDescriptor).collect(Collectors.toList());
         // Hibernate specific reflective classes; these are independent from the model and configuration details.
         HibernateReflectiveNeeds.registerStaticReflectiveNeeds(reflectiveClass);

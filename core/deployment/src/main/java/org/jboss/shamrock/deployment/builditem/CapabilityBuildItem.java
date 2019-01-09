@@ -17,7 +17,13 @@
 package org.jboss.shamrock.deployment.builditem;
 
 import org.jboss.builder.item.MultiBuildItem;
+import org.jboss.shamrock.deployment.Capabilities;
 
+/**
+ * Registers an internal feature.
+ * 
+ * @see Capabilities#isCapabilityPresent(String)
+ */
 public final class CapabilityBuildItem extends MultiBuildItem {
 
     private final String name;

@@ -24,8 +24,7 @@
    <packaging>pom</packaging>
 
    <properties>
-      <!-- TODO: unify version properties names - version.foo-name -->
-      <version.org.jandex>2.1.0.Beta3</version.org.jandex>
+      <jandex.version>2.1.0.Beta3</jandex.version>
       <resteasy.version>4.0.0.Beta6</resteasy.version>
       <opentracing.version>0.31.0</opentracing.version>
       <opentracing-jaxrs.version>0.3.1</opentracing-jaxrs.version>
@@ -816,7 +815,7 @@
          <dependency>
             <groupId>org.jboss</groupId>
             <artifactId>jandex</artifactId>
-            <version>${version.org.jandex}</version>
+            <version>${jandex.version}</version>
          </dependency>
 
          <dependency>

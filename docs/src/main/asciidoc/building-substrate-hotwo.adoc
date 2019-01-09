@@ -1,4 +1,4 @@
-== Building a custom SubstrateVM
+== {project-name} - Building a Custom SubstrateVM
 
 === Prerequisites
 

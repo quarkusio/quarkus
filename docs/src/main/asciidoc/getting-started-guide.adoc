@@ -1,4 +1,4 @@
-= Creating your first {project-name} application
+= {project-name} - Creating Your First Application
 
 :toc: macro
 :toclevels: 4
@@ -76,6 +76,18 @@ Add the Shamrock Maven plugin to the `pom.xml` file:
     <surefire.version>{surefire-version}</surefire.version>
 </properties>
 
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-bom</artifactId>
+            <version>${shamrock.version}</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+
 <build>
     <plugins>
         <plugin>
@@ -108,19 +120,19 @@ As we are going to create a JAX-RS endpoint, you also need to add the following 
     <dependency>
         <groupId>org.jboss.shamrock</groupId>
         <artifactId>shamrock-jaxrs-deployment</artifactId>
-        <scope>provided</scope>
-        <version>${shamrock.version}</version>
     </dependency>
     <dependency>
         <groupId>org.jboss.shamrock</groupId>
         <artifactId>shamrock-arc-deployment</artifactId>
-        <scope>provided</scope>
-        <version>${shamrock.version}</version>
     </dependency>
 </dependencies>
 ----
 
-Arc is a CDI-lite implementation providing dependency injection.
+[NOTE]
+.What's ArC?
+====
+ArC is a CDI-based dependency injection solution - see also link:cdi-reference.html[Contexts and Dependency Injection].
+====
 
 == Creating the Application class
 
@@ -170,45 +182,26 @@ Use: `mvn compile shamrock:dev`:
 
 [source, text]
 ----
-[INFO]
 [INFO] --------------------< org.acme:shamrock-quickstart >--------------------
 [INFO] Building shamrock-quickstart 1.0-SNAPSHOT
 [INFO] --------------------------------[ jar ]---------------------------------
-[INFO]
+[INFO] 
 [INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ shamrock-quickstart ---
-[WARNING] Using platform encoding (UTF-8 actually) to copy filtered resources, i.e. build is platform dependent!
-[INFO] Copying 0 resource
-[INFO]
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /opt/source/protean/quickstarts/getting-started/src/main/resources
+[INFO] 
 [INFO] --- maven-compiler-plugin:3.1:compile (default-compile) @ shamrock-quickstart ---
 [INFO] Nothing to compile - all classes are up to date
-[INFO]
-[INFO] --- shamrock-maven-plugin:....:dev (default-cli) @ shamrock-quickstart ---
-Nov 23, 2018 10:48:57 AM org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate startUndertowEagerly
-INFO: Starting Undertow on port 8080
-Nov 23, 2018 10:48:57 AM org.xnio.Xnio <clinit>
-INFO: XNIO version 3.3.8.Final
-Nov 23, 2018 10:48:57 AM org.xnio.nio.NioXnio <clinit>
-INFO: XNIO NIO Implementation Version 3.3.8.Final
-Nov 23, 2018 10:48:57 AM org.jboss.shamrock.deployment.ShamrockAugmentor run
-INFO: Beginning shamrock augmentation
-Nov 23, 2018 10:48:57 AM org.jboss.threads.Version <clinit>
-INFO: JBoss Threads version 3.0.0.Alpha3
-Nov 23, 2018 10:48:57 AM org.jboss.protean.arc.processor.BeanDeployment <init>
-INFO: Build deployment created in 24 ms
-Nov 23, 2018 10:48:57 AM org.jboss.protean.arc.processor.BeanDeployment init
-INFO: Bean deployment initialized in 7 ms
-Nov 23, 2018 10:48:57 AM org.jboss.protean.arc.processor.BeanProcessor process
-INFO: 27 resources generated/written in 48 ms
-Nov 23, 2018 10:48:57 AM org.jboss.shamrock.deployment.ShamrockAugmentor run
-INFO: Shamrock augmentation completed in 382ms
-Nov 23, 2018 10:48:57 AM org.jboss.protean.arc.ArcContainerImpl init
-INFO: ArC DI container initialized [beans=12, observers=0]
-Nov 23, 2018 10:48:57 AM org.jboss.resteasy.plugins.server.servlet.ConfigurationBootstrap createDeployment
-WARN: RESTEASY002175: The use of javax.ws.rs.core.Application is deprecated, please use javax.ws.rs.Application as a context-param instead
-Nov 23, 2018 10:48:58 AM org.jboss.resteasy.core.ResteasyDeploymentImpl processApplication
-INFO: RESTEASY002225: Deploying javax.ws.rs.core.Application: class org.acme.quickstart.MyApplication
-Nov 23, 2018 10:48:58 AM org.jboss.shamrock.runtime.Timing printStartupTime
-INFO: Shamrock started in 929.915ms
+[INFO] 
+[INFO] --- shamrock-maven-plugin:0.4.0:dev (default-cli) @ shamrock-quickstart ---
+INFO  [o.j.s.u.r.UndertowDeploymentTemplate] (main) Starting Undertow on port 8080
+INFO  [o.xnio] (main) XNIO version 3.6.5.Final
+INFO  [o.x.nio] (main) XNIO NIO Implementation Version 3.6.5.Final
+INFO  [o.j.threads] (main) JBoss Threads version 3.0.0.Alpha4
+INFO  [o.j.s.d.ShamrockAugmentor] (main) Beginning shamrock augmentation
+INFO  [o.j.s.d.ShamrockAugmentor] (main) Shamrock augmentation completed in 322ms
+INFO  [o.j.r.r.i18n] (main) RESTEASY002225: Deploying javax.ws.rs.core.Application: class org.acme.quickstart.MyApplication
+INFO  [o.j.shamrock] (main) Shamrock started in 697.982ms
 ----
 
 Once started, you can request the provided endpoint:

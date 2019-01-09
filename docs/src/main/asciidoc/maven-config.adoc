@@ -1,4 +1,4 @@
-= {project-name} Maven repositories
+= {project-name} - Maven Repositories
 
 // tag::repositories[]
 {project-name} releases are not yet available on Maven Central, so you need to configure the repositories.

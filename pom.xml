@@ -69,10 +69,12 @@
         <module>maven</module>
 
         <!-- Misc. -->
+        <module>cli</module>
         <module>docs</module>
 
         <!-- Do not add modules after war-launcher. JVM state will fail CI -->
         <module>war-launcher</module>
+        <module>cli-templates</module>
     </modules>
     <build>
         <pluginManagement>

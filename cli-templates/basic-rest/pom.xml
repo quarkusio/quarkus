@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <properties>
+        <shamrock.version>${project.version}</shamrock.version>
+    </properties>
+
+    <groupId>org.jboss.shamrock.cli-templates</groupId>
+    <artifactId>basic-rest</artifactId>
+    <version>1.0.0.Alpha1-SNAPSHOT</version>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-jaxrs-deployment</artifactId>
+            <version>${shamrock.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-arc-deployment</artifactId>
+            <version>${shamrock.version}</version>
+        </dependency>
+    </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-maven-plugin</artifactId>
+                <version>${shamrock.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>native-image</id>
+            <activation>
+                <property>
+                    <name>!no-native</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jboss.shamrock</groupId>
+                        <artifactId>shamrock-maven-plugin</artifactId>
+                        <version>${shamrock.version}</version>
+                        <executions>
+                            <execution>
+                                <id>native-image</id>
+                                <goals>
+                                    <goal>native-image</goal>
+                                </goals>
+                                <configuration>
+                                    <cleanupServer>true</cleanupServer>
+                                    <enableHttpUrlHandler>true</enableHttpUrlHandler>
+                                    <graalvmHome>${graalvmHome}</graalvmHome>
+                                    <enableJni>false</enableJni>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+</project>

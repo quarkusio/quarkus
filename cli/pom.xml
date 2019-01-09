@@ -28,9 +28,9 @@
     <properties>
         <test.level>INFO</test.level>
 
-      <!-- maven-compiler-plugin -->
-      <maven.compiler.target>1.8</maven.compiler.target>
-      <maven.compiler.source>1.8</maven.compiler.source>
+        <!-- maven-compiler-plugin -->
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.source>1.8</maven.compiler.source>
     </properties>
 
     <dependencies>
@@ -40,15 +40,19 @@
             <artifactId>aesh</artifactId>
             <version>1.10</version>
         </dependency>
-	<dependency>
+        <dependency>
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-model</artifactId>
             <version>3.6.0</version>
         </dependency>
-
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -79,26 +83,26 @@
                     </execution>
                 </executions>
             </plugin>
-	    <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-shade-plugin</artifactId>
-              <executions>
-                <execution>
-                  <phase>package</phase>
-                  <goals>
-                    <goal>shade</goal>
-                  </goals>
-                  <configuration>
-                    <artifactSet>
-                      <excludes>
-                        <exclude>org.fusesource.jansi:jansi</exclude>
-                        <exclude>org.jboss.shrinkwrap.resolver:shrinkwrap-resolver-depchain</exclude>
-                        <exclude>junit:junit</exclude>
-                      </excludes>
-                    </artifactSet>
-                  </configuration>
-                </execution>
-              </executions>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <artifactSet>
+                                <excludes>
+                                    <exclude>org.fusesource.jansi:jansi</exclude>
+                                    <exclude>org.jboss.shrinkwrap.resolver:shrinkwrap-resolver-depchain</exclude>
+                                    <exclude>junit:junit</exclude>
+                                </excludes>
+                            </artifactSet>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

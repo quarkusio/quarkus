@@ -55,8 +55,33 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
         //Try a JPA named query:
         verifyJPANamedQuery(entityManagerFactory);
 
+        verifyHqlFetch(entityManagerFactory);
+
         deleteAllPerson(entityManagerFactory);
 
+    }
+
+    private static void verifyHqlFetch(EntityManagerFactory emf) {
+        EntityManager em = emf.createEntityManager();
+        try {
+            EntityTransaction transaction = em.getTransaction();
+            try {
+                transaction.begin();
+
+                em.createQuery( "from Person p left join fetch p.address a" ).getResultList();
+
+                transaction.commit();
+            }
+            catch (Exception e) {
+                if ( transaction.isActive() ) {
+                    transaction.rollback();
+                }
+                throw e;
+            }
+        }
+        finally {
+            em.close();
+        }
     }
 
     private static void verifyJPANamedQuery(final EntityManagerFactory emf) {

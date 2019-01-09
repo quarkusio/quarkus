@@ -66,6 +66,8 @@ final class Execution {
         buildTargetName = builder.getBuildTargetName();
         executor = executorBuilder.build();
         lastStepCount.set(builder.getChain().getEndStepCount());
+        if(lastStepCount.get() == 0)
+            done = true;
     }
 
     List<Diagnostic> getDiagnostics() {

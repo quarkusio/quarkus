@@ -29,11 +29,11 @@ import io.reactivex.Single;
 /**
  * Various tests covering Panache functionality. All tests should work in both standard JVM and SubstrateVM.
  */
-@Path("/test")
+@Path("test")
 public class TestEndpoint {
 
     @GET
-    @Path("/model")
+    @Path("model")
     @Transactional
     public String testModel() {
         List<Person> persons = Person.findAll();
@@ -58,7 +58,7 @@ public class TestEndpoint {
     }
 
     @GET
-    @Path("/rxmodel")
+    @Path("rxmodel")
     public Single<String> testRxModel() {
         return RxPerson.<RxPerson>findAll().toList()
             .flatMap(persons -> {

@@ -18,9 +18,15 @@ package org.jboss.shamrock.deployment.logging;
 
 import java.io.Console;
 import java.io.File;
+import java.io.InputStream;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.function.Function;
 import java.util.logging.ErrorManager;
 import java.util.logging.Formatter;
@@ -59,6 +65,7 @@ import org.objectweb.asm.Opcodes;
 public final class LoggingResourceProcessor {
 
     private static final String GENERATED_CONFIGURATOR = "org/jboss/logmanager/GeneratedConfigurator";
+    private static final String INHERIT = "inherit";
 
     @Inject
     BuildProducer<GeneratedClassBuildItem> generatedClass;
@@ -355,7 +362,7 @@ public final class LoggingResourceProcessor {
 
     private ResultHandle getLevelFor(final BytecodeCreator bc, final String levelName) {
         switch (levelName) {
-            case "inherit":
+            case INHERIT:
                 return bc.loadNull();
             case "FATAL":
             case "ERROR":

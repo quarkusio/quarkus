@@ -16,7 +16,14 @@
 
 package org.jboss.shamrock.runner;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 
@@ -43,37 +50,42 @@ public class RuntimeLoggingConfigurator implements EmbeddedConfigurator {
     @Override
     public Level getLevelOf(final String loggerName) {
         Config config = getConfig();
+
         Optional<String> level = config.getOptionalValue("shamrock.log.category." + loggerName + ".level", String.class);
         if (level.isPresent()) {
             return Level.parse(level.get());
         }
-        level = config.getOptionalValue("shamrock.log.level", String.class);
-        if (level.isPresent()) {
-            switch (level.get()) {
-                case "FATAL":
-                    return org.jboss.logmanager.Level.FATAL;
-                case "ERROR":
-                    return org.jboss.logmanager.Level.ERROR;
-                case "WARN":
-                    return org.jboss.logmanager.Level.WARN;
-                case "INFO":
-                    return org.jboss.logmanager.Level.INFO;
-                case "DEBUG":
-                    return org.jboss.logmanager.Level.DEBUG;
-                case "TRACE":
-                    return org.jboss.logmanager.Level.TRACE;
-                default:
-                    return org.jboss.logmanager.Level.parse((level.get()));
+        if(loggerName.isEmpty()) {
+            level = config.getOptionalValue("shamrock.log.level", String.class);
+            if (level.isPresent()) {
+                switch (level.get()) {
+                    case "FATAL":
+                        return org.jboss.logmanager.Level.FATAL;
+                    case "ERROR":
+                        return org.jboss.logmanager.Level.ERROR;
+                    case "WARN":
+                        return org.jboss.logmanager.Level.WARN;
+                    case "INFO":
+                        return org.jboss.logmanager.Level.INFO;
+                    case "DEBUG":
+                        return org.jboss.logmanager.Level.DEBUG;
+                    case "TRACE":
+                        return org.jboss.logmanager.Level.TRACE;
+                    default:
+                        return org.jboss.logmanager.Level.parse((level.get()));
+                }
             }
+            return Level.INFO;
+        } else {
+            return null;
         }
-        return Level.INFO;
     }
 
     @Override
     public Handler[] getHandlersOf(final String loggerName) {
         Config config = getConfig();
         String format = config.getOptionalValue("shamrock.log.console.format", String.class)
-                .orElse("%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c{1.}] (%t) %s%e%n");
+                .orElse("%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n");
         boolean color = config.getOptionalValue("shamrock.log.console.format", Boolean.class)
                 .orElse(true);
 

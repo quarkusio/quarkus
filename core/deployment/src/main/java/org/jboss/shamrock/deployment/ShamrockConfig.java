@@ -57,7 +57,7 @@ public final class ShamrockConfig extends SimpleBuildItem {
         Set<String> props = new HashSet<>();
         for (String i : ConfigProvider.getConfig().getPropertyNames()) {
             if (i.startsWith(prefix)) {
-                int idex = i.indexOf('.', prefix.length() + 1);
+                int idex = i.lastIndexOf('.');
                 if (idex == -1) {
                     props.add(i.substring(prefix.length() + 1));
                 } else {

@@ -244,21 +244,6 @@ public class AugmentPhase implements AppCreationPhase, AugmentOutcome, RunnerJar
     }
 
     private void doProcess(AppCreationContext ctx) throws AppCreatorException {
-        //first lets look for some config, as it is not on the current class path
-        //and we need to load it to run the build process
-        Path config = appClassesDir.resolve("META-INF").resolve("microprofile-config.properties");
-        if(Files.exists(config)) {
-            try {
-                Config built = SmallRyeConfigProviderResolver.instance().getBuilder()
-                        .addDefaultSources()
-                        .addDiscoveredConverters()
-                        .addDiscoveredSources()
-                        .withSources(new PropertiesConfigSource(config.toUri().toURL())).build();
-                SmallRyeConfigProviderResolver.instance().registerConfig(built, Thread.currentThread().getContextClassLoader());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
 
         final AppArtifactResolver depResolver = ctx.getArtifactResolver();
         final List<AppDependency> appDeps = depResolver.collectDependencies(ctx.getAppArtifact());
@@ -303,6 +288,7 @@ public class AugmentPhase implements AppCreationPhase, AugmentOutcome, RunnerJar
 
                 }
             }
+
             if (!problems.isEmpty()) {
                 //TODO: add a config option to just log an error instead
                 throw new AppCreatorException(problems.toString());
@@ -365,6 +351,23 @@ public class AugmentPhase implements AppCreationPhase, AugmentOutcome, RunnerJar
                 cpCopy.addAll(classPathUrls);
 
                 URLClassLoader runnerClassLoader = new URLClassLoader(cpCopy.toArray(new URL[0]), getClass().getClassLoader());
+
+                //first lets look for some config, as it is not on the current class path
+                //and we need to load it to run the build process
+                Path config = appClassesDir.resolve("META-INF").resolve("microprofile-config.properties");
+                if(Files.exists(config)) {
+                    try {
+                        Config built = SmallRyeConfigProviderResolver.instance().getBuilder()
+                                .forClassLoader(runnerClassLoader)
+                                .addDefaultSources()
+                                .addDiscoveredConverters()
+                                .addDiscoveredSources()
+                                .withSources(new PropertiesConfigSource(config.toUri().toURL())).build();
+                        SmallRyeConfigProviderResolver.instance().registerConfig(built, Thread.currentThread().getContextClassLoader());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
                 final Path wiringClassesDirectory = wiringClassesDir;
                 ClassOutput classOutput = new ClassOutput() {
                     @Override

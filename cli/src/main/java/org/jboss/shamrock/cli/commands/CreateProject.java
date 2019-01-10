@@ -1,7 +1,6 @@
 package org.jboss.shamrock.cli.commands;
 
 
-import org.aesh.utils.Config;
 import org.apache.maven.model.Activation;
 import org.apache.maven.model.ActivationProperty;
 import org.apache.maven.model.Build;
@@ -16,11 +15,15 @@ import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.codehaus.plexus.util.xml.Xpp3DomBuilder;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.io.Writer;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -30,6 +33,7 @@ import java.util.Properties;
  */
 public class CreateProject {
 
+    private File root;
     private final String groupId;
     private final String artifactId;
     private final String version;
@@ -38,13 +42,14 @@ public class CreateProject {
     public static final String SHAMROCK_VERSION_PROPERTY_NAME = "shamrock.version";
     private static final String SHAMROCK_VERSION_VARIABLE = "${"+ SHAMROCK_VERSION_PROPERTY_NAME +"}";
 
-    public CreateProject(String groupId, String artifactId, String version) {
+    public CreateProject(final File file, String groupId, String artifactId, String version) {
+        root = file;
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.version = version;
     }
 
-    public boolean doCreateProject(File root) {
+    public boolean doCreateProject() {
         if(root.exists() && !root.isDirectory()) {
             System.out.println("Project root needs to either not exist or be a directory");
             return false;
@@ -57,10 +62,11 @@ public class CreateProject {
             }
         }
 
-        File pom = new File(root+ Config.getPathSeparator()+"pom.xml");
+        File pom = new File(root + "/pom.xml");
 
         try {
-            createPom(pom);
+//            createPom(pom);
+            writeProjectFiles();
         }
         catch(IOException e) {
             e.printStackTrace();
@@ -69,9 +75,34 @@ public class CreateProject {
         return true;
     }
 
+    private void writeProjectFiles() throws IOException {
+        //  Note:  this current approach is terrible.  I know.  I want to get everything else working and then figure out a nicer way of
+        //  doing discovery of template resources.
+
+        final InputStream stream = getClass().getResourceAsStream("/template-contents");
+        try(final BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
+            String line;
+            while((line = reader.readLine()) != null) {
+                final String name = "./basic-rest/";
+                if(line.startsWith(name)) {
+                    writeResource(name, line);
+                }
+            }
+        }
+    }
+
+    private void writeResource(final String name, final String path) throws IOException {
+        final File outputFile = new File(root, path.replace(name, ""));
+        outputFile.getParentFile().mkdirs();
+        try(final InputStream resource = getClass().getResourceAsStream("/templates/" + path)) {
+            java.nio.file.Files.copy(resource, outputFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
     private boolean createPom(File pom) throws IOException {
 
         Model model = new Model();
+
         Writer writer = new FileWriter(pom);
 
         setGroupArtifactAndVersion(model);
@@ -131,6 +162,7 @@ public class CreateProject {
         Properties properties = new Properties();
         properties.put(SHAMROCK_VERSION_PROPERTY_NAME, SHAMROCK_VERSION);
         properties.put("shamrock-maven-plugin.version", SHAMROCK_VERSION);
+        model.setProperties(properties);
     }
 
 

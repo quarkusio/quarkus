@@ -20,7 +20,7 @@ public class ProteanCli {
                                          .commandRegistry(AeshCommandRegistryBuilder.builder().command(ProteanCommand.class).create())
                                          .build();
 
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder("protean ");
         if (args.length == 1) {
             sb.append(args[0]);
         }

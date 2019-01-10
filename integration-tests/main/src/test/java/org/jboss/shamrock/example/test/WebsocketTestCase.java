@@ -41,7 +41,7 @@ public class WebsocketTestCase {
         final URI uri = new URI("http://localhost:8080/echo");
 
         LinkedBlockingDeque<String> message = new LinkedBlockingDeque<>();
-        ContainerProvider.getWebSocketContainer().connectToServer(new Endpoint() {
+        Session session = ContainerProvider.getWebSocketContainer().connectToServer(new Endpoint() {
             @Override
             public void onOpen(Session session, EndpointConfig endpointConfig) {
                 session.addMessageHandler(new MessageHandler.Whole<String>() {
@@ -54,7 +54,10 @@ public class WebsocketTestCase {
             }
         }, ClientEndpointConfig.Builder.create().build(), uri);
 
-
-        Assert.assertEquals("hello", message.poll(20, TimeUnit.SECONDS));
+        try {
+            Assert.assertEquals("hello", message.poll(20, TimeUnit.SECONDS));
+        } finally {
+            session.close();
+        }
     }
 }

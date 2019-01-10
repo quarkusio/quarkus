@@ -24,8 +24,7 @@
    <packaging>pom</packaging>
 
    <properties>
-      <!-- TODO: unify version properties names - version.foo-name -->
-      <version.org.jandex>2.1.0.Beta3</version.org.jandex>
+      <jandex.version>2.1.0.Beta3</jandex.version>
       <resteasy.version>4.0.0.Beta6</resteasy.version>
       <opentracing.version>0.31.0</opentracing.version>
       <opentracing-jaxrs.version>0.3.1</opentracing-jaxrs.version>
@@ -45,12 +44,12 @@
       <smallrye-reactive-streams-operators.version>0.4.0</smallrye-reactive-streams-operators.version>
       <javax.activation.version>1.1.1</javax.activation.version>
       <javax.inject.version>1</javax.inject.version>
-      <javax.annotation-api.version>1.3</javax.annotation-api.version>
+      <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
       <jboss-classfilewriter.version>1.2.3.Final</jboss-classfilewriter.version>
       <jboss-invocation.version>1.5.1.Final</jboss-invocation.version>
-      <javax.json.version>1.1.3</javax.json.version>
+      <javax.json.version>1.1.4</javax.json.version>
       <javax.xml.bind.version>2.3.1</javax.xml.bind.version>
-      <jboss-jaxrs-api_2.1_spec.version>1.0.0.Final</jboss-jaxrs-api_2.1_spec.version>
+      <jboss-jaxrs-api_2.1_spec.version>1.0.2.Final</jboss-jaxrs-api_2.1_spec.version>
       <asm.version>6.2.1</asm.version>
       <cdi-api.version>2.0.SP1</cdi-api.version>
       <fakereplace.version>1.0.0.Alpha7</fakereplace.version>
@@ -74,31 +73,34 @@
       <classmate.version>1.3.4</classmate.version>
       <javax.el-impl.version>3.0.1.b08-redhat-1</javax.el-impl.version>
       <hibernate-validator.version>6.1.0.Alpha2</hibernate-validator.version>
-      <narayana.version>5.8.0.Final</narayana.version>
+      <narayana.version>5.9.2.Final</narayana.version>
       <jboss-transaction-api_1.2_spec.version>1.1.1.Final</jboss-transaction-api_1.2_spec.version>
-      <agroal.version>1.2</agroal.version>
+      <agroal.version>1.3</agroal.version>
       <jboss-transaction-spi.version>7.6.0.Final</jboss-transaction-spi.version>
       <javax.persistence-api.version>2.2</javax.persistence-api.version>
       <rxjava.version>2.2.5</rxjava.version>
-      <microprofile-rest-client-api.version>1.0</microprofile-rest-client-api.version>
-      <microprofile-opentracing-api.version>1.2</microprofile-opentracing-api.version>
+      <microprofile-config-api.version>1.3</microprofile-config-api.version>
+      <microprofile-rest-client-api.version>1.0.1</microprofile-rest-client-api.version>
+      <microprofile-opentracing-api.version>1.2.1</microprofile-opentracing-api.version>
       <microprofile-reactive-streams-operators.version>1.0-RC4</microprofile-reactive-streams-operators.version>
       <wildfly.openssl.version>1.0.6.Final</wildfly.openssl.version>
       <jboss-logging-annotations.version>2.1.0.Final</jboss-logging-annotations.version>
       <log4j.version>1.2.16</log4j.version>
       <log4j2.version>2.0</log4j2.version>
       <slf4j.version>1.7.25</slf4j.version>
+      <slf4j-jboss-logging.version>1.1.0.Final</slf4j-jboss-logging.version>
       <wildfly-common.version>1.5.0.Alpha3-format-001</wildfly-common.version>
-      <jboss-modules.version>1.8.0.Final</jboss-modules.version>
+      <jboss-modules.version>1.8.7.Final</jboss-modules.version>
       <jboss-threads.version>3.0.0.Alpha4</jboss-threads.version>
-      <vertx.version>3.6.0.CR2</vertx.version>
-      <httpclient.version>4.5.4</httpclient.version>
-      <httpcore.version>4.4.7</httpcore.version>
+      <vertx.version>3.6.2</vertx.version>
+      <httpclient.version>4.5.6</httpclient.version>
+      <httpcore.version>4.4.10</httpcore.version>
       <quartz.version>2.3.0</quartz.version>
       <jakarta-activation.version>1.2.1</jakarta-activation.version>
       <h2.version>1.4.197</h2.version>
       <postgresql-jdbc.version>42.2.5</postgresql-jdbc.version>
       <mariadb-jdbc.version>2.3.0</mariadb-jdbc.version>
+      <junit.version>4.12</junit.version>
       <shrinkwrap.version>1.2.6</shrinkwrap.version>
       <rest-assured.version>3.2.0</rest-assured.version>
    </properties>
@@ -662,7 +664,7 @@
          <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.12</version>
+            <version>${junit.version}</version>
             <scope>test</scope>
          </dependency>
          <dependency>
@@ -746,7 +748,7 @@
          <dependency>
             <groupId>org.eclipse.microprofile.config</groupId>
             <artifactId>microprofile-config-api</artifactId>
-            <version>1.3</version>
+            <version>${microprofile-config-api.version}</version>
          </dependency>
          <dependency>
             <groupId>org.eclipse.microprofile.rest.client</groupId>
@@ -813,7 +815,7 @@
          <dependency>
             <groupId>org.jboss</groupId>
             <artifactId>jandex</artifactId>
-            <version>${version.org.jandex}</version>
+            <version>${jandex.version}</version>
          </dependency>
 
          <dependency>
@@ -1069,7 +1071,7 @@
          <dependency>
             <groupId>org.jboss.slf4j</groupId>
             <artifactId>slf4j-jboss-logging</artifactId>
-            <version>1.1.0.Final</version>
+            <version>${slf4j-jboss-logging.version}</version>
             <exclusions>
                <exclusion>
                   <groupId>org.jboss.logging</groupId>
@@ -1097,16 +1099,6 @@
             <groupId>org.glassfish.web</groupId>
             <artifactId>el-impl</artifactId>
             <version>${el-impl.version}</version>
-         </dependency>
-         <dependency>
-            <groupId>javax.money</groupId>
-            <artifactId>money-api</artifactId>
-            <version>1.0.3</version>
-         </dependency>
-         <dependency>
-            <groupId>org.jsoup</groupId>
-            <artifactId>jsoup</artifactId>
-            <version>1.10.2</version>
          </dependency>
          <dependency>
             <groupId>org.postgresql</groupId>

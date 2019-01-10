@@ -1,4 +1,4 @@
-= Deploying the application to Kubernetes and OpenShift
+= {project-name} - Deploying Application to Kubernetes and OpenShift
 
 This guide covers:
 

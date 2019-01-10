@@ -21,8 +21,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.jboss.shamrock</groupId>
-    <artifactId>shamrock-cli</artifactId>
-    <name>Shamrock - CLI</name>
+    <artifactId>shamrock-cli-all</artifactId>
+    <packaging>pom</packaging>
+    <name>Shamrock - CLI - All</name>
     <version>1.0.0.Alpha1-SNAPSHOT</version>
 
     <properties>
@@ -33,116 +34,9 @@
         <maven.compiler.source>1.8</maven.compiler.source>
     </properties>
 
-    <dependencies>
-
-        <dependency>
-            <groupId>org.aesh</groupId>
-            <artifactId>aesh</artifactId>
-            <version>1.10</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven</groupId>
-            <artifactId>maven-model</artifactId>
-            <version>3.6.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.12</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <resources>
-            <resource>
-                <directory>${project.basedir}/../cli-templates/basic-rest</directory>
-                <targetPath>templates/basic-rest</targetPath>
-                <filtering>false</filtering>
-                <excludes>
-                    <exclude>target/**</exclude>
-                </excludes>
-            </resource>
-        </resources>
-        <plugins>
-            <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.21.0</version>
-                <configuration>
-                    <systemProperties>
-                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                    </systemProperties>
-                    <threadCount>1</threadCount>
-                    <trimStackTrace>false</trimStackTrace>
-                </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>3.1.0</version>
-                <configuration>
-                    <archive>
-                        <manifest>
-                            <addClasspath>true</addClasspath>
-                            <mainClass>org.jboss.shamrock.cli.ProteanCli</mainClass>
-                        </manifest>
-                    </archive>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>test-jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.0</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <artifactSet>
-                                <excludes>
-                                    <exclude>org.fusesource.jansi:jansi</exclude>
-                                    <exclude>org.jboss.shrinkwrap.resolver:shrinkwrap-resolver-depchain</exclude>
-                                    <exclude>junit:junit</exclude>
-                                </excludes>
-                            </artifactSet>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>1.6.0</version>
-                <executions>
-                    <execution>
-                        <id>templates</id>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <phase>package</phase>
-                    </execution>
-                </executions>
-                <configuration>
-                    <executable>/usr/bin/find</executable>
-                    <workingDirectory>target/classes/templates</workingDirectory>
-                    <outputFile>target/classes/template-contents</outputFile>
-                    <arguments>
-                        <argument>.</argument>
-                        <argument>-type</argument>
-                        <argument>f</argument>
-                    </arguments>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+    <modules>
+        <module>aesh</module>
+        <module>templates</module>
+    </modules>
 
 </project>

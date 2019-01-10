@@ -6,19 +6,19 @@ include::protean-intro.adoc[tag=intro]
 
 * link:getting-started-guide.html[Getting Started]
 * link:building-native-image-guide.html[Building Native Image]
-* link:kubernetes-guide.html[Deploy your application on Kubernetes]
-* link:ide-configuration.html[Project scaffolding and IDE]
+* link:kubernetes-guide.html[Deploy Application on Kubernetes]
+* link:ide-configuration.html[Project Scaffolding and IDE]
 
 == Other guides
 
-* link:application-configuration-guide.html[Configuring your application]
-* link:application-lifecycle-events-guide.html[Application initialization and termination]
-* link:json-and-validation-guide.html[Using JSON and validation]
-* link:scheduled-guide.html[Schedule periodic tasks]
-* link:websocket-guide.html[Using websockets]
+* link:application-configuration-guide.html[Configuring Your Application]
+* link:application-lifecycle-events-guide.html[Application Initialization and Termination]
+* link:json-and-validation-guide.html[Using JSON and Validation]
+* link:scheduled-guide.html[Schedule Periodic Tasks]
+* link:websocket-guide.html[Using Websockets]
 * link:hibernate-orm-guide.html[Using Hibernate ORM]
-* link:extension-authors-guide.html[Write your own extension] _(advanced)_
-* link:performance-measure.html[Measuring performance] _(advanced)_
+* link:extension-authors-guide.html[Write Your Own Extension] _(advanced)_
+* link:performance-measure.html[Measuring Performance] _(advanced)_
 * link:cdi-reference.html[Contexts and Dependency Injection] _(advanced)_
 
 * link:faq.html[FAQs]

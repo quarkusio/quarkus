@@ -1,4 +1,4 @@
-= Schedule periodic tasks
+= {project-name} - Schedule Periodic Tasks
 
 Modern applications often need to run specific tasks periodically.
 In this guide, you learn how to schedule periodic tasks.
@@ -85,6 +85,8 @@ public class CounterBean {
 
 The code is pretty straightforward. Every 10 seconds, the counter is incremented.
 The `get()` method allows retrieving the current value.
+
+NOTE: Cron-like expressions are also supported. The syntax is currently based on http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger.html[Quartz Cron Trigger, window="_blank"]. For example a method annotated with `@Scheduled(cron="0 15 10 * * ?")` is executed at 10:15am every day.
 
 == Updating the resource and the test
 

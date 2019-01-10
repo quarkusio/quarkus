@@ -29,6 +29,7 @@ import java.util.ServiceLoader;
 
 import org.hibernate.AssertionFailure;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
+import org.hibernate.boot.registry.classloading.spi.ClassLoadingException;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 
@@ -49,10 +50,9 @@ public class FlatClassLoaderService implements ClassLoaderService {
 		try {
 			return (Class<T>) Class.forName( className, false, getClassLoader() );
 		}
-		catch (ClassNotFoundException e) {
-			log.debugf( "Could not load class '%s' using Class.forName(String) and class loader %s", className , getClassLoader());
+		catch (Exception | LinkageError e) {
+			throw new ClassLoadingException( "Unable to load class [" + className + "]", e );
 		}
-		return null;
 	}
 
 	@Override

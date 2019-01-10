@@ -1151,6 +1151,11 @@
         <pluginManagement>
             <plugins>
                 <plugin>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>shamrock-maven-plugin</artifactId>
+                    <version>${project.version}</version>
+                </plugin>
+                <plugin>
                     <artifactId>maven-dependency-plugin</artifactId>
                     <executions>
                         <execution>

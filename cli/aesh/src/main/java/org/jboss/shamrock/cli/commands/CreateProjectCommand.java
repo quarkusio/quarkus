@@ -38,9 +38,9 @@ public class CreateProjectCommand implements Command<CommandInvocation>{
         }
 
         if(path != null) {
-            CreateProject createProject = new CreateProject(groupid, artifactid, version);
+            CreateProject createProject = new CreateProject(new File(path.getAbsolutePath()), groupid, artifactid, version);
 
-            boolean status = createProject.doCreateProject(new File(path.getAbsolutePath()));
+            boolean status = createProject.doCreateProject();
             if(status)
                 commandInvocation.println("Project "+artifactid+" created successfully.");
             else

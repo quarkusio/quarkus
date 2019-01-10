@@ -3,13 +3,14 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <properties>
-        <shamrock.version>${project.version}</shamrock.version>
-    </properties>
 
     <groupId>org.jboss.shamrock.cli-templates</groupId>
     <artifactId>basic-rest</artifactId>
     <version>1.0.0.Alpha1-SNAPSHOT</version>
+
+    <properties>
+        <shamrock.version>${project.version}</shamrock.version>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -39,7 +40,6 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.0</version>
                 <configuration>
@@ -61,7 +61,6 @@
             </plugin>
         </plugins>
     </build>
-
     <profiles>
         <profile>
             <id>native-image</id>
@@ -95,5 +94,4 @@
             </build>
         </profile>
     </profiles>
-
 </project>

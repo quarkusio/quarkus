@@ -45,14 +45,24 @@
             <artifactId>maven-model</artifactId>
             <version>3.6.0</version>
         </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
         <resources>
             <resource>
-                <directory>${project.basedir}/../templates/basic-rest/src/main</directory>
+                <directory>${project.basedir}/../templates/basic-rest/</directory>
                 <targetPath>templates/basic-rest</targetPath>
                 <filtering>false</filtering>
+                <excludes>
+                    <exclude>target/**</exclude>
+                </excludes>
             </resource>
         </resources>
         <plugins>
@@ -107,6 +117,30 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.6.0</version>
+                <executions>
+                    <execution>
+                        <id>templates</id>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <phase>generate-test-resources</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <executable>/usr/bin/find</executable>
+                    <workingDirectory>target/classes/templates</workingDirectory>
+                    <outputFile>target/classes/template-contents</outputFile>
+                    <arguments>
+                        <argument>.</argument>
+                        <argument>-type</argument>
+                        <argument>f</argument>
+                    </arguments>
+                </configuration>
             </plugin>
         </plugins>
     </build>

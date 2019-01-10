@@ -14,10 +14,10 @@ import static org.junit.Assert.assertFalse;
 public class CreateProjectTest {
     @Test
     public void create() throws IOException {
-        final File file = new File("target/test-create");
+        final File file = new File("target/basic-rest");
         delete(file);
         final CreateProject createProject = new CreateProject(file, "org.jboss.shamrock",
-            "create-test", "1.0.0-SNAPSHOT");
+            "basic-rest", "1.0.0-SNAPSHOT");
 
         Assert.assertTrue(createProject.doCreateProject());
     }

@@ -36,6 +36,7 @@
 
     <modules>
         <module>maven</module>
+        <module>templates</module>
         <module>aesh</module>
     </modules>
 

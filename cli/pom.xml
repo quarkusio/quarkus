@@ -35,8 +35,8 @@
     </properties>
 
     <modules>
+        <module>maven</module>
         <module>aesh</module>
-        <module>templates</module>
     </modules>
 
 </project>

@@ -13,45 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.jboss.shamrock.scheduler.test;
 
-package org.jboss.shamrock.arc.test.interceptor;
-
-import javax.annotation.Priority;
-import javax.enterprise.inject.spi.DefinitionException;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
-
-import org.jboss.shamrock.test.ShouldFail;
+import org.jboss.shamrock.scheduler.api.Scheduled;
 import org.jboss.shamrock.test.Deployment;
 import org.jboss.shamrock.test.ShamrockUnitTest;
+import org.jboss.shamrock.test.ShouldFail;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(ShamrockUnitTest.class)
-public class InterceptorNoBindingsTest {
+public class MissingConfigCronExpressionTest {
 
-    @ShouldFail(DefinitionException.class)
+    @ShouldFail(IllegalStateException.class)
     @Deployment
     public static JavaArchive deploy() {
-        return ShrinkWrap.create(JavaArchive.class)
-                .addClasses(InterceptorWithoutBindings.class);
+        return ShrinkWrap.create(JavaArchive.class).addClasses(InvalidBean.class);
     }
 
     @Test
-    public void testDeploymentFailed() {
-        // This method should not be invoked
+    public void test() throws InterruptedException {
     }
 
-    @Priority(1)
-    @Interceptor
-    static class InterceptorWithoutBindings {
+    static class InvalidBean {
 
-        @AroundInvoke
-        Object aroundInvoke(InvocationContext ctx) throws Exception {
-            return ctx.proceed();
+        @Scheduled(cron = "{my.cron}")
+        void wrong() {
         }
 
     }

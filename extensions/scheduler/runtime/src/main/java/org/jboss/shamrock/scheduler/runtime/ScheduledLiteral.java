@@ -105,4 +105,13 @@ public final class ScheduledLiteral extends AnnotationLiteral<Scheduled> impleme
 
     }
 
+    public static boolean isConfigValue(String val) {
+    	val = val.trim();
+    	return val.startsWith("{") && val.endsWith("}");
+    }
+    
+    public static String getConfigProperty(String val) {
+        return val.substring(1, val.length() - 1);
+    }
+
 }

@@ -18,6 +18,7 @@ package org.jboss.shamrock.test;
 
 import static org.jboss.shamrock.test.PathTestHelper.getTestClassesLocation;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.File;
@@ -58,7 +59,7 @@ public class ShamrockUnitTest extends BlockJUnit4ClassRunner {
     // It will do as long as we keep the test execution sequential and don't parallelize things.
     private static RuntimeRunner runtimeRunner;
     private static Path deploymentDir;
-    private static BuildShouldFailWith buildShouldFailWith;
+    private static ShouldFail shouldFail;
 
     public ShamrockUnitTest(Class<?> klass) throws InitializationError {
         // We need to do it this way as we need to refresh the class once Shamrock is started
@@ -75,7 +76,7 @@ public class ShamrockUnitTest extends BlockJUnit4ClassRunner {
     protected void runChild(final FrameworkMethod method, RunNotifier notifier) {
         if (started) {
             super.runChild(method, notifier);
-        } else if (buildShouldFailWith != null) {
+        } else if (shouldFail != null) {
             notifier.fireTestFinished(describeChild(method));
         } else {
             notifier.fireTestIgnored(describeChild(method));
@@ -93,7 +94,7 @@ public class ShamrockUnitTest extends BlockJUnit4ClassRunner {
         try {
             deploymentDir = Files.createTempDirectory("shamrock-unit-test");
             Method deploymentMethod = getDeploymentMethod(testClass);
-            buildShouldFailWith = deploymentMethod.getAnnotation(BuildShouldFailWith.class);
+            shouldFail = deploymentMethod.getAnnotation(ShouldFail.class);
 
             exportArchive(deploymentDir, testClass, deploymentMethod);
 
@@ -102,20 +103,24 @@ public class ShamrockUnitTest extends BlockJUnit4ClassRunner {
 
             try {
                 runtimeRunner.run();
-                if (buildShouldFailWith != null) {
-                    fail("Build did not fail");
+                if (shouldFail != null) {
+                    fail("Test deployment did not fail");
                 }
                 started = true;
             } catch (Exception e) {
                 started = false;
-                if (buildShouldFailWith != null) {
+                if (shouldFail != null) {
                     if (e instanceof RuntimeException) {
                         Throwable cause = e.getCause();
-                        if (cause != null && cause instanceof BuildException) {
-                            assertEquals("Build failed with wrong exception", buildShouldFailWith.value(),
-                                    cause.getCause().getClass());
-                        } else {
-                            fail("Build did not fail with build exception: " + e);
+                        if (cause instanceof BuildException) {
+                            cause = cause.getCause();
+                        } else if(cause instanceof RuntimeException) {
+                            // Startup failure
+                            cause = cause.getCause();
+                        }
+                        if (cause != null) {
+                            assertTrue(cause.getClass() + " is not assignable to the expected: " + shouldFail.value(), shouldFail.value()
+                                    .isAssignableFrom(cause.getClass()));
                         }
                     } else {
                         fail("Unable to unwrap build exception from: " + e);

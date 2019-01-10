@@ -65,11 +65,7 @@
         <module>independent-projects/jboss-logmanager-embedded</module>
         <module>independent-projects/jboss-logging-embedded</module>
 
-        <!-- Maven -->
-        <module>maven-utils</module>
-        <module>maven</module>
-
-        <!-- Misc. -->
+        <!-- Misc. Maven, cli, docs -->
         <module>cli</module>
         <module>docs</module>
 

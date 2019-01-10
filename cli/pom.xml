@@ -48,11 +48,6 @@
     </dependencies>
 
     <build>
-        <resources>
-            <resource>
-
-            </resource>
-        </resources>
         <plugins>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>

@@ -62,13 +62,23 @@ public class ReflectiveHierarchyStep {
     }
 
     private void addReflectiveHierarchy(Type type, Set<DotName> processedReflectiveHierarchies) {
-
         if (type instanceof VoidType ||
                 type instanceof PrimitiveType ||
                 type instanceof UnresolvedTypeVariable) {
             return;
         } else if (type instanceof ClassType) {
+            if (skipClass(type.name(), processedReflectiveHierarchies)) {
+                return;
+            }
+
             addClassTypeHierarchy(type.name(), processedReflectiveHierarchies);
+
+            for (ClassInfo subclass : combinedIndexBuildItem.getIndex().getAllKnownSubclasses(type.name())) {
+                addClassTypeHierarchy(subclass.name(), processedReflectiveHierarchies);
+            }
+            for (ClassInfo subclass : combinedIndexBuildItem.getIndex().getAllKnownImplementors(type.name())) {
+                addClassTypeHierarchy(subclass.name(), processedReflectiveHierarchies);
+            }
         } else if (type instanceof ArrayType) {
             addReflectiveHierarchy(type.asArrayType().component(), processedReflectiveHierarchies);
         } else if (type instanceof ParameterizedType) {
@@ -81,8 +91,7 @@ public class ReflectiveHierarchyStep {
     }
 
     private void addClassTypeHierarchy(DotName name, Set<DotName> processedReflectiveHierarchies) {
-        if (name.toString().startsWith("java.") ||
-                processedReflectiveHierarchies.contains(name)) {
+        if (skipClass(name, processedReflectiveHierarchies)) {
             return;
         }
         processedReflectiveHierarchies.add(name);
@@ -103,7 +112,9 @@ public class ReflectiveHierarchyStep {
                 }
             }
         }
-
     }
 
+    private boolean skipClass(DotName name, Set<DotName> processedReflectiveHierarchies) {
+        return name.toString().startsWith("java.") || processedReflectiveHierarchies.contains(name);
+    }
 }

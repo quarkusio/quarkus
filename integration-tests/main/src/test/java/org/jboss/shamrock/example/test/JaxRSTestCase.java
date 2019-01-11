@@ -104,4 +104,18 @@ public class JaxRSTestCase {
                         "[0].subComponent.data.size()", is(1),
                         "[0].subComponent.data[0]", is("sub component list value"));
     }
+
+    @Test
+    public void testSubclass() {
+        RestAssured.when().get("/test/subclass").then()
+                .body("name", is("my name"),
+                        "value", is("my value"));
+    }
+
+    @Test
+    public void testImplementor() {
+        RestAssured.when().get("/test/implementor").then()
+                .body("name", is("my name"),
+                        "value", is("my value"));
+    }
 }

@@ -35,21 +35,27 @@
     <name>Gizmo</name>
     <version>1.0.0.Alpha1-SNAPSHOT</version>
 
+    <properties>
+        <version.asm>6.2.1</version.asm>
+        <version.jandex>2.1.0.Beta3</version.jandex>
+        <version.junit>4.12</version.junit>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm</artifactId>
-            <version>6.2.1</version>
+            <version>${version.asm}</version>
         </dependency>
         <dependency>
             <groupId>org.jboss</groupId>
             <artifactId>jandex</artifactId>
-            <version>2.0.5.Final</version>
+            <version>${version.jandex}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.12</version>
+            <version>${version.junit}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

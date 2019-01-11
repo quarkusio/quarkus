@@ -30,8 +30,6 @@ import org.jboss.shamrock.runtime.InjectionFactory;
 import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.runtime.ShutdownContext;
 import org.jboss.shamrock.runtime.Template;
-import org.jboss.shamrock.runtime.cdi.BeanContainer;
-import org.jboss.shamrock.runtime.cdi.BeanContainerListener;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.servlet.ServletExtension;

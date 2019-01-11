@@ -37,8 +37,6 @@ import org.jboss.shamrock.annotations.BuildProducer;
 import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.deployment.ApplicationArchive;
 import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
-import org.jboss.shamrock.deployment.builditem.BeanArchiveIndexBuildItem;
-import org.jboss.shamrock.deployment.cdi.BeanDefiningAnnotationBuildItem;
 
 public class BeanArchiveProcessor {
 

@@ -28,7 +28,7 @@ import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.Transactional;
 
-import org.jboss.shamrock.runtime.InterceptorBindingService;
+import org.jboss.shamrock.arc.runtime.InterceptorBindings;
 import org.jboss.tm.usertx.client.ServerVMClientUserTransaction;
 
 import com.arjuna.ats.jta.logging.jtaLogger;
@@ -76,7 +76,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
      * @return instance of {@link Transactional} annotation or null
      */
     private Transactional getTransactional(InvocationContext ic) {
-        Set<Annotation> bindings = InterceptorBindingService.getInterceptorBindings(ic);
+        Set<Annotation> bindings = InterceptorBindings.getInterceptorBindings(ic);
         for (Annotation i : bindings) {
             if (i.annotationType() == Transactional.class) {
                 return (Transactional) i;

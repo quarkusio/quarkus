@@ -35,9 +35,9 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.shamrock.annotations.BuildProducer;
 import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.annotations.Record;
-import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
-import org.jboss.shamrock.deployment.builditem.BeanArchiveIndexBuildItem;
-import org.jboss.shamrock.deployment.builditem.BeanContainerBuildItem;
+import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
+import org.jboss.shamrock.arc.deployment.BeanArchiveIndexBuildItem;
+import org.jboss.shamrock.arc.deployment.BeanContainerBuildItem;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.metrics.runtime.MetricsDeploymentTemplate;
@@ -94,7 +94,6 @@ public class MetricsProcessor {
 
         reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, Counted.class.getName()));
         reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, MetricsBinding.class.getName()));
-
 
         metrics.createRegistries(beanContainerBuildItem.getValue());
 

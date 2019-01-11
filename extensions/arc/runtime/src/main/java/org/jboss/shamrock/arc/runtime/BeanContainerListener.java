@@ -14,21 +14,16 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.runtime.cdi;
+package org.jboss.shamrock.arc.runtime;
 
-import java.lang.annotation.Annotation;
+/**
+ * An interface that can be used to configure beans immediately after the {@link BeanContainer} has been
+ * created. The container is passed to the interface and beans can be obtained and be modified.
+ *
+ * This provides a convenient way to pass configuration from the deployment processors into runtime beans.
+ */
+public interface BeanContainerListener {
 
-public interface BeanContainer {
-
-    default <T> T instance(Class<T> type, Annotation... qualifiers) {
-        return instanceFactory(type, qualifiers).get();
-    }
-    <T> Factory<T> instanceFactory(Class<T> type, Annotation... qualifiers);
-
-
-    interface Factory<T> {
-
-        T get();
-    }
+    void created(BeanContainer container);
 
 }

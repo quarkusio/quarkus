@@ -14,18 +14,25 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.arc.runtime;
+package org.jboss.shamrock.arc.deployment;
 
-import java.util.function.Function;
+import org.jboss.builder.item.MultiBuildItem;
 
-import org.jboss.protean.arc.ClientProxy;
+public final class GeneratedBeanBuildItem extends MultiBuildItem {
 
-public class ArcClientProxyUnwrapper implements Function<Object, Object> {
-    @Override
-    public Object apply(Object o) {
-        if (o instanceof ClientProxy) {
-            return ((ClientProxy) o).getContextualInstance();
-        }
-        return o;
+    final String name;
+    final byte[] data;
+
+    public GeneratedBeanBuildItem(String name, byte[] data) {
+        this.name = name;
+        this.data = data;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public byte[] getData() {
+        return data;
     }
 }

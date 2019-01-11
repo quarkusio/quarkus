@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.cdi;
+package org.jboss.shamrock.arc.deployment;
 
-import org.jboss.builder.item.MultiBuildItem;
-import org.jboss.shamrock.runtime.cdi.BeanContainerListener;
+import org.jboss.builder.item.SimpleBuildItem;
+import org.jboss.shamrock.arc.runtime.BeanContainer;
 
-public final class BeanContainerListenerBuildItem extends MultiBuildItem {
+public final class BeanContainerBuildItem extends SimpleBuildItem {
 
-    private final BeanContainerListener beanContainerListener;
+    private final BeanContainer value;
 
-    public BeanContainerListenerBuildItem(BeanContainerListener beanContainerListener) {
-        this.beanContainerListener = beanContainerListener;
+    public BeanContainerBuildItem(BeanContainer value) {
+        this.value = value;
     }
 
-    public BeanContainerListener getBeanContainerListener() {
-        return beanContainerListener;
+    public BeanContainer getValue() {
+        return value;
     }
 }

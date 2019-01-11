@@ -16,9 +16,9 @@
 
 package org.jboss.shamrock.agroal.runtime;
 
+import org.jboss.shamrock.arc.runtime.BeanContainer;
+import org.jboss.shamrock.arc.runtime.BeanContainerListener;
 import org.jboss.shamrock.runtime.Template;
-import org.jboss.shamrock.runtime.cdi.BeanContainer;
-import org.jboss.shamrock.runtime.cdi.BeanContainerListener;
 
 @Template
 public class DataSourceTemplate {

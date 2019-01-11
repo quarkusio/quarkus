@@ -12,12 +12,17 @@ import org.jboss.protean.arc.processor.DotNames;
 import org.jboss.protean.arc.processor.InjectionPointInfo;
 import org.jboss.shamrock.annotations.BuildStep;
 
+import io.smallrye.config.inject.ConfigProducer;
+
 /**
- * TODO: we should move this to the core-deployment module
  * 
- * @author Martin Kouba
  */
-public class ConfigValidationBuildStep {
+public class ConfigBuildStep {
+    
+    @BuildStep
+    AdditionalBeanBuildItem bean() {
+        return new AdditionalBeanBuildItem(ConfigProducer.class.getName());
+    }
     
     @BuildStep
     BeanDeploymentValidatorBuildItem beanDeploymentValidator() {

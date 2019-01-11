@@ -28,6 +28,7 @@ public final class Capabilities extends SimpleBuildItem {
 
     public static final String CDI_ARC = "org.jboss.shamrock.cdi";
     public static final String TRANSACTIONS = "org.jboss.shamrock.transactions";
+    public static final String UNDERTOW = "org.jboss.shamrock.undertow";
 
     private final Set<String> capabilities;
 

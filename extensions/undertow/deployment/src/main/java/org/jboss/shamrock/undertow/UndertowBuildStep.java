@@ -90,6 +90,7 @@ import org.jboss.shamrock.annotations.BuildProducer;
 import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.deployment.ApplicationArchive;
+import org.jboss.shamrock.deployment.Capabilities;
 import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
 import org.jboss.shamrock.deployment.builditem.ArchiveRootBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
@@ -101,7 +102,6 @@ import org.jboss.shamrock.deployment.builditem.ShutdownContextBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
-import org.jboss.shamrock.deployment.cdi.BeanDefiningAnnotationBuildItem;
 import org.jboss.shamrock.deployment.recording.RecorderContext;
 import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.undertow.runtime.HttpConfig;
@@ -117,15 +117,14 @@ import io.undertow.servlet.handlers.DefaultServlet;
 
 public class UndertowBuildStep {
 
-
-    private static final DotName webFilter = DotName.createSimple(WebFilter.class.getName());
-    private static final DotName webListener = DotName.createSimple(WebListener.class.getName());
-    private static final DotName webServlet = DotName.createSimple(WebServlet.class.getName());
-    private static final DotName runAs = DotName.createSimple(RunAs.class.getName());
-    private static final DotName declareRoles = DotName.createSimple(DeclareRoles.class.getName());
-    private static final DotName multipartConfig = DotName.createSimple(MultipartConfig.class.getName());
-    private static final DotName servletSecurity = DotName.createSimple(ServletSecurity.class.getName());
-    private static final String WEB_XML = "META-INF/web.xml";
+    public static final DotName WEB_FILTER = DotName.createSimple(WebFilter.class.getName());
+    public static final DotName WEB_LISTENER = DotName.createSimple(WebListener.class.getName());
+    public static final DotName WEB_SERVLET = DotName.createSimple(WebServlet.class.getName());
+    public static final DotName RUN_AS = DotName.createSimple(RunAs.class.getName());
+    public static final DotName DECLARE_ROLES = DotName.createSimple(DeclareRoles.class.getName());
+    public static final DotName MULTIPART_CONFIG = DotName.createSimple(MultipartConfig.class.getName());
+    public static final DotName SERVLET_SECURITY = DotName.createSimple(ServletSecurity.class.getName());
+    public static final String WEB_XML = "META-INF/web.xml";
 
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
@@ -158,22 +157,12 @@ public class UndertowBuildStep {
     }
     
     @BuildStep
-    List<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations() {
-        List<BeanDefiningAnnotationBuildItem> annotations = new ArrayList<>();
-        annotations.add(new BeanDefiningAnnotationBuildItem(webFilter));
-        annotations.add(new BeanDefiningAnnotationBuildItem(webServlet));
-        annotations.add(new BeanDefiningAnnotationBuildItem(webListener));
-        return annotations;
-    }
-
-
-    @BuildStep
     HotDeploymentConfigFileBuildItem configFile() {
         return new HotDeploymentConfigFileBuildItem(WEB_XML);
     }
 
     @Record(STATIC_INIT)
-    @BuildStep
+    @BuildStep(providesCapabilities = Capabilities.UNDERTOW)
     public ServletDeploymentBuildItem build(ApplicationArchivesBuildItem applicationArchivesBuildItem,
                                             List<ServletBuildItem> servlets,
                                             List<FilterBuildItem> filters,
@@ -388,7 +377,7 @@ public class UndertowBuildStep {
      */
     private void processAnnotations(IndexView index, WebMetaData metaData) {
         // @WebServlet
-        final Collection<AnnotationInstance> webServletAnnotations = index.getAnnotations(webServlet);
+        final Collection<AnnotationInstance> webServletAnnotations = index.getAnnotations(WEB_SERVLET);
         if (webServletAnnotations != null && webServletAnnotations.size() > 0) {
             ServletsMetaData servlets = new ServletsMetaData();
             List<ServletMappingMetaData> servletMappings = new ArrayList<ServletMappingMetaData>();
@@ -471,7 +460,7 @@ public class UndertowBuildStep {
             metaData.setServletMappings(servletMappings);
         }
         // @WebFilter
-        final Collection<AnnotationInstance> webFilterAnnotations = index.getAnnotations(webFilter);
+        final Collection<AnnotationInstance> webFilterAnnotations = index.getAnnotations(WEB_FILTER);
         if (webFilterAnnotations != null && webFilterAnnotations.size() > 0) {
             FiltersMetaData filters = new FiltersMetaData();
             List<FilterMappingMetaData> filterMappings = new ArrayList<FilterMappingMetaData>();
@@ -572,7 +561,7 @@ public class UndertowBuildStep {
             metaData.setFilterMappings(filterMappings);
         }
         // @WebListener
-        final Collection<AnnotationInstance> webListenerAnnotations = index.getAnnotations(webListener);
+        final Collection<AnnotationInstance> webListenerAnnotations = index.getAnnotations(WEB_LISTENER);
         if (webListenerAnnotations != null && webListenerAnnotations.size() > 0) {
             List<ListenerMetaData> listeners = new ArrayList<ListenerMetaData>();
             for (final AnnotationInstance annotation : webListenerAnnotations) {
@@ -592,7 +581,7 @@ public class UndertowBuildStep {
             metaData.setListeners(listeners);
         }
         // @RunAs
-        final Collection<AnnotationInstance> runAsAnnotations = index.getAnnotations(runAs);
+        final Collection<AnnotationInstance> runAsAnnotations = index.getAnnotations(RUN_AS);
         if (runAsAnnotations != null && runAsAnnotations.size() > 0) {
             AnnotationsMetaData annotations = metaData.getAnnotations();
             if (annotations == null) {
@@ -617,7 +606,7 @@ public class UndertowBuildStep {
             }
         }
         // @DeclareRoles
-        final Collection<AnnotationInstance> declareRolesAnnotations = index.getAnnotations(declareRoles);
+        final Collection<AnnotationInstance> declareRolesAnnotations = index.getAnnotations(DECLARE_ROLES);
         if (declareRolesAnnotations != null && declareRolesAnnotations.size() > 0) {
             SecurityRolesMetaData securityRoles = metaData.getSecurityRoles();
             if (securityRoles == null) {
@@ -633,7 +622,7 @@ public class UndertowBuildStep {
             }
         }
         // @MultipartConfig
-        final Collection<AnnotationInstance> multipartConfigAnnotations = index.getAnnotations(multipartConfig);
+        final Collection<AnnotationInstance> multipartConfigAnnotations = index.getAnnotations(MULTIPART_CONFIG);
         if (multipartConfigAnnotations != null && multipartConfigAnnotations.size() > 0) {
             AnnotationsMetaData annotations = metaData.getAnnotations();
             if (annotations == null) {
@@ -670,7 +659,7 @@ public class UndertowBuildStep {
             }
         }
         // @ServletSecurity
-        final Collection<AnnotationInstance> servletSecurityAnnotations = index.getAnnotations(servletSecurity);
+        final Collection<AnnotationInstance> servletSecurityAnnotations = index.getAnnotations(SERVLET_SECURITY);
         if (servletSecurityAnnotations != null && servletSecurityAnnotations.size() > 0) {
             AnnotationsMetaData annotations = metaData.getAnnotations();
             if (annotations == null) {

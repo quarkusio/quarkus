@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.builditem;
+package org.jboss.shamrock.arc.deployment;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,9 +31,9 @@ public final class AdditionalBeanBuildItem extends MultiBuildItem {
         this.beanNames = Arrays.asList(beanNames);
     }
 
-    public AdditionalBeanBuildItem(Class... beanClasss) {
+    public AdditionalBeanBuildItem(Class<?>... beanClasss) {
         beanNames = new ArrayList<>(beanClasss.length);
-        for (Class i : beanClasss) {
+        for (Class<?> i : beanClasss) {
             beanNames.add(i.getName());
         }
     }

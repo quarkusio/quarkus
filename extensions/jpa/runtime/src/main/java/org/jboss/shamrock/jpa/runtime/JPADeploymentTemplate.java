@@ -26,9 +26,9 @@ import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.protean.Hibernate;
 import org.hibernate.protean.impl.PersistenceUnitsHolder;
 import org.jboss.logging.Logger;
+import org.jboss.shamrock.arc.runtime.BeanContainer;
+import org.jboss.shamrock.arc.runtime.BeanContainerListener;
 import org.jboss.shamrock.runtime.Template;
-import org.jboss.shamrock.runtime.cdi.BeanContainer;
-import org.jboss.shamrock.runtime.cdi.BeanContainerListener;
 
 /**
  * @author Emmanuel Bernard emmanuel@hibernate.org

@@ -29,11 +29,14 @@
 
         <!-- Dependency versions -->
 
-        <version.org.postgresql.jdbc>42.2.5</version.org.postgresql.jdbc>
-        <version.junit>4.12</version.junit>
         <version.org.hibernate>5.4.0-protean-0.0.1</version.org.hibernate>
-        <version.org.hibernate.tooling>5.3.6.Final</version.org.hibernate.tooling>
+        <version.org.hibernate.tooling>5.4.0.Final</version.org.hibernate.tooling>
         <version.jakarta-activation>1.2.1</version.jakarta-activation>
+        <version.jboss-transaction-api_1.2_spec>1.1.1.Final</version.jboss-transaction-api_1.2_spec>
+        <version.antlr>2.7.7.redhat-7</version.antlr>
+        <version.dom4j>1.6.1.redhat-7</version.dom4j>
+        <version.hibernate-commons-annotations>5.1.0.Final</version.hibernate-commons-annotations>
+        <version.graal-annotations>1.0.0-rc4</version.graal-annotations>
 
         <!-- Build settings -->
 
@@ -52,23 +55,23 @@
             <dependency>
                 <groupId>org.jboss.spec.javax.transaction</groupId>
                 <artifactId>jboss-transaction-api_1.2_spec</artifactId>
-                <version>1.1.1.Final</version>
+                <version>${version.jboss-transaction-api_1.2_spec}</version>
             </dependency>
             <!-- Override ANTLR with the Red Hat build as the Maven Central version is compiled with a too old JDK to allow CDS -->
             <dependency>
                 <groupId>antlr</groupId>
                 <artifactId>antlr</artifactId>
-                <version>2.7.7.redhat-7</version>
+                <version>${version.antlr}</version>
             </dependency>
             <dependency>
                 <groupId>dom4j</groupId>
                 <artifactId>dom4j</artifactId>
-                <version>1.6.1.redhat-7</version>
+                <version>${version.dom4j}</version>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.common</groupId>
                 <artifactId>hibernate-commons-annotations</artifactId>
-                <version>5.0.5.Final</version>
+                <version>${version.hibernate-commons-annotations}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -97,7 +100,7 @@
         <dependency>
             <groupId>org.jboss.graalvm</groupId>
             <artifactId>graal-annotations</artifactId>
-            <version>1.0.0-rc4</version>
+            <version>${version.graal-annotations}</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
@@ -113,7 +116,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.7.0</version>
+                    <version>3.8.0</version>
                     <configuration>
                         <!-- Use 8 to be GraalVM compatible -->
                         <source>8</source>
@@ -123,7 +126,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
-                    <version>3.0.2</version>
+                    <version>3.1.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

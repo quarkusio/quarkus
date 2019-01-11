@@ -17,6 +17,8 @@ package org.jboss.shamrock.scheduler.deployment;
 
 import static org.jboss.shamrock.annotations.ExecutionTime.STATIC_INIT;
 
+import java.text.ParseException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -40,6 +42,7 @@ import org.jboss.protean.arc.InstanceHandle;
 import org.jboss.protean.arc.processor.AnnotationStore;
 import org.jboss.protean.arc.processor.AnnotationsTransformer;
 import org.jboss.protean.arc.processor.BeanDeploymentValidator;
+import org.jboss.protean.arc.processor.BeanDeploymentValidator.ValidationContext;
 import org.jboss.protean.arc.processor.BeanInfo;
 import org.jboss.protean.arc.processor.DotNames;
 import org.jboss.protean.arc.processor.ScopeInfo;
@@ -62,8 +65,10 @@ import org.jboss.shamrock.scheduler.api.ScheduledExecution;
 import org.jboss.shamrock.scheduler.api.Scheduleds;
 import org.jboss.shamrock.scheduler.runtime.QuartzScheduler;
 import org.jboss.shamrock.scheduler.runtime.ScheduledInvoker;
+import org.jboss.shamrock.scheduler.runtime.ScheduledLiteral;
 import org.jboss.shamrock.scheduler.runtime.SchedulerConfiguration;
 import org.jboss.shamrock.scheduler.runtime.SchedulerDeploymentTemplate;
+import org.quartz.CronExpression;
 import org.quartz.simpl.CascadingClassLoadHelper;
 import org.quartz.simpl.RAMJobStore;
 import org.quartz.simpl.SimpleThreadPool;
@@ -167,8 +172,11 @@ public class SchedulerProcessor {
                                 if (!method.returnType().kind().equals(Type.Kind.VOID)) {
                                     throw new IllegalStateException(String.format("Scheduled business method must return void [method: %s, bean:%s", method.returnType(), method, bean));
                                 }
+                                // Validate cron() and every() expressions
+                                for (AnnotationInstance scheduled : schedules) {
+                                    validateScheduled(validationContext, scheduled);
+                                }
                                 scheduledBusinessMethods.produce(new ScheduledBusinessMethodItem(bean, method, schedules));
-                                // TODO: validate cron and period expressions
                                 LOGGER.debugf("Found scheduled business method %s declared on %s", method, bean);
                             }
                         }
@@ -257,6 +265,40 @@ public class SchedulerProcessor {
                 return annotationValue.asEnum();
             default:
                 throw new IllegalArgumentException("Unsupported annotation value: " + annotationValue);
+        }
+    }
+
+    private void validateScheduled(ValidationContext validationContext, AnnotationInstance schedule) {
+        AnnotationValue cronValue = schedule.value("cron");
+        if (cronValue != null && !cronValue.asString().trim().isEmpty()) {
+            String cron = cronValue.asString().trim();
+            if (ScheduledLiteral.isConfigValue(cron)) {
+                // Don't validate config property
+                return;
+            }
+            try {
+                new CronExpression(cron);
+            } catch (ParseException e) {
+                validationContext.addDeploymentProblem(new IllegalStateException("Invalid cron() expression on: " + schedule, e));
+            }
+        } else {
+            AnnotationValue everyValue = schedule.value("every");
+            if (everyValue != null && !everyValue.asString().trim().isEmpty()) {
+                String every = everyValue.asString().trim();
+                if (ScheduledLiteral.isConfigValue(every)) {
+                    return;
+                }
+                if (Character.isDigit(every.charAt(0))) {
+                    every = "PT" + every;
+                }
+                try {
+                    Duration.parse(every);
+                } catch (Exception e) {
+                    validationContext.addDeploymentProblem(new IllegalStateException("Invalid every() expression on: " + schedule, e));
+                }
+            } else {
+                validationContext.addDeploymentProblem(new IllegalStateException("@Scheduled must declare either cron() or every(): " + schedule));
+            }
         }
     }
 

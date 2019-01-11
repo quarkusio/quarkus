@@ -13,15 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.jboss.shamrock.scheduler.test;
 
-package org.jboss.shamrock.arc.test.interceptor;
+import javax.enterprise.inject.spi.DeploymentException;
 
-import javax.annotation.Priority;
-import javax.enterprise.inject.spi.DefinitionException;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
-
+import org.jboss.shamrock.scheduler.api.Scheduled;
 import org.jboss.shamrock.test.ShouldFail;
 import org.jboss.shamrock.test.Deployment;
 import org.jboss.shamrock.test.ShamrockUnitTest;
@@ -31,29 +27,26 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(ShamrockUnitTest.class)
-public class InterceptorNoBindingsTest {
+public class NoExpressionTest {
 
-    @ShouldFail(DefinitionException.class)
+    @ShouldFail(DeploymentException.class)
     @Deployment
     public static JavaArchive deploy() {
         return ShrinkWrap.create(JavaArchive.class)
-                .addClasses(InterceptorWithoutBindings.class);
+                .addClasses(InvalidBean.class);
     }
 
     @Test
-    public void testDeploymentFailed() {
-        // This method should not be invoked
+    public void test() throws InterruptedException {
     }
-
-    @Priority(1)
-    @Interceptor
-    static class InterceptorWithoutBindings {
-
-        @AroundInvoke
-        Object aroundInvoke(InvocationContext ctx) throws Exception {
-            return ctx.proceed();
+    
+    static class InvalidBean {
+        
+        
+        @Scheduled
+        void wrong() {
         }
-
+        
     }
 
 }

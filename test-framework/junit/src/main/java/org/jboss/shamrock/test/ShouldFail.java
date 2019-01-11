@@ -21,18 +21,19 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.jboss.builder.BuildException;
+import org.jboss.shamrock.runner.RuntimeRunner;
 
 /**
- * Annotation that is used to assert a build failure.
+ * Annotation that is used to assert a boot failure.
  * <p>
  * This method should be used together with {@link Deployment}.
  * 
- * @see BuildException
+ * @see RuntimeRunner#run()
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
-public @interface BuildShouldFailWith {
+public @interface ShouldFail {
 
-    Class<? extends Exception> value() default Exception.class;
+    Class<? extends Throwable> value() default Throwable.class;
+    
 }

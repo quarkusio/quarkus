@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Red Hat, Inc.
+ * Copyright 2019 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,23 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.opentracing.runtime;
+package org.jboss.shamrock.jaeger;
 
-import org.jboss.shamrock.runtime.Template;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.List;
 
-/**
- * Created by bob on 8/6/18.
- */
-@Template
-public class TracingDeploymentTemplate {
+import org.jboss.shamrock.annotations.BuildStep;
+import org.jboss.shamrock.annotations.ExecutionTime;
+import org.jboss.shamrock.annotations.Record;
+import org.jboss.shamrock.jaeger.runtime.JaegerDeploymentTemplate;
+
+public class JaegerProcessor {
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void setupTracer(JaegerDeploymentTemplate jdt) {
+        jdt.registerTracer();
+    }
+
 }
-

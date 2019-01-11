@@ -27,6 +27,8 @@ import javax.ws.rs.ext.Provider;
 
 import io.opentracing.contrib.jaxrs2.server.OperationNameProvider;
 import io.opentracing.contrib.jaxrs2.server.ServerTracingDynamicFeature;
+import io.opentracing.util.GlobalTracer;
+
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
@@ -38,12 +40,11 @@ public class ShamrockTracingDynamicFeature implements DynamicFeature {
     private final ServerTracingDynamicFeature delegate;
 
     public ShamrockTracingDynamicFeature() {
-        //Instance<Tracer> tracerInstance = CDI.current().select(Tracer.class);
         Config config = ConfigProvider.getConfig();
         Optional<String> skipPattern = config.getOptionalValue("mp.opentracing.server.skip-pattern", String.class);
         Optional<String> operationNameProvider = config.getOptionalValue("mp.opentracing.server.operation-name-provider", String.class);
 
-        ServerTracingDynamicFeature.Builder builder = new ServerTracingDynamicFeature.Builder(new ShamrockTracer())
+        ServerTracingDynamicFeature.Builder builder = new ServerTracingDynamicFeature.Builder(GlobalTracer.get())
                 .withOperationNameProvider(OperationNameProvider.ClassNameOperationName.newBuilder())
                 .withTraceSerialization(false);
         if (skipPattern.isPresent()) {

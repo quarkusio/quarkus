@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Red Hat, Inc.
+ * Copyright 2019 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,31 +14,21 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.opentracing.runtime;
+package org.jboss.shamrock.jaeger.runtime;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
-import com.uber.jaeger.Span;
-import com.uber.jaeger.reporters.Reporter;
 
-@Substitute
-@TargetClass(className = "com.uber.jaeger.reporters.LoggingReporter")
-final public class Target_LoggingReporter implements Reporter {
+import io.jaegertracing.internal.metrics.NoopMetricsFactory;
+import io.jaegertracing.spi.MetricsFactory;
 
-    @Substitute
-    public Target_LoggingReporter() {
-
-    }
+@TargetClass(className = "io.jaegertracing.Configuration")
+public final class Target_Configuration {
 
     @Substitute
-    @Override
-    public void report(Span span) {
-        System.err.println( "--- not logging: " + span);
-    }
-
-    @Substitute
-    @Override
-    public void close() {
-
-    }
+    private MetricsFactory loadMetricsFactory() {
+        // TODO: Determine how to obtain required metrics factory
+        return new NoopMetricsFactory();
+    } 
 }
+

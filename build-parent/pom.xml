@@ -31,7 +31,7 @@
       <opentracing-web-servlet-filter.version>0.2.2</opentracing-web-servlet-filter.version>
       <opentracing-tracerresolver.version>0.1.5</opentracing-tracerresolver.version>
       <opentracing-concurrent.version>0.2.0</opentracing-concurrent.version>
-      <jaeger.version>0.27.0</jaeger.version>
+      <jaeger.version>0.33.1</jaeger.version>
       <undertow.version>2.0.16.Final</undertow.version>
       <xnio.version>3.6.5.Final</xnio.version>
       <jboss-servlet-api_4.0_spec.version>1.0.0.Final</jboss-servlet-api_4.0_spec.version>
@@ -250,6 +250,16 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-jaeger-deployment</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-jaeger-runtime</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-jaxrs-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
@@ -451,19 +461,13 @@
             <version>${jakarta-activation.version}</version>
          </dependency>
          <dependency>
-            <groupId>com.uber.jaeger</groupId>
+            <groupId>io.jaegertracing</groupId>
             <artifactId>jaeger-core</artifactId>
             <version>${jaeger.version}</version>
          </dependency>
          <dependency>
-            <groupId>com.uber.jaeger</groupId>
+            <groupId>io.jaegertracing</groupId>
             <artifactId>jaeger-thrift</artifactId>
-            <classifier>thrift92</classifier>
-            <version>${jaeger.version}</version>
-         </dependency>
-         <dependency>
-            <groupId>com.uber.jaeger</groupId>
-            <artifactId>jaeger-tracerresolver</artifactId>
             <version>${jaeger.version}</version>
          </dependency>
          <dependency>

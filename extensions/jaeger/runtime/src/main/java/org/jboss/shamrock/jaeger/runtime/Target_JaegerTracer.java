@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Red Hat, Inc.
+ * Copyright 2019 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.opentracing.runtime;
+package org.jboss.shamrock.jaeger.runtime;
+
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
-/**
- * Created by bob on 8/8/18.
- */
-@TargetClass(className = "com.uber.jaeger.Tracer")
-public final class TargetTracer {
+
+@TargetClass(className = "io.jaegertracing.internal.JaegerTracer")
+public final class Target_JaegerTracer {
+
     @Substitute
     private static String loadVersion() {
-        return "Graal-0.2.1";
+        // TODO: Obtain Jaeger version
+        return "";
     }
 }
 

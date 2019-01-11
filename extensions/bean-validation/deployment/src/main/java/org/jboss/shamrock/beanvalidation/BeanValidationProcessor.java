@@ -94,7 +94,7 @@ class BeanValidationProcessor {
                       BuildProducer<FeatureBuildItem> feature) throws Exception {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.BEAN_VALIDATION));
-        
+
         IndexView indexView = combinedIndexBuildItem.getIndex();
 
         Set<DotName> consideredAnnotations = new HashSet<>();
@@ -177,6 +177,15 @@ class BeanValidationProcessor {
                 continue;
             }
             classNamesCollector.add(subclass.name());
+        }
+        for (ClassInfo implementor : indexView.getAllKnownImplementors(className)) {
+            if (Modifier.isAbstract(implementor.flags())) {
+                // we can avoid adding the abstract classes here: either they are parent classes
+                // and they will be dealt with by Hibernate Validator or they are child classes
+                // without any proper implementation and we can ignore them.
+                continue;
+            }
+            classNamesCollector.add(implementor.name());
         }
     }
 

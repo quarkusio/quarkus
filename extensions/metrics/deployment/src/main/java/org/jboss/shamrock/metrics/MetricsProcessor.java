@@ -38,6 +38,7 @@ import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.BeanArchiveIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.BeanContainerBuildItem;
+import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.metrics.runtime.MetricsDeploymentTemplate;
 import org.jboss.shamrock.metrics.runtime.MetricsServlet;
@@ -86,8 +87,10 @@ public class MetricsProcessor {
     public void build(BeanContainerBuildItem beanContainerBuildItem,
                       MetricsDeploymentTemplate metrics,
                       BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
-                      BeanArchiveIndexBuildItem beanArchiveIndex) throws Exception {
+                      BeanArchiveIndexBuildItem beanArchiveIndex,
+                      BuildProducer<FeatureBuildItem> feature) throws Exception {
 
+        feature.produce(new FeatureBuildItem(FeatureBuildItem.MP_METRICS));
 
         reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, Counted.class.getName()));
         reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, MetricsBinding.class.getName()));

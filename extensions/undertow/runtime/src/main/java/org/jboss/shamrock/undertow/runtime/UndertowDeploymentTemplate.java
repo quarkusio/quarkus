@@ -213,7 +213,7 @@ public class UndertowDeploymentTemplate {
      */
     public static void startUndertowEagerly(HttpConfig config, HandlerWrapper hotDeploymentWrapper) throws ServletException {
         if (undertow == null) {
-            log.log(Level.INFO, "Starting Undertow on port " + config.port);
+            log.log(Level.FINE, "Starting Undertow on port " + config.port);
             HttpHandler rootHandler = new CanonicalPathHandler(ROOT_HANDLER);
             if (hotDeploymentWrapper != null) {
                 rootHandler = hotDeploymentWrapper.wrap(rootHandler);

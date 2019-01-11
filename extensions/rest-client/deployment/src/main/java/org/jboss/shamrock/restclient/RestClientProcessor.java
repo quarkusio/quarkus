@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Produces;
+import javax.inject.Inject;
 import javax.ws.rs.Path;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.ClientResponseFilter;
@@ -43,15 +44,14 @@ import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
 import org.jboss.resteasy.client.jaxrs.internal.proxy.ResteasyClientProxy;
 import org.jboss.resteasy.spi.ResteasyConfiguration;
-import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.annotations.BuildProducer;
-import javax.inject.Inject;
-
+import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
+import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import org.jboss.shamrock.deployment.cdi.GeneratedBeanBuildItem;
 import org.jboss.shamrock.restclient.runtime.DefaultResponseExceptionMapper;
@@ -92,8 +92,9 @@ class RestClientProcessor {
     CombinedIndexBuildItem combinedIndexBuildItem;
 
     @BuildStep
-    public void build(BuildProducer<GeneratedBeanBuildItem> generatedBeans) throws Exception {
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
+    public void build(BuildProducer<GeneratedBeanBuildItem> generatedBeans, BuildProducer<FeatureBuildItem> feature) throws Exception {
+        feature.produce(new FeatureBuildItem(FeatureBuildItem.MP_REST_CLIENT));
+    	reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
                 DefaultResponseExceptionMapper.class.getName(),
                 LogFactoryImpl.class.getName(),
                 Jdk14Logger.class.getName()));

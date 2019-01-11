@@ -17,9 +17,12 @@
 package org.jboss.shamrock.deployment.builditem;
 
 import org.jboss.builder.item.MultiBuildItem;
+import org.jboss.shamrock.runtime.StartupEvent;
 
 /**
  * A symbolic class that represents a service start.
+ * <p>
+ * {@link StartupEvent} is fired after all services are started.
  */
 public final class ServiceStartBuildItem extends MultiBuildItem {
 

@@ -26,9 +26,8 @@ import org.jboss.builder.item.SimpleBuildItem;
  */
 public final class Capabilities extends SimpleBuildItem {
 
-    public static final String CDI_ARC = "org.jboss.shamrock.cdi.arc";
+    public static final String CDI_ARC = "org.jboss.shamrock.cdi";
     public static final String TRANSACTIONS = "org.jboss.shamrock.transactions";
-
 
     private final Set<String> capabilities;
 
@@ -40,4 +39,8 @@ public final class Capabilities extends SimpleBuildItem {
         this.capabilities = capabilities;
     }
 
+    public Set<String> getCapabilities() {
+        return capabilities;
+    }
+    
 }

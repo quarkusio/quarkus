@@ -44,9 +44,10 @@ public class Timing {
         bootStartTime = System.nanoTime();
     }
 
-    public static void printStartupTime() {
+    public static void printStartupTime(String version, String features, String httpServer) {
         final long time = System.nanoTime() - bootStartTime + 500;
-        Logger.getLogger("org.jboss.shamrock").infof("Shamrock started in %d.%03dms", Long.valueOf(time / 1_000_000), Long.valueOf(time % 1_000_000 / 1_000));
+        Logger.getLogger("org.jboss.shamrock").infof("Shamrock %s started in %d.%03dms. %s", version, Long.valueOf(time / 1_000_000), Long.valueOf(time % 1_000_000 / 1_000), httpServer);
+        Logger.getLogger("org.jboss.shamrock").infof("Installed features: [%s]", features);
     }
 
 }

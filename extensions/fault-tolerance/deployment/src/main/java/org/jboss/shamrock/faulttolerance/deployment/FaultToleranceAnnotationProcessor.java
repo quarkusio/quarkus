@@ -40,6 +40,7 @@ import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.arc.deployment.AnnotationsTransformerBuildItem;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
+import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
 import org.jboss.shamrock.faulttolerance.runtime.ShamrockFallbackHandlerProvider;
@@ -77,8 +78,10 @@ public class FaultToleranceAnnotationProcessor {
     }
 
     @BuildStep
-    public void build(BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) throws Exception {
+    public void build(BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer, BuildProducer<FeatureBuildItem> feature) throws Exception {
 
+        feature.produce(new FeatureBuildItem(FeatureBuildItem.MP_FAULT_TOLERANCE));
+        
         IndexView index = combinedIndexBuildItem.getIndex();
 
         // Make sure rx.internal.util.unsafe.UnsafeAccess.DISABLED_BY_USER is set.

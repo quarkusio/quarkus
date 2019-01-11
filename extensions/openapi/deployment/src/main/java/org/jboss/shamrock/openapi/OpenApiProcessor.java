@@ -32,11 +32,13 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.jboss.jandex.IndexView;
+import org.jboss.shamrock.annotations.BuildProducer;
 import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
+import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
 import org.jboss.shamrock.deployment.cdi.BeanContainerListenerBuildItem;
 import org.jboss.shamrock.openapi.runtime.OpenApiDeploymentTemplate;
@@ -88,9 +90,9 @@ public class OpenApiProcessor {
 
     @BuildStep
     @Record(STATIC_INIT)
-    public BeanContainerListenerBuildItem build(OpenApiDeploymentTemplate template,
-                                                ApplicationArchivesBuildItem archivesBuildItem,
-                                                CombinedIndexBuildItem combinedIndexBuildItem) throws Exception {
+    public BeanContainerListenerBuildItem build(OpenApiDeploymentTemplate template, ApplicationArchivesBuildItem archivesBuildItem,
+            CombinedIndexBuildItem combinedIndexBuildItem, BuildProducer<FeatureBuildItem> feature) throws Exception {
+        feature.produce(new FeatureBuildItem(FeatureBuildItem.MP_OPENAPI));
         Result resourcePath = findStaticModel(archivesBuildItem);
         OpenAPI sm = generateStaticModel(resourcePath == null ? null : resourcePath.path, resourcePath == null ? OpenApiSerializer.Format.YAML : resourcePath.format);
         OpenAPI am = generateAnnotationModel(combinedIndexBuildItem.getIndex());

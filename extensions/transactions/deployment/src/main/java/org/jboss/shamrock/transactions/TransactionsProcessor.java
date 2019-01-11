@@ -28,6 +28,7 @@ import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.deployment.Capabilities;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
+import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
 import org.jboss.shamrock.transactions.runtime.TransactionProducers;
@@ -65,7 +66,8 @@ class TransactionsProcessor {
 
     @BuildStep(providesCapabilities = Capabilities.TRANSACTIONS)
     @Record(STATIC_INIT)
-    public void build(TransactionTemplate tt) {
+    public void build(TransactionTemplate tt, BuildProducer<FeatureBuildItem> feature) {
+        feature.produce(new FeatureBuildItem(FeatureBuildItem.TRANSACTIONS));
         additionalBeans.produce(new AdditionalBeanBuildItem(TransactionProducers.class));
         runtimeInit.produce(new RuntimeInitializedClassBuildItem("com.arjuna.ats.internal.jta.resources.arjunacore.CommitMarkableResourceRecord"));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, JTAEnvironmentBean.class.getName(),

@@ -63,6 +63,8 @@ import org.jboss.builder.BuildChainBuilder;
 import org.jboss.builder.BuildContext;
 import org.jboss.builder.BuildProvider;
 import org.jboss.builder.BuildStepBuilder;
+import org.jboss.builder.ConsumeFlag;
+import org.jboss.builder.ConsumeFlags;
 import org.jboss.builder.ProduceFlag;
 import org.jboss.builder.item.BuildItem;
 import org.jboss.builder.item.MultiBuildItem;
@@ -615,7 +617,14 @@ public class BuildAnnotationProcessor extends AbstractProcessor {
         //register fields
         for (InjectedBuildResource field : fieldList) {
             if (field.consumedTypeName != null) {
-                mc.invokeVirtualMethod(ofMethod(BuildStepBuilder.class, "consumes", BuildStepBuilder.class, Class.class), builder, mc.loadClass(field.consumedTypeName));
+                if (field.injectionType == InjectionType.OPTIONAL) {
+                    ResultHandle consumeFlags = mc.invokeStaticMethod(ofMethod(ConsumeFlags.class, "of", ConsumeFlags.class, ConsumeFlag.class),
+                            mc.load(ConsumeFlag.OPTIONAL));
+                    mc.invokeVirtualMethod(ofMethod(BuildStepBuilder.class, "consumes", BuildStepBuilder.class, Class.class, ConsumeFlags.class), builder,
+                            mc.loadClass(field.consumedTypeName), consumeFlags);
+                } else {
+                    mc.invokeVirtualMethod(ofMethod(BuildStepBuilder.class, "consumes", BuildStepBuilder.class, Class.class), builder, mc.loadClass(field.consumedTypeName));    
+                }
             }
             if (field.producedTypeName != null) {
                 mc.invokeVirtualMethod(ofMethod(BuildStepBuilder.class, "produces", BuildStepBuilder.class, Class.class), builder, mc.loadClass(field.producedTypeName));
@@ -640,7 +649,14 @@ public class BuildAnnotationProcessor extends AbstractProcessor {
         for (InjectedBuildResource injection : methodInjection) {
             if (injection.injectionType != InjectionType.TEMPLATE && injection.injectionType != InjectionType.RECORDER_CONTEXT && injection.injectionType != InjectionType.EXECUTOR) {
                 if (injection.consumedTypeName != null) {
-                    mc.invokeVirtualMethod(ofMethod(BuildStepBuilder.class, "consumes", BuildStepBuilder.class, Class.class), builder, mc.loadClass(injection.consumedTypeName));
+                    if (injection.injectionType == InjectionType.OPTIONAL) {
+                        ResultHandle consumeFlags = mc.invokeStaticMethod(ofMethod(ConsumeFlags.class, "of", ConsumeFlags.class, ConsumeFlag.class),
+                                mc.load(ConsumeFlag.OPTIONAL));
+                        mc.invokeVirtualMethod(ofMethod(BuildStepBuilder.class, "consumes", BuildStepBuilder.class, Class.class, ConsumeFlags.class), builder,
+                                mc.loadClass(injection.consumedTypeName), consumeFlags);
+                    } else {
+                        mc.invokeVirtualMethod(ofMethod(BuildStepBuilder.class, "consumes", BuildStepBuilder.class, Class.class), builder, mc.loadClass(injection.consumedTypeName));    
+                    }
                 }
                 if (injection.producedTypeName != null) {
                     mc.invokeVirtualMethod(ofMethod(BuildStepBuilder.class, "produces", BuildStepBuilder.class, Class.class), builder, mc.loadClass(injection.producedTypeName));
@@ -670,6 +686,9 @@ public class BuildAnnotationProcessor extends AbstractProcessor {
             val = buildStepMc.invokeVirtualMethod(ofMethod(BuildContext.class, "consume", SimpleBuildItem.class, Class.class), buildStepMc.getMethodParam(0), buildStepMc.loadClass(i.consumedTypeName));
         } else if (i.injectionType == InjectionType.LIST) {
             val = buildStepMc.invokeVirtualMethod(ofMethod(BuildContext.class, "consumeMulti", List.class, Class.class), buildStepMc.getMethodParam(0), buildStepMc.loadClass(i.consumedTypeName));
+        } else if (i.injectionType == InjectionType.OPTIONAL) {
+            ResultHandle tempVal = buildStepMc.invokeVirtualMethod(ofMethod(BuildContext.class, "consume", SimpleBuildItem.class, Class.class), buildStepMc.getMethodParam(0), buildStepMc.loadClass(i.consumedTypeName));
+            val = buildStepMc.invokeStaticMethod(ofMethod(Optional.class, "ofNullable", Optional.class, Object.class), tempVal);
         } else {
             val = buildStepMc.newInstance(ofConstructor(BUILD_PRODUCER, Class.class, BuildContext.class), buildStepMc.loadClass(i.producedTypeName), buildStepMc.getMethodParam(0));
         }
@@ -683,6 +702,10 @@ public class BuildAnnotationProcessor extends AbstractProcessor {
         } else if (field.injectionType == InjectionType.LIST) {
             ResultHandle val = buildStepMc.invokeVirtualMethod(ofMethod(BuildContext.class, "consumeMulti", List.class, Class.class), buildStepMc.getMethodParam(0), buildStepMc.loadClass(field.consumedTypeName));
             buildStepMc.writeInstanceField(FieldDescriptor.of(processorClassName, field.element.getSimpleName().toString(), List.class), p, val);
+        } else if (field.injectionType == InjectionType.OPTIONAL) {
+            ResultHandle val = buildStepMc.invokeVirtualMethod(ofMethod(BuildContext.class, "consume", SimpleBuildItem.class, Class.class), buildStepMc.getMethodParam(0), buildStepMc.loadClass(field.consumedTypeName));
+            ResultHandle optional = buildStepMc.invokeStaticMethod(ofMethod(Optional.class, "ofNullable", Optional.class, Object.class), val);
+            buildStepMc.writeInstanceField(FieldDescriptor.of(processorClassName, field.element.getSimpleName().toString(), Optional.class), p, optional);
         } else if (field.injectionType == InjectionType.EXECUTOR) {
             ResultHandle val = buildStepMc.invokeVirtualMethod(ofMethod(BuildContext.class, "getExecutor", Executor.class), buildStepMc.getMethodParam(0));
             buildStepMc.writeInstanceField(FieldDescriptor.of(processorClassName, field.element.getSimpleName().toString(), Executor.class), p, val);
@@ -747,6 +770,16 @@ public class BuildAnnotationProcessor extends AbstractProcessor {
             verifyType(typeMirror, MultiBuildItem.class);
             consumedTypeName = processingEnv.getElementUtils().getBinaryName(((TypeElement) ((DeclaredType) typeMirror).asElement())).toString();
 
+        } else if (simpleType.equals(Optional.class.getName())) {
+            ft = InjectionType.OPTIONAL;
+            if (type.getTypeArguments().size() != 1) {
+                throw new RuntimeException("Cannot use @BuildResource on an optional that does not include a generic type");
+            }
+            TypeMirror typeMirror = type.getTypeArguments().get(0);
+
+            verifyType(typeMirror, SimpleBuildItem.class);
+            consumedTypeName = processingEnv.getElementUtils().getBinaryName(((TypeElement) ((DeclaredType) typeMirror).asElement())).toString();
+
         } else if (simpleType.equals(BuildProducer.class.getName())) {
             ft = InjectionType.PRODUCER;
             if (type.getTypeArguments().size() != 1) {
@@ -792,7 +825,8 @@ public class BuildAnnotationProcessor extends AbstractProcessor {
         PRODUCER,
         TEMPLATE,
         RECORDER_CONTEXT,
-        EXECUTOR
+        EXECUTOR,
+        OPTIONAL
     }
 
     static class ConfigInjectionInfo {

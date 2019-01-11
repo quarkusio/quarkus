@@ -39,7 +39,7 @@ public class InjectionPointInfo {
 
     static InjectionPointInfo fromField(FieldInfo field, BeanDeployment beanDeployment) {
         Set<AnnotationInstance> qualifiers = new HashSet<>();
-        for (AnnotationInstance annotation : field.annotations()) {
+        for (AnnotationInstance annotation : beanDeployment.getAnnotations(field)) {
             if (beanDeployment.getQualifier(annotation.name()) != null) {
                 qualifiers.add(annotation);
             }
@@ -60,7 +60,7 @@ public class InjectionPointInfo {
         for (ListIterator<Type> iterator = method.parameters().listIterator(); iterator.hasNext();) {
             Type paramType = iterator.next();
             Set<AnnotationInstance> paramAnnotations = new HashSet<>();
-            for (AnnotationInstance annotation : method.annotations()) {
+            for (AnnotationInstance annotation : beanDeployment.getAnnotations(method)) {
                 if (org.jboss.jandex.AnnotationTarget.Kind.METHOD_PARAMETER.equals(annotation.target().kind())
                         && annotation.target().asMethodParameter().position() == iterator.previousIndex()) {
                     paramAnnotations.add(annotation);

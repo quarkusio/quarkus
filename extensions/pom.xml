@@ -62,6 +62,9 @@
         <module>jdbc</module>
         <module>jpa</module>
         <module>bean-validation</module>
+
+        <!-- Spring -->
+        <module>spring-di</module>
     </modules>
 
 </project>

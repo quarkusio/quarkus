@@ -22,31 +22,14 @@
         <artifactId>shamrock-build-parent</artifactId>
         <groupId>org.jboss.shamrock</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
-        <relativePath>../build-parent/pom.xml</relativePath>
+        <relativePath>../../build-parent/pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-integration-tests-parent</artifactId>
-    <name>Shamrock - Integration Tests</name>
-
+    <artifactId>shamrock-spring-di</artifactId>
+    <name>Shamrock - Spring - DI</name>
     <packaging>pom</packaging>
-
-    <properties>
-        <maven.deploy.skip>true</maven.deploy.skip>
-    </properties>
-
     <modules>
-        <module>class-transformer</module>
-        <module>shared-library</module>
-        <module>undertow</module>
-        <module>bean-validation</module>
-        <module>common-jpa-entities</module>
-        <module>main</module>
-        <module>jpa</module>
-        <module>jpa-postgresql</module>
-        <module>jpa-mariadb</module>
-        <module>jpa-h2</module>
-        <module>vertx</module>
-        <module>spring-di</module>
+        <module>deployment</module>
     </modules>
 </project>

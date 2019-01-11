@@ -121,8 +121,11 @@ final class Beans {
         List<StereotypeInfo> stereotypes = new ArrayList<>();
         String name = null;
 
-        for (AnnotationInstance annotation : producerMethod.annotations()) {
-            if (beanDeployment.getQualifier(annotation.name()) != null) {
+        for (AnnotationInstance annotation : beanDeployment.getAnnotations(producerMethod)) {
+            //only check for method annotations since at this point we will get both
+            // method and method param annotations
+            if (annotation.target().kind() == AnnotationTarget.Kind.METHOD
+                    && beanDeployment.getQualifier(annotation.name()) != null) {
                 qualifiers.add(annotation);
                 if (DotNames.NAMED.equals(annotation.name())) {
                     AnnotationValue nameValue = annotation.value();
@@ -186,7 +189,7 @@ final class Beans {
         List<StereotypeInfo> stereotypes = new ArrayList<>();
         String name = null;
 
-        for (AnnotationInstance annotation : producerField.annotations()) {
+        for (AnnotationInstance annotation : beanDeployment.getAnnotations(producerField)) {
             if (beanDeployment.getQualifier(annotation.name()) != null) {
                 qualifiers.add(annotation);
                 if (DotNames.NAMED.equals(annotation.name())) {

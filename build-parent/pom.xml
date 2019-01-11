@@ -402,6 +402,11 @@
             <version>${project.version}</version>
          </dependency>
          <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-spring-di-deployment</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
             <groupId>org.jboss.logging</groupId>
             <artifactId>jboss-logging-embedded</artifactId>
             <version>${project.version}</version>
@@ -1138,7 +1143,7 @@
             <artifactId>quartz</artifactId>
             <version>${quartz.version}</version>
          </dependency>
-         
+
          <dependency>
             <groupId>io.smallrye.reactive</groupId>
             <artifactId>smallrye-reactive-messaging-provider</artifactId>

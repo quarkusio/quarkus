@@ -16,6 +16,8 @@
 
 package org.jboss.shamrock.runtime;
 
+import java.math.BigDecimal;
+
 import org.jboss.logging.Logger;
 
 /**
@@ -29,7 +31,7 @@ public class Timing {
     private static volatile long bootStartTime = -1;
 
     public static void staticInitStarted() {
-        if(bootStartTime < 0) {
+        if (bootStartTime < 0) {
             bootStartTime = System.nanoTime();
         }
     }
@@ -45,9 +47,15 @@ public class Timing {
     }
 
     public static void printStartupTime(String version, String features, String httpServer) {
-        final long time = System.nanoTime() - bootStartTime + 500;
-        Logger.getLogger("org.jboss.shamrock").infof("Shamrock %s started in %d.%03dms. %s", version, Long.valueOf(time / 1_000_000), Long.valueOf(time % 1_000_000 / 1_000), httpServer);
-        Logger.getLogger("org.jboss.shamrock").infof("Installed features: [%s]", features);
+        final long bootTimeNanoSeconds = System.nanoTime() - bootStartTime;
+        final Logger logger = Logger.getLogger("org.jboss.shamrock");
+        //Use a BigDecimal so we can render in seconds with 3 digits precision, as requested:
+        final BigDecimal secondsRepresentation = BigDecimal
+              .valueOf(bootTimeNanoSeconds) // As nanoseconds
+              .divide(BigDecimal.valueOf(1_000_000), BigDecimal.ROUND_HALF_UP) // Convert to milliseconds, discard remaining digits while rounding
+              .divide(BigDecimal.valueOf(1_000), 3, BigDecimal.ROUND_HALF_UP); // Convert to seconds, while preserving 3 digits
+        logger.infof("Shamrock %s started in %ss. %s", version, secondsRepresentation, httpServer);
+        logger.infof("Installed features: [%s]", features);
     }
 
 }

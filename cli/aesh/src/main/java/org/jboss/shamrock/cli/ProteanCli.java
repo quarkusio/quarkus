@@ -33,16 +33,25 @@ public class ProteanCli {
                     }
                 }
             }
+
             try {
                 runtime.executeCommand(sb.toString());
             } catch (CommandNotFoundException e) {
-                System.out.println("Command not found: " + sb.toString());
-
-            } catch (OptionValidatorException | CommandException | CommandValidatorException | IOException | InterruptedException e) {
-                System.out.println(e.getMessage());
+                System.err.println("Command not found: " + sb.toString());
+            } catch (CommandException | CommandLineParserException | CommandValidatorException | OptionValidatorException e) {
+                showHelpIfNeeded(runtime, e);
+            } catch (InterruptedException | IOException e) {
+                System.err.println(e.getMessage());
             }
+        } else {
+            showHelpIfNeeded(runtime, null);
         }
-        System.out.println(runtime.commandInfo(ProteanCommand.COMMAND_NAME));
     }
 
+    private static void showHelpIfNeeded(CommandRuntime runtime, Exception e) {
+        if (e != null) {
+            System.err.println(e.getMessage());
+        }
+        System.err.println(runtime.commandInfo(ProteanCommand.COMMAND_NAME));
+    }
 }

@@ -105,10 +105,10 @@ public class ReflectiveHierarchyStep {
             for (FieldInfo i : info.fields()) {
                 addReflectiveHierarchy(i.type(), processedReflectiveHierarchies);
             }
-            for (MethodInfo i : info.methods()) {
-                addReflectiveHierarchy(i.returnType(), processedReflectiveHierarchies);
-                for (Type p : i.parameters()) {
-                    addReflectiveHierarchy(p, processedReflectiveHierarchies);
+            for (MethodInfo method : info.methods()) {
+                // we only add the return types of the potential getters
+                if (method.parameters().size() == 0) {
+                    addReflectiveHierarchy(method.returnType(), processedReflectiveHierarchies);
                 }
             }
         }

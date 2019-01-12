@@ -26,9 +26,9 @@ image:validation-guide-architecture.png[alt=Architecture,width=640,height=480]
 We recommend you to follow the instructions in the next sections and create the application step by step.
 However, you can go right to the completed example.
 
-Clone the Git repository: `git clone https://github.com/protean-project/quickstarts.git`, or download an https://github.com/protean-project/quickstarts/archive/master.zip[archive].
+Clone the Git repository: `git clone https://github.com/jbossas/protean-quickstarts.git`, or download an https://github.com/jbossas/protean-quickstarts/archive/master.zip[archive].
 
-The solution is located in the `input-validation` https://github.com/protean-project/quickstarts/tree/master/input-validation[directory].
+The solution is located in the `input-validation` https://github.com/jbossas/protean-quickstarts/tree/master/input-validation[directory].
 
 == Creating the Maven project
 
@@ -244,7 +244,7 @@ Keep in mind that you usually don't want to expose to the public the internals o
 
 Now let's add the simple web page to interact with our `BookResource`.
 Shamrock automatically serves static resources contained in the `META-INF/resources` directory.
-Creates the `src/main/resources/META-INF/resources` directory and copy this https://github.com/protean-project/quickstarts/blob/master/input-validation/src/main/resources/META-INF/resources/index.html[index.html] file in it.
+Creates the `src/main/resources/META-INF/resources` directory and copy this https://github.com/jbossas/protean-quickstarts/blob/master/input-validation/src/main/resources/META-INF/resources/index.html[index.html] file in it.
 
 == Run the application
 

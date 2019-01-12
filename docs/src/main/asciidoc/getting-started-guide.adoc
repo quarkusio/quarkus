@@ -45,7 +45,7 @@ This guide also covers the testing of the endpoint.
 We recommend you to follow the instructions in the next sections and create the application step by step.
 However, you can go right to the completed example.
 
-Clone the Git repository: `git clone https://github.com/protean-project/quickstarts.git`, or download an https://github.com/protean-project/quickstarts/archive/master.zip[archive].
+Clone the Git repository: `git clone https://github.com/jbossas/protean-quickstarts.git`, or download an https://github.com/jbossas/protean-quickstarts/archive/master.zip[archive].
 
 The solution is located in the `getting-started` directory.
 
@@ -368,7 +368,7 @@ public CompletionStage<String> hello() {
 }
 ----
 
-The async version of the code is available in the https://github.com/protean-project/quickstarts[Github] repository, in the `getting-started-async` directory.
+The async version of the code is available in the https://github.com/jbossas/protean-quickstarts[Github] repository, in the `getting-started-async` directory.
 
 == What's next?
 

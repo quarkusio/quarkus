@@ -113,7 +113,7 @@ public class ChatSocket {
 
 All chat applications need a _nice_ UI, well, this one may not be that nice, but does the work.
 Shamrock automatically serves static resources contained in the `META-INF/resources` directory.
-Create the `src/main/resources/META-INF/resources` directory and copy this https://github.com/protean-project/quickstarts/blob/master/using-websockets/src/main/resources/assets/index.html[index.html] file in it.
+Create the `src/main/resources/META-INF/resources` directory and copy this https://github.com/jbossas/protean-quickstarts/blob/master/using-websockets/src/main/resources/META-INF/resources/index.html[index.html] file in it.
 
 == Run the application
 

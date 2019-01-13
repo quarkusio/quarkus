@@ -221,7 +221,7 @@ public class ObserverGenerator extends AbstractGenerator {
             notify.invokeVirtualMethod(MethodDescriptor.of(observer.getObserverMethod()), declaringProviderInstanceHandle, referenceHandles);
         }
 
-        // Destroy @Dependent instances injected into method parameters of a disposer method
+        // Destroy @Dependent instances injected into method parameters of an observer method
         notify.invokeInterfaceMethod(MethodDescriptors.CREATIONAL_CTX_RELEASE, ctxHandle);
 
         // If the declaring bean is @Dependent we must destroy the instance afterwards

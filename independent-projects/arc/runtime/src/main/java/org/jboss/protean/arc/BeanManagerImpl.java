@@ -106,7 +106,7 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public void fireEvent(Object event, Annotation... qualifiers) {
-        throw new UnsupportedOperationException();
+        getEvent().select(qualifiers).fire(event);
     }
 
     @Override

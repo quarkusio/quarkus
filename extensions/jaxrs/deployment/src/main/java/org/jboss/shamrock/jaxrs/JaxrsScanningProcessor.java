@@ -254,6 +254,22 @@ public class JaxrsScanningProcessor {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, implementation.name().toString()));
         }
 
+        //currently we only examine the first class that is annotated with @ApplicationPath so best
+        //fail if there the user code has multiple such annotations instead of surprising the user
+        //at runtime
+        if (app.size() > 1) {
+            StringBuilder sb = new StringBuilder();
+            boolean first = true;
+            for (AnnotationInstance annotationInstance : app) {
+                if (first) {
+                    first = false;
+                } else {
+                    sb.append(",");
+                }
+                sb.append(annotationInstance.target().asClass().name().toString());
+            }
+            throw new RuntimeException("Multiple classes ( "+ sb.toString() + ") have been annotated with @ApplicationPath which is currently not supported");
+        }
         AnnotationInstance appPath = app.iterator().next();
         String path = appPath.value().asString();
         String appClass = appPath.target().asClass().name().toString();

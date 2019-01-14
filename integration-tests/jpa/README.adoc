@@ -3,14 +3,14 @@
 :config-file: microprofile-config.properties
 :toc:
 
+This module is testing the configuration and integration aspects of JPA;
+for example it covers reading configuration properties from the Protean config files as an alternative to the `persistence.xml`.
+
+All integration tests in this module use `H2`; other databases are being tested from other integration test modules.
+
 == How to run tests from the IDE
 
-Start the database first.
-
-[source]
---
-docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name postgres-protean-jpa -e POSTGRES_USER=hibernate_orm_test -e POSTGRES_PASSWORD=hibernate_orm_test -e POSTGRES_DB=hibernate_orm_test -p 5431:5432 postgres:10.5
---
+They should just work: no preparation needed for this module.
 
 == Documentation
 
@@ -45,7 +45,7 @@ Anything else?
 I would force the following:
 
 * `javax.persistence.sharedCache.mode` to yes
-*  `javax.persistence.sql-load-script-source` set to a default file name
+* `javax.persistence.sql-load-script-source` set to a default file name
 
 Questions do we need:
 

@@ -27,7 +27,9 @@ public class PersistenceAndShamrockConfigTest {
 
     @Test
     public void testPersistenceAndConfigTest() {
-        // should not be called, deployment exception should happen first.
+        // should not be called, deployment exception should happen first:
+        // it's illegal to have Hibernate configuration properties in both the
+        // microprofile-config.properties an in the persistence.xml
         fail();
     }
 

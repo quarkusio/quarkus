@@ -29,13 +29,13 @@ public class RestClientTestCase {
 
     @Test
     public void testMicroprofileClient() {
-        RestAssured.when().get("/rest/client/manual").then()
+        RestAssured.when().get("/client/manual").then()
                 .body(is("TEST"));
     }
 
     @Test
     public void testMicroprofileClientCDIIntegration() {
-        RestAssured.when().get("/rest/client/cdi").then()
+        RestAssured.when().get("/client/cdi").then()
                 .body(is("TEST"));
     }
 }

@@ -42,6 +42,7 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.CanonicalPathHandler;
 import io.undertow.server.handlers.ResponseCodeHandler;
+import io.undertow.server.handlers.resource.CachingResourceManager;
 import io.undertow.server.handlers.resource.ClassPathResourceManager;
 import io.undertow.server.handlers.resource.PathResourceManager;
 import io.undertow.server.session.SessionIdGenerator;
@@ -58,6 +59,8 @@ import io.undertow.servlet.api.ListenerInfo;
 import io.undertow.servlet.api.ServletContainer;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.api.ServletSecurityInfo;
+import io.undertow.servlet.handlers.DefaultServlet;
+import io.undertow.servlet.handlers.ServletPathMatches;
 
 /**
  * Provides the runtime methods to bootstrap Undertow. This class is present in the final uber-jar,
@@ -85,6 +88,7 @@ public class UndertowDeploymentTemplate {
         d.setClassLoader(getClass().getClassLoader());
         d.setDeploymentName(name);
         d.setContextPath("/");
+        d.setEagerFilterInit(true);
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         if (cl == null) {
             cl = new ClassLoader() {
@@ -92,13 +96,17 @@ public class UndertowDeploymentTemplate {
         }
         d.setClassLoader(cl);
         //TODO: this is a big hack
+        //TODO: caching configuration once the new config model is in place
         String resourcesDir = System.getProperty(RESOURCES_PROP);
         if (resourcesDir == null) {
-            d.setResourceManager(new KnownPathResourceManager(knownFile, knownDirectories, new ClassPathResourceManager(d.getClassLoader(), "META-INF/resources")));
+            d.setResourceManager(new CachingResourceManager(1000, 0, null, new KnownPathResourceManager(knownFile, knownDirectories, new ClassPathResourceManager(d.getClassLoader(), "META-INF/resources")), 2000));
         } else {
-            d.setResourceManager(new PathResourceManager(Paths.get(resourcesDir)));
+            d.setResourceManager(new CachingResourceManager(1000, 0, null, new PathResourceManager(Paths.get(resourcesDir)), 2000));
         }
         d.addWelcomePages("index.html", "index.htm");
+
+        d.addServlet(new ServletInfo(ServletPathMatches.DEFAULT_SERVLET_NAME, DefaultServlet.class).setAsyncSupported(true));
+
         return new RuntimeValue<>(d);
     }
 

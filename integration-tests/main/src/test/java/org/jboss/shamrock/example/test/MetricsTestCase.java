@@ -42,7 +42,7 @@ public class MetricsTestCase {
     }
 
     public void invokeResource() {
-        RestAssured.when().get("/rest/metrics").then()
+        RestAssured.when().get("/metricsresource").then()
                 .body(is("TEST"));
     }
 

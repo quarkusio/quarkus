@@ -29,13 +29,13 @@ public class ReactiveStreamsOperatorsTestCase {
 
     @Test
     public void testReactiveStreams() {
-        RestAssured.when().get("/rest/reactive/stream-regular").then()
+        RestAssured.when().get("/reactive/stream-regular").then()
                 .body(is("ABC"));
     }
 
     @Test
     public void testRxJava2() {
-        RestAssured.when().get("/rest/reactive/stream-rx").then()
+        RestAssured.when().get("/reactive/stream-rx").then()
                 .body(is("DEF"));
     }
 

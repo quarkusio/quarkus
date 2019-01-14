@@ -29,7 +29,7 @@ public class ExternalIndexTestCase {
 
     @Test
     public void testJAXRSResourceFromExternalLibrary() {
-        RestAssured.when().get("/rest/shared").then()
+        RestAssured.when().get("/shared").then()
                 .body(is("Shared Resource"));
     }
 

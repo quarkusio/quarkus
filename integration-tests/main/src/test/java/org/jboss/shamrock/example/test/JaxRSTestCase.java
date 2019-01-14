@@ -32,36 +32,36 @@ public class JaxRSTestCase {
 
     @Test
     public void testJAXRS() {
-        RestAssured.when().get("/rest/test").then().body(is("TEST"));
+        RestAssured.when().get("/test").then().body(is("TEST"));
     }
 
     @Test
     public void testInteger() {
-        RestAssured.when().get("/rest/test/int/10").then().body(is("11"));
+        RestAssured.when().get("/test/int/10").then().body(is("11"));
     }
 
     @Test
     public void testNonCdiBeansAreApplicationScoped() {
-        RestAssured.when().get("/rest/test/count").then().body(is("1"));
-        RestAssured.when().get("/rest/test/count").then().body(is("2"));
-        RestAssured.when().get("/rest/test/count").then().body(is("3"));
+        RestAssured.when().get("/test/count").then().body(is("1"));
+        RestAssured.when().get("/test/count").then().body(is("2"));
+        RestAssured.when().get("/test/count").then().body(is("3"));
     }
 
     @Test
     public void testContextInjection() {
-        RestAssured.when().get("/rest/test/request-test").then().body(is("/rest/test/request-test"));
+        RestAssured.when().get("/test/request-test").then().body(is("/test/request-test"));
     }
 
     @Test
     public void testJsonp() {
-        RestAssured.when().get("/rest/test/jsonp").then()
+        RestAssured.when().get("/test/jsonp").then()
                 .body("name", is("Stuart"),
                         "value", is("A Value"));
     }
 
     @Test
     public void testJackson() {
-        RestAssured.when().get("/rest/test/jackson").then()
+        RestAssured.when().get("/test/jackson").then()
                 .body("name", is("Stuart"),
                         "value", is("A Value"));
     }
@@ -72,7 +72,7 @@ public class JaxRSTestCase {
             // in the native image case, the right parser is not chosen, despite the content-type being correct
             RestAssured.defaultParser = Parser.XML;
 
-            RestAssured.when().get("/rest/test/xml").then()
+            RestAssured.when().get("/test/xml").then()
                     .body("xmlObject.value.text()", is("A Value"));
         } finally {
             RestAssured.reset();
@@ -81,22 +81,22 @@ public class JaxRSTestCase {
 
     @Test
     public void testBytecodeTransformation() {
-        RestAssured.when().get("/rest/test/transformed").then().body(is("Transformed Endpoint"));
+        RestAssured.when().get("/test/transformed").then().body(is("Transformed Endpoint"));
     }
 
     @Test
     public void testRxJava() {
-        RestAssured.when().get("/rest/test/rx").then().body(is("Hello"));
+        RestAssured.when().get("/test/rx").then().body(is("Hello"));
     }
 
     @Test
     public void testCustomProvider() {
-        RestAssured.when().get("/rest/test/fooprovider").then().body(is("hello-foo"));
+        RestAssured.when().get("/test/fooprovider").then().body(is("hello-foo"));
     }
 
     @Test
     public void testComplexObjectReflectionRegistration() {
-        RestAssured.when().get("/rest/test/complex").then()
+        RestAssured.when().get("/test/complex").then()
                 .body("$.size()", is(1),
                         "[0].value", is("component value"),
                         "[0].collectionTypes.size()", is(1),

@@ -34,7 +34,7 @@ public class OpenTracingTestCase {
     }
 
     public void invokeResource() {
-        RestAssured.when().get("/rest/opentracing").then()
+        RestAssured.when().get("/opentracing").then()
                 .body(is("TEST"));
     }
 

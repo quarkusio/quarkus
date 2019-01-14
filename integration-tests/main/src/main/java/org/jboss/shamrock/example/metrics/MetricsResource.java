@@ -21,7 +21,7 @@ import javax.ws.rs.Path;
 
 import org.eclipse.microprofile.metrics.annotation.Counted;
 
-@Path("/metrics")
+@Path("/metricsresource")
 public class MetricsResource {
 
     @GET

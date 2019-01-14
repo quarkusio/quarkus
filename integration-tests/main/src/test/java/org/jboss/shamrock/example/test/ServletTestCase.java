@@ -30,7 +30,7 @@ public class ServletTestCase {
 
     @Test
     public void testServlet() {
-        RestAssured.when().get("/test").then()
+        RestAssured.when().get("/testservlet").then()
                 .body(is("A message"));
     }
 

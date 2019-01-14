@@ -29,7 +29,7 @@ public class TransactionTestCase {
 
     @Test
     public void testTransaction() {
-        RestAssured.when().get("/rest/txn").then()
+        RestAssured.when().get("/txn").then()
                 .body(is("true"));
     }
 

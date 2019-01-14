@@ -236,8 +236,6 @@ public class JaxrsScanningProcessor {
                 "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector",
                 "com.fasterxml.jackson.databind.ser.std.SqlDateSerializer"));
 
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ArrayList.class.getName()));
-
         resource.produce(new SubstrateResourceBuildItem("META-INF/services/javax.ws.rs.client.ClientBuilder"));
         IndexView index = combinedIndexBuildItem.getIndex();
 

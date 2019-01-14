@@ -182,7 +182,7 @@ public class MojoTestBase {
     static String getHttpResponse() {
         AtomicReference<String> resp = new AtomicReference<>();
         await()
-                .pollDelay(1, TimeUnit.SECONDS)
+                .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> {
             try {
                 String content = get();
@@ -198,7 +198,7 @@ public class MojoTestBase {
     static String getHttpResponse(String path) {
         AtomicReference<String> resp = new AtomicReference<>();
         await()
-                .pollDelay(1, TimeUnit.SECONDS)
+                .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> {
             try {
                 URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
@@ -215,7 +215,7 @@ public class MojoTestBase {
     static boolean getHttpResponse(String path, int expectedStatus) {
         AtomicBoolean code = new AtomicBoolean();
         await()
-                .pollDelay(1, TimeUnit.SECONDS)
+                .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(5, TimeUnit.MINUTES).until(() -> {
             try {
                 URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));

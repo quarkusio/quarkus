@@ -228,13 +228,16 @@ public class JaxrsScanningProcessor {
                       CombinedIndexBuildItem combinedIndexBuildItem
     ) throws Exception {
 
+        // required by JSON-P support
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "org.glassfish.json.JsonProviderImpl"));
 
-        //this is pretty yuck, and does not really belong here, but it is needed to get the json-p
-        //provider to work
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "org.glassfish.json.JsonProviderImpl",
+        // required by Jackson
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false,
                 "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector",
                 "com.fasterxml.jackson.databind.ser.std.SqlDateSerializer"));
+
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ArrayList.class.getName()));
+
         resource.produce(new SubstrateResourceBuildItem("META-INF/services/javax.ws.rs.client.ClientBuilder"));
         IndexView index = combinedIndexBuildItem.getIndex();
 
@@ -366,6 +369,8 @@ public class JaxrsScanningProcessor {
             return;
         }
 
+        // Declare reflection for all the types implicated in the Rest end points (return types and parameters).
+        // It might be needed for serialization.
         for (DotName annotationType : METHOD_ANNOTATIONS) {
             Collection<AnnotationInstance> instances = index.getAnnotations(annotationType);
             for (AnnotationInstance instance : instances) {

@@ -294,6 +294,7 @@ public class CreateProjectMojo extends AbstractMojo {
             context.put("mProjectArtifactId", projectArtifactId);
             context.put("mProjectVersion", projectVersion);
             context.put("shamrockVersion", shamrockVersion != null ? shamrockVersion : MojoUtils.get(VERSION_PROP));
+            context.put("restAssuredVersion", MojoUtils.get("restAssuredVersion"));
             context.put("docRoot", MojoUtils.get("doc-root"));
 
             context.put("className", className);

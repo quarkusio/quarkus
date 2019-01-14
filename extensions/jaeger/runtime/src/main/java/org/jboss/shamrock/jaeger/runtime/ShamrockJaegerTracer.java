@@ -44,7 +44,7 @@ public class ShamrockJaegerTracer implements Tracer {
             if (orig != null) {
                 return orig;
             }
-            return Configuration.fromEnv().getTracer();
+            return Configuration.fromEnv().withMetricsFactory(new ShamrockJaegerMetricsFactory()).getTracer();
         });
     }
 

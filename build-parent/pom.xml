@@ -24,7 +24,7 @@
    <packaging>pom</packaging>
 
    <properties>
-      <jandex.version>2.1.0.Beta3</jandex.version>
+      <jandex.version>2.1.0.Final</jandex.version>
       <resteasy.version>4.0.0.Beta6</resteasy.version>
       <opentracing.version>0.31.0</opentracing.version>
       <opentracing-jaxrs.version>0.3.1</opentracing-jaxrs.version>

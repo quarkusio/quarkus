@@ -37,7 +37,7 @@
 
     <properties>
         <version.asm>6.2.1</version.asm>
-        <version.jandex>2.1.0.Beta3</version.jandex>
+        <version.jandex>2.1.0.Final</version.jandex>
         <version.junit>4.12</version.junit>
     </properties>
 

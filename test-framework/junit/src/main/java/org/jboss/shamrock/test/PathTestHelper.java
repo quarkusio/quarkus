@@ -24,7 +24,7 @@ final class PathTestHelper {
 	            throw new RuntimeException("The test class " + testClass + " is not located in the " + TEST_CLASSES_FRAGMENT + " directory.");
 	        }
 
-	        return path.subpath(0, path.getNameCount() - Paths.get(classFileName).getNameCount());
+	        return path.getRoot().resolve(path.subpath(0, path.getNameCount() - Paths.get(classFileName).getNameCount()));
 		} catch (URISyntaxException e) {
 			throw new RuntimeException(e);
 		}

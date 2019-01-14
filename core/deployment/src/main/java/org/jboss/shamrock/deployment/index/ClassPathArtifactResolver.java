@@ -17,6 +17,8 @@
 package org.jboss.shamrock.deployment.index;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -45,17 +47,10 @@ public class ClassPathArtifactResolver implements ArtifactResolver {
                 URL jarUrl = res.nextElement();
                 String path = jarUrl.getPath();
                 if (path.startsWith("file:")) {
-                    path = path.substring(5, path.length() - META_INF_MANIFEST_MF.length() - 2);
-                    String[] parts = path.split("/"); //TODO: windows?
-                    String fileName = parts[parts.length - 1];
-                    List<String> fileParts = new ArrayList<>();
-                    for (int i = parts.length - 2; i >= 0; --i) {
-                        fileParts.add(parts[i]);
-                    }
-                    pathList.add(new StoredUrl(Paths.get(path), fileName, fileParts));
+                    pathList.add(new StoredUrl(Paths.get(new URI(path.substring(0, path.length() - META_INF_MANIFEST_MF.length() - 2)))));
                 }
             }
-        } catch (IOException e) {
+        } catch (IOException | URISyntaxException e) {
             throw new RuntimeException(e);
         }
     }
@@ -72,13 +67,13 @@ public class ClassPathArtifactResolver implements ArtifactResolver {
             Matcher matcher = filePatten.matcher(url.fileName);
             if (matcher.matches()) {
                 String[] groupParts = groupId.split("\\.");
-                if (url.reverseParts.size() < groupParts.length + 2) {
+                if (url.path.getNameCount() < groupParts.length + 2) {
                     continue;
                 }
 
                 boolean matches = true;
                 for (int i = 0; i < groupParts.length; ++i) {
-                    String up = url.reverseParts.get(groupParts.length + 1 - i);
+                    String up = url.path.getName(url.path.getNameCount() - groupParts.length -3 + i).toString();
                     if (!up.equals(groupParts[i])) {
                         matches = false;
                         break;
@@ -100,12 +95,10 @@ public class ClassPathArtifactResolver implements ArtifactResolver {
     static class StoredUrl {
         final Path path;
         final String fileName;
-        final List<String> reverseParts;
 
-        private StoredUrl(Path path, String fileName, List<String> reverseParts) {
+        private StoredUrl(Path path) {
             this.path = path;
-            this.fileName = fileName;
-            this.reverseParts = reverseParts;
+            this.fileName = path.getFileName().toString();
         }
 
         @Override

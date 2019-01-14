@@ -14,11 +14,18 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.rest;
+package org.jboss.shamrock.jaxrs;
 
-import javax.ws.rs.ApplicationPath;
-import javax.ws.rs.core.Application;
+import org.jboss.builder.item.SimpleBuildItem;
 
-@ApplicationPath("/rest")
-public class TestApplication extends Application {
+/**
+ * A build item that represents a JAX-RS config.
+ */
+public final class JaxrsConfig extends SimpleBuildItem {
+
+    public final String defaultPath;
+
+    public JaxrsConfig(String defaultPath) {
+        this.defaultPath = defaultPath;
+    }
 }

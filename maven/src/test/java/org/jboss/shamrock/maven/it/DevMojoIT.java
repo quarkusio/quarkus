@@ -56,14 +56,14 @@ public class DevMojoIT extends MojoTestBase {
 
         // Wait until we get "uuid"
         await()
-                .pollDelay(1, TimeUnit.SECONDS)
+                .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains(uuid));
         sleep();
         filter(source, ImmutableMap.of(uuid, "carambar"));
 
         // Wait until we get "uuid"
         await()
-                .pollDelay(1, TimeUnit.SECONDS)
+                .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains("carambar"));
     }
 
@@ -94,7 +94,7 @@ public class DevMojoIT extends MojoTestBase {
 
         // Wait until we get "bar"
         await()
-                .pollDelay(1, TimeUnit.SECONDS)
+                .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/foo").contains("bar"));
     }
 
@@ -128,7 +128,7 @@ public class DevMojoIT extends MojoTestBase {
         FileUtils.write(source, myNewServlet, Charset.forName("UTF-8"));
 
         await()
-                .pollDelay(1, TimeUnit.SECONDS)
+                .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/my").contains("hello from servlet"));
 
         // delete servlet
@@ -136,7 +136,7 @@ public class DevMojoIT extends MojoTestBase {
         source.delete();
 
         await()
-                .pollDelay(1, TimeUnit.SECONDS)
+                .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/my", 404));
 
     }
@@ -178,7 +178,7 @@ public class DevMojoIT extends MojoTestBase {
 
         // Wait until we get "uuid"
         await()
-                .pollDelay(1, TimeUnit.SECONDS)
+                .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES)
                 .until(() -> getHttpResponse("/app/hello/greeting").contains(uuid));
     }
@@ -192,7 +192,7 @@ public class DevMojoIT extends MojoTestBase {
         File source = new File(testDir, "src/main/resources/META-INF/resources/lorem.txt");
         FileUtils.write(source, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", "UTF-8");
         await()
-                .pollDelay(1, TimeUnit.SECONDS)
+                .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES)
                 .until(() -> getHttpResponse("/lorem.txt").contains("Lorem ipsum"));
 
@@ -200,14 +200,14 @@ public class DevMojoIT extends MojoTestBase {
         String uuid = UUID.randomUUID().toString();
         FileUtils.write(source, uuid, "UTF-8");
         await()
-                .pollDelay(1, TimeUnit.SECONDS)
+                .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES)
                 .until(() -> getHttpResponse("/lorem.txt").contains(uuid));
 
         // Delete the resource
         source.delete();
         await()
-                .pollDelay(1, TimeUnit.SECONDS)
+                .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES)
                 .until(() -> getHttpResponse("/lorem.txt", 404));
     }
@@ -225,7 +225,7 @@ public class DevMojoIT extends MojoTestBase {
         // Wait until we get "uuid"
         AtomicReference<String> last = new AtomicReference<>();
         await()
-                .pollDelay(1, TimeUnit.SECONDS)
+                .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> {
             String content = getHttpResponse("/app/hello");
             last.set(content);
@@ -241,7 +241,7 @@ public class DevMojoIT extends MojoTestBase {
 
         // Wait until we get "uuid"
         await()
-                .pollDelay(1, TimeUnit.SECONDS)
+                .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains("carambar"));
     }
 
@@ -273,7 +273,7 @@ public class DevMojoIT extends MojoTestBase {
 
         // Wait until we get "uuid"
         await()
-                .pollDelay(1, TimeUnit.SECONDS)
+                .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains("message"));
 
         sleep();
@@ -281,7 +281,7 @@ public class DevMojoIT extends MojoTestBase {
         filter(source, ImmutableMap.of("message", "foobarbaz"));
 
         await()
-                .pollDelay(1, TimeUnit.SECONDS)
+                .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains("foobarbaz"));
     }
 

@@ -257,12 +257,9 @@ public class BeanDeployment {
 
     void init() {
         long start = System.currentTimeMillis();
-        for (BeanInfo bean : beans) {
-            bean.init();
-        }
-        for (InterceptorInfo interceptor : interceptors) {
-            interceptor.init();
-        }
+        beans.forEach(BeanInfo::init);
+        observers.forEach(ObserverInfo::init);
+        interceptors.forEach(InterceptorInfo::init);
         LOGGER.debugf("Bean deployment initialized in %s ms", System.currentTimeMillis() - start);
     }
 

@@ -218,8 +218,8 @@ public class JaxrsScanningProcessor {
 
     @BuildStep
     public void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-                      BuildProducer<SubstrateProxyDefinitionBuildItem> proxyDefinition,
                       BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
+                      BuildProducer<SubstrateProxyDefinitionBuildItem> proxyDefinition,
                       BuildProducer<SubstrateResourceBuildItem> resource,
                       BuildProducer<RuntimeInitializedClassBuildItem> runtimeClasses,
                       BuildProducer<FilterBuildItem> filterProducer,
@@ -227,17 +227,9 @@ public class JaxrsScanningProcessor {
                       BuildProducer<ServletInitParamBuildItem> servletContextParams,
                       CombinedIndexBuildItem combinedIndexBuildItem
     ) throws Exception {
-
-        // required by JSON-P support
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "org.glassfish.json.JsonProviderImpl"));
-
-        // required by Jackson
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false,
-                "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector",
-                "com.fasterxml.jackson.databind.ser.std.SqlDateSerializer"));
+        IndexView index = combinedIndexBuildItem.getIndex();
 
         resource.produce(new SubstrateResourceBuildItem("META-INF/services/javax.ws.rs.client.ClientBuilder"));
-        IndexView index = combinedIndexBuildItem.getIndex();
 
         Collection<AnnotationInstance> app = index.getAnnotations(APPLICATION_PATH);
         Collection<AnnotationInstance> xmlRoot = index.getAnnotations(XML_ROOT);
@@ -246,13 +238,6 @@ public class JaxrsScanningProcessor {
                     "com.sun.xml.internal.bind.v2.ContextFactory"));
         }
         runtimeClasses.produce(new RuntimeInitializedClassBuildItem("com.sun.xml.internal.bind.v2.runtime.reflect.opt.Injector"));
-        for (DotName i : Arrays.asList(XML_ROOT, JSONB_ANNOTATION)) {
-            for (AnnotationInstance anno : index.getAnnotations(i)) {
-                if (anno.target().kind() == AnnotationTarget.Kind.CLASS) {
-                    reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, anno.target().asClass().name().toString()));
-                }
-            }
-        }
 
         //@Context uses proxies for interface injection
         for (AnnotationInstance annotation : index.getAnnotations(CONTEXT)) {
@@ -367,23 +352,6 @@ public class JaxrsScanningProcessor {
             return;
         }
 
-        // Declare reflection for all the types implicated in the Rest end points (return types and parameters).
-        // It might be needed for serialization.
-        for (DotName annotationType : METHOD_ANNOTATIONS) {
-            Collection<AnnotationInstance> instances = index.getAnnotations(annotationType);
-            for (AnnotationInstance instance : instances) {
-                MethodInfo method = instance.target().asMethod();
-                if (isReflectionDeclarationRequiredFor(method.returnType())) {
-                    reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(method.returnType()));
-                }
-                for (Type param : method.parameters()) {
-                    if (isReflectionDeclarationRequiredFor(param)) {
-                        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(param));
-                    }
-                }
-            }
-        }
-
         OUTER:
         for (DotName annotationType : RESTEASY_PARAM_ANNOTATIONS) {
             Collection<AnnotationInstance> instances = index.getAnnotations(annotationType);
@@ -399,9 +367,7 @@ public class JaxrsScanningProcessor {
             }
         }
 
-        // In the case of a constraint violation, these elements might be returned as entities and will be serialized
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ViolationReport.class.getName()));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ResteasyConstraintViolation.class.getName()));
+        registerReflectionForSerialization(reflectiveClass, reflectiveHierarchy, combinedIndexBuildItem);
     }
 
     @BuildStep
@@ -475,6 +441,50 @@ public class JaxrsScanningProcessor {
     @BuildStep
     List<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations() {
         return Collections.singletonList(new BeanDefiningAnnotationBuildItem(PATH, singletonResources ? SINGLETON_SCOPE : null));
+    }
+
+    private void registerReflectionForSerialization(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
+            CombinedIndexBuildItem combinedIndexBuildItem) {
+        IndexView index = combinedIndexBuildItem.getIndex();
+
+        // required by JSON-P support
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "org.glassfish.json.JsonProviderImpl"));
+
+        // required by Jackson
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false,
+                "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector",
+                "com.fasterxml.jackson.databind.ser.std.SqlDateSerializer"));
+
+        // This is probably redundant with the automatic resolution we do just below but better be safe
+        for (DotName i : Arrays.asList(XML_ROOT, JSONB_ANNOTATION)) {
+            for (AnnotationInstance annotation : index.getAnnotations(i)) {
+                if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
+                    reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, annotation.target().asClass().name().toString()));
+                }
+            }
+        }
+
+        // Declare reflection for all the types implicated in the Rest end points (return types and parameters).
+        // It might be needed for serialization.
+        for (DotName annotationType : METHOD_ANNOTATIONS) {
+            Collection<AnnotationInstance> instances = index.getAnnotations(annotationType);
+            for (AnnotationInstance instance : instances) {
+                MethodInfo method = instance.target().asMethod();
+                if (isReflectionDeclarationRequiredFor(method.returnType())) {
+                    reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(method.returnType()));
+                }
+                for (Type param : method.parameters()) {
+                    if (isReflectionDeclarationRequiredFor(param)) {
+                        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(param));
+                    }
+                }
+            }
+        }
+
+        // In the case of a constraint violation, these elements might be returned as entities and will be serialized
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ViolationReport.class.getName()));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ResteasyConstraintViolation.class.getName()));
     }
 
     private Set<String> getAvailableProviders() throws Exception {

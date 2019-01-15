@@ -96,6 +96,7 @@ public class JaxrsScanningProcessor {
     private static final DotName APPLICATION_PATH = DotName.createSimple("javax.ws.rs.ApplicationPath");
 
     private static final DotName PATH = DotName.createSimple("javax.ws.rs.Path");
+    private static final DotName PROVIDER = DotName.createSimple("javax.ws.rs.ext.Provider");
     private static final DotName DYNAMIC_FEATURE = DotName.createSimple(DynamicFeature.class.getName());
 
     private static final DotName XML_ROOT = DotName.createSimple("javax.xml.bind.annotation.XmlRootElement");
@@ -207,6 +208,15 @@ public class JaxrsScanningProcessor {
                 .addResourceBundle("messages")
                 .addNativeImageSystemProperty("com.sun.xml.internal.bind.v2.bytecode.ClassTailor.noOptimize", "true") //com.sun.xml.internal.bind.v2.runtime.reflect.opt.AccessorInjector will attempt to use code that does not work if this is not set
                 .build();
+    }
+
+    @BuildStep
+    void scanForProviders(BuildProducer<JaxrsProviderBuildItem> providers, CombinedIndexBuildItem indexBuildItem) {
+        for(AnnotationInstance i : indexBuildItem.getIndex().getAnnotations(PROVIDER)) {
+            if(i.target().kind() == AnnotationTarget.Kind.CLASS) {
+                providers.produce(new JaxrsProviderBuildItem(i.target().asClass().name().toString()));
+            }
+        }
     }
 
     @BuildStep

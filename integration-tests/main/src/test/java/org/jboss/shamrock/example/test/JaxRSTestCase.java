@@ -18,6 +18,8 @@ package org.jboss.shamrock.example.test;
 
 import static org.hamcrest.Matchers.is;
 
+import java.util.Collections;
+
 import org.jboss.shamrock.test.ShamrockTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -85,6 +87,11 @@ public class JaxRSTestCase {
     @Test
     public void testRxJava() {
         RestAssured.when().get("/rest/test/rx").then().body(is("Hello"));
+    }
+
+    @Test
+    public void testCustomProvider() {
+        RestAssured.when().get("/rest/test/fooprovider").then().body(is("hello-foo"));
     }
 
     @Test

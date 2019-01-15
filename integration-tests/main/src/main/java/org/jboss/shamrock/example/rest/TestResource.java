@@ -127,6 +127,13 @@ public class TestResource {
 
     }
 
+    @GET
+    @Path("/fooprovider")
+    @Produces("application/foo")
+    public String fooProvider() {
+        return "hello";
+    }
+
     @XmlRootElement
     public static class XmlObject {
 

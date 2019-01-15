@@ -118,9 +118,6 @@ final class HibernateReflectiveNeeds {
         simpleConstructor(org.hibernate.hql.internal.ast.tree.ConstructorNode.class);
         simpleConstructor(org.hibernate.hql.internal.ast.tree.LiteralNode.class);
         simpleConstructor(org.hibernate.hql.internal.ast.tree.BinaryArithmeticOperatorNode.class);
-
-        //PostgreSQL specific (move to its own home?) FIXME
-        simpleConstructor(org.hibernate.dialect.PostgreSQL95Dialect.class);
     }
 
     private void allConstructors(final Class clazz) {

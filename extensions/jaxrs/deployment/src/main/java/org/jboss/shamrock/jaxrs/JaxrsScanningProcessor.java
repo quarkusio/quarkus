@@ -37,13 +37,18 @@ import java.util.stream.Collectors;
 
 import javax.inject.Singleton;
 import javax.servlet.DispatcherType;
+import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.container.DynamicFeature;
+import javax.ws.rs.core.Application;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
+import javax.ws.rs.ext.Provider;
 import javax.ws.rs.ext.Providers;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -92,38 +97,38 @@ import org.jboss.shamrock.undertow.ServletInitParamBuildItem;
  */
 public class JaxrsScanningProcessor {
 
-    private static final String JAVAX_WS_RS_APPLICATION = "javax.ws.rs.Application";
+    private static final String JAVAX_WS_RS_APPLICATION = Application.class.getName();
     private static final String JAX_RS_FILTER_NAME = JAVAX_WS_RS_APPLICATION;
     private static final String JAX_RS_SERVLET_NAME = JAVAX_WS_RS_APPLICATION;
     private static final String JAX_RS_APPLICATION_PARAMETER_NAME = JAVAX_WS_RS_APPLICATION;
 
-    private static final DotName APPLICATION_PATH = DotName.createSimple("javax.ws.rs.ApplicationPath");
+    private static final DotName APPLICATION_PATH = DotName.createSimple(ApplicationPath.class.getName());
 
-    private static final DotName PATH = DotName.createSimple("javax.ws.rs.Path");
-    private static final DotName PROVIDER = DotName.createSimple("javax.ws.rs.ext.Provider");
+    private static final DotName PATH = DotName.createSimple(Path.class.getName());
+    private static final DotName PROVIDER = DotName.createSimple(Provider.class.getName());
     private static final DotName DYNAMIC_FEATURE = DotName.createSimple(DynamicFeature.class.getName());
+    private static final DotName CONTEXT = DotName.createSimple(Context.class.getName());
+
+    private static final DotName GET = DotName.createSimple(javax.ws.rs.GET.class.getName());
+    private static final DotName HEAD = DotName.createSimple(javax.ws.rs.HEAD.class.getName());
+    private static final DotName DELETE = DotName.createSimple(javax.ws.rs.DELETE.class.getName());
+    private static final DotName OPTIONS = DotName.createSimple(javax.ws.rs.OPTIONS.class.getName());
+    private static final DotName PATCH = DotName.createSimple(javax.ws.rs.PATCH.class.getName());
+    private static final DotName POST = DotName.createSimple(javax.ws.rs.POST.class.getName());
+    private static final DotName PUT = DotName.createSimple(javax.ws.rs.PUT.class.getName());
+
+    private static final DotName CONSUMES = DotName.createSimple(Consumes.class.getName());
+    private static final DotName PRODUCES = DotName.createSimple(Produces.class.getName());
+
+    private static final DotName RESTEASY_QUERY_PARAM = DotName.createSimple(org.jboss.resteasy.annotations.jaxrs.QueryParam.class.getName());
+    private static final DotName RESTEASY_FORM_PARAM = DotName.createSimple(org.jboss.resteasy.annotations.jaxrs.FormParam.class.getName());
+    private static final DotName RESTEASY_COOKIE_PARAM = DotName.createSimple(org.jboss.resteasy.annotations.jaxrs.CookieParam.class.getName());
+    private static final DotName RESTEASY_PATH_PARAM = DotName.createSimple(org.jboss.resteasy.annotations.jaxrs.PathParam.class.getName());
+    private static final DotName RESTEASY_HEADER_PARAM = DotName.createSimple(org.jboss.resteasy.annotations.jaxrs.HeaderParam.class.getName());
+    private static final DotName RESTEASY_MATRIX_PARAM = DotName.createSimple(org.jboss.resteasy.annotations.jaxrs.MatrixParam.class.getName());
 
     private static final DotName XML_ROOT = DotName.createSimple("javax.xml.bind.annotation.XmlRootElement");
     private static final DotName JSONB_ANNOTATION = DotName.createSimple("javax.json.bind.annotation.JsonbAnnotation");
-    private static final DotName CONTEXT = DotName.createSimple("javax.ws.rs.core.Context");
-
-    private static final DotName GET = DotName.createSimple("javax.ws.rs.GET");
-    private static final DotName HEAD = DotName.createSimple("javax.ws.rs.HEAD");
-    private static final DotName DELETE = DotName.createSimple("javax.ws.rs.DELETE");
-    private static final DotName OPTIONS = DotName.createSimple("javax.ws.rs.OPTIONS");
-    private static final DotName PATCH = DotName.createSimple("javax.ws.rs.PATCH");
-    private static final DotName POST = DotName.createSimple("javax.ws.rs.POST");
-    private static final DotName PUT = DotName.createSimple("javax.ws.rs.PUT");
-
-    private static final DotName RESTEASY_QUERY_PARAM = DotName.createSimple("org.jboss.resteasy.annotations.jaxrs.QueryParam");
-    private static final DotName RESTEASY_FORM_PARAM = DotName.createSimple("org.jboss.resteasy.annotations.jaxrs.FormParam");
-    private static final DotName RESTEASY_COOKIE_PARAM = DotName.createSimple("org.jboss.resteasy.annotations.jaxrs.CookieParam");
-    private static final DotName RESTEASY_PATH_PARAM = DotName.createSimple("org.jboss.resteasy.annotations.jaxrs.PathParam");
-    private static final DotName RESTEASY_HEADER_PARAM = DotName.createSimple("org.jboss.resteasy.annotations.jaxrs.HeaderParam");
-    private static final DotName RESTEASY_MATRIX_PARAM = DotName.createSimple("org.jboss.resteasy.annotations.jaxrs.MatrixParam");
-
-    private static final DotName CONSUMES = DotName.createSimple("javax.ws.rs.Consumes");
-    private static final DotName PRODUCES = DotName.createSimple("javax.ws.rs.Produces");
 
     private static final Set<DotName> TYPES_IGNORED_FOR_REFLECTION = new HashSet<>(Arrays.asList(
             DotName.createSimple("javax.json.JsonObject"),

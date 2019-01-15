@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -177,10 +178,29 @@ public class DevMojoIT extends MojoTestBase {
         filter(source, ImmutableMap.of("bonjour", uuid));
 
         // Wait until we get "uuid"
+        AtomicInteger counter = new AtomicInteger();
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES)
-                .until(() -> getHttpResponse("/app/hello/greeting").contains(uuid));
+                .until(() -> {
+                    try {
+                        String response = getHttpResponse("/app/hello/greeting");
+                        if (! response.contains(uuid)) {
+                            if (counter.incrementAndGet() > 10) {
+                                counter.set(0);
+                                System.out.println("After 10 attempts, constraint not satisfied. Last response is:"
+                                        + response);
+                            }
+                            return false;
+                        } else {
+                            return true;
+                        }
+                    } catch (RuntimeException e) {
+                        System.out.println("Unable to retrieve the response: " + e.getCause().getMessage());
+                        e.getCause().printStackTrace();
+                        throw e;
+                    }
+                });
     }
 
     @Test
@@ -272,10 +292,29 @@ public class DevMojoIT extends MojoTestBase {
         filter(resource, Collections.singletonMap("\"hello\"", "bean.get()"));
 
         // Wait until we get "uuid"
+        AtomicInteger counter = new AtomicInteger();
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains("message"));
-
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> {
+                    try {
+                        String response = getHttpResponse("/app/hello");
+                        if (! response.contains("message")) {
+                            if (counter.incrementAndGet() > 10) {
+                                counter.set(0);
+                                System.out.println("After 10 attempts, constraint not satisfied. Last response is:"
+                                        + response);
+                            }
+                            return false;
+                        } else {
+                            return true;
+                        }
+                    } catch (RuntimeException e) {
+                        System.out.println("Unable to retrieve the response: " + e.getCause().getMessage());
+                        e.getCause().printStackTrace();
+                        throw e;
+                    }
+                });
         sleep();
 
         filter(source, ImmutableMap.of("message", "foobarbaz"));

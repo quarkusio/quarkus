@@ -198,6 +198,7 @@ public class MojoTestBase {
 
     static String getHttpResponse(String path) {
         AtomicReference<String> resp = new AtomicReference<>();
+        AtomicReference<Throwable> error = new AtomicReference<>();
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> {
@@ -207,10 +208,15 @@ public class MojoTestBase {
                 resp.set(content);
                 return true;
             } catch (Exception e) {
+                error.set(e);
                 return false;
             }
         });
-        return resp.get();
+        if (resp.get() != null) {
+            return resp.get();
+        } else {
+            throw new RuntimeException(error.get());
+        }
     }
 
     static boolean getHttpResponse(String path, int expectedStatus) {

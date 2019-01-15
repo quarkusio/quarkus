@@ -61,7 +61,7 @@ public class SetupTemplates {
         }
     }
 
-    public void generate(MavenProject project, String rootPath, String path, String className, Log log) throws MojoExecutionException {
+    public void generate(MavenProject project, String path, String className, Log log) throws MojoExecutionException {
         if (Strings.isNullOrEmpty(className)) {
             return;
         }
@@ -92,7 +92,6 @@ public class SetupTemplates {
         File testClassFile = new File(testRoot, className + "Test" + JAVA_EXTENSION);
         Map<String, String> context = new HashMap<>();
         context.put("classname", className);
-        context.put("root_prefix", rootPath);
         context.put("path", path);
         if (packageName != null) {
             context.put("packageName", packageName);
@@ -112,16 +111,6 @@ public class SetupTemplates {
             temp.process(context, out);
         } catch (Exception e) {
             throw new MojoExecutionException("Unable to generate test code", e);
-        }
-
-        // Generate application.
-        File appClassFile = new File(root, "ShamrockApplication.java");
-        try {
-            Template temp = cfg.getTemplate("templates/application-template.ftl");
-            Writer out = new FileWriter(appClassFile);
-            temp.process(context, out);
-        } catch (Exception e) {
-            throw new MojoExecutionException("Unable to generate Application class", e);
         }
     }
 

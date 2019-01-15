@@ -133,7 +133,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/main/java/org/acme/MyResource.java")).isFile();
-        assertThat(new File(testDir, "src/main/java/org/acme/ShamrockApplication.java")).isFile();
+        assertThat(new File(testDir, "src/main/java/org/acme/ShamrockApplication.java")).doesNotExist();
     }
 
     @Test
@@ -151,7 +151,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
                 .contains("shamrock.version");
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/main/java/org/acme/MyResource.java")).isFile();
-        assertThat(new File(testDir, "src/main/java/org/acme/ShamrockApplication.java")).isFile();
+        assertThat(new File(testDir, "src/main/java/org/acme/ShamrockApplication.java")).doesNotExist();
     }
 
     @Test
@@ -169,7 +169,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/main/java/org/acme/MyResource.java")).isFile();
-        assertThat(new File(testDir, "src/main/java/org/acme/ShamrockApplication.java")).isFile();
+        assertThat(new File(testDir, "src/main/java/org/acme/ShamrockApplication.java")).doesNotExist();
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
                 .contains("shamrock-jaxrs-deployment", "shamrock-metrics-deployment").doesNotContain("missing");
 
@@ -204,7 +204,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         setup(properties);
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(new File(testDir, "src/main/java/org/acme/MyResource.java")).isFile();
-        assertThat(new File(testDir, "src/main/java/org/acme/ShamrockApplication.java")).isFile();
+        assertThat(new File(testDir, "src/main/java/org/acme/ShamrockApplication.java")).doesNotExist();
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
                 .contains("commons-io");
 
@@ -238,7 +238,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         setup(properties);
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(new File(testDir, "src/main/java/org/acme/MyResource.java")).isFile();
-        assertThat(new File(testDir, "src/main/java/org/acme/ShamrockApplication.java")).isFile();
+        assertThat(new File(testDir, "src/main/java/org/acme/ShamrockApplication.java")).doesNotExist();
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
                 .contains("commons-io");
     }
@@ -251,7 +251,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
     }
 
     @Test
-    public void generateNewProjectAndRun() throws MavenInvocationException, FileNotFoundException, InterruptedException {
+    public void generateNewProjectAndRun() throws MavenInvocationException, FileNotFoundException {
         testDir = initEmptyProject("projects/project-generation-and-run");
 
         // Scaffold the new project
@@ -272,7 +272,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.acme")
                 .containsIgnoringCase("1.0-SNAPSHOT");
 
-        String greeting = getHttpResponse("/app/hello");
+        String greeting = getHttpResponse("/hello");
         assertThat(greeting).containsIgnoringCase("hello");
     }
 

@@ -13,7 +13,7 @@ public class HelloResourceTest {
     @Test
     public void testHelloEndpoint() {
         given()
-          .when().get("/app/hello")
+          .when().get("/hello")
           .then()
              .statusCode(200)
              .body(is("hello"));

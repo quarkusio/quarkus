@@ -82,9 +82,6 @@ public class CreateProjectMojo extends AbstractMojo {
     @Parameter(property = "className")
     private String className;
 
-    @Parameter(property = "root", defaultValue = "/app")
-    private String root;
-
     @Parameter(property = "extensions")
     private List<String> extensions;
 
@@ -123,7 +120,7 @@ public class CreateProjectMojo extends AbstractMojo {
         model = project.getOriginalModel().clone();
 
         createDirectories();
-        templates.generate(project, root, path, className, getLog());
+        templates.generate(project, path, className, getLog());
         Optional<Plugin> maybe = MojoUtils.hasPlugin(project, PLUGIN_KEY);
         if (maybe.isPresent()) {
             printUserInstructions(pomFile);
@@ -258,14 +255,6 @@ public class CreateProjectMojo extends AbstractMojo {
                     }
                 }
 
-                if (root == null) {
-                    root = prompter.promptWithDefaultValue("Set the application root ",
-                            "/app");
-                    if (!root.startsWith("/")) {
-                        root = "/" + root;
-                    }
-                }
-
                 if (path == null) {
                     path = prompter.promptWithDefaultValue("Set the resource path ",
                             "/hello");
@@ -298,7 +287,6 @@ public class CreateProjectMojo extends AbstractMojo {
             context.put("docRoot", MojoUtils.get("doc-root"));
 
             context.put("className", className);
-            context.put("root", root);
             context.put("path", path);
 
             templates.createNewProjectPomFile(context, pomFile);

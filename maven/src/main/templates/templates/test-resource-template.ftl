@@ -15,7 +15,7 @@ public class ${classname}Test {
     @Test
     public void testHelloEndpoint() {
         given()
-          .when().get("${root_prefix}${path}")
+          .when().get("${path}")
           .then()
              .statusCode(200)
              .body(is("hello"));

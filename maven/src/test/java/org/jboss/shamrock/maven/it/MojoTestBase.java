@@ -207,7 +207,6 @@ public class MojoTestBase {
             try {
                 URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
                 String content = toString(url);
-                System.out.println(path + " => " + content);
                 resp.set(content);
                 return true;
             } catch (Exception e) {

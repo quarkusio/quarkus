@@ -36,7 +36,8 @@ public class MojoTestBase {
         VARIABLES = ImmutableMap.of(
                 "@project.groupId@", CreateProjectMojo.PLUGIN_GROUPID,
                 "@project.artifactId@", CreateProjectMojo.PLUGIN_ARTIFACTID,
-                "@project.version@", VERSION);
+                "@project.version@", VERSION,
+                "@rest-assured.version@", MojoUtils.get("restAssuredVersion"));
     }
 
     static File initProject(String name) {

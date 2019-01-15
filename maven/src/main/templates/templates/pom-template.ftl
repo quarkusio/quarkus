@@ -11,6 +11,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
 
         <shamrock.version>${shamrockVersion}</shamrock.version>
+        <restassured.version>${restAssuredVersion}</restassured.version>
     </properties>
 
     <dependencyManagement>
@@ -43,7 +44,7 @@
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
-            <version>3.2.0</version>
+            <version>${r"${restassured.version}"}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

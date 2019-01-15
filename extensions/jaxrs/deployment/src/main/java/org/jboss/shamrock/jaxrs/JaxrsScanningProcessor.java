@@ -182,7 +182,7 @@ public class JaxrsScanningProcessor {
 
     /**
      * Set this to override the default path for JAX-RS resources if there are no
-     * annotated application classes. The default value is `/rest`. 
+     * annotated application classes. The default value is `/`. 
      */
     @ConfigProperty(name = "shamrock.jaxrs.path", defaultValue = "/")
     String defaultPath;

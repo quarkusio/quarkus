@@ -1,0 +1,108 @@
+= {project-name} - Using OpenTracing
+
+This guide explains how your Shamrock application can utilize opentracing to provide distributed tracing for
+interactive web applications.
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* an IDE
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven 3.5+
+
+Remember, you need to configure Maven as indicated in the link:maven-config.html[Maven configuration page].
+
+== Architecture
+
+In this guide, we create a straightforward REST application to demonstrate distributed tracing.
+
+== Solution
+
+We recommend you to follow the instructions in the next sections and create the application step by step.
+However, you can skip right to the completed example.
+
+Clone the Git repository: `git clone https://github.com/protean-project/quickstarts.git`, or download an https://github.com/protean-project/quickstarts/archive/master.zip[archive].
+
+The solution is located in the `using-opentracing` https://github.com/protean-project/quickstarts/tree/master/using-opentracing[directory].
+
+== Creating the Maven project
+
+First, we need a new project. Create a new project with the following command:
+
+[source, subs=attributes+]
+----
+mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=using-opentracing \
+    -DclassName="org.acme.opentracing.TracedResource" \
+    -Dpath="/hello" \
+    -Dextensions="tracing"
+----
+
+This command generates the Maven project with a REST endpoint and imports the `tracing` extension, which
+includes the OpenTracing support and the default https://www.jaegertracing.io/[Jaeger] tracer.
+
+=== Examine the JAX-RS resource
+
+Open the `src/main/java/org/acme/opentracing/TracedResource.java` file and see the following content:
+
+[source,java]
+----
+package org.acme.opentracing;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("/hello")
+public class TracedResource {
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() {
+        return "hello";
+    }
+}
+----
+
+Notice that there is no tracing specific code included in the application. By default, requests sent to this
+endpoint will be traced without any code changes being required. It is also possible to enhance the tracing information. For more information on this, please see the https://github.com/eclipse/microprofile-opentracing/blob/master/spec/src/main/asciidoc/microprofile-opentracing.asciidoc[ MicroProfile OpenTracing specification].
+
+== Run the application
+
+Now we are ready to run our application. Use:
+
+[source, text]
+----
+mvn compile shamrock:dev -Djvm.args="-DJAEGER_SERVICE_NAME=myservice -DJAEGER_SAMPLER_TYPE=const -DJAEGER_SAMPLER_PARAM=1 -DJAEGER_ENDPOINT=http://localhost:14268/api/traces"
+----
+
+The supplied `jvm.args` are used to configure the default OpenTracing tracer (Jaeger). If the `JAEGER_SERVICE_NAME` property is not provided then a "no-op" tracer will be configured, resulting in no tracing data being reported to the backend. The other properties are explained in the https://www.jaegertracing.io/docs/latest/client-features/[Tracer configuration via environment variables] section of the Jaeger documentation.
+
+NOTE: Currently the tracer can only be configured to report spans directly to the collector via HTTP, using the `JAEGER_ENDPONT` property. Support for using the Jaeger agent, via UDP, will be available in a future version.
+
+The next step is to startup the tracing system to collect and display the captured traces:
+
+[source, text]
+----
+docker run -e COLLECTOR_ZIPKIN_HTTP_PORT=9411 -p 5775:5775/udp -p 6831:6831/udp -p 6832:6832/udp -p 5778:5778 -p 16686:16686 -p 14268:14268 -p 9411:9411 jaegertracing/all-in-one:latest
+----
+
+Once both are started, you can request the provided endpoint:
+
+```
+$ curl http://localhost:8080/app/hello
+hello
+```
+When the first request has been submitted, the Jaeger tracer within the app will be initialized:
+```
+2019-01-14 17:36:38,580 localhost using-opentracing-dev.jar[14190] INFO  [i.j.Configuration] (XNIO-1 task-1) Initialized tracer=JaegerTracer(version=Java-0.33.1, serviceName=myservice, reporter=RemoteReporter(sender=HttpSender(), closeEnqueueTimeout=1000), sampler=ConstSampler(decision=true, tags={sampler.type=const, sampler.param=true}), tags={hostname=localhost.localdomain, jaeger.version=Java-0.33.1, ip=127.0.0.1}, zipkinSharedRpcSpan=false, expandExceptionLogs=false, useTraceId128Bit=false)
+```
+
+Then visit the http://localhost:16686[Jaeger UI] to see the tracing information.
+
+
+Hit `CTRL+C` to stop the application.

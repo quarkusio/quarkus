@@ -17,6 +17,7 @@ include::protean-intro.adoc[tag=intro]
 * link:scheduled-guide.html[Schedule Periodic Tasks]
 * link:websocket-guide.html[Using Websockets]
 * link:hibernate-orm-guide.html[Using Hibernate ORM]
+* link:opentracing-guide.html[Using OpenTracing]
 * link:extension-authors-guide.html[Write Your Own Extension] _(advanced)_
 * link:performance-measure.html[Measuring Performance] _(advanced)_
 * link:cdi-reference.html[Contexts and Dependency Injection] _(advanced)_

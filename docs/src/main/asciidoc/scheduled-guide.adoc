@@ -139,7 +139,7 @@ public class CountResourceTest {
     @Test
     public void testHelloEndpoint() {
         given()
-          .when().get("/app/count")
+          .when().get("/count")
           .then()
              .statusCode(200)
              .body(containsString("count"));  // <1>
@@ -152,8 +152,8 @@ public class CountResourceTest {
 == Package and run the application
 
 Run the application with: `mvn compile shamrock:dev`.
-In another terminal, run `curl localhost:8080/app/count` to check the counter value.
-After a few seconds, re-run `curl localhost:8080/app/count` to verify the counter has been incremented.
+In another terminal, run `curl localhost:8080/count` to check the counter value.
+After a few seconds, re-run `curl localhost:8080/count` to verify the counter has been incremented.
 
 As usual, the application can be packaged using `mvn clean package` and executed using the `-runner.jar` file.
 You can also generate the native executable.

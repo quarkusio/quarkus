@@ -123,7 +123,7 @@ public class GreetingResourceTest {
     @Test
     public void testHelloEndpoint() {
         given()
-          .when().get("/app/greeting")
+          .when().get("/greeting")
           .then()
              .statusCode(200)
              .body(is("hello shamrock!")); // Modified line
@@ -135,7 +135,7 @@ public class GreetingResourceTest {
 == Package and run the application
 
 Run the application with: `mvn compile shamrock:dev`.
-Open your browser to http://localhost:8080/app/greeting.
+Open your browser to http://localhost:8080/greeting.
 
 Changing the configuration file is immediately reflected.
 You can add the `greeting.suffix`, remove the other properties, change the values, etc.

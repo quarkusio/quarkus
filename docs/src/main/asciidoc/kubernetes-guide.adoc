@@ -56,7 +56,7 @@ The application is now exposed as an internal service. If you are using `minikub
 
 [source, bash]
 ----
-curl $(minikube service shamrock-quickstart --url)/app/hello/greeting/shamrock
+curl $(minikube service shamrock-quickstart --url)/hello/greeting/shamrock
 ----
 
 == Deploying the application in OpenShift
@@ -78,7 +78,7 @@ oc expose service shamrock-quickstart
 
 # Get the route URL
 export URL="http://$(oc get route | grep shamrock-quickstart | awk '{print $2}')"
-curl $URL/app/hello/greeting/shamrock
+curl $URL/hello/greeting/shamrock
 ----
 
 Your application is accessible at the printed URL.

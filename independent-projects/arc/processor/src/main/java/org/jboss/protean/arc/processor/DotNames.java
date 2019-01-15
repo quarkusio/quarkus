@@ -87,14 +87,14 @@ public final class DotNames {
     public static final DotName OPTIONAL = create(Optional.class);
     public static final DotName NAMED = create(Named.class);
 
-    public static final DotName BOOLEAN = create(Boolean.class.getName());
-    public static final DotName BYTE = create(Byte.class.getName());
-    public static final DotName CHARACTER = create(Character.class.getName());
-    public static final DotName DOUBLE = create(Double.class.getName());
-    public static final DotName FLOAT = create(Float.class.getName());
-    public static final DotName INTEGER = create(Integer.class.getName());
-    public static final DotName LONG = create(Long.class.getName());
-    public static final DotName SHORT = create(Short.class.getName());
+    public static final DotName BOOLEAN = create(Boolean.class);
+    public static final DotName BYTE = create(Byte.class);
+    public static final DotName CHARACTER = create(Character.class);
+    public static final DotName DOUBLE = create(Double.class);
+    public static final DotName FLOAT = create(Float.class);
+    public static final DotName INTEGER = create(Integer.class);
+    public static final DotName LONG = create(Long.class);
+    public static final DotName SHORT = create(Short.class);
 
     private DotNames() {
     }
@@ -104,12 +104,13 @@ public final class DotNames {
     }
 
     static DotName create(String name) {
-        if (!name.contains(".")) {
+        int lastDot = name.lastIndexOf('.');
+        if (lastDot < 0) {
             return DotName.createComponentized(null, name);
         }
-        String prefix = name.substring(0, name.lastIndexOf('.'));
+        String prefix = name.substring(0, lastDot);
         DotName prefixName = NAMES.getValue(prefix);
-        String local = name.substring(name.lastIndexOf('.') + 1);
+        String local = name.substring(lastDot + 1);
         return DotName.createComponentized(prefixName, local);
     }
 

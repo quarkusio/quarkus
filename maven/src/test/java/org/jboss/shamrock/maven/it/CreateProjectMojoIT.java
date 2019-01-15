@@ -252,7 +252,8 @@ public class CreateProjectMojoIT extends MojoTestBase {
 
     @Test
     public void generateNewProjectAndRun() throws MavenInvocationException, FileNotFoundException, InterruptedException {
-        testDir = initEmptyProject("projects/project-generation-and-run");
+        String pn = "projects/project-generation-and-run";
+        testDir = initEmptyProject(pn);
 
         // Scaffold the new project
         assertThat(testDir).isDirectory();
@@ -272,7 +273,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.acme")
                 .containsIgnoringCase("1.0-SNAPSHOT");
 
-        String greeting = getHttpResponse("/app/hello");
+        String greeting = getHttpResponse("/app/hello", pn);
         assertThat(greeting).containsIgnoringCase("hello");
     }
 

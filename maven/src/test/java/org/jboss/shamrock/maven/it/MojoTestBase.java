@@ -198,7 +198,7 @@ public class MojoTestBase {
         return resp.get();
     }
 
-    static String getHttpResponse(String path) {
+    static String getHttpResponse(String path, String projectName) {
         AtomicReference<String> resp = new AtomicReference<>();
         AtomicReference<Throwable> error = new AtomicReference<>();
         await()
@@ -212,6 +212,12 @@ public class MojoTestBase {
                 return true;
             } catch (Exception e) {
                 System.out.println("Calling " + path + " failed with: " + e.getMessage());
+                File log = new File("target/test-classes/" + projectName + ".log");
+                if (log.isFile()) {
+                    System.out.println(FileUtils.readFileToString(log, "UTF-8"));
+                } else {
+                    System.out.println("No log for " + projectName);
+                }
                 error.set(e);
                 return false;
             }

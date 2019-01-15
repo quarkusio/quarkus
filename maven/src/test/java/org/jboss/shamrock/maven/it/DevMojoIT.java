@@ -47,7 +47,8 @@ public class DevMojoIT extends MojoTestBase {
 
     @Test
     public void testThatTheApplicationIsReloadedOnJavaChange() throws MavenInvocationException, IOException, InterruptedException {
-        testDir = initProject("projects/classic", "projects/project-classic-run-java-change");
+        String pn = "projects/project-classic-run-java-change";
+        testDir = initProject("projects/classic", pn);
         runAndCheck();
 
         // Edit the "Hello" message.
@@ -58,19 +59,20 @@ public class DevMojoIT extends MojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains(uuid));
+                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello", pn).contains(uuid));
         sleep();
         filter(source, ImmutableMap.of(uuid, "carambar"));
 
         // Wait until we get "uuid"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains("carambar"));
+                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello", pn).contains("carambar"));
     }
 
     @Test
     public void testThatTheApplicationIsReloadedOnNewResource() throws MavenInvocationException, IOException {
-        testDir = initProject("projects/classic", "projects/project-classic-run-new-resource");
+        String pn = "projects/project-classic-run-new-resource";
+        testDir = initProject("projects/classic", pn);
         runAndCheck();
 
         File source = new File(testDir, "src/main/java/org/acme/MyNewResource.java");
@@ -96,13 +98,14 @@ public class DevMojoIT extends MojoTestBase {
         // Wait until we get "bar"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/foo").contains("bar"));
+                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/foo", pn).contains("bar"));
     }
 
     @Test
     @Ignore("Issue https://github.com/protean-project/shamrock/issues/245")
     public void testThatTheApplicationIsReloadedOnNewServlet() throws MavenInvocationException, IOException {
-        testDir = initProject("projects/classic", "projects/project-classic-run-new-servlet");
+        String pn = "projects/project-classic-run-new-servlet";
+        testDir = initProject("projects/classic", pn);
         runAndCheck();
 
         File source = new File(testDir, "src/main/java/org/acme/MySimpleServlet.java");
@@ -130,7 +133,7 @@ public class DevMojoIT extends MojoTestBase {
 
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/my").contains("hello from servlet"));
+                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/my", pn).contains("hello from servlet"));
 
         // delete servlet
         sleep();
@@ -152,13 +155,14 @@ public class DevMojoIT extends MojoTestBase {
         assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.acme")
                 .containsIgnoringCase("1.0-SNAPSHOT");
 
-        String greeting = getHttpResponse("/app/hello");
+        String greeting = getHttpResponse("/app/hello", null);
         assertThat(greeting).containsIgnoringCase("hello");
     }
 
     @Test
     public void testThatTheApplicationIsReloadedOnConfigChange() throws MavenInvocationException, IOException {
-        testDir = initProject("projects/classic", "projects/project-classic-run-config-change");
+        String pn = "projects/project-classic-run-config-change";
+        testDir = initProject("projects/classic", pn);
         assertThat(testDir).isDirectory();
         running = new RunningInvoker(testDir, false);
         running.execute(Arrays.asList("compile", "shamrock:dev"), Collections.emptyMap());
@@ -168,7 +172,7 @@ public class DevMojoIT extends MojoTestBase {
         assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.acme")
                 .containsIgnoringCase("1.0-SNAPSHOT");
 
-        String greeting = getHttpResponse("/app/hello/greeting");
+        String greeting = getHttpResponse("/app/hello/greeting", pn);
         assertThat(greeting).containsIgnoringCase("bonjour");
 
         sleep();
@@ -184,7 +188,7 @@ public class DevMojoIT extends MojoTestBase {
                 .atMost(1, TimeUnit.MINUTES)
                 .until(() -> {
                     try {
-                        String response = getHttpResponse("/app/hello/greeting");
+                        String response = getHttpResponse("/app/hello/greeting", pn);
                         if (! response.contains(uuid)) {
                             if (counter.incrementAndGet() > 10) {
                                 counter.set(0);
@@ -205,7 +209,8 @@ public class DevMojoIT extends MojoTestBase {
 
     @Test
     public void testThatNewResourcesAreServed() throws MavenInvocationException, IOException {
-        testDir = initProject("projects/classic", "projects/project-classic-run-resource-change");
+        String pn = "projects/project-classic-run-resource-change";
+        testDir = initProject("projects/classic", pn);
         runAndCheck();
 
         // Create a new resource
@@ -214,7 +219,7 @@ public class DevMojoIT extends MojoTestBase {
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES)
-                .until(() -> getHttpResponse("/lorem.txt").contains("Lorem ipsum"));
+                .until(() -> getHttpResponse("/lorem.txt", pn).contains("Lorem ipsum"));
 
         // Update the resource
         String uuid = UUID.randomUUID().toString();
@@ -222,7 +227,7 @@ public class DevMojoIT extends MojoTestBase {
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES)
-                .until(() -> getHttpResponse("/lorem.txt").contains(uuid));
+                .until(() -> getHttpResponse("/lorem.txt", pn).contains(uuid));
 
         // Delete the resource
         source.delete();
@@ -234,7 +239,8 @@ public class DevMojoIT extends MojoTestBase {
 
     @Test
     public void testThatApplicationRecoversCompilationIssue() throws MavenInvocationException, IOException {
-        testDir = initProject("projects/classic", "projects/project-classic-run-compilation-issue");
+        String pn = "projects/project-classic-run-compilation-issue";
+        testDir = initProject("projects/classic", pn);
         runAndCheck();
 
         // Edit the "Hello" message.
@@ -247,7 +253,7 @@ public class DevMojoIT extends MojoTestBase {
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> {
-            String content = getHttpResponse("/app/hello");
+            String content = getHttpResponse("/app/hello", pn);
             last.set(content);
             return content.contains(uuid);
         });
@@ -266,7 +272,7 @@ public class DevMojoIT extends MojoTestBase {
                 .atMost(1, TimeUnit.MINUTES)
                 .until(() -> {
                     try {
-                        String response = getHttpResponse("/app/hello");
+                        String response = getHttpResponse("/app/hello", pn);
                         if (!  response.contains("carambar")) {
                             if (counter.incrementAndGet() > 10) {
                                 counter.set(0);
@@ -287,7 +293,8 @@ public class DevMojoIT extends MojoTestBase {
 
     @Test
     public void testThatNewBeanAreDiscovered() throws IOException, MavenInvocationException {
-        testDir = initProject("projects/classic", "projects/project-classic-run-new-bean");
+        String pn = "projects/project-classic-run-new-bean";
+        testDir = initProject("projects/classic", pn);
         runAndCheck();
 
         // Edit the "Hello" message.
@@ -318,7 +325,7 @@ public class DevMojoIT extends MojoTestBase {
                 .atMost(1, TimeUnit.MINUTES)
                 .until(() -> {
                     try {
-                        String response = getHttpResponse("/app/hello");
+                        String response = getHttpResponse("/app/hello", pn);
                         if (! response.contains("message")) {
                             if (counter.incrementAndGet() > 10) {
                                 counter.set(0);
@@ -341,7 +348,7 @@ public class DevMojoIT extends MojoTestBase {
 
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains("foobarbaz"));
+                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello", pn).contains("foobarbaz"));
     }
 
 

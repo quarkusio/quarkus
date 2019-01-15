@@ -15,11 +15,6 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <properties>
-        <version.reactive-pg-client>0.10.9</version.reactive-pg-client>
-        <version.vertx>3.5.4</version.vertx>
-    </properties>
-
     <artifactId>shamrock-panache-runtime</artifactId>
 
     <dependencies>

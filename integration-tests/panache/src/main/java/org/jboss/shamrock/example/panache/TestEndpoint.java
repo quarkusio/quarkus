@@ -39,22 +39,48 @@ public class TestEndpoint {
         List<Person> persons = Person.findAll();
         Assert.assertEquals(0, persons.size());
         
-        Person person = new Person();
-        person.name = "stef";
-        person.status = Status.LIVING;
-        person.address = new SequencedAddress("stef street");
-        person.address.save();
-        person.save();
+        Person person = makeSavedPerson();
         Assert.assertNotNull(person.id);
+
+        Assert.assertEquals(1, Person.count());
+        Assert.assertEquals(1, Person.count("name = ?1", "stef"));
         
         persons = Person.findAll();
+        Assert.assertEquals(1, persons.size());
+        Assert.assertEquals(person, persons.get(0));
+        
+        persons = Person.find("name = ?1", "stef");
         Assert.assertEquals(1, persons.size());
         Assert.assertEquals(person, persons.get(0));
         
         Person byId = Person.findById(person.id);
         Assert.assertEquals(person, byId);
 
+        person.delete();
+        Assert.assertEquals(0, Person.count());
+        
+        makeSavedPerson();
+        Assert.assertEquals(1, Person.count());
+        Assert.assertEquals(0, Person.delete("name = ?1", "emmanuel"));
+        Assert.assertEquals(1, Person.delete("name = ?1", "stef"));
+
+        Assert.assertEquals(0, Person.deleteAll());
+
+        makeSavedPerson();
+        Assert.assertEquals(1, Person.deleteAll());
+
         return "OK";
+    }
+
+    private Person makeSavedPerson() {
+        Person person = new Person();
+        person.name = "stef";
+        person.status = Status.LIVING;
+        person.address = new SequencedAddress("stef street");
+        person.address.save();
+        
+        person.save();
+        return person;
     }
 
     @GET

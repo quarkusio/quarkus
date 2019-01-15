@@ -59,8 +59,6 @@ final class HibernateReflectiveNeeds {
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, com.arjuna.ats.jta.UserTransaction.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, com.arjuna.ats.jta.TransactionManager.class.getName()));
 
-        //FIXME following is not Hibernate specific?
-        simpleConstructor("com.sun.xml.internal.stream.events.XMLEventFactoryImpl");
         simpleConstructor(org.hibernate.hql.internal.ast.HqlToken.class);
         simpleConstructor(org.hibernate.hql.internal.ast.tree.Node.class);
 

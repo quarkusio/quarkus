@@ -9,8 +9,10 @@ import org.jboss.shamrock.maven.CreateProjectMojo;
 import org.jboss.shamrock.maven.utilities.MojoUtils;
 import org.junit.BeforeClass;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashMap;
@@ -204,7 +206,7 @@ public class MojoTestBase {
                 .atMost(1, TimeUnit.MINUTES).until(() -> {
             try {
                 URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
-                String content = IOUtils.toString(url, "UTF-8");
+                String content = toString(url);
                 System.out.println(path + " => " + content);
                 resp.set(content);
                 return true;
@@ -219,6 +221,17 @@ public class MojoTestBase {
         } else {
             throw new RuntimeException(error.get());
         }
+    }
+
+    static String toString(URL url) throws IOException {
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        try {
+            InputStream in = new BufferedInputStream(connection.getInputStream());
+            return IOUtils.toString(in, "UTF-8");
+        } finally {
+            connection.disconnect();
+        }
+
     }
 
     static boolean getHttpResponse(String path, int expectedStatus) {

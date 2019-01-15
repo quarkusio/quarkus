@@ -197,6 +197,10 @@ public class UndertowBuildStep {
                 Files.walk(resource).forEach(new Consumer<Path>() {
                     @Override
                     public void accept(Path path) {
+                        // Skip META-INF/resources entry
+                        if (resource.equals(path)) {
+                            return;
+                        }
                         Path rel = resource.relativize(path);
                         if (Files.isDirectory(rel)) {
                             knownDirectories.add(rel.toString());

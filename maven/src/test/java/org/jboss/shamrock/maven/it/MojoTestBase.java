@@ -205,9 +205,11 @@ public class MojoTestBase {
             try {
                 URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
                 String content = IOUtils.toString(url, "UTF-8");
+                System.out.println(path + " => " + content);
                 resp.set(content);
                 return true;
             } catch (Exception e) {
+                System.out.println("Calling " + path + " failed with: " + e.getMessage());
                 error.set(e);
                 return false;
             }

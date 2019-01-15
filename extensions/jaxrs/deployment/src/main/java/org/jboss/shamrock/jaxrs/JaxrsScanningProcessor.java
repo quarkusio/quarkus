@@ -193,18 +193,6 @@ public class JaxrsScanningProcessor {
     JaxrsConfig exportConfig() {
         return new JaxrsConfig(defaultPath);
     }
-    
-    @BuildStep
-    ServletInitParamBuildItem registerProviders(List<JaxrsProviderBuildItem> providers) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < providers.size(); ++i) {
-            if (i != 0) {
-                sb.append(",");
-            }
-            sb.append(providers.get(i).getName());
-        }
-        return new ServletInitParamBuildItem("resteasy.providers", sb.toString());
-    }
 
     @BuildStep
     SubstrateConfigBuildItem config() {

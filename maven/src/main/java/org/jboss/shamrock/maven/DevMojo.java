@@ -24,6 +24,7 @@ import java.net.InetAddress;
 import java.net.JarURLConnection;
 import java.net.Socket;
 import java.net.URL;
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -208,9 +209,20 @@ public class DevMojo extends AbstractMojo {
             //this allows us to just directly use classes, without messing around copying them
             //to the runner jar
             URL classFile = DevModeMain.class.getClassLoader().getResource(DevModeMain.class.getName().replace('.', File.separatorChar) + ".class");
-            Path path = Paths.get(classFile.toURI());
-            path = path.getRoot().resolve(path.subpath(0, path.getNameCount() - Paths.get(DevModeMain.class.getName().replace('.', File.separatorChar) + ".class").getNameCount())).toAbsolutePath();
-            classPath.append(path.toAbsolutePath().toUri().toURL().toString()).append('/');
+            Path path;
+            if (classFile.getProtocol().equals("jar")) {
+                String jarPath = classFile.getPath().substring(0, classFile.getPath().lastIndexOf('!'));
+                path = Paths.get(new URI(jarPath));
+            } else if (classFile.getProtocol().equals("file")) {
+                String filePath = classFile.getPath().substring(0, classFile.getPath().lastIndexOf(DevModeMain.class.getName().replace('.', '/')));
+                path = Paths.get(new URI(classFile.getProtocol(), classFile.getHost(), filePath, null));
+            } else {
+                throw new MojoFailureException("Unsupported DevModeMain artifact URL:" + classFile);
+            }
+            classPath.append(path.toAbsolutePath().toUri().toURL().toString());
+            if (classFile.getProtocol().equals("file")) {
+                classPath.append('/');
+            }
 
             //now we need to build a temporary jar to actually run
 

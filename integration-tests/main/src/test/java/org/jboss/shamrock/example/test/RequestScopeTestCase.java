@@ -29,10 +29,10 @@ public class RequestScopeTestCase {
 
     @Test
     public void testRequestScope() {
-        RestAssured.when().get("/rest/request-scoped").then()
+        RestAssured.when().get("/request-scoped").then()
                 .body(is("3"));
 
-        RestAssured.when().get("/rest/request-scoped").then()
+        RestAssured.when().get("/request-scoped").then()
                 .body(is("3"));
     }
 

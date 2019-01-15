@@ -35,7 +35,7 @@ public class ValidatorTestCase {
 
     @Test
     public void testManualValidationFailed() throws Exception {
-        URL uri = new URL("http://localhost:8080/rest/validator/manual");
+        URL uri = new URL("http://localhost:8080/validator/manual");
         URLConnection connection = uri.openConnection();
         connection.setDoOutput(true);
         connection.setRequestProperty("Content-Type", "application/json");
@@ -61,7 +61,7 @@ public class ValidatorTestCase {
 
     @Test
     public void testManualValidationPassed() throws Exception {
-        URL uri = new URL("http://localhost:8080/rest/validator/manual");
+        URL uri = new URL("http://localhost:8080/validator/manual");
         URLConnection connection = uri.openConnection();
         connection.setDoOutput(true);
         connection.setRequestProperty("Content-Type", "application/json");

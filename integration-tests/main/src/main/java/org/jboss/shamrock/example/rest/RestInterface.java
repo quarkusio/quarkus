@@ -24,5 +24,4 @@ public interface RestInterface {
 
     @GET
     String get();
-
 }

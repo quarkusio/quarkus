@@ -29,13 +29,13 @@ public class DatasourceTestCase {
 
     @Test
     public void testDataSource() {
-        RestAssured.when().get("/rest/datasource").then()
+        RestAssured.when().get("/datasource").then()
                 .body(is("10"));
     }
 
     @Test
     public void testDataSourceTransactions() {
-        RestAssured.when().get("/rest/datasource/txn").then()
+        RestAssured.when().get("/datasource/txn").then()
                 .body(is("PASSED"));
     }
 

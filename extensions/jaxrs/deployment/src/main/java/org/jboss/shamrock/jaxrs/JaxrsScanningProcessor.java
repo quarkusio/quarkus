@@ -36,6 +36,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.inject.Singleton;
+import javax.servlet.DispatcherType;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.container.DynamicFeature;
@@ -77,8 +78,10 @@ import org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildIte
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import org.jboss.shamrock.deployment.cdi.BeanDefiningAnnotationBuildItem;
+import org.jboss.shamrock.jaxrs.runtime.ResteasyFilter;
 import org.jboss.shamrock.jaxrs.runtime.graal.JaxrsTemplate;
 import org.jboss.shamrock.jaxrs.runtime.graal.ShamrockInjectorFactory;
+import org.jboss.shamrock.undertow.FilterBuildItem;
 import org.jboss.shamrock.undertow.ServletBuildItem;
 import org.jboss.shamrock.undertow.ServletInitParamBuildItem;
 
@@ -89,9 +92,10 @@ import org.jboss.shamrock.undertow.ServletInitParamBuildItem;
  */
 public class JaxrsScanningProcessor {
 
-    private static final String JAX_RS_SERVLET_NAME = "javax.ws.rs.Application";
-    // They happen to share the same value, but I'm not sure they mean the same thing
-    private static final String JAX_RS_APPLICATION_PARAMETER_NAME = JAX_RS_SERVLET_NAME;
+    private static final String JAVAX_WS_RS_APPLICATION = "javax.ws.rs.Application";
+    private static final String JAX_RS_FILTER_NAME = JAVAX_WS_RS_APPLICATION;
+    private static final String JAX_RS_SERVLET_NAME = JAVAX_WS_RS_APPLICATION;
+    private static final String JAX_RS_APPLICATION_PARAMETER_NAME = JAVAX_WS_RS_APPLICATION;
 
     private static final DotName APPLICATION_PATH = DotName.createSimple("javax.ws.rs.ApplicationPath");
 
@@ -152,21 +156,21 @@ public class JaxrsScanningProcessor {
     private static final DotName SINGLETON_SCOPE = DotName.createSimple(Singleton.class.getName());
 
     /**
-	 * If this is true then JAX-RS will use only a single instance of a resource
-	 * class to service all requests.
-	 *
-	 * If this is false then it will create a new instance of the resource per
-	 * request.
-	 *
-	 * If the resource class has an explicit CDI scope annotation then the value of
-	 * this annotation will always be used to control the lifecycle of the resource
-	 * class.
-	 *
-	 * IMPLEMENTATION NOTE: {@code javax.ws.rs.Path} turns into a CDI stereotype
-	 * with singleton scope. As a result, if a user annotates a JAX-RS resource with
-	 * a stereotype which has a different default scope the deployment fails with
-	 * IllegalStateException.
-	 */
+     * If this is true then JAX-RS will use only a single instance of a resource
+     * class to service all requests.
+     * <p>
+     * If this is false then it will create a new instance of the resource per
+     * request.
+     * <p>
+     * If the resource class has an explicit CDI scope annotation then the value of
+     * this annotation will always be used to control the lifecycle of the resource
+     * class.
+     * <p>
+     * IMPLEMENTATION NOTE: {@code javax.ws.rs.Path} turns into a CDI stereotype
+     * with singleton scope. As a result, if a user annotates a JAX-RS resource with
+     * a stereotype which has a different default scope the deployment fails with
+     * IllegalStateException.
+     */
     @ConfigProperty(name = "shamrock.jaxrs.singleton-resources", defaultValue = "true")
     boolean singletonResources;
 
@@ -180,7 +184,7 @@ public class JaxrsScanningProcessor {
      * Set this to override the default path for JAX-RS resources if there are no
      * annotated application classes. The default value is `/rest`. 
      */
-    @ConfigProperty(name = "shamrock.jaxrs.path", defaultValue = "/rest")
+    @ConfigProperty(name = "shamrock.jaxrs.path", defaultValue = "/")
     String defaultPath;
 
     private static final Logger log = Logger.getLogger("org.jboss.shamrock.jaxrs");
@@ -225,6 +229,7 @@ public class JaxrsScanningProcessor {
                       BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
                       BuildProducer<SubstrateResourceBuildItem> resource,
                       BuildProducer<RuntimeInitializedClassBuildItem> runtimeClasses,
+                      BuildProducer<FilterBuildItem> filterProducer,
                       BuildProducer<ServletBuildItem> servletProducer,
                       BuildProducer<ServletInitParamBuildItem> servletContextParams,
                       CombinedIndexBuildItem combinedIndexBuildItem
@@ -324,10 +329,19 @@ public class JaxrsScanningProcessor {
         } else {
             mappingPath = path + "/*";
         }
-        servletProducer.produce(new ServletBuildItem(JAX_RS_SERVLET_NAME, HttpServlet30Dispatcher.class.getName()).setLoadOnStartup(1).addMapping(mappingPath).setAsyncSupported(true));
+
         Collection<AnnotationInstance> paths = index.getAnnotations(PATH);
         if (paths != null && !paths.isEmpty()) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, HttpServlet30Dispatcher.class.getName()));
+
+            //if JAX-RS is installed at the root location we use a filter, otherwise we use a Servlet and take over the whole mapped path
+            if (path.equals("/")) {
+                filterProducer.produce(new FilterBuildItem(JAX_RS_FILTER_NAME, ResteasyFilter.class.getName()).setLoadOnStartup(1).addFilterServletNameMapping("default", DispatcherType.REQUEST).setAsyncSupported(true));
+                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ResteasyFilter.class.getName()));
+            } else {
+                servletProducer.produce(new ServletBuildItem(JAX_RS_SERVLET_NAME, HttpServlet30Dispatcher.class.getName()).setLoadOnStartup(1).addMapping(mappingPath).setAsyncSupported(true));
+                reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, HttpServlet30Dispatcher.class.getName()));
+            }
+
             StringBuilder sb = new StringBuilder();
             boolean first = true;
             for (AnnotationInstance annotation : paths) {
@@ -453,7 +467,7 @@ public class JaxrsScanningProcessor {
     @BuildStep
     void integrate(JaxrsTemplate template, BeanContainerBuildItem beanContainerBuildItem, List<ProxyUnwrapperBuildItem> proxyUnwrappers, BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.JAX_RS));
-    	List<Function<Object, Object>> unwrappers = new ArrayList<>();
+        List<Function<Object, Object>> unwrappers = new ArrayList<>();
         for (ProxyUnwrapperBuildItem i : proxyUnwrappers) {
             unwrappers.add(i.getUnwrapper());
         }

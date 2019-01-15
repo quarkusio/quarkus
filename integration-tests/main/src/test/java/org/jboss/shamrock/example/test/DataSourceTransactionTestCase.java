@@ -29,13 +29,13 @@ public class DataSourceTransactionTestCase {
 
     @Test
     public void testTransactionalAnnotation() {
-        RestAssured.when().get("/rest/datasource/txninterceptor0").then()
+        RestAssured.when().get("/datasource/txninterceptor0").then()
                 .body(is("PASSED"));
 
-        RestAssured.when().get("/rest/datasource/txninterceptor1").then()
+        RestAssured.when().get("/datasource/txninterceptor1").then()
                 .statusCode(500);
 
-        RestAssured.when().get("/rest/datasource/txninterceptor2").then()
+        RestAssured.when().get("/datasource/txninterceptor2").then()
                 .body(is("PASSED"));
     }
 

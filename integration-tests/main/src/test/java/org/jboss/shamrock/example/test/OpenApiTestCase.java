@@ -60,14 +60,14 @@ public class OpenApiTestCase {
 
         JsonObject paths = obj.getJsonObject("paths");
 
-        JsonObject testObj = paths.getJsonObject("/rest/test");
+        JsonObject testObj = paths.getJsonObject("/test");
         Assert.assertNotNull(testObj);
         Set<String> keys = testObj.keySet();
         Assert.assertEquals(1, keys.size());
         Assert.assertEquals("get", keys.iterator().next());
 
 
-        JsonObject injectionObj = paths.getJsonObject("/rest/test/rx");
+        JsonObject injectionObj = paths.getJsonObject("/test/rx");
         Assert.assertNotNull(injectionObj);
         keys = injectionObj.keySet();
         Assert.assertEquals(1, keys.size());
@@ -77,11 +77,11 @@ public class OpenApiTestCase {
 
         // make sure String, CompletionStage<String> and Single<String> are detected the same
         Assert.assertEquals("Normal and RX/Single have same schema", testObj, injectionObj);
-        JsonObject csObj = paths.getJsonObject("/rest/test/cs");
+        JsonObject csObj = paths.getJsonObject("/test/cs");
         Assert.assertEquals("Normal and RX/CS have same schema", testObj, csObj);
         
-        JsonObject paramsObj = paths.getJsonObject("/rest/test/params/{path}");
-        JsonObject params2Obj = paths.getJsonObject("/rest/test/params2/{path}");
+        JsonObject paramsObj = paths.getJsonObject("/test/params/{path}");
+        JsonObject params2Obj = paths.getJsonObject("/test/params2/{path}");
         Assert.assertEquals("Normal and RESTEasy annotations have same schema", paramsObj, params2Obj);
     }
 }

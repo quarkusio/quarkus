@@ -37,7 +37,7 @@ public class ClientResource {
     public String manual() throws Exception {
 
         RestInterface iface = RestClientBuilder.newBuilder()
-                .baseUrl(new URL("http", "localhost", 8080, "/rest"))
+                .baseUrl(new URL("http", "localhost", 8080, "/"))
                 .build(RestInterface.class);
         return iface.get();
     }

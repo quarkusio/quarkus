@@ -41,6 +41,7 @@ import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
 import org.jboss.shamrock.deployment.cdi.BeanContainerListenerBuildItem;
+import org.jboss.shamrock.jaxrs.JaxrsConfig;
 import org.jboss.shamrock.openapi.runtime.OpenApiDeploymentTemplate;
 import org.jboss.shamrock.openapi.runtime.OpenApiDocumentProducer;
 import org.jboss.shamrock.openapi.runtime.OpenApiServlet;
@@ -91,11 +92,12 @@ public class OpenApiProcessor {
     @BuildStep
     @Record(STATIC_INIT)
     public BeanContainerListenerBuildItem build(OpenApiDeploymentTemplate template, ApplicationArchivesBuildItem archivesBuildItem,
-            CombinedIndexBuildItem combinedIndexBuildItem, BuildProducer<FeatureBuildItem> feature) throws Exception {
+            CombinedIndexBuildItem combinedIndexBuildItem, BuildProducer<FeatureBuildItem> feature,
+	    JaxrsConfig jaxrsConfig) throws Exception {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.MP_OPENAPI));
         Result resourcePath = findStaticModel(archivesBuildItem);
         OpenAPI sm = generateStaticModel(resourcePath == null ? null : resourcePath.path, resourcePath == null ? OpenApiSerializer.Format.YAML : resourcePath.format);
-        OpenAPI am = generateAnnotationModel(combinedIndexBuildItem.getIndex());
+        OpenAPI am = generateAnnotationModel(combinedIndexBuildItem.getIndex(), jaxrsConfig);
         return new BeanContainerListenerBuildItem(template.setupModel(sm, am));
     }
 
@@ -115,10 +117,10 @@ public class OpenApiProcessor {
         return null;
     }
 
-    public OpenAPI generateAnnotationModel(IndexView indexView) {
+    public OpenAPI generateAnnotationModel(IndexView indexView, JaxrsConfig jaxrsConfig) {
         Config config = ConfigProvider.getConfig();
         OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
-        return new OpenApiAnnotationScanner(openApiConfig, indexView).scan();
+        return new OpenApiAnnotationScanner(openApiConfig, indexView, Arrays.asList(new RESTEasyExtension(jaxrsConfig, indexView))).scan();
     }
 
     private Result findStaticModel(ApplicationArchivesBuildItem archivesBuildItem) {

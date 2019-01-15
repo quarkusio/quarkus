@@ -72,5 +72,16 @@ public class OpenApiTestCase {
         keys = injectionObj.keySet();
         Assert.assertEquals(1, keys.size());
         Assert.assertEquals("get", keys.iterator().next());
+        
+        // test RESTEasy extensions
+
+        // make sure String, CompletionStage<String> and Single<String> are detected the same
+        Assert.assertEquals("Normal and RX/Single have same schema", testObj, injectionObj);
+        JsonObject csObj = paths.getJsonObject("/rest/test/cs");
+        Assert.assertEquals("Normal and RX/CS have same schema", testObj, csObj);
+        
+        JsonObject paramsObj = paths.getJsonObject("/rest/test/params/{path}");
+        JsonObject params2Obj = paths.getJsonObject("/rest/test/params2/{path}");
+        Assert.assertEquals("Normal and RESTEasy annotations have same schema", paramsObj, params2Obj);
     }
 }

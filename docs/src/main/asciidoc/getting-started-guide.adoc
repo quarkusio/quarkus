@@ -258,7 +258,7 @@ public class GreetingResource {
 }
 ----
 
-Start the application and check that http://localhost:8080/app/hello/greeting/shamrock returns `hello shamrock`.
+Start the application and check that http://localhost:8080/hello/greeting/shamrock returns `hello shamrock`.
 
 
 

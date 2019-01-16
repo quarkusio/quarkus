@@ -102,6 +102,26 @@ public class RxModelEnhancer implements BiFunction<String, ClassVisitor, ClassVi
             mv.visitMaxs(0, 0);
             mv.visitEnd();
 
+            // find
+            mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, 
+                                                 "find", 
+                                                 "(Ljava/lang/String;[Ljava/lang/Object;)Lio/reactivex/Observable;", 
+                                                 "(Ljava/lang/String;[Ljava/lang/Object;)Lio/reactivex/Observable<Lorg/jboss/panache/RxEntityBase;>;", 
+                                                 null);
+            mv.visitParameter("query", 0);
+            mv.visitParameter("params", 1);
+            mv.visitCode();
+            mv.visitFieldInsn(Opcodes.GETSTATIC, thisName.replace('.', '/'), fieldName, modelDesc);
+            mv.visitIntInsn(Opcodes.ALOAD, 0);
+            mv.visitIntInsn(Opcodes.ALOAD, 1);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
+                               "org/jboss/panache/RxEntityBase", 
+                               "find", 
+                               "(Lorg/jboss/panache/RxEntityBase$RxModelInfo;Ljava/lang/String;[Ljava/lang/Object;)Lio/reactivex/Observable;", false);
+            mv.visitInsn(Opcodes.ARETURN);
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+
             // findAll
             mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, 
                                                  "findAll", 
@@ -118,6 +138,78 @@ public class RxModelEnhancer implements BiFunction<String, ClassVisitor, ClassVi
             mv.visitMaxs(0, 0);
             mv.visitEnd();
             
+            // count
+            mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, 
+                                                 "count", 
+                                                 "()Lio/reactivex/Single;", 
+                                                 "()Lio/reactivex/Single<Ljava/lang/Long;>;", 
+                                                 null);
+            mv.visitCode();
+            mv.visitFieldInsn(Opcodes.GETSTATIC, thisName.replace('.', '/'), fieldName, modelDesc);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
+                               "org/jboss/panache/RxEntityBase", 
+                               "count", 
+                               "(Lorg/jboss/panache/RxEntityBase$RxModelInfo;)Lio/reactivex/Single;", false);
+            mv.visitInsn(Opcodes.ARETURN);
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+
+            // count
+            mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, 
+                                                 "count", 
+                                                 "(Ljava/lang/String;[Ljava/lang/Object;)Lio/reactivex/Single;", 
+                                                 "(Ljava/lang/String;[Ljava/lang/Object;)Lio/reactivex/Single<Ljava/lang/Long;>;", 
+                                                 null);
+            mv.visitParameter("query", 0);
+            mv.visitParameter("params", 1);
+            mv.visitCode();
+            mv.visitFieldInsn(Opcodes.GETSTATIC, thisName.replace('.', '/'), fieldName, modelDesc);
+            mv.visitIntInsn(Opcodes.ALOAD, 0);
+            mv.visitIntInsn(Opcodes.ALOAD, 1);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
+                               "org/jboss/panache/RxEntityBase", 
+                               "count", 
+                               "(Lorg/jboss/panache/RxEntityBase$RxModelInfo;Ljava/lang/String;[Ljava/lang/Object;)Lio/reactivex/Single;", false);
+            mv.visitInsn(Opcodes.ARETURN);
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+
+            // deleteAll
+            mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, 
+                                                 "deleteAll", 
+                                                 "()Lio/reactivex/Single;", 
+                                                 "()Lio/reactivex/Single<Ljava/lang/Long;>;", 
+                                                 null);
+            mv.visitCode();
+            mv.visitFieldInsn(Opcodes.GETSTATIC, thisName.replace('.', '/'), fieldName, modelDesc);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
+                               "org/jboss/panache/RxEntityBase", 
+                               "deleteAll", 
+                               "(Lorg/jboss/panache/RxEntityBase$RxModelInfo;)Lio/reactivex/Single;", false);
+            mv.visitInsn(Opcodes.ARETURN);
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+
+            // delete
+            mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, 
+                                                 "delete", 
+                                                 "(Ljava/lang/String;[Ljava/lang/Object;)Lio/reactivex/Single;", 
+                                                 "(Ljava/lang/String;[Ljava/lang/Object;)Lio/reactivex/Single<Ljava/lang/Long;>;", 
+                                                 null);
+            mv.visitParameter("query", 0);
+            mv.visitParameter("params", 1);
+            mv.visitCode();
+            mv.visitFieldInsn(Opcodes.GETSTATIC, thisName.replace('.', '/'), fieldName, modelDesc);
+            mv.visitIntInsn(Opcodes.ALOAD, 0);
+            mv.visitIntInsn(Opcodes.ALOAD, 1);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
+                               "org/jboss/panache/RxEntityBase", 
+                               "delete", 
+                               "(Lorg/jboss/panache/RxEntityBase$RxModelInfo;Ljava/lang/String;[Ljava/lang/Object;)Lio/reactivex/Single;", false);
+            mv.visitInsn(Opcodes.ARETURN);
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+
             // FIXME: inner class?
             super.visitEnd();
             

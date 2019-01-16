@@ -25,6 +25,7 @@ import javax.ws.rs.Path;
 import org.junit.Assert;
 
 import io.reactivex.Single;
+import io.reactivex.SingleSource;
 
 /**
  * Various tests covering Panache functionality. All tests should work in both standard JVM and SubstrateVM.
@@ -86,32 +87,80 @@ public class TestEndpoint {
     @GET
     @Path("rxmodel")
     public Single<String> testRxModel() {
-        return RxPerson.<RxPerson>findAll().toList()
+        return RxPerson.findAll().toList()
             .flatMap(persons -> {
                 Assert.assertEquals(0, persons.size());
 
-                RxPerson person = new RxPerson();
-                person.name = "stef";
-                person.status = Status.LIVING;
-//                person.address = new SequencedAddress("stef street");
-//                person.address.save();
-                return person.save().doOnError(t -> {
-                    System.err.println("STEF");
-                    t.printStackTrace();
-                });
+                return makeSavedRxPerson();
             }).flatMap(person -> {
                 Assert.assertNotNull(person.id);
                 
-                return RxPerson.<RxPerson>findAll().toList()
+                return RxPerson.findAll().toList()
                     .flatMapMaybe(persons -> {
                         Assert.assertEquals(1, persons.size());
                         Assert.assertEquals(person, persons.get(0));
 
-                        return RxPerson.<RxPerson>findById(person.id);
-                    }).map(byId -> {
+                        return RxPerson.findById(person.id);
+                    }).flatMapSingle(byId -> {
                         Assert.assertEquals(person, byId);
+
+                        return RxPerson.find("name = ?1", "stef").toList();
+                    }).flatMap(persons -> {
+                        Assert.assertEquals(1, persons.size());
+                        Assert.assertEquals(person, persons.get(0));
+
+                        return RxPerson.find("name = ?1", "emmanuel").toList();
+                    }).flatMap(persons -> {
+                        Assert.assertEquals(0, persons.size());
+
+                        return RxPerson.count();
+                    }).flatMap(count -> {
+                        Assert.assertEquals(1, (long)count);
+                        
+                        return RxPerson.count("name = ?1", "stef");
+                    }).flatMapCompletable(count -> {
+                        Assert.assertEquals(1, (long)count);
+
+                        return person.delete();
+                    })
+                    .andThen(Single.defer(() -> RxPerson.count()))
+                    .flatMap(count -> {
+                        Assert.assertEquals(0, (long)count);
+                        
+                        return makeSavedRxPerson();
+                    })
+                    .flatMap(p -> RxPerson.count())
+                    .flatMap(count -> {
+                        Assert.assertEquals(1, (long)count);
+                        
+                        return RxPerson.deleteAll();
+                    }).flatMap(count -> {
+                        Assert.assertEquals(1, (long)count);
+
+                        return RxPerson.count();
+                    }).flatMap(count -> {
+                        Assert.assertEquals(0, (long)count);
+                        
+                        return makeSavedRxPerson();
+                    }).flatMap(p ->  RxPerson.delete("name = ?1", "emmanuel"))
+                    .flatMap(count -> {
+                        Assert.assertEquals(0, (long)count);
+                        
+                        return RxPerson.delete("name = ?1", "stef");
+                    }).map(count -> {
+                        Assert.assertEquals(1, (long)count);
+                        
                         return "OK";
-                    }).toSingle();
+                    });
             });
+    }
+
+    private Single<? extends RxPerson> makeSavedRxPerson() {
+        RxPerson person = new RxPerson();
+        person.name = "stef";
+        person.status = Status.LIVING;
+//        person.address = new SequencedAddress("stef street");
+//        person.address.save();
+        return person.save();
     }
 }

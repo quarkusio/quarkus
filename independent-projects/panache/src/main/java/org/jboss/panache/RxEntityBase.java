@@ -95,6 +95,73 @@ public abstract class RxEntityBase<T extends RxEntityBase<?>> {
                 .map(row -> modelInfo.fromRow(row));
     }
 
+    public static <T extends RxEntityBase<?>> Observable<T> find(String query, Object... params) {
+        throw new RuntimeException("Should never be called");
+    }
+
+    protected static <T extends RxEntityBase<?>> Observable<T> find(RxModelInfo<T> modelInfo, String query, Object... params) {
+        PgPool pool = getPgPool();
+        // FIXME: order by from model info
+        return pool.rxPreparedQuery(createFindQuery(modelInfo, query, params), toParams(params))
+                .flatMapObservable(rowset -> Observable.fromIterable(rowset.getDelegate()))
+                .map(coreRow -> {
+                    try {
+                        return modelInfo.fromRow(Row.newInstance(coreRow));  
+                    }catch(Throwable t) {
+                        t.printStackTrace();
+                        return null;
+                    }
+                });
+    }
+
+    protected static Tuple toParams(Object[] params) {
+        Tuple t = Tuple.tuple();
+        for (Object param : params) {
+            t.addValue(param);
+        }
+        return t;
+    }
+    
+    public static Single<Long> count() {
+        throw new RuntimeException("Should never be called");
+    }
+
+    protected static Single<Long> count(RxModelInfo<?> modelInfo) {
+        PgPool pool = getPgPool();
+        return pool.rxQuery("SELECT COUNT(*) FROM "+modelInfo.getTableName())
+                .map(rowset -> rowset.iterator().next().getLong(0));
+    }
+
+    public static Single<Long> count(String query, Object...params) {
+        throw new RuntimeException("Should never be called");
+    }
+
+    protected static Single<Long> count(RxModelInfo<?> modelInfo, String query, Object...params) {
+        PgPool pool = getPgPool();
+        return pool.rxPreparedQuery(createCountQuery(modelInfo, query, params), toParams(params))
+                .map(rowset -> rowset.iterator().next().getLong(0));
+    }
+
+    public static Single<Long> deleteAll() {
+        throw new RuntimeException("Should never be called");
+    }
+
+    protected static Single<Long> deleteAll(RxModelInfo<?> modelInfo) {
+        PgPool pool = getPgPool();
+        return pool.rxQuery("DELETE FROM "+modelInfo.getTableName())
+                .map(rowset -> (long)rowset.rowCount());
+    }
+
+    public static Single<Long> delete(String query, Object...params) {
+        throw new RuntimeException("Should never be called");
+    }
+
+    protected static Single<Long> delete(RxModelInfo<?> modelInfo, String query, Object...params) {
+        PgPool pool = getPgPool();
+        return pool.rxPreparedQuery(createDeleteQuery(modelInfo, query, params), toParams(params))
+                .map(rowset -> (long)rowset.rowCount());
+    }
+
     @Override
     public boolean equals(Object obj) {
         if(obj == null)
@@ -118,6 +185,76 @@ public abstract class RxEntityBase<T extends RxEntityBase<?>> {
         String insertStatement();
         String updateStatement();
         Tuple toTuple(T entity);
+    }
+
+    private static String createFindQuery(RxModelInfo<?> modelInfo, String query, Object[] params) {
+        if(query == null)
+            return "SELECT * FROM "+getEntityName(modelInfo);
+
+        String trimmed = query.trim();
+        if(trimmed.isEmpty())
+            return "SELECT * FROM "+getEntityName(modelInfo);
+        
+        String lc = query.toLowerCase();
+        String translatedQuery = translateQuery(query);
+        if(lc.startsWith("from ")) {
+            return "SELECT * " + translatedQuery;
+        }
+        if(lc.startsWith("select ")) {
+            throw new IllegalArgumentException("Select queries not yet supported");
+        }
+        if(lc.startsWith("order by ")) {
+            return "SELECT * FROM "+getEntityName(modelInfo) + " " + translatedQuery;
+        }
+        return "SELECT * FROM "+getEntityName(modelInfo)+" WHERE "+translatedQuery;
+    }
+
+    private static String translateQuery(String query) {
+        return query.replaceAll("\\?(\\d+)", "\\$$1");
+    }
+
+    private static String createCountQuery(RxModelInfo<?> modelInfo, String query, Object[] params) {
+        if(query == null)
+            return "SELECT COUNT(*) FROM "+getEntityName(modelInfo);
+
+        String trimmed = query.trim();
+        if(trimmed.isEmpty())
+            return "SELECT COUNT(*) FROM "+getEntityName(modelInfo);
+        
+        String lc = query.toLowerCase();
+        String translatedQuery = translateQuery(query);
+        if(lc.startsWith("from ")) {
+            return "SELECT COUNT(*) "+translatedQuery;
+        }
+        if(lc.startsWith("order by ")) {
+            // ignore it
+            return "SELECT COUNT(*) FROM "+getEntityName(modelInfo);
+        }
+        return "SELECT COUNT(*) FROM "+getEntityName(modelInfo)+" WHERE "+translatedQuery;
+    }
+
+    private static String createDeleteQuery(RxModelInfo<?> modelInfo, String query, Object[] params) {
+        if(query == null)
+            return "DELETE FROM "+getEntityName(modelInfo);
+
+        String trimmed = query.trim();
+        if(trimmed.isEmpty())
+            return "DELETE FROM "+getEntityName(modelInfo);
+        
+        String lc = query.toLowerCase();
+        String translatedQuery = translateQuery(query);
+        if(lc.startsWith("from ")) {
+            return "DELETE "+translatedQuery;
+        }
+        if(lc.startsWith("order by ")) {
+            // ignore it
+            return "DELETE FROM "+getEntityName(modelInfo);
+        }
+        return "DELETE FROM "+getEntityName(modelInfo)+" WHERE "+translatedQuery;
+    }
+    
+    private static String getEntityName(RxModelInfo<?> modelInfo) {
+        return modelInfo.getTableName();
     }
 
 }

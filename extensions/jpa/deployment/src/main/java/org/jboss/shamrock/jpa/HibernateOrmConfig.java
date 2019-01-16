@@ -31,8 +31,16 @@ public class HibernateOrmConfig {
     @ConfigProperty(name="show_sql")
     public Optional<Boolean> showSql;
 
+    /**
+     * To populate the database tables with data before the application loads,
+     * specify the location of a load script.
+     * The location specified in this property is relative to the root of the persistence unit.
+     */
+    @ConfigProperty(name="sql-load-script-source")
+    public Optional<String> sqlLoadScriptSource;
+
     public boolean isAnyPropertySet() {
-        return dialect.isPresent() || schemaGeneration.isPresent() || showSql.isPresent();
+        return dialect.isPresent() || schemaGeneration.isPresent() || showSql.isPresent() || sqlLoadScriptSource.isPresent();
     }
 
 }

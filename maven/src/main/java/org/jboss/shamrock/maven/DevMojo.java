@@ -19,9 +19,11 @@ package org.jboss.shamrock.maven;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.InetAddress;
 import java.net.JarURLConnection;
+import java.net.Socket;
 import java.net.URL;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -62,6 +64,27 @@ public class DevMojo extends AbstractMojo {
     @Parameter(defaultValue = "${fakereplace}")
     private boolean fakereplace = false;
 
+    /**
+     * If this server should be started in debug mode. The default is to start in debug mode without suspending and listen on
+     * port 5005. It supports the following options:
+     * <table>
+     * <tr>
+     * <td><b>Value</b></td><td>Effect</td>
+     * </tr>
+     * <tr>
+     * <td><b>false</b></td><td>The JVM is not started in debug mode</td>
+     * </tr>
+     * <tr>
+     * <td><b>true</b></td><td>The JVM is started in debug mode and suspends until a debugger is attached to port 5005</td>
+     * </tr>
+     * <tr>
+     * <td><b>client</b></td><td>The JVM is started in client mode, and attempts to connect to localhost:5005</td>
+     * </tr>
+     * <tr>
+     * <td><b>{port}</b></td><td>The JVM is started in debug mode and suspends until a debugger is attached to {port}</td>
+     * </tr>
+     * </table>
+     */
     @Parameter(defaultValue = "${debug}")
     private String debug;
 
@@ -95,17 +118,32 @@ public class DevMojo extends AbstractMojo {
         try {
             List<String> args = new ArrayList<>();
             args.add("java");
-            if (debug != null) {
+            if (debug == null) {
+                // debug mode not specified
+                // make sure 5005 is not used, we don't want to just fail if something else is using it
+                try (Socket socket = new Socket(InetAddress.getByAddress(new byte[]{127, 0, 0, 1}), 5005)) {
+                    getLog().error("Port 5005 in use, not starting in debug mode");
+                } catch (IOException e) {
+                    args.add("-Xdebug");
+                    args.add("-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=n");
+                }
+            } else if (debug.toLowerCase().equals("client")) {
                 args.add("-Xdebug");
-                args.add("-Xnoagent");
-                args.add("-Djava.compiler=NONE");
-                if (debug.equals("client")) {
-                    args.add("-Xrunjdwp:transport=dt_socket,address=localhost:5005,server=n,suspend=n");
-                } else {
-                    args.add("-Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=y");
+                args.add("-Xrunjdwp:transport=dt_socket,address=localhost:5005,server=n,suspend=n");
+            } else if (debug.toLowerCase().equals("true")) {
+                args.add("-Xdebug");
+                args.add("-Xrunjdwp:transport=dt_socket,address=localhost:5005,server=n,suspend=y");
+            } else if (!debug.toLowerCase().equals("false")) {
+                try {
+                    int port = Integer.parseInt(debug);
+                    args.add("-Xdebug");
+                    args.add("-Xrunjdwp:transport=dt_socket,address=" + port + ",server=y,suspend=y");
+                } catch (NumberFormatException e) {
+                    throw new MojoFailureException(
+                            "Invalid value for debug parameter: " + debug + " must be true|false|client|{port}");
                 }
             }
-            if(jvmArgs != null) {
+            if (jvmArgs != null) {
                 args.addAll(Arrays.asList(jvmArgs.split(" ")));
             }
 

@@ -18,7 +18,7 @@ To complete this guide, you need:
 Using the community edition is enough.
 At least version {graal-version} is required.
 * The `GRAALVM_HOME` environment variable configured appropriately
-* Apache Maven 3.5+
+* Apache Maven 3.5.3+
 * A running Docker
 * The code of the application developed in the link:getting-started-guide.adoc[Getting Started Guide].
 

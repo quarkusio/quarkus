@@ -23,12 +23,28 @@ public interface BeanContainer {
     default <T> T instance(Class<T> type, Annotation... qualifiers) {
         return instanceFactory(type, qualifiers).get();
     }
+
     <T> Factory<T> instanceFactory(Class<T> type, Annotation... qualifiers);
 
+    /**
+     * Runs the given action within the scope of the CDI request context
+     *
+     * @param action The action to run
+     * @param t      The first context parameter, this is passed to the action
+     * @param u      The second context parameter, this is passed to the action
+     * @return the value returned by the action
+     * @throws Exception
+     */
+    <T, U, R> R withinRequestContext(RequestAction<T, U, R> action, T t, U u) throws Exception;
 
     interface Factory<T> {
 
         T get();
+    }
+
+    interface RequestAction<T, U, R> {
+
+        R run(T t, U u) throws Exception;
     }
 
 }

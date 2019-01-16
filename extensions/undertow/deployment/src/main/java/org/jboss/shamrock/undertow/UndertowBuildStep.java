@@ -155,14 +155,14 @@ public class UndertowBuildStep {
 
                 .build();
     }
-    
+
     @BuildStep
     HotDeploymentConfigFileBuildItem configFile() {
         return new HotDeploymentConfigFileBuildItem(WEB_XML);
     }
 
     @Record(STATIC_INIT)
-    @BuildStep(providesCapabilities = Capabilities.UNDERTOW)
+    @BuildStep
     public ServletDeploymentBuildItem build(ApplicationArchivesBuildItem applicationArchivesBuildItem,
                                             List<ServletBuildItem> servlets,
                                             List<FilterBuildItem> filters,

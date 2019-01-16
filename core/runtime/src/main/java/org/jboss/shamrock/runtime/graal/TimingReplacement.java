@@ -26,7 +26,7 @@ import com.oracle.svm.core.annotate.TargetClass;
 final class TimingReplacement {
 
     @Alias
-    private static volatile long bootStartTime = -1;
+    private static volatile long bootStartTime;
 
     @Substitute
     public static void mainStarted() {

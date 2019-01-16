@@ -31,7 +31,7 @@ import com.oracle.svm.core.annotate.TargetClass;
 public final class ChannelsSubstitution {
 
     @Delete()
-    private static final ByteBuffer DRAIN_BUFFER = null;
+    private static ByteBuffer DRAIN_BUFFER = null;
 
     /**
      * Attempt to drain the given number of bytes from the stream source channel.

@@ -25,11 +25,11 @@ import com.oracle.svm.core.annotate.TargetClass;
 final class ConfigurationInfoSubstitution {
 
     @Alias
-    private static String sourceId = "unknown";
+    private static String sourceId;
     @Alias
-    private static String propertiesFile = "arjuna-properties.xml";
+    private static String propertiesFile;
     @Alias
-    private static String buildId = "arjuna-builder";
+    private static String buildId;
     @Alias
     private static boolean isInitialized = false;
 

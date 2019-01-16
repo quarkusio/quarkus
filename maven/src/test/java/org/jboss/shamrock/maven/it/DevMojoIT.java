@@ -57,14 +57,14 @@ public class DevMojoIT extends MojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains(uuid));
+                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/hello").contains(uuid));
         sleep();
         filter(source, ImmutableMap.of(uuid, "carambar"));
 
         // Wait until we get "uuid"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains("carambar"));
+                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/hello").contains("carambar"));
     }
 
     @Test
@@ -95,7 +95,7 @@ public class DevMojoIT extends MojoTestBase {
         // Wait until we get "bar"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/foo").contains("bar"));
+                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/foo").contains("bar"));
     }
 
     @Test
@@ -151,7 +151,7 @@ public class DevMojoIT extends MojoTestBase {
         assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.acme")
                 .containsIgnoringCase("1.0-SNAPSHOT");
 
-        String greeting = getHttpResponse("/app/hello");
+        String greeting = getHttpResponse("/hello");
         assertThat(greeting).containsIgnoringCase("hello");
     }
 
@@ -167,7 +167,7 @@ public class DevMojoIT extends MojoTestBase {
         assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.acme")
                 .containsIgnoringCase("1.0-SNAPSHOT");
 
-        String greeting = getHttpResponse("/app/hello/greeting");
+        String greeting = getHttpResponse("/hello/greeting");
         assertThat(greeting).containsIgnoringCase("bonjour");
 
         sleep();
@@ -180,7 +180,7 @@ public class DevMojoIT extends MojoTestBase {
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES)
-                .until(() -> getHttpResponse("/app/hello/greeting").contains(uuid));
+                .until(() -> getHttpResponse("/hello/greeting").contains(uuid));
     }
 
     @Test
@@ -227,7 +227,7 @@ public class DevMojoIT extends MojoTestBase {
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> {
-            String content = getHttpResponse("/app/hello");
+            String content = getHttpResponse("/hello");
             last.set(content);
             return content.contains(uuid);
         });
@@ -242,7 +242,7 @@ public class DevMojoIT extends MojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains("carambar"));
+                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/hello").contains("carambar"));
     }
 
     @Test
@@ -274,7 +274,7 @@ public class DevMojoIT extends MojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains("message"));
+                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/hello").contains("message"));
 
         sleep();
 
@@ -282,9 +282,8 @@ public class DevMojoIT extends MojoTestBase {
 
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains("foobarbaz"));
+                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/hello").contains("foobarbaz"));
     }
-
 
 
     @Test

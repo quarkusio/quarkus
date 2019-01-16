@@ -134,23 +134,6 @@ As we are going to create a JAX-RS endpoint, you also need to add the following 
 ArC is a CDI-based dependency injection solution - see also link:cdi-reference.html[Contexts and Dependency Injection].
 ====
 
-== Creating the Application class
-
-It's now time to create the `Application` class, create the `src/main/java/org/acme/quickstart/MyApplication.java` file with the following content:
-
-[source,java]
-----
-package org.acme.quickstart;
-
-import javax.ws.rs.ApplicationPath;
-import javax.ws.rs.core.Application;
-
-@ApplicationPath("/app")
-public class MyApplication extends Application {
-
-}
-----
-
 === Creating the JAX-RS resource
 
 Create the `src/main/java/org/acme/quickstart/GreetingResource.java` file with the following content:
@@ -174,6 +157,13 @@ public class GreetingResource {
     }
 }
 ----
+
+[TIP]
+.Differences with vanilla Jax-RS
+====
+With Shamrock no need to create an `Application` class. It's supported but not required. In addition, only one instance
+of the resource is created and not one per request. You can configure this using the different `XScoped` annotations.
+====
 
 == Running the application
 
@@ -207,7 +197,7 @@ INFO  [o.j.shamrock] (main) Shamrock started in 697.982ms
 Once started, you can request the provided endpoint:
 
 ```
-$ curl http://localhost:8080/app/hello
+$ curl http://localhost:8080/hello
 hello
 ```
 
@@ -268,7 +258,7 @@ public class GreetingResource {
 }
 ----
 
-Start the application and check that http://localhost:8080/app/hello/greeting/shamrock returns `hello shamrock`.
+Start the application and check that http://localhost:8080/hello/greeting/shamrock returns `hello shamrock`.
 
 
 

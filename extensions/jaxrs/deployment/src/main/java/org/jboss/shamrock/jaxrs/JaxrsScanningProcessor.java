@@ -37,13 +37,18 @@ import java.util.stream.Collectors;
 
 import javax.inject.Singleton;
 import javax.servlet.DispatcherType;
+import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.container.DynamicFeature;
+import javax.ws.rs.core.Application;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
+import javax.ws.rs.ext.Provider;
 import javax.ws.rs.ext.Providers;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -92,38 +97,43 @@ import org.jboss.shamrock.undertow.ServletInitParamBuildItem;
  */
 public class JaxrsScanningProcessor {
 
-    private static final String JAVAX_WS_RS_APPLICATION = "javax.ws.rs.Application";
+    private static final String JAVAX_WS_RS_APPLICATION = Application.class.getName();
     private static final String JAX_RS_FILTER_NAME = JAVAX_WS_RS_APPLICATION;
     private static final String JAX_RS_SERVLET_NAME = JAVAX_WS_RS_APPLICATION;
     private static final String JAX_RS_APPLICATION_PARAMETER_NAME = JAVAX_WS_RS_APPLICATION;
 
-    private static final DotName APPLICATION_PATH = DotName.createSimple("javax.ws.rs.ApplicationPath");
+    private static final DotName APPLICATION_PATH = DotName.createSimple(ApplicationPath.class.getName());
 
-    private static final DotName PATH = DotName.createSimple("javax.ws.rs.Path");
-    private static final DotName PROVIDER = DotName.createSimple("javax.ws.rs.ext.Provider");
+    private static final DotName PATH = DotName.createSimple(Path.class.getName());
+    private static final DotName PROVIDER = DotName.createSimple(Provider.class.getName());
     private static final DotName DYNAMIC_FEATURE = DotName.createSimple(DynamicFeature.class.getName());
+    private static final DotName CONTEXT = DotName.createSimple(Context.class.getName());
+
+    private static final DotName GET = DotName.createSimple(javax.ws.rs.GET.class.getName());
+    private static final DotName HEAD = DotName.createSimple(javax.ws.rs.HEAD.class.getName());
+    private static final DotName DELETE = DotName.createSimple(javax.ws.rs.DELETE.class.getName());
+    private static final DotName OPTIONS = DotName.createSimple(javax.ws.rs.OPTIONS.class.getName());
+    private static final DotName PATCH = DotName.createSimple(javax.ws.rs.PATCH.class.getName());
+    private static final DotName POST = DotName.createSimple(javax.ws.rs.POST.class.getName());
+    private static final DotName PUT = DotName.createSimple(javax.ws.rs.PUT.class.getName());
+
+    private static final DotName CONSUMES = DotName.createSimple(Consumes.class.getName());
+    private static final DotName PRODUCES = DotName.createSimple(Produces.class.getName());
+
+    private static final DotName RESTEASY_QUERY_PARAM = DotName.createSimple(org.jboss.resteasy.annotations.jaxrs.QueryParam.class.getName());
+    private static final DotName RESTEASY_FORM_PARAM = DotName.createSimple(org.jboss.resteasy.annotations.jaxrs.FormParam.class.getName());
+    private static final DotName RESTEASY_COOKIE_PARAM = DotName.createSimple(org.jboss.resteasy.annotations.jaxrs.CookieParam.class.getName());
+    private static final DotName RESTEASY_PATH_PARAM = DotName.createSimple(org.jboss.resteasy.annotations.jaxrs.PathParam.class.getName());
+    private static final DotName RESTEASY_HEADER_PARAM = DotName.createSimple(org.jboss.resteasy.annotations.jaxrs.HeaderParam.class.getName());
+    private static final DotName RESTEASY_MATRIX_PARAM = DotName.createSimple(org.jboss.resteasy.annotations.jaxrs.MatrixParam.class.getName());
 
     private static final DotName XML_ROOT = DotName.createSimple("javax.xml.bind.annotation.XmlRootElement");
     private static final DotName JSONB_ANNOTATION = DotName.createSimple("javax.json.bind.annotation.JsonbAnnotation");
-    private static final DotName CONTEXT = DotName.createSimple("javax.ws.rs.core.Context");
 
-    private static final DotName GET = DotName.createSimple("javax.ws.rs.GET");
-    private static final DotName HEAD = DotName.createSimple("javax.ws.rs.HEAD");
-    private static final DotName DELETE = DotName.createSimple("javax.ws.rs.DELETE");
-    private static final DotName OPTIONS = DotName.createSimple("javax.ws.rs.OPTIONS");
-    private static final DotName PATCH = DotName.createSimple("javax.ws.rs.PATCH");
-    private static final DotName POST = DotName.createSimple("javax.ws.rs.POST");
-    private static final DotName PUT = DotName.createSimple("javax.ws.rs.PUT");
-
-    private static final DotName RESTEASY_QUERY_PARAM = DotName.createSimple("org.jboss.resteasy.annotations.jaxrs.QueryParam");
-    private static final DotName RESTEASY_FORM_PARAM = DotName.createSimple("org.jboss.resteasy.annotations.jaxrs.FormParam");
-    private static final DotName RESTEASY_COOKIE_PARAM = DotName.createSimple("org.jboss.resteasy.annotations.jaxrs.CookieParam");
-    private static final DotName RESTEASY_PATH_PARAM = DotName.createSimple("org.jboss.resteasy.annotations.jaxrs.PathParam");
-    private static final DotName RESTEASY_HEADER_PARAM = DotName.createSimple("org.jboss.resteasy.annotations.jaxrs.HeaderParam");
-    private static final DotName RESTEASY_MATRIX_PARAM = DotName.createSimple("org.jboss.resteasy.annotations.jaxrs.MatrixParam");
-
-    private static final DotName CONSUMES = DotName.createSimple("javax.ws.rs.Consumes");
-    private static final DotName PRODUCES = DotName.createSimple("javax.ws.rs.Produces");
+    private static final Set<DotName> TYPES_IGNORED_FOR_REFLECTION = new HashSet<>(Arrays.asList(
+            DotName.createSimple("javax.json.JsonObject"),
+            DotName.createSimple("javax.json.JsonArray")
+    ));
 
     private static final DotName[] METHOD_ANNOTATIONS = {
             GET,
@@ -182,7 +192,7 @@ public class JaxrsScanningProcessor {
 
     /**
      * Set this to override the default path for JAX-RS resources if there are no
-     * annotated application classes. The default value is `/`. 
+     * annotated application classes. The default value is `/`.
      */
     @ConfigProperty(name = "shamrock.jaxrs.path", defaultValue = "/")
     String defaultPath;
@@ -213,8 +223,8 @@ public class JaxrsScanningProcessor {
 
     @BuildStep
     public void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-                      BuildProducer<SubstrateProxyDefinitionBuildItem> proxyDefinition,
                       BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
+                      BuildProducer<SubstrateProxyDefinitionBuildItem> proxyDefinition,
                       BuildProducer<SubstrateResourceBuildItem> resource,
                       BuildProducer<RuntimeInitializedClassBuildItem> runtimeClasses,
                       BuildProducer<FilterBuildItem> filterProducer,
@@ -222,16 +232,9 @@ public class JaxrsScanningProcessor {
                       BuildProducer<ServletInitParamBuildItem> servletContextParams,
                       CombinedIndexBuildItem combinedIndexBuildItem
     ) throws Exception {
-
-
-        //this is pretty yuck, and does not really belong here, but it is needed to get the json-p
-        //provider to work
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "org.glassfish.json.JsonProviderImpl",
-                "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector",
-                "com.fasterxml.jackson.databind.ser.std.SqlDateSerializer"));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ArrayList.class.getName()));
-        resource.produce(new SubstrateResourceBuildItem("META-INF/services/javax.ws.rs.client.ClientBuilder"));
         IndexView index = combinedIndexBuildItem.getIndex();
+
+        resource.produce(new SubstrateResourceBuildItem("META-INF/services/javax.ws.rs.client.ClientBuilder"));
 
         Collection<AnnotationInstance> app = index.getAnnotations(APPLICATION_PATH);
         Collection<AnnotationInstance> xmlRoot = index.getAnnotations(XML_ROOT);
@@ -240,13 +243,6 @@ public class JaxrsScanningProcessor {
                     "com.sun.xml.internal.bind.v2.ContextFactory"));
         }
         runtimeClasses.produce(new RuntimeInitializedClassBuildItem("com.sun.xml.internal.bind.v2.runtime.reflect.opt.Injector"));
-        for (DotName i : Arrays.asList(XML_ROOT, JSONB_ANNOTATION)) {
-            for (AnnotationInstance anno : index.getAnnotations(i)) {
-                if (anno.target().kind() == AnnotationTarget.Kind.CLASS) {
-                    reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, anno.target().asClass().name().toString()));
-                }
-            }
-        }
 
         //@Context uses proxies for interface injection
         for (AnnotationInstance annotation : index.getAnnotations(CONTEXT)) {
@@ -353,25 +349,12 @@ public class JaxrsScanningProcessor {
             }
             servletContextParams.produce(new ServletInitParamBuildItem("resteasy.servlet.mapping.prefix", path));
             servletContextParams.produce(new ServletInitParamBuildItem("resteasy.injector.factory", ShamrockInjectorFactory.class.getName()));
-            if(appClass != null) {
+            if (appClass != null) {
                 servletContextParams.produce(new ServletInitParamBuildItem(JAX_RS_APPLICATION_PARAMETER_NAME, appClass));
             }
         } else {
             // no @Application class and no detected @Path resources, bail out
             return;
-        }
-        
-        for (DotName annotationType : METHOD_ANNOTATIONS) {
-            Collection<AnnotationInstance> instances = index.getAnnotations(annotationType);
-            for (AnnotationInstance instance : instances) {
-                MethodInfo method = instance.target().asMethod();
-                reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(method.returnType()));
-                for (Type param : method.parameters()) {
-                    if (param.kind() != Type.Kind.PRIMITIVE) {
-                        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(param));
-                    }
-                }
-            }
         }
 
         OUTER:
@@ -382,16 +365,14 @@ public class JaxrsScanningProcessor {
                 if(param.name() == null) {
                     log.warnv("Detected RESTEasy annotation {0} on method parameter {1}.{2} with no name. Either specify its name,"
                              +" or tell your compiler to enable debug info (-g) or parameter names (-parameters). This message is only"
-                            +" logged for the first such parameter.", instance.name(), 
+                            +" logged for the first such parameter.", instance.name(),
                              param.method().declaringClass(), param.method().name());
                     break OUTER;
                 }
             }
         }
-        
-        // In the case of a constraint violation, these elements might be returned as entities and will be serialized
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ViolationReport.class.getName()));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ResteasyConstraintViolation.class.getName()));
+
+        registerReflectionForSerialization(reflectiveClass, reflectiveHierarchy, combinedIndexBuildItem);
     }
 
     @BuildStep
@@ -465,6 +446,50 @@ public class JaxrsScanningProcessor {
     @BuildStep
     List<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations() {
         return Collections.singletonList(new BeanDefiningAnnotationBuildItem(PATH, singletonResources ? SINGLETON_SCOPE : null));
+    }
+
+    private void registerReflectionForSerialization(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
+            CombinedIndexBuildItem combinedIndexBuildItem) {
+        IndexView index = combinedIndexBuildItem.getIndex();
+
+        // required by JSON-P support
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "org.glassfish.json.JsonProviderImpl"));
+
+        // required by Jackson
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false,
+                "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector",
+                "com.fasterxml.jackson.databind.ser.std.SqlDateSerializer"));
+
+        // This is probably redundant with the automatic resolution we do just below but better be safe
+        for (DotName i : Arrays.asList(XML_ROOT, JSONB_ANNOTATION)) {
+            for (AnnotationInstance annotation : index.getAnnotations(i)) {
+                if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
+                    reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, annotation.target().asClass().name().toString()));
+                }
+            }
+        }
+
+        // Declare reflection for all the types implicated in the Rest end points (return types and parameters).
+        // It might be needed for serialization.
+        for (DotName annotationType : METHOD_ANNOTATIONS) {
+            Collection<AnnotationInstance> instances = index.getAnnotations(annotationType);
+            for (AnnotationInstance instance : instances) {
+                MethodInfo method = instance.target().asMethod();
+                if (isReflectionDeclarationRequiredFor(method.returnType())) {
+                    reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(method.returnType()));
+                }
+                for (Type param : method.parameters()) {
+                    if (isReflectionDeclarationRequiredFor(param)) {
+                        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(param));
+                    }
+                }
+            }
+        }
+
+        // In the case of a constraint violation, these elements might be returned as entities and will be serialized
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ViolationReport.class.getName()));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ResteasyConstraintViolation.class.getName()));
     }
 
     private Set<String> getAvailableProviders() throws Exception {
@@ -601,6 +626,24 @@ public class JaxrsScanningProcessor {
             providersToRegister.addAll(categorizedProviders.getPossible(mediaType));
         }
         return false;
+    }
+
+    private static boolean isReflectionDeclarationRequiredFor(Type type) {
+        DotName className = getClassName(type);
+
+        return className != null && !TYPES_IGNORED_FOR_REFLECTION.contains(className);
+    }
+
+    private static DotName getClassName(Type type) {
+        switch (type.kind()) {
+        case CLASS:
+        case PARAMETERIZED_TYPE:
+            return type.name();
+        case ARRAY:
+            return getClassName(type.asArrayType().component());
+        default:
+            return null;
+        }
     }
 
     private static class ProviderDiscoverer {

@@ -124,7 +124,26 @@ public class TestResource {
         subComponent.getData().add("sub component list value");
         ret.setSubComponent(subComponent);
         return Collections.singletonList(ret);
+    }
 
+    @GET
+    @Path("/subclass")
+    @Produces("application/json")
+    public ParentClass subclass() {
+        ChildClass child = new ChildClass();
+        child.setName("my name");
+        child.setValue("my value");
+        return child;
+    }
+
+    @GET
+    @Path("/implementor")
+    @Produces("application/json")
+    public MyInterface implementor() {
+        MyImplementor child = new MyImplementor();
+        child.setName("my name");
+        child.setValue("my value");
+        return child;
     }
 
     @GET
@@ -132,6 +151,26 @@ public class TestResource {
     @Produces("application/foo")
     public String fooProvider() {
         return "hello";
+    }
+
+    @GET
+    @Path("params/{path}")
+    public void regularParams(@PathParam("path") String path,
+                              @FormParam("form") String form,
+                              @CookieParam("cookie") String cookie,
+                              @HeaderParam("header") String header,
+                              @MatrixParam("matrix") String matrix,
+                              @QueryParam("query") String query) {
+    }
+
+    @GET
+    @Path("params2/{path}")
+    public void resteasyParams(@org.jboss.resteasy.annotations.jaxrs.PathParam String path,
+                               @org.jboss.resteasy.annotations.jaxrs.FormParam String form,
+                               @org.jboss.resteasy.annotations.jaxrs.CookieParam String cookie,
+                               @org.jboss.resteasy.annotations.jaxrs.HeaderParam String header,
+                               @org.jboss.resteasy.annotations.jaxrs.MatrixParam String matrix,
+                               @org.jboss.resteasy.annotations.jaxrs.QueryParam String query) {
     }
 
     @XmlRootElement
@@ -169,23 +208,57 @@ public class TestResource {
         }
     }
 
-    @Path("params/{path}")
-    @GET
-    public void regularParams(@PathParam("path") String path,
-                              @FormParam("form") String form,
-                              @CookieParam("cookie") String cookie,
-                              @HeaderParam("header") String header,
-                              @MatrixParam("matrix") String matrix,
-                              @QueryParam("query") String query) {
+    public static class ParentClass {
+        private String name;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
     }
 
-    @Path("params2/{path}")
-    @GET
-    public void resteasyParams(@org.jboss.resteasy.annotations.jaxrs.PathParam String path,
-                               @org.jboss.resteasy.annotations.jaxrs.FormParam String form,
-                               @org.jboss.resteasy.annotations.jaxrs.CookieParam String cookie,
-                               @org.jboss.resteasy.annotations.jaxrs.HeaderParam String header,
-                               @org.jboss.resteasy.annotations.jaxrs.MatrixParam String matrix,
-                               @org.jboss.resteasy.annotations.jaxrs.QueryParam String query) {
+    public static class ChildClass extends ParentClass {
+        private String value;
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
+        }
+    }
+
+    public static class MyImplementor implements MyInterface {
+        private String name;
+        private String value;
+
+        @Override
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
+        }
+    }
+
+    public interface MyInterface {
+
+        String getValue();
+
+        String getName();
     }
 }

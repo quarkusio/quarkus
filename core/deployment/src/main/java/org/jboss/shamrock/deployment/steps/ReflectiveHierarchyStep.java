@@ -62,13 +62,23 @@ public class ReflectiveHierarchyStep {
     }
 
     private void addReflectiveHierarchy(Type type, Set<DotName> processedReflectiveHierarchies) {
-
         if (type instanceof VoidType ||
                 type instanceof PrimitiveType ||
                 type instanceof UnresolvedTypeVariable) {
             return;
         } else if (type instanceof ClassType) {
+            if (skipClass(type.name(), processedReflectiveHierarchies)) {
+                return;
+            }
+
             addClassTypeHierarchy(type.name(), processedReflectiveHierarchies);
+
+            for (ClassInfo subclass : combinedIndexBuildItem.getIndex().getAllKnownSubclasses(type.name())) {
+                addClassTypeHierarchy(subclass.name(), processedReflectiveHierarchies);
+            }
+            for (ClassInfo subclass : combinedIndexBuildItem.getIndex().getAllKnownImplementors(type.name())) {
+                addClassTypeHierarchy(subclass.name(), processedReflectiveHierarchies);
+            }
         } else if (type instanceof ArrayType) {
             addReflectiveHierarchy(type.asArrayType().component(), processedReflectiveHierarchies);
         } else if (type instanceof ParameterizedType) {
@@ -81,8 +91,7 @@ public class ReflectiveHierarchyStep {
     }
 
     private void addClassTypeHierarchy(DotName name, Set<DotName> processedReflectiveHierarchies) {
-        if (name.toString().startsWith("java.") ||
-                processedReflectiveHierarchies.contains(name)) {
+        if (skipClass(name, processedReflectiveHierarchies)) {
             return;
         }
         processedReflectiveHierarchies.add(name);
@@ -96,14 +105,16 @@ public class ReflectiveHierarchyStep {
             for (FieldInfo i : info.fields()) {
                 addReflectiveHierarchy(i.type(), processedReflectiveHierarchies);
             }
-            for (MethodInfo i : info.methods()) {
-                addReflectiveHierarchy(i.returnType(), processedReflectiveHierarchies);
-                for (Type p : i.parameters()) {
-                    addReflectiveHierarchy(p, processedReflectiveHierarchies);
+            for (MethodInfo method : info.methods()) {
+                // we only add the return types of the potential getters
+                if (method.parameters().size() == 0) {
+                    addReflectiveHierarchy(method.returnType(), processedReflectiveHierarchies);
                 }
             }
         }
-
     }
 
+    private boolean skipClass(DotName name, Set<DotName> processedReflectiveHierarchies) {
+        return name.toString().startsWith("java.") || processedReflectiveHierarchies.contains(name);
+    }
 }

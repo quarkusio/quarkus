@@ -10,7 +10,7 @@ import com.oracle.svm.core.annotate.TargetClass;
 public final class Pool_disable_JMX {
 
     @Alias
-    private static final Logger logger = null;
+    private static Logger logger = null;
 
     @Substitute
     private void registerJmx() throws Exception {

@@ -95,7 +95,7 @@ NOTE: Currently the tracer can only be configured to report spans directly to th
 Once both the application and tracing system are started, you can make a request to the provided endpoint:
 
 ```
-$ curl http://localhost:8080/app/hello
+$ curl http://localhost:8080/hello
 hello
 ```
 When the first request has been submitted, the Jaeger tracer within the app will be initialized:

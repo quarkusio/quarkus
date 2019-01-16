@@ -158,6 +158,13 @@ public class GreetingResource {
 }
 ----
 
+[TIP]
+.Differences with vanilla Jax-RS
+====
+With Shamrock no need to create an `Application` class. It's supported but not required. In addition, only one instance
+of the resource is created and not one per request. You can configure this using the different `XScoped` annotations.
+====
+
 == Running the application
 
 Now we are ready to run our application.

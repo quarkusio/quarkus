@@ -408,10 +408,10 @@ public class NativeImagePhase implements AppCreationPhase {
 
     //FIXME remove after transition period
     private boolean isThisGraalVMRCObsolete() {
-        final String vmName = System.getProperty( "java.vm.name" );
-        log.info( "Running Shamrock native-image plugin on " + vmName );
-        if (vmName.contains( "-rc9" ) || vmName.contains( "-rc8")) {
-            log.error( "Out of date RC build of GraalVM detected! Please upgrade to RC10" );
+        final String vmName = System.getProperty("java.vm.name");
+        log.info("Running Shamrock native-image plugin on " + vmName);
+        if (vmName.contains("-rc9") || vmName.contains("-rc10")) {
+            log.error("Out of date RC build of GraalVM detected! Please upgrade to RC11");
             return true;
         }
         return false;

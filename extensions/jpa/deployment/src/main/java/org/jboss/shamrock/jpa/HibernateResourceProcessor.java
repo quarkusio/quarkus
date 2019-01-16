@@ -275,7 +275,10 @@ public final class HibernateResourceProcessor {
         if ( resolvedDriver.contains("org.mariadb.jdbc.Driver")) {
             return Optional.of(MariaDB103Dialect.class.getName());
         }
-        return Optional.empty();
+        String error = driver.isPresent() ?
+                "Hibernate extension could not guess the dialect from the driver '" + resolvedDriver + "'. Add an explicit 'shamrock.hibernate.dialect' property." :
+                "Hibernate extension cannot guess the dialect as no JDBC driver is specified by 'shamrock.datasource.driver'";
+        throw new ConfigurationError(error);
     }
 
     private void enhanceEntities(final KnownDomainObjects domainObjects, BuildProducer<BytecodeTransformerBuildItem> transformers) {

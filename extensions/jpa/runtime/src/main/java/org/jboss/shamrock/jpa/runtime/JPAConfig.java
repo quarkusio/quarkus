@@ -35,7 +35,7 @@ public class JPAConfig {
 
     private final AtomicBoolean jtaEnabled;
 
-    private final Map<String, LazyPu> persistenceUnits;
+    private final Map<String, LazyPersistenceUnit> persistenceUnits;
 
     private final AtomicReference<String> defaultPersistenceUnitName;
 
@@ -63,11 +63,11 @@ public class JPAConfig {
     }
 
     void registerPersistenceUnit(String unitName) {
-        persistenceUnits.put(unitName, new LazyPu(unitName));
+        persistenceUnits.put(unitName, new LazyPersistenceUnit(unitName));
     }
 
     void startAll() {
-        for(Map.Entry<String, LazyPu> i : persistenceUnits.entrySet()) {
+        for(Map.Entry<String, LazyPersistenceUnit> i : persistenceUnits.entrySet()) {
             i.getValue().get();
         }
     }
@@ -84,7 +84,7 @@ public class JPAConfig {
 
     @PreDestroy
     void destroy() {
-        for (LazyPu factory : persistenceUnits.values()) {
+        for (LazyPersistenceUnit factory : persistenceUnits.values()) {
             try {
                 factory.get().close();
             } catch (Exception e) {
@@ -94,12 +94,12 @@ public class JPAConfig {
         persistenceUnits.clear();
     }
 
-    static final class LazyPu {
+    static final class LazyPersistenceUnit {
 
         private final String name;
         private volatile EntityManagerFactory value;
 
-        LazyPu(String name) {
+        LazyPersistenceUnit(String name) {
             this.name = name;
         }
 

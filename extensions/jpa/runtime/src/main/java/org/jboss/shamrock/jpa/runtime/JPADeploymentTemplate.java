@@ -23,8 +23,6 @@ import javax.sql.DataSource;
 
 import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
-import org.hibernate.protean.Hibernate;
-import org.hibernate.protean.impl.PersistenceUnitsHolder;
 import org.jboss.logging.Logger;
 import org.jboss.shamrock.arc.runtime.BeanContainer;
 import org.jboss.shamrock.arc.runtime.BeanContainerListener;
@@ -35,6 +33,7 @@ import org.jboss.shamrock.runtime.Template;
  */
 @Template
 public class JPADeploymentTemplate {
+
     private List<String> entities = new ArrayList<>();
 
     private static final String CONNECTION_URL = "hibernate.connection.url";
@@ -101,7 +100,7 @@ public class JPADeploymentTemplate {
         };
     }
 
-    public void startAllUnits(BeanContainer beanContainer) {
+    public void startAllPersistenceUnits(BeanContainer beanContainer) {
         beanContainer.instance(JPAConfig.class).startAll();
     }
 }

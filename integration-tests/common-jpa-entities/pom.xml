@@ -32,8 +32,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.hibernate.protean</groupId>
-            <artifactId>hibernate-orm-protean</artifactId>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-core</artifactId>
             <scope>provided</scope>
         </dependency>
     </dependencies>

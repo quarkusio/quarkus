@@ -16,16 +16,14 @@
 
 package org.jboss.shamrock.jpa.runtime;
 
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
+public final class PersistenceProviderSetup {
 
-@Singleton
-public class DefaultEntityManagerProducer {
+    private PersistenceProviderSetup() {
+        // not to be constructed
+    }
 
-    @Produces
-    @PersistenceContext
-    EntityManager entityManager;
+    public static void registerPersistenceProvider() {
+        javax.persistence.spi.PersistenceProviderResolverHolder.setPersistenceProviderResolver(new FastBootHibernatePersistenceProviderResolver());
+    }
 
 }

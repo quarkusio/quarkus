@@ -11,6 +11,7 @@ To complete this guide, you need:
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.5.3+
+* Docker
 
 Remember, you need to configure Maven as indicated in the link:maven-config.html[Maven configuration page].
 
@@ -69,9 +70,16 @@ public class TracedResource {
 ----
 
 Notice that there is no tracing specific code included in the application. By default, requests sent to this
-endpoint will be traced without any code changes being required. It is also possible to enhance the tracing information. For more information on this, please see the https://github.com/eclipse/microprofile-opentracing/blob/master/spec/src/main/asciidoc/microprofile-opentracing.asciidoc[ MicroProfile OpenTracing specification].
+endpoint will be traced without any code changes being required. It is also possible to enhance the tracing information. For more information on this, please see the https://github.com/eclipse/microprofile-opentracing/blob/master/spec/src/main/asciidoc/microprofile-opentracing.asciidoc[MicroProfile OpenTracing specification].
 
 == Run the application
+
+The first step is to start the tracing system to collect and display the captured traces:
+
+[source, text]
+----
+docker run -e COLLECTOR_ZIPKIN_HTTP_PORT=9411 -p 5775:5775/udp -p 6831:6831/udp -p 6832:6832/udp -p 5778:5778 -p 16686:16686 -p 14268:14268 -p 9411:9411 jaegertracing/all-in-one:latest
+----
 
 Now we are ready to run our application. Use:
 
@@ -82,16 +90,9 @@ mvn compile shamrock:dev -Djvm.args="-DJAEGER_SERVICE_NAME=myservice -DJAEGER_SA
 
 The supplied `jvm.args` are used to configure the default OpenTracing tracer (Jaeger). If the `JAEGER_SERVICE_NAME` property is not provided then a "no-op" tracer will be configured, resulting in no tracing data being reported to the backend. The other properties are explained in the https://www.jaegertracing.io/docs/latest/client-features/[Tracer configuration via environment variables] section of the Jaeger documentation.
 
-NOTE: Currently the tracer can only be configured to report spans directly to the collector via HTTP, using the `JAEGER_ENDPONT` property. Support for using the Jaeger agent, via UDP, will be available in a future version.
+NOTE: Currently the tracer can only be configured to report spans directly to the collector via HTTP, using the `JAEGER_ENDPOINT` property. Support for using the Jaeger agent, via UDP, will be available in a future version.
 
-The next step is to startup the tracing system to collect and display the captured traces:
-
-[source, text]
-----
-docker run -e COLLECTOR_ZIPKIN_HTTP_PORT=9411 -p 5775:5775/udp -p 6831:6831/udp -p 6832:6832/udp -p 5778:5778 -p 16686:16686 -p 14268:14268 -p 9411:9411 jaegertracing/all-in-one:latest
-----
-
-Once both are started, you can request the provided endpoint:
+Once both the application and tracing system are started, you can make a request to the provided endpoint:
 
 ```
 $ curl http://localhost:8080/app/hello

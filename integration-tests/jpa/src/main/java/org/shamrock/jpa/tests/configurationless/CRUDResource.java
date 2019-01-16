@@ -72,4 +72,17 @@ public class CRUDResource {
         }
         return map;
     }
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Transactional
+    @Path("/import")
+    public Map<String, String> get() {
+        Gift gift = em.find(Gift.class, 100000L);
+
+        Map<String, String> map = new HashMap<>();
+        map.put("jpa", gift != null ? "OK" : "Boooo");
+        return map;
+    }
+
 }

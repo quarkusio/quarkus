@@ -1,0 +1,2 @@
+DELETE FROM Gift WHERE id=100000
+INSERT INTO Gift (id,name) VALUES (100000,'Teddy bear');

@@ -16,23 +16,6 @@
 
 package org.jboss.shamrock.jpa;
 
-import static org.jboss.shamrock.annotations.ExecutionTime.RUNTIME_INIT;
-import static org.jboss.shamrock.annotations.ExecutionTime.STATIC_INIT;
-
-import java.net.URL;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import javax.enterprise.inject.Produces;
-import javax.persistence.PersistenceContext;
-import javax.persistence.PersistenceUnit;
-import javax.persistence.spi.PersistenceUnitTransactionType;
-
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.cfg.AvailableSettings;
@@ -53,6 +36,8 @@ import org.jboss.shamrock.arc.deployment.BeanContainerBuildItem;
 import org.jboss.shamrock.arc.deployment.BeanContainerListenerBuildItem;
 import org.jboss.shamrock.arc.deployment.ResourceAnnotationBuildItem;
 import org.jboss.shamrock.deployment.Capabilities;
+import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
+import org.jboss.shamrock.deployment.builditem.ArchiveRootBuildItem;
 import org.jboss.shamrock.deployment.builditem.BytecodeTransformerBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
@@ -62,12 +47,33 @@ import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildIte
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import org.jboss.shamrock.deployment.configuration.ConfigurationError;
 import org.jboss.shamrock.deployment.recording.RecorderContext;
+
+
 import org.jboss.shamrock.jpa.runtime.DefaultEntityManagerFactoryProducer;
 import org.jboss.shamrock.jpa.runtime.DefaultEntityManagerProducer;
 import org.jboss.shamrock.jpa.runtime.JPAConfig;
 import org.jboss.shamrock.jpa.runtime.JPADeploymentTemplate;
 import org.jboss.shamrock.jpa.runtime.TransactionEntityManagers;
 import org.jboss.shamrock.jpa.runtime.boot.scan.ShamrockScanner;
+
+import javax.enterprise.inject.Produces;
+import javax.persistence.PersistenceContext;
+import javax.persistence.PersistenceUnit;
+import javax.persistence.spi.PersistenceUnitTransactionType;
+import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static org.jboss.shamrock.annotations.ExecutionTime.RUNTIME_INIT;
+import static org.jboss.shamrock.annotations.ExecutionTime.STATIC_INIT;
 
 /**
  * Simulacrum of JPA bootstrap.
@@ -102,9 +108,13 @@ public final class HibernateResourceProcessor {
     }
 
     @BuildStep
-    void doParse(BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceProducer) {
+    void doParseAndRegisterSubstrateResources(BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceProducer,
+                                              BuildProducer<SubstrateResourceBuildItem> resourceProducer,
+                                              BuildProducer<HotDeploymentConfigFileBuildItem> hotDeploymentProducer,
+                                              ArchiveRootBuildItem root,
+                                              ApplicationArchivesBuildItem applicationArchivesBuildItem) throws IOException {
         List<ParsedPersistenceXmlDescriptor> descriptors = loadOriginalXMLParsedDescriptors();
-        handleHibernateORMWithNoPersistenceXml(descriptors);
+        handleHibernateORMWithNoPersistenceXml(descriptors, resourceProducer, hotDeploymentProducer, root, applicationArchivesBuildItem );
         for (ParsedPersistenceXmlDescriptor i : descriptors) {
             persistenceProducer.produce(new PersistenceUnitDescriptorBuildItem(i));
         }
@@ -223,7 +233,12 @@ public final class HibernateResourceProcessor {
         return true;
     }
 
-    private void handleHibernateORMWithNoPersistenceXml(List<ParsedPersistenceXmlDescriptor> descriptors) {
+    private void handleHibernateORMWithNoPersistenceXml(
+            List<ParsedPersistenceXmlDescriptor> descriptors,
+            BuildProducer<SubstrateResourceBuildItem> resourceProducer,
+            BuildProducer<HotDeploymentConfigFileBuildItem> hotDeploymentProducer,
+            ArchiveRootBuildItem root,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem) {
         if ( descriptors.isEmpty() ) {
             //we have no persistence.xml so we will create a default one
             Optional<String> dialect = hibernateOrmConfig.flatMap(c -> c.dialect);
@@ -247,9 +262,36 @@ public final class HibernateResourceProcessor {
                                 desc.getProperties().setProperty(AvailableSettings.FORMAT_SQL, "true");
                             }
                         });
+
+                // sql-load-script-source
+                // explicit file or default one
+                String file = hibernateOrmConfig
+                        .flatMap(c -> c.sqlLoadScriptSource)
+                        .orElse("import.sql"); //default Hibernate ORM file imported
+
+                Optional<Path> loadScriptPath = Optional.ofNullable(applicationArchivesBuildItem.getRootArchive().getChildPath(file));
+                // enlist resource if present
+                loadScriptPath
+                        .filter( path -> !Files.isDirectory(path))
+                        .ifPresent( path -> {
+                            String resourceAsString = root.getPath().relativize(loadScriptPath.get()).toString();
+                            resourceProducer.produce(new SubstrateResourceBuildItem(resourceAsString));
+                            hotDeploymentProducer.produce(new HotDeploymentConfigFileBuildItem(resourceAsString));
+                            desc.getProperties().setProperty(AvailableSettings.HBM2DDL_LOAD_SCRIPT_SOURCE, file);
+                        });
+
+                //raise exception if explicit file is not present (i.e. not the default)
+                hibernateOrmConfig.flatMap(c -> c.sqlLoadScriptSource)
+                        .filter(o -> !loadScriptPath.filter( path -> !Files.isDirectory(path)).isPresent())
+                        .ifPresent(
+                            c -> { throw new ConfigurationError(
+                                "Unable to find file referenced in 'shamrock.hibernate.sql-load-script-source="
+                                + c + "'. Remove property or add file to your path."
+                            );
+                        });
+
                 descriptors.add(desc);
             });
-
         }
         else {
             if (hibernateOrmConfig.isPresent() && hibernateOrmConfig.get().isAnyPropertySet()) {

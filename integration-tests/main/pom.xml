@@ -176,7 +176,6 @@
             <plugin>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>shamrock-maven-plugin</artifactId>
-                <version>${project.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -239,7 +238,6 @@
                     <plugin>
                         <groupId>${project.groupId}</groupId>
                         <artifactId>shamrock-maven-plugin</artifactId>
-                        <version>${project.version}</version>
                         <executions>
                             <execution>
                                 <id>native-image</id>

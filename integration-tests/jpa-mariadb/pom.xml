@@ -176,6 +176,18 @@
         </profile>
 
         <profile>
+            <id>external-mariadb</id>
+            <activation>
+                <property>
+                    <name>external-mariadb</name>
+                </property>
+            </activation>
+            <properties>
+                <mariadb.url>jdbc:mariadb://localhost:3308/hibernate_orm_test</mariadb.url>
+            </properties>
+        </profile>
+
+        <profile>
             <id>docker-mariadb</id>
             <activation>
                 <property>

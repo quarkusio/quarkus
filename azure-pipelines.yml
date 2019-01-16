@@ -14,6 +14,9 @@ jobs:
 
   steps:
 
+    - script: docker run --rm --publish 3308:3306 --name build-mariadb -e MYSQL_USER=hibernate_orm_test -e MYSQL_PASSWORD=hibernate_orm_test -e MYSQL_DATABASE=hibernate_orm_test -e MYSQL_RANDOM_ROOT_PASSWORD=true -d mariadb:10.4
+        displayName: 'start mariadb'
+
   - script: docker run --rm --publish 5432:5432 --name build-postgres -e POSTGRES_USER=hibernate_orm_test -e POSTGRES_PASSWORD=hibernate_orm_test -e POSTGRES_DB=hibernate_orm_test -d postgres:10.5
     displayName: 'start postgres'
 
@@ -21,7 +24,7 @@ jobs:
     displayName: 'Maven Build'
     inputs:
       goals: 'install'
-      options: '-B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dnative-image.xmx=4g -Dnative'
+      options: '-B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-mariadb -Dexternal-mariadb -Dtest-postgresql -Dnative-image.xmx=4g -Dnative'
 
   - script: |
       docker build -f docker/strict-example/Dockerfile -t jtgdocker1/shamrock-strict-example examples/strict/

@@ -109,7 +109,7 @@ public class RxModelEnhancer implements BiFunction<String, ClassVisitor, ClassVi
                                                  "(Ljava/lang/String;[Ljava/lang/Object;)Lio/reactivex/Observable<Lorg/jboss/panache/RxEntityBase;>;", 
                                                  null);
             mv.visitParameter("query", 0);
-            mv.visitParameter("params", 1);
+            mv.visitParameter("params", 0);
             mv.visitCode();
             mv.visitFieldInsn(Opcodes.GETSTATIC, thisName.replace('.', '/'), fieldName, modelDesc);
             mv.visitIntInsn(Opcodes.ALOAD, 0);
@@ -161,7 +161,7 @@ public class RxModelEnhancer implements BiFunction<String, ClassVisitor, ClassVi
                                                  "(Ljava/lang/String;[Ljava/lang/Object;)Lio/reactivex/Single<Ljava/lang/Long;>;", 
                                                  null);
             mv.visitParameter("query", 0);
-            mv.visitParameter("params", 1);
+            mv.visitParameter("params", 0);
             mv.visitCode();
             mv.visitFieldInsn(Opcodes.GETSTATIC, thisName.replace('.', '/'), fieldName, modelDesc);
             mv.visitIntInsn(Opcodes.ALOAD, 0);
@@ -197,7 +197,7 @@ public class RxModelEnhancer implements BiFunction<String, ClassVisitor, ClassVi
                                                  "(Ljava/lang/String;[Ljava/lang/Object;)Lio/reactivex/Single<Ljava/lang/Long;>;", 
                                                  null);
             mv.visitParameter("query", 0);
-            mv.visitParameter("params", 1);
+            mv.visitParameter("params", 0);
             mv.visitCode();
             mv.visitFieldInsn(Opcodes.GETSTATIC, thisName.replace('.', '/'), fieldName, modelDesc);
             mv.visitIntInsn(Opcodes.ALOAD, 0);

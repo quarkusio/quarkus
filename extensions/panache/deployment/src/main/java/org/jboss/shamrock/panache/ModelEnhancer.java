@@ -54,7 +54,7 @@ public class ModelEnhancer implements BiFunction<String, ClassVisitor, ClassVisi
                     "<T:Lorg/jboss/panache/EntityBase;>(Ljava/lang/String;[Ljava/lang/Object;)Ljava/util/List<TT;>;", 
                     null);
             mv.visitParameter("query", 0);
-            mv.visitParameter("params", 1);
+            mv.visitParameter("params", 0);
             mv.visitCode();
             mv.visitLdcInsn(thisClass);
             mv.visitIntInsn(Opcodes.ALOAD, 0);
@@ -103,7 +103,7 @@ public class ModelEnhancer implements BiFunction<String, ClassVisitor, ClassVisi
                     null, 
                     null);
             mv.visitParameter("query", 0);
-            mv.visitParameter("params", 1);
+            mv.visitParameter("params", 0);
             mv.visitCode();
             mv.visitLdcInsn(thisClass);
             mv.visitIntInsn(Opcodes.ALOAD, 0);
@@ -122,7 +122,7 @@ public class ModelEnhancer implements BiFunction<String, ClassVisitor, ClassVisi
                     null, 
                     null);
             mv.visitParameter("query", 0);
-            mv.visitParameter("params", 1);
+            mv.visitParameter("params", 0);
             mv.visitCode();
             mv.visitLdcInsn(thisClass);
             mv.visitIntInsn(Opcodes.ALOAD, 0);

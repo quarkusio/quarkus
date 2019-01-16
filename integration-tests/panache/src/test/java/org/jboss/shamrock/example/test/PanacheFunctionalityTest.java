@@ -33,6 +33,7 @@ public class PanacheFunctionalityTest {
     public void testPanacheFunctionality() throws Exception {
         assertEquals("OK", URLTester.relative("api/test/model").invokeURL().asString());
         assertEquals("OK", URLTester.relative("api/test/rxmodel").invokeURL().asString());
+        assertEquals("OK", URLTester.relative("api/test/router").invokeURL().asString());
     }
 
 }

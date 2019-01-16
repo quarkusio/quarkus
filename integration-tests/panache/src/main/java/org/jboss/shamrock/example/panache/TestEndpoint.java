@@ -22,6 +22,8 @@ import javax.transaction.Transactional;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
+import org.jboss.panache.router.Router;
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
 import org.junit.Assert;
 
 import io.reactivex.Single;
@@ -162,5 +164,22 @@ public class TestEndpoint {
 //        person.address = new SequencedAddress("stef street");
 //        person.address.save();
         return person.save();
+    }
+
+    @GET
+    @Path("router-test/{pathParam}")
+    public String testMethod1(@PathParam String pathParam) {
+        return "Hello";
+    }
+
+    @GET
+    @Path("router")
+    public String testRouter() {
+        
+        Assert.assertEquals("http://localhost:8080/api/test/router", Router.getURI(TestEndpoint::testRouter).toString());
+        Assert.assertEquals("http://localhost:8080/api/test/router-test/stef", Router.getURI(TestEndpoint::testMethod1, "stef").toString());
+        
+        
+        return "OK";
     }
 }

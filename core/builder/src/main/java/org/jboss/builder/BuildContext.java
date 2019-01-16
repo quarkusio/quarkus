@@ -394,6 +394,7 @@ public final class BuildContext {
         final Execution execution = this.execution;
         final StepInfo stepInfo = this.stepInfo;
         final BuildStep buildStep = stepInfo.getBuildStep();
+        final long start = System.currentTimeMillis();
         log.tracef("Starting step \"%s\"", buildStep);
         try {
             if (! execution.isErrorReported()) {
@@ -408,7 +409,7 @@ public final class BuildContext {
                 }
             }
         } finally {
-            log.tracef("Finished step \"%s\"", buildStep);
+            log.tracef("Finished step \"%s\" in %s ms", buildStep, System.currentTimeMillis() - start);
             execution.removeBuildContext(stepInfo, this);
         }
         final Set<StepInfo> dependents = stepInfo.getDependents();

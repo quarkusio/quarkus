@@ -4,8 +4,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.jboss.protean.arc.Arc;
+import org.jboss.shamrock.arc.runtime.BeanContainer;
 import org.jboss.shamrock.runtime.Template;
-import org.jboss.shamrock.runtime.cdi.BeanContainer;
 
 import io.smallrye.reactive.messaging.extension.MediatorManager;
 

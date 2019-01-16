@@ -14,37 +14,26 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.cdi;
+package org.jboss.shamrock.arc.deployment;
 
 import org.jboss.builder.item.MultiBuildItem;
 import org.jboss.jandex.DotName;
 import org.jboss.shamrock.deployment.Capabilities;
 
 /**
- * This build item is used to specify additional bean defining annotations. See also
- * <a href="http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#bean_defining_annotations">2.5.1. Bean defining annotations</a>.
- *
+ * This build item is used to specify resource annotations that makes it possible to resolve non-CDI injection points, such as Java EE resources.
+ * 
  * @see Capabilities#CDI_ARC
  */
-public final class BeanDefiningAnnotationBuildItem extends MultiBuildItem {
+public final class ResourceAnnotationBuildItem extends MultiBuildItem {
 
     private final DotName name;
-    private final DotName defaultScope;
 
-    public BeanDefiningAnnotationBuildItem(DotName name) {
-        this(name, null);
-    }
-
-    public BeanDefiningAnnotationBuildItem(DotName name, DotName defaultScope) {
+    public ResourceAnnotationBuildItem(DotName name) {
         this.name = name;
-        this.defaultScope = defaultScope;
     }
 
     public DotName getName() {
         return name;
-    }
-
-    public DotName getDefaultScope() {
-        return defaultScope;
     }
 }

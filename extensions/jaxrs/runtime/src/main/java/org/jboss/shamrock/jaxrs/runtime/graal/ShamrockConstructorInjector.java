@@ -27,7 +27,7 @@ import org.jboss.resteasy.spi.ConstructorInjector;
 import org.jboss.resteasy.spi.Failure;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.jboss.resteasy.spi.HttpResponse;
-import org.jboss.shamrock.runtime.cdi.BeanContainer;
+import org.jboss.shamrock.arc.runtime.BeanContainer;
 
 public class ShamrockConstructorInjector implements ConstructorInjector {
 

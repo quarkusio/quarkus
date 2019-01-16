@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.runtime.cdi;
+package org.jboss.shamrock.arc.runtime;
 
-/**
- * An interface that can be used to configure beans immediately after the {@link BeanContainer} has been
- * created. The container is passed to the interface and beans can be obtained and be modified.
- *
- * This provides a convenient way to pass configuration from the deployment processors into runtime beans.
- */
-public interface BeanContainerListener {
+import java.util.function.Function;
 
-    void created(BeanContainer container);
+import org.jboss.protean.arc.ClientProxy;
 
+public class ClientProxyUnwrapper implements Function<Object, Object> {
+    @Override
+    public Object apply(Object o) {
+        if (o instanceof ClientProxy) {
+            return ((ClientProxy) o).getContextualInstance();
+        }
+        return o;
+    }
 }

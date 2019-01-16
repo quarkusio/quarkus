@@ -16,7 +16,6 @@
 
 package org.jboss.shamrock.arc.deployment;
 
-import static org.jboss.shamrock.annotations.ExecutionTime.RUNTIME_INIT;
 import static org.jboss.shamrock.annotations.ExecutionTime.STATIC_INIT;
 
 import java.io.ByteArrayInputStream;
@@ -44,38 +43,28 @@ import org.jboss.protean.arc.ArcContainer;
 import org.jboss.protean.arc.processor.BeanDefiningAnnotation;
 import org.jboss.protean.arc.processor.BeanProcessor;
 import org.jboss.protean.arc.processor.BeanProcessor.Builder;
+import org.jboss.protean.arc.processor.DotNames;
 import org.jboss.protean.arc.processor.ReflectionRegistration;
 import org.jboss.protean.arc.processor.ResourceOutput;
 import org.jboss.shamrock.annotations.BuildProducer;
 import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.arc.runtime.ArcDeploymentTemplate;
+import org.jboss.shamrock.arc.runtime.BeanContainer;
 import org.jboss.shamrock.arc.runtime.LifecycleEventRunner;
 import org.jboss.shamrock.deployment.Capabilities;
-import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
-import org.jboss.shamrock.deployment.builditem.BeanArchiveIndexBuildItem;
-import org.jboss.shamrock.deployment.builditem.BeanContainerBuildItem;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedResourceBuildItem;
-import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
 import org.jboss.shamrock.deployment.builditem.InjectionProviderBuildItem;
-import org.jboss.shamrock.deployment.builditem.ServiceStartBuildItem;
 import org.jboss.shamrock.deployment.builditem.ShutdownContextBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveFieldBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveMethodBuildItem;
-import org.jboss.shamrock.deployment.cdi.BeanContainerListenerBuildItem;
-import org.jboss.shamrock.deployment.cdi.BeanDefiningAnnotationBuildItem;
-import org.jboss.shamrock.deployment.cdi.GeneratedBeanBuildItem;
-import org.jboss.shamrock.deployment.cdi.ResourceAnnotationBuildItem;
-import org.jboss.shamrock.runtime.cdi.BeanContainer;
 import org.jboss.shamrock.undertow.ServletExtensionBuildItem;
 
 public class ArcAnnotationProcessor {
-
-    private static final DotName JAVA_LANG_OBJECT = DotName.createSimple(Object.class.getName());
 
     private static final Logger log = Logger.getLogger("org.jboss.shamrock.arc.deployment.processor");
 
@@ -212,13 +201,6 @@ public class ArcAnnotationProcessor {
         return new BeanContainerBuildItem(bc);
     }
 
-    @BuildStep
-    @Record(RUNTIME_INIT)
-    void startupEvent(ArcDeploymentTemplate template, List<ServiceStartBuildItem> startList, BeanContainerBuildItem beanContainer,
-            ShutdownContextBuildItem shutdown) {
-        template.handleLifecycleEvents(shutdown, beanContainer.getValue());
-    }
-
     private void indexBeanClass(String beanClass, Indexer indexer, IndexView shamrockIndex, Set<DotName> additionalIndex) {
         DotName beanClassName = DotName.createSimple(beanClass);
         if (additionalIndex.contains(beanClassName)) {
@@ -249,15 +231,9 @@ public class ArcAnnotationProcessor {
                 }
             }
         }
-        if (!beanInfo.superName().equals(JAVA_LANG_OBJECT)) {
+        if (!beanInfo.superName().equals(DotNames.OBJECT)) {
             indexBeanClass(beanInfo.superName().toString(), indexer, shamrockIndex, additionalIndex);
         }
-
-    }
-
-    @BuildStep
-    HotDeploymentConfigFileBuildItem configFile() {
-        return new HotDeploymentConfigFileBuildItem("META-INF/beans.xml");
     }
 
     private void indexBeanClass(String beanClass, Indexer indexer, IndexView shamrockIndex, Set<DotName> additionalIndex, byte[] beanData) {

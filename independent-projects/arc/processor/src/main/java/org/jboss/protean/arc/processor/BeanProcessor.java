@@ -161,7 +161,6 @@ public class BeanProcessor {
 
         Map<BeanInfo, String> beanToGeneratedName = new HashMap<>();
         Map<ObserverInfo, String> observerToGeneratedName = new HashMap<>();
-        Map<InterceptorInfo, String> interceptorToGeneratedName = new HashMap<>();
 
         long start = System.currentTimeMillis();
         List<Resource> resources = new ArrayList<>();
@@ -171,7 +170,6 @@ public class BeanProcessor {
             for (Resource resource : interceptorGenerator.generate(interceptor, reflectionRegistration)) {
                 resources.add(resource);
                 if (SpecialType.INTERCEPTOR_BEAN.equals(resource.getSpecialType())) {
-                    interceptorToGeneratedName.put(interceptor, resource.getName());
                     beanToGeneratedName.put(interceptor, resource.getName());
                 }
             }

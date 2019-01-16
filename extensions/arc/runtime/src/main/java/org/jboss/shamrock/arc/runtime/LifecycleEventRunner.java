@@ -32,10 +32,8 @@ public class LifecycleEventRunner {
     @Inject
     Event<StartupEvent> startup;
 
-
     @Inject
     Event<ShutdownEvent> shutdown;
-
 
     public void fireStartupEvent() {
         startup.fire(new StartupEvent());

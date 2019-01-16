@@ -14,26 +14,22 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.cdi;
+package org.jboss.shamrock.arc.deployment;
 
-import org.jboss.builder.item.MultiBuildItem;
-import org.jboss.jandex.DotName;
-import org.jboss.shamrock.deployment.Capabilities;
+import org.jboss.builder.item.SimpleBuildItem;
+import org.jboss.jandex.IndexView;
 
-/**
- * This build item is used to specify resource annotations that makes it possible to resolve non-CDI injection points, such as Java EE resources.
- * 
- * @see Capabilities#CDI_ARC
- */
-public final class ResourceAnnotationBuildItem extends MultiBuildItem {
+public final class BeanArchiveIndexBuildItem extends SimpleBuildItem {
 
-    private final DotName name;
+    private final IndexView index;
 
-    public ResourceAnnotationBuildItem(DotName name) {
-        this.name = name;
+    public BeanArchiveIndexBuildItem(IndexView index) {
+        this.index = index;
     }
 
-    public DotName getName() {
-        return name;
+
+    public IndexView getIndex() {
+        return index;
     }
+
 }

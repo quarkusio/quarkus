@@ -14,20 +14,21 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.builditem;
+package org.jboss.shamrock.arc.runtime;
 
-import org.jboss.builder.item.SimpleBuildItem;
-import org.jboss.shamrock.runtime.cdi.BeanContainer;
+import java.lang.annotation.Annotation;
+import java.util.Set;
 
-public final class BeanContainerBuildItem extends SimpleBuildItem {
+import javax.interceptor.InvocationContext;
 
-    private final BeanContainer value;
+import org.jboss.protean.arc.InvocationContextImpl;
 
-    public BeanContainerBuildItem(BeanContainer value) {
-        this.value = value;
-    }
+public class InterceptorBindings  {
 
-    public BeanContainer getValue() {
-        return value;
+	public static Set<Annotation> getInterceptorBindings(InvocationContext invocationContext) {
+        if (invocationContext instanceof InvocationContextImpl) {
+            return ((InvocationContextImpl) invocationContext).getInterceptorBindings();
+        }
+        return null;
     }
 }

@@ -14,22 +14,20 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.builditem;
+package org.jboss.shamrock.arc.deployment;
 
-import org.jboss.builder.item.SimpleBuildItem;
-import org.jboss.jandex.IndexView;
+import org.jboss.builder.item.MultiBuildItem;
+import org.jboss.shamrock.arc.runtime.BeanContainerListener;
 
-public final class BeanArchiveIndexBuildItem extends SimpleBuildItem {
+public final class BeanContainerListenerBuildItem extends MultiBuildItem {
 
-    private final IndexView index;
+    private final BeanContainerListener beanContainerListener;
 
-    public BeanArchiveIndexBuildItem(IndexView index) {
-        this.index = index;
+    public BeanContainerListenerBuildItem(BeanContainerListener beanContainerListener) {
+        this.beanContainerListener = beanContainerListener;
     }
 
-
-    public IndexView getIndex() {
-        return index;
+    public BeanContainerListener getBeanContainerListener() {
+        return beanContainerListener;
     }
-
 }

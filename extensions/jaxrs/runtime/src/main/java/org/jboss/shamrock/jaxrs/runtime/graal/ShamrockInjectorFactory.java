@@ -33,7 +33,7 @@ import org.jboss.resteasy.spi.PropertyInjector;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.jboss.resteasy.spi.metadata.ResourceClass;
 import org.jboss.resteasy.spi.metadata.ResourceConstructor;
-import org.jboss.shamrock.runtime.cdi.BeanContainer;
+import org.jboss.shamrock.arc.runtime.BeanContainer;
 
 public class ShamrockInjectorFactory extends InjectorFactoryImpl {
 

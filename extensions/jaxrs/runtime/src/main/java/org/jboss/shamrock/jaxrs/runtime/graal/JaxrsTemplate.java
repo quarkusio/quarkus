@@ -19,8 +19,8 @@ package org.jboss.shamrock.jaxrs.runtime.graal;
 import java.util.List;
 import java.util.function.Function;
 
+import org.jboss.shamrock.arc.runtime.BeanContainer;
 import org.jboss.shamrock.runtime.Template;
-import org.jboss.shamrock.runtime.cdi.BeanContainer;
 
 /**
  * Created by bob on 7/31/18.

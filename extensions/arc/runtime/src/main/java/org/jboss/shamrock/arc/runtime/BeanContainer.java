@@ -14,25 +14,21 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.cdi;
+package org.jboss.shamrock.arc.runtime;
 
-import org.jboss.builder.item.MultiBuildItem;
+import java.lang.annotation.Annotation;
 
-public final class GeneratedBeanBuildItem extends MultiBuildItem {
+public interface BeanContainer {
 
-    final String name;
-    final byte[] data;
+    default <T> T instance(Class<T> type, Annotation... qualifiers) {
+        return instanceFactory(type, qualifiers).get();
+    }
+    <T> Factory<T> instanceFactory(Class<T> type, Annotation... qualifiers);
 
-    public GeneratedBeanBuildItem(String name, byte[] data) {
-        this.name = name;
-        this.data = data;
+
+    interface Factory<T> {
+
+        T get();
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public byte[] getData() {
-        return data;
-    }
 }

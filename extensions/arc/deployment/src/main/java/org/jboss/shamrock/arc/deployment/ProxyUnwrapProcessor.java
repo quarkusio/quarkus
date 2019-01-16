@@ -17,13 +17,13 @@
 package org.jboss.shamrock.arc.deployment;
 
 import org.jboss.shamrock.annotations.BuildStep;
-import org.jboss.shamrock.arc.runtime.ArcClientProxyUnwrapper;
+import org.jboss.shamrock.arc.runtime.ClientProxyUnwrapper;
 import org.jboss.shamrock.deployment.builditem.ProxyUnwrapperBuildItem;
 
 public class ProxyUnwrapProcessor {
 
     @BuildStep
     ProxyUnwrapperBuildItem wrapper() {
-        return new ProxyUnwrapperBuildItem(new ArcClientProxyUnwrapper());
+        return new ProxyUnwrapperBuildItem(new ClientProxyUnwrapper());
     }
 }

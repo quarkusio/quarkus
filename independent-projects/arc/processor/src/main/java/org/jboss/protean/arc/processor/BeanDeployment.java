@@ -534,7 +534,9 @@ public class BeanDeployment {
             beanDefiningAnnotations.add(scope.getDotName());
         }
         if (additionalBeanDefiningAnnotations != null) {
-            beanDefiningAnnotations.addAll(additionalBeanDefiningAnnotations.stream().map(BeanDefiningAnnotation::getAnnotation).collect(Collectors.toSet()));
+            for (BeanDefiningAnnotation additional : additionalBeanDefiningAnnotations) {
+                beanDefiningAnnotations.add(additional.getAnnotation());
+            }
         }
         beanDefiningAnnotations.addAll(stereotypes);
         beanDefiningAnnotations.add(DotNames.create(Model.class));

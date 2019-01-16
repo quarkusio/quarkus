@@ -18,6 +18,8 @@ package org.jboss.shamrock.arc.runtime;
 
 import java.lang.annotation.Annotation;
 
+import org.jboss.protean.arc.ManagedContext;
+
 public interface BeanContainer {
 
     default <T> T instance(Class<T> type, Annotation... qualifiers) {
@@ -27,24 +29,28 @@ public interface BeanContainer {
     <T> Factory<T> instanceFactory(Class<T> type, Annotation... qualifiers);
 
     /**
-     * Runs the given action within the scope of the CDI request context
-     *
-     * @param action The action to run
-     * @param t      The first context parameter, this is passed to the action
-     * @param u      The second context parameter, this is passed to the action
-     * @return the value returned by the action
-     * @throws Exception
+     * <pre>
+     * ManagedContext requestContext = beanContainer.requestContext();
+     * if (requestContext.isActive()) {
+     *     // Perform action 
+     * } else {
+     *     try {
+     *         requestContext.activate();
+     *         // Perform action
+     *     } finally {
+     *         requestContext.terminate();
+     *     }
+     * }
+     * </pre>
+     * 
+     * @return the context for {@link javax.enterprise.context.RequestScoped}
+     * @throws IllegalStateException If the container is not running
      */
-    <T, U, R> R withinRequestContext(RequestAction<T, U, R> action, T t, U u) throws Exception;
+    ManagedContext requestContext();
 
     interface Factory<T> {
 
         T get();
-    }
-
-    interface RequestAction<T, U, R> {
-
-        R run(T t, U u) throws Exception;
     }
 
 }

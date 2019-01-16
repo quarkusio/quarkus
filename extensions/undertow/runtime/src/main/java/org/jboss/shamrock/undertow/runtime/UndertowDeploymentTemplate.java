@@ -31,6 +31,7 @@ import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
+import org.jboss.protean.arc.ManagedContext;
 import org.jboss.shamrock.arc.runtime.BeanContainer;
 import org.jboss.shamrock.runtime.InjectionFactory;
 import org.jboss.shamrock.runtime.InjectionInstance;
@@ -299,16 +300,20 @@ public class UndertowDeploymentTemplate {
                 deploymentInfo.addThreadSetupAction(new ThreadSetupHandler() {
                     @Override
                     public <T, C> ThreadSetupHandler.Action<T, C> create(Action<T, C> action) {
-                        BeanContainer.RequestAction<HttpServerExchange, C, T> function = new BeanContainer.RequestAction<HttpServerExchange, C, T>() {
-                            @Override
-                            public T run(HttpServerExchange exchange, C c) throws Exception {
-                                return action.call(exchange, c);
-                            }
-                        };
                         return new Action<T, C>() {
                             @Override
                             public T call(HttpServerExchange exchange, C context) throws Exception {
-                                return beanContainer.withinRequestContext(function, exchange, context);
+                                ManagedContext requestContext = beanContainer.requestContext();
+                                if (requestContext.isActive()) {
+                                    return action.call(exchange, context);
+                                } else {
+                                    try {
+                                        requestContext.activate();
+                                        return action.call(exchange, context);
+                                    } finally {
+                                        requestContext.terminate();
+                                    }
+                                }
                             }
                         };
                     }

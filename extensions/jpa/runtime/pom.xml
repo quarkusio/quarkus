@@ -43,7 +43,7 @@
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-core</artifactId>
             <exclusions>
-                <!-- Byte Buddy might be needed during build but not at runtime -->
+                <!-- Byte Buddy is needed during augmentation but not at runtime -->
                 <exclusion>
                     <groupId>net.bytebuddy</groupId>
                     <artifactId>byte-buddy</artifactId>

@@ -66,7 +66,7 @@ public abstract class RxEntityBase<T extends RxEntityBase<?>> {
 
     protected static <T extends RxEntityBase<?>> Observable<T> findAll(RxModelInfo<T> modelInfo) {
         PgPool pool = getPgPool();
-        // FIXME: order by from model info
+        // FIXME: field list and order by from model info
         return pool.rxQuery("SELECT * FROM "+modelInfo.getTableName()+" ORDER BY name")
                 .flatMapObservable(rowset -> Observable.fromIterable(rowset.getDelegate()))
                 .map(coreRow -> {
@@ -85,7 +85,7 @@ public abstract class RxEntityBase<T extends RxEntityBase<?>> {
     
     protected static <T extends RxEntityBase<?>> Maybe<T> findById(RxModelInfo<T> modelInfo, Object id) {
         PgPool pool = getPgPool();
-        // FIXME: id column name from model info
+        // FIXME: field list and id column name from model info
         return pool.rxPreparedQuery("SELECT * FROM "+modelInfo.getTableName()+" WHERE id = $1", Tuple.of(id))
                 .flatMapMaybe(rowset -> {
                     if(rowset.size() == 1)
@@ -188,6 +188,7 @@ public abstract class RxEntityBase<T extends RxEntityBase<?>> {
     }
 
     private static String createFindQuery(RxModelInfo<?> modelInfo, String query, Object[] params) {
+        // FIXME: field order from model info
         if(query == null)
             return "SELECT * FROM "+getEntityName(modelInfo);
 

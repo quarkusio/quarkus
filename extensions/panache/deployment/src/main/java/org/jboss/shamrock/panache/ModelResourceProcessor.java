@@ -16,10 +16,16 @@
 
 package org.jboss.shamrock.panache;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import javax.persistence.OneToMany;
+import javax.persistence.Transient;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -36,6 +42,7 @@ import org.jboss.protean.gizmo.ClassOutput;
 import org.jboss.protean.gizmo.FieldDescriptor;
 import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
+import org.jboss.protean.gizmo.ResultHandle;
 import org.jboss.shamrock.annotations.BuildProducer;
 import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
@@ -43,6 +50,7 @@ import org.jboss.shamrock.deployment.builditem.BytecodeTransformerBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
 import org.jboss.shamrock.jpa.AdditionalJpaModelBuildItem;
+import org.jboss.shamrock.panache.ModelResourceProcessor.RxField;
 
 import io.reactiverse.reactivex.pgclient.Row;
 import io.reactiverse.reactivex.pgclient.Tuple;
@@ -51,6 +59,36 @@ import net.bytebuddy.jar.asm.Opcodes;
 /**
  */
 public final class ModelResourceProcessor {
+
+    public class RxField {
+
+        private String name;
+        private Class<?> type;
+
+        public RxField(String name, Class<?> type) {
+            this.name = name;
+            this.type = type;
+        }
+
+        public String getFromRowMethod() {
+            if(type == String.class)
+                return "getString";
+            if(type == Boolean.class)
+                return "getBoolean";
+            if(type == Short.class)
+                return "getShort";
+            if(type == Integer.class)
+                return "getInteger";
+            if(type == Long.class)
+                return "getLong";
+            if(type == Float.class)
+                return "getFloat";
+            if(type == Double.class)
+                return "getDouble";
+            throw new RuntimeException("Field type not supported yet: "+type+" for field "+name);
+        }
+
+    }
 
     private static final DotName DOTNAME_CONTROLLER_BASE = DotName.createSimple(Controller.class.getName());
     private static final DotName DOTNAME_ENTITY_BASE = DotName.createSimple(EntityBase.class.getName());
@@ -175,26 +213,51 @@ public final class ModelResourceProcessor {
         AssignableResultHandle variable = fromRow.createVariable(modelSignature);
         // arg-less constructor
         fromRow.assign(variable, fromRow.newInstance(MethodDescriptor.ofConstructor(modelClassName)));
+        
+        
+        List<RxField> fields = new ArrayList<>();
+        try {
+            loadFields(Class.forName(modelClassName), fields );
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        
         // set each field from the Row
-        // FIXME: do not hardcode the fields
-        fromRow.writeInstanceField(FieldDescriptor.of(modelClassName, "id", Integer.class), variable, 
-                                   fromRow.invokeVirtualMethod(MethodDescriptor.ofMethod(Row.class, "getInteger", Integer.class, String.class), 
-                                                                 fromRow.getMethodParam(0), fromRow.load("id")));
-        fromRow.writeInstanceField(FieldDescriptor.of(modelClassName, "name", String.class), variable, 
-                                   fromRow.invokeVirtualMethod(MethodDescriptor.ofMethod(Row.class, "getString", String.class, String.class), 
-                                                                 fromRow.getMethodParam(0), fromRow.load("name")));
+        for (RxField field : fields) {
+            fromRow.writeInstanceField(FieldDescriptor.of(modelClassName, field.name, field.type), variable, 
+                    fromRow.invokeVirtualMethod(MethodDescriptor.ofMethod(Row.class, field.getFromRowMethod(), field.type, String.class), 
+                                                  fromRow.getMethodParam(0), fromRow.load(field.name)));
+        }
         fromRow.returnValue(variable);
-        // FIXME: required bridge?
         
         // insertStatement
         MethodCreator insertStatement = modelClass.getMethodCreator("insertStatement", String.class);
-        // FIXME: do not hardcode the fields
-        insertStatement.returnValue(insertStatement.load("INSERT INTO "+tableName+" (id, name) VALUES ($1, $2)"));
+        StringBuilder names = new StringBuilder();
+        StringBuilder indices = new StringBuilder();
+        StringBuilder updateFieldNoId = new StringBuilder();
+        for (int i = 0; i < fields.size(); i++) {
+            RxField field = fields.get(i);
+            System.err.println("Field["+i+"] = "+field.type+" "+field.name);
+            if(names.length() != 0) {
+                names.append(", ");
+                indices.append(", ");
+            }
+            if(updateFieldNoId.length() != 0) {
+                updateFieldNoId.append(", ");
+            }
+            names.append(field.name);
+            indices.append("$"+(i+1));
+            // FIXME: depends on ID being the first field
+            if(i > 0) {
+                updateFieldNoId.append(field.name+" = $"+(i+1));
+            }
+        }
+        insertStatement.returnValue(insertStatement.load("INSERT INTO "+tableName+" ("+names+") VALUES ("+indices+")"));
 
         // updateStatement
         MethodCreator updateStatement = modelClass.getMethodCreator("updateStatement", String.class);
-        // FIXME: do not hardcode the fields
-        updateStatement.returnValue(updateStatement.load("UPDATE "+tableName+" SET name = $2 WHERE id = $1"));
+        // FIXME: do not hardcode the ID
+        updateStatement.returnValue(updateStatement.load("UPDATE "+tableName+" SET "+updateFieldNoId+" WHERE id = $1"));
 
         // getTableName
         MethodCreator getTableName = modelClass.getMethodCreator("getTableName", String.class);
@@ -202,18 +265,26 @@ public final class ModelResourceProcessor {
 
         // toTuple
         MethodCreator toTuple = modelClass.getMethodCreator("toTuple", Tuple.class.getName(), modelClassName);
-        // FIXME: do not hardcode the fields
+        // FIXME: do not hardcode the ID
+        ResultHandle myTuple = toTuple.invokeStaticMethod(MethodDescriptor.ofMethod(Tuple.class, "tuple", Tuple.class));
+
         BranchResult branch = toTuple.ifNull(toTuple.readInstanceField(FieldDescriptor.of(modelClassName, "id", Integer.class), 
-                                                                                 toTuple.getMethodParam(0)));
+                toTuple.getMethodParam(0)));
+        branch.trueBranch().close();
+        ResultHandle idFieldValue = branch.falseBranch().readInstanceField(FieldDescriptor.of(modelClassName, "id", Integer.class), 
+                branch.falseBranch().getMethodParam(0));
+        branch.falseBranch().invokeVirtualMethod(MethodDescriptor.ofMethod(Tuple.class, "addValue", Tuple.class, Object.class), myTuple, idFieldValue);
+        branch.falseBranch().close();
         
-        branch.trueBranch().returnValue(branch.trueBranch().invokeStaticMethod(MethodDescriptor.ofMethod(Tuple.class, "of", Tuple.class, Object.class), 
-                                                                               branch.trueBranch().readInstanceField(FieldDescriptor.of(modelClassName, "name", String.class), 
-                                                                                                                     branch.trueBranch().getMethodParam(0))));
-        branch.falseBranch().returnValue(branch.falseBranch().invokeStaticMethod(MethodDescriptor.ofMethod(Tuple.class, "of", Tuple.class, Object.class, Object.class), 
-                                                                                 branch.falseBranch().readInstanceField(FieldDescriptor.of(modelClassName, "id", Integer.class), 
-                                                                                                                        branch.falseBranch().getMethodParam(0)),
-                                                                                 branch.falseBranch().readInstanceField(FieldDescriptor.of(modelClassName, "name", String.class), 
-                                                                                                                        branch.falseBranch().getMethodParam(0))));
+        // skip the ID field
+        for (int j = 1; j < fields.size(); j++) {
+            RxField field = fields.get(j);
+            ResultHandle fieldValue = toTuple.readInstanceField(FieldDescriptor.of(modelClassName, field.name, field.type), 
+                    toTuple.getMethodParam(0));
+            toTuple.invokeVirtualMethod(MethodDescriptor.ofMethod(Tuple.class, "addValue", Tuple.class, Object.class), myTuple, fieldValue);
+        }
+        toTuple.returnValue(myTuple);
+        
         // Bridge methods
         MethodCreator toTupleBridge = modelClass.getMethodCreator("toTuple", Tuple.class, RxEntityBase.class);
         toTupleBridge.setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC | Opcodes.ACC_BRIDGE);
@@ -230,6 +301,25 @@ public final class ModelResourceProcessor {
                                                                     fromRowBridge.getMethodParam(0)));
         
         modelClass.close();
+    }
+
+    private void loadFields(Class<?> modelClass, List<RxField> fields) {
+        Class<?> superClass = modelClass.getSuperclass();
+        if(superClass != null
+                && superClass != RxEntityBase.class)
+            loadFields(superClass, fields);
+        for (Field field : modelClass.getDeclaredFields()) {
+            if(Modifier.isTransient(field.getModifiers())
+                    || field.isAnnotationPresent(Transient.class)) {
+                continue;
+            }
+            // skip collections
+            if(field.isAnnotationPresent(OneToMany.class)) {
+                continue;
+            }
+            fields.add(new RxField(field.getName(), field.getType()));
+        }
+        // FIXME: add properties (wait for Hibernate code?)
     }
 
     static final class ProcessorClassOutput implements ClassOutput {

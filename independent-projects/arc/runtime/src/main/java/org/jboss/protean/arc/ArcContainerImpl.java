@@ -190,7 +190,6 @@ class ArcContainerImpl implements ArcContainer {
     @Override
     public Runnable withinRequest(Runnable action) {
         return () -> {
-            requireRunning();
             ManagedContext requestContext = requestContext();
             if (requestContext.isActive()) {
                 action.run();
@@ -208,7 +207,6 @@ class ArcContainerImpl implements ArcContainer {
     @Override
     public <T> Supplier<T> withinRequest(Supplier<T> action) {
         return () -> {
-            requireRunning();
             ManagedContext requestContext = requestContext();
             if (requestContext.isActive()) {
                 return action.get();

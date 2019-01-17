@@ -46,7 +46,7 @@ public class ArcDeploymentTemplate {
         return container;
     }
 
-    public BeanContainer initBeanContainer(ArcContainer container, List<BeanContainerListener> beanConfigurators) throws Exception {
+    public BeanContainer initBeanContainer(ArcContainer container, List<BeanContainerListener> listeners) throws Exception {
         BeanContainer beanContainer = new BeanContainer() {
 
             @Override
@@ -64,18 +64,12 @@ public class ArcDeploymentTemplate {
             }
 
             @Override
-            public <T, U, R> R withinRequestContext(RequestAction<T, U, R> action, T t, U u) throws Exception {
-                ManagedContext ctx = container.requestContext();
-                ctx.activate();
-                try {
-                    return action.run(t, u);
-                } finally {
-                    ctx.terminate();
-                }
+            public ManagedContext requestContext() {
+                return container.requestContext();
             }
         };
-        for (BeanContainerListener i : beanConfigurators) {
-            i.created(beanContainer);
+        for (BeanContainerListener listener : listeners) {
+            listener.created(beanContainer);
         }
         return beanContainer;
     }

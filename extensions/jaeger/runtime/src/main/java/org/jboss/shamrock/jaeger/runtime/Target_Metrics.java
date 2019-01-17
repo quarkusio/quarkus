@@ -101,81 +101,81 @@ public final class Target_Metrics {
         Map<String, String> tags = new HashMap<String, String>();
         tags.put("state", "started");
         tags.put("sampled", "y");
-        traceStartedSampled = factory.createCounter("traces", tags);
+        traceStartedSampled = factory.createCounter(metricsPrefix + "traces", tags);
 
         tags = new HashMap<String, String>();
         tags.put("state", "started");
         tags.put("sampled", "n");
-        traceStartedNotSampled = factory.createCounter("traces", tags);
+        traceStartedNotSampled = factory.createCounter(metricsPrefix + "traces", tags);
 
         tags = new HashMap<String, String>();
         tags.put("state", "joined");
         tags.put("sampled", "y");
-        tracesJoinedSampled = factory.createCounter("traces", tags);
+        tracesJoinedSampled = factory.createCounter(metricsPrefix + "traces", tags);
 
         tags = new HashMap<String, String>();
         tags.put("state", "joined");
         tags.put("sampled", "n");
-        tracesJoinedNotSampled = factory.createCounter("traces", tags);
+        tracesJoinedNotSampled = factory.createCounter(metricsPrefix + "traces", tags);
 
         tags = new HashMap<String, String>();
         tags.put("sampled", "y");
-        spansStartedSampled = factory.createCounter("started_spans", tags);
+        spansStartedSampled = factory.createCounter(metricsPrefix + "started_spans", tags);
 
         tags = new HashMap<String, String>();
         tags.put("sampled", "n");
-        spansStartedNotSampled = factory.createCounter("started_spans", tags);
+        spansStartedNotSampled = factory.createCounter(metricsPrefix + "started_spans", tags);
 
-        spansFinished = factory.createCounter("finished_spans", Collections.emptyMap());
+        spansFinished = factory.createCounter(metricsPrefix + "finished_spans", Collections.emptyMap());
 
-        decodingErrors = factory.createCounter("span_context_decoding_errors", Collections.emptyMap());
+        decodingErrors = factory.createCounter(metricsPrefix + "span_context_decoding_errors", Collections.emptyMap());
 
         tags = new HashMap<String, String>();
         tags.put("result", "ok");
-        reporterSuccess = factory.createCounter("reporter_spans", tags);
+        reporterSuccess = factory.createCounter(metricsPrefix + "reporter_spans", tags);
 
         tags = new HashMap<String, String>();
         tags.put("result", "err");
-        reporterFailure = factory.createCounter("reporter_spans", tags);
+        reporterFailure = factory.createCounter(metricsPrefix + "reporter_spans", tags);
 
         tags = new HashMap<String, String>();
         tags.put("result", "dropped");
-        reporterDropped = factory.createCounter("reporter_spans", tags);
+        reporterDropped = factory.createCounter(metricsPrefix + "reporter_spans", tags);
 
-        reporterQueueLength = factory.createGauge("reporter_queue_length", Collections.emptyMap());
-
-        tags = new HashMap<String, String>();
-        tags.put("result", "ok");
-        samplerRetrieved = factory.createCounter("sampler_queries", tags);
-
-        tags = new HashMap<String, String>();
-        tags.put("result", "err");
-        samplerQueryFailure = factory.createCounter("sampler_queries", tags);
+        reporterQueueLength = factory.createGauge(metricsPrefix + "reporter_queue_length", Collections.emptyMap());
 
         tags = new HashMap<String, String>();
         tags.put("result", "ok");
-        samplerUpdated = factory.createCounter("sampler_updates", tags);
+        samplerRetrieved = factory.createCounter(metricsPrefix + "sampler_queries", tags);
 
         tags = new HashMap<String, String>();
         tags.put("result", "err");
-        samplerParsingFailure = factory.createCounter("sampler_updates", tags);
+        samplerQueryFailure = factory.createCounter(metricsPrefix + "sampler_queries", tags);
 
         tags = new HashMap<String, String>();
         tags.put("result", "ok");
-        baggageUpdateSuccess = factory.createCounter("baggage_updates", tags);
+        samplerUpdated = factory.createCounter(metricsPrefix + "sampler_updates", tags);
 
         tags = new HashMap<String, String>();
         tags.put("result", "err");
-        baggageUpdateFailure = factory.createCounter("baggage_updates", tags);
-
-        baggageTruncate = factory.createCounter("baggage_truncations", Collections.emptyMap());
+        samplerParsingFailure = factory.createCounter(metricsPrefix + "sampler_updates", tags);
 
         tags = new HashMap<String, String>();
         tags.put("result", "ok");
-        baggageRestrictionsUpdateSuccess = factory.createCounter("baggage_restrictions_updates", tags);
+        baggageUpdateSuccess = factory.createCounter(metricsPrefix + "baggage_updates", tags);
 
         tags = new HashMap<String, String>();
         tags.put("result", "err");
-        baggageRestrictionsUpdateFailure = factory.createCounter("baggage_restrictions_updates", tags);
+        baggageUpdateFailure = factory.createCounter(metricsPrefix + "baggage_updates", tags);
+
+        baggageTruncate = factory.createCounter(metricsPrefix + "baggage_truncations", Collections.emptyMap());
+
+        tags = new HashMap<String, String>();
+        tags.put("result", "ok");
+        baggageRestrictionsUpdateSuccess = factory.createCounter(metricsPrefix + "baggage_restrictions_updates", tags);
+
+        tags = new HashMap<String, String>();
+        tags.put("result", "err");
+        baggageRestrictionsUpdateFailure = factory.createCounter(metricsPrefix + "baggage_restrictions_updates", tags);
     }
 }

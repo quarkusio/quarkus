@@ -33,6 +33,8 @@ import io.smallrye.metrics.MetricRegistries;
 
 public class ShamrockJaegerMetricsFactory implements MetricsFactory {
 
+    private static final String METRICS_PREFIX = "jaeger_tracer_";
+
     MetricRegistry registry = MetricRegistries.get(MetricRegistry.Type.BASE);
     
     @Override
@@ -73,7 +75,11 @@ public class ShamrockJaegerMetricsFactory implements MetricsFactory {
       };
     }
 
-    static Metadata meta(final String name, final Map<String, String> tags, MetricType type) {
+    static Metadata meta(String name, final Map<String, String> tags, MetricType type) {
+      if (!name.startsWith(METRICS_PREFIX)) {
+        // Add default prefix
+        name = METRICS_PREFIX + name;
+      }
       Metadata meta = new Metadata(name, type);
       meta.setDisplayName(name);
       meta.setUnit("none");

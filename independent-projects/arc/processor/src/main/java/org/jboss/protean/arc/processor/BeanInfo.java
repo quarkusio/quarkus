@@ -285,7 +285,7 @@ public class BeanInfo {
             bound.addAll(interception.interceptors);
         }
         if (!interceptedMethods.isEmpty()) {
-            bound.addAll(interceptedMethods.values().stream().map(m -> m.interceptors).flatMap(list -> list.stream()).collect(Collectors.toList()));
+            bound.addAll(interceptedMethods.values().stream().flatMap(ii -> ii.interceptors.stream()).collect(Collectors.toList()));
         }
         return bound.isEmpty() ? Collections.emptyList() : bound.stream().distinct().sorted().collect(Collectors.toList());
     }

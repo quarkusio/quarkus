@@ -134,7 +134,7 @@ public final class HibernateResourceProcessor {
 
     @BuildStep
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans, CombinedIndexBuildItem combinedIndex, List<PersistenceUnitDescriptorBuildItem> descriptors) {
-        additionalBeans.produce(new AdditionalBeanBuildItem(JPAConfig.class, TransactionEntityManagers.class));
+        additionalBeans.produce(new AdditionalBeanBuildItem(false, JPAConfig.class, TransactionEntityManagers.class));
 
         if (descriptors.size() == 1) {
             // There is only one persistence unit - register CDI beans for EM and EMF if no

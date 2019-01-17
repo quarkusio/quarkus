@@ -45,7 +45,7 @@ class AgroalProcessor {
 
     @BuildStep
     AdditionalBeanBuildItem registerBean() {
-        return new AdditionalBeanBuildItem(DataSourceProducer.class);
+        return new AdditionalBeanBuildItem(false, DataSourceProducer.class);
     }
 
     @Record(STATIC_INIT)

@@ -136,6 +136,9 @@ public class DevMojo extends AbstractMojo {
             } else if (!debug.toLowerCase().equals("false")) {
                 try {
                     int port = Integer.parseInt(debug);
+                    if (port <= 0) {
+                        throw new MojoFailureException("The specified debug port must be greater than 0");
+                    }
                     args.add("-Xdebug");
                     args.add("-Xrunjdwp:transport=dt_socket,address=" + port + ",server=y,suspend=y");
                 } catch (NumberFormatException e) {

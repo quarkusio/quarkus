@@ -23,6 +23,7 @@ import java.util.Set;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.panache.Controller;
 import org.jboss.panache.EntityBase;
 import org.jboss.panache.Model;
 import org.jboss.panache.PgPoolProducer;
@@ -51,6 +52,7 @@ import net.bytebuddy.jar.asm.Opcodes;
  */
 public final class ModelResourceProcessor {
 
+    private static final DotName DOTNAME_CONTROLLER_BASE = DotName.createSimple(Controller.class.getName());
     private static final DotName DOTNAME_ENTITY_BASE = DotName.createSimple(EntityBase.class.getName());
     private static final DotName DOTNAME_RX_ENTITY_BASE = DotName.createSimple(RxEntityBase.class.getName());
     private static final DotName DOTNAME_MODEL = DotName.createSimple(Model.class.getName());
@@ -73,6 +75,11 @@ public final class ModelResourceProcessor {
     void build(CombinedIndexBuildItem index,
                BuildProducer<BytecodeTransformerBuildItem> transformers,
                BuildProducer<GeneratedClassBuildItem> generatedClasses) throws Exception {
+
+        RouterEnhancer routerEnhancer = new RouterEnhancer();
+        for (ClassInfo classInfo : index.getIndex().getKnownDirectSubclasses(DOTNAME_CONTROLLER_BASE)) {
+            transformers.produce(new BytecodeTransformerBuildItem(classInfo.name().toString(), routerEnhancer));
+        }
 
         ModelEnhancer modelEnhancer = new ModelEnhancer();
         Set<String> modelClasses = new HashSet<>();

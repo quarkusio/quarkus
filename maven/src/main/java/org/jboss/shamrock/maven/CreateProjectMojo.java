@@ -54,9 +54,7 @@ public class CreateProjectMojo extends AbstractMojo {
     public static final String VERSION_PROP = "shamrock-version";
     public static final String PLUGIN_VERSION_PROPERTY_NAME = "shamrock.version";
     public static final String PLUGIN_VERSION_PROPERTY = "${" + PLUGIN_VERSION_PROPERTY_NAME + "}";
-    public static final String PLUGIN_GROUPID = "org.jboss.shamrock";
-    public static final String PLUGIN_ARTIFACTID = "shamrock-maven-plugin";
-    public static final String PLUGIN_KEY = PLUGIN_GROUPID + ":" + PLUGIN_ARTIFACTID;
+    public static final String PLUGIN_KEY = MavenConstants.PLUGIN_GROUPID + ":" + MavenConstants.PLUGIN_ARTIFACTID;
 
     /**
      * The Maven project which will define and configure the shamrock-maven-plugin
@@ -139,7 +137,7 @@ public class CreateProjectMojo extends AbstractMojo {
     private void addBom(Model model) {
         Dependency bom = new Dependency();
         bom.setArtifactId(MojoUtils.get("bom-artifactId"));
-        bom.setGroupId(PLUGIN_GROUPID);
+        bom.setGroupId(MavenConstants.PLUGIN_GROUPID);
         bom.setVersion("${shamrock.version}");
         bom.setType("pom");
         bom.setScope("import");
@@ -166,7 +164,7 @@ public class CreateProjectMojo extends AbstractMojo {
         Profile profile = new Profile();
         profile.setId("native");
         BuildBase buildBase = new BuildBase();
-        Plugin plg = plugin(PLUGIN_GROUPID, PLUGIN_ARTIFACTID, PLUGIN_VERSION_PROPERTY);
+        Plugin plg = plugin(MavenConstants.PLUGIN_GROUPID, MavenConstants.PLUGIN_ARTIFACTID, PLUGIN_VERSION_PROPERTY);
         PluginExecution exec = new PluginExecution();
         exec.addGoal("native-image");
         MojoUtils.Element element = new MojoUtils.Element("enableHttpUrlHandler", "true");
@@ -178,13 +176,13 @@ public class CreateProjectMojo extends AbstractMojo {
     }
 
     private void addMainPluginConfig(Model model) {
-        Plugin plugin = plugin(PLUGIN_GROUPID, PLUGIN_ARTIFACTID, PLUGIN_VERSION_PROPERTY);
+        Plugin plugin = plugin(MavenConstants.PLUGIN_GROUPID, MavenConstants.PLUGIN_ARTIFACTID, PLUGIN_VERSION_PROPERTY);
         if (isParentPom(model)) {
             addPluginManagementSection(model, plugin);
             //strip the shamrockVersion off
-            plugin = plugin(PLUGIN_GROUPID, PLUGIN_ARTIFACTID);
+            plugin = plugin(MavenConstants.PLUGIN_GROUPID, MavenConstants.PLUGIN_ARTIFACTID);
         } else {
-            plugin = plugin(PLUGIN_GROUPID, PLUGIN_ARTIFACTID, PLUGIN_VERSION_PROPERTY);
+            plugin = plugin(MavenConstants.PLUGIN_GROUPID, MavenConstants.PLUGIN_ARTIFACTID, PLUGIN_VERSION_PROPERTY);
         }
         PluginExecution pluginExec = new PluginExecution();
         pluginExec.addGoal("build");

@@ -33,6 +33,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.apache.maven.artifact.Artifact;
+import org.apache.maven.model.Plugin;
+import org.apache.maven.model.PluginExecution;
 import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoFailureException;
@@ -107,6 +109,24 @@ public class DevMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoFailureException {
+
+        boolean found = false;
+        for(Plugin i : project.getBuildPlugins()) {
+            if(i.getGroupId().equals(MavenConstants.PLUGIN_GROUPID)
+                    && i.getArtifactId().equals(MavenConstants.PLUGIN_ARTIFACTID)) {
+                for(PluginExecution p : i.getExecutions()) {
+                    if(p.getGoals().contains("build")) {
+                        found = true;
+                        break;
+                    }
+                }
+            }
+        }
+        if(!found) {
+            getLog().warn("The shamrock-maven-plugin build goal was not configured for this project, skipping shamrock:dev as this is assumed to be a support library. If you want to run shamrock dev on this project make sure the shamrock-maven-plugin is configured with a build goal.");
+            return;
+        }
+
         if (! sourceDir.isDirectory()) {
             throw new MojoFailureException("The `src/main/java` directory is required, please create it.");
         }

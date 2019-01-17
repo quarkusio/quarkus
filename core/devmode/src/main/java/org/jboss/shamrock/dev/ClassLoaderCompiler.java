@@ -18,6 +18,7 @@ package org.jboss.shamrock.dev;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayDeque;
@@ -85,7 +86,13 @@ public class ClassLoaderCompiler {
                             Object classPath = mf.getMainAttributes().get(Attributes.Name.CLASS_PATH);
                             if (classPath != null) {
                                 for (String i : classPath.toString().split(" ")) {
-                                    File f = new File(i);
+                                    File f;
+                                    try {
+                                        URL u = new URL(i);
+                                        f = new File(u.getPath());
+                                    } catch (MalformedURLException e) {
+                                        f = new File(file.getParentFile(), i);
+                                    }
                                     if (f.exists()) {
                                         toParse.add(f.getAbsolutePath());
                                     }

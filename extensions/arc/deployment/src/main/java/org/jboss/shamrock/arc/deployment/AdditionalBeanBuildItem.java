@@ -26,7 +26,7 @@ import org.jboss.builder.item.MultiBuildItem;
 /**
  * This build item is used to specify additional bean classes to be analyzed.
  * <p>
- * By default, the resulting beans should be removed if they're considered unused as described in {@link ArcConfig#removeUnusedBeans}. 
+ * By default, the resulting beans may be removed if they are considered unused and {@link ArcConfig#removeUnusedBeans} is enabled. 
  */
 public final class AdditionalBeanBuildItem extends MultiBuildItem {
 

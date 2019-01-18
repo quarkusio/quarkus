@@ -19,6 +19,7 @@ package org.jboss.shamrock.panache;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -54,6 +55,7 @@ import org.jboss.shamrock.deployment.builditem.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.BytecodeTransformerBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import org.jboss.shamrock.jpa.AdditionalJpaModelBuildItem;
 
 import io.reactiverse.reactivex.pgclient.Row;
@@ -162,8 +164,14 @@ public final class ModelResourceProcessor {
     @BuildStep
     void build(CombinedIndexBuildItem index,
                BuildProducer<BytecodeTransformerBuildItem> transformers,
-               BuildProducer<GeneratedClassBuildItem> generatedClasses) throws Exception {
+               BuildProducer<GeneratedClassBuildItem> generatedClasses,
+               BuildProducer<SubstrateResourceBuildItem> resources) throws Exception {
 
+        // FIXME: harmonize with ORM
+        URL load = Thread.currentThread().getContextClassLoader().getResource("META-INF/load.sql");
+        if(load != null)
+            resources.produce(new SubstrateResourceBuildItem("META-INF/load.sql"));
+        
         RouterEnhancer routerEnhancer = new RouterEnhancer();
         for (ClassInfo classInfo : index.getIndex().getKnownDirectSubclasses(DOTNAME_CONTROLLER_BASE)) {
             transformers.produce(new BytecodeTransformerBuildItem(classInfo.name().toString(), routerEnhancer));

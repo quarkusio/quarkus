@@ -85,13 +85,13 @@ public class BeanDeployment {
     
     private final boolean removeUnusedBeans;
     private final List<Predicate<BeanInfo>> unusedExclusions;
-
+    
     BeanDeployment(IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations, List<AnnotationsTransformer> annotationTransformers) {
-        this(index, additionalBeanDefiningAnnotations, annotationTransformers, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null, false, null);
+        this(index, additionalBeanDefiningAnnotations, annotationTransformers, Collections.emptyList(), Collections.emptyList(), null, false, null);
     }
 
     BeanDeployment(IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations, List<AnnotationsTransformer> annotationTransformers,
-            Collection<DotName> resourceAnnotations, List<BeanRegistrar> beanRegistrars, List<BeanDeploymentValidator> validators,
+            Collection<DotName> resourceAnnotations, List<BeanRegistrar> beanRegistrars,
             BuildContextImpl buildContext, boolean removeUnusedBeans, List<Predicate<BeanInfo>> unusedExclusions) {
         long start = System.currentTimeMillis();
         this.resourceAnnotations = new HashSet<>(resourceAnnotations);
@@ -145,43 +145,15 @@ public class BeanDeployment {
             }
         }
 
-        // Validate the bean deployment
-        List<Throwable> errors = new ArrayList<>();
-        validateBeanNames(errors);
-        ValidationContextImpl validationContext = new ValidationContextImpl(buildContext);
-        for (BeanDeploymentValidator validator : validators) {
-            validator.validate(validationContext);
-        }
-        errors.addAll(validationContext.getErrors());
-
-        if (!errors.isEmpty()) {
-            if (errors.size() == 1) {
-                Throwable error = errors.get(0);
-                if (error instanceof DeploymentException) {
-                    throw (DeploymentException) error;
-                } else {
-                    throw new DeploymentException(errors.get(0));
-                }
-            } else {
-                DeploymentException deploymentException = new DeploymentException("Multiple deployment problems occured: " + errors.stream()
-                        .map(e -> e.getMessage())
-                        .collect(Collectors.toList())
-                        .toString());
-                for (Throwable error : errors) {
-                    deploymentException.addSuppressed(error);
-                }
-                throw deploymentException;
-            }
-        }
-
         this.observers = observers;
         this.interceptorResolver = new InterceptorResolver(this);
 
         LOGGER.debugf("Bean deployment created in %s ms", System.currentTimeMillis() - start);
     }
     
-    private void validateBeanNames(List<Throwable> errors) {
+    private void validateBeans(List<Throwable> errors) {
         Map<String, List<BeanInfo>> namedBeans = new HashMap<>();
+        
         for (BeanInfo bean : beans) {
             if (bean.getName() != null) {
                 List<BeanInfo> named = namedBeans.get(bean.getName());
@@ -191,7 +163,9 @@ public class BeanDeployment {
                 }
                 named.add(bean);
             }
+            bean.validate(errors);
         }
+        
         if (!namedBeans.isEmpty()) {
             for (Entry<String, List<BeanInfo>> entry : namedBeans.entrySet()) {
                 if (entry.getValue()
@@ -261,6 +235,39 @@ public class BeanDeployment {
 
     boolean hasAnnotation(AnnotationTarget target, DotName name) {
         return annotationStore.hasAnnotation(target, name);
+    }
+    
+    void validate(BuildContextImpl buildContext, List<BeanDeploymentValidator> validators) {
+        long start = System.currentTimeMillis();
+        // Validate the bean deployment
+        List<Throwable> errors = new ArrayList<>();
+        validateBeans(errors);
+        ValidationContextImpl validationContext = new ValidationContextImpl(buildContext);
+        for (BeanDeploymentValidator validator : validators) {
+            validator.validate(validationContext);
+        }
+        errors.addAll(validationContext.getErrors());
+
+        if (!errors.isEmpty()) {
+            if (errors.size() == 1) {
+                Throwable error = errors.get(0);
+                if (error instanceof DeploymentException) {
+                    throw (DeploymentException) error;
+                } else {
+                    throw new DeploymentException(errors.get(0));
+                }
+            } else {
+                DeploymentException deploymentException = new DeploymentException("Multiple deployment problems occured: " + errors.stream()
+                        .map(e -> e.getMessage())
+                        .collect(Collectors.toList())
+                        .toString());
+                for (Throwable error : errors) {
+                    deploymentException.addSuppressed(error);
+                }
+                throw deploymentException;
+            }
+        }
+        LOGGER.debugf("Bean deployment validated in %s ms", System.currentTimeMillis() - start);
     }
 
     void init() {

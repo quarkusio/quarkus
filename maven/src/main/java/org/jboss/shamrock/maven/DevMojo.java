@@ -24,6 +24,9 @@ import java.net.InetAddress;
 import java.net.JarURLConnection;
 import java.net.Socket;
 import java.net.URL;
+import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -170,14 +173,14 @@ public class DevMojo extends AbstractMojo {
             //this stuff does not change
             StringBuilder classPath = new StringBuilder();
             for (Artifact artifact : project.getArtifacts()) {
-                classPath.append(artifact.getFile().getAbsolutePath());
+                classPath.append(artifact.getFile().toPath().toAbsolutePath().toUri().toURL().toString());
                 classPath.append(" ");
             }
             args.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
             File wiringClassesDirectory = new File(buildDir, "wiring-classes");
             wiringClassesDirectory.mkdirs();
 
-            classPath.append(wiringClassesDirectory.getAbsolutePath()).append("/");
+            classPath.append(wiringClassesDirectory.toPath().toAbsolutePath().toUri().toURL().toString()).append("/");
             classPath.append(' ');
 
             if (fakereplace) {
@@ -208,8 +211,21 @@ public class DevMojo extends AbstractMojo {
             //we also want to add the maven plugin jar to the class path
             //this allows us to just directly use classes, without messing around copying them
             //to the runner jar
-            URL classFile = getClass().getClassLoader().getResource(DevModeMain.class.getName().replace('.', '/') + ".class");
-            classPath.append(((JarURLConnection) classFile.openConnection()).getJarFileURL().getFile());
+            URL classFile = DevModeMain.class.getClassLoader().getResource(DevModeMain.class.getName().replace('.', File.separatorChar) + ".class");
+            Path path;
+            if (classFile.getProtocol().equals("jar")) {
+                String jarPath = classFile.getPath().substring(0, classFile.getPath().lastIndexOf('!'));
+                path = Paths.get(new URI(jarPath));
+            } else if (classFile.getProtocol().equals("file")) {
+                String filePath = classFile.getPath().substring(0, classFile.getPath().lastIndexOf(DevModeMain.class.getName().replace('.', '/')));
+                path = Paths.get(new URI(classFile.getProtocol(), classFile.getHost(), filePath, null));
+            } else {
+                throw new MojoFailureException("Unsupported DevModeMain artifact URL:" + classFile);
+            }
+            classPath.append(path.toAbsolutePath().toUri().toURL().toString());
+            if (classFile.getProtocol().equals("file")) {
+                classPath.append('/');
+            }
 
             //now we need to build a temporary jar to actually run
 

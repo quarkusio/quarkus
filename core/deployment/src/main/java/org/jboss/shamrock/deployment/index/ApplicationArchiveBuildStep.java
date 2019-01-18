@@ -19,6 +19,8 @@ package org.jboss.shamrock.deployment.index;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -147,16 +149,20 @@ public class ApplicationArchiveBuildStep {
 
 
     private static Path urlToPath(URL url) {
-        if (url.getProtocol().equals("jar")) {
-            String jarPath = url.getPath().substring(5, url.getPath().lastIndexOf('!'));
-            return Paths.get(jarPath);
-        } else if (url.getProtocol().equals("file")) {
-            int index = url.getPath().lastIndexOf("/META-INF");
-            String pathString = url.getPath().substring(0, index);
-            Path path = Paths.get(pathString);
-            return path;
-        }
-        throw new RuntimeException("Unkown URL type " + url.getProtocol());
+        try {
+			if (url.getProtocol().equals("jar")) {
+			    String jarPath = url.getPath().substring(0, url.getPath().lastIndexOf('!'));
+			    return Paths.get(new URI(jarPath));
+			} else if (url.getProtocol().equals("file")) {
+			    int index = url.getPath().lastIndexOf("/META-INF");
+			    String pathString = url.getPath().substring(0, index);
+			    Path path = Paths.get(new URI(url.getProtocol(), url.getHost(), pathString, null));
+			    return path;
+			}
+			throw new RuntimeException("Unkown URL type " + url.getProtocol());
+		} catch (URISyntaxException e) {
+			throw new RuntimeException(e);
+		}
     }
 
 

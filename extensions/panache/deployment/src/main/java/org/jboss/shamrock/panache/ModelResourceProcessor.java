@@ -77,7 +77,8 @@ public final class ModelResourceProcessor {
                 return "getBoolean";
             if(type == Short.class)
                 return "getShort";
-            if(type == Integer.class)
+            if(type == Integer.class
+                    || type.isEnum())
                 return "getInteger";
             if(type == Long.class)
                 return "getLong";
@@ -86,6 +87,12 @@ public final class ModelResourceProcessor {
             if(type == Double.class)
                 return "getDouble";
             throw new RuntimeException("Field type not supported yet: "+type+" for field "+name);
+        }
+
+        public Class<?> mappedType() {
+            if(type.isEnum())
+                return Integer.class;
+            return type;
         }
 
     }
@@ -224,9 +231,23 @@ public final class ModelResourceProcessor {
         
         // set each field from the Row
         for (RxField field : fields) {
-            fromRow.writeInstanceField(FieldDescriptor.of(modelClassName, field.name, field.type), variable, 
-                    fromRow.invokeVirtualMethod(MethodDescriptor.ofMethod(Row.class, field.getFromRowMethod(), field.type, String.class), 
-                                                  fromRow.getMethodParam(0), fromRow.load(field.name)));
+            ResultHandle value = fromRow.invokeVirtualMethod(MethodDescriptor.ofMethod(Row.class, field.getFromRowMethod(), field.mappedType(), String.class), 
+                    fromRow.getMethodParam(0), fromRow.load(field.name));
+            AssignableResultHandle fieldValue = fromRow.createVariable(field.type);
+            if(field.type.isEnum()) {
+                BranchResult branch = fromRow.ifNull(value);
+
+                branch.trueBranch().assign(fieldValue, branch.trueBranch().loadNull());
+                branch.trueBranch().close();
+                
+                ResultHandle enumValues = branch.falseBranch().invokeStaticMethod(MethodDescriptor.ofMethod(field.type.getName(), "values", "[L"+field.type.getName()+";"));
+                value = branch.falseBranch().readArrayValue(enumValues, branch.falseBranch().invokeVirtualMethod(MethodDescriptor.ofMethod(Integer.class, "intValue", int.class), value));
+                branch.falseBranch().assign(fieldValue, value);
+                branch.falseBranch().close();
+            } else {
+                fromRow.assign(fieldValue, value);
+            }
+            fromRow.writeInstanceField(FieldDescriptor.of(modelClassName, field.name, field.type), variable, fieldValue);
         }
         fromRow.returnValue(variable);
         
@@ -281,6 +302,10 @@ public final class ModelResourceProcessor {
             RxField field = fields.get(j);
             ResultHandle fieldValue = toTuple.readInstanceField(FieldDescriptor.of(modelClassName, field.name, field.type), 
                     toTuple.getMethodParam(0));
+            if(field.type.isEnum()) {
+                // FIXME: handle NPE
+                fieldValue = toTuple.invokeVirtualMethod(MethodDescriptor.ofMethod(Enum.class, "ordinal", int.class), fieldValue);
+            }
             toTuple.invokeVirtualMethod(MethodDescriptor.ofMethod(Tuple.class, "addValue", Tuple.class, Object.class), myTuple, fieldValue);
         }
         toTuple.returnValue(myTuple);

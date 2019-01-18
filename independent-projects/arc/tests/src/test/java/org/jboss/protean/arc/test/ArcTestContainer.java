@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.jboss.jandex.DotName;
@@ -40,6 +41,7 @@ import org.jboss.protean.arc.ComponentsProvider;
 import org.jboss.protean.arc.ResourceReferenceProvider;
 import org.jboss.protean.arc.processor.AnnotationsTransformer;
 import org.jboss.protean.arc.processor.BeanDeploymentValidator;
+import org.jboss.protean.arc.processor.BeanInfo;
 import org.jboss.protean.arc.processor.BeanProcessor;
 import org.jboss.protean.arc.processor.BeanRegistrar;
 import org.jboss.protean.arc.processor.DeploymentEnhancer;
@@ -64,6 +66,8 @@ public class ArcTestContainer implements TestRule {
         private final List<DeploymentEnhancer> deploymentEnhancers;
         private final List<BeanDeploymentValidator> beanDeploymentValidators;
         private boolean shouldFail = false;
+        private boolean removeUnusedBeans = false;
+        private final List<Predicate<BeanInfo>> exclusions;
 
         public Builder() {
             resourceReferenceProviders = new ArrayList<>();
@@ -73,6 +77,7 @@ public class ArcTestContainer implements TestRule {
             annotationsTransformers = new ArrayList<>();
             deploymentEnhancers = new ArrayList<>();
             beanDeploymentValidators = new ArrayList<>();
+            exclusions = new ArrayList<>();
         }
 
         public Builder resourceReferenceProviders(Class<?>... resourceReferenceProviders) {
@@ -111,6 +116,16 @@ public class ArcTestContainer implements TestRule {
             return this;
         }
         
+        public Builder removeUnusedBeans(boolean value) {
+            this.removeUnusedBeans = value;
+            return this;
+        }
+        
+        public Builder addRemovalExclusion(Predicate<BeanInfo> exclusion) {
+            this.exclusions.add(exclusion);
+            return this;
+        }
+        
         public Builder shouldFail() {
             this.shouldFail = true;
             return this;
@@ -118,7 +133,7 @@ public class ArcTestContainer implements TestRule {
         
         public ArcTestContainer build() {
             return new ArcTestContainer(resourceReferenceProviders, beanClasses, resourceAnnotations, beanRegistrars, annotationsTransformers,
-                    deploymentEnhancers, beanDeploymentValidators, shouldFail);
+                    deploymentEnhancers, beanDeploymentValidators, shouldFail, removeUnusedBeans, exclusions);
         }
 
     }
@@ -139,15 +154,18 @@ public class ArcTestContainer implements TestRule {
     
     private final boolean shouldFail;
     private final AtomicReference<Throwable> buildFailure;
+    
+    private final boolean removeUnusedBeans;
+    private final List<Predicate<BeanInfo>> exclusions;
 
     public ArcTestContainer(Class<?>... beanClasses) {
         this(Collections.emptyList(), Arrays.asList(beanClasses), Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
-                Collections.emptyList(), Collections.emptyList(), false);
+                Collections.emptyList(), Collections.emptyList(), false, false, Collections.emptyList());
     }
 
     public ArcTestContainer(List<Class<?>> resourceReferenceProviders, List<Class<?>> beanClasses, List<Class<? extends Annotation>> resourceAnnotations,
             List<BeanRegistrar> beanRegistrars, List<AnnotationsTransformer> annotationsTransformers, List<DeploymentEnhancer> deploymentEnhancers,
-            List<BeanDeploymentValidator> beanDeploymentValidators, boolean shouldFail) {
+            List<BeanDeploymentValidator> beanDeploymentValidators, boolean shouldFail, boolean removeUnusedBeans, List<Predicate<BeanInfo>> exclusions) {
         this.resourceReferenceProviders = resourceReferenceProviders;
         this.beanClasses = beanClasses;
         this.resourceAnnotations = resourceAnnotations;
@@ -157,6 +175,8 @@ public class ArcTestContainer implements TestRule {
         this.beanDeploymentValidators = beanDeploymentValidators;
         this.buildFailure = new AtomicReference<Throwable>(null);
         this.shouldFail = shouldFail;
+        this.removeUnusedBeans = removeUnusedBeans;
+        this.exclusions = exclusions;
     }
 
     @Override
@@ -263,6 +283,10 @@ public class ArcTestContainer implements TestRule {
                     }
                 }
             });
+            beanProcessorBuilder.setRemoveUnusedBeans(removeUnusedBeans);
+            for (Predicate<BeanInfo> exclusion : exclusions) {
+                beanProcessorBuilder.addRemovalExclusion(exclusion);
+            }
 
             BeanProcessor beanProcessor = beanProcessorBuilder.build();
 

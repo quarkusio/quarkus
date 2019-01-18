@@ -442,7 +442,7 @@ public class JaxrsScanningProcessor {
         }
         template.setupIntegration(beanContainerBuildItem.getValue(), unwrappers);
     }
-
+    
     @BuildStep
     List<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations() {
         return Collections.singletonList(new BeanDefiningAnnotationBuildItem(PATH, singletonResources ? SINGLETON_SCOPE : null));

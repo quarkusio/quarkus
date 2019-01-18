@@ -89,18 +89,24 @@ public class BeanProcessor {
 
     private final Predicate<DotName> applicationClassPredicate;
 
+    private final boolean removeUnusedBeans;
+    private final List<Predicate<BeanInfo>> unusedExclusions;
+
     private BeanProcessor(String name, IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations, ResourceOutput output,
-                          boolean sharedAnnotationLiterals, ReflectionRegistration reflectionRegistration, List<AnnotationsTransformer> annotationTransformers,
-                          Collection<DotName> resourceAnnotations, List<BeanRegistrar> beanRegistrars, List<DeploymentEnhancer> deploymentEnhancers,
-                          List<BeanDeploymentValidator> beanDeploymentValidators, Predicate<DotName> applicationClassPredicate) {
+            boolean sharedAnnotationLiterals, ReflectionRegistration reflectionRegistration, List<AnnotationsTransformer> annotationTransformers,
+            Collection<DotName> resourceAnnotations, List<BeanRegistrar> beanRegistrars, List<DeploymentEnhancer> deploymentEnhancers,
+            List<BeanDeploymentValidator> beanDeploymentValidators, Predicate<DotName> applicationClassPredicate, boolean unusedBeansRemovalEnabled,
+            List<Predicate<BeanInfo>> unusedExclusions) {
+
         this.reflectionRegistration = reflectionRegistration;
         this.applicationClassPredicate = applicationClassPredicate;
-        Objects.requireNonNull(output);
         this.name = name;
         this.additionalBeanDefiningAnnotations = additionalBeanDefiningAnnotations;
-        this.output = output;
+        this.output = Objects.requireNonNull(output);
         this.sharedAnnotationLiterals = sharedAnnotationLiterals;
         this.resourceAnnotations = resourceAnnotations;
+        this.removeUnusedBeans = unusedBeansRemovalEnabled;
+        this.unusedExclusions = unusedExclusions;
 
         // Initialize all build processors
         buildContext = new BuildContextImpl();
@@ -148,7 +154,7 @@ public class BeanProcessor {
     public BeanDeployment process() throws IOException {
 
         BeanDeployment beanDeployment = new BeanDeployment(new IndexWrapper(index), additionalBeanDefiningAnnotations, annotationTransformers,
-                resourceAnnotations, beanRegistrars, beanDeploymentValidators, buildContext);
+                resourceAnnotations, beanRegistrars, beanDeploymentValidators, buildContext, removeUnusedBeans, unusedExclusions);
         beanDeployment.init();
 
         AnnotationLiteralProcessor annotationLiterals = new AnnotationLiteralProcessor(name, sharedAnnotationLiterals);
@@ -259,6 +265,10 @@ public class BeanProcessor {
         private final List<BeanRegistrar> beanRegistrars = new ArrayList<>();
         private final List<DeploymentEnhancer> deploymentEnhancers = new ArrayList<>();
         private final List<BeanDeploymentValidator> beanDeploymentValidators = new ArrayList<>();
+
+        private boolean removeUnusedBeans = false;
+        private final List<Predicate<BeanInfo>> removalExclusions = new ArrayList<>();
+
         private Predicate<DotName> applicationClassPredicate = new Predicate<DotName>() {
             @Override
             public boolean test(DotName dotName) {
@@ -327,9 +337,43 @@ public class BeanProcessor {
             return this;
         }
 
+        /**
+         * If set to true the container will attempt to remove all unused beans.
+         * <p>
+         * An unused bean:
+         * <ul>
+         * <li>is not a built-in bean or interceptor,</li>
+         * <li>is not eligible for injection to any injection point,</li>
+         * <li>is not excluded - see {@link #addRemovalExclusion(Predicate)},</li>
+         * <li>does not have a name,</li>
+         * <li>does not declare an observer,</li>
+         * <li>does not declare any producer which is eligible for injection to any injection point,</li>
+         * <li>is not directly eligible for injection into any {@link javax.enterprise.inject.Instance} injection point</li>
+         * </ul>
+         * 
+         * @param removeUnusedBeans
+         * @return
+         */
+        public Builder setRemoveUnusedBeans(boolean removeUnusedBeans) {
+            this.removeUnusedBeans = removeUnusedBeans;
+            return this;
+        }
+
+        /**
+         * 
+         * @param exclusion
+         * @return self
+         * @see #setRemoveUnusedBeans(boolean)
+         */
+        public Builder addRemovalExclusion(Predicate<BeanInfo> exclusion) {
+            this.removalExclusions.add(exclusion);
+            return this;
+        }
+
         public BeanProcessor build() {
             return new BeanProcessor(name, addBuiltinClasses(index), additionalBeanDefiningAnnotations, output, sharedAnnotationLiterals,
-                    reflectionRegistration, annotationTransformers, resourceAnnotations, beanRegistrars, deploymentEnhancers, beanDeploymentValidators, applicationClassPredicate);
+                    reflectionRegistration, annotationTransformers, resourceAnnotations, beanRegistrars, deploymentEnhancers, beanDeploymentValidators,
+                    applicationClassPredicate, removeUnusedBeans, removalExclusions);
         }
 
     }

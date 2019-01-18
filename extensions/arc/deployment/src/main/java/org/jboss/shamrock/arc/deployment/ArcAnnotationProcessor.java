@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
@@ -49,6 +50,8 @@ import org.jboss.protean.arc.processor.ResourceOutput;
 import org.jboss.shamrock.annotations.BuildProducer;
 import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.annotations.Record;
+import org.jboss.shamrock.arc.deployment.UnremovableBeanBuildItem.BeanClassNameExclusion;
+import org.jboss.shamrock.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
 import org.jboss.shamrock.arc.runtime.ArcDeploymentTemplate;
 import org.jboss.shamrock.arc.runtime.BeanContainer;
 import org.jboss.shamrock.arc.runtime.LifecycleEventRunner;
@@ -100,6 +103,12 @@ public class ArcAnnotationProcessor {
     @Inject
     List<BeanDefiningAnnotationBuildItem> additionalBeanDefiningAnnotations;
     
+    @Inject
+    List<UnremovableBeanBuildItem> removalExclusions;
+    
+    @ConfigProperty(name = "shamrock.arc")
+    ArcConfig config;
+    
     @BuildStep(providesCapabilities = Capabilities.CDI_ARC, applicationArchiveMarkers = { "META-INF/beans.xml",
             "META-INF/services/javax.enterprise.inject.spi.Extension" })
     @Record(STATIC_INIT)
@@ -113,7 +122,7 @@ public class ArcAnnotationProcessor {
 
         List<String> additionalBeans = new ArrayList<>();
         for (AdditionalBeanBuildItem i : this.additionalBeans) {
-            additionalBeans.addAll(i.getBeanNames());
+            additionalBeans.addAll(i.getBeanClasses());
         }
         additionalBeans.add(LifecycleEventRunner.class.getName());
 
@@ -188,6 +197,24 @@ public class ArcAnnotationProcessor {
         for (BeanDeploymentValidatorBuildItem item : beanDeploymentValidators) {
             builder.addBeanDeploymentValidator(item.getBeanDeploymentValidator());
         }
+        builder.setRemoveUnusedBeans(config.removeUnusedBeans);
+        builder.addRemovalExclusion(new BeanClassNameExclusion(LifecycleEventRunner.class.getName()));
+        for (AdditionalBeanBuildItem additionalBean : this.additionalBeans) {
+            if (!additionalBean.isRemovable()) {
+                for (String beanClass : additionalBean.getBeanClasses()) {
+                    builder.addRemovalExclusion(new BeanClassNameExclusion(beanClass));
+                }
+            }
+        }
+        for (BeanDefiningAnnotationBuildItem annotation : this.additionalBeanDefiningAnnotations) {
+            if (!annotation.isRemovable()) {
+                builder.addRemovalExclusion(new BeanClassAnnotationExclusion(annotation.getName()));
+            }
+        }
+        for (UnremovableBeanBuildItem exclusion : removalExclusions) {
+            builder.addRemovalExclusion(exclusion.getPredicate());
+        }
+
         BeanProcessor beanProcessor = builder.build();
         beanProcessor.process();
 

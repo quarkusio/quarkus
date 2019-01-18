@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.enterprise.inject.Model;
@@ -79,18 +80,25 @@ public class BeanDeployment {
     private final AnnotationStore annotationStore;
 
     private final Set<DotName> resourceAnnotations;
+    
+    private final List<InjectionPointInfo> injectionPoints;
+    
+    private final boolean removeUnusedBeans;
+    private final List<Predicate<BeanInfo>> unusedExclusions;
 
     BeanDeployment(IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations, List<AnnotationsTransformer> annotationTransformers) {
-        this(index, additionalBeanDefiningAnnotations, annotationTransformers, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null);
+        this(index, additionalBeanDefiningAnnotations, annotationTransformers, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null, false, null);
     }
 
     BeanDeployment(IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations, List<AnnotationsTransformer> annotationTransformers,
             Collection<DotName> resourceAnnotations, List<BeanRegistrar> beanRegistrars, List<BeanDeploymentValidator> validators,
-            BuildContextImpl buildContext) {
+            BuildContextImpl buildContext, boolean removeUnusedBeans, List<Predicate<BeanInfo>> unusedExclusions) {
         long start = System.currentTimeMillis();
         this.resourceAnnotations = new HashSet<>(resourceAnnotations);
         this.index = index;
         this.annotationStore = new AnnotationStore(annotationTransformers, buildContext);
+        this.removeUnusedBeans = removeUnusedBeans;
+        this.unusedExclusions = removeUnusedBeans ? unusedExclusions : null;
 
         if (buildContext != null) {
             buildContext.putInternal(Key.ANNOTATION_STORE.asString(), annotationStore);
@@ -103,7 +111,7 @@ public class BeanDeployment {
         this.interceptors = findInterceptors();
         this.beanResolver = new BeanResolver(this);
         List<ObserverInfo> observers = new ArrayList<>();
-        List<InjectionPointInfo> injectionPoints = new ArrayList<>();
+        this.injectionPoints = new ArrayList<>();
         this.beans = findBeans(initBeanDefiningAnnotations(additionalBeanDefiningAnnotations, stereotypes.keySet()), observers, injectionPoints);
         
         if (buildContext != null) {
@@ -260,6 +268,62 @@ public class BeanDeployment {
         beans.forEach(BeanInfo::init);
         observers.forEach(ObserverInfo::init);
         interceptors.forEach(InterceptorInfo::init);
+        
+        if (removeUnusedBeans) {
+            long removalStart = System.currentTimeMillis();
+            Set<BeanInfo> removable = new HashSet<>();
+            Set<BeanInfo> unusedProducers = new HashSet<>();
+            List<BeanInfo> producers = beans.stream().filter(b -> b.isProducerMethod() || b.isProducerField()).collect(Collectors.toList());
+            List<InjectionPointInfo> instanceInjectionPoints = injectionPoints.stream().filter(ip -> BuiltinBean.resolve(ip) == BuiltinBean.INSTANCE)
+                    .collect(Collectors.toList());
+            for (BeanInfo bean : beans) {
+                // Named beans can be used in templates and expressions
+                if (bean.getName() != null) {
+                    continue;
+                }
+                // Custom exclusions
+                if (unusedExclusions.stream().anyMatch(e -> e.test(bean))) {
+                    continue;
+                }
+                // Is injected
+                if (injectionPoints.stream().anyMatch(ip -> bean.equals(ip.getResolvedBean()))) {
+                    continue;
+                }
+                // Declares an observer method
+                if (observers.stream().anyMatch((o) -> bean.equals(o.getDeclaringBean()))) {
+                    continue;
+                }
+                // Declares a producer - see also second pass
+                if (producers.stream().anyMatch(b -> bean.equals(b.getDeclaringBean()))) {
+                    continue;
+                }
+                // Instance<Foo>
+                if (instanceInjectionPoints.stream().anyMatch(ip -> Beans.matchesType(bean, ip.getRequiredType().asParameterizedType().arguments().get(0))
+                        && ip.getRequiredQualifiers().stream().allMatch(q -> Beans.hasQualifier(bean, q)))) {
+                    continue;
+                }
+                if (bean.isProducerField() || bean.isProducerMethod()) {
+                    // This bean is very likely an unused producer
+                    unusedProducers.add(bean);
+                }
+                removable.add(bean);
+            }
+            if (!unusedProducers.isEmpty()) {
+                // Second pass to find beans which themselves are unused and declare only unused producers
+                Map<BeanInfo, List<BeanInfo>> declaringMap = producers.stream().collect(Collectors.groupingBy(BeanInfo::getDeclaringBean));
+                for (Entry<BeanInfo, List<BeanInfo>> entry : declaringMap.entrySet()) {
+                    if (unusedProducers.containsAll(entry.getValue())) {
+                        // All producers declared by this bean are unused
+                        removable.add(entry.getKey());
+                    }
+                }
+            }
+            if (!removable.isEmpty()) {
+                beans.removeAll(removable);
+            }
+            LOGGER.debugf("Removed %s unused beans in %s ms", removable.size(), System.currentTimeMillis() - removalStart);
+        }
+
         LOGGER.debugf("Bean deployment initialized in %s ms", System.currentTimeMillis() - start);
     }
 

@@ -18,12 +18,9 @@ package org.jboss.shamrock.arc.deployment;
 
 import org.jboss.builder.item.MultiBuildItem;
 import org.jboss.jandex.DotName;
-import org.jboss.shamrock.deployment.Capabilities;
 
 /**
  * This build item is used to specify resource annotations that makes it possible to resolve non-CDI injection points, such as Java EE resources.
- * 
- * @see Capabilities#CDI_ARC
  */
 public final class ResourceAnnotationBuildItem extends MultiBuildItem {
 

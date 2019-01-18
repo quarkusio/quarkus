@@ -1,11 +1,16 @@
 = {project-name} - Contexts and Dependency Injection
 
+:numbered:
+:sectnums:
+:sectnumlevels: 4
+
 {project-name} DI solution is based on the http://docs.jboss.org/cdi/spec/2.0/cdi-spec.html[Contexts and Dependency Injection for Java 2.0, window="_blank"] specification.
 However, it is not a full CDI implementation verified by the TCK.
 Only a subset of the CDI features is implemented - see also <<supported_features,the list of supported features>> and <<limitations,the list of limitations>>.
 
 NOTE: Most of the existing CDI code should work just fine but there are some small differences which follow from the {project-name} architecture and goals.
 
+[[bean_discovery]]
 == Bean Discovery
 
 Bean discovery in CDI is a complex process which involves legacy deployment structures and accessibility requirements of the underlying module architecture.
@@ -110,10 +115,111 @@ public class CounterBean {
 * Passivation and passivating scopes are not supported
 * Transitive interceptor bindings and interceptor methods on superclasses are not implemented yet
 
+== Build Time Extension Points
+
 [[portable_extensions]]
-== Portable Extensions
+=== Portable Extensions
 
 {project-name} incorporates build-time optimizations in order to provide instant startup and low memory footprint.
 The downside of this approach is that CDI Portable Extensions cannot be supported.
 Nevertheless, most of the functionality can be achieved using {project-name} link:extension-authors-guide.html[extensions].
 
+=== Additional Bean Defining Annotations
+
+As described in <<bean_discovery>> bean classes that don’t have a bean defining annotation are not discovered.
+However, `BeanDefiningAnnotationBuildItem` can be used to extend the set of default bean defining annotations (`@Dependent`, `@Singleton`, `@ApplicationScoped`, `@RequestScoped` and `@Stereotype` annotations):
+
+[source,java]
+----
+@BuildStep
+BeanDefiningAnnotationBuildItem additionalBeanDefiningAnnotation() {
+    return new BeanDefiningAnnotationBuildItem(DotName.createSimple("javax.ws.rs.Path")));
+}
+----
+
+=== Resource Annotations
+
+`ResourceAnnotationBuildItem` is used to specify resource annotations  that make it possible to resolve non-CDI injection points, such as Java EE resources.
+
+NOTE: An integrator must also provide a corresponding `org.jboss.protean.arc.ResourceReferenceProvider` implementation. 
+
+[source,java]
+----
+@BuildStep
+void setupResourceInjection(BuildProducer<ResourceAnnotationBuildItem> resourceAnnotations, BuildProducer<GeneratedResourceBuildItem> resources) {
+    resources.produce(new GeneratedResourceBuildItem("META-INF/services/org.jboss.protean.arc.ResourceReferenceProvider",
+        "org.jboss.shamrock.jpa.runtime.JPAResourceReferenceProvider".getBytes()));
+    resourceAnnotations.produce(new ResourceAnnotationBuildItem(DotName.createSimple(PersistenceContext.class.getName())));
+}
+----
+
+=== Additional Beans
+
+`AdditionalBeanBuildItem` is used to specify additional bean classes to be analyzed during discovery.
+Additional bean classes are transparently added to the application index processed by the container.
+
+[source,java]
+----
+@BuildStep
+List<AdditionalBeanBuildItem> additionalBeans() {
+     return Arrays.asList(
+          new AdditionalBeanBuildItem(SmallRyeHealthReporter.class),
+          new AdditionalBeanBuildItem(HealthServlet.class));
+}
+----
+
+=== Synthetic Beans
+
+Sometimes it's useful to register a synthetic bean, i.e. a bean that doesn't need to have a corresponding java class.
+In CDI this could be achieved using `AfterBeanDiscovery.addBean()` methods.
+In {project-name} we produce a `BeanRegistrarBuildItem` and leverage the `org.jboss.protean.arc.processor.BeanConfigurator` API to build a synthetic bean definition.
+
+// TODO add example
+
+NOTE: The output of a `BeanConfigurator` is recorded as bytecode. Therefore there are some limitations in how a synthetic bean instance is created. See also `BeanConfigurator.creator()` methods.
+
+=== Annotation Transformations
+
+A very common task is to override the annotations found on the bean classes.
+For example you might want to add an interceptor binding to a specific bean class.
+Here is how to do it - use the `AnnotationsTransformerBuildItem`:
+
+[source,java]
+----
+@BuildStep
+AnnotationsTransformerBuildItem transform() {
+    return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+
+        public boolean appliesTo(org.jboss.jandex.AnnotationTarget.Kind kind) {
+            return kind == org.jboss.jandex.AnnotationTarget.Kind.CLASS;
+        }
+
+        public void transform(TransformationContext context) {
+            if (contex.getTarget().asClass().name().toString().equals("com.foo.Bar")) {
+                context.transform().add(MyInterceptorBinding.class).done();
+            }
+        }
+    });
+}
+----
+
+=== Bean Deployment Validation
+
+Once the bean deployment is ready an extenion can perform additional validations and inspect the found beans, observers and injection points.
+Register a `BeanDeploymentValidatorBuildItem`:
+
+[source,java]
+----
+@BuildStep
+BeanDeploymentValidatorBuildItem beanDeploymentValidator() {
+    return new BeanDeploymentValidatorBuildItem(new BeanDeploymentValidator() {
+         public void validate(ValidationContext validationContext) {
+             for (InjectionPointInfo injectionPoint : validationContext.get(Key.INJECTION_POINTS)) {
+                 System.out.println("Injection point: " + injectionPoint);
+             }
+         }
+    });
+}
+----
+
+NOTE: See also `org.jboss.protean.arc.processor.BuildExtension.Key` to discover the available metadata.

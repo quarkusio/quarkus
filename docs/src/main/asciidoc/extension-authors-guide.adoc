@@ -1,5 +1,9 @@
 = {project-name} - Extension Authors Guide
 
+:numbered:
+:sectnums:
+:sectnumlevels: 4
+
 Shamrock extensions add a new developer focused behavior to the core offering, and consist of two distinct parts, buildtime augmentation and runtime container. The augmentation part is responsible for all metadata processing, such as reading annotations, XML descriptors etc. The output of this augmentation phase is recorded bytecode which is responsible for directly instantiating the relevant runtime services.
 
 This means that metadata is only processed once at build time, which both saves on startup time, and also on memory

@@ -19,11 +19,12 @@ package org.jboss.shamrock.example.panache;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
-import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 
-import org.jboss.panache.Model;
 import org.jboss.panache.NotReallyJpa;
 import org.jboss.panache.RxModel;
+
+import io.reactivex.Observable;
 
 @NotReallyJpa
 @Entity
@@ -34,9 +35,12 @@ public class RxPerson extends RxModel<RxPerson> {
 //    public SequencedAddress address;
     public Status status;
 
-    public void describeFully(StringBuilder sb) {
-        sb.append( "Person with id=" ).append( id ).append( ", name='" ).append( name ).append("', status='").append(status).append( "', address { " );
-//        address.describeFully( sb );
-        sb.append( " }" );
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    public Observable<RxDog> dogs = Observable.empty();
+
+    // FIXME: generate
+    @Override
+    public String toString() {
+        return "RxPerson[id="+id+", name="+name+", status="+status+"]";
     }
 }

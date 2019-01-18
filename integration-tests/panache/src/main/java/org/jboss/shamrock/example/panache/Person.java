@@ -16,10 +16,14 @@
 
 package org.jboss.shamrock.example.panache;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 
 import org.jboss.panache.Model;
 
@@ -27,13 +31,12 @@ import org.jboss.panache.Model;
 public class Person extends Model{
 
     public String name;
+
     @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     public SequencedAddress address;
+    
     public Status status;
-
-    public void describeFully(StringBuilder sb) {
-        sb.append( "Person with id=" ).append( id ).append( ", name='" ).append( name ).append("', status='").append(status).append( "', address { " );
-        address.describeFully( sb );
-        sb.append( " }" );
-    }
+    
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    public List<Dog> dogs = new ArrayList<>();
 }

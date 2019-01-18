@@ -25,26 +25,28 @@ public abstract class RxEntityBase<T extends RxEntityBase<?>> {
         PgPool pool = getPgPool();
         RxModelInfo<T> modelInfo = (RxModelInfo)getModelInfo();
         // FIXME: custom id generation
-        if(_getId() == null)
-            return pool.rxPreparedQuery("SELECT nextval('hibernate_sequence') AS id")
-                    .map(rowset -> rowset.iterator().next().getInteger("id"))
-                    .flatMap(id -> {
-                        // non-persisted tuples are missing their id
-                        Tuple t = modelInfo.toTuple((T)this);
-                        Tuple withId = Tuple.tuple();
-                        withId.addValue(id);
-                        for (int i = 0; i < t.size(); i++) {
-                            withId.addValue(t.getValue(i));
-                        }
-                        return pool.rxPreparedQuery(modelInfo.insertStatement(), withId)
-                            .map(rowset -> {
-                                _setId(id);
-                                return (T)this;
-                            });
-                        });
-        else
-            return pool.rxPreparedQuery(modelInfo.updateStatement(), modelInfo.toTuple((T)this))
-                    .map(rowset -> (T)this);
+        return modelInfo.toTuple((T)this)
+                .flatMap(t -> {
+                    if(_getId() == null)
+                        return pool.rxPreparedQuery("SELECT nextval('hibernate_sequence') AS id")
+                                .map(rowset -> rowset.iterator().next().getInteger("id"))
+                                .flatMap(id -> {
+                                    // non-persisted tuples are missing their id
+                                    Tuple withId = Tuple.tuple();
+                                    withId.addValue(id);
+                                    for (int i = 0; i < t.size(); i++) {
+                                        withId.addValue(t.getValue(i));
+                                    }
+                                    return pool.rxPreparedQuery(modelInfo.insertStatement(), withId)
+                                            .map(rowset -> {
+                                                _setId(id);
+                                                return (T)this;
+                                            });
+                                });
+                    else
+                        return pool.rxPreparedQuery(modelInfo.updateStatement(), t)
+                                .map(rowset -> (T)this);
+                });
     }
 
     public Completable delete() {
@@ -71,7 +73,9 @@ public abstract class RxEntityBase<T extends RxEntityBase<?>> {
                 .flatMapObservable(rowset -> Observable.fromIterable(rowset.getDelegate()))
                 .map(coreRow -> {
                     try {
-                        return modelInfo.fromRow(Row.newInstance(coreRow));  
+                        Row row = Row.newInstance(coreRow);
+                        T t =  modelInfo.fromRow(row);
+                        return t;
                     }catch(Throwable t) {
                         t.printStackTrace();
                         return null;
@@ -184,9 +188,9 @@ public abstract class RxEntityBase<T extends RxEntityBase<?>> {
         T fromRow(Row row);
         String insertStatement();
         String updateStatement();
-        Tuple toTuple(T entity);
+        Single<Tuple> toTuple(T entity);
     }
-
+    
     private static String createFindQuery(RxModelInfo<?> modelInfo, String query, Object[] params) {
         // FIXME: field order from model info
         if(query == null)

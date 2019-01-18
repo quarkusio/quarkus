@@ -48,7 +48,10 @@ public class TestEndpoint extends Controller {
 
         Assert.assertEquals(1, Person.count());
         Assert.assertEquals(1, Person.count("name = ?1", "stef"));
-        
+
+        Assert.assertEquals(1, Dog.count());
+        Assert.assertEquals(1, person.dogs.size());
+
         persons = Person.findAll();
         Assert.assertEquals(1, persons.size());
         Assert.assertEquals(person, persons.get(0));
@@ -63,14 +66,16 @@ public class TestEndpoint extends Controller {
         person.delete();
         Assert.assertEquals(0, Person.count());
         
-        makeSavedPerson();
+        person = makeSavedPerson();
         Assert.assertEquals(1, Person.count());
         Assert.assertEquals(0, Person.delete("name = ?1", "emmanuel"));
+        Assert.assertEquals(1, Dog.delete("owner = ?1", person));
         Assert.assertEquals(1, Person.delete("name = ?1", "stef"));
 
         Assert.assertEquals(0, Person.deleteAll());
 
         makeSavedPerson();
+        Assert.assertEquals(1, Dog.deleteAll());
         Assert.assertEquals(1, Person.deleteAll());
 
         return "OK";
@@ -84,6 +89,12 @@ public class TestEndpoint extends Controller {
         person.address.save();
         
         person.save();
+
+        Dog dog = new Dog("octave", "dalmatian");
+        dog.owner = person;
+        dog.save();
+        person.dogs.add(dog);
+        
         return person;
     }
 
@@ -97,7 +108,7 @@ public class TestEndpoint extends Controller {
                 return makeSavedRxPerson();
             }).flatMap(person -> {
                 Assert.assertNotNull(person.id);
-                
+
                 return RxPerson.findAll().toList()
                     .flatMapMaybe(persons -> {
                         Assert.assertEquals(1, persons.size());
@@ -150,8 +161,24 @@ public class TestEndpoint extends Controller {
                         Assert.assertEquals(0, (long)count);
                         
                         return RxPerson.delete("name = ?1", "stef");
-                    }).map(count -> {
+                    }).flatMap(count -> {
                         Assert.assertEquals(1, (long)count);
+                        
+                        return makeSavedRxPerson();
+                    }).flatMap(p -> {
+                        
+                        RxDog dog = new RxDog("octave", "dalmatian");
+                        dog.owner = Single.just(p);
+                        return dog.save();
+                    }).flatMapMaybe(d -> {
+                        // get it from the DB
+                        return RxDog.<RxDog>findById(d.id);
+                        // check the lazy single
+                    }).flatMapSingle(d -> d.owner)
+                    // check the lazy list
+                    .flatMap(p -> p.dogs.toList())
+                    .map(dogs -> {
+                        Assert.assertEquals(1, dogs.size());
                         
                         return "OK";
                     });
@@ -164,7 +191,12 @@ public class TestEndpoint extends Controller {
         person.status = Status.LIVING;
 //        person.address = new SequencedAddress("stef street");
 //        person.address.save();
-        return person.save();
+        try {
+            return person.save();
+        }catch(Throwable t) {
+            t.printStackTrace();
+            throw new RuntimeException(t);
+        }
     }
 
     @GET

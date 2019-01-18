@@ -28,8 +28,4 @@ public class SequencedAddress extends Model {
     public SequencedAddress(String street) {
         this.street = street;
     }
-
-    public void describeFully(StringBuilder sb) {
-        sb.append( "Address with id=" ).append( id ).append( ", street='" ).append( street ).append( "'" );
-    }
 }

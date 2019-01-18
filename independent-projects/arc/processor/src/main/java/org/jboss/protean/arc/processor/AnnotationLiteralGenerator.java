@@ -54,9 +54,6 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
 
     private static final Logger LOGGER = Logger.getLogger(AnnotationLiteralGenerator.class);
 
-    private static final String INIT = "<init>";
-    private static final String CLINIT = "<clinit>";
-
     /**
      *
      * @param beanDeployment
@@ -88,7 +85,7 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
                 .interfaces(annotationClass.name().toString()).signature(signature).build();
 
         for (MethodInfo method : annotationClass.methods()) {
-            if(method.name().equals(CLINIT) || method.name().equals(INIT)) {
+            if(method.name().equals(Methods.CLINIT) || method.name().equals(Methods.INIT)) {
                 continue;
             }
             MethodCreator valueMethod = annotationLiteral.getMethodCreator(MethodDescriptor.of(method));

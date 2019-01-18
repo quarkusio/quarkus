@@ -38,12 +38,17 @@ import org.jboss.jandex.WildcardType;
 
 final class Methods {
 
+    // constructor
+    public static final String INIT = "<init>";
+    // static initializer
+    public static final String CLINIT = "<clinit>";
+
     private static final List<String> IGNORED_METHODS = initIgnoredMethods();
 
     private static List<String> initIgnoredMethods() {
         List<String> ignored = new ArrayList<>();
-        ignored.add("<init>");
-        ignored.add("<clinit>");
+        ignored.add(INIT);
+        ignored.add(CLINIT);
         return ignored;
     }
 

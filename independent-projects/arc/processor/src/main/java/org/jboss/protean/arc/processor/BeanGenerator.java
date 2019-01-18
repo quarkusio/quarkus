@@ -505,7 +505,7 @@ public class BeanGenerator extends AbstractGenerator {
             parameterTypes.add(InjectableInterceptor.class.getName());
         }
 
-        MethodCreator constructor = beanCreator.getMethodCreator("<init>", "V", parameterTypes.toArray(new String[0]));
+        MethodCreator constructor = beanCreator.getMethodCreator(Methods.INIT, "V", parameterTypes.toArray(new String[0]));
         // Invoke super()
         constructor.invokeSpecialMethod(MethodDescriptors.OBJECT_CONSTRUCTOR, constructor.getThis());
 
@@ -1158,7 +1158,7 @@ public class BeanGenerator extends AbstractGenerator {
                 return creator.newInstance(MethodDescriptor.ofConstructor(providerTypeName, paramTypes), providerHandles.toArray(new ResultHandle[0]));
             }
         } else {
-            MethodInfo noArgsConstructor = bean.getTarget().get().asClass().method("<init>");
+            MethodInfo noArgsConstructor = bean.getTarget().get().asClass().method(Methods.INIT);
             if (Modifier.isPrivate(noArgsConstructor.flags())) {
                 Level level = isApplicationClass ? Level.INFO : Level.DEBUG;
                 LOGGER.logf(level, "Constructor %s is private - users are encouraged to avoid using private constructors",

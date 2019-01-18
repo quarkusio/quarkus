@@ -148,7 +148,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
     }
 
     void createConstructor(ClassCreator clientProxy, String beanClassName, String superClasName, FieldDescriptor beanField) {
-        MethodCreator creator = clientProxy.getMethodCreator("<init>", void.class, beanClassName);
+        MethodCreator creator = clientProxy.getMethodCreator(Methods.INIT, void.class, beanClassName);
         creator.invokeSpecialMethod(MethodDescriptor.ofConstructor(superClasName), creator.getThis());
         creator.writeInstanceField(beanField, creator.getThis(), creator.getMethodParam(0));
         creator.returnValue(null);

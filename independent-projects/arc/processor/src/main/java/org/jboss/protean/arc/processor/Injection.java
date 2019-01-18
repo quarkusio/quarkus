@@ -16,6 +16,7 @@
 
 package org.jboss.protean.arc.processor;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -55,7 +56,7 @@ public class Injection {
     static List<Injection> forBean(AnnotationTarget beanTarget, BeanDeployment beanDeployment) {
         if (Kind.CLASS.equals(beanTarget.kind())) {
             List<Injection> injections = new ArrayList<>();
-            forClassBean(beanTarget.asClass(), beanDeployment, injections);
+            forClassBean(beanTarget.asClass(), beanDeployment, injections, true);
             return injections;
         } else if (Kind.METHOD.equals(beanTarget.kind())) {
             if (beanTarget.asMethod().parameters().isEmpty()) {
@@ -67,7 +68,7 @@ public class Injection {
         throw new IllegalArgumentException("Unsupported annotation target");
     }
 
-    private static void forClassBean(ClassInfo beanTarget, BeanDeployment beanDeployment, List<Injection> injections) {
+    private static void forClassBean(ClassInfo beanTarget, BeanDeployment beanDeployment, List<Injection> injections, boolean isFirstLevel) {
 
         List<AnnotationInstance> injectAnnotations = getAllInjectionPoints(beanDeployment, beanTarget, DotNames.INJECT);
 
@@ -84,6 +85,33 @@ public class Injection {
                 default:
                     LOGGER.warn("Unsupported @Inject target ignored: " + injectAnnotation.target());
                     continue;
+            }
+        }
+        // if the class has a single non no-arg constructor that is not annotated with @Inject,
+        // the class is not a non-static inner or and it not a superclass of of a bean
+        // we consider that constructor as an injection
+        if (isFirstLevel) {
+            boolean constrInjectionExists = false;
+            for (Injection injection : injections) {
+                if (injection.isConstructor()) {
+                    constrInjectionExists = true;
+                    break;
+                }
+            }
+
+            final boolean isNonStaticInnerClass = beanTarget.name().isInner()
+                    && !Modifier.isStatic(beanTarget.flags());
+            if (!isNonStaticInnerClass && !constrInjectionExists) {
+                List<MethodInfo> nonNoargConstrs = new ArrayList<>();
+                for (MethodInfo constr : beanTarget.methods()) {
+                    if ("<init>".equals(constr.name()) && constr.parameters().size() > 0) {
+                        nonNoargConstrs.add(constr);
+                    }
+                }
+                if(nonNoargConstrs.size() == 1) {
+                    final MethodInfo injectTarget = nonNoargConstrs.get(0);
+                    injections.add(new Injection(injectTarget, InjectionPointInfo.fromMethod(injectTarget.asMethod(), beanDeployment)));
+                }
             }
         }
 
@@ -105,7 +133,7 @@ public class Injection {
         if (!beanTarget.superName().equals(DotNames.OBJECT)) {
             ClassInfo info = beanDeployment.getIndex().getClassByName(beanTarget.superName());
             if (info != null) {
-                forClassBean(info, beanDeployment, injections);
+                forClassBean(info, beanDeployment, injections, false);
             }
         }
 

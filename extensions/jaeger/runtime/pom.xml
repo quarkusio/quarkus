@@ -47,6 +47,10 @@
             <groupId>com.oracle.substratevm</groupId>
             <artifactId>svm</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.smallrye</groupId>
+            <artifactId>smallrye-metrics</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

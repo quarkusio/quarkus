@@ -28,8 +28,11 @@ import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.Servlet;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
+import org.jboss.protean.arc.ManagedContext;
+import org.jboss.shamrock.arc.runtime.BeanContainer;
 import org.jboss.shamrock.runtime.InjectionFactory;
 import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.runtime.RuntimeValue;
@@ -59,6 +62,7 @@ import io.undertow.servlet.api.ListenerInfo;
 import io.undertow.servlet.api.ServletContainer;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.api.ServletSecurityInfo;
+import io.undertow.servlet.api.ThreadSetupHandler;
 import io.undertow.servlet.handlers.DefaultServlet;
 import io.undertow.servlet.handlers.ServletPathMatches;
 
@@ -287,6 +291,35 @@ public class UndertowDeploymentTemplate {
 
     public void addServletExtension(RuntimeValue<DeploymentInfo> deployment, ServletExtension extension) {
         deployment.getValue().addServletExtension(extension);
+    }
+
+    public ServletExtension setupRequestScope(BeanContainer beanContainer) {
+        return new ServletExtension() {
+            @Override
+            public void handleDeployment(DeploymentInfo deploymentInfo, ServletContext servletContext) {
+                deploymentInfo.addThreadSetupAction(new ThreadSetupHandler() {
+                    @Override
+                    public <T, C> ThreadSetupHandler.Action<T, C> create(Action<T, C> action) {
+                        return new Action<T, C>() {
+                            @Override
+                            public T call(HttpServerExchange exchange, C context) throws Exception {
+                                ManagedContext requestContext = beanContainer.requestContext();
+                                if (requestContext.isActive()) {
+                                    return action.call(exchange, context);
+                                } else {
+                                    try {
+                                        requestContext.activate();
+                                        return action.call(exchange, context);
+                                    } finally {
+                                        requestContext.terminate();
+                                    }
+                                }
+                            }
+                        };
+                    }
+                });
+            }
+        };
     }
 
     /**

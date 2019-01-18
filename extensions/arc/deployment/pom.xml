@@ -42,10 +42,6 @@
       <groupId>org.jboss.protean.arc</groupId>
       <artifactId>arc-processor</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.jboss.shamrock</groupId>
-      <artifactId>shamrock-undertow-deployment</artifactId>
-    </dependency>
     
     <dependency>
       <groupId>org.jboss.shamrock</groupId>

@@ -22,13 +22,11 @@ import org.jboss.builder.item.SimpleBuildItem;
 
 /**
  * The list of capabilities.
- *
  */
 public final class Capabilities extends SimpleBuildItem {
 
     public static final String CDI_ARC = "org.jboss.shamrock.cdi";
     public static final String TRANSACTIONS = "org.jboss.shamrock.transactions";
-    public static final String UNDERTOW = "org.jboss.shamrock.undertow";
 
     private final Set<String> capabilities;
 
@@ -43,5 +41,5 @@ public final class Capabilities extends SimpleBuildItem {
     public Set<String> getCapabilities() {
         return capabilities;
     }
-    
+
 }

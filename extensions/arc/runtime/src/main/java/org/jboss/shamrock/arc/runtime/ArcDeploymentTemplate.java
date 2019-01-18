@@ -20,8 +20,6 @@ import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.function.Supplier;
 
-import javax.servlet.ServletContext;
-
 import org.jboss.protean.arc.Arc;
 import org.jboss.protean.arc.ArcContainer;
 import org.jboss.protean.arc.InstanceHandle;
@@ -30,11 +28,6 @@ import org.jboss.shamrock.runtime.InjectionFactory;
 import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.runtime.ShutdownContext;
 import org.jboss.shamrock.runtime.Template;
-
-import io.undertow.server.HttpServerExchange;
-import io.undertow.servlet.ServletExtension;
-import io.undertow.servlet.api.DeploymentInfo;
-import io.undertow.servlet.api.ThreadSetupHandler;
 
 /**
  * @author Martin Kouba
@@ -53,7 +46,7 @@ public class ArcDeploymentTemplate {
         return container;
     }
 
-    public BeanContainer initBeanContainer(ArcContainer container, List<BeanContainerListener> beanConfigurators) throws Exception {
+    public BeanContainer initBeanContainer(ArcContainer container, List<BeanContainerListener> listeners) throws Exception {
         BeanContainer beanContainer = new BeanContainer() {
 
             @Override
@@ -69,36 +62,16 @@ public class ArcDeploymentTemplate {
                     }
                 };
             }
-        };
-        for(BeanContainerListener i : beanConfigurators) {
-            i.created(beanContainer);
-        }
-        return beanContainer;
-    }
 
-    public ServletExtension setupRequestScope(ArcContainer arcContainer) {
-        return new ServletExtension() {
             @Override
-            public void handleDeployment(DeploymentInfo deploymentInfo, ServletContext servletContext) {
-                deploymentInfo.addThreadSetupAction(new ThreadSetupHandler() {
-                    @Override
-                    public <T, C> Action<T, C> create(Action<T, C> action) {
-                        return new Action<T, C>() {
-                            @Override
-                            public T call(HttpServerExchange exchange, C context) throws Exception {
-                                ManagedContext requestContext = arcContainer.requestContext();
-                                requestContext.activate();
-                                try {
-                                    return action.call(exchange, context);
-                                } finally {
-                                    requestContext.terminate();
-                                }
-                            }
-                        };
-                    }
-                });
+            public ManagedContext requestContext() {
+                return container.requestContext();
             }
         };
+        for (BeanContainerListener listener : listeners) {
+            listener.created(beanContainer);
+        }
+        return beanContainer;
     }
 
     public InjectionFactory setupInjection(ArcContainer container) {

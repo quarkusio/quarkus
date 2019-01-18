@@ -30,6 +30,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-arc-runtime</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.oracle.substratevm</groupId>
             <artifactId>svm</artifactId>
         </dependency>

@@ -78,6 +78,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(index).contains("org.acme");
         assertThat(index).contains("1.0-SNAPSHOT");
         assertThat(index).contains(VERSION);
+        assertThat(index).contains(MojoUtils.get("doc-root"));
 
         assertThat(new File(testDir, "src/main/docker/Dockerfile")).isFile();
 

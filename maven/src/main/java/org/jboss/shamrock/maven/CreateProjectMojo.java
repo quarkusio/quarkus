@@ -31,6 +31,7 @@ import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -120,29 +121,49 @@ public class CreateProjectMojo extends AbstractMojo {
         File pomFile = project.getFile();
 
         Model model;
-        //Create pom.xml if not
+        // Create pom.xml if not
         if (pomFile == null || !pomFile.isFile()) {
             pomFile = createPomFileFromUserInputs();
-        }
-
-        //We should get cloned of the OriginalModel, as project.getModel will return effective model
-        model = project.getOriginalModel().clone();
-
-        createDirectories();
-        templates.generate(project, path, className, getLog());
-        Optional<Plugin> maybe = MojoUtils.hasPlugin(project, PLUGIN_KEY);
-        if (maybe.isPresent()) {
+            // The previous method has set project to the new created project.
+            createDirectories();
+            templates.generate(project, path, className, getLog());
             printUserInstructions(pomFile);
             return;
         }
 
-        // The plugin is not configured, add it.
+        // There is an existing `pom.xml` file
+        Optional<Plugin> maybe = MojoUtils.hasPlugin(project, PLUGIN_KEY);
+        if (maybe.isPresent()) {
+            getLog().info("The " + getPluginArtifactId() + " is already configured in the existing pom.xml, " +
+                    " nothing to do.");
+            return;
+        }
+
+        // We should get cloned of the original model, as project.getModel will return effective model
+        model = project.getOriginalModel().clone();
+
+        if (!isTypeSupported(model.getPackaging())) {
+            throw new MojoExecutionException("Unable to add " + getPluginArtifactId() + " to the existing pom.xml " +
+                    "file - unsupported project type: " + model.getPackaging());
+        }
+
+        // Ensure we don't have the project metadata provided by the user
+        if (projectArtifactId != null  || projectGroupId != null) {
+            throw new MojoExecutionException("Unable to add " + getPluginArtifactId() + " to the existing pom.xml " +
+                    "file - you can't provide project GAV and extend an existing pom.xml");
+        }
+
         addVersionProperty(model);
         addBom(model);
         addMainPluginConfig(model);
         ext.addExtensions(model, extensions, session, repositories, getLog());
         addNativeProfile(model);
+        createDirectories();
         save(pomFile, model);
+    }
+
+    private boolean isTypeSupported(String packaging) {
+        return packaging == null  || packaging.equalsIgnoreCase("jar");
     }
 
     private void addBom(Model model) {

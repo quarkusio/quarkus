@@ -43,8 +43,6 @@ import java.net.URL;
 import java.util.List;
 import java.util.Optional;
 
-import static org.jboss.shamrock.maven.MavenConstants.PLUGIN_GROUPID;
-
 /**
  * @author <a href="http://escoffier.me">Clement Escoffier</a>
  */
@@ -98,8 +96,7 @@ public class Extensions {
     }
 
     private List<Dependency> getDependenciesFromBom(MavenSession session, List<ArtifactRepository> repositories) throws MojoExecutionException {
-        String bomCoordinates = PLUGIN_GROUPID + ":" + MojoUtils.get("bom-artifactId") + ":"
-                + MojoUtils.get("shamrock-version");
+        String bomCoordinates = MojoUtils.getPluginGroupId() + ":" + MojoUtils.get("bom-artifactId") + ":" + MojoUtils.getPluginVersion();
         MavenProject bom = getMavenProject(bomCoordinates, session, repositories);
         return bom.getDependencyManagement().getDependencies();
     }

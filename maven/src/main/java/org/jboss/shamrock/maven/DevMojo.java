@@ -47,6 +47,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.jboss.shamrock.dev.DevModeMain;
+import org.jboss.shamrock.maven.utilities.MojoUtils;
 
 /**
  * The dev mojo, that runs a shamrock app in a forked process
@@ -115,8 +116,8 @@ public class DevMojo extends AbstractMojo {
 
         boolean found = false;
         for(Plugin i : project.getBuildPlugins()) {
-            if(i.getGroupId().equals(MavenConstants.PLUGIN_GROUPID)
-                    && i.getArtifactId().equals(MavenConstants.PLUGIN_ARTIFACTID)) {
+            if(i.getGroupId().equals(MojoUtils.getPluginGroupId())
+                    && i.getArtifactId().equals(MojoUtils.getPluginArtifactId())) {
                 for(PluginExecution p : i.getExecutions()) {
                     if(p.getGoals().contains("build")) {
                         found = true;
@@ -126,7 +127,9 @@ public class DevMojo extends AbstractMojo {
             }
         }
         if(!found) {
-            getLog().warn("The shamrock-maven-plugin build goal was not configured for this project, skipping shamrock:dev as this is assumed to be a support library. If you want to run shamrock dev on this project make sure the shamrock-maven-plugin is configured with a build goal.");
+            getLog().warn("The shamrock-maven-plugin build goal was not configured for this project, " +
+                    "skipping shamrock:dev as this is assumed to be a support library. If you want to run shamrock dev" +
+                    " on this project make sure the shamrock-maven-plugin is configured with a build goal.");
             return;
         }
 

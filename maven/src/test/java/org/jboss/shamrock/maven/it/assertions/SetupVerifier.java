@@ -6,7 +6,6 @@ import org.apache.maven.model.Profile;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
-import org.jboss.shamrock.maven.MavenConstants;
 import org.jboss.shamrock.maven.CreateProjectMojo;
 import org.jboss.shamrock.maven.utilities.MojoUtils;
 
@@ -17,6 +16,8 @@ import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.jboss.shamrock.maven.CreateProjectMojo.PLUGIN_VERSION_PROPERTY_NAME;
+import static org.jboss.shamrock.maven.utilities.MojoUtils.getPluginArtifactId;
+import static org.jboss.shamrock.maven.utilities.MojoUtils.getPluginGroupId;
 import static org.junit.Assert.*;
 
 public class SetupVerifier {
@@ -58,9 +59,11 @@ public class SetupVerifier {
 
         // Check plugin is set
         Plugin plugin = maybe.orElseThrow(() -> new AssertionError("Plugin expected"));
-        assertThat(plugin).isNotNull().satisfies(p -> {
-            assertThat(p.getArtifactId()).isEqualTo(MavenConstants.PLUGIN_ARTIFACTID);
-            assertThat(p.getGroupId()).isEqualTo(MavenConstants.PLUGIN_GROUPID);
+        assertThat(plugin)
+                .as("Check that plugin is set")
+                .isNotNull().satisfies(p -> {
+            assertThat(p.getArtifactId()).isEqualTo(getPluginArtifactId());
+            assertThat(p.getGroupId()).isEqualTo(getPluginGroupId());
             assertThat(p.getVersion()).isEqualTo(CreateProjectMojo.PLUGIN_VERSION_PROPERTY);
         });
 
@@ -76,7 +79,9 @@ public class SetupVerifier {
         Profile profile = model.getProfiles().get(0);
         assertThat(profile.getId()).isEqualTo("native");
         Plugin actual = profile.getBuild().getPluginsAsMap().get(CreateProjectMojo.PLUGIN_KEY);
-        assertThat(actual).isNotNull();
+        assertThat(actual)
+                .as("Plugin cannot be found in the native profile")
+                .isNotNull();
         assertThat(actual.getExecutions()).hasSize(1).allSatisfy(exec -> {
             assertThat(exec.getGoals()).containsExactly("native-image");
             assertThat(exec.getConfiguration()).isInstanceOf(Xpp3Dom.class)

@@ -16,6 +16,8 @@
 
 package org.jboss.shamrock.health.test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,27 +27,25 @@ import javax.inject.Inject;
 import org.eclipse.microprofile.health.Health;
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
-import org.jboss.shamrock.test.Deployment;
 import org.jboss.shamrock.test.ShamrockUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.restassured.RestAssured;
 
-@RunWith(ShamrockUnitTest.class)
 public class FailingUnitTest {
 
-    @Deployment
-    public static JavaArchive deploy() {
-        return ShrinkWrap.create(JavaArchive.class)
-                .addClasses(FailingHealthCheck.class)
-                .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml");
-    }
 
+    @RegisterExtension
+    static final ShamrockUnitTest config = new ShamrockUnitTest()
+            .setArchiveProducer(() ->
+                    ShrinkWrap.create(JavaArchive.class)
+                            .addClasses(FailingHealthCheck.class)
+                            .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml")
+            );
     @Inject
     @Health
     Instance<HealthCheck> checks;
@@ -61,7 +61,7 @@ public class FailingUnitTest {
         for (HealthCheck i : checks) {
             check.add(i);
         }
-        Assert.assertEquals(1, check.size());
-        Assert.assertEquals(HealthCheckResponse.State.DOWN, check.get(0).call().getState());
+        assertEquals(1, check.size());
+        assertEquals(HealthCheckResponse.State.DOWN, check.get(0).call().getState());
     }
 }

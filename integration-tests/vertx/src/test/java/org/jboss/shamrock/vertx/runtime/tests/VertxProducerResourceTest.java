@@ -2,15 +2,13 @@ package org.jboss.shamrock.vertx.runtime.tests;
 
 import static org.hamcrest.Matchers.containsString;
 
-import org.jboss.shamrock.test.ShamrockTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.jboss.shamrock.test.junit.ShamrockTest;
+import org.junit.jupiter.api.Test;
 
 import io.restassured.RestAssured;
 
-@RunWith(ShamrockTest.class)
+@ShamrockTest
 public class VertxProducerResourceTest {
-
 
     @Test
     public void testInjection() {

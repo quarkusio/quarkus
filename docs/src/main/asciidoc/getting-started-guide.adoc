@@ -272,7 +272,7 @@ Edit the `pom.xml` file to add the 2 following dependencies:
 ----
 <dependency>
     <groupId>org.jboss.shamrock</groupId>
-    <artifactId>shamrock-junit</artifactId>
+    <artifactId>shamrock-junit4</artifactId>
     <version>${shamrock.version}</version>
     <scope>test</scope>
 </dependency>

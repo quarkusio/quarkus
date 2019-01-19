@@ -3,26 +3,26 @@ package org.jboss.shamrock.health.test;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 
-import org.jboss.shamrock.test.Deployment;
 import org.jboss.shamrock.test.ShamrockUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
 
-@RunWith(ShamrockUnitTest.class)
+
 public class HealthUnitTest {
 
-    @Deployment
-    public static JavaArchive deploy() {
-        return ShrinkWrap.create(JavaArchive.class)
-                .addClasses(BasicHealthCheck.class)
-                .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml");
-    }
+    @RegisterExtension
+    static final ShamrockUnitTest config = new ShamrockUnitTest()
+            .setArchiveProducer(() ->
+                    ShrinkWrap.create(JavaArchive.class)
+                            .addClasses(BasicHealthCheck.class)
+                            .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml")
+            );
 
     @Test
     public void testHealth() {

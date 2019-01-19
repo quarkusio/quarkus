@@ -16,14 +16,14 @@
 
 package org.jboss.shamrock.spring.tests;
 
-import io.restassured.RestAssured;
-import org.jboss.shamrock.test.ShamrockTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
 import static org.hamcrest.Matchers.containsString;
 
-@RunWith(ShamrockTest.class)
+import org.jboss.shamrock.test.junit.ShamrockTest;
+import org.junit.jupiter.api.Test;
+
+import io.restassured.RestAssured;
+
+@ShamrockTest
 public class InjectedSpringBeansResourceTest {
 
     @Test

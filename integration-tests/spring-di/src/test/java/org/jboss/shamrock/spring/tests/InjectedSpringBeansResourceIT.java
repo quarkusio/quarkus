@@ -16,9 +16,8 @@
 
 package org.jboss.shamrock.spring.tests;
 
-import org.jboss.shamrock.test.SubstrateTest;
-import org.junit.runner.RunWith;
+import org.jboss.shamrock.test.junit.ShamrockTest;
 
-@RunWith(SubstrateTest.class)
+@ShamrockTest
 public class InjectedSpringBeansResourceIT extends InjectedSpringBeansResourceTest {
 }

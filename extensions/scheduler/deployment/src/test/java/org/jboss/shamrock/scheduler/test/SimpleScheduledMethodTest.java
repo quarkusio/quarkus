@@ -15,8 +15,8 @@
  */
 package org.jboss.shamrock.scheduler.test;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.wildfly.common.Assert.assertNotNull;
+import static org.wildfly.common.Assert.assertTrue;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -24,23 +24,21 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 
 import org.jboss.shamrock.scheduler.api.Scheduler;
-import org.jboss.shamrock.test.Deployment;
 import org.jboss.shamrock.test.ShamrockUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-@RunWith(ShamrockUnitTest.class)
 public class SimpleScheduledMethodTest {
 
-    @Deployment
-    public static JavaArchive deploy() {
-        return ShrinkWrap.create(JavaArchive.class)
-                .addClasses(SimpleJobs.class)
-                .addAsManifestResource(new StringAsset("simpleJobs.cron=0/1 * * * * ?\nsimpleJobs.every=1s"), "microprofile-config.properties");
-    }
+    @RegisterExtension
+    static final ShamrockUnitTest test = new ShamrockUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(SimpleJobs.class)
+                    .addAsManifestResource(new StringAsset("simpleJobs.cron=0/1 * * * * ?\nsimpleJobs.every=1s"), "microprofile-config.properties"));
 
     @Inject
     Scheduler scheduler;
@@ -48,7 +46,7 @@ public class SimpleScheduledMethodTest {
     @Test
     public void testSimpleScheduledJobs() throws InterruptedException {
         for (CountDownLatch latch : SimpleJobs.LATCHES.values()) {
-            assertTrue(latch.await(4, TimeUnit.SECONDS));
+            Assertions.assertTrue(latch.await(4, TimeUnit.SECONDS));
         }
     }
 

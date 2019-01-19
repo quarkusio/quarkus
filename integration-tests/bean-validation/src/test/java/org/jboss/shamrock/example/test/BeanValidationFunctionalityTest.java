@@ -3,16 +3,16 @@ package org.jboss.shamrock.example.test;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
-import org.jboss.shamrock.test.ShamrockTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.jboss.shamrock.test.junit.ShamrockTest;
+import org.junit.jupiter.api.Test;
 
 import io.restassured.RestAssured;
 
 /**
  * Test various Bean Validation operations running in Shamrock
  */
-@RunWith(ShamrockTest.class)
+
+@ShamrockTest
 public class BeanValidationFunctionalityTest {
 
     @Test
@@ -28,7 +28,7 @@ public class BeanValidationFunctionalityTest {
         RestAssured.when()
                 .get("/bean-validation/test/basic-features")
                 .then()
-                        .body(is(expected.toString()));
+                .body(is(expected.toString()));
     }
 
     @Test
@@ -40,7 +40,7 @@ public class BeanValidationFunctionalityTest {
         RestAssured.when()
                 .get("/bean-validation/test/custom-class-level-constraint")
                 .then()
-                        .body(is(expected.toString()));
+                .body(is(expected.toString()));
     }
 
     @Test
@@ -52,7 +52,7 @@ public class BeanValidationFunctionalityTest {
         RestAssured.when()
                 .get("/bean-validation/test/cdi-bean-method-validation")
                 .then()
-                        .body(is(expected.toString()));
+                .body(is(expected.toString()));
     }
 
     @Test
@@ -60,12 +60,12 @@ public class BeanValidationFunctionalityTest {
         RestAssured.when()
                 .get("/bean-validation/test/rest-end-point-validation/plop/")
                 .then()
-                        .statusCode(400)
-                        .body(containsString("numeric value out of bounds"));
+                .statusCode(400)
+                .body(containsString("numeric value out of bounds"));
 
         RestAssured.when()
                 .get("/bean-validation/test/rest-end-point-validation/42/")
                 .then()
-                        .body(is("42"));
+                .body(is("42"));
     }
 }

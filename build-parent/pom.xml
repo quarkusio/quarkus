@@ -103,9 +103,10 @@
       <postgresql-jdbc.version>42.2.5</postgresql-jdbc.version>
       <mariadb-jdbc.version>2.3.0</mariadb-jdbc.version>
       <spring.version>5.1.4.RELEASE</spring.version>
-      <junit.version>4.12</junit.version>
       <shrinkwrap.version>1.2.6</shrinkwrap.version>
       <rest-assured.version>3.3.0</rest-assured.version>
+      <junit4.version>4.12</junit4.version>
+      <junit.jupiter.version>5.3.2</junit.jupiter.version>
    </properties>
 
    <dependencyManagement>
@@ -273,7 +274,30 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-junit</artifactId>
+            <artifactId>shamrock-test-common</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-test-h2</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-junit4</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-junit5</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-junit5-internal</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
          </dependency>
@@ -686,10 +710,28 @@
          <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>${junit.version}</version>
+            <version>${junit4.version}</version>
             <scope>test</scope>
          </dependency>
-         <dependency>
+          <dependency>
+              <groupId>org.junit.jupiter</groupId>
+              <artifactId>junit-jupiter-api</artifactId>
+              <version>${junit.jupiter.version}</version>
+              <scope>test</scope>
+          </dependency>
+          <dependency>
+              <groupId>org.junit.jupiter</groupId>
+              <artifactId>junit-jupiter-params</artifactId>
+              <version>${junit.jupiter.version}</version>
+              <scope>test</scope>
+          </dependency>
+          <dependency>
+              <groupId>org.junit.jupiter</groupId>
+              <artifactId>junit-jupiter-engine</artifactId>
+              <version>${junit.jupiter.version}</version>
+              <scope>test</scope>
+          </dependency>
+          <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
             <version>${log4j.version}</version>

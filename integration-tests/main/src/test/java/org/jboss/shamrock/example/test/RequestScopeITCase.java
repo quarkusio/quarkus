@@ -16,10 +16,9 @@
 
 package org.jboss.shamrock.example.test;
 
-import org.jboss.shamrock.test.SubstrateTest;
-import org.junit.runner.RunWith;
+import org.jboss.shamrock.test.junit.SubstrateTest;
 
-@RunWith(SubstrateTest.class)
+@SubstrateTest
 public class RequestScopeITCase extends RequestScopeTestCase {
 
 }

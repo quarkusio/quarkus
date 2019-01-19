@@ -27,15 +27,14 @@ import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 
-import org.jboss.shamrock.test.ShamrockTest;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.jboss.shamrock.test.junit.ShamrockTest;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Ken Finnigan
  */
-@RunWith(ShamrockTest.class)
+@ShamrockTest
 public class OpenApiTestCase {
 
     @Test
@@ -52,36 +51,36 @@ public class OpenApiTestCase {
         }
         JsonReader parser = Json.createReader(new ByteArrayInputStream(out.toByteArray()));
         JsonObject obj = parser.readObject();
-        Assert.assertNotNull(obj);
+        Assertions.assertNotNull(obj);
 
-        Assert.assertEquals("3.0.1", obj.getString("openapi"));
-        Assert.assertEquals("Generated API", obj.getJsonObject("info").getString("title"));
-        Assert.assertEquals("1.0", obj.getJsonObject("info").getString("version"));
+        Assertions.assertEquals("3.0.1", obj.getString("openapi"));
+        Assertions.assertEquals("Generated API", obj.getJsonObject("info").getString("title"));
+        Assertions.assertEquals("1.0", obj.getJsonObject("info").getString("version"));
 
         JsonObject paths = obj.getJsonObject("paths");
 
         JsonObject testObj = paths.getJsonObject("/test");
-        Assert.assertNotNull(testObj);
+        Assertions.assertNotNull(testObj);
         Set<String> keys = testObj.keySet();
-        Assert.assertEquals(1, keys.size());
-        Assert.assertEquals("get", keys.iterator().next());
+        Assertions.assertEquals(1, keys.size());
+        Assertions.assertEquals("get", keys.iterator().next());
 
 
         JsonObject injectionObj = paths.getJsonObject("/test/rx");
-        Assert.assertNotNull(injectionObj);
+        Assertions.assertNotNull(injectionObj);
         keys = injectionObj.keySet();
-        Assert.assertEquals(1, keys.size());
-        Assert.assertEquals("get", keys.iterator().next());
-        
+        Assertions.assertEquals(1, keys.size());
+        Assertions.assertEquals("get", keys.iterator().next());
+
         // test RESTEasy extensions
 
         // make sure String, CompletionStage<String> and Single<String> are detected the same
-        Assert.assertEquals("Normal and RX/Single have same schema", testObj, injectionObj);
+        Assertions.assertEquals(testObj, injectionObj, "Normal and RX/Single have same schema");
         JsonObject csObj = paths.getJsonObject("/test/cs");
-        Assert.assertEquals("Normal and RX/CS have same schema", testObj, csObj);
-        
+        Assertions.assertEquals(testObj, csObj, "Normal and RX/CS have same schema");
+
         JsonObject paramsObj = paths.getJsonObject("/test/params/{path}");
         JsonObject params2Obj = paths.getJsonObject("/test/params2/{path}");
-        Assert.assertEquals("Normal and RESTEasy annotations have same schema", paramsObj, params2Obj);
+        Assertions.assertEquals(paramsObj, params2Obj, "Normal and RESTEasy annotations have same schema");
     }
 }

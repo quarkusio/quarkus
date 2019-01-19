@@ -28,10 +28,12 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import javax.enterprise.context.Dependent;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
@@ -41,6 +43,7 @@ import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 import org.jboss.protean.arc.ArcContainer;
+import org.jboss.protean.arc.processor.AnnotationsTransformer;
 import org.jboss.protean.arc.processor.BeanDefiningAnnotation;
 import org.jboss.protean.arc.processor.BeanProcessor;
 import org.jboss.protean.arc.processor.BeanProcessor.Builder;
@@ -139,6 +142,7 @@ public class ArcAnnotationProcessor {
             indexBeanClass(beanClass.getName(), indexer, beanArchiveIndex.getIndex(), additionalIndex, beanClass.getData());
             generatedClassNames.add(DotName.createSimple(beanClass.getName()));
         }
+
         CompositeIndex index = CompositeIndex.create(indexer.complete(), beanArchiveIndex.getIndex());
         Builder builder = BeanProcessor.builder();
         builder.setApplicationClassPredicate(new Predicate<DotName>() {
@@ -153,7 +157,21 @@ public class ArcAnnotationProcessor {
                 return false;
             }
         });
+        builder.addAnnotationTransformer(new AnnotationsTransformer() {
+
+            @Override
+            public boolean appliesTo(AnnotationTarget.Kind kind) {
+                return AnnotationTarget.Kind.CLASS == kind;
+            }
+            @Override
+            public void transform(TransformationContext transformationContext) {
+                if (additionalBeans.contains(transformationContext.getTarget().asClass().name().toString())) {
+                    transformationContext.transform().add(Dependent.class).done();
+                }
+            }
+        });
         builder.setIndex(index);
+
         builder.setAdditionalBeanDefiningAnnotations(additionalBeanDefiningAnnotations.stream()
                 .map((s) -> new BeanDefiningAnnotation(s.getName(), s.getDefaultScope()))
                 .collect(Collectors.toList()));

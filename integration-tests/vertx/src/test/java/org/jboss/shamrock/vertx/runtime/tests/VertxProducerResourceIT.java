@@ -1,9 +1,8 @@
 package org.jboss.shamrock.vertx.runtime.tests;
 
-import org.jboss.shamrock.test.SubstrateTest;
-import org.junit.runner.RunWith;
+import org.jboss.shamrock.test.junit.SubstrateTest;
 
-@RunWith(SubstrateTest.class)
+@SubstrateTest
 public class VertxProducerResourceIT extends VertxProducerResourceTest {
 
 

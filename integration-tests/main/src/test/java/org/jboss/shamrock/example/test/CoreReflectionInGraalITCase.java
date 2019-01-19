@@ -18,13 +18,12 @@ package org.jboss.shamrock.example.test;
 
 import static org.hamcrest.Matchers.is;
 
-import org.jboss.shamrock.test.SubstrateTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.jboss.shamrock.test.junit.SubstrateTest;
+import org.junit.jupiter.api.Test;
 
 import io.restassured.RestAssured;
 
-@RunWith(SubstrateTest.class)
+@SubstrateTest
 public class CoreReflectionInGraalITCase {
 
     @Test

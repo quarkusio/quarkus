@@ -64,6 +64,10 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-junit5-internal</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.jboss.protean.gizmo</groupId>
             <artifactId>gizmo</artifactId>
             <type>test-jar</type>

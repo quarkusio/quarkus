@@ -18,16 +18,13 @@ package org.jboss.shamrock.example.test;
 
 import static org.hamcrest.Matchers.is;
 
-import java.util.Collections;
-
-import org.jboss.shamrock.test.ShamrockTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.jboss.shamrock.test.junit.ShamrockTest;
+import org.junit.jupiter.api.Test;
 
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
 
-@RunWith(ShamrockTest.class)
+@ShamrockTest
 public class JaxRSTestCase {
 
     @Test

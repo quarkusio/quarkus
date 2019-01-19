@@ -16,6 +16,7 @@
 
 package org.jboss.shamrock.undertow.runtime;
 
+import java.net.SocketAddress;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.util.EventListener;
@@ -112,6 +113,15 @@ public class UndertowDeploymentTemplate {
         d.addServlet(new ServletInfo(ServletPathMatches.DEFAULT_SERVLET_NAME, DefaultServlet.class).setAsyncSupported(true));
 
         return new RuntimeValue<>(d);
+    }
+
+    public static SocketAddress getHttpAddress() {
+        for (Undertow.ListenerInfo info : undertow.getListenerInfo()) {
+            if (info.getProtcol().equals("http") && info.getSslContext() == null) {
+                return info.getAddress();
+            }
+        }
+        return null;
     }
 
     public <T> InstanceFactory<T> createInstanceFactory(InjectionInstance<T> injectionInstance) {

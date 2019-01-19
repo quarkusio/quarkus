@@ -20,17 +20,18 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 
+import org.jboss.builder.BuildChainBuilder;
 import org.jboss.builder.BuildResult;
 import org.jboss.shamrock.deployment.ShamrockAugmentor;
+import org.jboss.shamrock.deployment.builditem.ApplicationClassNameBuildItem;
 import org.jboss.shamrock.deployment.builditem.BytecodeTransformerBuildItem;
-import org.jboss.shamrock.deployment.builditem.MainClassBuildItem;
 import org.jboss.shamrock.runtime.Application;
 import org.objectweb.asm.ClassVisitor;
 
@@ -44,11 +45,19 @@ public class RuntimeRunner implements Runnable, Closeable {
     private final RuntimeClassLoader loader;
     private Closeable closeTask;
     private final List<Path> additionalArchives;
+    private final List<Consumer<BuildChainBuilder>> chainCustomizers = new ArrayList<>();
+
 
     public RuntimeRunner(ClassLoader classLoader, Path target, Path frameworkClassesPath, Path transformerCache, List<Path> additionalArchives) {
+        this(classLoader, target, frameworkClassesPath, transformerCache, additionalArchives, Collections.emptyList());
+    }
+
+    public RuntimeRunner(ClassLoader classLoader, Path target, Path frameworkClassesPath, Path transformerCache, List<Path> additionalArchives, List<Consumer<BuildChainBuilder>> chainCustomizers) {
         this.target = target;
         this.additionalArchives = additionalArchives;
-        this.loader = new RuntimeClassLoader(classLoader, target, frameworkClassesPath, transformerCache);
+        this.chainCustomizers.addAll(chainCustomizers);
+        RuntimeClassLoader rcl = new RuntimeClassLoader(classLoader, target, frameworkClassesPath, transformerCache);
+        this.loader = rcl;
     }
 
     @Override
@@ -69,8 +78,11 @@ public class RuntimeRunner implements Runnable, Closeable {
             for (Path i : additionalArchives) {
                 builder.addAdditionalApplicationArchive(i);
             }
+            for (Consumer<BuildChainBuilder> i : chainCustomizers) {
+                builder.addBuildChainCustomizer(i);
+            }
             builder.addFinal(BytecodeTransformerBuildItem.class)
-                    .addFinal(MainClassBuildItem.class);
+                    .addFinal(ApplicationClassNameBuildItem.class);
 
             BuildResult result = builder.build().run();
             List<BytecodeTransformerBuildItem> bytecodeTransformerBuildItems = result.consumeMulti(BytecodeTransformerBuildItem.class);
@@ -81,33 +93,11 @@ public class RuntimeRunner implements Runnable, Closeable {
                 }
 
                 loader.setTransformers(functions);
-                if (!functions.isEmpty()) {
-                    //transformation can be slow, and classes that are transformed are generally always loaded on startup
-                    //to speed this along we eagerly load the classes in parallel
-                    //TODO: do we need this? apparently there have been big perf fixes
-                    ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-                    for (Map.Entry<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> entry : functions.entrySet()) {
-                        executorService.submit(new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-                                    loader.loadClass(entry.getKey(), true);
-                                } catch (ClassNotFoundException e) {
-                                    //ignore
-                                    //this will show up at runtime anyway
-                                }
-                            }
-                        });
-                    }
-                    executorService.shutdown();
-
-                }
             }
 
 
             final Application application;
-            // todo - I guess this class name should come from a build item?
-            Class<? extends Application> appClass = loader.findClass("org.jboss.shamrock.runner.ApplicationImpl").asSubclass(Application.class);
+            Class<? extends Application> appClass = loader.loadClass(result.consume(ApplicationClassNameBuildItem.class).getClassName()).asSubclass(Application.class);
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             try {
                 Thread.currentThread().setContextClassLoader(loader);
@@ -124,6 +114,8 @@ public class RuntimeRunner implements Runnable, Closeable {
                 }
             };
 
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

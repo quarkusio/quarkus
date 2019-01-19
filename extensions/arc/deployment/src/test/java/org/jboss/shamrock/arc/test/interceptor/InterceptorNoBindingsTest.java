@@ -22,23 +22,19 @@ import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
 
-import org.jboss.shamrock.test.ShouldFail;
-import org.jboss.shamrock.test.Deployment;
 import org.jboss.shamrock.test.ShamrockUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-@RunWith(ShamrockUnitTest.class)
 public class InterceptorNoBindingsTest {
 
-    @ShouldFail(DefinitionException.class)
-    @Deployment
-    public static JavaArchive deploy() {
-        return ShrinkWrap.create(JavaArchive.class)
-                .addClasses(InterceptorWithoutBindings.class);
-    }
+    @RegisterExtension
+    static final ShamrockUnitTest config = new ShamrockUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(InterceptorWithoutBindings.class))
+            .setExpectedException(DefinitionException.class);
 
     @Test
     public void testDeploymentFailed() {

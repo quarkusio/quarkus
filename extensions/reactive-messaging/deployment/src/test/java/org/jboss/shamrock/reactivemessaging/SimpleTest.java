@@ -1,23 +1,20 @@
 package org.jboss.shamrock.reactivemessaging;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import org.jboss.shamrock.test.Deployment;
 import org.jboss.shamrock.test.ShamrockUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-@RunWith(ShamrockUnitTest.class)
 public class SimpleTest {
 
-    @Deployment
-    public static JavaArchive deploy() {
-        return ShrinkWrap.create(JavaArchive.class)
-                .addClasses(SimpleBean.class);
-    }
+    @RegisterExtension
+    static final ShamrockUnitTest config = new ShamrockUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(SimpleBean.class));
 
     @Test
     public void testSimpleBean() {

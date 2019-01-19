@@ -27,7 +27,7 @@ import org.hibernate.engine.spi.SelfDirtinessTracker;
 import org.jboss.shamrock.jpa.HibernateEntityEnhancer;
 
 import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;

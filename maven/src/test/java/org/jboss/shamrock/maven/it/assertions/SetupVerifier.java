@@ -6,6 +6,7 @@ import org.apache.maven.model.Profile;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
+import org.jboss.shamrock.maven.MavenConstants;
 import org.jboss.shamrock.maven.CreateProjectMojo;
 import org.jboss.shamrock.maven.utilities.MojoUtils;
 
@@ -58,8 +59,8 @@ public class SetupVerifier {
         // Check plugin is set
         Plugin plugin = maybe.orElseThrow(() -> new AssertionError("Plugin expected"));
         assertThat(plugin).isNotNull().satisfies(p -> {
-            assertThat(p.getArtifactId()).isEqualTo(CreateProjectMojo.PLUGIN_ARTIFACTID);
-            assertThat(p.getGroupId()).isEqualTo(CreateProjectMojo.PLUGIN_GROUPID);
+            assertThat(p.getArtifactId()).isEqualTo(MavenConstants.PLUGIN_ARTIFACTID);
+            assertThat(p.getGroupId()).isEqualTo(MavenConstants.PLUGIN_GROUPID);
             assertThat(p.getVersion()).isEqualTo(CreateProjectMojo.PLUGIN_VERSION_PROPERTY);
         });
 

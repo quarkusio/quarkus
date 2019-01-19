@@ -7,6 +7,7 @@ import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.shared.invoker.*;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
+import org.jboss.shamrock.maven.MavenConstants;
 import org.jboss.shamrock.maven.CreateProjectMojo;
 import org.jboss.shamrock.maven.it.verifier.RunningInvoker;
 import org.jboss.shamrock.maven.utilities.MojoUtils;
@@ -102,7 +103,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         setup(new Properties());
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
-                .contains(CreateProjectMojo.PLUGIN_ARTIFACTID, CreateProjectMojo.PLUGIN_VERSION_PROPERTY, CreateProjectMojo.PLUGIN_GROUPID);
+                .contains(MavenConstants.PLUGIN_ARTIFACTID, CreateProjectMojo.PLUGIN_VERSION_PROPERTY, MavenConstants.PLUGIN_GROUPID);
         assertThat(new File(testDir, "src/main/java")).isDirectory();
 
         assertThat(new File(testDir, "src/main/resources/META-INF/microprofile-config.properties")).doesNotExist();

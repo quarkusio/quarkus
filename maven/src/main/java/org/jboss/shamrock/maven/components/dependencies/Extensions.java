@@ -43,7 +43,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.Optional;
 
-import static org.jboss.shamrock.maven.CreateProjectMojo.PLUGIN_GROUPID;
+import static org.jboss.shamrock.maven.MavenConstants.PLUGIN_GROUPID;
 
 /**
  * @author <a href="http://escoffier.me">Clement Escoffier</a>

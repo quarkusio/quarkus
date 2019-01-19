@@ -54,6 +54,7 @@ import org.jboss.protean.gizmo.TryBlock;
 import org.jboss.shamrock.deployment.ClassOutput;
 import org.jboss.shamrock.deployment.ShamrockConfig;
 import org.jboss.shamrock.runtime.ConfigHelper;
+import org.jboss.shamrock.runtime.ObjectSubstitution;
 import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.runtime.StartupContext;
 import org.jboss.shamrock.runtime.StartupTask;

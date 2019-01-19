@@ -20,6 +20,7 @@ import java.lang.reflect.Constructor;
 import java.util.List;
 import java.util.function.Function;
 
+import org.jboss.shamrock.runtime.ObjectSubstitution;
 import org.jboss.shamrock.runtime.RuntimeValue;
 
 /**

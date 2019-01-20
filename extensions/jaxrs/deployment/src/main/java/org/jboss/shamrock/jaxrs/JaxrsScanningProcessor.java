@@ -97,7 +97,7 @@ import org.jboss.shamrock.undertow.ServletInitParamBuildItem;
  */
 public class JaxrsScanningProcessor {
 
-    private static final String JAVAX_WS_RS_APPLICATION = Application.class.getName();
+    private static final String JAVAX_WS_RS_APPLICATION = "javax.ws.rs.Application";
     private static final String JAX_RS_FILTER_NAME = JAVAX_WS_RS_APPLICATION;
     private static final String JAX_RS_SERVLET_NAME = JAVAX_WS_RS_APPLICATION;
     private static final String JAX_RS_APPLICATION_PARAMETER_NAME = JAVAX_WS_RS_APPLICATION;

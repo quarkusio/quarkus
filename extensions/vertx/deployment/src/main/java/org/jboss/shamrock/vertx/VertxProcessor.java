@@ -55,7 +55,7 @@ class VertxProcessor {
                 .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.WebSocket00FrameEncoder")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.JdkNpnApplicationProtocolNegotiator")
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslEngine")
-
+                .addNativeImageSystemProperty("io.netty.leakDetection.level", "DISABLED") //TODO: make configurable
                 .build();
     }
 

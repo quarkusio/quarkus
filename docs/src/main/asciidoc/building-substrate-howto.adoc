@@ -4,7 +4,7 @@
 
 ==== Install JVMCI
 
-Before anyting can be done you must first install a JVMCI build.
+Before anything can be done you must first install a JVMCI build.
 
 These can be downloaded from OTN
 http://www.oracle.com/technetwork/oracle-labs/program-languages/downloads/index.html[here]
@@ -26,7 +26,7 @@ export PATH=$JAVA_HOME/bin:$PATH
 
 ==== Install MX
 
-Now you need to install Graal’s special build tool, mx
+Now you need to install Graal’s special build tool, `mx`.
 
 [source,bash]
 ----
@@ -36,7 +36,7 @@ export PATH=`pwd`/mx:$PATH
 
 === Checkout and build SubstrateVM
 
-You can now check-out and build substrate
+You can now check-out and build Substrate:
 
 [source,bash]
 ----
@@ -57,7 +57,7 @@ mx native-image HelloWorld
 
 === Building a custom GraalVM distribution
 
-In order to create a custom Graal VM distribution (necessary for usage
+In order to create a custom GraalVM distribution (necessary for usage
 in shamrock) you must switch to the vm subdirectory, and use special
 build options to pick the modules in your distribution.
 

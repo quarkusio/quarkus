@@ -1,5 +1,5 @@
-<#if packageName??>
-package ${packageName};
+<#if package_name??>
+package ${package_name};
 </#if>
 
 import javax.ws.rs.GET;
@@ -8,7 +8,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 @Path("${path}")
-public class ${classname} {
+public class ${class_name} {
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)

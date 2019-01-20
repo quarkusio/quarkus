@@ -5,7 +5,6 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.maven.shared.utils.StringUtils;
-import org.jboss.shamrock.maven.MavenConstants;
 import org.jboss.shamrock.maven.CreateProjectMojo;
 import org.jboss.shamrock.maven.utilities.MojoUtils;
 import org.junit.BeforeClass;
@@ -24,21 +23,22 @@ import java.util.logging.Logger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.jboss.shamrock.maven.utilities.MojoUtils.getPluginArtifactId;
+import static org.jboss.shamrock.maven.utilities.MojoUtils.getPluginGroupId;
+import static org.jboss.shamrock.maven.utilities.MojoUtils.getPluginVersion;
 
 public class MojoTestBase {
-    static String VERSION;
+    static String VERSION = getPluginVersion();
     private static ImmutableMap<String, String> VARIABLES;
 
     @BeforeClass
     public static void init() {
-        VERSION = MojoUtils.get(CreateProjectMojo.VERSION_PROP);
         assertThat(VERSION).isNotNull();
-
         VARIABLES = ImmutableMap.of(
-                "@project.groupId@", MavenConstants.PLUGIN_GROUPID,
-                "@project.artifactId@", MavenConstants.PLUGIN_ARTIFACTID,
+                "@project.groupId@", getPluginGroupId(),
+                "@project.artifactId@", getPluginArtifactId(),
                 "@project.version@", VERSION,
-                "@rest-assured.version@", MojoUtils.get("restAssuredVersion"));
+                "@rest-assured.version@", MojoUtils.get("rest-assured-version"));
     }
 
     static File initProject(String name) {
@@ -96,18 +96,18 @@ public class MojoTestBase {
     }
 
     public static void installPluginToLocalRepository(File local) {
-        File repo = new File(local, MavenConstants.PLUGIN_GROUPID.replace(".", "/") + "/"
-                + MavenConstants.PLUGIN_ARTIFACTID + "/" + MojoTestBase.VERSION);
+        File repo = new File(local, getPluginGroupId().replace(".", "/") + "/"
+                + getPluginArtifactId() + "/" + MojoTestBase.VERSION);
         if (!repo.isDirectory()) {
             boolean mkdirs = repo.mkdirs();
             Logger.getLogger(MojoTestBase.class.getName())
                     .log(Level.FINE, repo.getAbsolutePath() + " created? " + mkdirs);
         }
 
-        File plugin = new File("target", MavenConstants.PLUGIN_ARTIFACTID + "-" + MojoTestBase.VERSION + ".jar");
+        File plugin = new File("target", getPluginArtifactId() + "-" + MojoTestBase.VERSION + ".jar");
         if (!plugin.isFile()) {
             File[] files = new File("target").listFiles(
-                    file -> file.getName().startsWith(MavenConstants.PLUGIN_ARTIFACTID) && file.getName().endsWith(".jar"));
+                    file -> file.getName().startsWith(getPluginArtifactId()) && file.getName().endsWith(".jar"));
             if (files != null && files.length != 0) {
                 plugin = files[0];
             }
@@ -115,7 +115,7 @@ public class MojoTestBase {
 
         try {
             FileUtils.copyFileToDirectory(plugin, repo);
-            String installedPomName = MavenConstants.PLUGIN_ARTIFACTID + "-" + MojoTestBase.VERSION + ".pom";
+            String installedPomName = getPluginArtifactId() + "-" + MojoTestBase.VERSION + ".pom";
             FileUtils.copyFile(new File("pom.xml"), new File(repo, installedPomName));
         } catch (IOException e) {
             throw new RuntimeException("Cannot copy the plugin jar, or the pom file, to the local repository", e);
@@ -239,7 +239,7 @@ public class MojoTestBase {
         return IOUtils.toString(url, "UTF-8");
     }
 
-    protected void sleep() {
+    void sleep() {
         try {
             Thread.sleep(1000);
         } catch (InterruptedException e) {

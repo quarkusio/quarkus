@@ -19,11 +19,19 @@ package org.jboss.shamrock.maven;
 
 import org.apache.maven.artifact.repository.ArtifactRepository;
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.model.*;
+import org.apache.maven.model.Build;
+import org.apache.maven.model.BuildBase;
+import org.apache.maven.model.Dependency;
+import org.apache.maven.model.DependencyManagement;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.Plugin;
+import org.apache.maven.model.PluginExecution;
+import org.apache.maven.model.Profile;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -38,11 +46,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static org.fusesource.jansi.Ansi.ansi;
-import static org.jboss.shamrock.maven.utilities.MojoUtils.configuration;
-import static org.jboss.shamrock.maven.utilities.MojoUtils.plugin;
+import static org.jboss.shamrock.maven.utilities.MojoUtils.*;
 
 /**
  * This goal helps in setting up Shamrock Maven project with shamrock-maven-plugin, with sensible defaults
@@ -51,10 +62,11 @@ import static org.jboss.shamrock.maven.utilities.MojoUtils.plugin;
 public class CreateProjectMojo extends AbstractMojo {
 
     private static final String JAVA_EXTENSION = ".java";
-    public static final String VERSION_PROP = "shamrock-version";
+
     public static final String PLUGIN_VERSION_PROPERTY_NAME = "shamrock.version";
     public static final String PLUGIN_VERSION_PROPERTY = "${" + PLUGIN_VERSION_PROPERTY_NAME + "}";
-    public static final String PLUGIN_KEY = MavenConstants.PLUGIN_GROUPID + ":" + MavenConstants.PLUGIN_ARTIFACTID;
+
+    public static final String PLUGIN_KEY = getPluginGroupId() + ":" + getPluginArtifactId();
 
     /**
      * The Maven project which will define and configure the shamrock-maven-plugin
@@ -109,36 +121,56 @@ public class CreateProjectMojo extends AbstractMojo {
         File pomFile = project.getFile();
 
         Model model;
-        //Create pom.xml if not
+        // Create pom.xml if not
         if (pomFile == null || !pomFile.isFile()) {
             pomFile = createPomFileFromUserInputs();
-        }
-
-        //We should get cloned of the OriginalModel, as project.getModel will return effective model
-        model = project.getOriginalModel().clone();
-
-        createDirectories();
-        templates.generate(project, path, className, getLog());
-        Optional<Plugin> maybe = MojoUtils.hasPlugin(project, PLUGIN_KEY);
-        if (maybe.isPresent()) {
+            // The previous method has set project to the new created project.
+            createDirectories();
+            templates.generate(project, path, className, getLog());
             printUserInstructions(pomFile);
             return;
         }
 
-        // The plugin is not configured, add it.
+        // There is an existing `pom.xml` file
+        Optional<Plugin> maybe = MojoUtils.hasPlugin(project, PLUGIN_KEY);
+        if (maybe.isPresent()) {
+            getLog().info("The " + getPluginArtifactId() + " is already configured in the existing pom.xml, " +
+                    " nothing to do.");
+            return;
+        }
+
+        // We should get cloned of the original model, as project.getModel will return effective model
+        model = project.getOriginalModel().clone();
+
+        if (!isTypeSupported(model.getPackaging())) {
+            throw new MojoExecutionException("Unable to add " + getPluginArtifactId() + " to the existing pom.xml " +
+                    "file - unsupported project type: " + model.getPackaging());
+        }
+
+        // Ensure we don't have the project metadata provided by the user
+        if (projectArtifactId != null  || projectGroupId != null) {
+            throw new MojoExecutionException("Unable to add " + getPluginArtifactId() + " to the existing pom.xml " +
+                    "file - you can't provide project GAV and extend an existing pom.xml");
+        }
+
         addVersionProperty(model);
         addBom(model);
         addMainPluginConfig(model);
         ext.addExtensions(model, extensions, session, repositories, getLog());
         addNativeProfile(model);
+        createDirectories();
         save(pomFile, model);
+    }
+
+    private boolean isTypeSupported(String packaging) {
+        return packaging == null  || packaging.equalsIgnoreCase("jar");
     }
 
     private void addBom(Model model) {
         Dependency bom = new Dependency();
         bom.setArtifactId(MojoUtils.get("bom-artifactId"));
-        bom.setGroupId(MavenConstants.PLUGIN_GROUPID);
-        bom.setVersion("${shamrock.version}");
+        bom.setGroupId(getPluginGroupId());
+        bom.setVersion("${shamrock.version}"); // Use the variable.
         bom.setType("pom");
         bom.setScope("import");
 
@@ -164,7 +196,7 @@ public class CreateProjectMojo extends AbstractMojo {
         Profile profile = new Profile();
         profile.setId("native");
         BuildBase buildBase = new BuildBase();
-        Plugin plg = plugin(MavenConstants.PLUGIN_GROUPID, MavenConstants.PLUGIN_ARTIFACTID, PLUGIN_VERSION_PROPERTY);
+        Plugin plg = plugin(getPluginGroupId(), getPluginArtifactId(), PLUGIN_VERSION_PROPERTY);
         PluginExecution exec = new PluginExecution();
         exec.addGoal("native-image");
         MojoUtils.Element element = new MojoUtils.Element("enableHttpUrlHandler", "true");
@@ -176,13 +208,13 @@ public class CreateProjectMojo extends AbstractMojo {
     }
 
     private void addMainPluginConfig(Model model) {
-        Plugin plugin = plugin(MavenConstants.PLUGIN_GROUPID, MavenConstants.PLUGIN_ARTIFACTID, PLUGIN_VERSION_PROPERTY);
+        Plugin plugin = plugin(getPluginGroupId(), getPluginArtifactId(), getPluginVersion());
         if (isParentPom(model)) {
             addPluginManagementSection(model, plugin);
             //strip the shamrockVersion off
-            plugin = plugin(MavenConstants.PLUGIN_GROUPID, MavenConstants.PLUGIN_ARTIFACTID);
+            plugin = plugin(getPluginGroupId(), getPluginArtifactId());
         } else {
-            plugin = plugin(MavenConstants.PLUGIN_GROUPID, MavenConstants.PLUGIN_ARTIFACTID, PLUGIN_VERSION_PROPERTY);
+            plugin = plugin(getPluginGroupId(), getPluginArtifactId(), PLUGIN_VERSION_PROPERTY);
         }
         PluginExecution pluginExec = new PluginExecution();
         pluginExec.addGoal("build");
@@ -193,7 +225,7 @@ public class CreateProjectMojo extends AbstractMojo {
 
     private void addVersionProperty(Model model) {
         //Set  a property at maven project level for Shamrock maven plugin versions
-        shamrockVersion = shamrockVersion == null ? MojoUtils.get(VERSION_PROP) : shamrockVersion;
+        shamrockVersion = shamrockVersion == null ? getPluginVersion() : shamrockVersion;
         model.getProperties().putIfAbsent(PLUGIN_VERSION_PROPERTY_NAME, shamrockVersion);
     }
 
@@ -240,7 +272,7 @@ public class CreateProjectMojo extends AbstractMojo {
                 // Ask for maven version if not set
                 if (shamrockVersion == null) {
                     shamrockVersion = prompter.promptWithDefaultValue("Set the Shamrock version",
-                            MojoUtils.get(VERSION_PROP));
+                            getPluginVersion());
                 }
 
                 if (className == null) {
@@ -277,14 +309,11 @@ public class CreateProjectMojo extends AbstractMojo {
 
 
             Map<String, String> context = new HashMap<>();
-            context.put("mProjectGroupId", projectGroupId);
-            context.put("mProjectArtifactId", projectArtifactId);
-            context.put("mProjectVersion", projectVersion);
-            context.put("shamrockVersion", shamrockVersion != null ? shamrockVersion : MojoUtils.get(VERSION_PROP));
-            context.put("restAssuredVersion", MojoUtils.get("restAssuredVersion"));
-            context.put("docRoot", MojoUtils.get("doc-root"));
-
-            context.put("className", className);
+            context.put("project_groupId", projectGroupId);
+            context.put("project_artifactId", projectArtifactId);
+            context.put("project_version", projectVersion);
+            context.put("shamrock_version", shamrockVersion != null ? shamrockVersion : getPluginVersion());
+            context.put("class_name", className);
             context.put("path", path);
 
             templates.createNewProjectPomFile(context, pomFile);

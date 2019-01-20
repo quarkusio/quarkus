@@ -7,7 +7,6 @@ import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.shared.invoker.*;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
-import org.jboss.shamrock.maven.MavenConstants;
 import org.jboss.shamrock.maven.CreateProjectMojo;
 import org.jboss.shamrock.maven.it.verifier.RunningInvoker;
 import org.jboss.shamrock.maven.utilities.MojoUtils;
@@ -15,12 +14,14 @@ import org.junit.After;
 import org.junit.Test;
 
 import java.io.*;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.jboss.shamrock.maven.utilities.MojoUtils.*;
 
 /**
  * @author <a href="http://escoffier.me">Clement Escoffier</a>
@@ -65,6 +66,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(index).contains("org.acme");
         assertThat(index).contains("1.0-SNAPSHOT");
         assertThat(index).contains(VERSION);
+        assertThat(index).contains(MojoUtils.get("doc-root"));
 
         assertThat(new File(testDir, "src/main/docker/Dockerfile")).isFile();
 
@@ -103,7 +105,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         setup(new Properties());
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
-                .contains(MavenConstants.PLUGIN_ARTIFACTID, CreateProjectMojo.PLUGIN_VERSION_PROPERTY, MavenConstants.PLUGIN_GROUPID);
+                .contains(getPluginArtifactId(), getPluginVersion(), getPluginGroupId());
         assertThat(new File(testDir, "src/main/java")).isDirectory();
 
         assertThat(new File(testDir, "src/main/resources/META-INF/microprofile-config.properties")).doesNotExist();
@@ -138,21 +140,19 @@ public class CreateProjectMojoIT extends MojoTestBase {
     }
 
     @Test
-    public void testProjectGenerationFromMinimalPomWithResource() throws Exception {
-        testDir = initProject("projects/simple-pom-it", "projects/project-generation-from-empty-pom-with-resource");
+    public void testThatProjectGenerationFailsOnExistingPomIfGAArePassed() throws Exception {
+        testDir = initProject("projects/simple-pom-it", "projects/project-generation-failed-from-pom-with-ga");
         assertThat(testDir).isDirectory();
         init(testDir);
         Properties properties = new Properties();
         properties.put("projectGroupId", "org.acme");
         properties.put("projectArtifactId", "acme");
         properties.put("className", "org.acme.MyResource.java");
+
         setup(properties);
-        assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
-                .contains("shamrock.version");
-        assertThat(new File(testDir, "src/main/java")).isDirectory();
-        assertThat(new File(testDir, "src/main/java/org/acme/MyResource.java")).isFile();
-        assertThat(new File(testDir, "src/main/java/org/acme/ShamrockApplication.java")).doesNotExist();
+                .doesNotContain("shamrock.version");
+        assertThat(new File(testDir, "src/main/java/org/acme/MyResource.java")).doesNotExist();
     }
 
     @Test
@@ -180,8 +180,6 @@ public class CreateProjectMojoIT extends MojoTestBase {
                         && d.getVersion().equalsIgnoreCase("${shamrock.version}")
                         && d.getScope().equalsIgnoreCase("import")
                         && d.getType().equalsIgnoreCase("pom"))).isTrue();
-
-        System.out.println(model.getDependencies().stream().map(d -> d.getManagementKey() + "[" + d.getVersion() + "]").collect(Collectors.toList()));
 
         assertThat(model.getDependencies().stream().anyMatch(d ->
                 d.getArtifactId().equalsIgnoreCase("shamrock-jaxrs-deployment")
@@ -232,14 +230,9 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(testDir).isDirectory();
         init(testDir);
         Properties properties = new Properties();
-        properties.put("projectGroupId", "org.acme");
-        properties.put("projectArtifactId", "acme");
-        properties.put("className", "org.acme.MyResource");
         properties.put("extensions", "commons-io:commons-io:2.5");
         setup(properties);
         assertThat(new File(testDir, "pom.xml")).isFile();
-        assertThat(new File(testDir, "src/main/java/org/acme/MyResource.java")).isFile();
-        assertThat(new File(testDir, "src/main/java/org/acme/ShamrockApplication.java")).doesNotExist();
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
                 .contains("commons-io");
     }

@@ -44,6 +44,18 @@ public class MojoUtils {
         // Avoid direct instantiation
     }
 
+    public static String getPluginArtifactId() {
+        return get("plugin-artifactId");
+    }
+
+    public static String getPluginGroupId() {
+        return get("plugin-groupId");
+    }
+
+    public static String getPluginVersion() {
+        return get("plugin-version");
+    }
+
     /**
      * Checks whether or not the given project has a plugin with the given key. The key is given using the
      * "groupId:artifactId" syntax.
@@ -147,6 +159,12 @@ public class MojoUtils {
         plugin.setVersion(version);
         plugin.setDependencies(dependencies);
         return plugin;
+    }
+
+    public static Map<String, String> getAllProperties() {
+        Map<String, String> all = new HashMap<>();
+        properties.stringPropertyNames().forEach(s -> all.put(s, properties.getProperty(s)));
+        return all;
     }
 
     /**

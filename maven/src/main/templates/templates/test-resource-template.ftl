@@ -1,5 +1,5 @@
-<#if packageName??>
-package ${packageName};
+<#if package_name??>
+package ${package_name};
 </#if>
 
 import org.jboss.shamrock.test.ShamrockTest;
@@ -10,7 +10,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
 @RunWith(ShamrockTest.class)
-public class ${classname}Test {
+public class ${class_name}Test {
 
     @Test
     public void testHelloEndpoint() {

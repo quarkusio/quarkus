@@ -154,8 +154,9 @@ public class BeanProcessor {
     public BeanDeployment process() throws IOException {
 
         BeanDeployment beanDeployment = new BeanDeployment(new IndexWrapper(index), additionalBeanDefiningAnnotations, annotationTransformers,
-                resourceAnnotations, beanRegistrars, beanDeploymentValidators, buildContext, removeUnusedBeans, unusedExclusions);
+                resourceAnnotations, beanRegistrars, buildContext, removeUnusedBeans, unusedExclusions);
         beanDeployment.init();
+        beanDeployment.validate(buildContext, beanDeploymentValidators);
 
         AnnotationLiteralProcessor annotationLiterals = new AnnotationLiteralProcessor(name, sharedAnnotationLiterals);
         BeanGenerator beanGenerator = new BeanGenerator(annotationLiterals, applicationClassPredicate);

@@ -138,7 +138,7 @@ public class SubclassGenerator extends AbstractGenerator {
             parameterTypes.add(InjectableInterceptor.class.getName());
         }
 
-        MethodCreator constructor = subclass.getMethodCreator("<init>", "V", parameterTypes.toArray(new String[0]));
+        MethodCreator constructor = subclass.getMethodCreator(Methods.INIT, "V", parameterTypes.toArray(new String[0]));
 
         ResultHandle creationalContextHandle = constructor.getMethodParam(superParamsSize);
         ResultHandle[] superParams = new ResultHandle[superParamsSize];

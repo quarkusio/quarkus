@@ -104,7 +104,7 @@ public class Injection {
             if (!isNonStaticInnerClass && !constrInjectionExists) {
                 List<MethodInfo> nonNoargConstrs = new ArrayList<>();
                 for (MethodInfo constr : beanTarget.methods()) {
-                    if ("<init>".equals(constr.name()) && constr.parameters().size() > 0) {
+                    if (Methods.INIT.equals(constr.name()) && constr.parameters().size() > 0) {
                         nonNoargConstrs.add(constr);
                     }
                 }
@@ -159,15 +159,15 @@ public class Injection {
     }
 
     boolean isMethod() {
-        return Kind.METHOD.equals(target.kind());
+        return Kind.METHOD == target.kind();
     }
 
     boolean isConstructor() {
-        return isMethod() && target.asMethod().name().equals("<init>");
+        return isMethod() && target.asMethod().name().equals(Methods.INIT);
     }
 
     boolean isField() {
-        return Kind.FIELD.equals(target.kind());
+        return Kind.FIELD == target.kind();
     }
 
     private static List<AnnotationInstance> getAllInjectionPoints(BeanDeployment beanDeployment, ClassInfo beanClass, DotName name) {

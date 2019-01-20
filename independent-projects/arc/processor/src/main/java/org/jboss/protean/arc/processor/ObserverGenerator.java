@@ -253,7 +253,7 @@ public class ObserverGenerator extends AbstractGenerator {
             }
         }
 
-        MethodCreator constructor = observerCreator.getMethodCreator("<init>", "V", parameterTypes.toArray(new String[0]));
+        MethodCreator constructor = observerCreator.getMethodCreator(Methods.INIT, "V", parameterTypes.toArray(new String[0]));
         // Invoke super()
         constructor.invokeSpecialMethod(MethodDescriptors.OBJECT_CONSTRUCTOR, constructor.getThis());
 

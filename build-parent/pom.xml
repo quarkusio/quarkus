@@ -30,6 +30,9 @@
    <packaging>pom</packaging>
 
    <properties>
+      <!-- Enable APT by default for Eclipse -->
+      <m2e.apt.activation>jdt_apt</m2e.apt.activation>
+      
       <jandex.version>2.1.0.Final</jandex.version>
       <resteasy.version>4.0.0.Beta8</resteasy.version>
       <opentracing.version>0.31.0</opentracing.version>

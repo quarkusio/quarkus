@@ -31,6 +31,7 @@ public final class InitialConfigurator implements EmbeddedConfigurator {
                     "%d{HH:mm:ss,SSS} %-5p [%c{1.}] %s%e%n"
                 ));
                 handler.setLevel(Level.INFO);
+                handler.setFilter(new LogCleanupFilter());
                 return new Handler[] {
                     handler
                 };

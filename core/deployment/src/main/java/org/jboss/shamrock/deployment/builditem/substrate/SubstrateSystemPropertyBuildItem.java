@@ -18,6 +18,9 @@ package org.jboss.shamrock.deployment.builditem.substrate;
 
 import org.jboss.builder.item.MultiBuildItem;
 
+/**
+ * A system property that will be set at native image build time
+ */
 public final class SubstrateSystemPropertyBuildItem extends MultiBuildItem {
 
     private final String key;

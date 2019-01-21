@@ -22,6 +22,9 @@ import java.util.List;
 
 import org.jboss.builder.item.MultiBuildItem;
 
+/**
+ * A build item that indicates that a static resource should be included in the native image
+ */
 public final class SubstrateResourceBuildItem extends MultiBuildItem {
 
     private final List<String> resources;

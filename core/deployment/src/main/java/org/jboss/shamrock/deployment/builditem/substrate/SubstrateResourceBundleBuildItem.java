@@ -18,6 +18,9 @@ package org.jboss.shamrock.deployment.builditem.substrate;
 
 import org.jboss.builder.item.MultiBuildItem;
 
+/**
+ * Indicates that a resource bundle should be included in the native image
+ */
 public final class SubstrateResourceBundleBuildItem extends MultiBuildItem {
 
     private final String bundleName;

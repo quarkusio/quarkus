@@ -158,7 +158,7 @@ public class BeanProcessor {
         beanDeployment.init();
         beanDeployment.validate(buildContext, beanDeploymentValidators);
 
-        AnnotationLiteralProcessor annotationLiterals = new AnnotationLiteralProcessor(name, sharedAnnotationLiterals);
+        AnnotationLiteralProcessor annotationLiterals = new AnnotationLiteralProcessor(sharedAnnotationLiterals, applicationClassPredicate);
         BeanGenerator beanGenerator = new BeanGenerator(annotationLiterals, applicationClassPredicate);
         ClientProxyGenerator clientProxyGenerator = new ClientProxyGenerator(applicationClassPredicate);
         InterceptorGenerator interceptorGenerator = new InterceptorGenerator(annotationLiterals, applicationClassPredicate);

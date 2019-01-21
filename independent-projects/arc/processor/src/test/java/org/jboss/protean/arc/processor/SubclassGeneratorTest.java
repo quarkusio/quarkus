@@ -49,7 +49,7 @@ public class SubclassGeneratorTest {
         BeanDeployment deployment = new BeanDeployment(index, null, null);
         deployment.init();
 
-        AnnotationLiteralProcessor annotationLiteralProcessor = new AnnotationLiteralProcessor(BeanProcessor.DEFAULT_NAME, true);
+        AnnotationLiteralProcessor annotationLiteralProcessor = new AnnotationLiteralProcessor(true, TruePredicate.INSTANCE);
         BeanGenerator beanGenerator = new BeanGenerator(annotationLiteralProcessor, TruePredicate.INSTANCE);
         SubclassGenerator generator = new SubclassGenerator(annotationLiteralProcessor, TruePredicate.INSTANCE);
         BeanInfo simpleBean = deployment.getBeans().stream()

@@ -61,10 +61,8 @@ enum BuiltinBean {
                     } else {
                         // Create annotation literal first
                         ClassInfo qualifierClass = beanDeployment.getQualifier(qualifierAnnotation.name());
-                        String annotationLiteralName = annotationLiterals.process(classOutput, qualifierClass, qualifierAnnotation,
-                                Types.getPackageName(clazzCreator.getClassName()));
-                        constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiers,
-                                constructor.newInstance(MethodDescriptor.ofConstructor(annotationLiteralName)));
+                        constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiers, annotationLiterals.process(constructor, classOutput,
+                                qualifierClass, qualifierAnnotation, Types.getPackageName(clazzCreator.getClassName())));
                     }
                 }
             }
@@ -115,10 +113,8 @@ enum BuiltinBean {
                     } else {
                         // Create annotation literal first
                         ClassInfo qualifierClass = beanDeployment.getQualifier(qualifierAnnotation.name());
-                        String annotationLiteralName = annotationLiterals.process(classOutput, qualifierClass, qualifierAnnotation,
-                                Types.getPackageName(clazzCreator.getClassName()));
-                        constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiers,
-                                constructor.newInstance(MethodDescriptor.ofConstructor(annotationLiteralName)));
+                        constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiers, annotationLiterals.process(constructor, classOutput,
+                                qualifierClass, qualifierAnnotation, Types.getPackageName(clazzCreator.getClassName())));
                     }
                 }
             }
@@ -139,10 +135,8 @@ enum BuiltinBean {
                 for (AnnotationInstance annotation : injectionPoint.getRequiredQualifiers()) {
                     // Create annotation literal first
                     ClassInfo annotationClass = beanDeployment.getIndex().getClassByName(annotation.name());
-                    String annotationLiteralName = annotationLiterals.process(classOutput, annotationClass, annotation,
-                            Types.getPackageName(clazzCreator.getClassName()));
-                    constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, annotations,
-                            constructor.newInstance(MethodDescriptor.ofConstructor(annotationLiteralName)));
+                    constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, annotations, annotationLiterals.process(constructor, classOutput,
+                            annotationClass, annotation, Types.getPackageName(clazzCreator.getClassName())));
                 }
             }
             ResultHandle parameterizedType = Types.getTypeHandle(constructor, injectionPoint.getRequiredType());

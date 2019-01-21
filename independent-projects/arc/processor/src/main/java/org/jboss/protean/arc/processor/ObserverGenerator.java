@@ -283,10 +283,8 @@ public class ObserverGenerator extends AbstractGenerator {
                         } else {
                             // Create annotation literal first
                             ClassInfo qualifierClass = observer.getDeclaringBean().getDeployment().getQualifier(qualifierAnnotation.name());
-                            String annotationLiteralName = annotationLiterals.process(classOutput, qualifierClass, qualifierAnnotation,
-                                    Types.getPackageName(observerCreator.getClassName()));
-                            constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, requiredQualifiersHandle,
-                                    constructor.newInstance(MethodDescriptor.ofConstructor(annotationLiteralName)));
+                            constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, requiredQualifiersHandle, annotationLiterals.process(constructor,
+                                    classOutput, qualifierClass, qualifierAnnotation, Types.getPackageName(observerCreator.getClassName())));
                         }
                     }
                     ResultHandle wrapHandle = constructor.newInstance(
@@ -319,10 +317,8 @@ public class ObserverGenerator extends AbstractGenerator {
                 } else {
                     // Create annotation literal first
                     ClassInfo qualifierClass = observer.getDeclaringBean().getDeployment().getQualifier(qualifierAnnotation.name());
-                    String annotationLiteralName = annotationLiterals.process(classOutput, qualifierClass, qualifierAnnotation,
-                            Types.getPackageName(observerCreator.getClassName()));
-                    constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiersHandle,
-                            constructor.newInstance(MethodDescriptor.ofConstructor(annotationLiteralName)));
+                    constructor.invokeInterfaceMethod(MethodDescriptors.SET_ADD, qualifiersHandle, annotationLiterals.process(constructor, classOutput,
+                            qualifierClass, qualifierAnnotation, Types.getPackageName(observerCreator.getClassName())));
                 }
             }
             ResultHandle unmodifiableQualifiersHandle = constructor

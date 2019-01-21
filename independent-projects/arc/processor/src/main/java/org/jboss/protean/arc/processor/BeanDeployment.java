@@ -108,10 +108,10 @@ public class BeanDeployment {
         // TODO interceptor bindings are transitive!!!
         this.interceptorBindings = findInterceptorBindings(index);
         this.stereotypes = findStereotypes(index, interceptorBindings, additionalBeanDefiningAnnotations);
-        this.interceptors = findInterceptors();
+        this.injectionPoints = new ArrayList<>();
+        this.interceptors = findInterceptors(injectionPoints);
         this.beanResolver = new BeanResolver(this);
         List<ObserverInfo> observers = new ArrayList<>();
-        this.injectionPoints = new ArrayList<>();
         this.beans = findBeans(initBeanDefiningAnnotations(additionalBeanDefiningAnnotations, stereotypes.keySet()), observers, injectionPoints);
         
         if (buildContext != null) {
@@ -594,7 +594,7 @@ public class BeanDeployment {
         return found.isEmpty() ? null : found.get(0);
     }
 
-    private List<InterceptorInfo> findInterceptors() {
+    private List<InterceptorInfo> findInterceptors(List<InjectionPointInfo> injectionPoints) {
         Set<ClassInfo> interceptorClasses = new HashSet<>();
         for (AnnotationInstance annotation : index.getAnnotations(DotNames.INTERCEPTOR)) {
             if (Kind.CLASS.equals(annotation.target().kind())) {
@@ -609,6 +609,9 @@ public class BeanDeployment {
             for (InterceptorInfo interceptor : interceptors) {
                 LOGGER.logf(Level.DEBUG, "Created %s", interceptor);
             }
+        }
+        for(InterceptorInfo i : interceptors) {
+            injectionPoints.addAll(i.getAllInjectionPoints());
         }
         return interceptors;
     }

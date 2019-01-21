@@ -49,7 +49,7 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
-            <version>5.1.4.RELEASE</version>
+            <version>${spring.version}</version>
         </dependency>
 
         <dependency>

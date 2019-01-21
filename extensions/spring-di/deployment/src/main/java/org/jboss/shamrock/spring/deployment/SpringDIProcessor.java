@@ -26,12 +26,6 @@ import org.jboss.protean.arc.processor.Transformation;
 import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.arc.deployment.AnnotationsTransformerBuildItem;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Produces;
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -261,9 +255,9 @@ public class SpringDIProcessor {
 
             private String determineName(AnnotationValue annotationValue) {
                 final String className = annotationValue.getClass().getName();
-                if (className.contains("ArrayValue")) {
+                if (annotationValue.kind() == AnnotationValue.Kind.ARRAY) {
                     return annotationValue.asStringArray()[0];
-                } else if (className.contains("StringValue")) {
+                } else if (annotationValue.kind() == AnnotationValue.Kind.STRING) {
                     return  annotationValue.asString();
                 }
                 return null;

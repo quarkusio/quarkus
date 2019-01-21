@@ -102,6 +102,7 @@
       <h2.version>1.4.197</h2.version>
       <postgresql-jdbc.version>42.2.5</postgresql-jdbc.version>
       <mariadb-jdbc.version>2.3.0</mariadb-jdbc.version>
+      <spring.version>5.1.4.RELEASE</spring.version>
       <junit.version>4.12</junit.version>
       <shrinkwrap.version>1.2.6</shrinkwrap.version>
       <rest-assured.version>3.3.0</rest-assured.version>

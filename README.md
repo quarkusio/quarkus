@@ -22,8 +22,8 @@ _All under ONE framework._
 
 ## Getting Started
 
-* [Documentation](http://10.8.247.58/nfs/protean/index.html)
-* [Getting Started](http://10.8.247.58/nfs/protean/getting-started-guide.html)
+* [Documentation](http://10.0.144.40/nfs/protean/)
+* [Getting Started](http://10.0.144.40/nfs/protean/getting-started-guide.html)
 
 ---
 

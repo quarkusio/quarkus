@@ -19,6 +19,8 @@ package org.jboss.shamrock.creator.util;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileAlreadyExistsException;
@@ -42,7 +44,6 @@ import java.util.UUID;
 public class IoUtils {
 
     private static final int DEFAULT_BUFFER_SIZE = 1024 * 4;
-    private static char[] charBuffer;
 
     private static final Path TMP_DIR = Paths.get(PropertyUtils.getProperty("java.io.tmpdir"));
 
@@ -137,9 +138,7 @@ public class IoUtils {
     }
 
     public static String readFile(Path file) throws IOException {
-        if(charBuffer == null) {
-            charBuffer = new char[DEFAULT_BUFFER_SIZE];
-        }
+        final char[] charBuffer = new char[DEFAULT_BUFFER_SIZE];
         int n = 0;
         final StringWriter output = new StringWriter();
         try (BufferedReader input = Files.newBufferedReader(file)) {
@@ -148,6 +147,14 @@ public class IoUtils {
             }
         }
         return output.getBuffer().toString();
+    }
+
+    public static void copy(OutputStream out, InputStream in) throws IOException {
+        byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
+        int r;
+        while ((r = in.read(buffer)) > 0) {
+            out.write(buffer, 0, r);
+        }
     }
 
     public static void writeFile(Path file, String content) throws IOException {

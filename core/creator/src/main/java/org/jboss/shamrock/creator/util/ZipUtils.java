@@ -89,7 +89,7 @@ public class ZipUtils {
     }
 
     public static void zip(Path src, Path zipFile) throws IOException {
-        try (FileSystem zipfs = newFileSystem(toZipUri(zipFile), Files.exists(zipFile) ? Collections.emptyMap() : CREATE_ENV)) {
+        try (FileSystem zipfs = newZip(zipFile)) {
             if(Files.isDirectory(src)) {
                 try (DirectoryStream<Path> stream = Files.newDirectoryStream(src)) {
                     for(Path srcPath : stream) {
@@ -100,6 +100,10 @@ public class ZipUtils {
                 Files.copy(src, zipfs.getPath(src.getFileName().toString()), StandardCopyOption.REPLACE_EXISTING);
             }
         }
+    }
+
+    public static FileSystem newZip(Path zipFile) throws IOException {
+        return newFileSystem(toZipUri(zipFile), Files.exists(zipFile) ? Collections.emptyMap() : CREATE_ENV);
     }
 
     private static void copyToZip(Path srcRoot, Path srcPath, FileSystem zipfs) throws IOException {

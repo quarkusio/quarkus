@@ -29,6 +29,7 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.jboss.shamrock.creator.AppCreator;
 import org.jboss.shamrock.creator.AppCreatorException;
+import org.jboss.shamrock.creator.AppDependency;
 import org.jboss.shamrock.creator.phase.augment.AugmentOutcome;
 import org.jboss.shamrock.creator.phase.nativeimage.NativeImageOutcome;
 import org.jboss.shamrock.creator.phase.nativeimage.NativeImagePhase;
@@ -48,9 +49,6 @@ public class NativeImageMojo extends AbstractMojo {
      */
     @Parameter(readonly = true, required = true, defaultValue = "${project.build.directory}")
     private File outputDirectory;
-
-    @Parameter(defaultValue = "${project.build.directory}/wiring-classes")
-    private File wiringClassesDirectory;
 
     @Parameter(defaultValue = "false")
     private boolean reportErrorsAtRuntime;
@@ -164,8 +162,19 @@ public class NativeImageMojo extends AbstractMojo {
                     return classesDir;
                 }
                 @Override
+                public Path getTransformedClassesDir() {
+                    // not relevant for this mojo
+                    throw new UnsupportedOperationException();
+                }
+                @Override
                 public Path getWiringClassesDir() {
-                    return wiringClassesDirectory.toPath();
+                    // not relevant for this mojo
+                    throw new UnsupportedOperationException();
+                }
+                @Override
+                public boolean isWhitelisted(AppDependency dep) {
+                    // not relevant for this mojo
+                    throw new UnsupportedOperationException();
                 }
             })
             .pushOutcome(RunnerJarOutcome.class, new RunnerJarOutcome() {

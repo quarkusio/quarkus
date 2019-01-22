@@ -17,11 +17,8 @@
 
 package org.jboss.shamrock.creator.phase.augment;
 
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -31,7 +28,6 @@ import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,13 +41,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.jar.Attributes;
-import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
-
 import org.eclipse.microprofile.config.Config;
 import org.jboss.builder.BuildResult;
 import org.jboss.logging.Logger;
@@ -65,7 +56,6 @@ import org.jboss.shamrock.creator.config.reader.MappedPropertiesHandler;
 import org.jboss.shamrock.creator.config.reader.PropertiesHandler;
 import org.jboss.shamrock.creator.outcome.OutcomeProviderRegistration;
 import org.jboss.shamrock.creator.phase.curate.CurateOutcome;
-import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarOutcome;
 import org.jboss.shamrock.creator.util.IoUtils;
 import org.jboss.shamrock.creator.util.ZipUtils;
 import org.jboss.shamrock.deployment.ClassOutput;
@@ -86,9 +76,8 @@ import io.smallrye.config.SmallRyeConfigProviderResolver;
  *
  * @author Alexey Loubyansky
  */
-public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutcome, RunnerJarOutcome {
+public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutcome {
 
-    private static final String DEFAULT_MAIN_CLASS = "org.jboss.shamrock.runner.GeneratedMain";
     private static final String DEPENDENCIES_RUNTIME = "dependencies.runtime";
     private static final String PROVIDED = "provided";
 
@@ -96,15 +85,9 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
 
     private Path outputDir;
     private Path appClassesDir;
+    private Path transformedClassesDir;
     private Path wiringClassesDir;
-    private Path libDir;
-    private Path runnerJar;
-
-    private String finalName;
-
-    private String mainClass = DEFAULT_MAIN_CLASS;
-
-    private boolean uberJar;
+    private Set<String> whitelist = new HashSet<>();
 
     /**
      * Output directory for the outcome of this phase.
@@ -133,6 +116,19 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
     }
 
     /**
+     * Directory containing transformed application classes. If none is set by
+     * the user, transformed-classes directory will be created in the work
+     * directory of the creator.
+     *
+     * @param transformedClassesDir  directory for transformed application classes
+     * @return  this phase instance
+     */
+    public AugmentPhase setTransformedClassesDir(Path transformedClassesDir) {
+        this.transformedClassesDir = transformedClassesDir;
+        return this;
+    }
+
+    /**
      * The directory for generated classes. If none is set by the user,
      * wiring-classes directory will be created in the work directory of the creator.
      *
@@ -144,56 +140,14 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
         return this;
     }
 
-    /**
-     * Directory for application dependencies. If none set by the user
-     * lib directory will be created in the output directory of the phase.
-     *
-     * @param libDir  directory for project dependencies
-     * @return  this phase instance
-     */
-    public AugmentPhase setLibDir(Path libDir) {
-        this.libDir = libDir;
-        return this;
-    }
-
-    /**
-     * Name for the runnable JAR. If none is provided by the user
-     * the name will derived from the user application JAR filename.
-     *
-     * @param finalName  runnable JAR name
-     * @return  this phase instance
-     */
-    public AugmentPhase setFinalName(String finalName) {
-        this.finalName = finalName;
-        return this;
-    }
-
-    /**
-     * Main class name fir the runnable JAR. If none is set by the user
-     * org.jboss.shamrock.runner.GeneratedMain will be use by default.
-     *
-     * @param mainClass  main class name for the runnable JAR
-     * @return
-     */
-    public AugmentPhase setMainClass(String mainClass) {
-        this.mainClass = mainClass;
-        return this;
-    }
-
-    /**
-     * Whether to build an uber JAR. The default is false.
-     *
-     * @param uberJar  whether to build an uber JAR
-     * @return  this phase instance
-     */
-    public AugmentPhase setUberJar(boolean uberJar) {
-        this.uberJar = uberJar;
-        return this;
-    }
-
     @Override
     public Path getAppClassesDir() {
         return appClassesDir;
+    }
+
+    @Override
+    public Path getTransformedClassesDir() {
+        return transformedClassesDir;
     }
 
     @Override
@@ -202,19 +156,13 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
     }
 
     @Override
-    public Path getRunnerJar() {
-        return runnerJar;
-    }
-
-    @Override
-    public Path getLibDir() {
-        return libDir;
+    public boolean isWhitelisted(AppDependency dep) {
+        return whitelist.contains(getDependencyConflictId(dep.getArtifact()));
     }
 
     @Override
     public void register(OutcomeProviderRegistration registration) throws AppCreatorException {
         registration.provides(AugmentOutcome.class);
-        registration.provides(RunnerJarOutcome.class);
     }
 
     @Override
@@ -224,7 +172,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
         outputDir = outputDir == null ? ctx.getWorkPath() : IoUtils.mkdirs(outputDir);
 
         if (appClassesDir == null) {
-            appClassesDir = ctx.createWorkDir("classes");
+            appClassesDir = outputDir.resolve("classes");
             final Path appJar = appState.getArtifactResolver().resolve(appState.getAppArtifact());
             try {
                 ZipUtils.unzip(appJar, appClassesDir);
@@ -237,22 +185,12 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
             IoUtils.recursiveDelete(metaInf.resolve("MANIFEST.MF"));
         }
 
-        wiringClassesDir = IoUtils.mkdirs(wiringClassesDir == null ? ctx.getWorkPath("wiring-classes") : wiringClassesDir);
-
-        libDir = IoUtils.mkdirs(libDir == null ? outputDir.resolve("lib") : libDir);
-
-        if (finalName == null) {
-            final String name = appState.getArtifactResolver().resolve(appState.getAppArtifact()).getFileName().toString();
-            int i = name.lastIndexOf('.');
-            if (i > 0) {
-                finalName = name.substring(0, i);
-            }
-        }
+        transformedClassesDir = IoUtils.mkdirs(transformedClassesDir == null ? outputDir.resolve("transformed-classes") : transformedClassesDir);
+        wiringClassesDir = IoUtils.mkdirs(wiringClassesDir == null ? outputDir.resolve("wiring-classes") : wiringClassesDir);
 
         doProcess(appState);
 
         ctx.pushOutcome(AugmentOutcome.class, this);
-        ctx.pushOutcome(RunnerJarOutcome.class, this);
     }
 
     private void doProcess(CurateOutcome appState) throws AppCreatorException {
@@ -276,16 +214,24 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
         final List<AppDependency> appDeps = appState.getEffectiveDeps();
 
         try {
-            StringBuilder classPath = new StringBuilder();
-            List<String> problems = new ArrayList<>();
-            Set<String> whitelist = new HashSet<>();
+            // we need to make sure all the deployment artifacts are on the class path
+            final List<URL> cpUrls = new ArrayList<>();
+            cpUrls.add(appClassesDir.toUri().toURL());
+
+            List<String> problems = null;
             for (AppDependency appDep : appDeps) {
-                final AppArtifact depCoords = appDep.getArtifact();
-                if (!"jar".equals(depCoords.getType())) {
+                final AppArtifact depArtifact = appDep.getArtifact();
+                final Path resolvedDep = depResolver.resolve(depArtifact);
+                cpUrls.add(resolvedDep.toUri().toURL());
+
+                if (!"jar".equals(depArtifact.getType())) {
                     continue;
                 }
-                try (ZipFile zip = openZipFile(depResolver.resolve(depCoords))) {
+                try (ZipFile zip = openZipFile(resolvedDep)) {
                     if (!appDep.getScope().equals(PROVIDED) && zip.getEntry("META-INF/services/org.jboss.shamrock.deployment.ShamrockSetup") != null) {
+                        if(problems == null) {
+                            problems = new ArrayList<>();
+                        }
                         problems.add("Artifact " + appDep + " is a deployment artifact, however it does not have scope required. This will result in unnecessary jars being included in the final image");
                     }
                     ZipEntry deps = zip.getEntry(DEPENDENCIES_RUNTIME);
@@ -312,226 +258,115 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                             }
                         }
                     }
-
                 }
             }
-            if (!problems.isEmpty()) {
+            if (problems != null) {
                 //TODO: add a config option to just log an error instead
                 throw new AppCreatorException(problems.toString());
             }
-            Set<String> seen = new HashSet<>();
-            runnerJar = outputDir.resolve(finalName + "-runner.jar");
-            log.info("Building jar: " + runnerJar);
-            try (ZipOutputStream runner = new ZipOutputStream(new BufferedOutputStream(Files.newOutputStream(runnerJar)))) {
-                Map<String, List<byte[]>> services = new HashMap<>();
 
-                for (AppDependency appDep : appDeps) {
-                    final AppArtifact depCoords = appDep.getArtifact();
-                    if (appDep.getScope().equals(PROVIDED) && !whitelist.contains(getDependencyConflictId(depCoords))) {
-                        continue;
-                    }
-                    if (depCoords.getArtifactId().equals("svm") && depCoords.getGroupId().equals("com.oracle.substratevm")) {
-                        continue;
-                    }
-                    final File artifactFile = depResolver.resolve(depCoords).toFile();
-                    if (uberJar) {
-                        try (ZipInputStream in = new ZipInputStream(new FileInputStream(artifactFile))) {
-                            for (ZipEntry e = in.getNextEntry(); e != null; e = in.getNextEntry()) {
-                                if (e.getName().startsWith("META-INF/services/") && e.getName().length() > 18) {
-                                    services.computeIfAbsent(e.getName(), (u) -> new ArrayList<>()).add(read(in));
-                                    continue;
-                                } else if (e.getName().equals("META-INF/MANIFEST.MF")) {
-                                    continue;
-                                }
-                                if (!seen.add(e.getName())) {
-                                    if (!e.getName().endsWith("/")) {
-                                        log.warn("Duplicate entry " + e.getName() + " entry from " + appDep + " will be ignored");
-                                    }
-                                    continue;
-                                }
-                                runner.putNextEntry(new ZipEntry(e.getName()));
-                                doCopy(runner, in);
-                            }
-                        }
-                    } else {
-                        final String fileName = depCoords.getGroupId() + "." + artifactFile.getName();
-                        final Path targetPath = libDir.resolve(fileName);
-
-                        Files.copy(artifactFile.toPath(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-                        classPath.append(" lib/" + fileName);
+            final URLClassLoader runnerClassLoader = new URLClassLoader(cpUrls.toArray(new URL[cpUrls.size()]), getClass().getClassLoader());
+            final Path wiringClassesDirectory = wiringClassesDir;
+            ClassOutput classOutput = new ClassOutput() {
+                @Override
+                public void writeClass(boolean applicationClass, String className, byte[] data) throws IOException {
+                    String location = className.replace('.', '/');
+                    final Path p = wiringClassesDirectory.resolve(location + ".class");
+                    Files.createDirectories(p.getParent());
+                    try (OutputStream out = Files.newOutputStream(p)) {
+                        out.write(data);
                     }
                 }
 
-                List<URL> classPathUrls = new ArrayList<>();
-                for (AppDependency appDep : appDeps) {
-                    final AppArtifact depCoords = appDep.getArtifact();
-                    final Path p = depResolver.resolve(depCoords);
-                    classPathUrls.add(p.toUri().toURL());
-                }
-
-                //we need to make sure all the deployment artifacts are on the class path
-                //to do this we need to create a new class loader to actually use for the runner
-                List<URL> cpCopy = new ArrayList<>();
-
-                cpCopy.add(appClassesDir.toUri().toURL());
-                cpCopy.addAll(classPathUrls);
-
-                URLClassLoader runnerClassLoader = new URLClassLoader(cpCopy.toArray(new URL[0]), getClass().getClassLoader());
-                final Path wiringClassesDirectory = wiringClassesDir;
-                ClassOutput classOutput = new ClassOutput() {
-                    @Override
-                    public void writeClass(boolean applicationClass, String className, byte[] data) throws IOException {
-                        String location = className.replace('.', '/');
-                        final Path p = wiringClassesDirectory.resolve(location + ".class");
-                        Files.createDirectories(p.getParent());
-                        try (OutputStream out = Files.newOutputStream(p)) {
-                            out.write(data);
-                        }
+                @Override
+                public void writeResource(String name, byte[] data) throws IOException {
+                    final Path p = wiringClassesDirectory.resolve(name);
+                    Files.createDirectories(p.getParent());
+                    try (OutputStream out = Files.newOutputStream(p)) {
+                        out.write(data);
                     }
-
-                    @Override
-                    public void writeResource(String name, byte[] data) throws IOException {
-                        final Path p = wiringClassesDirectory.resolve(name);
-                        Files.createDirectories(p.getParent());
-                        try (OutputStream out = Files.newOutputStream(p)) {
-                            out.write(data);
-                        }
-                    }
-                };
-
-
-                ClassLoader old = Thread.currentThread().getContextClassLoader();
-                BuildResult result;
-                try {
-                    Thread.currentThread().setContextClassLoader(runnerClassLoader);
-
-                    ShamrockAugmentor.Builder builder = ShamrockAugmentor.builder();
-                    builder.setRoot(appClassesDir);
-                    builder.setClassLoader(runnerClassLoader);
-                    builder.setOutput(classOutput);
-                    builder.addFinal(BytecodeTransformerBuildItem.class)
-                            .addFinal(MainClassBuildItem.class)
-                            .addFinal(SubstrateOutputBuildItem.class);
-                    result = builder.build().run();
-                } finally {
-                    Thread.currentThread().setContextClassLoader(old);
                 }
+            };
 
-                Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers = new HashMap<>();
-                List<BytecodeTransformerBuildItem> bytecodeTransformerBuildItems = result.consumeMulti(BytecodeTransformerBuildItem.class);
+            ClassLoader old = Thread.currentThread().getContextClassLoader();
+            BuildResult result;
+            try {
+                Thread.currentThread().setContextClassLoader(runnerClassLoader);
+
+                ShamrockAugmentor.Builder builder = ShamrockAugmentor.builder();
+                builder.setRoot(appClassesDir);
+                builder.setClassLoader(runnerClassLoader);
+                builder.setOutput(classOutput);
+                builder.addFinal(BytecodeTransformerBuildItem.class).addFinal(MainClassBuildItem.class)
+                        .addFinal(SubstrateOutputBuildItem.class);
+                result = builder.build().run();
+            } finally {
+                Thread.currentThread().setContextClassLoader(old);
+            }
+
+            final List<BytecodeTransformerBuildItem> bytecodeTransformerBuildItems = result.consumeMulti(BytecodeTransformerBuildItem.class);
+            if (!bytecodeTransformerBuildItems.isEmpty()) {
+                final Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers = new HashMap<>(bytecodeTransformerBuildItems.size());
                 if (!bytecodeTransformerBuildItems.isEmpty()) {
                     for (BytecodeTransformerBuildItem i : bytecodeTransformerBuildItems) {
                         bytecodeTransformers.computeIfAbsent(i.getClassToTransform(), (h) -> new ArrayList<>()).add(i.getVisitorFunction());
                     }
                 }
 
-                Files.walk(wiringClassesDirectory).forEach(new Consumer<Path>() {
-                    @Override
-                    public void accept(Path path) {
-                        try {
-                            String pathName = wiringClassesDirectory.relativize(path).toString();
-                            if (Files.isDirectory(path)) {
-                                String p = pathName + "/";
-                                if (seen.contains(p)) {
-                                    return;
-                                }
-                                seen.add(p);
-                                if (!pathName.isEmpty()) {
-                                    runner.putNextEntry(new ZipEntry(p));
-                                }
-                            } else if (pathName.startsWith("META-INF/services/") && pathName.length() > 18) {
-                                services.computeIfAbsent(pathName, (u) -> new ArrayList<>()).add(CopyUtils.readFileContent(path));
-                            } else {
-                                seen.add(pathName);
-                                runner.putNextEntry(new ZipEntry(pathName));
-                                try (FileInputStream in = new FileInputStream(path.toFile())) {
-                                    doCopy(runner, in);
-                                }
-                            }
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                });
-
-                Manifest manifest = new Manifest();
-                manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
-                manifest.getMainAttributes().put(Attributes.Name.CLASS_PATH, classPath.toString());
-                manifest.getMainAttributes().put(Attributes.Name.MAIN_CLASS, mainClass);
-                runner.putNextEntry(new ZipEntry("META-INF/MANIFEST.MF"));
-                manifest.write(runner);
-                //now copy all the contents to the runner jar
-                //I am not 100% sure about this idea, but if we are going to support bytecode transforms it seems
-                //like the cleanest way to do it
-                //at the end of the PoC phase all this needs review
-                Path appJar = appClassesDir;
-                ExecutorService executorPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-                ConcurrentLinkedDeque<Future<FutureEntry>> transformed = new ConcurrentLinkedDeque<>();
+                // now copy all the contents to the runner jar
+                // I am not 100% sure about this idea, but if we are going to support bytecode transforms it seems
+                // like the cleanest way to do it
+                // at the end of the PoC phase all this needs review
+                final ExecutorService executorPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+                final ConcurrentLinkedDeque<Future<FutureEntry>> transformed = new ConcurrentLinkedDeque<>();
                 try {
-                    Files.walk(appJar).forEach(new Consumer<Path>() {
+                    Files.walk(appClassesDir).forEach(new Consumer<Path>() {
                         @Override
                         public void accept(Path path) {
-                            try {
-                                final String pathName = appJar.relativize(path).toString();
-                                if (Files.isDirectory(path)) {
-//                                if (!pathName.isEmpty()) {
-//                                    out.putNextEntry(new ZipEntry(pathName + "/"));
-//                                }
-                                } else if (pathName.endsWith(".class") && !bytecodeTransformers.isEmpty()) {
-                                    String className = pathName.substring(0, pathName.length() - 6).replace('/', '.');
-                                    List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors = bytecodeTransformers.get(className);
-
-                                    if (visitors == null || visitors.isEmpty()) {
-                                        runner.putNextEntry(new ZipEntry(pathName));
-                                        try (FileInputStream in = new FileInputStream(path.toFile())) {
-                                            doCopy(runner, in);
-                                        }
-                                    } else {
-                                        transformed.add(executorPool.submit(new Callable<FutureEntry>() {
-                                            @Override
-                                            public FutureEntry call() throws Exception {
-                                                final byte[] fileContent = CopyUtils.readFileContent(path);
-                                                ClassReader cr = new ClassReader(fileContent);
-                                                ClassWriter writer = new ClassWriter(cr, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-                                                ClassVisitor visitor = writer;
-                                                for (BiFunction<String, ClassVisitor, ClassVisitor> i : visitors) {
-                                                    visitor = i.apply(className, visitor);
-                                                }
-                                                cr.accept(visitor, 0);
-                                                return new FutureEntry(writer.toByteArray(), pathName);
-                                            }
-                                        }));
-                                    }
-                                } else {
-                                    runner.putNextEntry(new ZipEntry(pathName));
-                                    try (FileInputStream in = new FileInputStream(path.toFile())) {
-                                        doCopy(runner, in);
-                                    }
-                                }
-                            } catch (Exception e) {
-                                throw new RuntimeException(e);
+                            if (Files.isDirectory(path)) {
+                                return;
                             }
+                            final String pathName = appClassesDir.relativize(path).toString();
+                            if (!pathName.endsWith(".class") || bytecodeTransformers.isEmpty()) {
+                                return;
+                            }
+                            final String className = pathName.substring(0, pathName.length() - 6).replace('/', '.');
+                            final List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors = bytecodeTransformers.get(className);
+                            if (visitors == null || visitors.isEmpty()) {
+                                return;
+                            }
+                            transformed.add(executorPool.submit(new Callable<FutureEntry>() {
+                                @Override
+                                public FutureEntry call() throws Exception {
+                                    final byte[] fileContent = CopyUtils.readFileContent(path);
+                                    ClassReader cr = new ClassReader(fileContent);
+                                    ClassWriter writer = new ClassWriter(cr, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+                                    ClassVisitor visitor = writer;
+                                    for (BiFunction<String, ClassVisitor, ClassVisitor> i : visitors) {
+                                        visitor = i.apply(className, visitor);
+                                    }
+                                    cr.accept(visitor, 0);
+                                    return new FutureEntry(writer.toByteArray(), pathName);
+                                }
+                            }));
                         }
                     });
-                    for (Future<FutureEntry> i : transformed) {
-
-                        FutureEntry res = i.get();
-                        runner.putNextEntry(new ZipEntry(res.location));
-                        runner.write(res.data);
-                    }
                 } finally {
                     executorPool.shutdown();
                 }
-                for (Map.Entry<String, List<byte[]>> entry : services.entrySet()) {
-                    runner.putNextEntry(new ZipEntry(entry.getKey()));
-                    for (byte[] i : entry.getValue()) {
-                        runner.write(i);
-                        runner.write('\n');
+                if (!transformed.isEmpty()) {
+                    for (Future<FutureEntry> i : transformed) {
+                        final FutureEntry res = i.get();
+                        final Path classFile = transformedClassesDir.resolve(res.location);
+                        Files.createDirectories(classFile.getParent());
+                        try(OutputStream out = Files.newOutputStream(classFile)) {
+                            IoUtils.copy(out, new ByteArrayInputStream(res.data));
+                        }
                     }
                 }
             }
         } catch (Exception e) {
-            throw new AppCreatorException("Failed to run", e);
+            throw new AppCreatorException("Failed to augment application classes", e);
         }
     }
 
@@ -560,24 +395,6 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
         }
     }
 
-    private static void doCopy(OutputStream out, InputStream in) throws IOException {
-        byte[] buffer = new byte[1024];
-        int r;
-        while ((r = in.read(buffer)) > 0) {
-            out.write(buffer, 0, r);
-        }
-    }
-
-    private static byte[] read(InputStream in) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        byte[] buffer = new byte[1024];
-        int r;
-        while ((r = in.read(buffer)) > 0) {
-            out.write(buffer, 0, r);
-        }
-        return out.toByteArray();
-    }
-
     private static final class FutureEntry {
         final byte[] data;
         final String location;
@@ -590,7 +407,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
 
     @Override
     public String getConfigPropertyName() {
-        return "augment";
+        return "augment-only";
     }
 
     @Override
@@ -603,10 +420,6 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
         }
         .map("output", (AugmentPhase t, String value) -> t.setOutputDir(Paths.get(value)))
         .map("classes", (AugmentPhase t, String value) -> t.setAppClassesDir(Paths.get(value)))
-        .map("wiring-classes", (AugmentPhase t, String value) -> t.setWiringClassesDir(Paths.get(value)))
-        .map("lib", (AugmentPhase t, String value) -> t.setLibDir(Paths.get(value)))
-        .map("final-name", AugmentPhase::setFinalName)
-        .map("main-class", AugmentPhase::setMainClass)
-        .map("uber-jar", (AugmentPhase t, String value) -> t.setUberJar(Boolean.parseBoolean(value)));
+        .map("wiring-classes", (AugmentPhase t, String value) -> t.setWiringClassesDir(Paths.get(value)));
     }
 }

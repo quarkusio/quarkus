@@ -157,7 +157,7 @@ public class ArcAnnotationProcessor {
         builder.setAdditionalBeanDefiningAnnotations(additionalBeanDefiningAnnotations.stream()
                 .map((s) -> new BeanDefiningAnnotation(s.getName(), s.getDefaultScope()))
                 .collect(Collectors.toList()));
-        builder.setSharedAnnotationLiterals(false);
+        builder.setSharedAnnotationLiterals(true);
         builder.addResourceAnnotations(resourceAnnotations.stream()
                 .map(ResourceAnnotationBuildItem::getName)
                 .collect(Collectors.toList()));

@@ -17,100 +17,138 @@
 package org.jboss.protean.arc.processor;
 
 import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.protean.arc.ComputingCache;
+import org.jboss.protean.gizmo.BytecodeCreator;
 import org.jboss.protean.gizmo.ClassOutput;
+import org.jboss.protean.gizmo.MethodDescriptor;
+import org.jboss.protean.gizmo.ResultHandle;
 
 /**
  *
  * @author Martin Kouba
  */
-public class AnnotationLiteralProcessor {
+class AnnotationLiteralProcessor {
 
     private final AtomicInteger index;
 
-    private final ComputingCache<CacheKey, String> cache;
+    private final ComputingCache<Key, Literal> cache;
 
-    public AnnotationLiteralProcessor(String name, boolean shared) {
+    AnnotationLiteralProcessor(boolean shared, Predicate<DotName> applicationClassPredicate) {
         this.index = new AtomicInteger(1);
-        this.cache = shared ? new ComputingCache<>(key -> AnnotationLiteralGenerator.generatedSharedName(name, DotNames.simpleName(key.name), index)) : null;
+        this.cache = shared ? new ComputingCache<>(key -> {
+            return new Literal(AnnotationLiteralGenerator.generatedSharedName(key.annotationName, index), applicationClassPredicate.test(key.annotationName), 
+                    key.annotationClass.methods()
+                    .stream()
+                    .filter(m -> !m.name().equals(Methods.CLINIT) && !m.name().equals(Methods.INIT))
+                    .collect(Collectors.toList()));
+        }) : null;
     }
 
     boolean hasLiteralsToGenerate() {
         return cache != null && !cache.isEmpty();
     }
 
-    ComputingCache<CacheKey, String> getCache() {
+    ComputingCache<Key, Literal> getCache() {
         return cache;
     }
 
     /**
      *
+     * @param bytecode
      * @param classOutput
      * @param annotationClass
+     * @param annotationInstance
+     * @param targetPackage
      * @return an annotation literal class name
      */
-    String process(ClassOutput classOutput, ClassInfo annotationClass, AnnotationInstance annotationInstance, String targetPackage) {
+    ResultHandle process(BytecodeCreator bytecode, ClassOutput classOutput, ClassInfo annotationClass, AnnotationInstance annotationInstance,
+            String targetPackage) {
         if (cache != null) {
-            return cache.getValue(new CacheKey(annotationInstance.name(), annotationInstance.values()));
+            Literal literal = cache.getValue(new Key(annotationInstance.name(), annotationClass));
+
+            Map<String, AnnotationValue> annotationValues = annotationInstance.values().stream()
+                    .collect(Collectors.toMap(AnnotationValue::name, Function.identity()));
+
+            ResultHandle[] constructorParams = new ResultHandle[literal.constructorParams.size()];
+
+            for (ListIterator<MethodInfo> iterator = literal.constructorParams.listIterator(); iterator.hasNext();) {
+                MethodInfo method = iterator.next();
+                AnnotationValue value = annotationValues.get(method.name());
+                if (value == null) {
+                    value = method.defaultValue();
+                }
+                if (value == null) {
+                    throw new NullPointerException("Value not set for " + method);
+                }
+                ResultHandle retValue = AnnotationLiteralGenerator.loadValue(bytecode, value, annotationClass, method);
+                constructorParams[iterator.previousIndex()] = retValue;
+            }
+            return bytecode
+                    .newInstance(MethodDescriptor.ofConstructor(literal.className,
+                            literal.constructorParams.stream().map(m -> m.returnType().name().toString()).toArray()), constructorParams);
+
+        } else {
+            String literalClassName = AnnotationLiteralGenerator.generatedLocalName(targetPackage, DotNames.simpleName(annotationClass.name()), index);
+            AnnotationLiteralGenerator.createAnnotationLiteral(classOutput, annotationClass, annotationInstance, literalClassName);
+            return bytecode.newInstance(MethodDescriptor.ofConstructor(literalClassName));
         }
-        String literalName = AnnotationLiteralGenerator.generatedLocalName(targetPackage, DotNames.simpleName(annotationClass.name()), index);
-        AnnotationLiteralGenerator.createAnnotationLiteral(classOutput, annotationClass, annotationInstance, literalName);
-        return literalName;
     }
 
-    static class CacheKey {
+    static class Literal {
 
-        final DotName name;
+        final String className;
 
-        final List<AnnotationValue> values;
+        final boolean isApplicationClass;
+        
+        final List<MethodInfo> constructorParams;
 
-        public CacheKey(DotName name, List<AnnotationValue> values) {
-            this.name = name;
-            this.values = values;
+        public Literal(String className, boolean isApplicationClass, List<MethodInfo> constructorParams) {
+            this.className = className;
+            this.isApplicationClass = isApplicationClass;
+            this.constructorParams = constructorParams;
+        }
+
+    }
+
+    static class Key {
+
+        final DotName annotationName;
+        
+        final ClassInfo annotationClass;
+
+        public Key(DotName name, ClassInfo annotationClass) {
+            this.annotationName = name;
+            this.annotationClass = annotationClass;
         }
 
         @Override
         public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + ((name == null) ? 0 : name.hashCode());
-            result = prime * result + ((values == null) ? 0 : values.hashCode());
-            return result;
+            return Objects.hash(annotationName);
         }
 
         @Override
         public boolean equals(Object obj) {
-            if (this == obj) {
+            if (this == obj)
                 return true;
-            }
-            if (obj == null) {
+            if (obj == null)
                 return false;
-            }
-            if (!(obj instanceof CacheKey)) {
+            if (getClass() != obj.getClass())
                 return false;
-            }
-            CacheKey other = (CacheKey) obj;
-            if (name == null) {
-                if (other.name != null) {
-                    return false;
-                }
-            } else if (!name.equals(other.name)) {
-                return false;
-            }
-            if (values == null) {
-                if (other.values != null) {
-                    return false;
-                }
-            } else if (!values.equals(other.values)) {
-                return false;
-            }
-            return true;
+            Key other = (Key) obj;
+            return Objects.equals(annotationName, other.annotationName);
         }
 
     }

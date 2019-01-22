@@ -116,7 +116,7 @@ public final class DotNames {
 
     public static String simpleName(DotName dotName) {
         String local = dotName.local();
-        return local.contains(".") ? Types.convertNested(local.substring(local.lastIndexOf("."), local.length())) : Types.convertNested(local);
+        return local.contains(".") ? Types.convertNested(local.substring(local.lastIndexOf(".") + 1, local.length())) : Types.convertNested(local);
     }
 
     public static String packageName(DotName dotName) {

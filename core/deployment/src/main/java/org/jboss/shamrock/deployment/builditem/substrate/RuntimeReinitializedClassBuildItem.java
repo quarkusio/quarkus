@@ -18,6 +18,10 @@ package org.jboss.shamrock.deployment.builditem.substrate;
 
 import org.jboss.builder.item.MultiBuildItem;
 
+/**
+ * A class that will be reinitialized at runtime by Substrate. This will result in the static
+ * initializer running twice.
+ */
 public final class RuntimeReinitializedClassBuildItem extends MultiBuildItem {
 
     private final String className;

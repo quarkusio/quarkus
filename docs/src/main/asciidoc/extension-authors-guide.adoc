@@ -396,3 +396,31 @@ public class PersistenceAndShamrockConfigTest {
 ----
 
 <1> This tells JUnit that the Protean deployment should fail with a specific exception
+
+
+== Native Image Support
+
+There Shamrock provides a lot of build items that control aspects of the native image build. This allows for extensions
+to programmatically perform tests such as registering classes for reflection or adding static resources to the native
+image. Some of these build items are listed below:
+
+`org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem`::
+ Includes static resources into the native image.
+
+`org.jboss.shamrock.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem`::
+A class that will be reinitialized at runtime by Substrate. This will result in the static initializer running twice.
+
+`org.jboss.shamrock.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem`::
+A system property that will be set at native image build time.
+
+`org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBundleBuildItem`::
+Includes a resource bundle in the native image.
+
+`org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem`::
+Registers a class for reflection in Substrate. Constructors are always registered, while methods and fields are optional.
+
+`org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem`::
+A class that will be initialized at runtime rather than build time. This will cause the build to fail if the class is initialized as part of the native image build process, so care must be taken.
+
+`org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildItem`::
+A convenience feature that allows you to control most of the above features from a single build item.

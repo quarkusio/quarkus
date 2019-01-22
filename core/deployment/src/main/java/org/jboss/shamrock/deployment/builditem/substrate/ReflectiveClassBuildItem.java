@@ -21,6 +21,9 @@ import java.util.List;
 
 import org.jboss.builder.item.MultiBuildItem;
 
+/**
+ * Used to register a class for reflection in substrate
+ */
 public final class ReflectiveClassBuildItem extends MultiBuildItem {
 
     private final List<String> className;

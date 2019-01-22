@@ -53,8 +53,8 @@ public abstract class MappedPropertiesHandler<T> implements PropertiesHandler<T>
         }
 
         @Override
-        public C newInstance() {
-            return delegate.newInstance();
+        public C getTarget() throws PropertiesConfigReaderException {
+            return delegate.getTarget();
         }
 
         @Override

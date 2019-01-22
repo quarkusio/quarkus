@@ -34,19 +34,19 @@ import java.util.Properties;
  */
 public class PropertiesConfigReader<T> {
 
-    public static <T> PropertiesConfigReader<T> getInstance(PropertiesHandler<T> handler) {
+    public static <T> PropertiesConfigReader<T> getInstance(PropertiesHandler<T> handler) throws PropertiesConfigReaderException {
         return getInstance(handler, (PropertyLine line) -> PropertiesConfigUtils.unrecognizedProperty(line));
     }
 
-    public static <T> PropertiesConfigReader<T> getInstance(PropertiesHandler<T> handler, UnrecognizedPropertyHandler unrecognizedPropHandler) {
+    public static <T> PropertiesConfigReader<T> getInstance(PropertiesHandler<T> handler, UnrecognizedPropertyHandler unrecognizedPropHandler) throws PropertiesConfigReaderException {
         return getInstance(handler, unrecognizedPropHandler, (PropertyLine line, int nameElement) -> {});
     }
 
-    public static <T> PropertiesConfigReader<T> getInstance(PropertiesHandler<T> handler, UnrecognizedNameElementHandler unrecognizedChildHandler) {
+    public static <T> PropertiesConfigReader<T> getInstance(PropertiesHandler<T> handler, UnrecognizedNameElementHandler unrecognizedChildHandler) throws PropertiesConfigReaderException {
         return getInstance(handler, (PropertyLine line) -> PropertiesConfigUtils.unrecognizedProperty(line), unrecognizedChildHandler);
     }
 
-    public static <T> PropertiesConfigReader<T> getInstance(PropertiesHandler<T> handler, UnrecognizedPropertyHandler unrecognizedPropHandler, UnrecognizedNameElementHandler unrecognizedChildHandler) {
+    public static <T> PropertiesConfigReader<T> getInstance(PropertiesHandler<T> handler, UnrecognizedPropertyHandler unrecognizedPropHandler, UnrecognizedNameElementHandler unrecognizedChildHandler) throws PropertiesConfigReaderException {
         return  new PropertiesConfigReader<>(handler, unrecognizedPropHandler, unrecognizedChildHandler);
     }
 
@@ -56,10 +56,10 @@ public class PropertiesConfigReader<T> {
     private PropertyContext root;
     private PropertyContext current;
 
-    protected PropertiesConfigReader(PropertiesHandler<T> handler, UnrecognizedPropertyHandler unrecognizedPropHandler, UnrecognizedNameElementHandler unrecognizedChildHandler) {
+    protected PropertiesConfigReader(PropertiesHandler<T> handler, UnrecognizedPropertyHandler unrecognizedPropHandler, UnrecognizedNameElementHandler unrecognizedChildHandler) throws PropertiesConfigReaderException {
         this.unrecognizedPropHandler = unrecognizedPropHandler;
         this.unrecognizedChildHandler = unrecognizedChildHandler;
-        result = handler.newInstance();
+        result = handler.getTarget();
         root = new PropertyContext(null, null, 0, new String[] {}, handler);
         root.o = result;
         current = root;
@@ -180,7 +180,7 @@ public class PropertiesConfigReader<T> {
                 continue;
             }
             current = new PropertyContext(current, namePart, j - i, Arrays.copyOf(line.nameElements, j), childHandler);
-            current.o = childHandler.newInstance();
+            current.o = childHandler.getTarget();
             i = j;
         }
         current.nestedProperty = line;

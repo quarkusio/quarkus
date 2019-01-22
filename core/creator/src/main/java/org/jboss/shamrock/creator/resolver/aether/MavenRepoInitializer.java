@@ -124,7 +124,7 @@ public class MavenRepoInitializer {
         session.setOffline(settings.isOffline());
 
         // uncomment to generate dirty trees
-        // session.setDependencyGraphTransformer( null );
+        //session.setDependencyGraphTransformer( null );
 
         return session;
     }
@@ -140,7 +140,7 @@ public class MavenRepoInitializer {
     public static List<RemoteRepository> getRemoteRepos(Settings settings) throws AppCreatorException {
 
         final Map<String, Profile> profilesMap = settings.getProfilesAsMap();
-        final List<RemoteRepository> remotes = new ArrayList<>(20);
+        final List<RemoteRepository> remotes = new ArrayList<>();
 
         for (String profileName : settings.getActiveProfiles()) {
             final Profile profile = profilesMap.get(profileName);

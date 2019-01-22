@@ -34,7 +34,10 @@ import org.eclipse.aether.repository.RemoteRepository;
 import org.jboss.shamrock.creator.AppArtifact;
 import org.jboss.shamrock.creator.AppCreator;
 import org.jboss.shamrock.creator.AppCreatorException;
+import org.jboss.shamrock.creator.AppDependency;
 import org.jboss.shamrock.creator.phase.augment.AugmentPhase;
+import org.jboss.shamrock.creator.phase.curate.CurateOutcome;
+import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarOutcome;
 import org.jboss.shamrock.creator.resolver.maven.ResolvedMavenArtifactDeps;
 
 /**
@@ -120,25 +123,33 @@ public class BuildMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-        try {
-            new AppCreator()
-            // init the resolver with the project dependencies
-            .setArtifactResolver(new ResolvedMavenArtifactDeps(project.getGroupId(), project.getArtifactId(),
-                    project.getVersion(), project.getArtifacts()))
-            // add the necessary phases
-            .addPhase(new AugmentPhase()
-                    .setOutputDir(buildDir.toPath())
-                    .setAppClassesDir(outputDirectory.toPath())
-                    .setWiringClassesDir(wiringClassesDirectory.toPath())
-                    .setLibDir(libDir.toPath())
-                    .setFinalName(finalName)
-                    .setMainClass(mainClass)
-                    .setUberJar(uberJar)
-                    )
-            // initiate the build process using the app's GAV
-            .create(new AppArtifact(project.getGroupId(), project.getArtifactId(), project.getVersion()));
+
+        try(AppCreator appCreator = AppCreator.builder()
+                // configure the build phase we want the app to go through
+                .addPhase(new AugmentPhase()
+                        .setOutputDir(buildDir.toPath())
+                        .setAppClassesDir(outputDirectory.toPath())
+                        .setWiringClassesDir(wiringClassesDirectory.toPath())
+                        .setLibDir(libDir.toPath())
+                        .setFinalName(finalName)
+                        .setMainClass(mainClass)
+                        .setUberJar(uberJar))
+                .build()) {
+
+            final AppArtifact appArtifact = new AppArtifact(project.getGroupId(), project.getArtifactId(), project.getVersion());
+            final List<AppDependency> appDeps = new ResolvedMavenArtifactDeps(project.getGroupId(), project.getArtifactId(),
+                    project.getVersion(), project.getArtifacts()).collectDependencies(appArtifact);
+
+            // push resolved application state
+            appCreator.pushOutcome(CurateOutcome.builder()
+                    .setAppArtifact(appArtifact)
+                    .setInitialDeps(appDeps)
+                    .build());
+
+            // resolve the outcome we need here
+            appCreator.resolveOutcome(RunnerJarOutcome.class);
         } catch (AppCreatorException e) {
-            throw new MojoExecutionException("Failed to create application", e);
+            throw new MojoExecutionException("Failed to build a runnable JAR", e);
         }
     }
 }

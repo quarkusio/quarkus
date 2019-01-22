@@ -9,7 +9,7 @@ import java.nio.file.Path;
  *
  * @author Alexey Loubyansky
  */
-public abstract class AppArtifactResolverBase<R extends AppArtifactResolverBase<R>> implements AppArtifactResolver {
+public abstract class AppArtifactResolverBase implements AppArtifactResolver {
 
     @Override
     public Path resolve(AppArtifact artifact) throws AppCreatorException {

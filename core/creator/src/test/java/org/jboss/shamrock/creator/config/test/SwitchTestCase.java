@@ -33,7 +33,7 @@ public class SwitchTestCase extends PersonAddressTestBase {
     static final class PersonPropertiesHandler implements PropertiesHandler<Person> {
 
         @Override
-        public Person newInstance() {
+        public Person getTarget() {
             return new Person();
         }
 
@@ -84,7 +84,7 @@ public class SwitchTestCase extends PersonAddressTestBase {
         static final AddressPropertiesHandler INSTANCE =  new AddressPropertiesHandler();
 
         @Override
-        public Address.Builder newInstance() {
+        public Address.Builder getTarget() {
             return Address.builder();
         }
 

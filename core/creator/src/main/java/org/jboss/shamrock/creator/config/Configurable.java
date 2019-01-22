@@ -15,16 +15,17 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.config.reader;
+package org.jboss.shamrock.creator.config;
+
+import org.jboss.shamrock.creator.config.reader.PropertiesHandler;
 
 /**
  *
  * @author Alexey Loubyansky
  */
-public class MultirootedConfigHandler extends MappedPropertiesHandler<Object> {
+public interface Configurable<T> {
 
-    @Override
-    public Object getTarget() {
-        return null;
-    }
+    String getConfigPropertyName();
+
+    PropertiesHandler<T> getPropertiesHandler();
 }

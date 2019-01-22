@@ -15,16 +15,31 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.config.reader;
+package org.jboss.shamrock.creator.demo;
+
+import java.util.Properties;
+
+import org.jboss.shamrock.creator.AppCreator;
+import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarOutcome;
 
 /**
  *
  * @author Alexey Loubyansky
  */
-public class MultirootedConfigHandler extends MappedPropertiesHandler<Object> {
+public class UpdateToLatestVersionDemo extends ConfigDemoBase {
+
+    public static void main(String[] args) throws Exception {
+        new UpdateToLatestVersionDemo().run();
+    }
 
     @Override
-    public Object getTarget() {
-        return null;
+    protected void initProps(Properties props) {
+        props.setProperty("curate.update", "latest");
+        props.setProperty("curate.update-number", "minor");
+    }
+
+    @Override
+    public void demo(AppCreator creator) throws Exception {
+        creator.resolveOutcome(RunnerJarOutcome.class);
     }
 }

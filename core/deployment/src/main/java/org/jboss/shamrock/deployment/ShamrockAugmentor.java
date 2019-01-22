@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.jboss.builder.BuildChain;
 import org.jboss.builder.BuildChainBuilder;
@@ -44,12 +45,14 @@ public class ShamrockAugmentor {
     private final ClassLoader classLoader;
     private final Path root;
     private final Set<Class<? extends BuildItem>> finalResults;
+    private final List<Consumer<BuildChainBuilder>> buildChainCustomizers;
 
     ShamrockAugmentor(Builder builder) {
         this.output = builder.output;
         this.classLoader = builder.classLoader;
         this.root = builder.root;
         this.finalResults = new HashSet<>(builder.finalResults);
+        this.buildChainCustomizers = new ArrayList<>(builder.buildChainCustomizers);
     }
 
     public BuildResult run() throws Exception {
@@ -79,6 +82,9 @@ public class ShamrockAugmentor {
                     .produces(ShutdownContextBuildItem.class)
                     .produces(ClassOutputBuildItem.class)
                     .build();
+            for (Consumer<BuildChainBuilder> i : buildChainCustomizers) {
+                i.accept(chainBuilder);
+            }
             for (Class<? extends BuildItem> i : finalResults) {
                 chainBuilder.addFinal(i);
             }
@@ -115,7 +121,12 @@ public class ShamrockAugmentor {
         ClassLoader classLoader;
         Path root;
         Set<Class<? extends BuildItem>> finalResults = new HashSet<>();
+        private final List<Consumer<BuildChainBuilder>> buildChainCustomizers = new ArrayList<>();
 
+        public Builder addBuildChainCustomizer(Consumer<BuildChainBuilder> customizer) {
+            this.buildChainCustomizers.add(customizer);
+            return this;
+        }
 
         public List<Path> getAdditionalApplicationArchives() {
             return additionalApplicationArchives;

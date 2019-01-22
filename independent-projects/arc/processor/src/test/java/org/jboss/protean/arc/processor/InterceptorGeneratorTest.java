@@ -23,6 +23,7 @@ import static org.junit.Assert.assertNotNull;
 import java.io.IOException;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.Collections;
 
 import javax.annotation.Priority;
 import javax.inject.Inject;

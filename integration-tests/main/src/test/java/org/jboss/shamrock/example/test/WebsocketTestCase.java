@@ -27,12 +27,11 @@ import javax.websocket.EndpointConfig;
 import javax.websocket.MessageHandler;
 import javax.websocket.Session;
 
-import org.jboss.shamrock.test.ShamrockTest;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.jboss.shamrock.test.junit.ShamrockTest;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-@RunWith(ShamrockTest.class)
+@ShamrockTest
 public class WebsocketTestCase {
 
     @Test
@@ -55,7 +54,7 @@ public class WebsocketTestCase {
         }, ClientEndpointConfig.Builder.create().build(), uri);
 
         try {
-            Assert.assertEquals("hello", message.poll(20, TimeUnit.SECONDS));
+            Assertions.assertEquals("hello", message.poll(20, TimeUnit.SECONDS));
         } finally {
             session.close();
         }

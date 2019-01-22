@@ -40,7 +40,7 @@
         <!-- Test extensions -->
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-junit</artifactId>
+            <artifactId>shamrock-junit5</artifactId>
         </dependency>
         <dependency>
             <groupId>io.rest-assured</groupId>

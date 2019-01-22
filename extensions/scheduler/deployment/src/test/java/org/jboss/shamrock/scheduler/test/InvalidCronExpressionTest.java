@@ -18,35 +18,32 @@ package org.jboss.shamrock.scheduler.test;
 import javax.enterprise.inject.spi.DeploymentException;
 
 import org.jboss.shamrock.scheduler.api.Scheduled;
-import org.jboss.shamrock.test.ShouldFail;
-import org.jboss.shamrock.test.Deployment;
 import org.jboss.shamrock.test.ShamrockUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-@RunWith(ShamrockUnitTest.class)
 public class InvalidCronExpressionTest {
 
-    @ShouldFail(DeploymentException.class)
-    @Deployment
-    public static JavaArchive deploy() {
-        return ShrinkWrap.create(JavaArchive.class)
-                .addClasses(InvalidBean.class);
-    }
+
+    @RegisterExtension
+    static final ShamrockUnitTest test = new ShamrockUnitTest()
+            .setExpectedException(DeploymentException.class)
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(InvalidBean.class));
 
     @Test
     public void test() throws InterruptedException {
     }
-    
+
     static class InvalidBean {
-        
-        
-        @Scheduled(cron="0 0 0 ????")
+
+
+        @Scheduled(cron = "0 0 0 ????")
         void wrong() {
         }
-        
+
     }
 
 }

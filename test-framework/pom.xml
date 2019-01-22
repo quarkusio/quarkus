@@ -30,7 +30,11 @@
     <name>Shamrock - Test Framework</name>
     <packaging>pom</packaging>
     <modules>
-        <module>junit</module>
+        <module>common</module>
+        <module>h2</module>
+        <module>junit4</module>
+        <module>junit5-internal</module>
+        <module>junit5</module>
     </modules>
 
 </project>

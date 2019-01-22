@@ -2,14 +2,14 @@
 package ${package_name};
 </#if>
 
-import org.jboss.shamrock.test.ShamrockTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.jboss.shamrock.test.junit.ShamrockTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
-@RunWith(ShamrockTest.class)
+@ExtendWith(ShamrockTest.class)
 public class ${class_name}Test {
 
     @Test

@@ -22,6 +22,7 @@ import static org.jboss.protean.gizmo.MethodDescriptor.ofMethod;
 import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.jboss.builder.Version;
@@ -32,8 +33,10 @@ import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
 import org.jboss.protean.gizmo.TryBlock;
+import org.jboss.shamrock.annotations.BuildProducer;
 import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.deployment.ClassOutput;
+import org.jboss.shamrock.deployment.builditem.ApplicationClassNameBuildItem;
 import org.jboss.shamrock.deployment.builditem.ClassOutputBuildItem;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.HttpServerBuiltItem;
@@ -51,6 +54,8 @@ class MainClassBuildStep {
     private static final String APP_CLASS = "org.jboss.shamrock.runner.ApplicationImpl";
     private static final String MAIN_CLASS = "org.jboss.shamrock.runner.GeneratedMain";
     private static final String STARTUP_CONTEXT = "STARTUP_CONTEXT";
+
+    private static final AtomicInteger COUNT = new AtomicInteger();
     
     @BuildStep
     MainClassBuildItem build(List<StaticBytecodeRecorderBuildItem> staticInitTasks,
@@ -58,10 +63,14 @@ class MainClassBuildStep {
                              List<SystemPropertyBuildItem> properties,
                              Optional<HttpServerBuiltItem> httpServer,
                              List<FeatureBuildItem> features,
+                             BuildProducer<ApplicationClassNameBuildItem> appClassNameProducer,
                              ClassOutputBuildItem classOutput) {
 
+        String appClassName = APP_CLASS + COUNT.incrementAndGet();
+        appClassNameProducer.produce(new ApplicationClassNameBuildItem(appClassName));
+
         // Application class
-        ClassCreator file = new ClassCreator(ClassOutput.gizmoAdaptor(classOutput.getClassOutput(), true), APP_CLASS, null, Application.class.getName());
+        ClassCreator file = new ClassCreator(ClassOutput.gizmoAdaptor(classOutput.getClassOutput(), true), appClassName, null, Application.class.getName());
 
         // Application class: static init
 
@@ -149,7 +158,7 @@ class MainClassBuildStep {
         mv = file.getMethodCreator("main", void.class, String[].class);
         mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
 
-        final ResultHandle appClassInstance = mv.newInstance(ofConstructor(APP_CLASS));
+        final ResultHandle appClassInstance = mv.newInstance(ofConstructor(appClassName));
         // run the app
         mv.invokeVirtualMethod(ofMethod(Application.class, "run", void.class, String[].class), appClassInstance, mv.getMethodParam(0));
 

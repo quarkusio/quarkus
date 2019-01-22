@@ -1,11 +1,11 @@
 package org.shamrock.jpa.tests.configurationless;
 
-import org.jboss.shamrock.test.SubstrateTest;
-import org.junit.runner.RunWith;
+import org.jboss.shamrock.test.junit.SubstrateTest;
 
 /**
  * @author Emmanuel Bernard emmanuel@hibernate.org
  */
-@RunWith(SubstrateTest.class)
+
+@SubstrateTest
 public class JPALoadScriptTestInGraalITCase extends JPALoadScriptTest {
 }

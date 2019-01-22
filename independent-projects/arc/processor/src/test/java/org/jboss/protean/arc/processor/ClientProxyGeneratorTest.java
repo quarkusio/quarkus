@@ -21,6 +21,7 @@ import static org.jboss.protean.arc.processor.Basics.index;
 import java.io.IOException;
 import java.util.AbstractList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import javax.enterprise.context.ApplicationScoped;

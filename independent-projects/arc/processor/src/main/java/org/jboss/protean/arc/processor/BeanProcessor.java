@@ -351,7 +351,7 @@ public class BeanProcessor {
          * <li>does not declare any producer which is eligible for injection to any injection point,</li>
          * <li>is not directly eligible for injection into any {@link javax.enterprise.inject.Instance} injection point</li>
          * </ul>
-         * 
+         *
          * @param removeUnusedBeans
          * @return
          */
@@ -361,7 +361,7 @@ public class BeanProcessor {
         }
 
         /**
-         * 
+         *
          * @param exclusion
          * @return self
          * @see #setRemoveUnusedBeans(boolean)

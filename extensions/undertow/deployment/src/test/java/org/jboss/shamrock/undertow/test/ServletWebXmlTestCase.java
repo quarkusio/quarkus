@@ -18,33 +18,16 @@ package org.jboss.shamrock.undertow.test;
 
 import static org.hamcrest.Matchers.is;
 
-import org.jboss.shamrock.test.Deployment;
 import org.jboss.shamrock.test.ShamrockUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.restassured.RestAssured;
 
-@RunWith(ShamrockUnitTest.class)
 public class ServletWebXmlTestCase {
-
-    @Deployment
-    public static JavaArchive deploy() {
-        return ShrinkWrap.create(JavaArchive.class)
-                .addClasses(WebXmlServlet.class)
-                .addAsManifestResource(new StringAsset(WEB_XML), "web.xml");
-    }
-
-    @Test
-    public void testWebXmlServlet() {
-        RestAssured.when().get("/mapped").then()
-                .statusCode(200)
-                .body(is("web xml servlet"));
-    }
-
 
     static final String WEB_XML =
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
@@ -64,4 +47,18 @@ public class ServletWebXmlTestCase {
                     "    <url-pattern>/mapped</url-pattern>\n" +
                     "  </servlet-mapping>" +
                     "</web-app>";
+
+    @RegisterExtension
+    static ShamrockUnitTest runner = new ShamrockUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(WebXmlServlet.class)
+                    .addAsManifestResource(new StringAsset(WEB_XML), "web.xml"));
+
+    @Test
+    public void testWebXmlServlet() {
+        RestAssured.when().get("/mapped").then()
+                .statusCode(200)
+                .body(is("web xml servlet"));
+    }
+
 }

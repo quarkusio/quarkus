@@ -49,7 +49,7 @@
         <!-- test dependencies -->
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-junit</artifactId>
+            <artifactId>shamrock-junit5</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

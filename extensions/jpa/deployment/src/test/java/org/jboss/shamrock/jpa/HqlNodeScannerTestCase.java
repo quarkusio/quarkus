@@ -26,12 +26,12 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 //not a real test, but you can use it to
 //get all not implementation that need to be added for reflection
-@Ignore
+@Disabled
 public class HqlNodeScannerTestCase {
 
     @Test

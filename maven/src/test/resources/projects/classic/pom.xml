@@ -27,7 +27,7 @@
     </dependency>
     <dependency>
       <groupId>@project.groupId@</groupId>
-      <artifactId>shamrock-junit</artifactId>
+      <artifactId>shamrock-junit5</artifactId>
       <version>${shamrock.version}</version>
       <scope>test</scope>
     </dependency>

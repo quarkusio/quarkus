@@ -25,12 +25,11 @@ import java.nio.charset.StandardCharsets;
 
 import javax.json.Json;
 
-import org.jboss.shamrock.test.ShamrockTest;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.jboss.shamrock.test.junit.ShamrockTest;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-@RunWith(ShamrockTest.class)
+@ShamrockTest
 public class ValidatorTestCase {
 
     @Test
@@ -55,7 +54,7 @@ public class ValidatorTestCase {
         while ((r = in.read(buf)) > 0) {
             out.write(buf, 0, r);
         }
-        Assert.assertEquals("failed:email", new String(out.toByteArray()));
+        Assertions.assertEquals("failed:email", new String(out.toByteArray()));
     }
 
 
@@ -81,7 +80,7 @@ public class ValidatorTestCase {
         while ((r = in.read(buf)) > 0) {
             out.write(buf, 0, r);
         }
-        Assert.assertEquals("passed", new String(out.toByteArray()));
+        Assertions.assertEquals("passed", new String(out.toByteArray()));
     }
 
 }

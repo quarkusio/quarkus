@@ -128,7 +128,7 @@ package org.acme.quickstart;
 
 import org.jboss.shamrock.test.junit.SubstrateTest;
 
-@RSubstrateTest // <1>
+@SubstrateTest // <1>
 public class GreetingResourceIT extends GreetingResourceTest { // <2>
 
     // Run the same tests

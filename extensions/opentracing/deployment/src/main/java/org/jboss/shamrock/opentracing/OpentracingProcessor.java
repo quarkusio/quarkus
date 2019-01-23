@@ -50,7 +50,7 @@ public class OpentracingProcessor {
     }
 
     @BuildStep
-    void setupFilter(BuildProducer<JaxrsProviderBuildItem> providers,
+            void setupFilter(BuildProducer<JaxrsProviderBuildItem> providers,
                      BuildProducer<FilterBuildItem> filterProducer,
                      BuildProducer<FeatureBuildItem> feature) {
 

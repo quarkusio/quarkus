@@ -31,7 +31,7 @@ import javax.servlet.http.HttpServletResponse;
  */
 @ServletSecurity(
         @HttpConstraint(
-                rolesAllowed={"Tester"}
+                rolesAllowed={"tester", "user"}
         )
 )
 @WebServlet(name = "MySecureServlet", urlPatterns = "/secure-test", initParams = {@WebInitParam(name = "message", value = "A secured message")})

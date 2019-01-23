@@ -62,6 +62,9 @@
         <module>jdbc</module>
         <module>jpa</module>
         <module>bean-validation</module>
+
+        <!-- Security -->
+        <module>security</module>
     </modules>
 
 </project>

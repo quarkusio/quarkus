@@ -18,6 +18,8 @@ package org.jboss.shamrock.deployment.recording;
 
 import java.util.Objects;
 
+import org.jboss.shamrock.runtime.ObjectSubstitution;
+
 public class NonSerializable {
 
     private final String message;

@@ -27,7 +27,7 @@ jobs:
     displayName: 'Maven Build'
     inputs:
       goals: 'install'
-      options: '-B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dnative-image.xmx=4g -Dnative'
+      options: '-B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dnative-image.xmx=4g -Dnative -Dno-format'
 
   - script: |
       docker build -f docker/integration-test-main/Dockerfile -t jtgdocker1/shamrock-integration-test-main integration-tests/main

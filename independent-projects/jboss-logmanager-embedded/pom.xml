@@ -36,6 +36,7 @@
 
     <properties>
         <test.log.dir>${project.build.directory}/test-log-output</test.log.dir>
+        <format.skip>true</format.skip>
     </properties>
 
     <dependencies>

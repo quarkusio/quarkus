@@ -134,12 +134,16 @@ class EventImpl<T> implements Event<T> {
 
     @Override
     public <U extends T> Event<U> select(Class<U> subtype, Annotation... qualifiers) {
-        throw new UnsupportedOperationException();
+        Set<Annotation> mergerdQualifiers = new HashSet<>(this.qualifiers);
+        Collections.addAll(mergerdQualifiers, qualifiers);
+        return new EventImpl<U>(subtype, mergerdQualifiers);
     }
 
     @Override
     public <U extends T> Event<U> select(TypeLiteral<U> subtype, Annotation... qualifiers) {
-        throw new UnsupportedOperationException();
+        Set<Annotation> mergerdQualifiers = new HashSet<>(this.qualifiers);
+        Collections.addAll(mergerdQualifiers, qualifiers);
+        return new EventImpl<U>(subtype.getType(), mergerdQualifiers);
     }
 
     private Notifier<? super T> createNotifier(Class<?> runtimeType) {

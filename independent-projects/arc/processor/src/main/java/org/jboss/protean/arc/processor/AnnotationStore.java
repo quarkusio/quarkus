@@ -33,8 +33,10 @@ import org.jboss.protean.arc.processor.BuildExtension.BuildContext;
 import org.jboss.protean.arc.processor.BuildExtension.Key;
 
 /**
+ * Applies {@link AnnotationsTransformer}s and caches the results of transformations.
  *
  * @author Martin Kouba
+ * @see AnnotationsTransformer
  */
 public class AnnotationStore {
 
@@ -58,6 +60,12 @@ public class AnnotationStore {
         this.buildContext = buildContext;
     }
 
+    /**
+     * All {@link AnnotationsTransformer}s are applied and the result is cached.
+     * 
+     * @param target
+     * @return the annotation instance for the given target
+     */
     public Collection<AnnotationInstance> getAnnotations(AnnotationTarget target) {
         if (transformed != null) {
             return transformed.computeIfAbsent(target, this::transform);
@@ -65,14 +73,35 @@ public class AnnotationStore {
         return getOriginalAnnotations(target);
     }
 
+    /**
+     * 
+     * @param target
+     * @param name
+     * @return the annotation instance if present, {@code null} otherwise
+     * @see #getAnnotations(AnnotationTarget)
+     */
     public AnnotationInstance getAnnotation(AnnotationTarget target, DotName name) {
         return Annotations.find(getAnnotations(target), name);
     }
 
+    /**
+     * 
+     * @param target
+     * @param name
+     * @return {@code true} if the specified target contains the specified annotation, @{code false} otherwise
+     * @see #getAnnotations(AnnotationTarget)
+     */
     public boolean hasAnnotation(AnnotationTarget target, DotName name) {
         return Annotations.contains(getAnnotations(target), name);
     }
 
+    /**
+     * 
+     * @param target
+     * @param names
+     * @return {@code true} if the specified target contains any of the specified annotations, @{code false} otherwise
+     * @see #getAnnotations(AnnotationTarget)
+     */
     public boolean hasAnyAnnotation(AnnotationTarget target, Iterable<DotName> names) {
         return Annotations.containsAny(getAnnotations(target), names);
     }

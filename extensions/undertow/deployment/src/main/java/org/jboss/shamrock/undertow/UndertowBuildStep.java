@@ -90,7 +90,6 @@ import org.jboss.shamrock.annotations.BuildProducer;
 import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.deployment.ApplicationArchive;
-import org.jboss.shamrock.deployment.Capabilities;
 import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
 import org.jboss.shamrock.deployment.builditem.ArchiveRootBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
@@ -105,6 +104,8 @@ import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildI
 import org.jboss.shamrock.deployment.recording.RecorderContext;
 import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.undertow.runtime.HttpConfig;
+import org.jboss.shamrock.undertow.runtime.ServletSecurityInfoProxy;
+import org.jboss.shamrock.undertow.runtime.ServletSecurityInfoSubstitution;
 import org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate;
 
 import io.undertow.Undertow;
@@ -155,14 +156,14 @@ public class UndertowBuildStep {
 
                 .build();
     }
-
+    
     @BuildStep
     HotDeploymentConfigFileBuildItem configFile() {
         return new HotDeploymentConfigFileBuildItem(WEB_XML);
     }
 
     @Record(STATIC_INIT)
-    @BuildStep
+    @BuildStep()
     public ServletDeploymentBuildItem build(ApplicationArchivesBuildItem applicationArchivesBuildItem,
                                             List<ServletBuildItem> servlets,
                                             List<FilterBuildItem> filters,
@@ -174,6 +175,7 @@ public class UndertowBuildStep {
                                             InjectionFactoryBuildItem bc,
                                             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) throws Exception {
 
+        context.registerSubstitution(ServletSecurityInfo.class, ServletSecurityInfoProxy.class, ServletSecurityInfoSubstitution.class);
         reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, DefaultServlet.class.getName(), "io.undertow.server.protocol.http.HttpRequestParser$$generated"));
 
         //we need to check for web resources in order to get welcome files to work

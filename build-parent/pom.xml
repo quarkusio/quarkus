@@ -92,6 +92,8 @@
       <slf4j.version>1.7.25</slf4j.version>
       <slf4j-jboss-logging.version>1.1.0.Final</slf4j-jboss-logging.version>
       <wildfly-common.version>1.5.0.Alpha3-format-001</wildfly-common.version>
+      <wildfly-client-config.version>1.0.0.Final</wildfly-client-config.version>
+      <wildfly-elytron.version>1.8.0.Final-SNAPSHOT</wildfly-elytron.version>
       <jboss-modules.version>1.8.7.Final</jboss-modules.version>
       <jboss-threads.version>3.0.0.Alpha4</jboss-threads.version>
       <vertx.version>3.6.2</vertx.version>
@@ -429,6 +431,16 @@
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-spring-di-deployment</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-security-deployment</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-security-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
@@ -851,6 +863,16 @@
             <version>${javax.xml.bind.version}</version>
          </dependency>
          <dependency>
+            <groupId>org.jboss.spec.javax.security.jacc</groupId>
+            <artifactId>jboss-jacc-api_1.5_spec</artifactId>
+            <version>1.0.2.Final</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.spec.javax.security.auth.message</groupId>
+            <artifactId>jboss-jaspi-api_1.1_spec</artifactId>
+            <version>1.0.2.Final</version>
+         </dependency>
+         <dependency>
             <groupId>org.graalvm.sdk</groupId>
             <artifactId>graal-sdk</artifactId>
             <version>${graal-sdk.version}</version>
@@ -1099,6 +1121,29 @@
             <groupId>org.wildfly.openssl</groupId>
             <artifactId>wildfly-openssl-linux-x86_64</artifactId>
             <version>${wildfly.openssl.version}</version>
+         </dependency>
+
+         <dependency>
+            <groupId>org.wildfly.client</groupId>
+            <artifactId>wildfly-client-config</artifactId>
+            <version>${wildfly-client-config.version}</version>
+            <exclusions>
+               <exclusion>
+                  <groupId>org.jboss.logging</groupId>
+                  <artifactId>jboss-logging</artifactId>
+               </exclusion>
+            </exclusions>
+         </dependency>
+         <dependency>
+            <groupId>org.wildfly.security</groupId>
+            <artifactId>wildfly-elytron-embedded</artifactId>
+            <version>${wildfly-elytron.version}</version>
+            <exclusions>
+               <exclusion>
+                  <groupId>org.jboss.logging</groupId>
+                  <artifactId>jboss-logging</artifactId>
+               </exclusion>
+            </exclusions>
          </dependency>
 
          <dependency>

@@ -30,11 +30,11 @@ import java.util.Set;
 
 import org.jboss.shamrock.creator.AppCreator;
 import org.jboss.shamrock.creator.phase.augment.AugmentPhase;
-import org.jboss.shamrock.creator.phase.curate.PomStateCreationPhase;
-import org.jboss.shamrock.creator.phase.curate.PomStateReadingPhase;
+import org.jboss.shamrock.creator.phase.curate.CuratePhase;
 import org.jboss.shamrock.creator.phase.nativeimage.NativeImageOutcome;
 import org.jboss.shamrock.creator.phase.nativeimage.NativeImagePhase;
 import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarOutcome;
+import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarPhase;
 import org.jboss.shamrock.creator.util.IoUtils;
 import org.jboss.shamrock.creator.util.PropertyUtils;
 
@@ -68,42 +68,16 @@ public class AppCreatorDemo {
         //buildNativeImage(appJar, demoDir);
         //curateRunnableJar(appJar, demoDir);
 
-        logLibDiff(exampleTarget, demoDir);
-    }
-
-    private static void curateRunnableJar(Path userApp, Path outputDir) throws Exception {
-
-        try (AppCreator appCreator = AppCreator.builder()
-                .addPhase(new PomStateCreationPhase())
-                .addPhase(new PomStateReadingPhase())
-                .setAppJar(userApp)
-                .setWorkDir(outputDir)
-                .build()) {
-            appCreator.resolveOutcome(PomStateReadingPhase.Outcome.class);
-        }
-/*
-        new AppCreator()
-
-        // enabling debug allows to see resolved application dependencies in the terminal
-        .setDebug(true)
-
-        // setting a work dir can be useful if you want to see the temporary content used
-        // by various phases during app building
-        .setWorkDir(outputDir)
-
-        .addPhase(new PomStateCreationPhase())
-        .addPhase(new PomStateReadingPhase())
-        //.addPhase(new CuratePhase())
-        //.addPhase(new AugmentPhase().setOutputDir(outputDir))
-        .create(userApp);
-        */
+        //logLibDiff(exampleTarget, demoDir);
     }
 
     private static void buildRunnableJar(Path userApp, Path outputDir) throws Exception {
 
         final RunnerJarOutcome runnerJar;
         try (AppCreator appCreator = AppCreator.builder()
+                .addPhase(new CuratePhase())
                 .addPhase(new AugmentPhase()/*.setOutputDir(outputDir)*/)
+                .addPhase(new RunnerJarPhase()/*.setOutputDir(outputDir)*/)
                 .addPhase(new NativeImagePhase())
                 .setAppJar(userApp)
                 .build()) {
@@ -117,7 +91,9 @@ public class AppCreatorDemo {
 
         try (AppCreator appCreator = AppCreator.builder()
                 //.setOutput(outputDir)
+                .addPhase(new CuratePhase())
                 .addPhase(new AugmentPhase())
+                .addPhase(new RunnerJarPhase())
                 .addPhase(new NativeImagePhase().setOutputDir(outputDir))
                 .setAppJar(userApp)
                 .build()) {

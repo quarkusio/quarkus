@@ -18,6 +18,7 @@
 package org.jboss.shamrock.creator.phase.augment;
 
 import java.nio.file.Path;
+import org.jboss.shamrock.creator.AppDependency;
 
 /**
  *
@@ -27,5 +28,9 @@ public interface AugmentOutcome {
 
     Path getAppClassesDir();
 
+    Path getTransformedClassesDir();
+
     Path getWiringClassesDir();
+
+    boolean isWhitelisted(AppDependency dep);
 }

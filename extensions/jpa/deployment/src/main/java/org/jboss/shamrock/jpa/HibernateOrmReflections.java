@@ -103,6 +103,10 @@ public final class HibernateOrmReflections {
         simpleConstructor(reflectiveClass, org.hibernate.hql.internal.ast.tree.ConstructorNode.class);
         simpleConstructor(reflectiveClass, org.hibernate.hql.internal.ast.tree.LiteralNode.class);
         simpleConstructor(reflectiveClass, org.hibernate.hql.internal.ast.tree.BinaryArithmeticOperatorNode.class);
+
+        //The CoreMessageLogger is sometimes looked up without it necessarily being a field, so we're
+        //not processing it the same way as other Logger lookups.
+        simpleConstructor(reflectiveClass, "org.hibernate.internal.CoreMessageLogger_$logger");
     }
 
     private void allConstructors(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, final Class<?> clazz) {

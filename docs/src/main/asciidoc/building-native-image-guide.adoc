@@ -126,10 +126,9 @@ Then, create the `src/test/java/org/acme/quickstart/GreetingResourceIT.java` wit
 package org.acme.quickstart;
 
 
-import org.jboss.shamrock.test.SubstrateTest;
-import org.junit.runner.RunWith;
+import org.jboss.shamrock.test.junit.SubstrateTest;
 
-@RunWith(SubstrateTest.class) // <1>
+@SubstrateTest // <1>
 public class GreetingResourceIT extends GreetingResourceTest { // <2>
 
     // Run the same tests

@@ -297,99 +297,109 @@ TODO: config integration
 
 Testing of extensions should be done with the `org.jboss.shamrock.test.ShamrockUnitTest` runner. This runner allows
 for Arquillian-style tests that test specific functionalities. It is not intended for testing user applications, as this
-should be done via `org.jboss.shamrock.test.ShamrockTest`. The main difference between these test runners is that
+should be done via `org.jboss.shamrock.test.junit.ShamrockTest`. The main difference between these test runners is that
 `ShamrockTest` simply boots the application once at the start of the run, while `ShamrockUnitTest` deploys a custom
 Shamrock application for each test class.
 
 These tests should be placed in the deployment module, if additional Shamrock modules are required for testing
 their deployment modules should also be added as test scoped dependencies.
 
+Note that `ShamrockUnitTest` is in the `shamrock-junit5-internal` module.
+
 An example test class may look like:
 
 [source,java]
 ----
+package org.jboss.shamrock.health.test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 
-import org.eclipse.microprofile.health.*;
-import org.jboss.shamrock.test.*;
+import org.eclipse.microprofile.health.Health;
+import org.eclipse.microprofile.health.HealthCheck;
+import org.eclipse.microprofile.health.HealthCheckResponse;
+import org.jboss.shamrock.test.ShamrockUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-@RunWith(ShamrockUnitTest.class)                                     <1>
+import io.restassured.RestAssured;
+
 public class FailingUnitTest {
 
-    @Deployment                                                      <2>
-    public static JavaArchive deploy() {
-        return ShrinkWrap.create(JavaArchive.class)
-                .addClasses(FailingHealthCheck.class)
-                .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml");
-    }
 
-    @Inject                                                          <3>
+    @RegisterExtension                                                                  // <1>
+    static final ShamrockUnitTest config = new ShamrockUnitTest()
+            .setArchiveProducer(() ->
+                    ShrinkWrap.create(JavaArchive.class)                                // <2>
+                            .addClasses(FailingHealthCheck.class)
+                            .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml")
+            );
+    @Inject                                                                             // <3>
     @Health
     Instance<HealthCheck> checks;
 
     @Test
     public void testHealthServlet() {
-        URLResponse rep = URLTester.relative("health").invokeURL();  <4>
-        Assert.assertEquals(503, rep.statusCode());
+        RestAssured.when().get("/health").then().statusCode(503);                       // <4>
     }
 
     @Test
     public void testHealthBeans() {
-        List<HealthCheck> check = new ArrayList<>();                 <5>
+        List<HealthCheck> check = new ArrayList<>();                                    // <5>
         for (HealthCheck i : checks) {
             check.add(i);
         }
-        Assert.assertEquals(1, check.size());
-        Assert.assertEquals(HealthCheckResponse.State.DOWN, check.get(0).call().getState());
+        assertEquals(1, check.size());
+        assertEquals(HealthCheckResponse.State.DOWN, check.get(0).call().getState());
     }
 }
 ----
 
 
 <1> This tells JUnit to use the Shamrock unit test runner
-<2> This deployment method is used to build the application to be tested. It uses Shrinkwrap to create a JavaArchive to test
+<2> This producer is used to build the application to be tested. It uses Shrinkwrap to create a JavaArchive to test
 <3> It is possible to inject beans from our test deployment directly into the test case
 <4> This method directly invokes the health check Servlet and verifies the response
 <5> This method uses the injected health check bean to verify it is returning the expected result
 
-If you want to test that an extension properly fails at build time, use `@BuildShouldFailWith`
+If you want to test that an extension properly fails at build time, use the `setExpectedException` method:
 
 [source,java]
 ----
+
+package org.jboss.shamrock.jpa;
+
 import org.jboss.shamrock.deployment.configuration.ConfigurationError;
-import org.jboss.shamrock.test.BuildShouldFailWith;
-import org.jboss.shamrock.test.Deployment;
 import org.jboss.shamrock.test.ShamrockUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-import static org.junit.Assert.fail;
-
-@RunWith(ShamrockUnitTest.class)
 public class PersistenceAndShamrockConfigTest {
 
-    @Deployment
-    @BuildShouldFailWith(ConfigurationError.class) <1>
-    public static JavaArchive deploy() {
-        return ShrinkWrap.create(JavaArchive.class)
-                .addClasses(Gift.class, CRUDResource.class, ConfigurationlessApp.class)
-                .addAsManifestResource("META-INF/some-persistence.xml", "persistence.xml")
-                .addAsManifestResource("META-INF/microprofile-config.properties");
-    }
+    @RegisterExtension
+    static ShamrockUnitTest runner = new ShamrockUnitTest()
+            .setExpectedException(ConfigurationError.class)                     <1>
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addAsManifestResource("META-INF/some-persistence.xml", "persistence.xml")
+                    .addAsManifestResource("META-INF/microprofile-config.properties"));
 
     @Test
     public void testPersistenceAndConfigTest() {
-        // should not be called, deployment exception should happen first.
-        fail();
+        // should not be called, deployment exception should happen first:
+        // it's illegal to have Hibernate configuration properties in both the
+        // microprofile-config.properties an in the persistence.xml
+        Assertions.fail();
     }
 
 }

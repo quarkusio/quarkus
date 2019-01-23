@@ -158,7 +158,7 @@ public class DevMojo extends AbstractMojo {
                 args.add("-Xrunjdwp:transport=dt_socket,address=localhost:5005,server=n,suspend=n");
             } else if (debug.toLowerCase().equals("true")) {
                 args.add("-Xdebug");
-                args.add("-Xrunjdwp:transport=dt_socket,address=localhost:5005,server=n,suspend=y");
+                args.add("-Xrunjdwp:transport=dt_socket,address=localhost:5005,server=y,suspend=y");
             } else if (!debug.toLowerCase().equals("false")) {
                 try {
                     int port = Integer.parseInt(debug);

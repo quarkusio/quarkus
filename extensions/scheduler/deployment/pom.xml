@@ -5,7 +5,7 @@
   <parent>
     <artifactId>shamrock-scheduler</artifactId>
     <groupId>org.jboss.shamrock</groupId>
-    <version>1.0.0.Alpha1-SNAPSHOT</version>
+    <version>0.7.0</version>
     <relativePath>../</relativePath>
   </parent>
 

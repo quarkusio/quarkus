@@ -24,6 +24,9 @@ import org.jboss.jandex.AnnotationTarget.Kind;
 
 /**
  * Allows a build-time extension to override the annotations that exist on bean classes.
+ * <p>
+ * The container should use {@link AnnotationStore} to obtain annotations of any {@link org.jboss.jandex.ClassInfo}, {@link org.jboss.jandex.FieldInfo} and
+ * {@link org.jboss.jandex.MethodInfo}.
  *
  * @author Martin Kouba
  */
@@ -49,6 +52,12 @@ public interface AnnotationsTransformer extends BuildExtension {
 
         AnnotationTarget getTarget();
 
+        /**
+         * The initial set of annotations instances corresponds to {@link org.jboss.jandex.ClassInfo#classAnnotations()},
+         * {@link org.jboss.jandex.FieldInfo#annotations()} and {@link org.jboss.jandex.MethodInfo#annotations()} respectively.
+         * 
+         * @return the annotation instances
+         */
         Collection<AnnotationInstance> getAnnotations();
 
         /**
@@ -57,21 +66,17 @@ public interface AnnotationsTransformer extends BuildExtension {
          * @return a new transformation
          */
         Transformation transform();
-        
+
         default boolean isClass() {
             return getTarget().kind() == Kind.CLASS;
         }
-        
+
         default boolean isField() {
             return getTarget().kind() == Kind.FIELD;
         }
-        
+
         default boolean isMethod() {
             return getTarget().kind() == Kind.METHOD;
-        }
-        
-        default boolean isMethodParameter() {
-            return getTarget().kind() == Kind.METHOD_PARAMETER;
         }
 
     }

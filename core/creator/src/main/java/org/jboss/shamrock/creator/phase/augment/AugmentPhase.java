@@ -72,7 +72,8 @@ import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 /**
- * This phase at the moment actually combines augmentation and runnable JAR building.
+ * This phase consumes {@link org.jboss.shamrock.creator.phase.curate.CurateOutcome} and processes
+ * user application and and its dependency classes for phases that generate a runnable application.
  *
  * @author Alexey Loubyansky
  */

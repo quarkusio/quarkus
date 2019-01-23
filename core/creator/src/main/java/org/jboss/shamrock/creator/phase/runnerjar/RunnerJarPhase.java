@@ -58,7 +58,8 @@ import org.jboss.shamrock.creator.util.ZipUtils;
 import org.jboss.shamrock.dev.CopyUtils;
 
 /**
- * This phase at the moment actually combines augmentation and runnable JAR building.
+ * Based on the provided {@link org.jboss.shamrock.creator.phase.augment.AugmentOutcome},
+ * this phase builds a runnable JAR.
  *
  * @author Alexey Loubyansky
  */

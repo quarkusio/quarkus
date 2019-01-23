@@ -196,14 +196,14 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             params.add(beanToResultHandle.get(bean.getDeclaringBean()));
             paramTypes.add(Type.getDescriptor(InjectableBean.class));
         }
-        for (InjectionPointInfo injetionPoint : injectionPoints) {
-            ResultHandle resultHandle = beanToResultHandle.get(injetionPoint.getResolvedBean());
+        for (InjectionPointInfo injectionPoint : injectionPoints) {
+            ResultHandle resultHandle = beanToResultHandle.get(injectionPoint.getResolvedBean());
             params.add(resultHandle);
             paramTypes.add(Type.getDescriptor(InjectableReferenceProvider.class));
         }
         if (bean.getDisposer() != null) {
-            for (InjectionPointInfo injetionPoint : bean.getDisposer().getInjection().injectionPoints) {
-                ResultHandle resultHandle = beanToResultHandle.get(injetionPoint.getResolvedBean());
+            for (InjectionPointInfo injectionPoint : bean.getDisposer().getInjection().injectionPoints) {
+                ResultHandle resultHandle = beanToResultHandle.get(injectionPoint.getResolvedBean());
                 params.add(resultHandle);
                 paramTypes.add(Type.getDescriptor(InjectableReferenceProvider.class));
             }

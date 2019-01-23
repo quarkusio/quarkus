@@ -55,7 +55,6 @@ import org.jboss.shamrock.creator.phase.augment.AugmentOutcome;
 import org.jboss.shamrock.creator.phase.curate.CurateOutcome;
 import org.jboss.shamrock.creator.util.IoUtils;
 import org.jboss.shamrock.creator.util.ZipUtils;
-import org.jboss.shamrock.dev.CopyUtils;
 
 /**
  * Based on the provided {@link org.jboss.shamrock.creator.phase.augment.AugmentOutcome},
@@ -252,7 +251,10 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
                         return;
                     }
                     if (relativePath.startsWith("META-INF/services/") && relativePath.length() > 18) {
-                        services.computeIfAbsent(relativePath, (u) -> new ArrayList<>()).add(CopyUtils.readFileContent(path));
+                        if (Files.size(path) > Integer.MAX_VALUE) {
+                            throw new RuntimeException("Can't process class files larger than Integer.MAX_VALUE bytes");
+                        }
+                        services.computeIfAbsent(relativePath, (u) -> new ArrayList<>()).add(Files.readAllBytes(path));
                         return;
                     }
                     seen.add(relativePath);

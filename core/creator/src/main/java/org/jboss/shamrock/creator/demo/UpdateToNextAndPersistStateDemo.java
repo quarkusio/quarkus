@@ -21,6 +21,10 @@ import java.util.Properties;
 
 import org.jboss.shamrock.creator.AppCreator;
 import org.jboss.shamrock.creator.phase.curate.CurateOutcome;
+import org.jboss.shamrock.creator.phase.curate.CuratePhase;
+import org.jboss.shamrock.creator.phase.curate.DependenciesOrigin;
+import org.jboss.shamrock.creator.phase.curate.VersionUpdate;
+import org.jboss.shamrock.creator.phase.curate.VersionUpdateNumber;
 import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarOutcome;
 
 /**
@@ -35,9 +39,9 @@ public class UpdateToNextAndPersistStateDemo extends ConfigDemoBase {
 
     @Override
     protected void initProps(Properties props) {
-        props.setProperty("curate.initial-deps", "last-update"); // APPLICATION, last-update
-        props.setProperty("curate.update", "next");
-        props.setProperty("curate.update-number", "minor");
+        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_DEPS_ORIGIN), DependenciesOrigin.LAST_UPDATE.getName()); // APPLICATION, last-update
+        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_VERSION_UPDATE), VersionUpdate.NEXT.getName());
+        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_VERSION_UPDATE_NUMBER), VersionUpdateNumber.MINOR.getName());
     }
 
     @Override

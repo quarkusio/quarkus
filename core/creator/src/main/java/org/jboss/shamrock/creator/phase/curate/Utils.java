@@ -26,10 +26,11 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
@@ -64,25 +65,6 @@ public class Utils {
     }
 
     /**
-     * Filters out non-platform and transitive dependencies.
-     *
-     * @param appDeps  resolved application dependencies
-     * @return  dependencies that can be checked for updates
-     * @throws AppCreatorException  in case of a failure
-     */
-    static List<AppDependency> getUpdateCandidates(List<AppDependency> appDeps) throws AppCreatorException {
-        final List<AppDependency> updateCandidates = new ArrayList<>();
-        for(AppDependency dep : appDeps) {
-            final String groupId = dep.getArtifact().getGroupId();
-            if(!groupId.equals("org.jboss.shamrock") || "test".equals(dep.getScope())) {
-                continue;
-            }
-            updateCandidates.add(dep);
-        }
-        return updateCandidates;
-    }
-
-    /**
      * Filters out non-platform from application POM dependencies.
      *
      * @param deps  POM model application dependencies
@@ -90,24 +72,28 @@ public class Utils {
      * @return  dependencies that can be checked for updates
      * @throws AppCreatorException  in case of a failure
      */
-    static List<AppDependency> getUpdateCandidates(List<Dependency> deps, List<AppDependency> appDeps) throws AppCreatorException {
-        final Map<ArtifactKey, AppDependency> appDepMap = new HashMap<>(appDeps.size());
+    static List<AppDependency> getUpdateCandidates(List<Dependency> deps, List<AppDependency> appDeps, Set<String> groupIds) throws AppCreatorException {
+        final Map<ArtifactKey, AppDependency> appDepMap = new LinkedHashMap<>(appDeps.size());
         for(AppDependency appDep : appDeps) {
             appDepMap.put(new ArtifactKey(appDep.getArtifact()), appDep);
         }
         final List<AppDependency> updateCandidates = new ArrayList<>(deps.size());
+        // it's critical to preserve the order of the dependencies from the pom
         for(Dependency dep : deps) {
-            if(!dep.getGroupId().equals("org.jboss.shamrock") || "test".equals(dep.getScope())) {
+            if(!groupIds.contains(dep.getGroupId()) || "test".equals(dep.getScope())) {
                 continue;
             }
             final AppDependency appDep = appDepMap.remove(new ArtifactKey(dep));
             if(appDep == null) {
-                throw new AppCreatorException("Failed to locate dependency " + new AppArtifact(dep.getGroupId(), dep.getArtifactId(), dep.getClassifier(), dep.getType(), dep.getVersion()) + " present in pom.xml among resolved application dependencies");
+                // This normally would be a dependency that's missing <scope>test</scope> in the artifact's pom
+                // but is marked as such in one of artifact's parent poms
+                //throw new AppCreatorException("Failed to locate dependency " + new AppArtifact(dep.getGroupId(), dep.getArtifactId(), dep.getClassifier(), dep.getType(), dep.getVersion()) + " present in pom.xml among resolved application dependencies");
+                continue;
             }
             updateCandidates.add(appDep);
         }
         for(AppDependency appDep : appDepMap.values()) {
-            if(appDep.getArtifact().getGroupId().equals("org.jboss.shamrock")) {
+            if(groupIds.contains(appDep.getArtifact().getGroupId())) {
                 updateCandidates.add(appDep);
             }
         }

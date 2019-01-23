@@ -22,6 +22,9 @@ import java.util.Properties;
 import org.jboss.shamrock.creator.AppCreator;
 import org.jboss.shamrock.creator.AppDependency;
 import org.jboss.shamrock.creator.phase.curate.CurateOutcome;
+import org.jboss.shamrock.creator.phase.curate.CuratePhase;
+import org.jboss.shamrock.creator.phase.curate.VersionUpdate;
+import org.jboss.shamrock.creator.phase.curate.VersionUpdateNumber;
 
 /**
  *
@@ -35,8 +38,8 @@ public class CheckUpdatesDemo extends ConfigDemoBase {
 
     @Override
     protected void initProps(Properties props) {
-        props.setProperty("curate.update", "none"); // NONE, next, latest
-        props.setProperty("curate.update-number", "minor"); // major, minor, MICRO
+        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_VERSION_UPDATE), VersionUpdate.NONE.getName()); // NONE, next, latest
+        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_VERSION_UPDATE_NUMBER), VersionUpdateNumber.MINOR.getName()); // major, minor, MICRO
     }
 
     @Override

@@ -22,7 +22,6 @@ import java.util.List;
 import org.jboss.shamrock.creator.AppArtifact;
 import org.jboss.shamrock.creator.AppArtifactResolver;
 import org.jboss.shamrock.creator.AppCreatorException;
-import org.jboss.shamrock.creator.phase.curate.CuratePhase.UpdateNumber;
 
 /**
  *
@@ -31,9 +30,9 @@ import org.jboss.shamrock.creator.phase.curate.CuratePhase.UpdateNumber;
 public class DefaultUpdateDiscovery implements UpdateDiscovery {
 
     private final AppArtifactResolver resolver;
-    private final UpdateNumber updateNumber;
+    private final VersionUpdateNumber updateNumber;
 
-    public DefaultUpdateDiscovery(AppArtifactResolver resolver, UpdateNumber updateNumber) {
+    public DefaultUpdateDiscovery(AppArtifactResolver resolver, VersionUpdateNumber updateNumber) {
         this.resolver = resolver;
         this.updateNumber = updateNumber;
     }
@@ -66,7 +65,7 @@ public class DefaultUpdateDiscovery implements UpdateDiscovery {
     }
 
     private String resolveUpToVersion(AppArtifact artifact) throws AppCreatorException {
-        if(updateNumber == CuratePhase.UpdateNumber.MAJOR) {
+        if(updateNumber == VersionUpdateNumber.MAJOR) {
             return null;
         }
 
@@ -78,7 +77,7 @@ public class DefaultUpdateDiscovery implements UpdateDiscovery {
             throw new AppCreatorException("Failed to determine the major version in " + version);
         }
         final String majorStr = version.substring(0, majorMinorSep);
-        if (updateNumber == CuratePhase.UpdateNumber.MINOR) {
+        if (updateNumber == VersionUpdateNumber.MINOR) {
             final long major;
             try {
                 major = Long.parseLong(majorStr);

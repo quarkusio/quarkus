@@ -64,8 +64,10 @@
         <module>independent-projects/jboss-logmanager-embedded</module>
         <module>independent-projects/jboss-logging-embedded</module>
 
-        <!-- Misc. Maven, cli, docs -->
-        <module>cli</module>
+        <!-- Maven -->
+        <module>maven</module>
+
+        <!-- Misc. -->
         <module>docs</module>
 
         <!-- Do not add modules after war-launcher. JVM state will fail CI -->

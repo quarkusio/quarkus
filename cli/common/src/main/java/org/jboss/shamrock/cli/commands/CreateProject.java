@@ -1,0 +1,198 @@
+package org.jboss.shamrock.cli.commands;
+
+
+import org.apache.maven.model.Activation;
+import org.apache.maven.model.ActivationProperty;
+import org.apache.maven.model.Build;
+import org.apache.maven.model.BuildBase;
+import org.apache.maven.model.Dependency;
+import org.apache.maven.model.DependencyManagement;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.Plugin;
+import org.apache.maven.model.PluginExecution;
+import org.apache.maven.model.Profile;
+import org.jboss.shamrock.BasicRest;
+import org.jboss.shamrock.maven.utilities.MojoUtils;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Properties;
+
+import static org.jboss.shamrock.maven.utilities.MojoUtils.*;
+import static org.jboss.shamrock.maven.utilities.MojoUtils.SHAMROCK_VERSION_PROPERTY_NAME;
+import static org.jboss.shamrock.maven.utilities.MojoUtils.SHAMROCK_VERSION_VARIABLE;
+import static org.jboss.shamrock.maven.utilities.MojoUtils.configuration;
+import static org.jboss.shamrock.maven.utilities.MojoUtils.plugin;
+
+/**
+ * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
+ */
+public class CreateProject {
+
+    private File root;
+    private String groupId;
+    private String artifactId;
+    private String version = SHAMROCK_VERSION;
+
+    private Model model;
+
+    public CreateProject(final File file) {
+        root = file;
+    }
+
+    public CreateProject groupId(String groupId) {
+        this.groupId = groupId;
+        return this;
+    }
+
+    public CreateProject artifactId(String artifactId) {
+        this.artifactId = artifactId;
+        return this;
+    }
+
+    public CreateProject version(String version) {
+        this.version = version;
+        return this;
+    }
+
+    public Model getModel() {
+        return model;
+    }
+
+    public boolean doCreateProject(final Map<String, Object> context) throws IOException {
+        if (root.exists() && !root.isDirectory()) {
+            System.out.println("Project root needs to either not exist or be a directory");
+            return false;
+        } else if (!root.exists()) {
+            boolean mkdirStatus = root.mkdirs();
+            if (!mkdirStatus) {
+                System.out.println("Failed to create root directory");
+                return false;
+            }
+        }
+
+        System.out.println("Creating a new project in " + root.getAbsolutePath());
+
+        context.put("mProjectGroupId", groupId);
+        context.put("mProjectArtifactId", artifactId);
+        context.put("mProjectVersion", version);
+        context.put("shamrockVersion", SHAMROCK_VERSION);
+
+        new BasicRest()
+            .generate(root, context);
+
+        final File pom = new File(root + "/pom.xml");
+        model = MojoUtils.readPom(pom);
+        addVersionProperty(model);
+        addBom(model);
+        addMainPluginConfig(model);
+        addNativeProfile(model);
+        MojoUtils.write(model, pom);
+
+        return true;
+    }
+
+    private void addBom(Model model) {
+        boolean hasBom = false;
+        DependencyManagement dm = model.getDependencyManagement();
+        if (dm == null) {
+            dm = new DependencyManagement();
+            model.setDependencyManagement(dm);
+        } else {
+            hasBom = dm.getDependencies().stream()
+                       .anyMatch(d ->
+                                     d.getGroupId().equals(SHAMROCK_GROUP_ID) &&
+                                     d.getArtifactId().equals(SHAMROCK_BOM_ARTIFACT_ID));
+        }
+
+        if (!hasBom) {
+            Dependency bom = new Dependency();
+            bom.setGroupId(SHAMROCK_GROUP_ID);
+            bom.setArtifactId(SHAMROCK_BOM_ARTIFACT_ID);
+            bom.setVersion(SHAMROCK_VERSION_VARIABLE);
+            bom.setType("pom");
+            bom.setScope("import");
+
+            dm.addDependency(bom);
+        }
+    }
+
+    private void addNativeProfile(Model model) {
+        final boolean match = model.getProfiles().stream().anyMatch(p -> p.getId().equals("native-image"));
+        if (!match) {
+            PluginExecution exec = new PluginExecution();
+            exec.addGoal("native-image");
+            exec.setConfiguration(configuration(new Element("enableHttpUrlHandler", "true")));
+
+            Plugin plg = plugin(SHAMROCK_GROUP_ID, SHAMROCK_PLUGIN_ARTIFACT_ID, SHAMROCK_VERSION_VARIABLE);
+            plg.addExecution(exec);
+
+            BuildBase buildBase = new BuildBase();
+            buildBase.addPlugin(plg);
+
+            Profile profile = new Profile();
+            profile.setId("native-image");
+            profile.setBuild(buildBase);
+
+            final Activation activation = new Activation();
+            final ActivationProperty property = new ActivationProperty();
+            property.setName("!no-native");
+
+            activation.setProperty(property);
+            profile.setActivation(activation);
+            model.addProfile(profile);
+        }
+    }
+
+    private void addMainPluginConfig(Model model) {
+        Plugin plugin = plugin(SHAMROCK_GROUP_ID, SHAMROCK_PLUGIN_ARTIFACT_ID, SHAMROCK_VERSION_VARIABLE);
+        if (isParentPom(model)) {
+            addPluginManagementSection(model, plugin);
+            //strip the shamrockVersion off
+            plugin = plugin(SHAMROCK_GROUP_ID, SHAMROCK_PLUGIN_ARTIFACT_ID);
+        } else {
+            plugin = plugin(SHAMROCK_GROUP_ID, SHAMROCK_PLUGIN_ARTIFACT_ID, SHAMROCK_VERSION_VARIABLE);
+        }
+        PluginExecution pluginExec = new PluginExecution();
+        pluginExec.addGoal("build");
+        plugin.addExecution(pluginExec);
+        Build build = createBuildSectionIfRequired(model);
+        build.getPlugins().add(plugin);
+    }
+
+    private void addPluginManagementSection(Model model, Plugin plugin) {
+        if (model.getBuild().getPluginManagement() != null) {
+            if (model.getBuild().getPluginManagement().getPlugins() == null) {
+                model.getBuild().getPluginManagement().setPlugins(new ArrayList<>());
+            }
+            model.getBuild().getPluginManagement().getPlugins().add(plugin);
+        }
+    }
+
+    private Build createBuildSectionIfRequired(Model model) {
+        Build build = model.getBuild();
+        if (build == null) {
+            build = new Build();
+            model.setBuild(build);
+        }
+        if (build.getPlugins() == null) {
+            build.setPlugins(new ArrayList<>());
+        }
+        return build;
+    }
+
+    private void addVersionProperty(Model model) {
+        Properties properties = model.getProperties();
+        if (properties == null) {
+            properties = new Properties();
+            model.setProperties(properties);
+        }
+        properties.putIfAbsent(SHAMROCK_VERSION_PROPERTY_NAME, SHAMROCK_VERSION);
+    }
+
+    private boolean isParentPom(Model model) {
+        return "pom".equals(model.getPackaging());
+    }
+}

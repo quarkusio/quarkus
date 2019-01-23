@@ -411,7 +411,7 @@ public class BeanDeployment {
 
             if (beanClass.nestingType().equals(NestingType.ANONYMOUS) || beanClass.nestingType().equals(NestingType.LOCAL)
                     || (beanClass.nestingType().equals(NestingType.INNER) && !Modifier.isStatic(beanClass.flags()))) {
-                // Skip annonymous, local and inner classes
+                // Skip anonymous, local and inner classes
                 continue;
             }
 

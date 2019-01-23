@@ -763,10 +763,10 @@ public class BeanGenerator extends AbstractGenerator {
                     ResultHandle interceptorProvider = create.readInstanceField(
                             FieldDescriptor.of(beanCreator.getClassName(), interceptorToProviderField.get(interceptor), InjectableInterceptor.class.getName()),
                             create.getThis());
-                    ResultHandle interceptorInstaceHandle = create.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, interceptorProvider,
+                    ResultHandle interceptorInstanceHandle = create.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, interceptorProvider,
                             create.getMethodParam(0));
                     ResultHandle wrapHandle = create.invokeStaticMethod(MethodDescriptor.ofMethod(InitializedInterceptor.class, "of",
-                            InitializedInterceptor.class, Object.class, InjectableInterceptor.class), interceptorInstaceHandle, interceptorProvider);
+                            InitializedInterceptor.class, Object.class, InjectableInterceptor.class), interceptorInstanceHandle, interceptorProvider);
                     interceptorToWrap.put(interceptor, wrapHandle);
                 }
 

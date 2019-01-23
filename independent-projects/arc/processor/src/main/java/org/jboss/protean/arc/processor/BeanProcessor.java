@@ -379,14 +379,14 @@ public class BeanProcessor {
 
     }
 
-    private static <E extends BuildExtension> List<E> initAndSort(List<E> extentions, BuildContext buildContext) {
-        for (Iterator<E> iterator = extentions.iterator(); iterator.hasNext();) {
+    private static <E extends BuildExtension> List<E> initAndSort(List<E> extensions, BuildContext buildContext) {
+        for (Iterator<E> iterator = extensions.iterator(); iterator.hasNext();) {
             if (!iterator.next().initialize(buildContext)) {
                 iterator.remove();
             }
         }
-        extentions.sort(BuildExtension::compare);
-        return extentions;
+        extensions.sort(BuildExtension::compare);
+        return extensions;
     }
 
     /**

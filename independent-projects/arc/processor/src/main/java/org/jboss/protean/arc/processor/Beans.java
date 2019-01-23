@@ -161,7 +161,7 @@ final class Beans {
         if (isAlternative) {
             alternativePriority = declaringBean.getAlternativePriority();
             if (alternativePriority == null) {
-                // Declaring bean itself does not have to be an alternive and can only have @Priority
+                // Declaring bean itself does not have to be an alternative and can only have @Priority
                 alternativePriority = declaringBean.getTarget().get().asClass().classAnnotations().stream().filter(a -> a.name().equals(DotNames.PRIORITY)).findAny()
                         .map(a -> a.value().asInt()).orElse(null);
             }
@@ -224,7 +224,7 @@ final class Beans {
         if (isAlternative) {
             alternativePriority = declaringBean.getAlternativePriority();
             if (alternativePriority == null) {
-                // Declaring bean itself does not have to be an alternive and can only have @Priority
+                // Declaring bean itself does not have to be an alternative and can only have @Priority
                 alternativePriority = declaringBean.getTarget().get().asClass().classAnnotations().stream().filter(a -> a.name().equals(DotNames.PRIORITY)).findAny()
                         .map(a -> a.value().asInt()).orElse(null);
             }

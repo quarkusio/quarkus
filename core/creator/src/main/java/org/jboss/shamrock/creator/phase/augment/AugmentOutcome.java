@@ -21,16 +21,41 @@ import java.nio.file.Path;
 import org.jboss.shamrock.creator.AppDependency;
 
 /**
+ * Represents an outcome of {@link AugmentPhase}
  *
  * @author Alexey Loubyansky
  */
 public interface AugmentOutcome {
 
+    /**
+     * Directory containing original user application classes.
+     *
+     * @return  directory containing original user application classes
+     */
     Path getAppClassesDir();
 
+    /**
+     * Directory containing bytecode-transformed user application classes.
+     * Depending on the application, this directory may be empty.
+     *
+     * @return  directory containing transformed user application classes
+     */
     Path getTransformedClassesDir();
 
+    /**
+     * Directory containing classes generated during augmentation.
+     *
+     * @return  directory containing generated classes
+     */
     Path getWiringClassesDir();
 
+    /**
+     * Phases that consume this outcome may check whether an application
+     * dependency was "whitelisted" for processing during augmentation.
+     * <p>The need for this method has to be further reviewed.
+     *
+     * @param dep  application dependency
+     * @return  true if the dependency was whitelisted, otherwise - false
+     */
     boolean isWhitelisted(AppDependency dep);
 }

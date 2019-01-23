@@ -607,7 +607,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
         }
     }
 
-    class ProxyInstance {
+    private static final class ProxyInstance {
         final Object proxy;
         final String key;
 

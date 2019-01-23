@@ -123,7 +123,6 @@ final class FastBootHibernatePersistenceProvider implements PersistenceProvider 
                 persistenceUnitName);
 
         verifyProperties(properties);
-        Map integration = Collections.emptyMap();
 
         // These are pre-parsed during image generation:
         final List<PersistenceUnitDescriptor> units = PersistenceUnitsHolder.getPersistenceUnitDescriptors();

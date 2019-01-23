@@ -272,7 +272,7 @@ Edit the `pom.xml` file to add the 2 following dependencies:
 ----
 <dependency>
     <groupId>org.jboss.shamrock</groupId>
-    <artifactId>shamrock-junit4</artifactId>
+    <artifactId>shamrock-junit5</artifactId>
     <version>${shamrock.version}</version>
     <scope>test</scope>
 </dependency>
@@ -284,30 +284,40 @@ Edit the `pom.xml` file to add the 2 following dependencies:
 </dependency>
 ----
 
+Note that Shamrock uses JUnit 5 by default, which means that you may need to upgrade the version of surefire
+that is in use. Do this by adding the following to the `<build><plugins>` section of  `pom.xml`:
+
+[source,xml,subs=attributes+]
+----
+<plugin>
+    <artifactId>maven-surefire-plugin</artifactId>
+    <version>{surefire-version}</version>
+</plugin>
+----
+
 Then, create the `src/test/java/org/acme/quickstart/GreetingResourceTest.java` with the following content:
 
 [source,java]
 ----
 package org.acme.quickstart;
 
-import org.jboss.shamrock.test.ShamrockTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.jboss.shamrock.test.junit.ShamrockTest;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
-@RunWith(ShamrockTest.class)    // <1>
+@ShamrockTest
 public class GreetingResourceTest {
 
-    @Test
+    @Test    // <1>
     public void testHelloEndpoint() {
         given()
           .when().get("/hello")
           .then()
-             .statusCode(200)  // <2>
+             .statusCode(200)    // <2>
              .body(is("hello"));
     }
 

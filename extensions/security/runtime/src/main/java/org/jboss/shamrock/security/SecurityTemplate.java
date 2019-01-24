@@ -249,14 +249,7 @@ public class SecurityTemplate {
         return new ServletExtension() {
             @Override
             public void handleDeployment(DeploymentInfo deploymentInfo, ServletContext servletContext) {
-                //such hacks, this needs to be done properly, but is an example to get going
-                boolean enable = false;
-                for (ServletInfo i : deploymentInfo.getServlets().values()) {
-                    if (i.getServletSecurityInfo() != null) {
-                        enable = true;
-                    }
-                }
-                if (enable) {
+                if (authConfigs.size() > 0) {
                     AuthConfig first = authConfigs.get(0);
                     log.infof("configureUndertowIdentityManager, %s", authConfigs);
                     LoginConfig loginConfig = new LoginConfig(first.authMechanism, first.realmName);

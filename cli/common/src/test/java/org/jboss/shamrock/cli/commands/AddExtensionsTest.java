@@ -18,7 +18,7 @@ public class AddExtensionsTest {
 
         CreateProjectTest.delete(pom.getParentFile());
         new CreateProject(pom.getParentFile())
-            .groupId(MojoUtils.SHAMROCK_GROUP_ID)
+            .groupId("org.acme")
             .artifactId("add-extension-test")
             .version("0.0.1-SNAPSHOT")
             .doCreateProject(new HashMap<>());
@@ -35,7 +35,7 @@ public class AddExtensionsTest {
     private void hasDependency(final Model model, final String artifactId) {
         Assertions.assertTrue(model.getDependencies()
                                .stream()
-                               .anyMatch(d -> d.getGroupId().equals(MojoUtils.SHAMROCK_GROUP_ID) &&
+                               .anyMatch(d -> d.getGroupId().equals(MojoUtils.getPluginGroupId()) &&
                                               d.getArtifactId().equals(artifactId)));
     }
 }

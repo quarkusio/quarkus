@@ -14,6 +14,7 @@ import java.util.TreeMap;
 
 import static java.util.stream.Collectors.toList;
 import static org.jboss.shamrock.maven.utilities.MojoUtils.credentials;
+import static org.jboss.shamrock.maven.utilities.MojoUtils.getPluginVersion;
 import static org.jboss.shamrock.maven.utilities.MojoUtils.loadExtensions;
 
 public class ListExtensions {
@@ -41,11 +42,11 @@ public class ListExtensions {
 
         final String extracted = extractVersion(dependency);
         if (extracted != null) {
-            if (MojoUtils.SHAMROCK_VERSION.equalsIgnoreCase(extracted)) {
+            if (MojoUtils.getPluginVersion().equalsIgnoreCase(extracted)) {
                 label = "current";
             } else {
                 label = "update";
-                version = String.format("%s <> %s", extracted, MojoUtils.SHAMROCK_VERSION);
+                version = String.format("%s <> %s", extracted, getPluginVersion());
             }
         }
 

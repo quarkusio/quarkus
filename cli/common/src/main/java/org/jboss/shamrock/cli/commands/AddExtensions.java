@@ -14,7 +14,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.Optional;
 
-import static org.jboss.shamrock.maven.utilities.MojoUtils.SHAMROCK_BOM_ARTIFACT_ID;
+import static org.jboss.shamrock.maven.utilities.MojoUtils.getBomArtifactId;
 import static org.jboss.shamrock.maven.utilities.MojoUtils.readPom;
 
 public class AddExtensions {
@@ -108,7 +108,7 @@ public class AddExtensions {
                            .filter(dependency -> "import".equalsIgnoreCase(dependency.getScope()))
                            .filter(dependency -> "pom".equalsIgnoreCase(dependency.getType()))
                            // Does it matches the bom artifact name
-                           .anyMatch(dependency -> dependency.getArtifactId().equalsIgnoreCase(SHAMROCK_BOM_ARTIFACT_ID));
+                           .anyMatch(dependency -> dependency.getArtifactId().equalsIgnoreCase(getBomArtifactId()));
     }
 
     private boolean isDefinedInBom(List<Dependency> dependencies, Extension extension) {

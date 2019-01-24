@@ -13,8 +13,10 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.jboss.shamrock.maven.utilities.MojoUtils.*;
 
 public class CreateProjectTest {
     @Test
@@ -48,7 +50,7 @@ public class CreateProjectTest {
         Assertions.assertTrue(createProject.doCreateProject(new HashMap<>()));
 
         assertThat(FileUtils.readFileToString(pom, "UTF-8"))
-            .contains(MojoUtils.SHAMROCK_PLUGIN_ARTIFACT_ID, MojoUtils.SHAMROCK_VERSION_VARIABLE, MojoUtils.SHAMROCK_GROUP_ID);
+            .contains(getPluginArtifactId(), SHAMROCK_VERSION_PROPERTY, getPluginGroupId());
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/test/java")).isDirectory();
 
@@ -56,7 +58,7 @@ public class CreateProjectTest {
         assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).exists();
 
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
-            .containsIgnoringCase(MojoUtils.SHAMROCK_BOM_ARTIFACT_ID);
+            .containsIgnoringCase(getBomArtifactId());
 
     }
     @Test
@@ -79,10 +81,10 @@ public class CreateProjectTest {
 
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(new File(testDir, "src/main/java/org/acme/MyResource.java")).isFile();
-        assertThat(new File(testDir, "src/main/java/org/acme/MyApplication.java")).isFile();
+        assertThat(new File(testDir, "src/main/java/org/acme/MyApplication.java")).doesNotExist();
 
         assertThat(FileUtils.readFileToString(pom, "UTF-8"))
-            .contains(MojoUtils.SHAMROCK_PLUGIN_ARTIFACT_ID, MojoUtils.SHAMROCK_VERSION_VARIABLE, MojoUtils.SHAMROCK_GROUP_ID);
+                .contains(getPluginArtifactId(), SHAMROCK_VERSION_PROPERTY, getPluginGroupId());
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/test/java")).isDirectory();
 
@@ -90,17 +92,18 @@ public class CreateProjectTest {
         assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).exists();
 
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
-            .containsIgnoringCase(MojoUtils.SHAMROCK_BOM_ARTIFACT_ID);
+            .containsIgnoringCase(MojoUtils.SHAMROCK_VERSION_PROPERTY);
 
     }
 
     public static void delete(final File file) throws IOException {
 
         if (file.exists()) {
-            Files.walk(file.toPath())
-                 .sorted(Comparator.reverseOrder())
-                 .map(Path::toFile)
-                 .forEach(File::delete);
+            try (Stream<Path> stream = Files.walk(file.toPath())){
+                 stream.sorted(Comparator.reverseOrder())
+                        .map(Path::toFile)
+                        .forEach(File::delete);
+            }
         }
 
         Assertions.assertFalse(

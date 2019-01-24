@@ -15,7 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static java.util.Arrays.asList;
-import static org.jboss.shamrock.maven.utilities.MojoUtils.readPom;
+import static org.jboss.shamrock.maven.utilities.MojoUtils.*;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ListExtensionsTest {
@@ -28,7 +28,7 @@ public class ListExtensionsTest {
         final HashMap<String, Object> context = new HashMap<>();
 
         new CreateProject(pom.getParentFile())
-            .groupId(MojoUtils.SHAMROCK_GROUP_ID)
+            .groupId(getPluginGroupId())
             .artifactId("add-extension-test")
             .version("0.0.1-SNAPSHOT")
             .doCreateProject(context);
@@ -42,7 +42,7 @@ public class ListExtensionsTest {
 
         final Map<String, Dependency> installed = listExtensions.findInstalled();
 
-        Assertions.assertNotNull(installed.get(MojoUtils.SHAMROCK_GROUP_ID + ":shamrock-agroal-deployment"));
+        Assertions.assertNotNull(installed.get(getPluginGroupId() + ":shamrock-agroal-deployment"));
     }
 
     @Test
@@ -53,7 +53,7 @@ public class ListExtensionsTest {
         final HashMap<String, Object> context = new HashMap<>();
 
         new CreateProject(pom.getParentFile())
-            .groupId(MojoUtils.SHAMROCK_GROUP_ID)
+            .groupId(getPluginGroupId())
             .artifactId("add-extension-test")
             .version("0.0.1-SNAPSHOT")
             .doCreateProject(context);
@@ -92,11 +92,11 @@ public class ListExtensionsTest {
                 agroal = true;
             } else if (line.contains(" Arc ")) {
                 assertTrue(line.startsWith("update"), "Arc should list as having an update: " + line);
-                assertTrue(line.endsWith(MojoUtils.SHAMROCK_VERSION), "Arc should list as having an update: " + line);
+                assertTrue(line.endsWith(getPluginVersion()), "Arc should list as having an update: " + line);
                 arc = true;
             } else if (line.contains(" JaxRS ")) {
                 assertTrue(line.startsWith("update"), "JaxRS should list as having an update: " + line);
-                assertTrue(line.endsWith(MojoUtils.SHAMROCK_VERSION), "Arc should list as having an update: " + line);
+                assertTrue(line.endsWith(getPluginVersion()), "Arc should list as having an update: " + line);
                 jaxrs = true;
             } else if (line.contains(" Bean Validation ")) {
                 assertTrue(line.startsWith("   "), "Bean Validation should not list as anything: " + line);

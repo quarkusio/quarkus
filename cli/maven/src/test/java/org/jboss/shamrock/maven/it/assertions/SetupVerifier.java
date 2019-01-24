@@ -53,14 +53,14 @@ public class SetupVerifier {
 
         //Check if the properties have been set correctly
         Properties properties = model.getProperties();
-        assertThat(properties.containsKey(MojoUtils.SHAMROCK_VERSION_PROPERTY_NAME)).isTrue();
+        assertThat(properties.containsKey("shamrock.version")).isTrue();
 
         // Check plugin is set
         Plugin plugin = maybe.orElseThrow(() -> new AssertionError("Plugin expected"));
         assertThat(plugin).isNotNull().satisfies(p -> {
-            assertThat(p.getArtifactId()).isEqualTo(MojoUtils.SHAMROCK_PLUGIN_ARTIFACT_ID);
-            assertThat(p.getGroupId()).isEqualTo(MojoUtils.SHAMROCK_GROUP_ID);
-            assertThat(p.getVersion()).isEqualTo(MojoUtils.SHAMROCK_VERSION_VARIABLE);
+            assertThat(p.getArtifactId()).isEqualTo(MojoUtils.getPluginArtifactId());
+            assertThat(p.getGroupId()).isEqualTo(MojoUtils.getPluginGroupId());
+            assertThat(p.getVersion()).isEqualTo(MojoUtils.SHAMROCK_VERSION_PROPERTY);
         });
 
         // Check build execution Configuration
@@ -91,7 +91,7 @@ public class SetupVerifier {
         Properties projectProps = project.getProperties();
         assertNotNull(projectProps);
         assertFalse(projectProps.isEmpty());
-        assertEquals(MojoUtils.SHAMROCK_VERSION, projectProps.getProperty("shamrock.version"));
+        assertEquals(MojoUtils.getPluginVersion(), projectProps.getProperty("shamrock.version"));
     }
 
 }

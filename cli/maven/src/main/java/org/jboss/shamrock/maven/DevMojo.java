@@ -118,8 +118,8 @@ public class DevMojo extends AbstractMojo {
 
         boolean found = false;
         for(Plugin i : project.getBuildPlugins()) {
-            if(i.getGroupId().equals(MojoUtils.SHAMROCK_GROUP_ID)
-                    && i.getArtifactId().equals(MojoUtils.SHAMROCK_PLUGIN_ARTIFACT_ID)) {
+            if(i.getGroupId().equals(MojoUtils.getPluginGroupId())
+                    && i.getArtifactId().equals(MojoUtils.getPluginArtifactId())) {
                 for(PluginExecution p : i.getExecutions()) {
                     if(p.getGoals().contains("build")) {
                         found = true;

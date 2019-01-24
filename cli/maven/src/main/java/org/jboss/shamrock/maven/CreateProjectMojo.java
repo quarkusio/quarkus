@@ -43,7 +43,7 @@ import static org.fusesource.jansi.Ansi.ansi;
 @Mojo(name = "create", requiresProject = false)
 public class CreateProjectMojo extends AbstractMojo {
 
-    public static final String PLUGIN_KEY = MojoUtils.SHAMROCK_GROUP_ID + ":" + MojoUtils.SHAMROCK_PLUGIN_ARTIFACT_ID;
+    public static final String PLUGIN_KEY = MojoUtils.getPluginGroupId() + ":" + MojoUtils.getPluginArtifactId();
 
     @Parameter(defaultValue = "${project}")
     protected MavenProject project;

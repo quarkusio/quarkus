@@ -20,7 +20,6 @@ public class BasicRest extends ShamrockTemplate {
     private File projectRoot;
     private File srcMain;
     private File testMain;
-    private String docRoot;
 
     @Override
     public String getName() {
@@ -43,7 +42,7 @@ public class BasicRest extends ShamrockTemplate {
 
     private void setupContext() {
         MojoUtils.getAllProperties().forEach((k, v) -> context.put(k.replace("-", "_"), v));
-        String packageName = (String) context.get("package_name");
+        String packageName = (String) context.get(PACKAGE_NAME);
         if (className.endsWith(MojoUtils.JAVA_EXTENSION)) {
             className = className.substring(0, className.length() - MojoUtils.JAVA_EXTENSION.length());
         }
@@ -61,11 +60,11 @@ public class BasicRest extends ShamrockTemplate {
             testMain = mkdirs(testPackageDir);
         }
 
-        context.put("class_name", className);
-        context.put("path", path);
+        context.put(CLASS_NAME, className);
+        context.put(RESOURCE_PATH, path);
 
         if (packageName != null) {
-            context.put("package_name", packageName);
+            context.put(PACKAGE_NAME, packageName);
         }
     }
 
@@ -95,8 +94,7 @@ public class BasicRest extends ShamrockTemplate {
         className = get("className",
             String.format("%s.%s.%s", context.get(PROJECT_GROUP_ID), context.get(PROJECT_ARTIFACT_ID),
                 "MyResource"));
-        docRoot = get("doc_root", docRoot);
-        path = get("path", path);
+        path = get(RESOURCE_PATH, path);
 
         srcMain = mkdirs(new File(projectRoot, "src/main/java"));
         testMain = mkdirs(new File(projectRoot, "src/test/java"));

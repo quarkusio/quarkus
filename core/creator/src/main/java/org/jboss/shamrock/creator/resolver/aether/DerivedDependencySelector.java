@@ -189,8 +189,7 @@ public class DerivedDependencySelector implements DependencySelector {
         }
         */
 
-        if (acceptedScopes.size() != AppCreatorDependencySelector.TRANSITIVE_SCOPES.size()
-                && dependency.getScope().equals(AppCreatorDependencySelector.PROVIDED)) {
+        if (acceptedScopes.size() != AppCreatorDependencySelector.TRANSITIVE_SCOPES.size()) {
             return new DerivedDependencySelector(this, AppCreatorDependencySelector.TRANSITIVE_SCOPES,
                     dependency.getExclusions().isEmpty() ? depExclusions
                             : new DepExclusions(depExclusions, dependency.getExclusions()));

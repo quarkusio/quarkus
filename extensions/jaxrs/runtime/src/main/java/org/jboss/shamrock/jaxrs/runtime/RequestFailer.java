@@ -1,4 +1,4 @@
-package org.jboss.shamrock.security;
+package org.jboss.shamrock.jaxrs.runtime;
 
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Response;

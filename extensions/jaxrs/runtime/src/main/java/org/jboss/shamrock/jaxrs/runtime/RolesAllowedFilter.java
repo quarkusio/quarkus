@@ -1,4 +1,4 @@
-package org.jboss.shamrock.security;
+package org.jboss.shamrock.jaxrs.runtime;
 
 import javax.annotation.Priority;
 import javax.ws.rs.Priorities;

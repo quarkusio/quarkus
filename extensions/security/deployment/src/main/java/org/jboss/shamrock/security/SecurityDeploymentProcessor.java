@@ -30,7 +30,6 @@ import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.deployment.ShamrockConfig;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
-import org.jboss.shamrock.jaxrs.JaxrsProviderBuildItem;
 import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.undertow.ServletExtensionBuildItem;
 import org.wildfly.security.auth.server.SecurityDomain;
@@ -215,13 +214,6 @@ class SecurityDeploymentProcessor {
         }
     }
 
-    /**
-     * Install the JAXRS security provider
-     * @param providers - the JaxrsProviderBuildItem providers producer to use
-     */
-    @BuildStep
-    void setupFilter(BuildProducer<JaxrsProviderBuildItem> providers) {
-        providers.produce(new JaxrsProviderBuildItem(RolesFilterRegistrar.class.getName()));
-    }
+
 
 }

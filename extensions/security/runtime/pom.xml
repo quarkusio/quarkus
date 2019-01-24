@@ -53,12 +53,6 @@
             <groupId>org.jboss.spec.javax.security.auth.message</groupId>
             <artifactId>jboss-jaspi-api_1.1_spec</artifactId>
         </dependency>
-        <dependency>
-            <groupId>javax.ws.rs</groupId>
-            <artifactId>javax.ws.rs-api</artifactId>
-            <version>2.1.1</version>
-            <scope>provided</scope>
-        </dependency>
     </dependencies>
 
     <build>

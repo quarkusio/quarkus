@@ -1,4 +1,4 @@
-package org.jboss.shamrock.security;
+package org.jboss.shamrock.jaxrs.runtime;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;

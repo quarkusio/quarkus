@@ -22,8 +22,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Repository;
@@ -48,118 +52,32 @@ import org.jboss.shamrock.creator.resolver.aether.AetherArtifactResolver;
  */
 public class CuratePhase implements AppCreationPhase<CuratePhase> {
 
-    enum DepsOrigin {
-        ORIGINAL_APP("application"),
-        LAST_UPDATE("last-update"),
-        UNKNOWN(null);
+    public static final String CONFIG_PROP = "curate";
+    public static final String CONFIG_PROP_DEPS_ORIGIN = "dependencies-origin";
+    public static final String CONFIG_PROP_LOCAL_REPO = "local-repo";
+    public static final String CONFIG_PROP_VERSION_UPDATE = "version-update";
+    public static final String CONFIG_PROP_VERSION_UPDATE_NUMBER = "version-update-number";
+    public static final String CONFIG_PROP_UPDATE_GROUP_ID = "update-groupId";
 
-        private final String name;
+    private static final String GROUP_ID_SPLIT_EXPR = "\\s*(,|\\s)\\s*";
 
-        static DepsOrigin of(String name) {
-            if(ORIGINAL_APP.name.equals(name)) {
-                return ORIGINAL_APP;
-            }
-            if(LAST_UPDATE.name.equals(name)) {
-                return LAST_UPDATE;
-            }
-            return UNKNOWN;
-        }
-
-        DepsOrigin(String name) {
-            this.name = name;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public String toString() {
-            return name;
-        }
-    }
-
-    enum UpdateTo {
-
-        LATEST("latest"),
-        NEXT("next"),
-        NONE("none"),
-        UNKNOWN(null);
-
-        private final String name;
-
-        static UpdateTo of(String name) {
-            if(LATEST.name.equals(name)) {
-                return LATEST;
-            }
-            if(NEXT.name.equals(name)) {
-                return NEXT;
-            }
-            if(NONE.name.equals(name)) {
-                return NONE;
-            }
-            return UNKNOWN;
-        }
-
-        UpdateTo(String name) {
-            this.name = name;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public String toString() {
-            return name;
-        }
-    }
-
-    enum UpdateNumber {
-
-        MAJOR("major"),
-        MINOR("minor"),
-        MICRO("micro"),
-        UNKNOWN(null);
-
-        private final String name;
-
-        static UpdateNumber of(String name) {
-            if(MAJOR.name.equals(name)) {
-                return MAJOR;
-            }
-            if(MINOR.name.equals(name)) {
-                return MINOR;
-            }
-            if(MICRO.name.equals(name)) {
-                return MICRO;
-            }
-            return UNKNOWN;
-        }
-
-        UpdateNumber(String name) {
-            this.name = name;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public String toString() {
-            return name;
-        }
+    public static String completePropertyName(String name) {
+        return CONFIG_PROP + '.' + name;
     }
 
     private static final Logger log = Logger.getLogger(CuratePhase.class);
 
-    private DepsOrigin initialDeps = DepsOrigin.ORIGINAL_APP;
-    private UpdateTo update = UpdateTo.NONE;
-    private UpdateNumber updateNumber = UpdateNumber.MICRO;
+    private DependenciesOrigin depsOrigin = DependenciesOrigin.APPLICATION;
+    private VersionUpdate update = VersionUpdate.NONE;
+    private VersionUpdateNumber updateNumber = VersionUpdateNumber.MICRO;
     private Path localRepo;
+    private Set<String> updateGroupIds = Collections.singleton("org.jboss.shamrock");
 
-    public void setInitialDeps(DepsOrigin initialDeps) {
-        this.initialDeps = initialDeps;
+    public void setInitialDeps(DependenciesOrigin initialDeps) {
+        this.depsOrigin = initialDeps;
     }
 
-    public void setUpdate(UpdateTo update) {
+    public void setUpdate(VersionUpdate update) {
         this.update = update;
     }
 
@@ -169,7 +87,7 @@ public class CuratePhase implements AppCreationPhase<CuratePhase> {
 
     @Override
     public String getConfigPropertyName() {
-        return "curate";
+        return CONFIG_PROP;
     }
 
     @Override
@@ -179,28 +97,29 @@ public class CuratePhase implements AppCreationPhase<CuratePhase> {
             public CuratePhase getTarget() throws PropertiesConfigReaderException {
                 return CuratePhase.this;
             }}
-        .map("initial-deps", (target, value) -> {
-            initialDeps = DepsOrigin.of(value);
-            if(initialDeps == DepsOrigin.UNKNOWN) {
+        .map(CONFIG_PROP_DEPS_ORIGIN, (target, value) -> {
+            depsOrigin = DependenciesOrigin.of(value);
+            if(depsOrigin == DependenciesOrigin.UNKNOWN) {
                 throw new PropertiesConfigReaderException("The value of initial-deps property is expected to be either "
-                + DepsOrigin.ORIGINAL_APP + " or " + DepsOrigin.LAST_UPDATE + " but was " + value);
+                + DependenciesOrigin.APPLICATION + " or " + DependenciesOrigin.LAST_UPDATE + " but was " + value);
             }
         })
-        .map("local-repo", (target, value) -> {localRepo = Paths.get(value);})
-        .map("update", (target, value) -> {
-            update = UpdateTo.of(value);
-            if(update == UpdateTo.UNKNOWN) {
+        .map(CONFIG_PROP_LOCAL_REPO, (target, value) -> {localRepo = Paths.get(value);})
+        .map(CONFIG_PROP_VERSION_UPDATE, (target, value) -> {
+            update = VersionUpdate.of(value);
+            if(update == VersionUpdate.UNKNOWN) {
                 throw new PropertiesConfigReaderException("The value of update property is expected to be one of "
-                + UpdateTo.LATEST + ", " + UpdateTo.NEXT + " or " + UpdateTo.NONE + " but was " + value);
+                + VersionUpdate.LATEST + ", " + VersionUpdate.NEXT + " or " + VersionUpdate.NONE + " but was " + value);
             }
         })
-        .map("update-number", (target, value) -> {
-            updateNumber = UpdateNumber.of(value);
-            if(updateNumber == UpdateNumber.UNKNOWN) {
+        .map(CONFIG_PROP_VERSION_UPDATE_NUMBER, (target, value) -> {
+            updateNumber = VersionUpdateNumber.of(value);
+            if(updateNumber == VersionUpdateNumber.UNKNOWN) {
                 throw new PropertiesConfigReaderException("The value of update-number property is expected to be one of "
-                + UpdateNumber.MAJOR + ", " + UpdateNumber.MINOR + " or " + UpdateNumber.MICRO + " but was " + value);
+                + VersionUpdateNumber.MAJOR + ", " + VersionUpdateNumber.MINOR + " or " + VersionUpdateNumber.MICRO + " but was " + value);
             }
-        });
+        })
+        .map(CONFIG_PROP_UPDATE_GROUP_ID, (target, value) -> {updateGroupIds = new HashSet<>(Arrays.asList(value.split(GROUP_ID_SPLIT_EXPR)));});
     }
 
     @Override
@@ -211,7 +130,7 @@ public class CuratePhase implements AppCreationPhase<CuratePhase> {
     @Override
     public void provideOutcome(AppCreator ctx) throws AppCreatorException {
 
-        log.info("provideOutcome initialDeps=" + initialDeps + ", update=" + update);
+        log.info("provideOutcome depsOrigin=" + depsOrigin + ", versionUpdate=" + update + ", versionUpdateNumber=" + updateNumber);
 
         final Path appJar = ctx.getAppJar();
         if(appJar == null) {
@@ -259,7 +178,7 @@ public class CuratePhase implements AppCreationPhase<CuratePhase> {
         outcome.setArtifactResolver(resolver);
 
         final List<AppDependency> initialDepsList;
-        if(initialDeps == DepsOrigin.LAST_UPDATE) {
+        if(depsOrigin == DependenciesOrigin.LAST_UPDATE) {
             log.info("Looking for the state of the last update");
             Path statePath = null;
             try {
@@ -317,20 +236,20 @@ public class CuratePhase implements AppCreationPhase<CuratePhase> {
         //logDeps("INITIAL:", initialDepsList);
 
         outcome.setInitialDeps(initialDepsList);
-        if (update == UpdateTo.NONE) {
+        if (update == VersionUpdate.NONE) {
             ctx.pushOutcome(outcome.build());
             return;
         }
 
         log.info("Checking for available updates");
-        final List<AppDependency> appDeps = Utils.getUpdateCandidates(Utils.readAppModel(appJar, appArtifact).getDependencies(), initialDepsList);
+        final List<AppDependency> appDeps = Utils.getUpdateCandidates(Utils.readAppModel(appJar, appArtifact).getDependencies(), initialDepsList, updateGroupIds);
         final UpdateDiscovery ud = new DefaultUpdateDiscovery(resolver, updateNumber);
         List<AppDependency> availableUpdates = null;
         int i = 0;
         while (i < appDeps.size()) {
             final AppDependency dep = appDeps.get(i++);
             final AppArtifact depArtifact = dep.getArtifact();
-            final String updatedVersion = update == UpdateTo.NEXT ? ud.getNextVersion(depArtifact)
+            final String updatedVersion = update == VersionUpdate.NEXT ? ud.getNextVersion(depArtifact)
                     : ud.getLatestVersion(depArtifact);
             if (depArtifact.getVersion().equals(updatedVersion)) {
                 continue;

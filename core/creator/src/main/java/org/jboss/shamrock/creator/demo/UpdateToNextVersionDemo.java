@@ -20,6 +20,9 @@ package org.jboss.shamrock.creator.demo;
 import java.util.Properties;
 
 import org.jboss.shamrock.creator.AppCreator;
+import org.jboss.shamrock.creator.phase.curate.CuratePhase;
+import org.jboss.shamrock.creator.phase.curate.VersionUpdate;
+import org.jboss.shamrock.creator.phase.curate.VersionUpdateNumber;
 import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarOutcome;
 
 /**
@@ -31,11 +34,22 @@ public class UpdateToNextVersionDemo extends ConfigDemoBase {
     public static void main(String[] args) throws Exception {
         new UpdateToNextVersionDemo().run();
     }
-
+/*
+    @Override
+    protected Path initAppJar() {
+        final Path shamrockRoot = Paths.get("").toAbsolutePath().getParent().getParent();
+        final Path quickstartsRoot = shamrockRoot.getParent().resolve("protean-quickstarts");
+        if(!Files.exists(quickstartsRoot)) {
+            throw new IllegalStateException("Failed to locate protean-quickstarts repo at " + quickstartsRoot);
+        }
+        final Path appDir = quickstartsRoot.resolve("input-validation").resolve("target");
+        return appDir.resolve("input-validation-1.0-SNAPSHOT.jar");
+    }
+*/
     @Override
     protected void initProps(Properties props) {
-        props.setProperty("curate.update", "next");
-        props.setProperty("curate.update-number", "minor");
+        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_VERSION_UPDATE), VersionUpdate.NEXT.getName());
+        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_VERSION_UPDATE_NUMBER), VersionUpdateNumber.MINOR.getName());
     }
 
     @Override

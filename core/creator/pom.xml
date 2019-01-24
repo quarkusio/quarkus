@@ -33,10 +33,6 @@
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-core-deployment</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-development-mode</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>org.apache.maven</groupId>

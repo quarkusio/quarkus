@@ -63,7 +63,6 @@ import org.jboss.shamrock.deployment.ShamrockAugmentor;
 import org.jboss.shamrock.deployment.builditem.BytecodeTransformerBuildItem;
 import org.jboss.shamrock.deployment.builditem.MainClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateOutputBuildItem;
-import org.jboss.shamrock.dev.CopyUtils;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -339,8 +338,10 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                             transformed.add(executorPool.submit(new Callable<FutureEntry>() {
                                 @Override
                                 public FutureEntry call() throws Exception {
-                                    final byte[] fileContent = CopyUtils.readFileContent(path);
-                                    ClassReader cr = new ClassReader(fileContent);
+                                    if (Files.size(path) > Integer.MAX_VALUE) {
+                                        throw new RuntimeException("Can't process class files larger than Integer.MAX_VALUE bytes");
+                                    }
+                                    ClassReader cr = new ClassReader(Files.readAllBytes(path));
                                     ClassWriter writer = new ClassWriter(cr, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
                                     ClassVisitor visitor = writer;
                                     for (BiFunction<String, ClassVisitor, ClassVisitor> i : visitors) {
@@ -408,7 +409,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
 
     @Override
     public String getConfigPropertyName() {
-        return "augment-only";
+        return "augment";
     }
 
     @Override
@@ -421,6 +422,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
         }
         .map("output", (AugmentPhase t, String value) -> t.setOutputDir(Paths.get(value)))
         .map("classes", (AugmentPhase t, String value) -> t.setAppClassesDir(Paths.get(value)))
+        .map("transformed-classes", (AugmentPhase t, String value) -> t.setTransformedClassesDir(Paths.get(value)))
         .map("wiring-classes", (AugmentPhase t, String value) -> t.setWiringClassesDir(Paths.get(value)));
     }
 }

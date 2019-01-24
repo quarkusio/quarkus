@@ -59,6 +59,10 @@
             <artifactId>shamrock-creator</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-development-mode</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.apache.maven.shared</groupId>
             <artifactId>maven-artifact-transfer</artifactId>
             <version>0.10.0</version>

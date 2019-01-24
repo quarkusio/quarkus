@@ -33,6 +33,7 @@ import java.util.Set;
 import org.jboss.shamrock.creator.AppCreator;
 import org.jboss.shamrock.creator.config.reader.PropertiesConfigReader;
 import org.jboss.shamrock.creator.config.reader.PropertiesHandler;
+import org.jboss.shamrock.creator.phase.curate.CuratePhase;
 import org.jboss.shamrock.creator.util.IoUtils;
 import org.jboss.shamrock.creator.util.PropertyUtils;
 
@@ -117,7 +118,7 @@ public class ConfigDemoBase {
         if(demoDir != null) {
             props.setProperty("output", demoDir.toString());
         }
-        props.setProperty("curate.local-repo", Paths.get(PropertyUtils.getUserHome(), "shamrock-curate-repo").toString());
+        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_LOCAL_REPO), Paths.get(PropertyUtils.getUserHome(), "shamrock-curate-repo").toString());
         initProps(props);
         return props;
     }

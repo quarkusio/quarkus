@@ -30,6 +30,10 @@
     <packaging>pom</packaging>
 
     <properties>
+        <!-- Maven plugin versions -->
+        <elasticsearch-maven-plugin.version>6.11</elasticsearch-maven-plugin.version>
+        <elasticsearch-server.version>6.7.0</elasticsearch-server.version>
+
         <!-- These properties are not in the bom as we don't want to enforce the version -->
         <spring.version>5.1.4.RELEASE</spring.version>
 
@@ -524,6 +528,16 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-elasticsearch-rest-client</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-elasticsearch-rest-client-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-vertx</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -878,6 +892,14 @@
                 <plugin>
                     <artifactId>maven-resources-plugin</artifactId>
                     <version>3.1.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>com.github.alexcojocaru</groupId>
+                    <artifactId>elasticsearch-maven-plugin</artifactId>
+                    <version>${elasticsearch-maven-plugin.version}</version>
+                    <configuration>
+                        <version>${elasticsearch-server.version}</version>
+                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>

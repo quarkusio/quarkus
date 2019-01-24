@@ -55,6 +55,14 @@ public class ServletTestCase {
     @Test()
     public void testSecureAccessFailure() {
         RestAssured.when().get("/secure-test").then()
-                .statusCode(403);
+                .statusCode(401);
+    }
+
+    // Basic @ServletSecurity test
+   @Test()
+    public void testSecureAccessSuccess() {
+        RestAssured.given().auth().preemptive().basic("stuart", "test")
+                .when().get("/secure-test").then()
+                .statusCode(200);
     }
 }

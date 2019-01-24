@@ -84,6 +84,7 @@ import org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildIte
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import org.jboss.shamrock.jaxrs.runtime.ResteasyFilter;
+import org.jboss.shamrock.jaxrs.runtime.RolesFilterRegistrar;
 import org.jboss.shamrock.jaxrs.runtime.graal.JaxrsTemplate;
 import org.jboss.shamrock.jaxrs.runtime.graal.ShamrockInjectorFactory;
 import org.jboss.shamrock.undertow.FilterBuildItem;
@@ -446,6 +447,15 @@ public class JaxrsScanningProcessor {
     @BuildStep
     List<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations() {
         return Collections.singletonList(new BeanDefiningAnnotationBuildItem(PATH, singletonResources ? SINGLETON_SCOPE : null));
+    }
+
+    /**
+     * Install the JAXRS security provider
+     * @param providers - the JaxrsProviderBuildItem providers producer to use
+     */
+    @BuildStep
+    void setupFilter(BuildProducer<JaxrsProviderBuildItem> providers) {
+        providers.produce(new JaxrsProviderBuildItem(RolesFilterRegistrar.class.getName()));
     }
 
     private void registerReflectionForSerialization(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,

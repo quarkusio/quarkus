@@ -46,6 +46,8 @@
       <javax.activation.version>1.1.1</javax.activation.version>
       <javax.inject.version>1</javax.inject.version>
       <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
+      <javax.security.jacc-api.version>1.0.2.Final</javax.security.jacc-api.version>
+      <javax.security.jaspi-api.version>1.0.2.Final</javax.security.jaspi-api.version>
       <jboss-classfilewriter.version>1.2.3.Final</jboss-classfilewriter.version>
       <jboss-invocation.version>1.5.1.Final</jboss-invocation.version>
       <javax.json.version>1.1.4</javax.json.version>
@@ -92,6 +94,9 @@
       <slf4j.version>1.7.25</slf4j.version>
       <slf4j-jboss-logging.version>1.1.0.Final</slf4j-jboss-logging.version>
       <wildfly-common.version>1.5.0.Alpha3-format-001</wildfly-common.version>
+      <wildfly-client-config.version>1.0.0.Final</wildfly-client-config.version>
+      <!-- This requires a release build of the https://github.com/jbossas/protean-wildfly-elytron-embedded project -->
+      <wildfly-elytron.version>1.8.0.Alpha1</wildfly-elytron.version>
       <jboss-modules.version>1.8.7.Final</jboss-modules.version>
       <jboss-threads.version>3.0.0.Alpha4</jboss-threads.version>
       <vertx.version>3.6.2</vertx.version>
@@ -429,6 +434,16 @@
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-spring-di-deployment</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-security-deployment</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-security-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
@@ -851,6 +866,16 @@
             <version>${javax.xml.bind.version}</version>
          </dependency>
          <dependency>
+            <groupId>org.jboss.spec.javax.security.jacc</groupId>
+            <artifactId>jboss-jacc-api_1.5_spec</artifactId>
+            <version>${javax.security.jacc-api.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.spec.javax.security.auth.message</groupId>
+            <artifactId>jboss-jaspi-api_1.1_spec</artifactId>
+            <version>${javax.security.jaspi-api.version}</version>
+         </dependency>
+         <dependency>
             <groupId>org.graalvm.sdk</groupId>
             <artifactId>graal-sdk</artifactId>
             <version>${graal-sdk.version}</version>
@@ -1099,6 +1124,29 @@
             <groupId>org.wildfly.openssl</groupId>
             <artifactId>wildfly-openssl-linux-x86_64</artifactId>
             <version>${wildfly.openssl.version}</version>
+         </dependency>
+
+         <dependency>
+            <groupId>org.wildfly.client</groupId>
+            <artifactId>wildfly-client-config</artifactId>
+            <version>${wildfly-client-config.version}</version>
+            <exclusions>
+               <exclusion>
+                  <groupId>org.jboss.logging</groupId>
+                  <artifactId>jboss-logging</artifactId>
+               </exclusion>
+            </exclusions>
+         </dependency>
+         <dependency>
+            <groupId>org.wildfly.security</groupId>
+            <artifactId>wildfly-elytron-embedded</artifactId>
+            <version>${wildfly-elytron.version}</version>
+            <exclusions>
+               <exclusion>
+                  <groupId>org.jboss.logging</groupId>
+                  <artifactId>jboss-logging</artifactId>
+               </exclusion>
+            </exclusions>
          </dependency>
 
          <dependency>

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.web;
+package org.shamrock.security.test;
 
 import java.io.IOException;
 
@@ -31,7 +31,7 @@ import javax.servlet.http.HttpServletResponse;
  */
 @ServletSecurity(
         @HttpConstraint(
-                rolesAllowed={"tester", "user"}
+                rolesAllowed={"user"}
         )
 )
 @WebServlet(name = "MySecureServlet", urlPatterns = "/secure-test", initParams = {@WebInitParam(name = "message", value = "A secured message")})

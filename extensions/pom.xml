@@ -65,6 +65,9 @@
 
         <!-- Spring -->
         <module>spring-di</module>
+
+        <!-- Security -->
+        <module>security</module>
     </modules>
 
 </project>

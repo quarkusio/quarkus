@@ -14,7 +14,7 @@ import org.jboss.shamrock.runtime.RuntimeValue;
  * registers the {@linkplain io.undertow.security.api.AuthenticationMechanismFactory} for the method.
  */
 public final class AuthConfigBuildItem extends MultiBuildItem {
-    private AuthConfig authConfig;
+    private final AuthConfig authConfig;
 
     public AuthConfigBuildItem(AuthConfig authConfig) {
         this.authConfig = authConfig;

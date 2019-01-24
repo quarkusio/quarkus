@@ -10,8 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.wildfly.security.WildFlyElytronProvider;
 import org.wildfly.security.auth.principal.NamePrincipal;
 import org.wildfly.security.auth.realm.LegacyPropertiesSecurityRealm;
@@ -49,16 +49,16 @@ public class SecurityRealmsTestCase {
         RealmIdentity scott = realm.getRealmIdentity(new NamePrincipal("scott"));
         PasswordCredential pass = scott.getCredential(PasswordCredential.class);
         ClearPassword clear = ClearPassword.createRaw(ClearPassword.ALGORITHM_CLEAR, "jb0ss".toCharArray());
-        Assert.assertTrue(pass.matches(new PasswordCredential(clear)));
+        Assertions.assertTrue(pass.matches(new PasswordCredential(clear)));
         AuthorizationIdentity auth = scott.getAuthorizationIdentity();
         Attributes roles = auth.getAttributes();
-        Assert.assertTrue(roles.containsValue("groups", "Admin"));
-        Assert.assertTrue(roles.containsValue("groups", "Tester"));
+        Assertions.assertTrue(roles.containsValue("groups", "Admin"));
+        Assertions.assertTrue(roles.containsValue("groups", "Tester"));
 
         RealmIdentity jdoe = realm.getRealmIdentity(new NamePrincipal("jdoe"));
         auth = jdoe.getAuthorizationIdentity();
         roles = auth.getAttributes();
-        Assert.assertTrue(roles.containsValue("groups", "NoRolesUser"));
+        Assertions.assertTrue(roles.containsValue("groups", "NoRolesUser"));
     }
 
     @Test
@@ -79,7 +79,7 @@ public class SecurityRealmsTestCase {
         RealmIdentity scott = realm.getRealmIdentity(new NamePrincipal("scott"));
         AuthorizationIdentity auth = scott.getAuthorizationIdentity();
         Attributes roles = auth.getAttributes();
-        Assert.assertTrue(roles.containsValue("groups", "Admin"));
-        Assert.assertTrue(roles.containsValue("groups", "Tester"));
+        Assertions.assertTrue(roles.containsValue("groups", "Admin"));
+        Assertions.assertTrue(roles.containsValue("groups", "Tester"));
     }
 }

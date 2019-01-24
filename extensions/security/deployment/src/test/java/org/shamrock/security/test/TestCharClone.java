@@ -3,7 +3,7 @@ package org.shamrock.security.test;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class TestCharClone {
     @Test

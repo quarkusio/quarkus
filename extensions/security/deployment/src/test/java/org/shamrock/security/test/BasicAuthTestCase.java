@@ -2,34 +2,30 @@ package org.shamrock.security.test;
 
 import static org.hamcrest.Matchers.equalTo;
 import io.restassured.RestAssured;
-import org.jboss.shamrock.test.Deployment;
 import org.jboss.shamrock.test.ShamrockUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
  * Tests of BASIC authentication mechanism
  */
-@RunWith(ShamrockUnitTest.class)
 public class BasicAuthTestCase {
+    static Class[] testClasses = {
+            TestSecureServlet.class, TestApplication.class, RolesEndpointClassLevel.class,
+            ParametrizedPathsResource.class, SubjectExposingResource.class
+    };
+    @RegisterExtension
+    static final ShamrockUnitTest config = new ShamrockUnitTest()
+            .setArchiveProducer(() ->
+                                        ShrinkWrap.create(JavaArchive.class)
+                                                .addClasses(testClasses)
+                                                .addAsManifestResource("microprofile-config.properties")
+                                                .addAsResource("test-users.properties")
+                                                .addAsResource("test-roles.properties")
+            );
 
-    @Deployment
-    public static JavaArchive deploy() {
-        Class[] testClasses = {
-                TestSecureServlet.class, TestApplication.class, RolesEndpointClassLevel.class,
-                ParametrizedPathsResource.class, SubjectExposingResource.class
-        };
-        JavaArchive archive = ShrinkWrap.create(JavaArchive.class)
-                .addClasses(testClasses)
-                .addAsManifestResource("microprofile-config.properties")
-                .addAsResource("test-users.properties")
-                .addAsResource("test-roles.properties")
-                ;
-        System.out.printf("BasicAuthApp: %s\n", archive.toString(true));
-        return archive;
-    }
 
     // Basic @ServletSecurity tests
     @Test()

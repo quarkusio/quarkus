@@ -2,32 +2,26 @@ package org.shamrock.security.test;
 
 import io.restassured.RestAssured;
 import io.undertow.servlet.ServletExtension;
-import org.jboss.shamrock.test.Deployment;
 import org.jboss.shamrock.test.ShamrockUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-@RunWith(ShamrockUnitTest.class)
+
 public class CustomAuthTestCase {
-    @Deployment
-    public static JavaArchive deploy() {
-        System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
-        StringAsset customAuthExt = new StringAsset(CustomAuthExtension.class.getName());
-        JavaArchive archive = ShrinkWrap.create(JavaArchive.class)
-                .addClasses(TestSecureServlet.class, CustomAuth.class, CustomAuthExtension.class, CustomAuthFactory.class)
-                .addAsManifestResource("microprofile-config-custom-auth.properties", "microprofile-config.properties")
-                .addAsManifestResource(customAuthExt, "services/"+ ServletExtension.class.getName())
-                //.addAsManifestResource("logging.properties")
-                .addAsResource("test-users.properties")
-                .addAsResource("test-roles.properties")
-                ;
-        System.out.printf("BasicAuthApp: %s\n", archive.toString(true));
-        return archive;
-    }
+    @RegisterExtension
+    static final ShamrockUnitTest config = new ShamrockUnitTest()
+            .setArchiveProducer(() ->
+                                        ShrinkWrap.create(JavaArchive.class)
+                                                .addClasses(TestSecureServlet.class, CustomAuth.class, CustomAuthExtension.class, CustomAuthFactory.class)
+                                                .addAsManifestResource("microprofile-config-custom-auth.properties", "microprofile-config.properties")
+                                                .addAsManifestResource(new StringAsset(CustomAuthExtension.class.getName()), "services/"+ ServletExtension.class.getName())
+                                                //.addAsManifestResource("logging.properties")
+                                                .addAsResource("test-users.properties")
+                                                .addAsResource("test-roles.properties")
+            );
 
     // Basic @ServletSecurity test
     @Test()

@@ -2,40 +2,32 @@ package org.shamrock.security.test;
 
 import io.restassured.RestAssured;
 import io.undertow.servlet.ServletExtension;
-import org.jboss.shamrock.test.Deployment;
 import org.jboss.shamrock.test.ShamrockUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.hamcrest.Matchers.equalTo;
 
 /**
  * Tests of a CUSTOM authentication mechanism that uses the BASIC authentication headers
  */
-@RunWith(ShamrockUnitTest.class)
 public class CustomAuthEmbeddedTestCase {
-    @Deployment
-    public static JavaArchive deploy() {
-        System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
-        StringAsset customAuthExt = new StringAsset(CustomAuthExtension.class.getName());
-        Class[] testClasses = {
-                TestSecureServlet.class, TestApplication.class, RolesEndpointClassLevel.class,
-                ParametrizedPathsResource.class, SubjectExposingResource.class
-        };
-        JavaArchive archive = ShrinkWrap.create(JavaArchive.class)
-                .addClasses(testClasses)
-                .addClasses(CustomAuth.class, CustomAuthExtension.class, CustomAuthFactory.class)
-                .addAsManifestResource("microprofile-config-custom-auth-embedded.properties", "microprofile-config.properties")
-                .addAsManifestResource(customAuthExt, "services/"+ ServletExtension.class.getName())
-                //.addAsManifestResource("logging.properties")
-                ;
-        System.out.printf("CustomAuthEmbedded: %s\n", archive.toString(true));
-        return archive;
-    }
+    static Class[] testClasses = {
+            TestSecureServlet.class, TestApplication.class, RolesEndpointClassLevel.class,
+            ParametrizedPathsResource.class, SubjectExposingResource.class
+    };
+    @RegisterExtension
+    static final ShamrockUnitTest config = new ShamrockUnitTest()
+            .setArchiveProducer(() ->
+                                        ShrinkWrap.create(JavaArchive.class)
+                                                .addClasses(testClasses)
+                                                .addClasses(CustomAuth.class, CustomAuthExtension.class, CustomAuthFactory.class)
+                                                .addAsManifestResource("microprofile-config-custom-auth-embedded.properties", "microprofile-config.properties")
+                                                .addAsManifestResource(new StringAsset(CustomAuthExtension.class.getName()), "services/"+ ServletExtension.class.getName())
+            );
 
 
     // Basic @ServletSecurity tests

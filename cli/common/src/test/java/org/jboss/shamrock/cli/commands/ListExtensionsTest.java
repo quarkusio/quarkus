@@ -86,7 +86,7 @@ public class ListExtensionsTest {
         boolean agroal = false;
         boolean bean = false;
         final String output = baos.toString();
-        for (String line : output.split("\n")) {
+        for (String line : output.split("\r?\n")) {
             if (line.contains(" Agroal ")) {
                 Assert.assertTrue("Agroal should list as current: " + line, line.startsWith("current"));
                 agroal = true;

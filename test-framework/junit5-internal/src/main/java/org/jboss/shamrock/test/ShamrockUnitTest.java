@@ -16,7 +16,6 @@
 
 package org.jboss.shamrock.test;
 
-import static org.jboss.shamrock.test.PathTestHelper.getTestClassesLocation;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -46,6 +45,7 @@ import org.jboss.invocation.proxy.ProxyFactory;
 import org.jboss.shamrock.runner.RuntimeRunner;
 import org.jboss.shamrock.runtime.InjectionFactoryTemplate;
 import org.jboss.shamrock.runtime.InjectionInstance;
+import org.jboss.shamrock.test.common.PathTestHelper;
 import org.jboss.shamrock.test.common.TestResourceManager;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
@@ -196,7 +196,7 @@ public class ShamrockUnitTest implements BeforeAllCallback, AfterAllCallback, Te
             }
 
             runtimeRunner = new RuntimeRunner(testClass.getClassLoader(), deploymentDir,
-                    getTestClassesLocation(testClass), null, new ArrayList<>(), customiers);
+                    PathTestHelper.getTestClassesLocation(testClass), null, new ArrayList<>(), customiers);
 
             try {
                 runtimeRunner.run();

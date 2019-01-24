@@ -236,7 +236,7 @@ public class DevMojo extends AbstractMojo {
             //we also want to add the maven plugin jar to the class path
             //this allows us to just directly use classes, without messing around copying them
             //to the runner jar
-            URL classFile = DevModeMain.class.getClassLoader().getResource(DevModeMain.class.getName().replace('.', File.separatorChar) + ".class");
+            URL classFile = DevModeMain.class.getClassLoader().getResource(DevModeMain.class.getName().replace('.', '/') + ".class");
             Path path;
             if (classFile.getProtocol().equals("jar")) {
                 String jarPath = classFile.getPath().substring(0, classFile.getPath().lastIndexOf('!'));

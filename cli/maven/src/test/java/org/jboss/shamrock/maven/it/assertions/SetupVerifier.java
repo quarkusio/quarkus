@@ -16,7 +16,7 @@ import java.util.Optional;
 import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class SetupVerifier {
 
@@ -42,7 +42,7 @@ public class SetupVerifier {
     }
 
     public static void verifySetup(File pomFile) throws Exception {
-        assertNotNull("Unable to find pom.xml", pomFile);
+        assertNotNull(pomFile, "Unable to find pom.xml");
         MavenXpp3Reader xpp3Reader = new MavenXpp3Reader();
         Model model = xpp3Reader.read(new FileInputStream(pomFile));
 

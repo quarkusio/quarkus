@@ -46,6 +46,8 @@
       <javax.activation.version>1.1.1</javax.activation.version>
       <javax.inject.version>1</javax.inject.version>
       <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
+      <javax.security.jacc-api.version>1.0.2.Final</javax.security.jacc-api.version>
+      <javax.security.jaspi-api.version>1.0.2.Final</javax.security.jaspi-api.version>
       <jboss-classfilewriter.version>1.2.3.Final</jboss-classfilewriter.version>
       <jboss-invocation.version>1.5.1.Final</jboss-invocation.version>
       <javax.json.version>1.1.4</javax.json.version>
@@ -866,12 +868,12 @@
          <dependency>
             <groupId>org.jboss.spec.javax.security.jacc</groupId>
             <artifactId>jboss-jacc-api_1.5_spec</artifactId>
-            <version>1.0.2.Final</version>
+            <version>${javax.security.jacc-api.version}</version>
          </dependency>
          <dependency>
             <groupId>org.jboss.spec.javax.security.auth.message</groupId>
             <artifactId>jboss-jaspi-api_1.1_spec</artifactId>
-            <version>1.0.2.Final</version>
+            <version>${javax.security.jaspi-api.version}</version>
          </dependency>
          <dependency>
             <groupId>org.graalvm.sdk</groupId>

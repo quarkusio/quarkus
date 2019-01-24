@@ -46,7 +46,7 @@ public class ElytronIdentityManager implements IdentityManager {
 
     @Override
     public Account verify(String id, Credential credential) {
-        log.infof("verify, id=%s, credential=%s", id, credential);
+        log.debugf("verify, id=%s, credential=%s", id, credential);
         try {
             if (credential instanceof PasswordCredential) {
                 PasswordCredential passwordCredential = (PasswordCredential) credential;

@@ -90,8 +90,8 @@ class SecurityDeploymentProcessor {
                                                     BuildProducer<SubstrateResourceBuildItem> resources,
                                                     BuildProducer<SecurityRealmBuildItem> securityRealm) throws Exception {
         if (propertiesRealmConfig.isPresent() && propertiesRealmConfig.get().isEnabled()) {
-            log.info("Configuring from PropertiesRealmConfig");
             PropertiesRealmConfig realmConfig = propertiesRealmConfig.get();
+            log.debugf("Configuring from PropertiesRealmConfig, users=%s, roles=%s", realmConfig.getUsers(), realmConfig.getRoles());
             // Add the users/roles properties files resource names to build artifact
             resources.produce(new SubstrateResourceBuildItem(realmConfig.users, realmConfig.roles));
             // Have the runtime template create the LegacyPropertiesSecurityRealm and create the build item
@@ -123,8 +123,8 @@ class SecurityDeploymentProcessor {
             MPRealmConfig realmConfig = mpRealmConfig.get();
             log.info("Configuring from MPRealmConfig");
             // These are not being populated correctly by the core config Map logic for some reason, so reparse them here
-            log.infof("MPRealmConfig.users: %s", realmConfig.users);
-            log.infof("MPRealmConfig.roles: %s", realmConfig.roles);
+            log.debugf("MPRealmConfig.users: %s", realmConfig.users);
+            log.debugf("MPRealmConfig.roles: %s", realmConfig.roles);
             Set<String> userKeys = ShamrockConfig.getNames("shamrock.security.embedded.users");
 
             log.debugf("userKeys: %s", userKeys);
@@ -163,7 +163,7 @@ class SecurityDeploymentProcessor {
     SecurityDomainBuildItem build(SecurityTemplate template, BuildProducer<ServletExtensionBuildItem> extension,
                                   List<SecurityRealmBuildItem> realms,
                                   List<AuthConfigBuildItem> authConfigs) throws Exception {
-        log.infof("build, hasFile=%s, hasMP=%s", propertiesRealmConfig.isPresent(), mpRealmConfig.isPresent());
+        log.debugf("build, hasFile=%s, hasMP=%s", propertiesRealmConfig.isPresent(), mpRealmConfig.isPresent());
         if(realms.size() > 0) {
             // Configure the SecurityDomain.Builder from the main realm
             SecurityRealmBuildItem realmBuildItem = realms.get(0);

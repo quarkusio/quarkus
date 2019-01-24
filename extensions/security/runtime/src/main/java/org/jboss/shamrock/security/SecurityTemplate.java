@@ -72,7 +72,7 @@ public class SecurityTemplate {
      * @throws Exception
      */
     public void loadRealm(RuntimeValue<SecurityRealm> realm, PropertiesRealmConfig config) throws Exception {
-        log.infof("loadRealm, config=%s", config);
+        log.debugf("loadRealm, config=%s", config);
         SecurityRealm secRealm = realm.getValue();
         if(!(secRealm instanceof LegacyPropertiesSecurityRealm)) {
             return;
@@ -98,7 +98,7 @@ public class SecurityTemplate {
      * @throws Exception
      */
     public void loadRealm(RuntimeValue<SecurityRealm> realm, MPRealmConfig config) throws Exception {
-        log.infof("loadRealm, config=%s", config);
+        log.debugf("loadRealm, config=%s", config);
         SecurityRealm secRealm = realm.getValue();
         if(!(secRealm instanceof SimpleMapBackedSecurityRealm)) {
             return;
@@ -106,12 +106,11 @@ public class SecurityTemplate {
         SimpleMapBackedSecurityRealm memRealm = (SimpleMapBackedSecurityRealm) secRealm;
         HashMap<String, SimpleRealmEntry> identityMap = new HashMap<>();
         Map<String, String> userInfo = config.getUsers();
-        log.infof("UserInfoMap: %s\n", userInfo);
+        log.debugf("UserInfoMap: %s\n", userInfo);
         Map<String, String> roleInfo = config.getRoles();
-        log.infof("RoleInfoMap: %s\n", roleInfo);
+        log.debugf("RoleInfoMap: %s\n", roleInfo);
         for(String user : userInfo.keySet()) {
             String password = userInfo.get(user);
-            System.out.printf("User(%s), password=%s\n", user, password);
             ClearPassword clear = ClearPassword.createRaw(ClearPassword.ALGORITHM_CLEAR, password.toCharArray());
             PasswordCredential passwordCred = new PasswordCredential(clear);
             List<Credential> credentials = new ArrayList<>();
@@ -124,7 +123,7 @@ public class SecurityTemplate {
             }
             SimpleRealmEntry entry = new SimpleRealmEntry(credentials, attributes);
             identityMap.put(user, entry);
-            log.infof("Added user(%s), roles=%s\n", user, attributes.get("groups"));
+            log.debugf("Added user(%s), roles=%s\n", user, attributes.get("groups"));
         }
         memRealm.setIdentityMap(identityMap);
     }
@@ -136,7 +135,7 @@ public class SecurityTemplate {
      * @throws Exception
      */
     public RuntimeValue<SecurityRealm> createRealm(PropertiesRealmConfig config) throws Exception {
-        log.infof("createRealm, config=%s", config);
+        log.debugf("createRealm, config=%s", config);
 
         SecurityRealm realm = LegacyPropertiesSecurityRealm.builder()
                 .setDefaultRealm("default")
@@ -157,7 +156,7 @@ public class SecurityTemplate {
      * @throws Exception
      */
     public RuntimeValue<SecurityRealm> createRealm(MPRealmConfig config) {
-        log.infof("createRealm, config=%s", config);
+        log.debugf("createRealm, config=%s", config);
 
         Supplier<Provider[]> providers = new Supplier<Provider[]>() {
             @Override
@@ -177,7 +176,7 @@ public class SecurityTemplate {
      * @throws Exception on any error
      */
     public RuntimeValue<SecurityDomain.Builder> configureDomainBuilder(String realmName, RuntimeValue<SecurityRealm> realm) throws Exception {
-        log.infof("buildDomain, realm=%s", realm.getValue());
+        log.debugf("buildDomain, realm=%s", realm.getValue());
 
         SecurityDomain.Builder domain = SecurityDomain.builder()
                 .addRealm(realmName, realm.getValue())
@@ -251,7 +250,7 @@ public class SecurityTemplate {
             public void handleDeployment(DeploymentInfo deploymentInfo, ServletContext servletContext) {
                 if (authConfigs.size() > 0) {
                     AuthConfig first = authConfigs.get(0);
-                    log.infof("configureUndertowIdentityManager, %s", authConfigs);
+                    log.debugf("configureUndertowIdentityManager, %s", authConfigs);
                     LoginConfig loginConfig = new LoginConfig(first.authMechanism, first.realmName);
                     for(int n = 1; n < authConfigs.size(); n ++) {
                         AuthConfig ac = authConfigs.get(n);

@@ -5,9 +5,9 @@ import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.jboss.shamrock.maven.it.verifier.MavenProcessInvocationResult;
 import org.jboss.shamrock.maven.it.verifier.RunningInvoker;
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -30,7 +30,7 @@ public class DevMojoIT extends MojoTestBase {
     private RunningInvoker running;
     private File testDir;
 
-    @After
+    @AfterEach
     public void cleanup() {
         if (running != null) {
             running.stop();
@@ -99,7 +99,7 @@ public class DevMojoIT extends MojoTestBase {
     }
 
     @Test
-    @Ignore("Issue https://github.com/protean-project/shamrock/issues/245")
+    @Disabled("Issue https://github.com/protean-project/shamrock/issues/245")
     public void testThatTheApplicationIsReloadedOnNewServlet() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-run-new-servlet");
         runAndCheck();

@@ -6,7 +6,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.maven.shared.utils.StringUtils;
 import org.jboss.shamrock.maven.utilities.MojoUtils;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,7 +26,7 @@ import static org.awaitility.Awaitility.await;
 public class MojoTestBase {
     private static ImmutableMap<String, String> VARIABLES;
 
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         VARIABLES = ImmutableMap.of(
                 "@project.groupId@", MojoUtils.SHAMROCK_GROUP_ID,

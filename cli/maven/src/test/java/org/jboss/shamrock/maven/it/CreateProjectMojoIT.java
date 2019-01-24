@@ -10,15 +10,13 @@ import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.jboss.shamrock.maven.CreateProjectMojo;
 import org.jboss.shamrock.maven.it.verifier.RunningInvoker;
 import org.jboss.shamrock.maven.utilities.MojoUtils;
-import org.junit.After;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.*;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Properties;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -239,7 +237,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(FileUtils.readFileToString(resource, "UTF-8")).contains(contentsToFind);
     }
 
-    @After
+    @AfterEach
     public void cleanup() {
         if (running != null) {
             running.stop();

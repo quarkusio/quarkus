@@ -3,8 +3,8 @@ package org.jboss.shamrock.cli.commands;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.model.Model;
 import org.jboss.shamrock.maven.utilities.MojoUtils;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,7 +13,6 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -26,7 +25,7 @@ public class CreateProjectTest {
                                                                    .artifactId("basic-rest")
                                                                    .version("1.0.0-SNAPSHOT");
 
-        Assert.assertTrue(createProject.doCreateProject(new HashMap<>()));
+        Assertions.assertTrue(createProject.doCreateProject(new HashMap<>()));
     }
 
     @Test
@@ -46,7 +45,7 @@ public class CreateProjectTest {
                                                                    .artifactId("wrong")
                                                                    .version("1.0.0-SNAPSHOT");
 
-        Assert.assertTrue(createProject.doCreateProject(new HashMap<>()));
+        Assertions.assertTrue(createProject.doCreateProject(new HashMap<>()));
 
         assertThat(FileUtils.readFileToString(pom, "UTF-8"))
             .contains(MojoUtils.SHAMROCK_PLUGIN_ARTIFACT_ID, MojoUtils.SHAMROCK_VERSION_VARIABLE, MojoUtils.SHAMROCK_GROUP_ID);
@@ -73,7 +72,7 @@ public class CreateProjectTest {
         properties.put("className", "org.acme.MyResource");
         properties.put("extensions", "commons-io:commons-io:2.5");
 
-        Assert.assertTrue(new CreateProject(testDir).groupId("org.acme")
+        Assertions.assertTrue(new CreateProject(testDir).groupId("org.acme")
                                                     .artifactId("acme")
                                                     .version("1.0.0-SNAPSHOT")
                                                     .doCreateProject(properties));
@@ -104,7 +103,7 @@ public class CreateProjectTest {
                  .forEach(File::delete);
         }
 
-        Assert.assertFalse("Directory still exists",
-            Files.exists(file.toPath()));
+        Assertions.assertFalse(
+            Files.exists(file.toPath()), "Directory still exists");
     }
 }

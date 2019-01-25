@@ -30,9 +30,17 @@ public class Timing {
 
     private static volatile long bootStartTime = -1;
 
+    private static volatile long bootStopTime = -1;
+
     public static void staticInitStarted() {
         if (bootStartTime < 0) {
             bootStartTime = System.nanoTime();
+        }
+    }
+
+    public static void staticInitStopped() {
+        if (bootStopTime < 0) {
+            bootStopTime = System.nanoTime();
         }
     }
 
@@ -50,12 +58,23 @@ public class Timing {
         final long bootTimeNanoSeconds = System.nanoTime() - bootStartTime;
         final Logger logger = Logger.getLogger("org.jboss.shamrock");
         //Use a BigDecimal so we can render in seconds with 3 digits precision, as requested:
-        final BigDecimal secondsRepresentation = BigDecimal
-              .valueOf(bootTimeNanoSeconds) // As nanoseconds
-              .divide(BigDecimal.valueOf(1_000_000), BigDecimal.ROUND_HALF_UP) // Convert to milliseconds, discard remaining digits while rounding
-              .divide(BigDecimal.valueOf(1_000), 3, BigDecimal.ROUND_HALF_UP); // Convert to seconds, while preserving 3 digits
+        final BigDecimal secondsRepresentation = convertToBigDecimalSeconds(bootTimeNanoSeconds);
         logger.infof("Shamrock %s started in %ss. %s", version, secondsRepresentation, httpServer);
         logger.infof("Installed features: [%s]", features);
+    }
+
+    public static void printStopTime() {
+        final long stopTimeNanoSeconds = System.nanoTime() - bootStopTime;
+        final Logger logger = Logger.getLogger("org.jboss.shamrock");
+        final BigDecimal secondsRepresentation = convertToBigDecimalSeconds(stopTimeNanoSeconds);
+        logger.infof("Shamrock stopped in %ss", secondsRepresentation);
+    }
+
+    private static BigDecimal convertToBigDecimalSeconds (final long timeNanoSeconds) {
+        final BigDecimal secondsRepresentation = BigDecimal.valueOf(timeNanoSeconds) // As nanoseconds
+              .divide(BigDecimal.valueOf(1_000_000), BigDecimal.ROUND_HALF_UP) // Convert to milliseconds, discard remaining digits while rounding
+              .divide(BigDecimal.valueOf(1_000), 3, BigDecimal.ROUND_HALF_UP); // Convert to seconds, while preserving 3 digits
+        return secondsRepresentation;
     }
 
 }

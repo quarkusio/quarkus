@@ -2,8 +2,8 @@ package org.jboss.shamrock.cli.commands;
 
 import org.apache.maven.model.Model;
 import org.jboss.shamrock.maven.utilities.MojoUtils;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,7 +18,7 @@ public class AddExtensionsTest {
 
         CreateProjectTest.delete(pom.getParentFile());
         new CreateProject(pom.getParentFile())
-            .groupId(MojoUtils.SHAMROCK_GROUP_ID)
+            .groupId("org.acme")
             .artifactId("add-extension-test")
             .version("0.0.1-SNAPSHOT")
             .doCreateProject(new HashMap<>());
@@ -33,9 +33,9 @@ public class AddExtensionsTest {
     }
 
     private void hasDependency(final Model model, final String artifactId) {
-        Assert.assertTrue(model.getDependencies()
+        Assertions.assertTrue(model.getDependencies()
                                .stream()
-                               .anyMatch(d -> d.getGroupId().equals(MojoUtils.SHAMROCK_GROUP_ID) &&
+                               .anyMatch(d -> d.getGroupId().equals(MojoUtils.getPluginGroupId()) &&
                                               d.getArtifactId().equals(artifactId)));
     }
 }

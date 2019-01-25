@@ -16,7 +16,6 @@ import java.util.Map;
 public class BasicRest extends ShamrockTemplate {
     private Map<String, Object> context;
     private String className = "ShamrockResource";
-    private String docRoot = "/app";
     private String path = "/hello";
     private File projectRoot;
     private File srcMain;
@@ -42,7 +41,8 @@ public class BasicRest extends ShamrockTemplate {
     }
 
     private void setupContext() {
-        String packageName = (String) context.get("packageName");
+        MojoUtils.getAllProperties().forEach((k, v) -> context.put(k.replace("-", "_"), v));
+        String packageName = (String) context.get(PACKAGE_NAME);
         if (className.endsWith(MojoUtils.JAVA_EXTENSION)) {
             className = className.substring(0, className.length() - MojoUtils.JAVA_EXTENSION.length());
         }
@@ -60,12 +60,11 @@ public class BasicRest extends ShamrockTemplate {
             testMain = mkdirs(testPackageDir);
         }
 
-        context.put("className", className);
-        context.put("docRoot", docRoot);
-        context.put("path", path);
+        context.put(CLASS_NAME, className);
+        context.put(RESOURCE_PATH, path);
 
         if (packageName != null) {
-            context.put("packageName", packageName);
+            context.put(PACKAGE_NAME, packageName);
         }
     }
 
@@ -74,8 +73,6 @@ public class BasicRest extends ShamrockTemplate {
         File testClassFile = new File(testMain, className + "Test" + MojoUtils.JAVA_EXTENSION);
         generate("templates/resource-template.ftl", context, classFile, "resource code");
         generate("templates/test-resource-template.ftl", context, testClassFile, "test code");
-        generate("templates/application-template.ftl", context, new File(srcMain, "MyApplication.java"),
-            "Application class");
     }
 
     @SuppressWarnings("unchecked")
@@ -90,15 +87,14 @@ public class BasicRest extends ShamrockTemplate {
             generate("templates/pom-template.ftl", context, pomFile, "Unable to generate pom.xml");
         } else {
             final Model model = MojoUtils.readPom(pomFile);
-            context.put(MojoUtils.PROJECT_GROUP_ID, model.getGroupId());
-            context.put(MojoUtils.PROJECT_ARTIFACT_ID, model.getArtifactId());
+            context.put(PROJECT_GROUP_ID, model.getGroupId());
+            context.put(PROJECT_ARTIFACT_ID, model.getArtifactId());
         }
 
         className = get("className",
-            String.format("%s.%s.%s", context.get(MojoUtils.PROJECT_GROUP_ID), context.get(MojoUtils.PROJECT_ARTIFACT_ID),
+            String.format("%s.%s.%s", context.get(PROJECT_GROUP_ID), context.get(PROJECT_ARTIFACT_ID),
                 "MyResource"));
-        docRoot = get("docRoot", docRoot);
-        path = get("path", path);
+        path = get(RESOURCE_PATH, path);
 
         srcMain = mkdirs(new File(projectRoot, "src/main/java"));
         testMain = mkdirs(new File(projectRoot, "src/test/java"));

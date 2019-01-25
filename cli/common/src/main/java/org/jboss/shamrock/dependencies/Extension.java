@@ -32,7 +32,7 @@ public class Extension {
     private String artifactId;
     private String groupId;
     private String scope;
-    private String version = MojoUtils.SHAMROCK_VERSION_VARIABLE;
+    private String version = MojoUtils.SHAMROCK_VERSION_PROPERTY;
 
     private String type;
     private String classifier;

@@ -6,7 +6,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.maven.shared.utils.StringUtils;
 import org.jboss.shamrock.maven.utilities.MojoUtils;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeAll;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,12 +26,12 @@ import static org.awaitility.Awaitility.await;
 public class MojoTestBase {
     private static ImmutableMap<String, String> VARIABLES;
 
-    @BeforeClass
+    @BeforeAll
     public static void init() {
         VARIABLES = ImmutableMap.of(
-                "@project.groupId@", MojoUtils.SHAMROCK_GROUP_ID,
-                "@project.artifactId@", MojoUtils.SHAMROCK_PLUGIN_ARTIFACT_ID,
-                "@project.version@", MojoUtils.SHAMROCK_VERSION);
+                "@project.groupId@", MojoUtils.getPluginGroupId(),
+                "@project.artifactId@", MojoUtils.getPluginArtifactId(),
+                "@project.version@", MojoUtils.getPluginVersion());
     }
 
     static File initProject(String name) {
@@ -89,18 +89,18 @@ public class MojoTestBase {
     }
 
     public static void installPluginToLocalRepository(File local) {
-        File repo = new File(local, MojoUtils.SHAMROCK_GROUP_ID.replace(".", "/") + "/"
-                                    + MojoUtils.SHAMROCK_PLUGIN_ARTIFACT_ID + "/" + MojoUtils.SHAMROCK_VERSION);
+        File repo = new File(local, MojoUtils.getPluginGroupId().replace(".", "/") + "/"
+                                    + MojoUtils.getPluginArtifactId() + "/" + MojoUtils.getPluginVersion());
         if (!repo.isDirectory()) {
             boolean mkdirs = repo.mkdirs();
             Logger.getLogger(MojoTestBase.class.getName())
                     .log(Level.FINE, repo.getAbsolutePath() + " created? " + mkdirs);
         }
 
-        File plugin = new File("target", MojoUtils.SHAMROCK_PLUGIN_ARTIFACT_ID + "-" + MojoUtils.SHAMROCK_VERSION + ".jar");
+        File plugin = new File("target", MojoUtils.getPluginArtifactId() + "-" + MojoUtils.getPluginVersion() + ".jar");
         if (!plugin.isFile()) {
             File[] files = new File("target").listFiles(
-                    file -> file.getName().startsWith(MojoUtils.SHAMROCK_PLUGIN_ARTIFACT_ID) && file.getName().endsWith(".jar"));
+                    file -> file.getName().startsWith(MojoUtils.getPluginArtifactId()) && file.getName().endsWith(".jar"));
             if (files != null && files.length != 0) {
                 plugin = files[0];
             }
@@ -108,7 +108,7 @@ public class MojoTestBase {
 
         try {
             FileUtils.copyFileToDirectory(plugin, repo);
-            String installedPomName = MojoUtils.SHAMROCK_PLUGIN_ARTIFACT_ID + "-" + MojoUtils.SHAMROCK_VERSION + ".pom";
+            String installedPomName = MojoUtils.getPluginArtifactId() + "-" + MojoUtils.getPluginVersion() + ".pom";
             FileUtils.copyFile(new File("pom.xml"), new File(repo, installedPomName));
         } catch (IOException e) {
             throw new RuntimeException("Cannot copy the plugin jar, or the pom file, to the local repository", e);

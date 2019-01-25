@@ -37,28 +37,64 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.net.URL;
+import java.util.*;
 
 /**
  * @author kameshs
  */
 public class MojoUtils {
 
-    public static final String SHAMROCK_GROUP_ID = "org.jboss.shamrock";
-    public static final String SHAMROCK_VERSION = "1.0.0.Alpha1-SNAPSHOT";
-    public static final String SHAMROCK_VERSION_PROPERTY_NAME = "shamrock.version";
-    public static final String SHAMROCK_VERSION_VARIABLE = "${" + SHAMROCK_VERSION_PROPERTY_NAME + "}";
-    public static final String SHAMROCK_BOM_ARTIFACT_ID = "shamrock-bom";
-    public static final String SHAMROCK_PLUGIN_ARTIFACT_ID = "shamrock-maven-plugin";
-    public static final String PROJECT_GROUP_ID = "mProjectGroupId";
-    public static final String PROJECT_ARTIFACT_ID = "mProjectArtifactId";
     public static final String JAVA_EXTENSION = ".java";
+
+    private static final String PLUGIN_VERSION_PROPERTY_NAME = "shamrock.version";
+    public static final String SHAMROCK_VERSION_PROPERTY = "${" + PLUGIN_VERSION_PROPERTY_NAME + "}";
+
+    private static final Properties properties = new Properties();
 
     private MojoUtils() {
         // Avoid direct instantiation
+    }
+
+    static {
+        loadProperties();
+    }
+
+    public static Map<String, String> getAllProperties() {
+        Map<String, String> all = new HashMap<>();
+        properties.stringPropertyNames().forEach(s -> all.put(s, properties.getProperty(s)));
+        return all;
+    }
+
+
+    public static String getPluginArtifactId() {
+        return get("plugin-artifactId");
+    }
+
+    public static String getPluginGroupId() {
+        return get("plugin-groupId");
+    }
+
+    public static String getPluginVersion() {
+        return get("plugin-version");
+    }
+
+    public static String getBomArtifactId() {
+        return get("bom-artifactId");
+    }
+
+    private static void loadProperties() {
+        URL url = MojoUtils.class.getClassLoader().getResource("shamrock.properties");
+        Objects.requireNonNull(url);
+        try (InputStream in = url.openStream()) {
+            properties.load(in);
+        } catch (IOException e) {
+            throw new IllegalStateException("The shamrock.properties file cannot be read", e);
+        }
+    }
+
+    public static String get(String key) {
+        return properties.getProperty(key);
     }
 
     /**

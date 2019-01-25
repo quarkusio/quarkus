@@ -1,21 +1,21 @@
-<#if packageName??>
-package ${packageName};
+<#if package_name??>
+package ${package_name};
 </#if>
 
-import org.jboss.shamrock.test.ShamrockTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.jboss.shamrock.test.junit.ShamrockTest;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
-@RunWith(ShamrockTest.class)
-public class ${className}Test {
+@ExtendWith(ShamrockTest.class)
+public class ${class_name}Test {
 
     @Test
     public void testHelloEndpoint() {
         given()
-          .when().get("${docRoot}${path}")
+          .when().get("${path}")
           .then()
              .statusCode(200)
              .body(is("hello"));

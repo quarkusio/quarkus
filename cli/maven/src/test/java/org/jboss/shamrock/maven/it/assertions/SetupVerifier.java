@@ -16,7 +16,7 @@ import java.util.Optional;
 import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class SetupVerifier {
 
@@ -42,7 +42,7 @@ public class SetupVerifier {
     }
 
     public static void verifySetup(File pomFile) throws Exception {
-        assertNotNull("Unable to find pom.xml", pomFile);
+        assertNotNull(pomFile, "Unable to find pom.xml");
         MavenXpp3Reader xpp3Reader = new MavenXpp3Reader();
         Model model = xpp3Reader.read(new FileInputStream(pomFile));
 
@@ -53,14 +53,14 @@ public class SetupVerifier {
 
         //Check if the properties have been set correctly
         Properties properties = model.getProperties();
-        assertThat(properties.containsKey(MojoUtils.SHAMROCK_VERSION_PROPERTY_NAME)).isTrue();
+        assertThat(properties.containsKey("shamrock.version")).isTrue();
 
         // Check plugin is set
         Plugin plugin = maybe.orElseThrow(() -> new AssertionError("Plugin expected"));
         assertThat(plugin).isNotNull().satisfies(p -> {
-            assertThat(p.getArtifactId()).isEqualTo(MojoUtils.SHAMROCK_PLUGIN_ARTIFACT_ID);
-            assertThat(p.getGroupId()).isEqualTo(MojoUtils.SHAMROCK_GROUP_ID);
-            assertThat(p.getVersion()).isEqualTo(MojoUtils.SHAMROCK_VERSION_VARIABLE);
+            assertThat(p.getArtifactId()).isEqualTo(MojoUtils.getPluginArtifactId());
+            assertThat(p.getGroupId()).isEqualTo(MojoUtils.getPluginGroupId());
+            assertThat(p.getVersion()).isEqualTo(MojoUtils.SHAMROCK_VERSION_PROPERTY);
         });
 
         // Check build execution Configuration
@@ -91,7 +91,7 @@ public class SetupVerifier {
         Properties projectProps = project.getProperties();
         assertNotNull(projectProps);
         assertFalse(projectProps.isEmpty());
-        assertEquals(MojoUtils.SHAMROCK_VERSION, projectProps.getProperty("shamrock.version"));
+        assertEquals(MojoUtils.getPluginVersion(), projectProps.getProperty("shamrock.version"));
     }
 
 }

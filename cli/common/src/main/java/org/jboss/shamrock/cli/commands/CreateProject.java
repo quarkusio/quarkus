@@ -22,9 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import static org.jboss.shamrock.ShamrockTemplate.*;
 import static org.jboss.shamrock.maven.utilities.MojoUtils.*;
-import static org.jboss.shamrock.maven.utilities.MojoUtils.SHAMROCK_VERSION_PROPERTY_NAME;
-import static org.jboss.shamrock.maven.utilities.MojoUtils.SHAMROCK_VERSION_VARIABLE;
 import static org.jboss.shamrock.maven.utilities.MojoUtils.configuration;
 import static org.jboss.shamrock.maven.utilities.MojoUtils.plugin;
 
@@ -36,7 +35,7 @@ public class CreateProject {
     private File root;
     private String groupId;
     private String artifactId;
-    private String version = SHAMROCK_VERSION;
+    private String version = getPluginVersion();
 
     private Model model;
 
@@ -77,10 +76,12 @@ public class CreateProject {
 
         System.out.println("Creating a new project in " + root.getAbsolutePath());
 
-        context.put("mProjectGroupId", groupId);
-        context.put("mProjectArtifactId", artifactId);
-        context.put("mProjectVersion", version);
-        context.put("shamrockVersion", SHAMROCK_VERSION);
+        MojoUtils.getAllProperties().forEach((k, v) -> context.put(k.replace("-", "_"), v));
+
+        context.put(PROJECT_GROUP_ID, groupId);
+        context.put(PROJECT_ARTIFACT_ID, artifactId);
+        context.put(PROJECT_VERSION, version);
+        context.put(SHAMROCK_VERSION, getPluginVersion());
 
         new BasicRest()
             .generate(root, context);
@@ -105,15 +106,15 @@ public class CreateProject {
         } else {
             hasBom = dm.getDependencies().stream()
                        .anyMatch(d ->
-                                     d.getGroupId().equals(SHAMROCK_GROUP_ID) &&
-                                     d.getArtifactId().equals(SHAMROCK_BOM_ARTIFACT_ID));
+                                     d.getGroupId().equals(getPluginGroupId()) &&
+                                     d.getArtifactId().equals(getBomArtifactId()));
         }
 
         if (!hasBom) {
             Dependency bom = new Dependency();
-            bom.setGroupId(SHAMROCK_GROUP_ID);
-            bom.setArtifactId(SHAMROCK_BOM_ARTIFACT_ID);
-            bom.setVersion(SHAMROCK_VERSION_VARIABLE);
+            bom.setGroupId(getPluginGroupId());
+            bom.setArtifactId(getBomArtifactId());
+            bom.setVersion(SHAMROCK_VERSION_PROPERTY);
             bom.setType("pom");
             bom.setScope("import");
 
@@ -128,7 +129,7 @@ public class CreateProject {
             exec.addGoal("native-image");
             exec.setConfiguration(configuration(new Element("enableHttpUrlHandler", "true")));
 
-            Plugin plg = plugin(SHAMROCK_GROUP_ID, SHAMROCK_PLUGIN_ARTIFACT_ID, SHAMROCK_VERSION_VARIABLE);
+            Plugin plg = plugin(getPluginGroupId(), getPluginArtifactId(), SHAMROCK_VERSION_PROPERTY);
             plg.addExecution(exec);
 
             BuildBase buildBase = new BuildBase();
@@ -150,11 +151,11 @@ public class CreateProject {
 
     private void addMainPluginConfig(Model model) {
         if (!hasPlugin(model)) {
-            Plugin plugin = plugin(SHAMROCK_GROUP_ID, SHAMROCK_PLUGIN_ARTIFACT_ID, SHAMROCK_VERSION_VARIABLE);
+            Plugin plugin = plugin(getPluginGroupId(), getPluginArtifactId(), SHAMROCK_VERSION_PROPERTY);
             if (isParentPom(model)) {
                 addPluginManagementSection(model, plugin);
                 //strip the shamrockVersion off
-                plugin = plugin(SHAMROCK_GROUP_ID, SHAMROCK_PLUGIN_ARTIFACT_ID);
+                plugin = plugin(getPluginGroupId(), getPluginArtifactId());
             }
             PluginExecution pluginExec = new PluginExecution();
             pluginExec.addGoal("build");
@@ -180,8 +181,8 @@ public class CreateProject {
         return plugins != null && model.getBuild().getPlugins()
                     .stream()
                     .anyMatch(p ->
-                         p.getGroupId().equalsIgnoreCase(SHAMROCK_GROUP_ID) &&
-                         p.getArtifactId().equalsIgnoreCase(SHAMROCK_PLUGIN_ARTIFACT_ID));
+                         p.getGroupId().equalsIgnoreCase(getPluginGroupId()) &&
+                         p.getArtifactId().equalsIgnoreCase(getPluginArtifactId()));
     }
 
     private void addPluginManagementSection(Model model, Plugin plugin) {
@@ -211,7 +212,7 @@ public class CreateProject {
             properties = new Properties();
             model.setProperties(properties);
         }
-        properties.putIfAbsent(SHAMROCK_VERSION_PROPERTY_NAME, SHAMROCK_VERSION);
+        properties.putIfAbsent("shamrock.version", getPluginVersion());
     }
 
     private boolean isParentPom(Model model) {

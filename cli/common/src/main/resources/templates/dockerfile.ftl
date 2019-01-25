@@ -5,11 +5,11 @@
 #
 # Then, build the image with:
 #
-# docker build -f src/main/docker/Dockerfile -t shamrock/${mProjectArtifactId} .
+# docker build -f src/main/docker/Dockerfile -t shamrock/${project_artifactId} .
 #
 # Then run the container using:
 #
-# docker run -i --rm -p 8080:8080 shamrock/${mProjectArtifactId}
+# docker run -i --rm -p 8080:8080 shamrock/${project_artifactId}
 #
 ###
 FROM registry.fedoraproject.org/fedora-minimal

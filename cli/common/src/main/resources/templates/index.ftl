@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>${mProjectArtifactId} - ${mProjectVersion}</title>
+    <title>${project_artifactId} - ${project_version}</title>
     <style>
         h1, h2, h3, h4, h5, h6 {
             margin-bottom: 0.5rem;
@@ -130,18 +130,18 @@
         <div class="right-section">
             <h3>Application</h3>
             <ul>
-                <li>GroupId: ${mProjectGroupId}</li>
-                <li>ArtifactId: ${mProjectArtifactId}</li>
-                <li>Version: ${mProjectVersion}</li>
-                <li>Shamrock Version: ${shamrockVersion}</li>
+                <li>GroupId: ${project_groupId}</li>
+                <li>ArtifactId: ${project_artifactId}</li>
+                <li>Version: ${project_version}</li>
+                <li>Shamrock Version: ${shamrock_version}</li>
             </ul>
         </div>
         <div class="right-section">
             <h3>Next steps</h3>
             <ul>
-                <li><a href="${docRoot}/ide-configuration.html#import-in-your-ide">Setup your IDE</a></li>
-                <li><a href="${docRoot}/getting-started-guide.html">Getting started</a></li>
-                <li><a href="${docRoot}/index.html">Documentation</a></li>
+                <li><a href="${doc_root}/ide-configuration.html#import-in-your-ide">Setup your IDE</a></li>
+                <li><a href="${doc_root}/getting-started-guide.html">Getting started</a></li>
+                <li><a href="${doc_root}/index.html">Documentation</a></li>
             </ul>
         </div>
     </div>

@@ -105,6 +105,8 @@ public class ShamrockTestExtension implements BeforeAllCallback, TestInstanceFac
         }
     }
 
+
+
     private ExtensionState doJavaStart(ExtensionContext context, TestResourceManager testResourceManager) {
         Path testClassesLocation = getTestClassesLocation(context.getRequiredTestClass());
         RuntimeRunner runtimeRunner = RuntimeRunner
@@ -127,7 +129,6 @@ public class ShamrockTestExtension implements BeforeAllCallback, TestInstanceFac
 
         return new ExtensionState(testResourceManager, runtimeRunner, false);
     }
-
 
     static class ExtensionState implements ExtensionContext.Store.CloseableResource {
 

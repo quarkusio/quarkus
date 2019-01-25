@@ -284,6 +284,12 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-test-data-access</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-test-h2</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>

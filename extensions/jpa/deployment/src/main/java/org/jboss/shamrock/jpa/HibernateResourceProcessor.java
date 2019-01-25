@@ -53,6 +53,7 @@ import org.jboss.shamrock.jpa.runtime.DefaultEntityManagerFactoryProducer;
 import org.jboss.shamrock.jpa.runtime.DefaultEntityManagerProducer;
 import org.jboss.shamrock.jpa.runtime.JPAConfig;
 import org.jboss.shamrock.jpa.runtime.JPADeploymentTemplate;
+import org.jboss.shamrock.jpa.runtime.RequestScopedEntityManagerHolder;
 import org.jboss.shamrock.jpa.runtime.TransactionEntityManagers;
 import org.jboss.shamrock.jpa.runtime.boot.scan.ShamrockScanner;
 
@@ -134,7 +135,7 @@ public final class HibernateResourceProcessor {
 
     @BuildStep
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans, CombinedIndexBuildItem combinedIndex, List<PersistenceUnitDescriptorBuildItem> descriptors) {
-        additionalBeans.produce(new AdditionalBeanBuildItem(false, JPAConfig.class, TransactionEntityManagers.class));
+        additionalBeans.produce(new AdditionalBeanBuildItem(false, JPAConfig.class, TransactionEntityManagers.class, RequestScopedEntityManagerHolder.class));
 
         if (descriptors.size() == 1) {
             // There is only one persistence unit - register CDI beans for EM and EMF if no

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2018 Red Hat, Inc.
+  ~ Copyright 2019 Red Hat, Inc.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -18,24 +18,30 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <artifactId>shamrock-build-parent</artifactId>
-        <groupId>org.jboss.shamrock</groupId>
-        <version>1.0.0.Alpha1-SNAPSHOT</version>
-        <relativePath>../build-parent/pom.xml</relativePath>
-    </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-test-framework</artifactId>
-    <name>Shamrock - Test Framework</name>
-    <packaging>pom</packaging>
-    <modules>
-        <module>common</module>
-        <module>h2</module>
-        <module>junit4</module>
-        <module>junit5-internal</module>
-        <module>junit5</module>
-        <module>data-access</module>
-    </modules>
+    <parent>
+        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>shamrock-test-framework</artifactId>
+        <version>1.0.0.Alpha1-SNAPSHOT</version>
+        <relativePath>../</relativePath>
+    </parent>
+
+    <artifactId>shamrock-test-data-access</artifactId>
+    <name>Shamrock - Test framework - Data Access Test Utilities</name>
+    <dependencies>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-test-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-transactions-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-jpa-runtime</artifactId>
+        </dependency>
+    </dependencies>
 
 </project>

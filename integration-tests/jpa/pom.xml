@@ -39,7 +39,10 @@
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-test-h2</artifactId>
-            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-test-data-access</artifactId>
         </dependency>
         <dependency>
             <groupId>io.rest-assured</groupId>

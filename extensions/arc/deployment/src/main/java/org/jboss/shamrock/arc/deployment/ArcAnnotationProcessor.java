@@ -58,6 +58,7 @@ import org.jboss.shamrock.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnot
 import org.jboss.shamrock.arc.runtime.ArcDeploymentTemplate;
 import org.jboss.shamrock.arc.runtime.BeanContainer;
 import org.jboss.shamrock.arc.runtime.LifecycleEventRunner;
+import org.jboss.shamrock.deployment.ApplicationArchive;
 import org.jboss.shamrock.deployment.Capabilities;
 import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
@@ -151,6 +152,12 @@ public class ArcAnnotationProcessor {
                 if(applicationArchivesBuildItem.getRootArchive().getIndex().getClassByName(dotName) != null) {
                     return true;
                 }
+                for(ApplicationArchive i : applicationArchivesBuildItem.getApplicationArchives()) {
+                    if(i.getIndex().getClassByName(dotName) != null && !i.isPlatformArchive()) {
+                        return true;
+                    }
+                }
+
                 if(generatedClassNames.contains(dotName)) {
                     return true;
                 }

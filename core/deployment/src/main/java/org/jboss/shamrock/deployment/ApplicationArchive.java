@@ -46,6 +46,12 @@ public interface ApplicationArchive extends Closeable {
     Path getArchiveRoot();
 
     /**
+     *
+     * @return <code>true</code> if this archive represents part of the platform, i.e. an existing jar file that is not part of the current application
+     */
+    boolean isPlatformArchive();
+
+    /**
      * Convenience method, returns the child path if it exists, otherwise null.
      *
      * @param path The child path

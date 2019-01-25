@@ -30,6 +30,7 @@ import org.jboss.builder.BuildResult;
 import org.jboss.builder.BuildStep;
 import org.jboss.builder.item.BuildItem;
 import org.jboss.logging.Logger;
+import org.jboss.shamrock.deployment.builditem.AdditionalApplicationArchiveBuildItem;
 import org.jboss.shamrock.deployment.builditem.ArchiveRootBuildItem;
 import org.jboss.shamrock.deployment.builditem.ClassOutputBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
@@ -46,6 +47,7 @@ public class ShamrockAugmentor {
     private final Path root;
     private final Set<Class<? extends BuildItem>> finalResults;
     private final List<Consumer<BuildChainBuilder>> buildChainCustomizers;
+    private final List<Path> additionalApplicationArchives;
 
     ShamrockAugmentor(Builder builder) {
         this.output = builder.output;
@@ -53,6 +55,8 @@ public class ShamrockAugmentor {
         this.root = builder.root;
         this.finalResults = new HashSet<>(builder.finalResults);
         this.buildChainCustomizers = new ArrayList<>(builder.buildChainCustomizers);
+        this.additionalApplicationArchives = new ArrayList<>(builder.additionalApplicationArchives);
+
     }
 
     public BuildResult run() throws Exception {
@@ -74,6 +78,9 @@ public class ShamrockAugmentor {
                             context.produce(new ArchiveRootBuildItem(root));
                             context.produce(new ClassOutputBuildItem(output));
                             context.produce(new ShutdownContextBuildItem());
+                            for(Path i : additionalApplicationArchives) {
+                                context.produce(new AdditionalApplicationArchiveBuildItem(i));
+                            }
                         }
                     })
                     .produces(ShamrockConfig.class)
@@ -81,6 +88,7 @@ public class ShamrockAugmentor {
                     .produces(ArchiveRootBuildItem.class)
                     .produces(ShutdownContextBuildItem.class)
                     .produces(ClassOutputBuildItem.class)
+                    .produces(AdditionalApplicationArchiveBuildItem.class)
                     .build();
             for (Consumer<BuildChainBuilder> i : buildChainCustomizers) {
                 i.accept(chainBuilder);

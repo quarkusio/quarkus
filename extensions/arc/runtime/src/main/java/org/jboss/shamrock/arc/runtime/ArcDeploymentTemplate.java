@@ -85,6 +85,22 @@ public class ArcDeploymentTemplate {
                         public T newInstance() {
                             return instance.get().get();
                         }
+
+                        @Override
+                        public ManagedInstance<T> newManagedInstance() {
+                            InstanceHandle<T> handle = instance.get();
+                            return new ManagedInstance<T>() {
+                                @Override
+                                public T get() {
+                                    return handle.get();
+                                }
+
+                                @Override
+                                public void destroy() {
+                                    handle.destroy();
+                                }
+                            };
+                        }
                     };
                 } else {
                     return new InjectionInstance<T>() {
@@ -95,6 +111,22 @@ public class ArcDeploymentTemplate {
                             } catch (Exception e) {
                                 throw new RuntimeException(e);
                             }
+                        }
+
+                        @Override
+                        public ManagedInstance<T> newManagedInstance() {
+                            T inst = newInstance();
+                            return new ManagedInstance<T>() {
+                                @Override
+                                public T get() {
+                                    return inst;
+                                }
+
+                                @Override
+                                public void destroy() {
+
+                                }
+                            };
                         }
                     };
                 }

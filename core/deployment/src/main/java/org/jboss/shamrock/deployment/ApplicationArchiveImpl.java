@@ -28,11 +28,13 @@ public final class ApplicationArchiveImpl extends MultiBuildItem implements Appl
     private final IndexView indexView;
     private final Path archiveRoot;
     private final Closeable closeable;
+    private final boolean platformArchive;
 
-    public ApplicationArchiveImpl(IndexView indexView, Path archiveRoot, Closeable closeable) {
+    public ApplicationArchiveImpl(IndexView indexView, Path archiveRoot, Closeable closeable, boolean platformArchive) {
         this.indexView = indexView;
         this.archiveRoot = archiveRoot;
         this.closeable = closeable;
+        this.platformArchive = platformArchive;
     }
 
     @Override
@@ -43,6 +45,11 @@ public final class ApplicationArchiveImpl extends MultiBuildItem implements Appl
     @Override
     public Path getArchiveRoot() {
         return archiveRoot;
+    }
+
+    @Override
+    public boolean isPlatformArchive() {
+        return platformArchive;
     }
 
     @Override

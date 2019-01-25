@@ -20,16 +20,65 @@ import static org.jboss.shamrock.test.common.PathTestHelper.getAppClassLocation;
 import static org.jboss.shamrock.test.common.PathTestHelper.getTestClassesLocation;
 
 import java.io.Closeable;
-import java.util.Collections;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.nio.file.Path;
 
+import org.jboss.builder.BuildContext;
+import org.jboss.invocation.proxy.ProxyConfiguration;
+import org.jboss.invocation.proxy.ProxyFactory;
+import org.jboss.jandex.DotName;
+import org.jboss.protean.arc.processor.DotNames;
+import org.jboss.shamrock.arc.deployment.BeanDefiningAnnotationBuildItem;
 import org.jboss.shamrock.runner.RuntimeRunner;
+import org.jboss.shamrock.runtime.InjectionFactory;
+import org.jboss.shamrock.runtime.InjectionFactoryTemplate;
+import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.test.common.NativeImageLauncher;
 import org.jboss.shamrock.test.common.TestResourceManager;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.TestInstanceFactory;
+import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
+import org.junit.jupiter.api.extension.TestInstantiationException;
 
-public class ShamrockTestExtension implements BeforeAllCallback {
+public class ShamrockTestExtension implements BeforeAllCallback, TestInstanceFactory {
 
+
+    public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext) throws TestInstantiationException {
+        try {
+            Class testClass = extensionContext.getRequiredTestClass();
+            InjectionFactory injectionFactory = InjectionFactoryTemplate.currentFactory();
+            if(injectionFactory == null) {
+                //integration test, just create the class
+                return testClass.newInstance();
+            }
+
+
+            ProxyFactory<?> factory = new ProxyFactory<>(new ProxyConfiguration<>()
+                    .setProxyName(testClass.getName() + "$$ShamrockTestProxy")
+                    .setClassLoader(testClass.getClassLoader())
+                    .setSuperClass(testClass));
+            InjectionInstance<?> injectionInstance = injectionFactory.create(Class.forName(testClass.getName(), true, Thread.currentThread().getContextClassLoader()));
+            InjectionInstance.ManagedInstance<?> actualTestInstance = injectionInstance.newManagedInstance();
+
+            extensionContext.getStore(ExtensionContext.Namespace.GLOBAL).put(ShamrockTestExtension.class.getName() + ".instance", new ExtensionContext.Store.CloseableResource() {
+                @Override
+                public void close() throws Throwable {
+                    actualTestInstance.destroy();
+                }
+            });
+            return factory.newInstance(new InvocationHandler() {
+                @Override
+                public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                    Method realMethod = actualTestInstance.get().getClass().getMethod(method.getName(), method.getParameterTypes());
+                    return realMethod.invoke(actualTestInstance.get(), args);
+                }
+            });
+        } catch (Exception e) {
+            throw new TestInstantiationException("Unable to create test proxy", e);
+        }
+    }
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
@@ -57,9 +106,25 @@ public class ShamrockTestExtension implements BeforeAllCallback {
     }
 
     private ExtensionState doJavaStart(ExtensionContext context, TestResourceManager testResourceManager) {
-        RuntimeRunner runtimeRunner = new RuntimeRunner(getClass().getClassLoader(), getAppClassLocation(context.getRequiredTestClass()),
-                getTestClassesLocation(context.getRequiredTestClass()), null, Collections.emptyList());
+        Path testClassesLocation = getTestClassesLocation(context.getRequiredTestClass());
+        RuntimeRunner runtimeRunner = RuntimeRunner
+                .builder()
+                .setClassLoader(getClass().getClassLoader())
+                .setApplicationRoot(getAppClassLocation(context.getRequiredTestClass()))
+                .setFrameworkClassesPath(testClassesLocation)
+                .addAdditionalApplicationRoot(testClassesLocation)
+                .addChainCustomizer((b) -> {
+                    b.addBuildStep()
+                            .produces(BeanDefiningAnnotationBuildItem.class)
+                            .setBuildStep(new org.jboss.builder.BuildStep() {
+                                @Override
+                                public void execute(BuildContext context) {
+                                    context.produce(new BeanDefiningAnnotationBuildItem(DotName.createSimple(ShamrockTest.class.getName()), DotNames.DEFAULT, false));
+                                }
+                            }).build();
+                }).build();
         runtimeRunner.run();
+
         return new ExtensionState(testResourceManager, runtimeRunner, false);
     }
 

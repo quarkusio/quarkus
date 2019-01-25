@@ -16,11 +16,10 @@
 
 package org.jboss.shamrock.test.junit4;
 
-import static org.jboss.shamrock.test.common.PathTestHelper.getTestClassesLocation;
 import static org.jboss.shamrock.test.common.PathTestHelper.getAppClassLocation;
+import static org.jboss.shamrock.test.common.PathTestHelper.getTestClassesLocation;
 
 import java.io.IOException;
-import java.util.Collections;
 
 import org.jboss.shamrock.runner.RuntimeRunner;
 import org.junit.runner.notification.RunNotifier;
@@ -42,8 +41,11 @@ public class ShamrockTest extends AbstractShamrockTestRunner {
 
         @Override
         protected void startShamrock() {
-            runtimeRunner = new RuntimeRunner(getClass().getClassLoader(), getAppClassLocation(getTestClass()),
-                    getTestClassesLocation(getTestClass()), null, Collections.emptyList());
+            runtimeRunner = RuntimeRunner.builder()
+                    .setClassLoader(getClass().getClassLoader())
+                    .setApplicationRoot(getAppClassLocation(getTestClass()))
+                    .setFrameworkClassesPath(getTestClassesLocation(getTestClass()))
+                    .build();
             runtimeRunner.run();
         }
 

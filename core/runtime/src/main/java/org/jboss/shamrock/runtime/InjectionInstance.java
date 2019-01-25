@@ -20,4 +20,14 @@ public interface InjectionInstance<T> {
 
     T newInstance();
 
+    ManagedInstance<T> newManagedInstance();
+
+    interface ManagedInstance<T> {
+
+        T get();
+
+        void destroy();
+
+    }
+
 }

@@ -36,6 +36,22 @@ public class DefaultInjectionTemplate {
                         throw new RuntimeException(e);
                     }
                 }
+
+                @Override
+                public ManagedInstance<T> newManagedInstance() {
+                    T res = newInstance();
+                    return new ManagedInstance<T>() {
+                        @Override
+                        public T get() {
+                            return res;
+                        }
+
+                        @Override
+                        public void destroy() {
+
+                        }
+                    };
+                }
             };
         }
     }

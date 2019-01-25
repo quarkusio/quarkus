@@ -20,7 +20,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +34,7 @@ import org.jboss.shamrock.deployment.builditem.ApplicationClassNameBuildItem;
 import org.jboss.shamrock.deployment.builditem.BytecodeTransformerBuildItem;
 import org.jboss.shamrock.runtime.Application;
 import org.objectweb.asm.ClassVisitor;
+import org.wildfly.common.Assert;
 
 /**
  * Class that can be used to run shamrock directly, executing the build and runtime
@@ -41,22 +42,18 @@ import org.objectweb.asm.ClassVisitor;
  */
 public class RuntimeRunner implements Runnable, Closeable {
 
-    private final Path target;
+    private final Path applicationRoot;
     private final RuntimeClassLoader loader;
     private Closeable closeTask;
     private final List<Path> additionalArchives;
-    private final List<Consumer<BuildChainBuilder>> chainCustomizers = new ArrayList<>();
+    private List<Consumer<BuildChainBuilder>> chainCustomizers;
 
-
-    public RuntimeRunner(ClassLoader classLoader, Path target, Path frameworkClassesPath, Path transformerCache, List<Path> additionalArchives) {
-        this(classLoader, target, frameworkClassesPath, transformerCache, additionalArchives, Collections.emptyList());
-    }
-
-    public RuntimeRunner(ClassLoader classLoader, Path target, Path frameworkClassesPath, Path transformerCache, List<Path> additionalArchives, List<Consumer<BuildChainBuilder>> chainCustomizers) {
-        this.target = target;
-        this.additionalArchives = additionalArchives;
-        this.chainCustomizers.addAll(chainCustomizers);
-        RuntimeClassLoader rcl = new RuntimeClassLoader(classLoader, target, frameworkClassesPath, transformerCache);
+    RuntimeRunner(Builder builder) {
+        this.applicationRoot = builder.applicationRoot;
+        this.additionalArchives = new ArrayList<>(builder.additionalArchives);
+        this.chainCustomizers = new ArrayList<>(builder.chainCustomizers);
+        this.additionalArchives.addAll(builder.additionalApplicationRoots);
+        RuntimeClassLoader rcl = new RuntimeClassLoader(builder.classLoader, applicationRoot, builder.frameworkClassesPath, builder.transformerCache, builder.additionalApplicationRoots);
         this.loader = rcl;
     }
 
@@ -72,7 +69,7 @@ public class RuntimeRunner implements Runnable, Closeable {
         Thread.currentThread().setContextClassLoader(loader);
         try {
             ShamrockAugmentor.Builder builder = ShamrockAugmentor.builder();
-            builder.setRoot(target);
+            builder.setRoot(applicationRoot);
             builder.setClassLoader(loader);
             builder.setOutput(loader);
             for (Path i : additionalArchives) {
@@ -118,6 +115,79 @@ public class RuntimeRunner implements Runnable, Closeable {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+
+        private ClassLoader classLoader;
+        private Path applicationRoot;
+        /**
+         * additional roots for classes that need to be loaded into the runtime class loader
+         *
+         * e.g. in a multi module maven project this might be used to allow for hot deployment from changes in any module (TODO)
+         *
+         */
+        private final List<Path> additionalApplicationRoots = new ArrayList<>();
+        private Closeable closeTask;
+        private final List<Path> additionalArchives = new ArrayList<>();
+        private final List<Consumer<BuildChainBuilder>> chainCustomizers = new ArrayList<>();
+        private Path frameworkClassesPath;
+        private Path transformerCache;
+
+        public Builder addChainCustomizer(Consumer<BuildChainBuilder> customizer) {
+            chainCustomizers.add(customizer);
+            return this;
+        }
+
+        public Builder addAdditionalArchive(Path archive) {
+            additionalArchives.add(archive);
+            return this;
+        }
+
+        public Builder addAdditionalArchives(Collection<Path> archives) {
+            additionalArchives.addAll(archives);
+            return this;
+        }
+        public Builder addAdditionalApplicationRoot(Path root) {
+            additionalApplicationRoots.add(root);
+            return this;
+        }
+
+        public Builder setCloseTask(Closeable closeTask) {
+            this.closeTask = closeTask;
+            return this;
+        }
+
+        public Builder setClassLoader(ClassLoader classLoader) {
+            this.classLoader = classLoader;
+            return this;
+        }
+
+        public Builder setApplicationRoot(Path applicationRoot) {
+            this.applicationRoot = applicationRoot;
+            return this;
+        }
+
+        public Builder setFrameworkClassesPath(Path frameworkClassesPath) {
+            this.frameworkClassesPath = frameworkClassesPath;
+            return this;
+        }
+
+        public Builder setTransformerCache(Path transformerCache) {
+            this.transformerCache = transformerCache;
+            return this;
+        }
+
+        public RuntimeRunner build() {
+            Assert.checkNotNullParam("target", applicationRoot);
+            Assert.checkNotNullParam("classLoader", classLoader);
+            Assert.checkNotNullParam("frameworkClassesPath", frameworkClassesPath);
+            return new RuntimeRunner(this);
         }
     }
 }

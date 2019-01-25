@@ -59,7 +59,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
 
     private volatile Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers = null;
 
-    private final Path applicationClasses;
+    private final List<Path> applicationClasses;
     private final Path frameworkClassesPath;
     private final Path transformerCache;
 
@@ -69,9 +69,11 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
         registerAsParallelCapable();
     }
 
-    public RuntimeClassLoader(ClassLoader parent, Path applicationClasses, Path frameworkClassesPath, Path transformerCache) {
+    public RuntimeClassLoader(ClassLoader parent, Path applicationClasses, Path frameworkClassesPath, Path transformerCache, List<Path> additionalApplicationRoots) {
         super(parent);
-        this.applicationClasses = applicationClasses;
+        this.applicationClasses = new ArrayList<>();
+        this.applicationClasses.add(applicationClasses);
+        this.applicationClasses.addAll(additionalApplicationRoots);
         this.frameworkClassesPath = frameworkClassesPath;
         this.transformerCache = transformerCache;
     }
@@ -110,7 +112,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
         if (appResource != null) {
             List<URL> resources = new ArrayList<>();
             resources.add(appResource);
-            for (Enumeration<URL> e = super.getResources(name); e.hasMoreElements();) {
+            for (Enumeration<URL> e = super.getResources(name); e.hasMoreElements(); ) {
                 resources.add(e.nextElement());
             }
             return Collections.enumeration(resources);
@@ -143,7 +145,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
         }
         return super.getResourceAsStream(name);
     }
-    
+
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
         Class<?> ex = findLoadedClass(name);
@@ -158,11 +160,18 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
         }
 
         final String fileName = name.replace('.', '/') + ".class";
-        Path classLoc = applicationClasses.resolve(fileName);
+        Path classLoc = null;
+        for (Path i : applicationClasses) {
+            classLoc = i.resolve(fileName);
+            if (Files.exists(classLoc)) {
+                break;
+            }
+        }
+
         if (Files.exists(classLoc)) {
             CompletableFuture<Class<?>> res = new CompletableFuture<>();
             Future<Class<?>> existing = loadingClasses.putIfAbsent(name, res);
-            if(existing != null) {
+            if (existing != null) {
                 try {
                     return existing.get();
                 } catch (Exception e) {
@@ -206,14 +215,14 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
         }
 
         Path hashPath = null;
-        if(transformerCache != null) {
+        if (transformerCache != null) {
 
             try {
                 MessageDigest md = MessageDigest.getInstance("MD5");
                 byte[] thedigest = md.digest(bytes);
                 String hash = Base64.getUrlEncoder().encodeToString(thedigest);
                 hashPath = transformerCache.resolve(hash);
-                if(Files.exists(hashPath)) {
+                if (Files.exists(hashPath)) {
                     return readFileContent(hashPath);
                 }
             } catch (Exception e) {
@@ -230,7 +239,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
         }
         cr.accept(visitor, 0);
         byte[] data = writer.toByteArray();
-        if(hashPath != null) {
+        if (hashPath != null) {
             try {
 
                 File file = hashPath.toFile();
@@ -248,7 +257,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
     @Override
     protected Class<?> findClass(String name) throws ClassNotFoundException {
         Class<?> existing = findLoadedClass(name);
-        if(existing != null) {
+        if (existing != null) {
             return existing;
         }
         byte[] bytes = appClasses.get(name);
@@ -260,7 +269,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
         } catch (Error e) {
             //potential race conditions if another thread is loading the same class
             existing = findLoadedClass(name);
-            if(existing != null) {
+            if (existing != null) {
                 return existing;
             }
             throw e;
@@ -320,10 +329,14 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
     }
 
     private URL findApplicationResource(String name) {
-        Path resourcePath = applicationClasses.resolve(name);
         try {
-            return Files.exists(resourcePath) ? resourcePath.toUri()
-                    .toURL() : null;
+            for (Path i : applicationClasses) {
+                Path resourcePath = i.resolve(name);
+                if (Files.exists(resourcePath)) {
+                    return resourcePath.toUri().toURL();
+                }
+            }
+            return null;
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }

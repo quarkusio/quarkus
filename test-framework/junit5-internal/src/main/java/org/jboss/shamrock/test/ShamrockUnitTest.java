@@ -169,12 +169,15 @@ public class ShamrockUnitTest implements BeforeAllCallback, AfterAllCallback, Te
             exportArchive(deploymentDir, testClass);
 
             List<Consumer<BuildChainBuilder>> customiers = new ArrayList<>();
-
+            RuntimeRunner.Builder runtimeBuilder = RuntimeRunner.builder()
+                    .setClassLoader(testClass.getClassLoader())
+                    .setApplicationRoot(deploymentDir)
+                    .setFrameworkClassesPath(PathTestHelper.getTestClassesLocation(testClass));
             try {
                 //this is a bit of a hack to avoid requiring a dep on the arc extension,
                 //as this would mean we cannot use this to test the extension
                 Class<? extends BuildItem> buildItem = (Class<? extends BuildItem>) Class.forName("org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem");
-                customiers.add(new Consumer<BuildChainBuilder>() {
+                runtimeBuilder.addChainCustomizer(new Consumer<BuildChainBuilder>() {
                     @Override
                     public void accept(BuildChainBuilder buildChainBuilder) {
                         buildChainBuilder.addBuildStep(new BuildStep() {
@@ -195,8 +198,7 @@ public class ShamrockUnitTest implements BeforeAllCallback, AfterAllCallback, Te
                 //ignore
             }
 
-            runtimeRunner = new RuntimeRunner(testClass.getClassLoader(), deploymentDir,
-                    PathTestHelper.getTestClassesLocation(testClass), null, new ArrayList<>(), customiers);
+            runtimeRunner = runtimeBuilder.build();
 
             try {
                 runtimeRunner.run();
@@ -211,8 +213,14 @@ public class ShamrockUnitTest implements BeforeAllCallback, AfterAllCallback, Te
                     throw new TestInstantiationException("Failed to create test instance", e);
                 }
 
-                Object actualTest = factory.newInstance();
-                extensionContext.getStore(ExtensionContext.Namespace.GLOBAL).put(testClass.getName(), actualTest);
+                InjectionInstance.ManagedInstance<?> actualTest = factory.newManagedInstance();
+                extensionContext.getStore(ExtensionContext.Namespace.GLOBAL).put(testClass.getName(), actualTest.get());
+                extensionContext.getStore(ExtensionContext.Namespace.GLOBAL).put(testClass.getName() + ".handle", new ExtensionContext.Store.CloseableResource() {
+                    @Override
+                    public void close() throws Throwable {
+                        actualTest.destroy();
+                    }
+                });
             } catch (Exception e) {
                 started = false;
                 if (expectedException != null) {

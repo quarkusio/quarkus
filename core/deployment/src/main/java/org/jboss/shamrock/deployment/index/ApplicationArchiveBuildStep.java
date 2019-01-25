@@ -29,7 +29,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
@@ -38,6 +37,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -48,6 +48,7 @@ import org.jboss.jandex.Indexer;
 import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.deployment.ApplicationArchive;
 import org.jboss.shamrock.deployment.ApplicationArchiveImpl;
+import org.jboss.shamrock.deployment.builditem.AdditionalApplicationArchiveBuildItem;
 import org.jboss.shamrock.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
 import org.jboss.shamrock.deployment.builditem.ApplicationIndexBuildItem;
@@ -66,18 +67,18 @@ public class ApplicationArchiveBuildStep {
 
 
     @BuildStep
-    ApplicationArchivesBuildItem build(ArchiveRootBuildItem root, ApplicationIndexBuildItem appindex, List<AdditionalApplicationArchiveMarkerBuildItem> appMarkers) throws IOException {
+    ApplicationArchivesBuildItem build(ArchiveRootBuildItem root, ApplicationIndexBuildItem appindex, List<AdditionalApplicationArchiveMarkerBuildItem> appMarkers, List<AdditionalApplicationArchiveBuildItem> additionalArchives) throws IOException {
 
         Set<String> markerFiles = new HashSet<>();
         for (AdditionalApplicationArchiveMarkerBuildItem i : appMarkers) {
             markerFiles.add(i.getFile());
         }
 
-        List<ApplicationArchive> applicationArchives = scanForOtherIndexes(Thread.currentThread().getContextClassLoader(), markerFiles, root.getPath(), Collections.emptyList());
-        return new ApplicationArchivesBuildItem(new ApplicationArchiveImpl(appindex.getIndex(), root.getPath(), null), applicationArchives);
+        List<ApplicationArchive> applicationArchives = scanForOtherIndexes(Thread.currentThread().getContextClassLoader(), markerFiles, root.getPath(), additionalArchives.stream().map(AdditionalApplicationArchiveBuildItem::getPath).collect(Collectors.toSet()));
+        return new ApplicationArchivesBuildItem(new ApplicationArchiveImpl(appindex.getIndex(), root.getPath(), null, false), applicationArchives);
     }
 
-    private List<ApplicationArchive> scanForOtherIndexes(ClassLoader classLoader, Set<String> applicationArchiveFiles, Path appRoot, List<Path> additionalApplicationArchives) throws IOException {
+    private List<ApplicationArchive> scanForOtherIndexes(ClassLoader classLoader, Set<String> applicationArchiveFiles, Path appRoot, Set<Path> additionalApplicationArchives) throws IOException {
 
 
         Set<Path> dependenciesToIndex = new HashSet<>();
@@ -93,7 +94,7 @@ public class ApplicationArchiveBuildStep {
 
         dependenciesToIndex.addAll(additionalApplicationArchives);
 
-        return indexPaths(dependenciesToIndex, classLoader);
+        return indexPaths(dependenciesToIndex, classLoader, additionalApplicationArchives);
     }
 
     public List<Path> getIndexDependencyPaths(Map<String, IndexDependencyConfig> config, ClassLoader classLoader) {
@@ -116,17 +117,17 @@ public class ApplicationArchiveBuildStep {
         }
     }
 
-    private static List<ApplicationArchive> indexPaths(Set<Path> dependenciesToIndex, ClassLoader classLoader) throws IOException {
+    private static List<ApplicationArchive> indexPaths(Set<Path> dependenciesToIndex, ClassLoader classLoader, Set<Path> additionalApplicationArchives) throws IOException {
         List<ApplicationArchive> ret = new ArrayList<>();
 
         for (final Path dep : dependenciesToIndex) {
             if (Files.isDirectory(dep)) {
                 IndexView indexView = handleFilePath(dep);
-                ret.add(new ApplicationArchiveImpl(indexView, dep, null));
+                ret.add(new ApplicationArchiveImpl(indexView, dep, null, !additionalApplicationArchives.contains(dep)));
             } else {
                 IndexView index = handleJarPath(dep);
                 FileSystem fs = FileSystems.newFileSystem(dep, classLoader);
-                ret.add(new ApplicationArchiveImpl(index, fs.getRootDirectories().iterator().next(), fs));
+                ret.add(new ApplicationArchiveImpl(index, fs.getRootDirectories().iterator().next(), fs, !additionalApplicationArchives.contains(dep)));
             }
         }
 

@@ -14,24 +14,35 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <artifactId>shamrock-build-parent</artifactId>
-        <groupId>org.jboss.shamrock</groupId>
-        <version>1.0.0.Alpha1-SNAPSHOT</version>
-        <relativePath>../../build-parent/pom.xml</relativePath>
-    </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-reactive-streams-operators-project</artifactId>
-    <name>Shamrock - Reactive Streams Operators - Project</name>
-    <packaging>pom</packaging>
-    <modules>
-        <module>reactive-streams-operators</module>
-        <module>reactive-type-converters</module>
-        <!-- we should also add support for the vertx execution model -->
-    </modules>
+    <parent>
+        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>shamrock-reactive-converters</artifactId>
+        <version>1.0.0.Alpha1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>shamrock-reactive-converters-runtime</artifactId>
+    <name>Shamrock - Reactive Type Converters - Runtime</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-converter-api</artifactId>
+            <version>${smallrye-reactive-streams-operators.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <!-- Mark this as a runtime dependency, so to make sure it's included on the final classpath during native-image -->
+        <plugins>
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>

@@ -122,7 +122,7 @@ class FunctionCreatorImpl implements FunctionCreator {
                     FieldCreator field = functionCreator.classCreator.getFieldCreator(name, handle.getType());
                     field.setModifiers(Opcodes.ACC_PRIVATE | Opcodes.ACC_FINAL);
                     ResultHandle sub = super.readInstanceField(field.getFieldDescriptor(), getMethod().getThis());
-                    capture = functionCreator.new CapturedResultHandle(sub, field.getFieldDescriptor());
+                    capture = new CapturedResultHandle(sub, field.getFieldDescriptor());
                     functionCreator.capturedResultHandles.put(handle, capture);
                     return sub;
                 }
@@ -172,7 +172,7 @@ class FunctionCreatorImpl implements FunctionCreator {
         }
     }
 
-    private final class CapturedResultHandle {
+    private static final class CapturedResultHandle {
         final ResultHandle substitute;
         final FieldDescriptor descriptor;
 

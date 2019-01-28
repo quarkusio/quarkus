@@ -107,6 +107,10 @@ The next screen list the found modules; select the generated project and click o
 // Until https://github.com/protean-project/shamrock/issues/232 is fixed:
 In a separated terminal, run `mvn compile shamrock:dev`, and enjoy a highly productive environment.
 
+NOTE: Because of Eclipse IDE limitations (https://bugs.eclipse.org/bugs/show_bug.cgi?id=38016[Eclipse-38016],
+https://bugs.eclipse.org/bugs/show_bug.cgi?id=330639[Eclipse-330639]); do not create a M2 Eclipse _launch_ configuration,
+ as the process won't be handled correctly. As a workaround, launch `mvn compile shamrock:dev` in a terminal.
+
 **IntelliJ**
 
 In IntelliJ:

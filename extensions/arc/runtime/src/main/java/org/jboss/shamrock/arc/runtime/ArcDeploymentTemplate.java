@@ -53,7 +53,16 @@ public class ArcDeploymentTemplate {
             public <T> Factory<T> instanceFactory(Class<T> type, Annotation... qualifiers) {
                 Supplier<InstanceHandle<T>> handle = container.instanceSupplier(type, qualifiers);
                 if (handle == null) {
-                    return null;
+                    return new Factory<T>() {
+                        @Override
+                        public T get() {
+                            try {
+                                return type.newInstance();
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                    };
                 }
                 return new Factory<T>() {
                     @Override

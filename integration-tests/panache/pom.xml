@@ -73,7 +73,7 @@
         <!-- test dependencies -->
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-junit</artifactId>
+            <artifactId>shamrock-junit4</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

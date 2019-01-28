@@ -16,7 +16,7 @@
 
 package org.jboss.shamrock.example.test;
 
-import org.jboss.shamrock.test.SubstrateTest;
+import org.jboss.shamrock.test.junit4.SubstrateTest;
 import org.junit.runner.RunWith;
 
 /**

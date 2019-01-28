@@ -8,13 +8,14 @@ import org.aesh.command.CommandNotFoundException;
 import org.aesh.command.CommandRuntime;
 import org.aesh.command.impl.registry.AeshCommandRegistryBuilder;
 import org.aesh.command.parser.CommandLineParserException;
+import org.aesh.command.registry.CommandRegistryException;
 import org.aesh.command.validator.CommandValidatorException;
 import org.aesh.command.validator.OptionValidatorException;
 import org.jboss.shamrock.cli.commands.ProteanCommand;
 
 public class ProteanCli {
 
-    public static void main(String[] args) throws CommandLineParserException {
+    public static void main(String[] args) throws CommandRegistryException {
         CommandRuntime runtime = AeshCommandRuntimeBuilder
                                          .builder()
                                          .commandRegistry(AeshCommandRegistryBuilder.builder().command(ProteanCommand.class).create())

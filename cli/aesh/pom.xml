@@ -42,7 +42,7 @@
         <dependency>
             <groupId>org.aesh</groupId>
             <artifactId>aesh</artifactId>
-            <version>1.10</version>
+            <version>1.11</version>
         </dependency>
 
         <dependency>

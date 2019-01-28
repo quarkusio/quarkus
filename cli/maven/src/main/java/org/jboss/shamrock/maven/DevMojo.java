@@ -296,7 +296,20 @@ public class DevMojo extends AbstractMojo {
             pb.directory(outputDirectory);
             Process p = pb.start();
 
-            int val = p.waitFor();
+            //https://github.com/jbossas/protean-shamrock/issues/232
+            Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    p.destroy();
+                }
+            }, "Development Mode Shutdown Hook"));
+            try {
+                p.waitFor();
+            } catch (Exception e)  {
+                p.destroy();
+                throw e;
+            }
+
         } catch (Exception e) {
             throw new MojoFailureException("Failed to run", e);
         }

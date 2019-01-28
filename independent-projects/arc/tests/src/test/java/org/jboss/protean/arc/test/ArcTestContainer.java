@@ -52,6 +52,8 @@ import org.junit.runners.model.Statement;
 
 public class ArcTestContainer implements TestRule {
 
+    private static final String TARGET_TEST_CLASSES = "target/test-classes";
+
     public static Builder builder() {
         return new Builder();
     }
@@ -220,8 +222,12 @@ public class ArcTestContainer implements TestRule {
                 .getContextClassLoader();
 
         try {
+            String arcContainerAbsolutePath =
+                    ArcTestContainer.class.getClassLoader().getResource(ArcTestContainer.class.getName().replace(".", "/") + ".class").getFile();
+            int targetClassesIndex = arcContainerAbsolutePath.indexOf(TARGET_TEST_CLASSES);
+            String testClassesRootPath = arcContainerAbsolutePath.substring(0, targetClassesIndex);
             File generatedSourcesDirectory = new File("target/generated-arc-sources");
-            File testOutputDirectory = new File("target/test-classes");
+            File testOutputDirectory = new File(testClassesRootPath + TARGET_TEST_CLASSES);
             File componentsProviderFile = new File(generatedSourcesDirectory + "/" + nameToPath(testClass.getPackage()
                     .getName()), ComponentsProvider.class.getSimpleName());
 

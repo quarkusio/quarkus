@@ -16,24 +16,24 @@
 
 package org.jboss.shamrock.example.test;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.Matchers.is;
 
-import org.jboss.shamrock.example.testutils.URLTester;
-import org.jboss.shamrock.test.junit4.ShamrockTest;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.jboss.shamrock.test.junit.ShamrockTest;
+import org.junit.jupiter.api.Test;
+
+import io.restassured.RestAssured;
 
 /**
  * Test various Panache operations running in Shamrock
  */
-@RunWith(ShamrockTest.class)
+@ShamrockTest
 public class PanacheFunctionalityTest {
 
     @Test
     public void testPanacheFunctionality() throws Exception {
-        assertEquals("OK", URLTester.relative("api/test/model").invokeURL().asString());
-        assertEquals("OK", URLTester.relative("api/test/rxmodel").invokeURL().asString());
-        assertEquals("OK", URLTester.relative("api/test/router").invokeURL().asString());
+        RestAssured.when().get("/api/test/model").then().body(is("OK"));
+        RestAssured.when().get("/api/test/rxmodel").then().body(is("OK"));
+        RestAssured.when().get("/api/test/router").then().body(is("OK"));
     }
 
 }

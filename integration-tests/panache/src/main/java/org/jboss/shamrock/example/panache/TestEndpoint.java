@@ -25,10 +25,9 @@ import javax.ws.rs.Path;
 import org.jboss.panache.Controller;
 import org.jboss.panache.router.Router;
 import org.jboss.resteasy.annotations.jaxrs.PathParam;
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import io.reactivex.Single;
-import io.reactivex.SingleSource;
 
 /**
  * Various tests covering Panache functionality. All tests should work in both standard JVM and SubstrateVM.
@@ -41,42 +40,42 @@ public class TestEndpoint extends Controller {
     @Transactional
     public String testModel() {
         List<Person> persons = Person.findAll();
-        Assert.assertEquals(0, persons.size());
+        Assertions.assertEquals(0, persons.size());
         
         Person person = makeSavedPerson();
-        Assert.assertNotNull(person.id);
+        Assertions.assertNotNull(person.id);
 
-        Assert.assertEquals(1, Person.count());
-        Assert.assertEquals(1, Person.count("name = ?1", "stef"));
+        Assertions.assertEquals(1, Person.count());
+        Assertions.assertEquals(1, Person.count("name = ?1", "stef"));
 
-        Assert.assertEquals(1, Dog.count());
-        Assert.assertEquals(1, person.dogs.size());
+        Assertions.assertEquals(1, Dog.count());
+        Assertions.assertEquals(1, person.dogs.size());
 
         persons = Person.findAll();
-        Assert.assertEquals(1, persons.size());
-        Assert.assertEquals(person, persons.get(0));
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
         
         persons = Person.find("name = ?1", "stef");
-        Assert.assertEquals(1, persons.size());
-        Assert.assertEquals(person, persons.get(0));
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
         
         Person byId = Person.findById(person.id);
-        Assert.assertEquals(person, byId);
+        Assertions.assertEquals(person, byId);
 
         person.delete();
-        Assert.assertEquals(0, Person.count());
+        Assertions.assertEquals(0, Person.count());
         
         person = makeSavedPerson();
-        Assert.assertEquals(1, Person.count());
-        Assert.assertEquals(0, Person.delete("name = ?1", "emmanuel"));
-        Assert.assertEquals(1, Dog.delete("owner = ?1", person));
-        Assert.assertEquals(1, Person.delete("name = ?1", "stef"));
+        Assertions.assertEquals(1, Person.count());
+        Assertions.assertEquals(0, Person.delete("name = ?1", "emmanuel"));
+        Assertions.assertEquals(1, Dog.delete("owner = ?1", person));
+        Assertions.assertEquals(1, Person.delete("name = ?1", "stef"));
 
-        Assert.assertEquals(0, Person.deleteAll());
+        Assertions.assertEquals(0, Person.deleteAll());
 
         makeSavedPerson();
-        Assert.assertEquals(1, Dog.deleteAll());
-        Assert.assertEquals(1, Person.deleteAll());
+        Assertions.assertEquals(1, Dog.deleteAll());
+        Assertions.assertEquals(1, Person.deleteAll());
 
         return "OK";
     }
@@ -103,66 +102,66 @@ public class TestEndpoint extends Controller {
     public Single<String> testRxModel() {
         return RxPerson.findAll().toList()
             .flatMap(persons -> {
-                Assert.assertEquals(0, persons.size());
+                Assertions.assertEquals(0, persons.size());
 
                 return makeSavedRxPerson();
             }).flatMap(person -> {
-                Assert.assertNotNull(person.id);
+                Assertions.assertNotNull(person.id);
 
                 return RxPerson.findAll().toList()
                     .flatMapMaybe(persons -> {
-                        Assert.assertEquals(1, persons.size());
-                        Assert.assertEquals(person, persons.get(0));
+                        Assertions.assertEquals(1, persons.size());
+                        Assertions.assertEquals(person, persons.get(0));
 
                         return RxPerson.findById(person.id);
                     }).flatMapSingle(byId -> {
-                        Assert.assertEquals(person, byId);
+                        Assertions.assertEquals(person, byId);
 
                         return RxPerson.find("name = ?1", "stef").toList();
                     }).flatMap(persons -> {
-                        Assert.assertEquals(1, persons.size());
-                        Assert.assertEquals(person, persons.get(0));
+                        Assertions.assertEquals(1, persons.size());
+                        Assertions.assertEquals(person, persons.get(0));
 
                         return RxPerson.find("name = ?1", "emmanuel").toList();
                     }).flatMap(persons -> {
-                        Assert.assertEquals(0, persons.size());
+                        Assertions.assertEquals(0, persons.size());
 
                         return RxPerson.count();
                     }).flatMap(count -> {
-                        Assert.assertEquals(1, (long)count);
+                        Assertions.assertEquals(1, (long)count);
                         
                         return RxPerson.count("name = ?1", "stef");
                     }).flatMapCompletable(count -> {
-                        Assert.assertEquals(1, (long)count);
+                        Assertions.assertEquals(1, (long)count);
 
                         return person.delete();
                     })
                     .andThen(Single.defer(() -> RxPerson.count()))
                     .flatMap(count -> {
-                        Assert.assertEquals(0, (long)count);
+                        Assertions.assertEquals(0, (long)count);
                         
                         return makeSavedRxPerson();
                     })
                     .flatMap(p -> RxPerson.count())
                     .flatMap(count -> {
-                        Assert.assertEquals(1, (long)count);
+                        Assertions.assertEquals(1, (long)count);
                         
                         return RxPerson.deleteAll();
                     }).flatMap(count -> {
-                        Assert.assertEquals(1, (long)count);
+                        Assertions.assertEquals(1, (long)count);
 
                         return RxPerson.count();
                     }).flatMap(count -> {
-                        Assert.assertEquals(0, (long)count);
+                        Assertions.assertEquals(0, (long)count);
                         
                         return makeSavedRxPerson();
                     }).flatMap(p ->  RxPerson.delete("name = ?1", "emmanuel"))
                     .flatMap(count -> {
-                        Assert.assertEquals(0, (long)count);
+                        Assertions.assertEquals(0, (long)count);
                         
                         return RxPerson.delete("name = ?1", "stef");
                     }).flatMap(count -> {
-                        Assert.assertEquals(1, (long)count);
+                        Assertions.assertEquals(1, (long)count);
                         
                         return makeSavedRxPerson();
                     }).flatMap(p -> {
@@ -178,7 +177,7 @@ public class TestEndpoint extends Controller {
                     // check the lazy list
                     .flatMap(p -> p.dogs.toList())
                     .map(dogs -> {
-                        Assert.assertEquals(1, dogs.size());
+                        Assertions.assertEquals(1, dogs.size());
                         
                         return "OK";
                     });
@@ -216,9 +215,9 @@ public class TestEndpoint extends Controller {
     @Path("router")
     public String testRouter() {
         
-        Assert.assertEquals("http://localhost:8080/api/test/router", Router.getURI(TestEndpoint::testRouter).toString());
-        Assert.assertEquals("http://localhost:8080/api/test/router-test/stef", Router.getURI(TestEndpoint::testMethod1, "stef").toString());
-        Assert.assertTrue(Router.getURI(TestEndpoint::testMethod2, 2, new byte[] {20}).toString()
+        Assertions.assertEquals("http://localhost:8080/api/test/router", Router.getURI(TestEndpoint::testRouter).toString());
+        Assertions.assertEquals("http://localhost:8080/api/test/router-test/stef", Router.getURI(TestEndpoint::testMethod1, "stef").toString());
+        Assertions.assertTrue(Router.getURI(TestEndpoint::testMethod2, 2, new byte[] {20}).toString()
                 .startsWith("http://localhost:8080/api/test/router-test/2-"));
         
         return "OK";

@@ -171,7 +171,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         }
 
         runnerJar = outputDir.resolve(finalName + "-runner.jar");
-
+        IoUtils.recursiveDelete(runnerJar);
         try (FileSystem zipFs = ZipUtils.newZip(runnerJar)) {
             buildRunner(zipFs, appState, ctx.resolveOutcome(AugmentOutcome.class));
         } catch (Exception e) {

@@ -17,13 +17,18 @@
 package org.jboss.shamrock.jaeger.runtime;
 
 import org.jboss.shamrock.runtime.annotations.Template;
+import java.util.Optional;
 
 import io.opentracing.util.GlobalTracer;
 
 import static io.jaegertracing.Configuration.JAEGER_SERVICE_NAME;
 import static io.jaegertracing.Configuration.JAEGER_ENDPOINT;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
+
 import org.jboss.logging.Logger;
+import org.jboss.shamrock.runtime.Template;
 
 @Template
 public class JaegerDeploymentTemplate {
@@ -41,9 +46,12 @@ public class JaegerDeploymentTemplate {
     }
 
     private static boolean isValidConfig() {
-        if (System.getProperty(JAEGER_SERVICE_NAME, System.getenv(JAEGER_SERVICE_NAME)) == null) {
+        Config config = ConfigProvider.getConfig();
+        Optional<String> serviceName = config.getOptionalValue(JAEGER_SERVICE_NAME, String.class);
+        Optional<String> endpoint = config.getOptionalValue(JAEGER_ENDPOINT, String.class);
+        if (!serviceName.isPresent()) {
             log.warn("Property 'JAEGER_SERVICE_NAME' has not been defined");
-        } else if (System.getProperty(JAEGER_ENDPOINT, System.getenv(JAEGER_ENDPOINT)) == null) {
+        } else if (!endpoint.isPresent()) {
             log.warn("Property 'JAEGER_ENDPOINT' has not been defined");
             // Return true for now, so we can reproduce issue with UdpSender
             return true;

@@ -13,6 +13,7 @@
 
         <shamrock.version>${shamrock_version}</shamrock.version>
         <restassured.version>${rest_assured_version}</restassured.version>
+        <surefire-plugin.version>${surefire_plugin_version}</surefire-plugin.version>
     </properties>
 
     <dependencyManagement>
@@ -63,6 +64,11 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${r"${surefire-plugin.version}"}</version>
             </plugin>
         </plugins>
     </build>

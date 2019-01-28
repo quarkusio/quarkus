@@ -4,12 +4,11 @@ package ${package_name};
 
 import org.jboss.shamrock.test.junit.ShamrockTest;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
-@ExtendWith(ShamrockTest.class)
+@ShamrockTest
 public class ${class_name}Test {
 
     @Test

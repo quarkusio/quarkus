@@ -13,6 +13,7 @@ import org.aesh.command.option.Argument;
 import org.aesh.command.option.Option;
 import org.aesh.io.Resource;
 import org.jboss.shamrock.dependencies.Extension;
+import org.jboss.shamrock.maven.utilities.MojoUtils;
 
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
@@ -56,7 +57,7 @@ public class AddExtensionCommand implements Command<CommandInvocation>{
     }
 
     private boolean findExtension(String name) {
-        for(Extension ext : AddExtensions.get()) {
+        for(Extension ext : MojoUtils.loadExtensions()) {
             if(ext.getName().equalsIgnoreCase(name))
                 return true;
         }

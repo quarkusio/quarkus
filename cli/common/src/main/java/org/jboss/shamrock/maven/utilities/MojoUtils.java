@@ -228,8 +228,13 @@ public class MojoUtils {
             ObjectMapper mapper = new ObjectMapper()
                                       .enable(JsonParser.Feature.ALLOW_COMMENTS)
                                       .enable(JsonParser.Feature.ALLOW_NUMERIC_LEADING_ZEROS);
-            return mapper.readValue(MojoUtils.class.getClassLoader().getResourceAsStream("extensions.json"),
-                new TypeReference<List<Extension>>() {});
+            List<Extension> extensions = mapper.readValue(MojoUtils.class.getClassLoader().getResourceAsStream("extensions.json"),
+                    new TypeReference<List<Extension>>() {
+                // Do nothing.
+            });
+            //TODO This is temporary until "extensions.json" is the generated version
+            extensions.forEach(e -> e.setVersion(MojoUtils.SHAMROCK_VERSION_PROPERTY));
+            return extensions;
         } catch (IOException e) {
             throw new RuntimeException("Unable to load the extensions.json file", e);
         }

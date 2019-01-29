@@ -3,6 +3,7 @@ package org.jboss.shamrock.maven;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.jboss.shamrock.cli.commands.AddExtensions;
+import org.jboss.shamrock.maven.utilities.MojoUtils;
 
 @Mojo(name = "list-extensions", requiresProject = false)
 public class ListExtensionsMojo extends AbstractMojo {
@@ -10,7 +11,7 @@ public class ListExtensionsMojo extends AbstractMojo {
     @Override
     public void execute() {
         getLog().info("Available extensions:");
-        AddExtensions.get().stream()
+        MojoUtils.loadExtensions().stream()
                      .sorted((o1, o2) -> o1.getName().compareToIgnoreCase(o2.getName()))
                      .forEach(ext -> getLog().info("\t * " + ext.getName() + " (" + ext.getGroupId() + ":" + ext.getArtifactId() + ")"));
 

@@ -36,6 +36,8 @@
     </properties>
 
     <modules>
+        <module>common-core</module>
+        <module>extension-plugin</module>
         <module>common</module>
         <module>maven</module>
         <module>aesh</module>

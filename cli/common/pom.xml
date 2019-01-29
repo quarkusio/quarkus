@@ -31,13 +31,27 @@
                 </includes>
             </resource>
         </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.jboss.shamrock</groupId>
+                <artifactId>shamrock-extension-plugin</artifactId>
+                <version>${project.version}</version>
+                <executions>
+                    <execution>
+                        <id>generate-extension-list</id>
+                        <goals>
+                            <goal>extension-list</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
 
     <dependencies>
         <dependency>
-            <groupId>org.apache.maven</groupId>
-            <artifactId>maven-model</artifactId>
-            <version>3.5.4</version>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>common-core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.maven</groupId>

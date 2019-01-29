@@ -5,7 +5,6 @@ import static org.jboss.shamrock.maven.utilities.MojoUtils.readPom;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -15,10 +14,6 @@ import org.apache.maven.model.Model;
 import org.jboss.shamrock.dependencies.Extension;
 import org.jboss.shamrock.maven.utilities.MojoUtils;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 public class AddExtensions {
     private Model model;
     private File pom;
@@ -26,20 +21,6 @@ public class AddExtensions {
     public AddExtensions(final File pom) throws IOException {
         this.model = MojoUtils.readPom(pom);
         this.pom = pom;
-    }
-
-    public static List<Extension> get() {
-        ObjectMapper mapper = new ObjectMapper()
-                .enable(JsonParser.Feature.ALLOW_COMMENTS)
-                .enable(JsonParser.Feature.ALLOW_NUMERIC_LEADING_ZEROS);
-        URL url = AddExtensions.class.getClassLoader().getResource("extensions.json");
-        try {
-            return mapper.readValue(url, new TypeReference<List<Extension>>() {
-                // Do nothing.
-            });
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to load the extensions.json file", e);
-        }
     }
 
     public boolean addExtensions(final Set<String> extensions) throws IOException {
@@ -65,13 +46,13 @@ public class AddExtensions {
                 final Extension extension = optional.get();
 
                 if (!MojoUtils.hasDependency(model, extension.getGroupId(), extension.getArtifactId())) {
-                    System.out.println("Adding extension " + extension.toCoordinates());
+                    System.out.println("Adding extension " + extension.ga());
                     model.addDependency(extension
                                             .toDependency(containsBOM(model) &&
                                                           isDefinedInBom(dependenciesFromBom, extension)));
                     updated = true;
                 } else {
-                    System.out.println("Skipping extension " + extension.toCoordinates() + ": already present");
+                    System.out.println("Skipping extension " + extension.ga() + ": already present");
                 }
             } else if (dependency.contains(":")) {
                 Dependency parsed = MojoUtils.parse(dependency);

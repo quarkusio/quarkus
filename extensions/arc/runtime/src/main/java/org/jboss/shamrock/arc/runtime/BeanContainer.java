@@ -23,7 +23,11 @@ import org.jboss.protean.arc.ManagedContext;
 public interface BeanContainer {
 
     default <T> T instance(Class<T> type, Annotation... qualifiers) {
-        return instanceFactory(type, qualifiers).get();
+        Factory<T> instanceFactory = instanceFactory(type, qualifiers);
+        if(instanceFactory == null) {
+            return null;
+        }
+        return instanceFactory.get();
     }
 
     <T> Factory<T> instanceFactory(Class<T> type, Annotation... qualifiers);

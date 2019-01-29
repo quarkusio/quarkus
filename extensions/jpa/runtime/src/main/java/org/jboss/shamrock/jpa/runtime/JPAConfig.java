@@ -86,7 +86,7 @@ public class JPAConfig {
     void destroy() {
         for (LazyPersistenceUnit factory : persistenceUnits.values()) {
             try {
-                factory.get().close();
+                factory.close();
             } catch (Exception e) {
                 LOGGER.warn("Unable to close the EntityManagerFactory: " + factory, e);
             }
@@ -98,6 +98,7 @@ public class JPAConfig {
 
         private final String name;
         private volatile EntityManagerFactory value;
+        private volatile boolean closed = false;
 
         LazyPersistenceUnit(String name) {
             this.name = name;
@@ -106,6 +107,9 @@ public class JPAConfig {
         EntityManagerFactory get() {
             if(value == null) {
                 synchronized (this) {
+                    if(closed) {
+                        throw new IllegalStateException("Persistence unit is closed");
+                    }
                     if(value == null) {
                         value = Persistence.createEntityManagerFactory(name);
                     }
@@ -114,6 +118,14 @@ public class JPAConfig {
             return value;
         }
 
+        public synchronized void close() {
+            closed = true;
+            EntityManagerFactory emf = this.value;
+            this.value = null;
+            if(emf != null) {
+                emf.close();
+            }
+        }
     }
 
 }

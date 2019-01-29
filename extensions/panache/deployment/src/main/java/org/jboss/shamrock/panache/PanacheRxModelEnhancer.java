@@ -8,7 +8,7 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-public class RxModelEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
+public class PanacheRxModelEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
 
     public final static String RX_ENTITY_BASE_NAME = RxEntityBase.class.getName();
     public final static String RX_ENTITY_BASE_BINARY_NAME = RX_ENTITY_BASE_NAME.replace('.', '/');

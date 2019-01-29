@@ -28,7 +28,7 @@ import org.objectweb.asm.tree.analysis.BasicInterpreter;
 import org.objectweb.asm.tree.analysis.BasicValue;
 import org.objectweb.asm.tree.analysis.Frame;
 
-public class RouterEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
+public class PanacheRouterEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
 
     public final static String ROUTER_NAME = Router.class.getName();
     public final static String ROUTER_BINARY_NAME = ROUTER_NAME.replace('.', '/');

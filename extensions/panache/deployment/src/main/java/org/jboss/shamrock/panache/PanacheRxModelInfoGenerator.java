@@ -24,7 +24,7 @@ import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
 import org.jboss.shamrock.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
-import org.jboss.shamrock.panache.ModelResourceProcessor.ProcessorClassOutput;
+import org.jboss.shamrock.panache.PanacheResourceProcessor.ProcessorClassOutput;
 
 import io.reactiverse.reactivex.pgclient.Row;
 import io.reactiverse.reactivex.pgclient.Tuple;
@@ -35,7 +35,7 @@ import io.reactivex.SingleSource;
 import io.reactivex.functions.Function;
 import net.bytebuddy.jar.asm.Opcodes;
 
-public class RxModelInfoGenerator {
+public class PanacheRxModelInfoGenerator {
     
     private enum RelationType {
         ONE, MANY;
@@ -125,7 +125,7 @@ public class RxModelInfoGenerator {
         ClassCreator modelClass = ClassCreator.builder().className(modelInfoClassName)
             .classOutput(new ProcessorClassOutput(generatedClasses))
             .interfaces(RxEntityBase.RxModelInfo.class)
-            .signature("Ljava/lang/Object;L"+RxModelEnhancer.RX_MODEL_INFO_BINARY_NAME+"<"+modelSignature+">;")
+            .signature("Ljava/lang/Object;L"+PanacheRxModelEnhancer.RX_MODEL_INFO_BINARY_NAME+"<"+modelSignature+">;")
             .build();
         
         // no arg constructor is auto-created by gizmo

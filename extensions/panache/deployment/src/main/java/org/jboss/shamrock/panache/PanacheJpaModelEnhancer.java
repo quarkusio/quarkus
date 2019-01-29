@@ -8,7 +8,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
-public class ModelEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
+public class PanacheJpaModelEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
 
     public final static String ENTITY_BASE_NAME = EntityBase.class.getName();
     public final static String ENTITY_BASE_BINARY_NAME = ENTITY_BASE_NAME.replace('.', '/');

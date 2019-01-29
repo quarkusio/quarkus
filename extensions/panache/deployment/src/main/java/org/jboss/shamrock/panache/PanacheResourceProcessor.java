@@ -51,7 +51,7 @@ import io.reactiverse.reactivex.pgclient.PgPool;
 
 /**
  */
-public final class ModelResourceProcessor {
+public final class PanacheResourceProcessor {
 
 
     private static final DotName DOTNAME_CONTROLLER_BASE = DotName.createSimple(Controller.class.getName());
@@ -107,12 +107,12 @@ public final class ModelResourceProcessor {
         if(load != null)
             resources.produce(new SubstrateResourceBuildItem("META-INF/load.sql"));
         
-        RouterEnhancer routerEnhancer = new RouterEnhancer();
+        PanacheRouterEnhancer routerEnhancer = new PanacheRouterEnhancer();
         for (ClassInfo classInfo : index.getIndex().getKnownDirectSubclasses(DOTNAME_CONTROLLER_BASE)) {
             transformers.produce(new BytecodeTransformerBuildItem(classInfo.name().toString(), routerEnhancer));
         }
 
-        ModelEnhancer modelEnhancer = new ModelEnhancer();
+        PanacheJpaModelEnhancer modelEnhancer = new PanacheJpaModelEnhancer();
         Set<String> modelClasses = new HashSet<>();
         for (ClassInfo classInfo : index.getIndex().getKnownDirectSubclasses(DOTNAME_ENTITY_BASE)) {
             // skip Model
@@ -127,7 +127,7 @@ public final class ModelResourceProcessor {
             transformers.produce(new BytecodeTransformerBuildItem(modelClass, modelEnhancer));
         }
         
-        RxModelEnhancer rxModelEnhancer = new RxModelEnhancer();
+        PanacheRxModelEnhancer rxModelEnhancer = new PanacheRxModelEnhancer();
         Set<String> rxModelClasses = new HashSet<>();
         for (ClassInfo classInfo : index.getIndex().getAllKnownSubclasses(DOTNAME_RX_ENTITY_BASE)) {
             // skip RxModel
@@ -140,7 +140,7 @@ public final class ModelResourceProcessor {
         }
         for (String rxModelClass : rxModelClasses) {
             transformers.produce(new BytecodeTransformerBuildItem(rxModelClass, rxModelEnhancer));
-            RxModelInfoGenerator.generateModelClass(rxModelClass, generatedClasses);
+            PanacheRxModelInfoGenerator.generateModelClass(rxModelClass, generatedClasses);
         }
 
         // this just deadlocks, probably fighting with JPA

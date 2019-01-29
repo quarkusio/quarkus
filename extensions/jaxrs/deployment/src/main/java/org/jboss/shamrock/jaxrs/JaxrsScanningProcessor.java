@@ -349,7 +349,6 @@ public class JaxrsScanningProcessor {
                 servletContextParams.produce(new ServletInitParamBuildItem(ResteasyContextParameters.RESTEASY_SCANNED_RESOURCES, sb.toString()));
             }
             servletContextParams.produce(new ServletInitParamBuildItem("resteasy.servlet.mapping.prefix", path));
-            servletContextParams.produce(new ServletInitParamBuildItem("resteasy.injector.factory", ShamrockInjectorFactory.class.getName()));
             if (appClass != null) {
                 servletContextParams.produce(new ServletInitParamBuildItem(JAX_RS_APPLICATION_PARAMETER_NAME, appClass));
             }
@@ -376,11 +375,16 @@ public class JaxrsScanningProcessor {
         registerReflectionForSerialization(reflectiveClass, reflectiveHierarchy, combinedIndexBuildItem);
     }
 
+    @Record(STATIC_INIT)
     @BuildStep
     void registerProviders(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
                            BuildProducer<ServletInitParamBuildItem> servletContextParams,
                            CombinedIndexBuildItem combinedIndexBuildItem,
-                           List<JaxrsProviderBuildItem> contributedProviderBuildItems) throws Exception {
+                           List<JaxrsProviderBuildItem> contributedProviderBuildItems,
+                           JaxrsTemplate template,
+                           BeanContainerBuildItem beanContainerBuildItem,
+                           List<ProxyUnwrapperBuildItem> proxyUnwrappers,
+                           BuildProducer<FeatureBuildItem> feature) throws Exception {
         IndexView index = combinedIndexBuildItem.getIndex();
 
         Set<String> contributedProviders = new HashSet<>();
@@ -431,18 +435,18 @@ public class JaxrsScanningProcessor {
         for (String providerToRegister : providersToRegister) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, providerToRegister));
         }
-    }
 
-    @Record(STATIC_INIT)
-    @BuildStep
-    void integrate(JaxrsTemplate template, BeanContainerBuildItem beanContainerBuildItem, List<ProxyUnwrapperBuildItem> proxyUnwrappers, BuildProducer<FeatureBuildItem> feature) {
+
         feature.produce(new FeatureBuildItem(FeatureBuildItem.JAX_RS));
         List<Function<Object, Object>> unwrappers = new ArrayList<>();
         for (ProxyUnwrapperBuildItem i : proxyUnwrappers) {
             unwrappers.add(i.getUnwrapper());
         }
         template.setupIntegration(beanContainerBuildItem.getValue(), unwrappers);
+
+        servletContextParams.produce(new ServletInitParamBuildItem("resteasy.injector.factory", ShamrockInjectorFactory.class.getName()));
     }
+
     
     @BuildStep
     List<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations() {

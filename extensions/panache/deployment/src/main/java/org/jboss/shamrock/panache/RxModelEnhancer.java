@@ -2,11 +2,25 @@ package org.jboss.shamrock.panache;
 
 import java.util.function.BiFunction;
 
+import org.jboss.panache.RxEntityBase;
+import org.jboss.panache.RxModel;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 public class RxModelEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
+
+    public final static String RX_ENTITY_BASE_NAME = RxEntityBase.class.getName();
+    public final static String RX_ENTITY_BASE_BINARY_NAME = RX_ENTITY_BASE_NAME.replace('.', '/');
+    public final static String RX_ENTITY_BASE_SIGNATURE = "L"+RX_ENTITY_BASE_BINARY_NAME+";";
+
+    public final static String RX_MODEL_INFO_NAME = RxEntityBase.RxModelInfo.class.getName();
+    public final static String RX_MODEL_INFO_BINARY_NAME = RX_MODEL_INFO_NAME.replace('.', '/');
+    public final static String RX_MODEL_INFO_SIGNATURE = "L"+RX_MODEL_INFO_BINARY_NAME+";";
+
+    public final static String RX_MODEL_NAME = RxModel.class.getName();
+    public final static String RX_MODEL_BINARY_NAME = RX_MODEL_NAME.replace('.', '/');
+    public final static String RX_MODEL_SIGNATURE = "L"+RX_MODEL_BINARY_NAME+";";
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
@@ -44,7 +58,7 @@ public class RxModelEnhancer implements BiFunction<String, ClassVisitor, ClassVi
                 mv.visitCode();
                 mv.visitIntInsn(Opcodes.ALOAD, 0);
                 mv.visitMethodInsn(Opcodes.INVOKESPECIAL, 
-                                   "org/jboss/panache/RxModel", 
+                                   RX_MODEL_BINARY_NAME, 
                                    "<init>", 
                                    "()V", false);
                 mv.visitInsn(Opcodes.RETURN);
@@ -75,8 +89,8 @@ public class RxModelEnhancer implements BiFunction<String, ClassVisitor, ClassVi
             // getModelInfo
             mv = super.visitMethod(Opcodes.ACC_PROTECTED | Opcodes.ACC_SYNTHETIC, 
                                                  "getModelInfo", 
-                                                 "()Lorg/jboss/panache/RxEntityBase$RxModelInfo;", 
-                                                 "()Lorg/jboss/panache/RxEntityBase$RxModelInfo<+Lorg/jboss/panache/RxEntityBase;>;", 
+                                                 "()"+RX_MODEL_INFO_SIGNATURE+"", 
+                                                 "()L"+RX_ENTITY_BASE_BINARY_NAME+"<+"+RX_ENTITY_BASE_SIGNATURE+">;", 
                                                  null);
             mv.visitCode();
             mv.visitFieldInsn(Opcodes.GETSTATIC, thisName.replace('.', '/'), fieldName, modelDesc);
@@ -88,16 +102,16 @@ public class RxModelEnhancer implements BiFunction<String, ClassVisitor, ClassVi
             mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, 
                                                  "findById", 
                                                  "(Ljava/lang/Object;)Lio/reactivex/Maybe;", 
-                                                 "(Ljava/lang/Object;)Lio/reactivex/Maybe<Lorg/jboss/panache/RxEntityBase;>;", 
+                                                 "(Ljava/lang/Object;)Lio/reactivex/Maybe<"+RX_ENTITY_BASE_SIGNATURE+">;", 
                                                  null);
             mv.visitParameter("id", 0);
             mv.visitCode();
             mv.visitFieldInsn(Opcodes.GETSTATIC, thisName.replace('.', '/'), fieldName, modelDesc);
             mv.visitIntInsn(Opcodes.ALOAD, 0);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                               "org/jboss/panache/RxEntityBase", 
+                               RX_ENTITY_BASE_BINARY_NAME, 
                                "findById", 
-                               "(Lorg/jboss/panache/RxEntityBase$RxModelInfo;Ljava/lang/Object;)Lio/reactivex/Maybe;", false);
+                               "("+RX_MODEL_INFO_SIGNATURE+"Ljava/lang/Object;)Lio/reactivex/Maybe;", false);
             mv.visitInsn(Opcodes.ARETURN);
             mv.visitMaxs(0, 0);
             mv.visitEnd();
@@ -106,7 +120,7 @@ public class RxModelEnhancer implements BiFunction<String, ClassVisitor, ClassVi
             mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, 
                                                  "find", 
                                                  "(Ljava/lang/String;[Ljava/lang/Object;)Lio/reactivex/Observable;", 
-                                                 "(Ljava/lang/String;[Ljava/lang/Object;)Lio/reactivex/Observable<Lorg/jboss/panache/RxEntityBase;>;", 
+                                                 "(Ljava/lang/String;[Ljava/lang/Object;)Lio/reactivex/Observable<"+RX_ENTITY_BASE_SIGNATURE+">;", 
                                                  null);
             mv.visitParameter("query", 0);
             mv.visitParameter("params", 0);
@@ -115,9 +129,9 @@ public class RxModelEnhancer implements BiFunction<String, ClassVisitor, ClassVi
             mv.visitIntInsn(Opcodes.ALOAD, 0);
             mv.visitIntInsn(Opcodes.ALOAD, 1);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                               "org/jboss/panache/RxEntityBase", 
+                               RX_ENTITY_BASE_BINARY_NAME, 
                                "find", 
-                               "(Lorg/jboss/panache/RxEntityBase$RxModelInfo;Ljava/lang/String;[Ljava/lang/Object;)Lio/reactivex/Observable;", false);
+                               "("+RX_MODEL_INFO_SIGNATURE+"Ljava/lang/String;[Ljava/lang/Object;)Lio/reactivex/Observable;", false);
             mv.visitInsn(Opcodes.ARETURN);
             mv.visitMaxs(0, 0);
             mv.visitEnd();
@@ -126,14 +140,14 @@ public class RxModelEnhancer implements BiFunction<String, ClassVisitor, ClassVi
             mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, 
                                                  "findAll", 
                                                  "()Lio/reactivex/Observable;", 
-                                                 "()Lio/reactivex/Observable<Lorg/jboss/panache/RxEntityBase;>;", 
+                                                 "()Lio/reactivex/Observable<"+RX_ENTITY_BASE_SIGNATURE+">;", 
                                                  null);
             mv.visitCode();
             mv.visitFieldInsn(Opcodes.GETSTATIC, thisName.replace('.', '/'), fieldName, modelDesc);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                               "org/jboss/panache/RxEntityBase", 
+                               RX_ENTITY_BASE_BINARY_NAME, 
                                "findAll", 
-                               "(Lorg/jboss/panache/RxEntityBase$RxModelInfo;)Lio/reactivex/Observable;", false);
+                               "("+RX_MODEL_INFO_SIGNATURE+")Lio/reactivex/Observable;", false);
             mv.visitInsn(Opcodes.ARETURN);
             mv.visitMaxs(0, 0);
             mv.visitEnd();
@@ -147,9 +161,9 @@ public class RxModelEnhancer implements BiFunction<String, ClassVisitor, ClassVi
             mv.visitCode();
             mv.visitFieldInsn(Opcodes.GETSTATIC, thisName.replace('.', '/'), fieldName, modelDesc);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                               "org/jboss/panache/RxEntityBase", 
+                               RX_ENTITY_BASE_BINARY_NAME, 
                                "count", 
-                               "(Lorg/jboss/panache/RxEntityBase$RxModelInfo;)Lio/reactivex/Single;", false);
+                               "("+RX_MODEL_INFO_SIGNATURE+")Lio/reactivex/Single;", false);
             mv.visitInsn(Opcodes.ARETURN);
             mv.visitMaxs(0, 0);
             mv.visitEnd();
@@ -167,9 +181,9 @@ public class RxModelEnhancer implements BiFunction<String, ClassVisitor, ClassVi
             mv.visitIntInsn(Opcodes.ALOAD, 0);
             mv.visitIntInsn(Opcodes.ALOAD, 1);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                               "org/jboss/panache/RxEntityBase", 
+                               RX_ENTITY_BASE_BINARY_NAME, 
                                "count", 
-                               "(Lorg/jboss/panache/RxEntityBase$RxModelInfo;Ljava/lang/String;[Ljava/lang/Object;)Lio/reactivex/Single;", false);
+                               "("+RX_MODEL_INFO_SIGNATURE+"Ljava/lang/String;[Ljava/lang/Object;)Lio/reactivex/Single;", false);
             mv.visitInsn(Opcodes.ARETURN);
             mv.visitMaxs(0, 0);
             mv.visitEnd();
@@ -183,9 +197,9 @@ public class RxModelEnhancer implements BiFunction<String, ClassVisitor, ClassVi
             mv.visitCode();
             mv.visitFieldInsn(Opcodes.GETSTATIC, thisName.replace('.', '/'), fieldName, modelDesc);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                               "org/jboss/panache/RxEntityBase", 
+                               RX_ENTITY_BASE_BINARY_NAME, 
                                "deleteAll", 
-                               "(Lorg/jboss/panache/RxEntityBase$RxModelInfo;)Lio/reactivex/Single;", false);
+                               "("+RX_MODEL_INFO_SIGNATURE+")Lio/reactivex/Single;", false);
             mv.visitInsn(Opcodes.ARETURN);
             mv.visitMaxs(0, 0);
             mv.visitEnd();
@@ -203,9 +217,9 @@ public class RxModelEnhancer implements BiFunction<String, ClassVisitor, ClassVi
             mv.visitIntInsn(Opcodes.ALOAD, 0);
             mv.visitIntInsn(Opcodes.ALOAD, 1);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                               "org/jboss/panache/RxEntityBase", 
+                               RX_ENTITY_BASE_BINARY_NAME, 
                                "delete", 
-                               "(Lorg/jboss/panache/RxEntityBase$RxModelInfo;Ljava/lang/String;[Ljava/lang/Object;)Lio/reactivex/Single;", false);
+                               "("+RX_MODEL_INFO_SIGNATURE+"Ljava/lang/String;[Ljava/lang/Object;)Lio/reactivex/Single;", false);
             mv.visitInsn(Opcodes.ARETURN);
             mv.visitMaxs(0, 0);
             mv.visitEnd();

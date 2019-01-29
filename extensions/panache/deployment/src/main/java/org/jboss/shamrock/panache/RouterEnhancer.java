@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.BiFunction;
 
+import org.jboss.panache.router.Router;
+import org.jboss.panache.router._Router;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.MethodVisitor;
@@ -28,6 +30,13 @@ import org.objectweb.asm.tree.analysis.Frame;
 
 public class RouterEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
 
+    public final static String ROUTER_NAME = Router.class.getName();
+    public final static String ROUTER_BINARY_NAME = ROUTER_NAME.replace('.', '/');
+    public final static String _ROUTER_NAME = _Router.class.getName();
+    public final static String _ROUTER_BINARY_NAME = _ROUTER_NAME.replace('.', '/');
+
+    public final static String ROUTER_METHOD = "getURI";
+    
     public static class PointerValue extends BasicValue {
 
         private Handle handle;
@@ -59,8 +68,8 @@ public class RouterEnhancer implements BiFunction<String, ClassVisitor, ClassVis
                 
                 public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
                     if(opcode == Opcodes.INVOKESTATIC 
-                            && owner.equals("org/jboss/panache/router/Router")
-                            && name.equals("getURI")) {
+                            && owner.equals(ROUTER_BINARY_NAME)
+                            && name.equals(ROUTER_METHOD)) {
                         shouldInstrument = true;
                     }
                     super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
@@ -102,8 +111,8 @@ public class RouterEnhancer implements BiFunction<String, ClassVisitor, ClassVis
                                 if (insnNode instanceof MethodInsnNode) {
                                     final MethodInsnNode methodInsnNode = (MethodInsnNode) insnNode;
                                     if (methodInsnNode.getOpcode() == Opcodes.INVOKESTATIC) {
-                                        if (methodInsnNode.name.equals("getURI") 
-                                                && methodInsnNode.owner.equals("org/jboss/panache/router/Router")) {
+                                        if (methodInsnNode.name.equals(ROUTER_METHOD) 
+                                                && methodInsnNode.owner.equals(ROUTER_BINARY_NAME)) {
                                             final Frame<BasicValue> frame = a.getFrames()[it.previousIndex()];
                                             final int stackSize = frame.getStackSize();
                                             int classArg = stackSize - 2;
@@ -145,7 +154,7 @@ public class RouterEnhancer implements BiFunction<String, ClassVisitor, ClassVis
                                         + "Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/Class;"
                                         + oldDesc.substring(lastParen);
                                 // switch owner too
-                                node.owner = "org/jboss/panache/router/_Router";
+                                node.owner = _ROUTER_BINARY_NAME;
                             }
                         }catch(AnalyzerException x) {
                             x.printStackTrace();

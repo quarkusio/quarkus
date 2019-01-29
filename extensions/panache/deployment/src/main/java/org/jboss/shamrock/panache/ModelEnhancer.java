@@ -2,6 +2,7 @@ package org.jboss.shamrock.panache;
 
 import java.util.function.BiFunction;
 
+import org.jboss.panache.EntityBase;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -9,6 +10,10 @@ import org.objectweb.asm.Type;
 
 public class ModelEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
 
+    public final static String ENTITY_BASE_NAME = EntityBase.class.getName();
+    public final static String ENTITY_BASE_BINARY_NAME = ENTITY_BASE_NAME.replace('.', '/');
+    public final static String ENTITY_BASE_SIGNATURE = "L"+ENTITY_BASE_BINARY_NAME+";";
+    
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
         return new ModelEnhancingClassVisitor(className, outputClassVisitor);
@@ -33,17 +38,17 @@ public class ModelEnhancer implements BiFunction<String, ClassVisitor, ClassVisi
         public void visitEnd() {
             MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, 
                     "findById", 
-                    "(Ljava/lang/Object;)Lorg/jboss/panache/EntityBase;", 
-                    "<T:Lorg/jboss/panache/EntityBase;>(Ljava/lang/Object;)TT;", 
+                    "(Ljava/lang/Object;)"+ENTITY_BASE_SIGNATURE+"", 
+                    "<T:"+ENTITY_BASE_SIGNATURE+">(Ljava/lang/Object;)TT;", 
                     null);
             mv.visitParameter("id", 0);
             mv.visitCode();
             mv.visitLdcInsn(thisClass);
             mv.visitIntInsn(Opcodes.ALOAD, 0);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                    "org/jboss/panache/EntityBase", 
+                    ENTITY_BASE_BINARY_NAME, 
                     "findById", 
-                    "(Ljava/lang/Class;Ljava/lang/Object;)Lorg/jboss/panache/EntityBase;", false);
+                    "(Ljava/lang/Class;Ljava/lang/Object;)"+ENTITY_BASE_SIGNATURE+"", false);
             mv.visitInsn(Opcodes.ARETURN);
             mv.visitMaxs(0, 0);
             mv.visitEnd();
@@ -51,7 +56,7 @@ public class ModelEnhancer implements BiFunction<String, ClassVisitor, ClassVisi
             mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, 
                     "find", 
                     "(Ljava/lang/String;[Ljava/lang/Object;)Ljava/util/List;", 
-                    "<T:Lorg/jboss/panache/EntityBase;>(Ljava/lang/String;[Ljava/lang/Object;)Ljava/util/List<TT;>;", 
+                    "<T:"+ENTITY_BASE_SIGNATURE+">(Ljava/lang/String;[Ljava/lang/Object;)Ljava/util/List<TT;>;", 
                     null);
             mv.visitParameter("query", 0);
             mv.visitParameter("params", 0);
@@ -60,7 +65,7 @@ public class ModelEnhancer implements BiFunction<String, ClassVisitor, ClassVisi
             mv.visitIntInsn(Opcodes.ALOAD, 0);
             mv.visitIntInsn(Opcodes.ALOAD, 1);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                    "org/jboss/panache/EntityBase", 
+                    ENTITY_BASE_BINARY_NAME, 
                     "find", 
                     "(Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/Object;)Ljava/util/List;", false);
             mv.visitInsn(Opcodes.ARETURN);
@@ -70,12 +75,12 @@ public class ModelEnhancer implements BiFunction<String, ClassVisitor, ClassVisi
             mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, 
                     "findAll", 
                     "()Ljava/util/List;", 
-                    "<T:Lorg/jboss/panache/EntityBase;>()Ljava/util/List<TT;>;", 
+                    "<T:"+ENTITY_BASE_SIGNATURE+">()Ljava/util/List<TT;>;", 
                     null);
             mv.visitCode();
             mv.visitLdcInsn(thisClass);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                    "org/jboss/panache/EntityBase", 
+                    ENTITY_BASE_BINARY_NAME, 
                     "findAll", 
                     "(Ljava/lang/Class;)Ljava/util/List;", false);
             mv.visitInsn(Opcodes.ARETURN);
@@ -90,7 +95,7 @@ public class ModelEnhancer implements BiFunction<String, ClassVisitor, ClassVisi
             mv.visitCode();
             mv.visitLdcInsn(thisClass);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                    "org/jboss/panache/EntityBase", 
+                    ENTITY_BASE_BINARY_NAME, 
                     "count", 
                     "(Ljava/lang/Class;)J", false);
             mv.visitInsn(Opcodes.LRETURN);
@@ -109,7 +114,7 @@ public class ModelEnhancer implements BiFunction<String, ClassVisitor, ClassVisi
             mv.visitIntInsn(Opcodes.ALOAD, 0);
             mv.visitIntInsn(Opcodes.ALOAD, 1);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                    "org/jboss/panache/EntityBase", 
+                    ENTITY_BASE_BINARY_NAME, 
                     "count", 
                     "(Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/Object;)J", false);
             mv.visitInsn(Opcodes.LRETURN);
@@ -128,7 +133,7 @@ public class ModelEnhancer implements BiFunction<String, ClassVisitor, ClassVisi
             mv.visitIntInsn(Opcodes.ALOAD, 0);
             mv.visitIntInsn(Opcodes.ALOAD, 1);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                    "org/jboss/panache/EntityBase", 
+                    ENTITY_BASE_BINARY_NAME, 
                     "delete", 
                     "(Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/Object;)J", false);
             mv.visitInsn(Opcodes.LRETURN);
@@ -143,7 +148,7 @@ public class ModelEnhancer implements BiFunction<String, ClassVisitor, ClassVisi
             mv.visitCode();
             mv.visitLdcInsn(thisClass);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                    "org/jboss/panache/EntityBase", 
+                    ENTITY_BASE_BINARY_NAME, 
                     "deleteAll", 
                     "(Ljava/lang/Class;)J", false);
             mv.visitInsn(Opcodes.LRETURN);

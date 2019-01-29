@@ -291,7 +291,7 @@ that is in use. Do this by adding the following to the `<build><plugins>` sectio
 ----
 <plugin>
     <artifactId>maven-surefire-plugin</artifactId>
-    <version>{surefire-version}</version>
+    <version>${surefire.version}</version>
 </plugin>
 ----
 
@@ -348,8 +348,9 @@ It produces 2 jar files:
 
 * `shamrock-quickstart-1.0-SNAPSHOT.jar` - containing just the classes and resources of the projects, it's the regular
 artifact produced by the Maven build;
-* `shamrock-quickstart-1.0-SNAPSHOT-runner.jar` - being an executable _über-jar_.
-It embeds all the dependencies required to run the application.
+* `shamrock-quickstart-1.0-SNAPSHOT-runner.jar` - being an executable _jar_. Be aware that it's not an _über-jar_ as
+the dependencies are copied into the `target/lib` directory. Refer to the Maven plugin documentation to generate an
+ _über-jar_ embedding the dependencies.
 
 You can run the application using: `java -jar target/shamrock-quickstart-1.0-SNAPSHOT-runner.jar`
 

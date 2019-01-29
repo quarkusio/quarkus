@@ -16,22 +16,16 @@
 
 package org.jboss.shamrock.example.panache;
 
-import javax.persistence.Embeddable;
+import javax.persistence.Entity;
 
-/**
- * Class marked @Embeddable explicitly so it is picked up.
- *
- * @author Emmanuel Bernard emmanuel@hibernate.org
- */
-@Embeddable
-public class WorkAddress {
-    private String company;
+import org.jboss.panache.Model;
 
-    public String getCompany() {
-        return company;
-    }
+@Entity
+public class Address extends Model {
 
-    public void setCompany(String company) {
-        this.company = company;
+    public String street;
+
+    public Address(String street) {
+        this.street = street;
     }
 }

@@ -28,12 +28,12 @@ import javax.persistence.OneToMany;
 import org.jboss.panache.Model;
 
 @Entity
-public class Person extends Model{
+public class Person extends Model {
 
     public String name;
 
     @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    public SequencedAddress address;
+    public Address address;
     
     public Status status;
     

@@ -84,7 +84,7 @@ public class TestEndpoint extends Controller {
         Person person = new Person();
         person.name = "stef";
         person.status = Status.LIVING;
-        person.address = new SequencedAddress("stef street");
+        person.address = new Address("stef street");
         person.address.save();
         
         person.save();

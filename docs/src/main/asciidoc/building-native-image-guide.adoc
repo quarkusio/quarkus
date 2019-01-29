@@ -54,7 +54,7 @@ image:native-image-process.png[Creating a native executable, width=640]
 
 Before going further, be sure that the `GRAALVM_HOME` environment variable is configured appropriately.
 
-Edit the `pom.xml` to add the following _profile_.
+If you generated the application from the previous tutorial, you can find in the `pom.xml` the following _profile_:
 
 [source,xml]
 ----
@@ -86,7 +86,7 @@ Edit the `pom.xml` to add the following _profile_.
 
 We use a profile because, you will see very soon, packaging the native image takes a _few_ seconds.
 
-Now run: `mvn package -Pnative`
+Create a native executable using: `mvn package -Pnative`.
 
 In addition to the regular files, the build also produces `target/shamrock-quickstart-1.0-SNAPSHOT-runner`.
 You can run it using: `target/shamrock-quickstart-native-1.0-SNAPSHOT-runner`.
@@ -190,7 +190,7 @@ mvn package -Pnative -Dnative-image.docker-build=true
 
 The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.
 However, it's not an issue as we are going to copy it to a Docker container.
-Create the following `Dockerfile` in the `src/main/docker` (or wherever you want):
+The project generation has provided a `Dockerfile` in the `src/main/docker` with the following content:
 
 [source]
 ----

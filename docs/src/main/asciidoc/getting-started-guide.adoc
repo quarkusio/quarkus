@@ -49,33 +49,34 @@ Clone the Git repository: `git clone git@github.com:jbossas/protean-quickstarts.
 
 The solution is located in the `getting-started` directory.
 
-== Creating the pom file
+== Bootstrapping the project
 
-In your favorite IDE, create a new Maven project.
-It should generate a `pom.xml` file with a content similar to:
+The easiest way to create a new Protean project is to open a terminal and run the following command:
 
-[source,xml]
+[source, subs=attributes+]
 ----
-<?xml version="1.0" encoding="UTF-8"?>
-<project>
-    <modelVersion>4.0.0</modelVersion>
-
-    <groupId>org.acme</groupId>
-    <artifactId>shamrock-quickstart</artifactId>
-    <version>1.0-SNAPSHOT</version>
-
-</project>
+mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=getting-started \
+    -DclassName="org.acme.quickstart.GreetingResource" \
+    -Dpath="/hello"
 ----
 
-Add the Shamrock Maven plugin to the `pom.xml` file:
+It generates:
+
+* the Maven structure
+* an `org.acme.quickstart.GreetingResource` resource exposed on `/hello`
+* an associated unit test
+* a landing page accessible on `http://localhost:8080`
+* an example of `Dockerfile`
+* the application configuration file
+
+Once generated, look at the `pom.xml`.
+You will find the import of the Shamrock BOM, allowing to omit the version on the different Protean dependencies.
+In addition, you can see the `shamrock-maven-plugin` responsible of the packaging of the application and also providing the development mode.
 
 [source,xml,subs=attributes+]
 ----
-<properties>
-    <shamrock.version>{shamrock-version}</shamrock.version>
-    <surefire.version>{surefire-version}</surefire.version>
-</properties>
-
 <dependencyManagement>
     <dependencies>
         <dependency>
@@ -112,11 +113,10 @@ Add the Shamrock Maven plugin to the `pom.xml` file:
 Shamrock can be seen as {project-name} core.
 ====
 
-As we are going to create a JAX-RS endpoint, you also need to add the following dependencies:
+If we focus on the dependencies section, you can see 2 extensions allowing the development of REST applications:
 
 [source,xml]
 ----
-<dependencies>
     <dependency>
         <groupId>org.jboss.shamrock</groupId>
         <artifactId>shamrock-jaxrs-deployment</artifactId>
@@ -125,7 +125,6 @@ As we are going to create a JAX-RS endpoint, you also need to add the following 
         <groupId>org.jboss.shamrock</groupId>
         <artifactId>shamrock-arc-deployment</artifactId>
     </dependency>
-</dependencies>
 ----
 
 [NOTE]
@@ -134,9 +133,9 @@ As we are going to create a JAX-RS endpoint, you also need to add the following 
 ArC is a CDI-based dependency injection solution - see also link:cdi-reference.html[Contexts and Dependency Injection].
 ====
 
-=== Creating the JAX-RS resource
+=== The JAX-RS resources
 
-Create the `src/main/java/org/acme/quickstart/GreetingResource.java` file with the following content:
+During the project creation, the `src/main/java/org/acme/quickstart/GreetingResource.java` file as been created with the following content:
 
 [source,java]
 ----
@@ -157,6 +156,8 @@ public class GreetingResource {
     }
 }
 ----
+
+It's a very simple REST endpoint, returning "hello" to request on "/hello".
 
 [TIP]
 .Differences with vanilla Jax-RS
@@ -201,11 +202,11 @@ $ curl http://localhost:8080/hello
 hello
 ```
 
-Hit `CTRL+C` to stop the application.
+Hit `CTRL+C` to stop the application, but you can also keep it running and enjoy the blasting fast hot-reload.
 
 == Using injection
 
-Let's add a companion bean.
+Let's modify the application and add a companion bean.
 Create the `src/main/java/org/acme/quickstart/GreetingService.java` file with the following content:
 
 [source, java]
@@ -258,15 +259,14 @@ public class GreetingResource {
 }
 ----
 
-Start the application and check that http://localhost:8080/hello/greeting/shamrock returns `hello shamrock`.
-
-
+If you stopped the application, restart the application with `mvn compile shamrock:dev`.
+Then check that http://localhost:8080/hello/greeting/shamrock returns `hello shamrock`.
 
 == Testing
 
 All right, so far so good, but wouldn't it be better with a few tests, just in case.
 
-Edit the `pom.xml` file to add the 2 following dependencies:
+In the generated `pom.xml` file, you can see 2 test dependencies:
 
 [source,xml,subs=attributes+]
 ----
@@ -285,7 +285,7 @@ Edit the `pom.xml` file to add the 2 following dependencies:
 ----
 
 Note that Shamrock uses JUnit 5 by default, which means that you may need to upgrade the version of surefire
-that is in use. Do this by adding the following to the `<build><plugins>` section of  `pom.xml`:
+that is in use. This is done in `<build><plugins>` section of  `pom.xml`:
 
 [source,xml,subs=attributes+]
 ----
@@ -295,7 +295,8 @@ that is in use. Do this by adding the following to the `<build><plugins>` sectio
 </plugin>
 ----
 
-Then, create the `src/test/java/org/acme/quickstart/GreetingResourceTest.java` with the following content:
+The project generation contains a simple test.
+Edit the `src/test/java/org/acme/quickstart/GreetingResourceTest.java` to match the following content:
 
 [source,java]
 ----

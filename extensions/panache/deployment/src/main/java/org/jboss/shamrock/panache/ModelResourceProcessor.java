@@ -22,23 +22,28 @@ import java.lang.reflect.ParameterizedType;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.function.Predicate;
 
+import javax.persistence.EntityManager;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Transient;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.Type;
 import org.jboss.panache.Controller;
 import org.jboss.panache.EntityBase;
 import org.jboss.panache.Model;
 import org.jboss.panache.PgPoolProducer;
 import org.jboss.panache.RxEntityBase;
 import org.jboss.panache.RxModel;
+import org.jboss.protean.arc.processor.BeanInfo;
 import org.jboss.protean.gizmo.AssignableResultHandle;
 import org.jboss.protean.gizmo.BranchResult;
 import org.jboss.protean.gizmo.BytecodeCreator;
@@ -52,12 +57,14 @@ import org.jboss.protean.gizmo.ResultHandle;
 import org.jboss.shamrock.annotations.BuildProducer;
 import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
+import org.jboss.shamrock.arc.deployment.UnremovableBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.BytecodeTransformerBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import org.jboss.shamrock.jpa.AdditionalJpaModelBuildItem;
 
+import io.reactiverse.reactivex.pgclient.PgPool;
 import io.reactiverse.reactivex.pgclient.Row;
 import io.reactiverse.reactivex.pgclient.Tuple;
 import io.reactivex.Maybe;
@@ -147,6 +154,13 @@ public final class ModelResourceProcessor {
     private static final DotName DOTNAME_RX_ENTITY_BASE = DotName.createSimple(RxEntityBase.class.getName());
     private static final DotName DOTNAME_MODEL = DotName.createSimple(Model.class.getName());
     private static final DotName DOTNAME_RX_MODEL = DotName.createSimple(RxModel.class.getName());
+
+    private static final Set<DotName> UNREMOVABLE_BEANS = Collections.unmodifiableSet(
+            new HashSet<>(Arrays.asList(
+                    DotName.createSimple(EntityManager.class.getName()),
+                    DotName.createSimple(PgPool.class.getName())
+
+            )));
     
     @BuildStep
     List<AdditionalJpaModelBuildItem> produceModel() {
@@ -154,6 +168,22 @@ public final class ModelResourceProcessor {
         // only transforms classes from the application jar, so we do our own transforming
         return Arrays.asList(
                 new AdditionalJpaModelBuildItem(Model.class));
+    }
+
+    @BuildStep
+    UnremovableBeanBuildItem ensureBeanLookupAvailible() {
+        return new UnremovableBeanBuildItem(new Predicate<BeanInfo>() {
+            @Override
+            public boolean test(BeanInfo beanInfo) {
+                for(Type t : beanInfo.getTypes()) {
+                    if(UNREMOVABLE_BEANS.contains(t.name())) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        });
     }
     
     @BuildStep

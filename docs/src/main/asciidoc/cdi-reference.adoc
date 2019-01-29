@@ -137,6 +137,8 @@ BeanDefiningAnnotationBuildItem additionalBeanDefiningAnnotation() {
 }
 ----
 
+NOTE: Bean registrations that are result of a `BeanDefiningAnnotationBuildItem` are unremovable by default. See also <<remove_unused_beans>>.
+
 === Resource Annotations
 
 `ResourceAnnotationBuildItem` is used to specify resource annotations  that make it possible to resolve non-CDI injection points, such as Java EE resources.
@@ -167,6 +169,8 @@ List<AdditionalBeanBuildItem> additionalBeans() {
           new AdditionalBeanBuildItem(HealthServlet.class));
 }
 ----
+
+NOTE: A bean registration that is a result of an `AdditionalBeanBuildItem` is removable by default. See also <<remove_unused_beans>>.
 
 === Synthetic Beans
 
@@ -223,3 +227,21 @@ BeanDeploymentValidatorBuildItem beanDeploymentValidator() {
 ----
 
 NOTE: See also `org.jboss.protean.arc.processor.BuildExtension.Key` to discover the available metadata.
+
+[[remove_unused_beans]]
+== Removing Unused Beans
+
+The container attempts to remove all unused beans during build by default.
+This optimization can be disabled: `shamrock.arc.remove-unused-beans=false`.
+
+An unused bean:
+
+* is not a built-in bean or an interceptor,
+* is not eligible for injection to any injection point,
+* is not excluded by any extension,
+* does not have a name,
+* does not declare an observer,
+* does not declare any producer which is eligible for injection to any injection point,
+* is not directly eligible for injection into any `javax.enterprise.inject.Instance` injection point
+ 
+The extensions can eliminate possible false positives by producing `UnremovableBeanBuildItem`.

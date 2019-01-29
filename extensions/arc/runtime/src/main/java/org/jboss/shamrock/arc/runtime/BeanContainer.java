@@ -20,12 +20,27 @@ import java.lang.annotation.Annotation;
 
 import org.jboss.protean.arc.ManagedContext;
 
+/**
+ * Represents a CDI bean container.
+ */
 public interface BeanContainer {
 
+    /**
+     * 
+     * @param type
+     * @param qualifiers
+     * @return a bean instance or {@code null} if no matching bean is found
+     */
     default <T> T instance(Class<T> type, Annotation... qualifiers) {
         return instanceFactory(type, qualifiers).get();
     }
 
+    /**
+     * 
+     * @param type
+     * @param qualifiers
+     * @return a bean instance factory, never {@code null} 
+     */
     <T> Factory<T> instanceFactory(Class<T> type, Annotation... qualifiers);
 
     /**
@@ -49,7 +64,18 @@ public interface BeanContainer {
     ManagedContext requestContext();
 
     interface Factory<T> {
-
+        
+        Factory<Object> EMPTY = new Factory<Object>() {
+            @Override
+            public Object get() {
+                return null;
+            }
+        };
+        
+        /**
+         * 
+         * @return a bean instance or {@code null} if no matching bean is found
+         */
         T get();
     }
 

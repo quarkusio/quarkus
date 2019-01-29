@@ -445,10 +445,10 @@ public class BeanInfo {
         builder.append(", qualifiers=");
         builder.append(qualifiers);
         builder.append(", target=");
-        builder.append(target);
+        builder.append(target.isPresent() ? target.get() : "n/a");
         if (declaringBean != null) {
             builder.append(", declaringBean=");
-            builder.append(declaringBean.target);
+            builder.append(declaringBean.target.isPresent() ? declaringBean.target.get() : "n/a");
         }
         builder.append("]");
         return builder.toString();

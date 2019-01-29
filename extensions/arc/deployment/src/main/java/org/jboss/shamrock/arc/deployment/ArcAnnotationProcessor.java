@@ -45,6 +45,7 @@ import org.jboss.logging.Logger;
 import org.jboss.protean.arc.ArcContainer;
 import org.jboss.protean.arc.processor.AnnotationsTransformer;
 import org.jboss.protean.arc.processor.BeanDefiningAnnotation;
+import org.jboss.protean.arc.processor.BeanDeployment;
 import org.jboss.protean.arc.processor.BeanProcessor;
 import org.jboss.protean.arc.processor.BeanProcessor.Builder;
 import org.jboss.protean.arc.processor.DotNames;
@@ -234,14 +235,25 @@ public class ArcAnnotationProcessor {
         }
 
         BeanProcessor beanProcessor = builder.build();
-        beanProcessor.process();
-
+        BeanDeployment beanDeployment = beanProcessor.process();
+    
         ArcContainer container = arcTemplate.getContainer(shutdown);
-        BeanContainer bc = arcTemplate.initBeanContainer(container,
-                beanContainerListenerBuildItems.stream().map(BeanContainerListenerBuildItem::getBeanContainerListener).collect(Collectors.toList()));
-        injectionProvider.produce(new InjectionProviderBuildItem(arcTemplate.setupInjection(container)));
+        BeanContainer beanContainer =
+            arcTemplate.initBeanContainer(
+                container,
+                beanContainerListenerBuildItems
+                    .stream()
+                    .map(BeanContainerListenerBuildItem::getBeanContainerListener)
+                    .collect(Collectors.toList()),
+                beanDeployment
+                    .getRemovedBeans()
+                    .stream()
+                    .flatMap(b -> b.getTypes().stream())
+                    .map(t -> t.name().toString())
+                    .collect(Collectors.toSet()));
+            injectionProvider.produce(new InjectionProviderBuildItem(arcTemplate.setupInjection(container)));
 
-        return new BeanContainerBuildItem(bc);
+        return new BeanContainerBuildItem(beanContainer);
     }
 
     private void indexBeanClass(String beanClass, Indexer indexer, IndexView shamrockIndex, Set<DotName> additionalIndex) {

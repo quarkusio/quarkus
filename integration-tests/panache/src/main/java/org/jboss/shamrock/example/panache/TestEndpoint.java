@@ -18,6 +18,7 @@ package org.jboss.shamrock.example.panache;
 
 import java.util.List;
 
+import javax.inject.Inject;
 import javax.transaction.Transactional;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -94,6 +95,77 @@ public class TestEndpoint extends Controller {
         Dog dog = new Dog("octave", "dalmatian");
         dog.owner = person;
         dog.save();
+        person.dogs.add(dog);
+        
+        return person;
+    }
+
+    @Inject
+    PersonDao personDao;
+    @Inject
+    DogDao dogDao;
+    @Inject
+    AddressDao addressDao;
+    
+    @GET
+    @Path("model-dao")
+    @Transactional
+    public String testModelDao() {
+        List<Person> persons = personDao.findAll();
+        Assertions.assertEquals(0, persons.size());
+        
+        Person person = makeSavedPersonDao();
+        Assertions.assertNotNull(person.id);
+
+        Assertions.assertEquals(1, personDao.count());
+        Assertions.assertEquals(1, personDao.count("name = ?1", "stef"));
+        Assertions.assertEquals(1, personDao.count("name", "stef"));
+
+        Assertions.assertEquals(1, dogDao.count());
+        Assertions.assertEquals(1, person.dogs.size());
+
+        persons = personDao.findAll();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+        
+        persons = personDao.find("name = ?1", "stef");
+        persons = personDao.find("name", "stef");
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+        
+        Person byId = personDao.findById(person.id);
+        Assertions.assertEquals(person, byId);
+
+        personDao.delete(person);
+        Assertions.assertEquals(0, personDao.count());
+        
+        person = makeSavedPersonDao();
+        Assertions.assertEquals(1, personDao.count());
+        Assertions.assertEquals(0, personDao.delete("name = ?1", "emmanuel"));
+        Assertions.assertEquals(1, dogDao.delete("owner = ?1", person));
+        Assertions.assertEquals(1, personDao.delete("name", "stef"));
+
+        Assertions.assertEquals(0, personDao.deleteAll());
+
+        makeSavedPersonDao();
+        Assertions.assertEquals(1, dogDao.deleteAll());
+        Assertions.assertEquals(1, personDao.deleteAll());
+
+        return "OK";
+    }
+ 
+    private Person makeSavedPersonDao() {
+        Person person = new Person();
+        person.name = "stef";
+        person.status = Status.LIVING;
+        person.address = new Address("stef street");
+        addressDao.save(person.address);
+
+        personDao.save(person);
+
+        Dog dog = new Dog("octave", "dalmatian");
+        dog.owner = person;
+        dogDao.save(dog);
         person.dogs.add(dog);
         
         return person;

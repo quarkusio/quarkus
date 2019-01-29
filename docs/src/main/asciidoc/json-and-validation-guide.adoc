@@ -40,6 +40,7 @@ mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=input-validation \
     -DclassName="org.acme.validation.BookResource" \
+    -Dpath="/books" \
     -Dextensions="json, validation"
 ----
 
@@ -207,6 +208,11 @@ The best option is then to annotate a method of your business service with your 
 
 [source, java]
 ----
+package org.acme.validation;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.validation.Valid;
+
 @ApplicationScoped
 public class BookService {
 
@@ -220,6 +226,8 @@ Calling the service in your rest end point triggers the `Book` validation automa
 
 [source, java]
 ----
+@Inject BookService bookService;
+
 @Path("/service-method-validation")
 @POST
 @Produces(MediaType.APPLICATION_JSON)
@@ -244,7 +252,7 @@ Keep in mind that you usually don't want to expose to the public the internals o
 
 Now let's add the simple web page to interact with our `BookResource`.
 Shamrock automatically serves static resources contained in the `META-INF/resources` directory.
-Creates the `src/main/resources/META-INF/resources` directory and copy this https://github.com/protean-project/quickstarts/blob/master/input-validation/src/main/resources/META-INF/resources/index.html[index.html] file in it.
+In the `src/main/resources/META-INF/resources` directory, replace the `index.html` file with the content from this https://raw.githubusercontent.com/jbossas/protean-quickstarts/master/input-validation/src/main/resources/META-INF/resources/index.html[index.html] file in it.
 
 == Run the application
 

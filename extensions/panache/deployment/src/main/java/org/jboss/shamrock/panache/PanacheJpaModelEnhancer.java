@@ -3,6 +3,7 @@ package org.jboss.shamrock.panache;
 import java.util.function.BiFunction;
 
 import org.jboss.panache.EntityBase;
+import org.jboss.panache.JpaOperations;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -13,7 +14,11 @@ public class PanacheJpaModelEnhancer implements BiFunction<String, ClassVisitor,
     public final static String ENTITY_BASE_NAME = EntityBase.class.getName();
     public final static String ENTITY_BASE_BINARY_NAME = ENTITY_BASE_NAME.replace('.', '/');
     public final static String ENTITY_BASE_SIGNATURE = "L"+ENTITY_BASE_BINARY_NAME+";";
-    
+
+    public final static String JPA_OPERATIONS_NAME = JpaOperations.class.getName();
+    public final static String JPA_OPERATIONS_BINARY_NAME = JPA_OPERATIONS_NAME.replace('.', '/');
+    public final static String JPA_OPERATIONS_SIGNATURE = "L"+JPA_OPERATIONS_BINARY_NAME+";";
+
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
         return new ModelEnhancingClassVisitor(className, outputClassVisitor);
@@ -46,9 +51,10 @@ public class PanacheJpaModelEnhancer implements BiFunction<String, ClassVisitor,
             mv.visitLdcInsn(thisClass);
             mv.visitIntInsn(Opcodes.ALOAD, 0);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                    ENTITY_BASE_BINARY_NAME, 
+                    JPA_OPERATIONS_BINARY_NAME, 
                     "findById", 
-                    "(Ljava/lang/Class;Ljava/lang/Object;)"+ENTITY_BASE_SIGNATURE+"", false);
+                    "(Ljava/lang/Class;Ljava/lang/Object;)Ljava/lang/Object;", false);
+            mv.visitTypeInsn(Opcodes.CHECKCAST, ENTITY_BASE_BINARY_NAME);
             mv.visitInsn(Opcodes.ARETURN);
             mv.visitMaxs(0, 0);
             mv.visitEnd();
@@ -65,7 +71,7 @@ public class PanacheJpaModelEnhancer implements BiFunction<String, ClassVisitor,
             mv.visitIntInsn(Opcodes.ALOAD, 0);
             mv.visitIntInsn(Opcodes.ALOAD, 1);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                    ENTITY_BASE_BINARY_NAME, 
+                    JPA_OPERATIONS_BINARY_NAME, 
                     "find", 
                     "(Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/Object;)Ljava/util/List;", false);
             mv.visitInsn(Opcodes.ARETURN);
@@ -80,7 +86,7 @@ public class PanacheJpaModelEnhancer implements BiFunction<String, ClassVisitor,
             mv.visitCode();
             mv.visitLdcInsn(thisClass);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                    ENTITY_BASE_BINARY_NAME, 
+                    JPA_OPERATIONS_BINARY_NAME, 
                     "findAll", 
                     "(Ljava/lang/Class;)Ljava/util/List;", false);
             mv.visitInsn(Opcodes.ARETURN);
@@ -95,7 +101,7 @@ public class PanacheJpaModelEnhancer implements BiFunction<String, ClassVisitor,
             mv.visitCode();
             mv.visitLdcInsn(thisClass);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                    ENTITY_BASE_BINARY_NAME, 
+                    JPA_OPERATIONS_BINARY_NAME, 
                     "count", 
                     "(Ljava/lang/Class;)J", false);
             mv.visitInsn(Opcodes.LRETURN);
@@ -114,7 +120,7 @@ public class PanacheJpaModelEnhancer implements BiFunction<String, ClassVisitor,
             mv.visitIntInsn(Opcodes.ALOAD, 0);
             mv.visitIntInsn(Opcodes.ALOAD, 1);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                    ENTITY_BASE_BINARY_NAME, 
+                    JPA_OPERATIONS_BINARY_NAME, 
                     "count", 
                     "(Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/Object;)J", false);
             mv.visitInsn(Opcodes.LRETURN);
@@ -133,7 +139,7 @@ public class PanacheJpaModelEnhancer implements BiFunction<String, ClassVisitor,
             mv.visitIntInsn(Opcodes.ALOAD, 0);
             mv.visitIntInsn(Opcodes.ALOAD, 1);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                    ENTITY_BASE_BINARY_NAME, 
+                    JPA_OPERATIONS_BINARY_NAME, 
                     "delete", 
                     "(Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/Object;)J", false);
             mv.visitInsn(Opcodes.LRETURN);
@@ -148,7 +154,7 @@ public class PanacheJpaModelEnhancer implements BiFunction<String, ClassVisitor,
             mv.visitCode();
             mv.visitLdcInsn(thisClass);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                    ENTITY_BASE_BINARY_NAME, 
+                    JPA_OPERATIONS_BINARY_NAME, 
                     "deleteAll", 
                     "(Ljava/lang/Class;)J", false);
             mv.visitInsn(Opcodes.LRETURN);

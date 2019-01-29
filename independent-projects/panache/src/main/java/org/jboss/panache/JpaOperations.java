@@ -60,12 +60,15 @@ public class JpaOperations {
         if(trimmed.isEmpty())
             return "FROM "+getEntityName(entityClass);
         
-        String lc = query.toLowerCase();
-        if(lc.startsWith("from ") || lc.startsWith("select ")) {
+        String trimmedLc = trimmed.toLowerCase();
+        if(trimmedLc.startsWith("from ") || trimmedLc.startsWith("select ")) {
             return query;
         }
-        if(lc.startsWith("order by ")) {
+        if(trimmedLc.startsWith("order by ")) {
             return "FROM "+getEntityName(entityClass) + " " + query;
+        }
+        if (trimmedLc.indexOf(' ') == -1 && trimmedLc.indexOf('=') == -1 && params != null && params.length == 1) {
+            query += " = ?1";
         }
         return "FROM "+getEntityName(entityClass)+" WHERE "+query;
     }
@@ -78,13 +81,16 @@ public class JpaOperations {
         if(trimmed.isEmpty())
             return "SELECT COUNT(*) FROM "+getEntityName(entityClass);
         
-        String lc = query.toLowerCase();
-        if(lc.startsWith("from ")) {
+        String trimmedLc = trimmed.toLowerCase();
+        if(trimmedLc.startsWith("from ")) {
             return "SELECT COUNT(*) "+query;
         }
-        if(lc.startsWith("order by ")) {
+        if(trimmedLc.startsWith("order by ")) {
             // ignore it
             return "SELECT COUNT(*) FROM "+getEntityName(entityClass);
+        }
+        if (trimmedLc.indexOf(' ') == -1 && trimmedLc.indexOf('=') == -1 && params != null && params.length == 1) {
+            query += " = ?1";
         }
         return "SELECT COUNT(*) FROM "+getEntityName(entityClass)+" WHERE "+query;
     }
@@ -97,13 +103,16 @@ public class JpaOperations {
         if(trimmed.isEmpty())
             return "DELETE FROM "+getEntityName(entityClass);
         
-        String lc = query.toLowerCase();
-        if(lc.startsWith("from ")) {
+        String trimmedLc = trimmed.toLowerCase();
+        if(trimmedLc.startsWith("from ")) {
             return "DELETE "+query;
         }
-        if(lc.startsWith("order by ")) {
+        if(trimmedLc.startsWith("order by ")) {
             // ignore it
             return "DELETE FROM "+getEntityName(entityClass);
+        }
+        if (trimmedLc.indexOf(' ') == -1 && trimmedLc.indexOf('=') == -1 && params != null && params.length == 1) {
+            query += " = ?1";
         }
         return "DELETE FROM "+getEntityName(entityClass)+" WHERE "+query;
     }

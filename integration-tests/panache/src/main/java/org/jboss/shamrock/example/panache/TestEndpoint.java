@@ -47,6 +47,7 @@ public class TestEndpoint extends Controller {
 
         Assertions.assertEquals(1, Person.count());
         Assertions.assertEquals(1, Person.count("name = ?1", "stef"));
+        Assertions.assertEquals(1, Person.count("name", "stef"));
 
         Assertions.assertEquals(1, Dog.count());
         Assertions.assertEquals(1, person.dogs.size());
@@ -56,6 +57,7 @@ public class TestEndpoint extends Controller {
         Assertions.assertEquals(person, persons.get(0));
         
         persons = Person.find("name = ?1", "stef");
+        persons = Person.find("name", "stef");
         Assertions.assertEquals(1, persons.size());
         Assertions.assertEquals(person, persons.get(0));
         
@@ -69,7 +71,7 @@ public class TestEndpoint extends Controller {
         Assertions.assertEquals(1, Person.count());
         Assertions.assertEquals(0, Person.delete("name = ?1", "emmanuel"));
         Assertions.assertEquals(1, Dog.delete("owner = ?1", person));
-        Assertions.assertEquals(1, Person.delete("name = ?1", "stef"));
+        Assertions.assertEquals(1, Person.delete("name", "stef"));
 
         Assertions.assertEquals(0, Person.deleteAll());
 

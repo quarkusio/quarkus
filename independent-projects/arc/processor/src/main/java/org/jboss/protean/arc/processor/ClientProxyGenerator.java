@@ -103,7 +103,13 @@ public class ClientProxyGenerator extends AbstractGenerator {
 
         for (MethodInfo method : getDelegatingMethods(bean)) {
 
-            MethodCreator forward = clientProxy.getMethodCreator(MethodDescriptor.of(method));
+            MethodDescriptor originalMethodDescriptor = MethodDescriptor.of(method);
+            MethodDescriptor virtualMethod = MethodDescriptor.ofMethod(providerTypeName, 
+                                                                       originalMethodDescriptor.getName(), 
+                                                                       originalMethodDescriptor.getReturnType(), 
+                                                                       originalMethodDescriptor.getParameterTypes());
+
+            MethodCreator forward = clientProxy.getMethodCreator(originalMethodDescriptor);
 
             // Exceptions
             for (Type exception : method.exceptions()) {
@@ -137,7 +143,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
                 ret = forward.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD, forward.loadClass(method.declaringClass().name().toString()),
                         forward.load(method.name()), paramTypesArray, delegate, argsArray);
             } else {
-                ret = forward.invokeVirtualMethod(method, delegate, params);
+                ret = forward.invokeVirtualMethod(virtualMethod, delegate, params);
             }
             // Finally write the bytecode
             forward.returnValue(ret);

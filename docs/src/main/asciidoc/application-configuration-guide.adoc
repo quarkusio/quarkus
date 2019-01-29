@@ -27,9 +27,9 @@ The solution is located in the `application-configuration` directory.
 
 First, we need a new project. Create a new project with the following command:
 
-[source]
+[source, subs=attributes+]
 ----
-mvn org.jboss.shamrock:shamrock-maven-plugin:1.0.0.Alpha1-SNAPSHOT:create \
+mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=application-configuration \
     -DclassName="org.acme.config.GreetingResource" \
@@ -91,7 +91,7 @@ public String hello() {
 
 We need to create the file providing the values.
 By default, Shamrock reads `META-INF/microprofile-config.properties`.
-Create the `src/main/resources/META-INF/microprofile-config.properties` with the following content:
+Edit the `src/main/resources/META-INF/microprofile-config.properties` with the following content:
 
 [source]
 ----
@@ -99,6 +99,17 @@ Create the `src/main/resources/META-INF/microprofile-config.properties` with the
 greeting.message = hello
 greeting.name = shamrock
 ----
+
+Once set, check the application with:
+
+[source]
+----
+$ curl  http://localhost:8080/greeting
+hello shamrock!
+----
+
+TIP: If the application requires configuration values and these values are not set, an error is thrown.
+So you can quickly now when your configuration is complete.
 
 == Update the test
 
@@ -140,4 +151,4 @@ Changing the configuration file is immediately reflected.
 You can add the `greeting.suffix`, remove the other properties, change the values, etc.
 
 As usual, the application can be packaged using `mvn clean package` and executed using the `-runner.jar` file.
-You can also generate the native executable.
+You can also generate the native executable with `mvn clean package -Pnative`

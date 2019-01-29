@@ -47,6 +47,9 @@ mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
 It generates:
 
 * the Maven structure
+* a landing page accessible on `http://localhost:8080`
+* an example of `Dockerfile`
+* the application configuration file
 * an `org.acme.scheduling.CountResource` resource
 * an associated test
 

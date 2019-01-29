@@ -27,7 +27,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>shamrock-panache-example</artifactId>
-    <name>Shamrock - Examples - Panache</name>
+    <name>Shamrock - Integration Tests - Panache</name>
     <description>An example that tests Panache</description>
     <dependencies>
         <dependency>

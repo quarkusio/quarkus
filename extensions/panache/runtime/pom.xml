@@ -16,6 +16,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>shamrock-panache-runtime</artifactId>
+    <name>Shamrock - Panache - Runtime</name>
 
     <dependencies>
         <dependency>

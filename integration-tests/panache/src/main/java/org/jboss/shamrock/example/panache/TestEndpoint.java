@@ -215,10 +215,10 @@ public class TestEndpoint extends Controller {
     @Path("router")
     public String testRouter() {
         
-        Assertions.assertEquals("http://localhost:8080/api/test/router", Router.getURI(TestEndpoint::testRouter).toString());
-        Assertions.assertEquals("http://localhost:8080/api/test/router-test/stef", Router.getURI(TestEndpoint::testMethod1, "stef").toString());
+        Assertions.assertEquals("http://localhost:8080/test/router", Router.getURI(TestEndpoint::testRouter).toString());
+        Assertions.assertEquals("http://localhost:8080/test/router-test/stef", Router.getURI(TestEndpoint::testMethod1, "stef").toString());
         Assertions.assertTrue(Router.getURI(TestEndpoint::testMethod2, 2, new byte[] {20}).toString()
-                .startsWith("http://localhost:8080/api/test/router-test/2-"));
+                .startsWith("http://localhost:8080/test/router-test/2-"));
         
         return "OK";
     }

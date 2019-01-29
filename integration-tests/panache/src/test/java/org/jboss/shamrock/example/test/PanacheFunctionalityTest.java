@@ -31,9 +31,9 @@ public class PanacheFunctionalityTest {
 
     @Test
     public void testPanacheFunctionality() throws Exception {
-        RestAssured.when().get("/api/test/model").then().body(is("OK"));
-        RestAssured.when().get("/api/test/rxmodel").then().body(is("OK"));
-        RestAssured.when().get("/api/test/router").then().body(is("OK"));
+        RestAssured.when().get("/test/model").then().body(is("OK"));
+        RestAssured.when().get("/test/rxmodel").then().body(is("OK"));
+        RestAssured.when().get("/test/router").then().body(is("OK"));
     }
 
 }

@@ -178,6 +178,16 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
             throw new AppCreatorException("Failed to build a runner jar", e);
         }
 
+        // when using uberJar, we rename the standard jar to include the .original suffix
+        // this greatly aids tools (such as s2i) that look for a single jar in the output directory to work OOTB
+        if (uberJar) {
+            try {
+                Files.move(outputDir.resolve(finalName + ".jar"), outputDir.resolve(finalName + ".jar.original"));
+            } catch (IOException e) {
+                throw new AppCreatorException("Unable to build uberjar", e);
+            }
+        }
+
         ctx.pushOutcome(RunnerJarOutcome.class, this);
     }
 

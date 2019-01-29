@@ -369,7 +369,7 @@ public CompletionStage<String> hello() {
 }
 ----
 
-The async version of the code is available in the https://github.com/protean-project/quickstarts[Github] repository, in the `getting-started-async` directory.
+The async version of the code is available in the https://github.com/jbossas/protean-quickstarts[Github] repository, in the `getting-started-async` directory.
 
 == What's next?
 

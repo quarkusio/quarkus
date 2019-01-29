@@ -133,7 +133,7 @@ import org.jboss.shamrock.test.junit.ShamrockTest;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.CoreMatchers.containsString;;
+import static org.hamcrest.CoreMatchers.containsString;
 
 @ShamrockTest
 public class CountResourceTest {
@@ -158,4 +158,4 @@ In another terminal, run `curl localhost:8080/count` to check the counter value.
 After a few seconds, re-run `curl localhost:8080/count` to verify the counter has been incremented.
 
 As usual, the application can be packaged using `mvn clean package` and executed using the `-runner.jar` file.
-You can also generate the native executable.
+You can also generate the native executable with `mvn clean package -Pnative`.

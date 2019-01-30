@@ -19,11 +19,7 @@ package org.jboss.shamrock.restclient;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
 import javax.ws.rs.Path;
 import javax.ws.rs.client.ClientRequestFilter;
@@ -37,9 +33,11 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.jboss.protean.gizmo.ClassCreator;
-import org.jboss.protean.gizmo.ClassOutput;
-import org.jboss.protean.gizmo.MethodCreator;
+import org.jboss.jandex.Type;
+import org.jboss.jandex.Type.Kind;
+import org.jboss.protean.arc.processor.BeanConfigurator;
+import org.jboss.protean.arc.processor.BeanRegistrar;
+import org.jboss.protean.arc.processor.ScopeInfo;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
 import org.jboss.resteasy.client.jaxrs.internal.proxy.ResteasyClientProxy;
@@ -47,7 +45,7 @@ import org.jboss.resteasy.spi.ResteasyConfiguration;
 import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
-import org.jboss.shamrock.arc.deployment.GeneratedBeanBuildItem;
+import org.jboss.shamrock.arc.deployment.BeanRegistrarBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
@@ -59,6 +57,8 @@ import org.jboss.shamrock.restclient.runtime.RestClientBase;
 import org.jboss.shamrock.restclient.runtime.RestClientProxy;
 
 class RestClientProcessor {
+    
+    private static final DotName REST_CLIENT = DotName.createSimple(RestClient.class.getName());
 
     private static final DotName[] CLIENT_ANNOTATIONS = {
             DotName.createSimple("javax.ws.rs.GET"),
@@ -89,10 +89,16 @@ class RestClientProcessor {
     BuildProducer<SubstrateResourceBuildItem> resources;
 
     @Inject
+    BuildProducer<BeanRegistrarBuildItem> beanRegistrars;
+    
+    @Inject
+    BuildProducer<FeatureBuildItem> feature;
+    
+    @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
 
     @BuildStep
-    public void build(BuildProducer<GeneratedBeanBuildItem> generatedBeans, BuildProducer<FeatureBuildItem> feature) throws Exception {
+    public void build() throws Exception {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.MP_REST_CLIENT));
     	reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
                 DefaultResponseExceptionMapper.class.getName(),
@@ -133,33 +139,28 @@ class RestClientProcessor {
             proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem(iName, ResteasyClientProxy.class.getName()));
             proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem(iName, RestClientProxy.class.getName()));
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, iName));
-
-            //now generate CDI beans
-            //TODO: do we need to check if CDI is enabled? Are we just assuming it always is?
-            String className = iName + "$$RestClientProxy";
-            AtomicReference<byte[]> bytes = new AtomicReference<>();
-            try (ClassCreator creator = new ClassCreator(new ClassOutput() {
-                @Override
-                public void write(String name, byte[] data) {
-                    bytes.set(data);
-                    generatedClass.produce(new GeneratedClassBuildItem(true, name, data));
-                }
-            }, className, null, RestClientBase.class.getName())) {
-
-                creator.addAnnotation(Dependent.class);
-                MethodCreator producer = creator.getMethodCreator("producerMethod", iName);
-                producer.addAnnotation(Produces.class);
-                producer.addAnnotation(RestClient.class);
-                producer.addAnnotation(ApplicationScoped.class);
-
-                ResultHandle ret = producer.invokeVirtualMethod(MethodDescriptor.ofMethod(RestClientBase.class, "create", Object.class), producer.getThis());
-                producer.returnValue(ret);
-
-                MethodCreator ctor = creator.getMethodCreator(MethodDescriptor.ofConstructor(className));
-                ctor.invokeSpecialMethod(MethodDescriptor.ofConstructor(RestClientBase.class, Class.class), ctor.getThis(), ctor.loadClass(iName));
-                ctor.returnValue(null);
-            }
-            generatedBeans.produce(new GeneratedBeanBuildItem(className, bytes.get()));
         }
+        
+        BeanRegistrar beanRegistrar = new BeanRegistrar() {
+
+            @Override
+            public void register(RegistrationContext registrationContext) {
+                for (Map.Entry<DotName, ClassInfo> entry : interfaces.entrySet()) {
+                    BeanConfigurator<Object> configurator = registrationContext.configure(RestClientBase.class);
+                    configurator.types(Type.create(entry.getValue().name(), Kind.CLASS));
+                    configurator.scope(ScopeInfo.APPLICATION);
+                    configurator.addQualifier(REST_CLIENT);
+                    configurator.creator(m -> {
+                        // return new RestClientBase(proxyType).create();
+                        ResultHandle interfaceHandle = m.loadClass(entry.getValue().name().toString());
+                        ResultHandle baseHandle = m.newInstance(MethodDescriptor.ofConstructor(RestClientBase.class, Class.class), interfaceHandle);
+                        ResultHandle ret = m.invokeVirtualMethod(MethodDescriptor.ofMethod(RestClientBase.class, "create", Object.class), baseHandle);
+                        m.returnValue(ret);
+                    });
+                    configurator.done();
+                }
+            }
+        };
+        beanRegistrars.produce(new BeanRegistrarBuildItem(beanRegistrar));
     }
 }

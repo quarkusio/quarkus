@@ -26,6 +26,7 @@ import java.util.function.Consumer;
 import javax.enterprise.context.spi.CreationalContext;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
@@ -130,6 +131,11 @@ public final class BeanConfigurator<T> {
 
     public BeanConfigurator<T> types(Type... types) {
         Collections.addAll(this.types, types);
+        return this;
+    }
+    
+    public BeanConfigurator<T> addQualifier(DotName annotationName) {
+        this.qualifiers.add(AnnotationInstance.create(annotationName, null, new AnnotationValue[] {}));
         return this;
     }
 

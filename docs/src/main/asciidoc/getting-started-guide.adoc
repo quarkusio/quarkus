@@ -51,7 +51,7 @@ The solution is located in the `getting-started` directory.
 
 == Bootstrapping the project
 
-The easiest way to create a new Protean project is to open a terminal and run the following command:
+The easiest way to create a new {project-name} project is to open a terminal and run the following command:
 
 [source, subs=attributes+]
 ----
@@ -72,7 +72,7 @@ It generates:
 * the application configuration file
 
 Once generated, look at the `pom.xml`.
-You will find the import of the Shamrock BOM, allowing to omit the version on the different Protean dependencies.
+You will find the import of the Shamrock BOM, allowing to omit the version on the different {project-name} dependencies.
 In addition, you can see the `shamrock-maven-plugin` responsible of the packaging of the application and also providing the development mode.
 
 [source,xml,subs=attributes+]
@@ -284,8 +284,9 @@ In the generated `pom.xml` file, you can see 2 test dependencies:
 </dependency>
 ----
 
-Note that Shamrock uses JUnit 5 by default, which means that you may need to upgrade the version of the https://maven.apache.org/surefire/maven-surefire-plugin/[Surefire Maven Plugin] that is in use.
-This is done in the `<build><plugins>` section of  `pom.xml`:
+Shamrock supports https://junit.org/junit4/[Junit 4] and https://junit.org/junit5/[Junit 5] tests.
+In the generated project, we use Junit 5.
+Because of this, the version of the https://maven.apache.org/surefire/maven-surefire-plugin/[Surefire Maven Plugin] must be set, as the default version does not support Junit 5:
 
 [source,xml,subs=attributes+]
 ----

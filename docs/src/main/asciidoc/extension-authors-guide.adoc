@@ -405,7 +405,7 @@ public class PersistenceAndShamrockConfigTest {
 }
 ----
 
-<1> This tells JUnit that the Protean deployment should fail with a specific exception
+<1> This tells JUnit that the {project-name} deployment should fail with a specific exception
 
 
 == Native Image Support

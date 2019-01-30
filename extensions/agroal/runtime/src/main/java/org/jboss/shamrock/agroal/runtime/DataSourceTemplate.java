@@ -42,6 +42,21 @@ public class DataSourceTemplate {
                 }
                 producer.setMinSize(config.minSize);
                 producer.setMaxSize(config.maxSize);
+                if (config.ssl.isPresent()) {
+                    SslMode sslMode;
+                    switch(config.ssl.get().toLowerCase()) {
+                    case "disable":
+                        sslMode = SslMode.Disable;
+                        break;
+                    case "default":
+                        sslMode = SslMode.Default;
+                        break;
+                    default:
+                        throw new RuntimeException("Invalid configuration for shamrock.datasource.ssl-mode: '"+
+                                config.ssl.get()+"'. Use 'default' or 'disable'.");    
+                    }
+                    producer.setSslMode(sslMode);
+                }
             }
         };
     }

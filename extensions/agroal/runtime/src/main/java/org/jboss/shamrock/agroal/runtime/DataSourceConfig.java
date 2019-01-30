@@ -60,4 +60,9 @@ public class DataSourceConfig {
     @ConfigProperty(name = "maxSize", defaultValue = "20")
     public int maxSize;
 
+    /**
+     * The SSL behaviour, defaults to driver-specific. Set to `disable` to disable SSL.
+     */
+    @ConfigProperty(name = "ssl")
+    public Optional<String> ssl;
 }

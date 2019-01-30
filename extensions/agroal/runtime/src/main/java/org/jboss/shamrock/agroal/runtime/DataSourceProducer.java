@@ -55,6 +55,7 @@ public class DataSourceProducer {
     private boolean xa;
     private Integer minSize;
     private Integer maxSize;
+    private SslMode sslMode;
 
     private AgroalDataSource agroalDataSource;
 
@@ -116,6 +117,16 @@ public class DataSourceProducer {
         else {
             log.warning( "Agroal pool 'maxSize' was not set: setting to default value " + DEFAULT_MAX_POOL_SIZE );
             poolConfiguration.maxSize( DEFAULT_MAX_POOL_SIZE );
+        }
+        // default to leave as-is
+        if(sslMode == SslMode.Disable) {
+            // other drivers not supported yet
+            if(driver.getName().equals("org.postgresql.Driver"))
+                poolConfiguration.connectionFactoryConfiguration().jdbcProperty("sslmode", "disable");
+            else if(driver.getName().equals("com.mysql.jdbc.Driver"))
+                poolConfiguration.connectionFactoryConfiguration().jdbcProperty("useSSL", "false");
+            else
+                log.warning( "Agroal does not support disabling SSL for driver " + driver.getName() );
         }
 
         //Explicit reference to bypass reflection need of the ServiceLoader used by AgroalDataSource#from
@@ -221,5 +232,13 @@ public class DataSourceProducer {
 
     public void setMaxSize(Integer maxSize) {
         this.maxSize = maxSize;
+    }
+
+    public SslMode getSslMode() {
+        return sslMode;
+    }
+
+    public void setSslMode(SslMode sslMode) {
+        this.sslMode = sslMode;
     }
 }

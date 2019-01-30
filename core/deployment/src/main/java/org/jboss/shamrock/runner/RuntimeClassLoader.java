@@ -44,6 +44,7 @@ import java.util.function.BiFunction;
 
 import org.jboss.logging.Logger;
 import org.jboss.shamrock.deployment.ClassOutput;
+import org.jboss.shamrock.deployment.ShamrockClassWriter;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -223,7 +224,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
 
 
         ClassReader cr = new ClassReader(bytes);
-        ClassWriter writer = new ClassWriter(cr, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+        ClassWriter writer = new ShamrockClassWriter(cr, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
         ClassVisitor visitor = writer;
         for (BiFunction<String, ClassVisitor, ClassVisitor> i : transformers) {
             visitor = i.apply(name, visitor);

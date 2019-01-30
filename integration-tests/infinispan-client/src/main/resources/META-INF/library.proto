@@ -1,0 +1,14 @@
+package book_sample;
+
+message Book {
+  required string title = 1;
+  required string description = 2;
+  required int32 publicationYear = 3; // no native Date type available in Protobuf
+
+  repeated Author authors = 4;
+}
+
+message Author {
+  required string name = 1;
+  required string surname = 2;
+}

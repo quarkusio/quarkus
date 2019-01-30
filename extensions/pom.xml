@@ -68,6 +68,9 @@
 
         <!-- Security -->
         <module>security</module>
+
+        <!-- Infinispan -->
+        <module>infinispan-client</module>
     </modules>
 
 </project>

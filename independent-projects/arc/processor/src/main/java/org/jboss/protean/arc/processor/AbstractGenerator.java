@@ -26,11 +26,6 @@ abstract class AbstractGenerator {
 
     static final String DEFAULT_PACKAGE = Arc.class.getPackage().getName() + ".generator";
 
-    protected String providerName(String name) {
-        // TODO we can do better
-        return Character.toLowerCase(name.charAt(0)) + name.substring(1);
-    }
-
     protected String getBaseName(BeanInfo bean, String beanClassName) {
         String name = Types.getSimpleName(beanClassName);
         return name.substring(0, name.lastIndexOf(BeanGenerator.BEAN_SUFFIX));

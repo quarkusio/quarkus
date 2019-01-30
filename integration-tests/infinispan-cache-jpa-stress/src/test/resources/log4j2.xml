@@ -10,13 +10,9 @@
     </Appenders>
 
     <Loggers>
-        <!--<Logger name="org.hibernate" level="error" />-->
-        <!--<Logger name="org.infinispan.protean" level="error" />-->
-        <!--<Logger name="org.jboss.shamrock.example.test" level="error" />-->
-
-        <Logger name="org.hibernate" level="trace" />
-        <Logger name="org.infinispan.protean" level="trace" />
-        <Logger name="org.jboss.shamrock.example.test" level="trace" />
+        <Logger name="org.hibernate" level="error" />
+        <Logger name="org.infinispan.protean" level="error" />
+        <Logger name="org.jboss.shamrock.example.test" level="error" />
 
         <Root level="info">
             <AppenderRef ref="FileAppender"/>

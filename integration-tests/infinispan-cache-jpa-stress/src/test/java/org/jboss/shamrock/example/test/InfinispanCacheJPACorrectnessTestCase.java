@@ -12,6 +12,7 @@ import org.jboss.logging.Logger;
 import org.jboss.shamrock.example.infinispancachejpa.correctness.Family;
 import org.jboss.shamrock.example.infinispancachejpa.correctness.Member;
 
+import javax.persistence.EntityNotFoundException;
 import javax.persistence.PersistenceException;
 import javax.transaction.RollbackException;
 import java.io.BufferedWriter;
@@ -67,7 +68,7 @@ public class InfinispanCacheJPACorrectnessTestCase {
             { javax.persistence.RollbackException.class, javax.persistence.OptimisticLockException.class, StaleStateException.class },
             { PessimisticLockException.class },
             { StaleObjectStateException.class },
-            { ObjectNotFoundException.class },
+            { EntityNotFoundException.class },
             { LockAcquisitionException.class }
     };
 

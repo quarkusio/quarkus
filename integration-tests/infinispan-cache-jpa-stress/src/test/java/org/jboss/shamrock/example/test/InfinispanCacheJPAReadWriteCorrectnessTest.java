@@ -16,6 +16,7 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.persistence.EntityManagerFactory;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -38,7 +39,7 @@ public class InfinispanCacheJPAReadWriteCorrectnessTest {
         Supplier<Family> familyCtor = () -> {
             String familyName = Utils.randomString();
             FamilyRW f = new FamilyRW(familyName);
-            HashSet<MemberRW> members = new HashSet<>();
+            Set<MemberRW> members = new HashSet<>();
             members.add((MemberRW) memberCtor.apply(f));
             f.setMembers(members);
             return f;

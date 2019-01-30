@@ -48,5 +48,7 @@
         <module>jpa-h2</module>
         <module>vertx</module>
         <module>spring-di</module>
+        <module>infinispan-cache-jpa</module>
+        <module>infinispan-cache-jpa-stress</module>
     </modules>
 </project>

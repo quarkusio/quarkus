@@ -237,6 +237,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
         final String runnerJarName = runnerJar.getFileName().toString();
 
         Path outputLibDir = outputDir.resolve(runnerJarOutcome.getLibDir().getFileName());
+        boolean outputLibDirCopied = false;
         if (Files.exists(outputLibDir)) {
             outputLibDir = null;
         } else {
@@ -245,6 +246,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
             } catch (IOException e) {
                 throw new AppCreatorException("Failed to copy the runnable jar and the lib to the docker project dir", e);
             }
+            outputLibDirCopied = true;
         }
 
         final Config config = SmallRyeConfigProviderResolver.instance().getConfig();
@@ -411,7 +413,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
             if(runnerJarCopied) {
                 IoUtils.recursiveDelete(runnerJar);
             }
-            if(outputLibDir != null) {
+            if(outputLibDirCopied) {
                 IoUtils.recursiveDelete(outputLibDir);
             }
         }

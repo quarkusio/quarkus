@@ -40,7 +40,7 @@ Remember, you need to configure Maven as indicated in the link:maven-config.html
 We recommend you to follow the instructions in the next sections and package the application step by step.
 However, you can go right to the completed example.
 
-Clone the Git repository: `git clone https://github.com/protean-project/quickstarts.git`, or download an https://github.com/protean-project/quickstarts/archive/master.zip[archive].
+Clone the Git repository: `git clone https://github.com/jbossas/protean-quickstarts.git`, or download an https://github.com/jbossas/protean-quickstarts/archive/master.zip[archive].
 
 The solution is located in the `getting-started-native` directory.
 
@@ -54,7 +54,7 @@ image:native-image-process.png[Creating a native executable, width=640]
 
 Before going further, be sure that the `GRAALVM_HOME` environment variable is configured appropriately.
 
-Edit the `pom.xml` to add the following _profile_.
+If you have generated the application from the previous tutorial, you can find in the `pom.xml` the following _profile_:
 
 [source,xml]
 ----
@@ -86,7 +86,7 @@ Edit the `pom.xml` to add the following _profile_.
 
 We use a profile because, you will see very soon, packaging the native image takes a _few_ seconds.
 
-Now run: `mvn package -Pnative`
+Create a native executable using: `mvn package -Pnative`.
 
 In addition to the regular files, the build also produces `target/shamrock-quickstart-1.0-SNAPSHOT-runner`.
 You can run it using: `target/shamrock-quickstart-native-1.0-SNAPSHOT-runner`.
@@ -176,6 +176,8 @@ Executing /Users/starksm/Dev/JBoss/Protean/get-started/target/shamrock-quickstar
 
 == Producing a Docker container
 
+IMPORTANT: Before going further, be sure to have a working Docker environment.
+
 You can run the application in a Docker container using the JAR produced by the Shamrock Maven Plugin.
 However, in this guide we focus on creating a Docker image using the produced native executable.
 Because the Docker container may not use the same _executable_ format as the one produced by default, we must instruct the Maven build to produce an
@@ -188,7 +190,7 @@ mvn package -Pnative -Dnative-image.docker-build=true
 
 The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.
 However, it's not an issue as we are going to copy it to a Docker container.
-Create the following `Dockerfile` in the `src/main/docker` (or wherever you want):
+The project generation has provided a `Dockerfile` in the `src/main/docker` directory with the following content:
 
 [source]
 ----

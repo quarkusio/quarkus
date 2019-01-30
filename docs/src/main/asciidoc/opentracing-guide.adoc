@@ -24,9 +24,9 @@ In this guide, we create a straightforward REST application to demonstrate distr
 We recommend you to follow the instructions in the next sections and create the application step by step.
 However, you can skip right to the completed example.
 
-Clone the Git repository: `git clone https://github.com/protean-project/quickstarts.git`, or download an https://github.com/protean-project/quickstarts/archive/master.zip[archive].
+Clone the Git repository: `git clone https://github.com/jbossas/protean-quickstarts.git`, or download an https://github.com/jbossas/protean-quickstarts/archive/master.zip[archive].
 
-The solution is located in the `using-opentracing` https://github.com/protean-project/quickstarts/tree/master/using-opentracing[directory].
+The solution is located in the `using-opentracing` https://github.com/jbossas/protean-quickstarts/tree/master/using-opentracing[directory].
 
 == Creating the Maven project
 

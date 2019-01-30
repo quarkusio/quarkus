@@ -22,7 +22,7 @@ Remember, you need to configure Maven as indicated in the link:maven-config.html
 We recommend you to follow the instructions in the next sections and create the application step by step.
 However, you can go right to the completed example.
 
-Clone the Git repository: `git clone https://github.com/protean-project/quickstarts.git`, or download an https://github.com/protean-project/quickstarts/archive/master.zip[archive].
+Clone the Git repository: `git clone https://github.com/jbossas/protean-quickstarts.git`, or download an https://github.com/jbossas/protean-quickstarts/archive/master.zip[archive].
 
 The solution is located in the `application-lifecycle-events` directory.
 
@@ -42,6 +42,9 @@ mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
 It generates:
 
 * the Maven structure
+* a landing page accessible on `http://localhost:8080`
+* an example of `Dockerfile`
+* the application configuration file
 * an `org.acme.events.GreetingResource` resource
 * an associated test
 
@@ -80,15 +83,9 @@ public class AppLifecycleBean {
 1. Method called when the application is starting
 2. Method called when the application is terminating
 
-[INFO]
-====
-The events are also called in _dev mode_ between each redeployment.
-====
+TIP: The events are also called in _dev mode_ between each redeployment.
 
-[INFO]
-====
-The methods can access injected beans. Check the https://github.com/protean-project/quickstarts/blob/master/application-lifecycle-events/src/main/java/org/acme/events/AppLifecycleBean.java[AppLifecycleBean.java] class for details.
-====
+NOTE: The methods can access injected beans. Check the https://github.com/jbossas/protean-quickstarts/blob/master/application-lifecycle-events/src/main/java/org/acme/events/AppLifecycleBean.java[AppLifecycleBean.java] class for details.
 
 == Package and run the application
 
@@ -96,4 +93,4 @@ Run the application with: `mvn compile shamrock:dev`, the logged message is prin
 When the application is stopped, the second log message is printed.
 
 As usual, the application can be packaged using `mvn clean package` and executed using the `-runner.jar` file.
-You can also generate the native executable.
+You can also generate the native executable using `mvn clean package -Pnative`.

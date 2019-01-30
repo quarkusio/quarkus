@@ -37,11 +37,11 @@ public class ShamrockClassWriter extends ClassWriter {
         ClassLoader cl = getClassLoader();
         Class<?> c1 = null, c2 = null;
         try {
-            c1 = cl.loadClass(type1);
+            c1 = cl.loadClass(type1.replace('/', '.'));
         } catch (ClassNotFoundException e) {
         }
         try {
-            c2 = cl.loadClass(type2);
+            c2 = cl.loadClass(type2.replace('/', '.'));
         } catch (ClassNotFoundException e) {
         }
         if (c1 != null && c2 != null) {

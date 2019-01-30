@@ -54,7 +54,7 @@ image:native-image-process.png[Creating a native executable, width=640]
 
 Before going further, be sure that the `GRAALVM_HOME` environment variable is configured appropriately.
 
-If you generated the application from the previous tutorial, you can find in the `pom.xml` the following _profile_:
+If you have generated the application from the previous tutorial, you can find in the `pom.xml` the following _profile_:
 
 [source,xml]
 ----
@@ -190,7 +190,7 @@ mvn package -Pnative -Dnative-image.docker-build=true
 
 The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.
 However, it's not an issue as we are going to copy it to a Docker container.
-The project generation has provided a `Dockerfile` in the `src/main/docker` with the following content:
+The project generation has provided a `Dockerfile` in the `src/main/docker` directory with the following content:
 
 [source]
 ----

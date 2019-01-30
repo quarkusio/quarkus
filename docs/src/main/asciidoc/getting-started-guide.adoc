@@ -135,7 +135,7 @@ ArC is a CDI-based dependency injection solution - see also link:cdi-reference.h
 
 === The JAX-RS resources
 
-During the project creation, the `src/main/java/org/acme/quickstart/GreetingResource.java` file as been created with the following content:
+During the project creation, the `src/main/java/org/acme/quickstart/GreetingResource.java` file has been created with the following content:
 
 [source,java]
 ----
@@ -157,7 +157,7 @@ public class GreetingResource {
 }
 ----
 
-It's a very simple REST endpoint, returning "hello" to request on "/hello".
+It's a very simple REST endpoint, returning "hello" to requests on "/hello".
 
 [TIP]
 .Differences with vanilla Jax-RS
@@ -284,8 +284,8 @@ In the generated `pom.xml` file, you can see 2 test dependencies:
 </dependency>
 ----
 
-Note that Shamrock uses JUnit 5 by default, which means that you may need to upgrade the version of surefire
-that is in use. This is done in `<build><plugins>` section of  `pom.xml`:
+Note that Shamrock uses JUnit 5 by default, which means that you may need to upgrade the version of the https://maven.apache.org/surefire/maven-surefire-plugin/[Surefire Maven Plugin] that is in use.
+This is done in the `<build><plugins>` section of  `pom.xml`:
 
 [source,xml,subs=attributes+]
 ----
@@ -295,7 +295,7 @@ that is in use. This is done in `<build><plugins>` section of  `pom.xml`:
 </plugin>
 ----
 
-The project generation contains a simple test.
+The generated project contains a simple test.
 Edit the `src/test/java/org/acme/quickstart/GreetingResourceTest.java` to match the following content:
 
 [source,java]
@@ -350,10 +350,12 @@ It produces 2 jar files:
 * `shamrock-quickstart-1.0-SNAPSHOT.jar` - containing just the classes and resources of the projects, it's the regular
 artifact produced by the Maven build;
 * `shamrock-quickstart-1.0-SNAPSHOT-runner.jar` - being an executable _jar_. Be aware that it's not an _über-jar_ as
-the dependencies are copied into the `target/lib` directory. Refer to the Maven plugin documentation to generate an
- _über-jar_ embedding the dependencies.
+the dependencies are copied into the `target/lib` directory.
 
 You can run the application using: `java -jar target/shamrock-quickstart-1.0-SNAPSHOT-runner.jar`
+
+NOTE: The `Class-Path` entry of the `MANIFEST.MF` from the _runner jar_ explicitly lists the jars from the `lib` directory.
+So if you want to deploy your application somewhere, you need to copy the _runner_ jar as well as the _lib_ directory.
 
 == Async
 

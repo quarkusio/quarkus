@@ -92,7 +92,6 @@ public String hello() {
 
 == Create the configuration
 
-We need to create the file providing the values.
 By default, Shamrock reads `META-INF/microprofile-config.properties`.
 Edit the `src/main/resources/META-INF/microprofile-config.properties` with the following content:
 
@@ -112,7 +111,7 @@ hello shamrock!
 ----
 
 TIP: If the application requires configuration values and these values are not set, an error is thrown.
-So you can quickly now when your configuration is complete.
+So you can quickly know when your configuration is complete.
 
 == Update the test
 

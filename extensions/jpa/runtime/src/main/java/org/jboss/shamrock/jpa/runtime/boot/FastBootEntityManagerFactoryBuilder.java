@@ -17,6 +17,7 @@
 package org.jboss.shamrock.jpa.runtime.boot;
 
 import java.io.Serializable;
+import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityNotFoundException;
@@ -105,6 +106,15 @@ public final class FastBootEntityManagerFactoryBuilder implements EntityManagerF
     }
 
     private PersistenceException persistenceException(String message, Exception cause) {
+        Throwable t = cause;
+        while(t != null) {
+            if(t instanceof NoSuchAlgorithmException) {
+                message += " Perhaps you need to enable SSL with the `shamrock.ssl.native=true` configuration, or"
+                        + " prevent drivers from using SSL with the `shamrock.datasource.ssl=disable` configuration.";
+                break;
+            }
+            t = t.getCause();
+        }
         return new PersistenceException(getExceptionHeader() + message, cause);
     }
 

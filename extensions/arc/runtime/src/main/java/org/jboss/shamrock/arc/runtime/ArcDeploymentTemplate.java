@@ -17,9 +17,11 @@
 package org.jboss.shamrock.arc.runtime;
 
 import java.lang.annotation.Annotation;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
 
+import org.jboss.logging.Logger;
 import org.jboss.protean.arc.Arc;
 import org.jboss.protean.arc.ArcContainer;
 import org.jboss.protean.arc.InstanceHandle;
@@ -34,6 +36,8 @@ import org.jboss.shamrock.runtime.Template;
  */
 @Template
 public class ArcDeploymentTemplate {
+    
+    private static final Logger LOGGER = Logger.getLogger(ArcDeploymentTemplate.class.getName());
 
     public ArcContainer getContainer(ShutdownContext shutdown) throws Exception {
         ArcContainer container = Arc.initialize();
@@ -46,19 +50,30 @@ public class ArcDeploymentTemplate {
         return container;
     }
 
-    public BeanContainer initBeanContainer(ArcContainer container, List<BeanContainerListener> listeners) throws Exception {
+    public BeanContainer initBeanContainer(ArcContainer container, List<BeanContainerListener> listeners, Collection<String> removedBeanTypes)
+            throws Exception {
         BeanContainer beanContainer = new BeanContainer() {
-
+            @SuppressWarnings("unchecked")
             @Override
             public <T> Factory<T> instanceFactory(Class<T> type, Annotation... qualifiers) {
-                Supplier<InstanceHandle<T>> handle = container.instanceSupplier(type, qualifiers);
-                if (handle == null) {
-                    return null;
+                Supplier<InstanceHandle<T>> handleSupplier = container.instanceSupplier(type, qualifiers);
+                if (handleSupplier == null) {
+                    if (removedBeanTypes.contains(type.getName())) {
+                        // Note that this only catches the simplest use cases
+                        LOGGER.warnf(
+                                "Bean matching %s was marked as unused and removed during build.\nExtensions can eliminate false positives using:\n\t- a custom UnremovableBeanBuildItem\n\t- AdditionalBeanBuildItem(false, beanClazz)",
+                                type);
+                    } else {
+                        LOGGER.warnf(
+                                "No matching bean found for type %s and qualifiers %s. The bean might have been marked as unused and removed during build.",
+                                type, qualifiers);
+                    }
+                    return (Factory<T>) Factory.EMPTY;
                 }
                 return new Factory<T>() {
                     @Override
                     public T get() {
-                        return handle.get().get();
+                        return handleSupplier.get().get();
                     }
                 };
             }

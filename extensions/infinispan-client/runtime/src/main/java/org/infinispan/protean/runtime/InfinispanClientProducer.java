@@ -41,7 +41,7 @@ public class InfinispanClientProducer {
     private BeanManager beanManager;
 
     private void initialize() {
-       log.info("Intializing CacheManager");
+       log.debug("Initializing CacheManager");
        Configuration conf;
         if (properties == null) {
            // We already loaded and it wasn't present - so use an empty config

@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
-import java.util.function.Predicate;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.infinispan.client.hotrod.exceptions.HotRodClientException;
@@ -46,7 +45,6 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Type;
-import org.jboss.protean.arc.processor.BeanInfo;
 import org.jboss.shamrock.annotations.BuildProducer;
 import org.jboss.shamrock.annotations.BuildStep;
 import org.jboss.shamrock.annotations.ExecutionTime;
@@ -89,7 +87,7 @@ class InfinispanClientProcessor {
         } else {
             try {
                 properties = loadFromStream(stream);
-                log.infof("Found HotRod properties of %s",  properties);
+                log.debugf("Found HotRod properties of %s",  properties);
             } finally {
                 Util.close(stream);
             }
@@ -177,7 +175,7 @@ class InfinispanClientProcessor {
         Properties properties = builderBuildItem.getProperties();
         if (infinispanConfig.isPresent()) {
             InfinispanConfiguration conf = infinispanConfig.get();
-            log.infof("Applying micro profile configuration on top of hotrod properties: %s", conf);
+            log.debugf("Applying micro profile configuration on top of hotrod properties: %s", conf);
             if (properties == null) {
                 properties = new Properties();
             }
@@ -194,7 +192,7 @@ class InfinispanClientProcessor {
           )));
 
     @BuildStep
-    UnremovableBeanBuildItem ensureBeanLookupAvailible2() {
+    UnremovableBeanBuildItem ensureBeanLookupAvailable() {
         return new UnremovableBeanBuildItem(beanInfo -> {
                 Set<Type> types = beanInfo.getTypes();
                 for (Type t : types) {

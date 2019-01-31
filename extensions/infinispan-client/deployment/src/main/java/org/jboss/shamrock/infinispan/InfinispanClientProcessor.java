@@ -194,7 +194,7 @@ class InfinispanClientProcessor {
           )));
 
     @BuildStep
-    UnremovableBeanBuildItem ensureBeanLookupAvailible2() {
+    UnremovableBeanBuildItem ensureBeanLookupAvailable() {
         return new UnremovableBeanBuildItem(beanInfo -> {
                 Set<Type> types = beanInfo.getTypes();
                 for (Type t : types) {

@@ -16,6 +16,7 @@
 
 package org.jboss.shamrock.example.test;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
 import org.jboss.shamrock.test.junit.ShamrockTest;
@@ -36,5 +37,12 @@ public class RestClientTestCase {
     public void testMicroprofileClientCDIIntegration() {
         RestAssured.when().get("/client/cdi").then()
                 .body(is("TEST"));
+    }
+
+    @Test
+    public void testDegradedSslSupport() {
+        RestAssured.when().get("/ssl").then()
+                .statusCode(500)
+                .body(containsString("SSL support"), containsString("disabled"));
     }
 }

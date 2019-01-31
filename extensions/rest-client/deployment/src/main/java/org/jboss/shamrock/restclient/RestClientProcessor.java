@@ -44,8 +44,10 @@ import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
 import org.jboss.shamrock.arc.deployment.BeanRegistrarBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
+import org.jboss.shamrock.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.SslNativeConfigBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
@@ -54,7 +56,7 @@ import org.jboss.shamrock.restclient.runtime.RestClientBase;
 import org.jboss.shamrock.restclient.runtime.RestClientProxy;
 
 class RestClientProcessor {
-    
+
     private static final DotName REST_CLIENT = DotName.createSimple(RestClient.class.getName());
 
     private static final DotName REGISTER_REST_CLIENT = DotName.createSimple(RegisterRestClient.class.getName());
@@ -76,12 +78,18 @@ class RestClientProcessor {
 
     @Inject
     BuildProducer<BeanRegistrarBuildItem> beanRegistrars;
-    
+
     @Inject
     BuildProducer<FeatureBuildItem> feature;
-    
+
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
+
+    @Inject
+    SslNativeConfigBuildItem SslNativeConfigBuildItem;
+
+    @Inject
+    BuildProducer<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport;
 
     @BuildStep
     public void build() throws Exception {
@@ -101,7 +109,7 @@ class RestClientProcessor {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl"));
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, "org.jboss.resteasy.plugins.providers.jsonb.JsonBindingProvider", "org.jboss.resteasy.plugins.providers.jsonb.AbstractJsonBindingProvider"));
         proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem(ResteasyConfiguration.class.getName()));
-        
+
         // According to the spec only rest client interfaces annotated with RegisterRestClient are registered as beans
         Map<DotName, ClassInfo> interfaces = new HashMap<>();
         for (AnnotationInstance annotation : combinedIndexBuildItem.getIndex().getAnnotations(REGISTER_REST_CLIENT)) {
@@ -119,7 +127,7 @@ class RestClientProcessor {
             }
             interfaces.put(theInfo.name(), theInfo);
         }
-        
+
         if (interfaces.isEmpty()) {
             return;
         }
@@ -130,7 +138,7 @@ class RestClientProcessor {
             proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem(iName, RestClientProxy.class.getName()));
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, iName));
         }
-        
+
         BeanRegistrar beanRegistrar = new BeanRegistrar() {
 
             @Override
@@ -154,5 +162,8 @@ class RestClientProcessor {
             }
         };
         beanRegistrars.produce(new BeanRegistrarBuildItem(beanRegistrar));
+
+        // Indicates that this extension would like the SSL support to be enabled
+        extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.MP_REST_CLIENT));
     }
 }

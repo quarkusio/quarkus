@@ -17,7 +17,9 @@
 package org.jboss.shamrock.jpa.runtime.boot;
 
 import java.io.Serializable;
+import java.security.NoSuchAlgorithmException;
 import java.util.Map;
+
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.PersistenceException;
@@ -105,6 +107,17 @@ public final class FastBootEntityManagerFactoryBuilder implements EntityManagerF
     }
 
     private PersistenceException persistenceException(String message, Exception cause) {
+        // Provide a comprehensible message if there is an issue with SSL support
+        Throwable t = cause;
+        while (t != null) {
+            if (t instanceof NoSuchAlgorithmException) {
+                message += "Unable to enable SSL support. You might be in the case where you used the `shamrock.ssl.native=false` configuration"
+                        + " and SSL was not disabled automatically for your driver.";
+                break;
+            }
+            t = t.getCause();
+        }
+
         return new PersistenceException(getExceptionHeader() + message, cause);
     }
 

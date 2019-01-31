@@ -12,8 +12,11 @@ import org.infinispan.protean.hibernate.cache.ManualTestService;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
+import java.util.function.Supplier;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -392,24 +395,6 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint extends HttpServlet {
 
     private static void testMaxSize(EntityManagerFactory emf) {
         addItemBeyondMaxSize(emf);
-        queryItemEvicted(emf);
-    }
-
-    private static void queryItemEvicted(EntityManagerFactory emf) {
-        Statistics stats = getStatistics(emf);
-
-        EntityManager em = emf.createEntityManager();
-        EntityTransaction transaction = em.getTransaction();
-        transaction.begin();
-        final Item i1 = em.find(Item.class, 1L);
-        final String expectedDesc = "Infinispan T-shirt";
-        if (!i1.getDescription().equals(expectedDesc))
-            throw new RuntimeException("Incorrect description: " + i1.getDescription() + ", expected: " + expectedDesc);
-
-        transaction.commit();
-        em.close();
-
-        assertRegionStats(new Counts(1, 0, 1, 3), Item.class.getName(), stats);
     }
 
     private static void addItemBeyondMaxSize(EntityManagerFactory emf) {
@@ -423,7 +408,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint extends HttpServlet {
         transaction.commit();
         em.close();
 
-        assertRegionStats(new Counts(1, 0, 0, 3), Item.class.getName(), stats);
+        assertRegionStatsEventually(new Counts(1, 0, 0, 3), Item.class.getName(), stats);
     }
 
     private static void testQuery(EntityManagerFactory entityManagerFactory) {
@@ -746,13 +731,53 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint extends HttpServlet {
     }
 
     private static void assertCountEquals(Counts expected, Counts actual, String msg) {
-        //FIXME this is currently failing often on CI, needs to be investigated.
-        //Seems to fail more often in native mode.
-        // - https://github.com/jbossas/protean-shamrock/issues/694
-        /*if (!expected.equals(actual))
+        if (!expected.equals(actual))
             throw new RuntimeException(
                     "[" + msg + "] expected " + expected + " second level cache count, instead got: " + actual
-            );*/
+        );
+    }
+
+    private static void assertRegionStatsEventually(Counts expected, String region, Statistics stats) {
+        eventually(() -> {
+            final CacheRegionStatistics cacheStats = stats.getDomainDataRegionStatistics(region);
+            final Counts actual = new Counts(
+                    cacheStats.getPutCount()
+                    , cacheStats.getHitCount()
+                    , cacheStats.getMissCount()
+                    , cacheStats.getElementCountInMemory()
+            );
+            if (!expected.equals(actual)) {
+                return new RuntimeException(
+                        "[" + region + "] expected " + expected + " second level cache count, instead got: " + actual
+                );
+            }
+
+            return null;
+        });
+    }
+
+    static void eventually(Supplier<RuntimeException> condition) {
+        eventually(Duration.ofSeconds(10).toMillis(), Duration.ofMillis(500).toMillis(), TimeUnit.MILLISECONDS, condition);
+    }
+
+    static void eventually(long timeout, long pollInterval, TimeUnit unit, Supplier<RuntimeException> condition) {
+        if (pollInterval <= 0) {
+            throw new IllegalArgumentException("Check interval must be positive");
+        }
+        try {
+            long expectedEndTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeout, unit);
+            long sleepMillis = TimeUnit.MILLISECONDS.convert(pollInterval, unit);
+            while (expectedEndTime - System.nanoTime() > 0) {
+                if (condition.get() == null) return;
+                Thread.sleep(sleepMillis);
+            }
+
+            final RuntimeException exception = condition.get();
+            if (exception != null)
+                throw exception;
+        } catch (Exception e) {
+            throw new RuntimeException("Unexpected!", e);
+        }
     }
 
     static final class Counts {

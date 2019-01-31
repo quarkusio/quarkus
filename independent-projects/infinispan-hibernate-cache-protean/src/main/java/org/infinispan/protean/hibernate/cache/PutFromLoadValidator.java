@@ -80,7 +80,7 @@ public final class PutFromLoadValidator {
     /**
      * Period (in nanoseconds) after which ongoing invalidation is removed.
      */
-    public static final long EXPIRATION_PERIOD = 60_000_000;
+    public static final long EXPIRATION_PERIOD = Duration.ofSeconds(60).toNanos();
 
     /**
      * Registry of expected, future, isPutValid calls. If a key+owner is registered in this map, it

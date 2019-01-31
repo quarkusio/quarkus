@@ -1,6 +1,4 @@
-<#if package_name??>
 package ${package_name};
-</#if>
 
 import org.jboss.shamrock.test.junit.ShamrockTest;
 import org.junit.jupiter.api.Test;

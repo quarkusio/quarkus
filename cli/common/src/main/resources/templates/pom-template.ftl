@@ -21,7 +21,7 @@
             <dependency>
                 <groupId>${plugin_groupId}</groupId>
                 <artifactId>${bom_artifactId}</artifactId>
-                <version>${r"${shamrock.version}"}</version>
+                <version>${shamrock.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -46,7 +46,7 @@
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
-            <version>${r"${restassured.version}"}</version>
+            <version>${restassured.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -56,7 +56,7 @@
             <plugin>
                 <groupId>${plugin_groupId}</groupId>
                 <artifactId>${plugin_artifactId}</artifactId>
-                <version>${r"${shamrock.version}"}</version>
+                <version>${shamrock.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -68,7 +68,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>${r"${surefire-plugin.version}"}</version>
+                <version>${surefire-plugin.version}</version>
             </plugin>
         </plugins>
     </build>
@@ -81,7 +81,7 @@
                     <plugin>
                         <groupId>${plugin_groupId}</groupId>
                         <artifactId>${plugin_artifactId}</artifactId>
-                        <version>${r"${shamrock.version}"}</version>
+                        <version>${shamrock.version}</version>
                         <executions>
                             <execution>
                                 <goals>

@@ -36,7 +36,7 @@ public class RunningInvoker extends MavenProcessInvoker {
         }
         installPluginToLocalRepository(new File(repo));
         setLocalRepositoryDirectory(new File(repo));
-        log = new File(basedir.getParentFile(), "build-" + basedir.getName() + ".log");
+        log = new File(basedir, "build-" + basedir.getName() + ".log");
         PrintStream stream = new PrintStream(log);
         logHandler = new PrintStreamHandler(stream, true);
         setErrorHandler(logHandler);

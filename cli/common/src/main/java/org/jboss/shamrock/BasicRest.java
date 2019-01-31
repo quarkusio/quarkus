@@ -1,17 +1,22 @@
 package org.jboss.shamrock;
 
-import freemarker.template.TemplateException;
 import org.apache.maven.model.Model;
 import org.jboss.shamrock.maven.utilities.MojoUtils;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
+
+import static java.lang.String.format;
 
 public class BasicRest extends ShamrockTemplate {
     private Map<String, Object> context;
@@ -92,7 +97,7 @@ public class BasicRest extends ShamrockTemplate {
         }
 
         className = get("className",
-            String.format("%s.%s.%s", context.get(PROJECT_GROUP_ID), context.get(PROJECT_ARTIFACT_ID),
+            format("%s.%s.%s", context.get(PROJECT_GROUP_ID), context.get(PROJECT_ARTIFACT_ID),
                 "MyResource"));
         path = get(RESOURCE_PATH, path);
 
@@ -105,11 +110,14 @@ public class BasicRest extends ShamrockTemplate {
     private void generate(final String templateName, final Map<String, Object> context, final File outputFile, final String resourceType)
         throws IOException {
         if (!outputFile.exists()) {
-            try (Writer out = new FileWriter(outputFile)) {
-                cfg.getTemplate(templateName)
-                   .process(context, out);
-            } catch (TemplateException e) {
-                throw new RuntimeException("Unable to generate " + resourceType, e);
+            String path = templateName.startsWith("/") ? templateName : "/" + templateName;
+            try (Writer out = new FileWriter(outputFile);
+                 final BufferedReader stream = new BufferedReader(new InputStreamReader(getClass().getResourceAsStream(path)))) {
+                String template = stream.lines().collect(Collectors.joining("\n"));
+                for (Entry<String, Object> e : context.entrySet()) {
+                    template = template.replace(format("${%s}", e.getKey()), e.getValue().toString());
+                }
+                out.write(template);
             }
         }
     }

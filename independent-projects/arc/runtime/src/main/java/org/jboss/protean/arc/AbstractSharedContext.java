@@ -67,7 +67,7 @@ abstract class AbstractSharedContext implements InjectableContext {
 
     @Override
     public synchronized void destroy() {
-        instances.forEachValue(InstanceHandleImpl::destroyInternal);
+        instances.forEachExistingValue(InstanceHandleImpl::destroyInternal);
         instances.clear();
     }
 

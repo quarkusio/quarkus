@@ -33,33 +33,35 @@ import java.util.function.Function;
  */
 public class ComputingCache<K, V> {
 
-    private final ConcurrentMap<K, V> map;
+    private final ConcurrentMap<K, LazyValue<V>> map;
 
-    private final Function<K, V> function;
+    private final Function<K, LazyValue<V>> function;
 
     public ComputingCache(Function<K, V> computingFunction) {
         this.map = new ConcurrentHashMap<>();
-        this.function = computingFunction;
+        this.function = new CacheFunction(computingFunction);
     }
 
     public V getValue(K key) {
-        V value = map.get(key);
+        LazyValue<V> value = map.get(key);
         if (value == null) {
             value = function.apply(key);
-            V previous = map.putIfAbsent(key, value);
+            LazyValue<V> previous = map.putIfAbsent(key, value);
             if (previous != null) {
                 value = previous;
             }
         }
-        return value;
+        return value.get();
     }
 
     public V getValueIfPresent(K key) {
-        return map.get(key);
+        LazyValue<V> value = map.get(key);
+        return value != null ? value.getIfPresent() :null;
     }
 
     public V remove(K key) {
-        return map.remove(key);
+        LazyValue<V> previous = map.remove(key);
+        return previous != null ? previous.get() : null;
     }
 
     public void clear() {
@@ -68,20 +70,44 @@ public class ComputingCache<K, V> {
 
     public void forEachValue(Consumer<? super V> action) {
         Objects.requireNonNull(action);
-        for (V value : map.values()) {
-            action.accept(value);
+        for (LazyValue<V> value : map.values()) {
+            action.accept(value.get());
+        }
+    }
+
+    public void forEachExistingValue(Consumer<? super V> action) {
+        Objects.requireNonNull(action);
+        for (LazyValue<V> value : map.values()) {
+            if(value.isSet()) {
+                action.accept(value.get());
+            }
         }
     }
 
     public void forEachEntry(BiConsumer<? super K, ? super V> action) {
         Objects.requireNonNull(action);
-        for (Map.Entry<K, V> entry : map.entrySet()) {
-            action.accept(entry.getKey(), entry.getValue());
+        for (Map.Entry<K, LazyValue<V>> entry : map.entrySet()) {
+            action.accept(entry.getKey(), entry.getValue().get());
         }
     }
 
     public boolean isEmpty() {
         return map.isEmpty();
+    }
+
+    class CacheFunction implements Function<K, LazyValue<V>> {
+
+        private final Function<K, V> computingFunction;
+
+        public CacheFunction(Function<K, V> computingFunction) {
+            this.computingFunction = computingFunction;
+        }
+
+        @Override
+        public LazyValue<V> apply(K key) {
+            return new LazyValue<V>(() -> computingFunction.apply(key));
+        }
+
     }
 
 }

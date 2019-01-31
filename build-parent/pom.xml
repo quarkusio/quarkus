@@ -25,7 +25,7 @@
 
    <properties>
       <jandex.version>2.1.0.Final</jandex.version>
-      <resteasy.version>4.0.0.Beta6</resteasy.version>
+      <resteasy.version>4.0.0.Beta8</resteasy.version>
       <opentracing.version>0.31.0</opentracing.version>
       <opentracing-jaxrs.version>0.3.1</opentracing-jaxrs.version>
       <opentracing-web-servlet-filter.version>0.2.2</opentracing-web-servlet-filter.version>
@@ -69,7 +69,7 @@
       <!-- The Graal version we suggest using in documentation - as that's 
          what we work with by self downloading it: -->
       <graal-sdk.version-for-documentation>1.0.0-rc11</graal-sdk.version-for-documentation>
-      <jackson.version>2.9.5</jackson.version>
+      <jackson.version>2.9.8</jackson.version>
       <commons-beanutils-core.version>1.8.3</commons-beanutils-core.version>
       <commons-logging.version>1.2</commons-logging.version>
       <validation-api.version>2.0.1.Final</validation-api.version>
@@ -1002,7 +1002,7 @@
                </exclusion>
                <exclusion>
                   <groupId>org.jboss.spec.javax.annotation</groupId>
-                  <artifactId>jboss-annotations-api_1.2_spec</artifactId>
+                  <artifactId>jboss-annotations-api_1.3_spec</artifactId>
                </exclusion>
                <exclusion>
                   <groupId>javax.activation</groupId>
@@ -1021,7 +1021,7 @@
                </exclusion>
                <exclusion>
                   <groupId>org.jboss.spec.javax.annotation</groupId>
-                  <artifactId>jboss-annotations-api_1.2_spec</artifactId>
+                  <artifactId>jboss-annotations-api_1.3_spec</artifactId>
                </exclusion>
                <exclusion>
                   <groupId>javax.activation</groupId>

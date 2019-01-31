@@ -19,6 +19,9 @@ package org.jboss.shamrock.example.rest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+@RegisterRestClient
 @Path("/test")
 public interface RestInterface {
 

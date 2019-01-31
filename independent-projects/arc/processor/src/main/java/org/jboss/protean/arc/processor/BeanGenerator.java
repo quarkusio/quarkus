@@ -139,11 +139,13 @@ public class BeanGenerator extends AbstractGenerator {
         } else {
             baseName = DotNames.simpleName(bean.getImplClazz().name());
         }
+        baseName += SYNTHETIC_SUFFIX;
+        
         Type providerType = bean.getProviderType();
         ClassInfo providerClass = bean.getDeployment().getIndex().getClassByName(providerType.name());
         String providerTypeName = providerClass.name().toString();
         String targetPackage = getPackageName(bean);
-        String generatedName = targetPackage.replace('.', '/') + "/" + baseName + SYNTHETIC_SUFFIX + BEAN_SUFFIX;
+        String generatedName = targetPackage.replace('.', '/') + "/" + baseName + BEAN_SUFFIX;
         
         boolean isApplicationClass = applicationClassPredicate.test(bean.getImplClazz().name());
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass, name -> name.equals(generatedName) ? SpecialType.BEAN : null);

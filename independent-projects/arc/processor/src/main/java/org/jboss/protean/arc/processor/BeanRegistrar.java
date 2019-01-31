@@ -16,6 +16,7 @@
 
 package org.jboss.protean.arc.processor;
 
+import org.jboss.jandex.DotName;
 import org.jboss.protean.arc.InjectableBean;
 
 /**
@@ -31,7 +32,6 @@ public interface BeanRegistrar extends BuildExtension {
      */
     void register(RegistrationContext registrationContext);
 
-
     interface RegistrationContext extends BuildContext {
 
         /**
@@ -39,7 +39,11 @@ public interface BeanRegistrar extends BuildExtension {
          * @param beanClass
          * @return a new synthetic bean builder
          */
-        <T> BeanConfigurator<T> configure(Class<?> beanClass);
+        <T> BeanConfigurator<T> configure(DotName beanClassName);
+
+        default <T> BeanConfigurator<T> configure(Class<?> beanClass) {
+            return configure(DotName.createSimple(beanClass.getName()));
+        }
 
         // TODO add synthetic observer?
 

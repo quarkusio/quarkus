@@ -18,17 +18,15 @@ package org.jboss.shamrock.agroal;
 
 import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
 
-import java.util.function.Consumer;
-
 import org.jboss.logging.Logger;
 import org.jboss.shamrock.agroal.runtime.DataSourceConfig;
 import org.jboss.shamrock.agroal.runtime.DataSourceProducer;
 import org.jboss.shamrock.agroal.runtime.DataSourceTemplate;
+import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
+import org.jboss.shamrock.arc.deployment.BeanContainerListenerBuildItem;
 import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
-import org.jboss.shamrock.arc.deployment.BeanContainerListenerBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 
 class AgroalProcessor {
@@ -40,7 +38,6 @@ class AgroalProcessor {
      */
     DataSourceConfig datasource;
 
-
     @BuildStep
     AdditionalBeanBuildItem registerBean() {
         return new AdditionalBeanBuildItem(false, DataSourceProducer.class);
@@ -50,9 +47,14 @@ class AgroalProcessor {
     @BuildStep
     BeanContainerListenerBuildItem build(
         BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-        DataSourceTemplate template,
-        Consumer<DataSourceDriverBuildItem> driverBuildItemConsumer
+        BuildProducer<DataSourceDriverBuildItem> datasourceDriver,
+        DataSourceTemplate template
     ) throws Exception {
+        if (! datasource.url.isPresent() || ! datasource.driver.isPresent()) {
+            log.warn("Agroal extension was included in build however no data source URL and/or driver class has been defined");
+            return null;
+        }
+
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
                 io.agroal.pool.ConnectionHandler[].class.getName(),
                 io.agroal.pool.ConnectionHandler.class.getName(),
@@ -61,17 +63,14 @@ class AgroalProcessor {
                 java.sql.ResultSet.class.getName(),
                 java.sql.ResultSet[].class.getName()
         ));
-        if (! datasource.url.isPresent() || ! datasource.driver.isPresent()) {
-            log.warn("Agroal extension was included in build however no data source URL and/or driver class has been defined");
-            return null;
-        }
 
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, datasource.url.get()));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, datasource.driver.get()));
+
         if (datasource.driver.isPresent()) {
-            driverBuildItemConsumer.accept(new DataSourceDriverBuildItem(datasource.driver.get()));
+            datasourceDriver.produce(new DataSourceDriverBuildItem(datasource.driver.get()));
         }
-        return new BeanContainerListenerBuildItem(template.addDatasource(datasource));
 
+        return new BeanContainerListenerBuildItem(template.addDatasource(datasource));
     }
 
 }

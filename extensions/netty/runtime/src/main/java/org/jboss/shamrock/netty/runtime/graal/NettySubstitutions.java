@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.netty.runtime.graalsubstitutions;
+package org.jboss.shamrock.netty.runtime.graal;
 
 import java.security.PrivateKey;
 import java.security.Provider;

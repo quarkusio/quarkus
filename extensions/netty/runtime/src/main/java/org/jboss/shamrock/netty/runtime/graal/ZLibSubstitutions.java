@@ -1,4 +1,4 @@
-package org.jboss.shamrock.netty.runtime.graalsubstitutions;
+package org.jboss.shamrock.netty.runtime.graal;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;

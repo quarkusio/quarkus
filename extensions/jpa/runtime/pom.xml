@@ -59,6 +59,13 @@
             <artifactId>infinispan-hibernate-cache-protean</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- Technically the shamrock-caffeine-runtime belongs as a dependency to the Protean Caching layer,
+          but since this is currently shaped as a non-shamrock external project I'd rather not have it depend on
+          other Shamrock components (yet) -->
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-caffeine-runtime</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

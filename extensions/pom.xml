@@ -71,6 +71,9 @@
 
         <!-- Infinispan -->
         <module>infinispan-client</module>
+
+        <!-- Caching -->
+        <module>caffeine</module>
     </modules>
 
 </project>

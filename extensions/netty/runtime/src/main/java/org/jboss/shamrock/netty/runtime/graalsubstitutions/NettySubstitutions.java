@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.vertx.runtime.graal;
+package org.jboss.shamrock.netty.runtime.graalsubstitutions;
 
 import java.security.PrivateKey;
 import java.security.Provider;
@@ -113,7 +113,7 @@ final class Target_io_netty_handler_ssl_JdkSslServerContext {
                                                     String keyPassword, KeyManagerFactory keyManagerFactory, Iterable<String> ciphers,
                                                     CipherSuiteFilter cipherFilter, ApplicationProtocolConfig apn, long sessionCacheSize,
                                                     long sessionTimeout, ClientAuth clientAuth, String[] protocols, boolean startTls)
-            throws SSLException {}
+          throws SSLException {}
 }
 
 @TargetClass(className = "io.netty.handler.ssl.JdkSslClientContext")
@@ -125,7 +125,7 @@ final class Target_io_netty_handler_ssl_JdkSslClientContext {
                                                     String keyPassword, KeyManagerFactory keyManagerFactory, Iterable<String> ciphers,
                                                     CipherSuiteFilter cipherFilter, ApplicationProtocolConfig apn, String[] protocols,
                                                     long sessionCacheSize, long sessionTimeout)
-            throws SSLException {}
+          throws SSLException {}
 }
 
 @TargetClass(className = "io.netty.handler.ssl.SslHandler$SslEngineType")
@@ -160,14 +160,14 @@ final class Target_io_netty_handler_ssl_SslContext {
                                                CipherSuiteFilter cipherFilter, ApplicationProtocolConfig apn, long sessionCacheSize,
                                                long sessionTimeout, ClientAuth clientAuth, String[] protocols, boolean startTls,
                                                boolean enableOcsp)
-            throws SSLException {
+          throws SSLException {
 
         if (enableOcsp) {
             throw new IllegalArgumentException("OCSP is not supported with this SslProvider: " + provider);
         }
         return (SslContext) (Object) new Target_io_netty_handler_ssl_JdkSslServerContext(sslContextProvider, trustCertCollection,
-                trustManagerFactory, keyCertChain, key, keyPassword, keyManagerFactory, ciphers, cipherFilter, apn, sessionCacheSize,
-                sessionTimeout, clientAuth, protocols, startTls);
+              trustManagerFactory, keyCertChain, key, keyPassword, keyManagerFactory, ciphers, cipherFilter, apn, sessionCacheSize,
+              sessionTimeout, clientAuth, protocols, startTls);
     }
 
     @Substitute
@@ -176,12 +176,12 @@ final class Target_io_netty_handler_ssl_SslContext {
                                                String keyPassword, KeyManagerFactory keyManagerFactory, Iterable<String> ciphers,
                                                CipherSuiteFilter cipherFilter, ApplicationProtocolConfig apn, String[] protocols,
                                                long sessionCacheSize, long sessionTimeout, boolean enableOcsp)
-            throws SSLException {
+          throws SSLException {
         if (enableOcsp) {
             throw new IllegalArgumentException("OCSP is not supported with this SslProvider: " + provider);
         }
         return (SslContext) (Object) new Target_io_netty_handler_ssl_JdkSslClientContext(sslContextProvider, trustCert, trustManagerFactory,
-                keyCertChain, key, keyPassword, keyManagerFactory, ciphers, cipherFilter, apn, protocols, sessionCacheSize, sessionTimeout);
+              keyCertChain, key, keyPassword, keyManagerFactory, ciphers, cipherFilter, apn, protocols, sessionCacheSize, sessionTimeout);
     }
 
 }
@@ -203,11 +203,11 @@ final class Target_io_netty_handler_ssl_JdkSslContext {
         }
 
         switch (config.protocol()) {
-        case NONE:
-            return (JdkApplicationProtocolNegotiator) (Object) Target_io_netty_handler_ssl_JdkDefaultApplicationProtocolNegotiator.INSTANCE;
-        case ALPN:
-            if (isServer) {
-            	// GRAAL RC9 bug: https://github.com/oracle/graal/issues/813
+            case NONE:
+                return (JdkApplicationProtocolNegotiator) (Object) Target_io_netty_handler_ssl_JdkDefaultApplicationProtocolNegotiator.INSTANCE;
+            case ALPN:
+                if (isServer) {
+                    // GRAAL RC9 bug: https://github.com/oracle/graal/issues/813
 //                switch(config.selectorFailureBehavior()) {
 //                case FATAL_ALERT:
 //                    return new JdkAlpnApplicationProtocolNegotiator(true, config.supportedProtocols());
@@ -217,35 +217,35 @@ final class Target_io_netty_handler_ssl_JdkSslContext {
 //                    throw new UnsupportedOperationException(new StringBuilder("JDK provider does not support ")
 //                    .append(config.selectorFailureBehavior()).append(" failure behavior").toString());
 //                }
-                SelectorFailureBehavior behavior = config.selectorFailureBehavior();
-                if (behavior == SelectorFailureBehavior.FATAL_ALERT)
-                    return new JdkAlpnApplicationProtocolNegotiator(true, config.supportedProtocols());
-                else if (behavior == SelectorFailureBehavior.NO_ADVERTISE)
-                    return new JdkAlpnApplicationProtocolNegotiator(false, config.supportedProtocols());
-                else {
-                    throw new UnsupportedOperationException(new StringBuilder("JDK provider does not support ")
-                            .append(config.selectorFailureBehavior()).append(" failure behavior").toString());
+                    SelectorFailureBehavior behavior = config.selectorFailureBehavior();
+                    if (behavior == SelectorFailureBehavior.FATAL_ALERT)
+                        return new JdkAlpnApplicationProtocolNegotiator(true, config.supportedProtocols());
+                    else if (behavior == SelectorFailureBehavior.NO_ADVERTISE)
+                        return new JdkAlpnApplicationProtocolNegotiator(false, config.supportedProtocols());
+                    else {
+                        throw new UnsupportedOperationException(new StringBuilder("JDK provider does not support ")
+                              .append(config.selectorFailureBehavior()).append(" failure behavior").toString());
+                    }
+                } else {
+                    switch (config.selectedListenerFailureBehavior()) {
+                        case ACCEPT:
+                            return new JdkAlpnApplicationProtocolNegotiator(false, config.supportedProtocols());
+                        case FATAL_ALERT:
+                            return new JdkAlpnApplicationProtocolNegotiator(true, config.supportedProtocols());
+                        default:
+                            throw new UnsupportedOperationException(new StringBuilder("JDK provider does not support ")
+                                  .append(config.selectedListenerFailureBehavior()).append(" failure behavior").toString());
+                    }
                 }
-            } else {
-                switch (config.selectedListenerFailureBehavior()) {
-                case ACCEPT:
-                    return new JdkAlpnApplicationProtocolNegotiator(false, config.supportedProtocols());
-                case FATAL_ALERT:
-                    return new JdkAlpnApplicationProtocolNegotiator(true, config.supportedProtocols());
-                default:
-                    throw new UnsupportedOperationException(new StringBuilder("JDK provider does not support ")
-                            .append(config.selectedListenerFailureBehavior()).append(" failure behavior").toString());
-                }
-            }
-        default:
-            throw new UnsupportedOperationException(
-                    new StringBuilder("JDK provider does not support ").append(config.protocol()).append(" protocol").toString());
+            default:
+                throw new UnsupportedOperationException(
+                      new StringBuilder("JDK provider does not support ").append(config.protocol()).append(" protocol").toString());
         }
     }
 
 }
 
-/* 
+/*
  * This one only prints exceptions otherwise we get a useless bogus
  * exception message: https://github.com/eclipse-vertx/vert.x/issues/1657
  */
@@ -304,5 +304,5 @@ final class Target_io_netty_bootstrap_AbstractBootstrap {
 }
 
 class NettySubstitutions {
-    
+
 }

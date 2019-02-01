@@ -42,6 +42,10 @@
             <artifactId>shamrock-caffeine-runtime</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-netty-runtime</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.infinispan</groupId>
             <artifactId>infinispan-client-hotrod</artifactId>
             <exclusions>

@@ -8,12 +8,15 @@ Then, you can scaffold a new project with:
 
 [source,subs=attributes+]
 ----
-mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
+mvn -B org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
     -DprojectGroupId=my-groupId \
     -DprojectArtifactId=my-artifactId \
     -DprojectVersion=my-version \
     -DclassName="org.my.group.MyResource"
 ----
+
+NOTE: If you just launch `mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create` the Maven plugin ask
+for user inputs.
 
 The following table lists the attributes you can pass to the `create` command:
 

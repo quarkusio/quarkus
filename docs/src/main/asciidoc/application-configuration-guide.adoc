@@ -29,7 +29,7 @@ First, we need a new project. Create a new project with the following command:
 
 [source]
 ----
-mvn org.jboss.shamrock:shamrock-maven-plugin:1.0.0.Alpha1-SNAPSHOT:create \
+mvn -B org.jboss.shamrock:shamrock-maven-plugin:1.0.0.Alpha1-SNAPSHOT:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=application-configuration \
     -DclassName="org.acme.config.GreetingResource" \

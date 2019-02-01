@@ -126,6 +126,11 @@ public class NativeImageMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
 
+        if (! buildDir.isDirectory()  || ! new File(buildDir, "lib").isDirectory()) {
+            throw new MojoFailureException("Unable to find the required build output. " +
+                    "Please ensure that the 'build' goal has been properly configured for the project - since it is a prerequisite of the 'native-image' goal");
+        }
+
         try(AppCreator appCreator = AppCreator.builder()
                 // configure the build phase we want the app to go through
                 .addPhase(new NativeImagePhase()

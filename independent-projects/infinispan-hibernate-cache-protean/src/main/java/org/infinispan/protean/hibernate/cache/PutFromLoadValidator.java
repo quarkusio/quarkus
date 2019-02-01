@@ -78,9 +78,11 @@ public final class PutFromLoadValidator {
     private static final boolean trace = log.isTraceEnabled();
 
     /**
-     * Period (in nanoseconds) after which ongoing invalidation is removed.
+     * Period (in milliseconds) after which ongoing invalidation is removed.
+     * Needs to be milliseconds because it will be compared with {@link RegionFactory#nextTimestamp()},
+     * and that method is expected to return milliseconds.
      */
-    public static final long EXPIRATION_PERIOD = 60_000_000;
+    private static final long EXPIRATION_PERIOD = Duration.ofSeconds(60).toMillis();
 
     /**
      * Registry of expected, future, isPutValid calls. If a key+owner is registered in this map, it
@@ -120,7 +122,7 @@ public final class PutFromLoadValidator {
         this.nextTimestamp = regionFactory::nextTimestamp;
 
         this.pendingPuts = Caffeine.newBuilder()
-                .expireAfterAccess(Duration.ofNanos(EXPIRATION_PERIOD))
+                .expireAfterAccess(Duration.ofMillis(EXPIRATION_PERIOD))
                 .build();
     }
 

@@ -190,7 +190,7 @@ final class DomainDataRegionImpl implements DomainDataRegion, ExtendedStatistics
                 break;
             case VERSIONED_ENTRIES:
                 // no need to use this as a function - simply override all
-                VersionedEntry evict = new VersionedEntry(regionFactory.nextTimestamp(), PutFromLoadValidator.EXPIRATION_PERIOD);
+                VersionedEntry evict = new VersionedEntry(regionFactory.nextTimestamp(), VersionedEntry.TOMBSTONE_LIFESPAN);
                 removeEntries(entry -> cache.put(entry.getKey(), evict));
                 break;
         }

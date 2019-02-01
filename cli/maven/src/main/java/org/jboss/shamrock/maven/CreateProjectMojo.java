@@ -47,11 +47,12 @@ public class CreateProjectMojo extends AbstractMojo {
 
     public static final String PLUGIN_KEY = MojoUtils.getPluginGroupId() + ":" + MojoUtils.getPluginArtifactId();
 
+    private static final String DEFAULT_GROUP_ID = "org.acme.shamrock.sample";
     /**
      * FQCN of the generated resources when applied on a project with an existing `pom.xml` file and the user
      * does not pass the `className` parameter.
      */
-    private static final String DEFAULT_CLASS_NAME = "io.jboss.shamrock.sample.HelloResource";
+    private static final String DEFAULT_CLASS_NAME = DEFAULT_GROUP_ID + ".HelloResource";
 
     @Parameter(defaultValue = "${project}")
     protected MavenProject project;
@@ -142,7 +143,7 @@ public class CreateProjectMojo extends AbstractMojo {
         if (! session.getRequest().isInteractiveMode()) {
             // Inject default values in all non-set parameters
             if (StringUtils.isBlank(projectGroupId)) {
-                projectGroupId = "io.jboss.shamrock.sample";
+                projectGroupId = DEFAULT_GROUP_ID;
             }
             if (StringUtils.isBlank(projectArtifactId)) {
                 projectArtifactId = "my-shamrock-project";
@@ -156,7 +157,7 @@ public class CreateProjectMojo extends AbstractMojo {
         try {
             if (StringUtils.isBlank(projectGroupId)) {
                 projectGroupId = prompter.promptWithDefaultValue("Set the project groupId",
-                        "io.jboss.shamrock.sample");
+                        DEFAULT_GROUP_ID);
             }
 
             if (StringUtils.isBlank(projectArtifactId)) {

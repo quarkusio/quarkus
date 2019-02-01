@@ -240,7 +240,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         Properties properties = new Properties();
         properties.put("className", "MyGreatResource");
         setup(properties);
-        check(new File(testDir, "src/main/java/io/jboss/shamrock/sample/MyGreatResource.java"), "package io.jboss.shamrock.sample;");
+        check(new File(testDir, "src/main/java/org/acme/shamrock/sample/MyGreatResource.java"), "package org.acme.shamrock.sample;");
     }
 
 

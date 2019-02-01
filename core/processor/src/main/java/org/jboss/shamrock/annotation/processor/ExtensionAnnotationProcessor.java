@@ -58,8 +58,10 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.PrimitiveType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic;
+import javax.tools.Diagnostic.Kind;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
 
@@ -396,7 +398,16 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         final PackageElement packageElement = processingEnv.getElementUtils().getPackageOf(clazz);
         final String className = getRelativeBinaryName(clazz, new StringBuilder()).append("$$accessor").toString();
         final JSourceFile sourceFile = sources.createSourceFile(packageElement.getQualifiedName().toString(), className);
-        final JType clazzType = JTypes.typeOf(clazz.asType());
+        JType clazzType = JTypes.typeOf(clazz.asType());
+        if(clazz.asType() instanceof DeclaredType) {
+            DeclaredType declaredType = ((DeclaredType)clazz.asType());
+            TypeMirror enclosingType = declaredType.getEnclosingType();
+            if(enclosingType != null && enclosingType.getKind() == TypeKind.DECLARED
+                    && clazz.getModifiers().contains(Modifier.STATIC)) {
+                // Ugly workaround for Eclipse APT and static nested types
+                clazzType = unnestStaticNestedType(declaredType);
+            }
+        }
         final JClassDef classDef = sourceFile._class(JMod.PUBLIC | JMod.FINAL, className);
         classDef.constructor(JMod.PRIVATE); // no construction
         final JAssignableExpr instanceName = JExprs.name(INSTANCE_SYM);
@@ -451,6 +462,23 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         } catch (IOException e) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to generate source file: " + e, clazz);
         }
+    }
+
+    private JType unnestStaticNestedType(DeclaredType declaredType) {
+        final TypeElement typeElement = (TypeElement) declaredType.asElement();
+
+        final String name = typeElement.getQualifiedName().toString();
+        final JType rawType = JTypes.typeNamed(name);
+        final List<? extends TypeMirror> typeArguments = declaredType.getTypeArguments();
+        if (typeArguments.isEmpty()) {
+            return rawType;
+        }
+        JType[] args = new JType[typeArguments.size()];
+        for (int i = 0; i < typeArguments.size(); i++) {
+            final TypeMirror argument = typeArguments.get(i);
+            args[i] = JTypes.typeOf(argument);
+        }
+        return rawType.typeArg(args);
     }
 
     private void appendParamTypes(ExecutableElement ex, final StringBuilder buf) {

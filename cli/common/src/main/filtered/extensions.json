@@ -62,6 +62,15 @@
     "artifactId": "shamrock-jaxrs-deployment"
   },
   {
+    "name": "JAX-RS - JSON",
+    "labels": [
+      "jaxrs-json",
+      "resteasy-json"
+    ],
+    "groupId": "org.jboss.shamrock",
+    "artifactId": "shamrock-jaxrs-json-deployment"
+  },
+  {
     "name": "JPA",
     "labels": [
       "jpa",
@@ -170,15 +179,5 @@
     ],
     "groupId": "org.jboss.shamrock",
     "artifactId": "shamrock-websockets-deployment"
-  },
-  {
-    "name": "JSON",
-    "labels": [
-      "json",
-      "jackson"
-    ],
-    "groupId": "org.jboss.resteasy",
-    "artifactId": "resteasy-jackson2-provider",
-    "version": "${resteasy.version}"
   }
 ]

@@ -30,6 +30,7 @@ import java.util.function.Supplier;
 
 import javax.servlet.ServletContext;
 
+import io.undertow.security.idm.IdentityManager;
 import org.jboss.logging.Logger;
 import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.runtime.annotations.Template;
@@ -184,7 +185,7 @@ public class SecurityTemplate {
                 .setRoleDecoder(new RoleDecoder() {
                     @Override
                     public Roles decodeRoles(AuthorizationIdentity authorizationIdentity) {
-                        SimpleAttributesEntry groups = (SimpleAttributesEntry) authorizationIdentity.getAttributes().get("groups");
+                        Attributes.Entry groups = authorizationIdentity.getAttributes().get("groups");
                         Set<String> roles = new HashSet<>(groups);
                         return new Roles() {
                             @Override
@@ -237,14 +238,26 @@ public class SecurityTemplate {
     }
 
     /**
+     * Create an ElytronIdentityManager for the given SecurityDomain
+     * @param domain - configured SecurityDomain
+     * @return runtime value for ElytronIdentityManager
+     */
+    public RuntimeValue<IdentityManager> createIdentityManager(RuntimeValue<SecurityDomain> domain) {
+        return new RuntimeValue<>(new ElytronIdentityManager(domain.getValue()));
+    }
+
+    /**
      * Called to create a {@linkplain ServletExtension} to associate the {@linkplain ElytronIdentityManager} with the
      * deployment.
      *
      * @param domain - the SecurityDomain to use for auth decisions
+     * @param identityManager - the IdentityManager for auth decisions
      * @param authConfigs - the authenticaiton methods to register with the deployment {@linkplain LoginConfig}
      * @return - the ServletExtension instance to register
      */
-    public ServletExtension configureUndertowIdentityManager(RuntimeValue<SecurityDomain> domain, List<AuthConfig> authConfigs) {
+    public ServletExtension configureUndertowIdentityManager(RuntimeValue<SecurityDomain> domain,
+                                                             RuntimeValue<IdentityManager> identityManager,
+                                                             List<AuthConfig> authConfigs) {
         return new ServletExtension() {
             @Override
             public void handleDeployment(DeploymentInfo deploymentInfo, ServletContext servletContext) {
@@ -258,7 +271,7 @@ public class SecurityTemplate {
                     }
                     deploymentInfo.setLoginConfig(loginConfig);
                 }
-                deploymentInfo.setIdentityManager(new ElytronIdentityManager(domain.getValue()));
+                deploymentInfo.setIdentityManager(identityManager.getValue());
             }
         };
     }

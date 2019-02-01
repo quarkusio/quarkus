@@ -41,6 +41,10 @@
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-infinispan-client-runtime</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-caffeine-deployment</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

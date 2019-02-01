@@ -171,39 +171,54 @@ public class CreateProjectMojo extends AbstractMojo {
             }
 
             if (StringUtils.isBlank(className)) {
-                String defaultResourceName = projectGroupId.replace("-", ".")
-                        .replace("_", ".") + ".HelloResource";
-
-                className = prompter.promptWithDefaultValue("Set the resource classname", defaultResourceName);
+                // Ask the user if he want to create a resource
+                String answer = prompter.promptWithDefaultValue("Do you want to create a REST resource?", "yes");
+                if (isTrueOrYes(answer)) {
+                    String defaultResourceName = projectGroupId.replace("-", ".")
+                            .replace("_", ".") + ".HelloResource";
+                    className = prompter.promptWithDefaultValue("Set the resource classname", defaultResourceName);
+                    if (StringUtils.isBlank(path)) {
+                        path = prompter.promptWithDefaultValue("Set the resource path ", "/hello");
+                    }
+                } else {
+                    className = null;
+                    path = null;
+                }
             }
 
-            if (StringUtils.isBlank(path)) {
-                path = prompter.promptWithDefaultValue("Set the resource path ", "/hello");
-            }
+
         } catch (IOException e) {
             throw new MojoExecutionException("Unable to get user input", e);
         }
     }
 
+    private boolean isTrueOrYes(String answer) {
+        if (answer == null) {
+            return false;
+        }
+        String content = answer.trim();
+        return "true".equalsIgnoreCase(content) || "yes".equalsIgnoreCase(content) || "y".equalsIgnoreCase(content);
+    }
+
     private void sanitizeOptions() {
-        if (className == null) {
-            className = DEFAULT_CLASS_NAME;
-        }
-        if (className.endsWith(MojoUtils.JAVA_EXTENSION)) {
-            className = className.substring(0, className.length() - MojoUtils.JAVA_EXTENSION.length());
-        }
+        // If className is null, we won't create the REST resource,
+        if (className != null) {
+            if (className.endsWith(MojoUtils.JAVA_EXTENSION)) {
+                className = className.substring(0, className.length() - MojoUtils.JAVA_EXTENSION.length());
+            }
 
-        if (!className.contains(".")) {
-            // No package name, inject one
-            className = projectGroupId.replace("-", ".").replace("_", ".") + "." + className;
-        }
+            if (!className.contains(".")) {
+                // No package name, inject one
+                className = projectGroupId.replace("-", ".").replace("_", ".") + "." + className;
+            }
 
-        if (StringUtils.isBlank(path)) {
-            path = "/hello";
-        }
+            if (StringUtils.isBlank(path)) {
+                path = "/hello";
+            }
 
-        if (!path.startsWith("/")) {
-            path = "/" + path;
+            if (!path.startsWith("/")) {
+                path = "/" + path;
+            }
         }
     }
 

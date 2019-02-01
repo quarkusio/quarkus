@@ -14,6 +14,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.jboss.logging.Logger;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -70,8 +71,7 @@ public final class InfinispanRegionFactory implements RegionFactory {
                         if (key.contains(SIZE_SUFFIX)) {
                             cacheConfig.setMaxSize(Long.parseLong(value));
                         } else if (key.contains(MAX_IDLE_SUFFIX)) {
-                            final long nanosIdle = TimeUnit.SECONDS.toNanos(Long.parseLong(value));
-                            cacheConfig.setMaxIdle(nanosIdle);
+                            cacheConfig.setMaxIdle(Duration.ofSeconds(Long.parseLong(value)));
                         }
 
                         return cacheConfig;

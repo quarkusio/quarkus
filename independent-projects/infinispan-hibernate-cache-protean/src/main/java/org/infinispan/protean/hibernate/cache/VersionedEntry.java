@@ -4,6 +4,7 @@ import org.hibernate.cache.spi.entry.CacheEntry;
 import org.hibernate.cache.spi.entry.StructuredCacheEntry;
 import org.jboss.logging.Logger;
 
+import java.time.Duration;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -14,12 +15,14 @@ final class VersionedEntry {
     private static final Logger log = Logger.getLogger(VersionedEntry.class);
     private static final boolean trace = log.isTraceEnabled();
 
+    public static final Duration TOMBSTONE_LIFESPAN = Duration.ofSeconds(60);
+
     static final ExcludeEmptyFilter EXCLUDE_EMPTY_VERSIONED_ENTRY = new ExcludeEmptyFilter();
 
     private final Object value;
     private final Object version;
     private final long timestamp;
-    private long lifespan = Long.MAX_VALUE; // nanoseconds
+    private Duration lifespan = Duration.ofSeconds(Long.MAX_VALUE);
 
     VersionedEntry(Object value, Object version, long timestamp) {
         this.value = value;
@@ -31,7 +34,7 @@ final class VersionedEntry {
         this(null, null, timestamp);
     }
 
-    VersionedEntry(long timestamp, long lifespan) {
+    VersionedEntry(long timestamp, Duration lifespan) {
         this(null, null, timestamp);
         this.lifespan = lifespan;
     }
@@ -44,8 +47,8 @@ final class VersionedEntry {
         return timestamp;
     }
 
-    long getLifespan() {
-        return lifespan;
+    long getLifespanNanos() {
+        return lifespan.toNanos();
     }
 
     Object getValue() {
@@ -69,7 +72,7 @@ final class VersionedEntry {
             }
             if (entry.version == null) {
                 // eviction or post-commit removal: we'll store it with given timestamp
-                entry.lifespan = PutFromLoadValidator.EXPIRATION_PERIOD;
+                entry.lifespan = TOMBSTONE_LIFESPAN;
                 return entry;
             }
 
@@ -105,7 +108,7 @@ final class VersionedEntry {
                     }
                 }
                 if (versionComparator == null) {
-                    entry.lifespan = PutFromLoadValidator.EXPIRATION_PERIOD;
+                    entry.lifespan = TOMBSTONE_LIFESPAN;
                     return new VersionedEntry(null, null, entry.timestamp);
                 } else {
                     int compareResult = versionComparator.compare(entry.version, oldVersion);
@@ -113,7 +116,7 @@ final class VersionedEntry {
                         log.tracef("Comparing %s and %s -> %d (using %s)", entry.version, oldVersion, compareResult, versionComparator);
                     }
                     if (entry.value == null && compareResult >= 0) {
-                        entry.lifespan = PutFromLoadValidator.EXPIRATION_PERIOD;
+                        entry.lifespan = TOMBSTONE_LIFESPAN;
                         return entry;
                     } else if (compareResult > 0) {
                         return entry.value instanceof CacheEntry ? entry.value : entry;

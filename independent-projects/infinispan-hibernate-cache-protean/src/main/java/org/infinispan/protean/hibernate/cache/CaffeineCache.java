@@ -5,6 +5,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Expiry;
 import org.jboss.logging.Logger;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -19,7 +20,7 @@ final class CaffeineCache implements InternalCache {
     private final String cacheName;
 
     public CaffeineCache(String cacheName, InternalCacheConfig config, TimeService timeService) {
-        long maxIdle = config != null ? config.maxIdle : -1;
+        Duration maxIdle = config != null ? config.maxIdle : null;
         long maxSize = config != null ? config.maxSize : -1;
 
         this.cacheName = cacheName;
@@ -129,10 +130,13 @@ final class CaffeineCache implements InternalCache {
     // e.g. regions would then need to aggregate counts for all data accesses for that region.
     private static final class CacheExpiryPolicy implements Expiry {
 
-        private final long maxIdle;
+        private final long maxIdleNanos;
 
-        public CacheExpiryPolicy(long maxIdle) {
-            this.maxIdle = maxIdle;
+        public CacheExpiryPolicy(Duration maxIdle) {
+            if (maxIdle == null)
+                this.maxIdleNanos = -1;
+            else
+                this.maxIdleNanos = maxIdle.toNanos();
         }
 
         @Override
@@ -144,18 +148,18 @@ final class CaffeineCache implements InternalCache {
             if (value instanceof VersionedEntry) {
                 // Deal with versioned entry expirations
                 final VersionedEntry versioned = (VersionedEntry) value;
-                if (maxIdle > 0) {
-                    final long idleDeadline = currentTime + maxIdle;
-                    final long versionedLifespan = versioned.getLifespan();
+                if (maxIdleNanos > 0) {
+                    final long idleDeadline = currentTime + maxIdleNanos;
+                    final long versionedLifespan = versioned.getLifespanNanos();
                     log.tracef("Expire after create, either idle deadline %d (ns) or versioned entry lifespan %d (ns)", idleDeadline, versionedLifespan);
                     return Math.min(idleDeadline, versionedLifespan);
                 }
 
-                return versioned.getLifespan();
+                return versioned.getLifespanNanos();
             }
 
-            if (maxIdle > 0)
-                return maxIdle;
+            if (maxIdleNanos > 0)
+                return maxIdleNanos;
 
             return Long.MAX_VALUE;
         }
@@ -167,8 +171,8 @@ final class CaffeineCache implements InternalCache {
 
         @Override
         public long expireAfterRead(Object key, Object value, long currentTime, long currentDuration) {
-            if (maxIdle > 0) {
-                return maxIdle;
+            if (maxIdleNanos > 0) {
+                return maxIdleNanos;
             }
 
             return Long.MAX_VALUE;

@@ -58,7 +58,7 @@ class MainClassBuildStep {
     private static final String STARTUP_CONTEXT = "STARTUP_CONTEXT";
 
     private static final AtomicInteger COUNT = new AtomicInteger();
-    
+
     @BuildStep
     MainClassBuildItem build(List<StaticBytecodeRecorderBuildItem> staticInitTasks,
                              List<MainBytecodeRecorderBuildItem> mainMethod,
@@ -135,10 +135,11 @@ class MainClassBuildStep {
                 tryBlock.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup, startupContext);
             }
         }
-        
+
         // Startup log messages
         ResultHandle featuresHandle = tryBlock.load(features.stream()
                 .map(f -> f.getInfo())
+                .sorted()
                 .collect(Collectors.joining(", ")));
         ResultHandle serverHandle = httpServer.isPresent() ? tryBlock.load("Listening on: http://" + httpServer.get()
                 .getHost() + ":" + httpServer.get().getPort()) : tryBlock.load("");

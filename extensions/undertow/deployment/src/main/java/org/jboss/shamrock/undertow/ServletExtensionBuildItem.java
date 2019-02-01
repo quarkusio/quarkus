@@ -16,13 +16,18 @@
 
 package org.jboss.shamrock.undertow;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.jboss.builder.item.MultiBuildItem;
 
 import io.undertow.servlet.ServletExtension;
+import org.jboss.shamrock.runtime.ObjectSubstitution;
 
 public final class ServletExtensionBuildItem extends MultiBuildItem {
 
     private final ServletExtension value;
+    private final List<Class<? extends ObjectSubstitution<?, ?>>> objSubstitutions = new ArrayList<>();
 
     public ServletExtensionBuildItem(ServletExtension value) {
         this.value = value;
@@ -30,5 +35,12 @@ public final class ServletExtensionBuildItem extends MultiBuildItem {
 
     public ServletExtension getValue() {
         return value;
+    }
+
+    public void addObjectSubstitution(Class<? extends ObjectSubstitution<?, ?>> sub) {
+        objSubstitutions.add(sub);
+    }
+    public List<Class<? extends ObjectSubstitution<?, ?>>> getObjSubstitutions() {
+        return objSubstitutions;
     }
 }

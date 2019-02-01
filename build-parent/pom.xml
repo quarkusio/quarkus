@@ -121,6 +121,7 @@
       <assertj.version>3.11.1</assertj.version>
       <infinispan.version>10.0.0.Alpha3</infinispan.version>
       <caffeine.version>2.6.2</caffeine.version>
+      <netty.version>4.1.30.Final</netty.version>
    </properties>
 
    <dependencyManagement>
@@ -224,6 +225,16 @@
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-health-deployment</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-netty-deployment</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-netty-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
@@ -522,6 +533,15 @@
             <type>test-jar</type>
             <scope>test</scope>
             <version>${project.version}</version>
+         </dependency>
+
+         <!-- Netty dependencies, imported as a BOM -->
+         <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-bom</artifactId>
+            <version>${netty.version}</version>
+            <type>pom</type>
+            <scope>import</scope>
          </dependency>
 
          <!-- Additional dependencies, keep in alphabetical order -->

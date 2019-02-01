@@ -54,6 +54,7 @@
 
         <!-- Reactive -->
         <module>vertx</module>
+        <module>netty</module>
         <module>reactive-streams-operators</module>
         <module>reactive-messaging</module>
 

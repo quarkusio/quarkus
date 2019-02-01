@@ -199,6 +199,8 @@ public class ClientProxyGenerator extends AbstractGenerator {
                 resolved = Types.buildResolvedMap(producerField.type().asParameterizedType().arguments(), fieldClass.typeParameters(), Collections.emptyMap());
             }
             Methods.addDelegatingMethods(bean.getDeployment().getIndex(), fieldClass, resolved, methods);
+        } else if (bean.isSynthetic()) {
+            Methods.addDelegatingMethods(bean.getDeployment().getIndex(), bean.getImplClazz(), Collections.emptyMap(), methods);
         }
         return methods.values();
     }

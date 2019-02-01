@@ -127,8 +127,8 @@ public class BeanDeployment {
             RegistrationContext registrationContext = new RegistrationContext() {
 
                 @Override
-                public <T> BeanConfigurator<T> configure(Class<?> beanClass) {
-                    return new BeanConfigurator<T>(beanClass, BeanDeployment.this, beans::add);
+                public <T> BeanConfigurator<T> configure(DotName beanClassName) {
+                    return new BeanConfigurator<T>(beanClassName, BeanDeployment.this, beans::add);
                 }
 
                 @Override

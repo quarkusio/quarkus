@@ -19,13 +19,8 @@ package org.jboss.shamrock.restclient;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
-import javax.ws.rs.Path;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.ClientResponseFilter;
 
@@ -37,9 +32,9 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.jboss.protean.gizmo.ClassCreator;
-import org.jboss.protean.gizmo.ClassOutput;
-import org.jboss.protean.gizmo.MethodCreator;
+import org.jboss.protean.arc.processor.BeanConfigurator;
+import org.jboss.protean.arc.processor.BeanRegistrar;
+import org.jboss.protean.arc.processor.ScopeInfo;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
 import org.jboss.resteasy.client.jaxrs.internal.proxy.ResteasyClientProxy;
@@ -47,7 +42,7 @@ import org.jboss.resteasy.spi.ResteasyConfiguration;
 import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
-import org.jboss.shamrock.arc.deployment.GeneratedBeanBuildItem;
+import org.jboss.shamrock.arc.deployment.BeanRegistrarBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
@@ -59,19 +54,10 @@ import org.jboss.shamrock.restclient.runtime.RestClientBase;
 import org.jboss.shamrock.restclient.runtime.RestClientProxy;
 
 class RestClientProcessor {
+    
+    private static final DotName REST_CLIENT = DotName.createSimple(RestClient.class.getName());
 
-    private static final DotName[] CLIENT_ANNOTATIONS = {
-            DotName.createSimple("javax.ws.rs.GET"),
-            DotName.createSimple("javax.ws.rs.HEAD"),
-            DotName.createSimple("javax.ws.rs.DELETE"),
-            DotName.createSimple("javax.ws.rs.OPTIONS"),
-            DotName.createSimple("javax.ws.rs.PATCH"),
-            DotName.createSimple("javax.ws.rs.POST"),
-            DotName.createSimple("javax.ws.rs.PUT"),
-            DotName.createSimple("javax.ws.rs.PUT"),
-            DotName.createSimple(RegisterRestClient.class.getName()),
-            DotName.createSimple(Path.class.getName())
-    };
+    private static final DotName REGISTER_REST_CLIENT = DotName.createSimple(RegisterRestClient.class.getName());
 
     @Inject
     BuildProducer<GeneratedClassBuildItem> generatedClass;
@@ -89,10 +75,16 @@ class RestClientProcessor {
     BuildProducer<SubstrateResourceBuildItem> resources;
 
     @Inject
+    BuildProducer<BeanRegistrarBuildItem> beanRegistrars;
+    
+    @Inject
+    BuildProducer<FeatureBuildItem> feature;
+    
+    @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
 
     @BuildStep
-    public void build(BuildProducer<GeneratedBeanBuildItem> generatedBeans, BuildProducer<FeatureBuildItem> feature) throws Exception {
+    public void build() throws Exception {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.MP_REST_CLIENT));
     	reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
                 DefaultResponseExceptionMapper.class.getName(),
@@ -109,23 +101,27 @@ class RestClientProcessor {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl"));
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, "org.jboss.resteasy.plugins.providers.jsonb.JsonBindingProvider", "org.jboss.resteasy.plugins.providers.jsonb.AbstractJsonBindingProvider"));
         proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem(ResteasyConfiguration.class.getName()));
+        
+        // According to the spec only rest client interfaces annotated with RegisterRestClient are registered as beans
         Map<DotName, ClassInfo> interfaces = new HashMap<>();
-        for (DotName type : CLIENT_ANNOTATIONS) {
-            for (AnnotationInstance annotation : combinedIndexBuildItem.getIndex().getAnnotations(type)) {
-                AnnotationTarget target = annotation.target();
-                ClassInfo theInfo;
-                if (target.kind() == AnnotationTarget.Kind.CLASS) {
-                    theInfo = target.asClass();
-                } else if (target.kind() == AnnotationTarget.Kind.METHOD) {
-                    theInfo = target.asMethod().declaringClass();
-                } else {
-                    continue;
-                }
-                if (!Modifier.isInterface(theInfo.flags())) {
-                    continue;
-                }
-                interfaces.put(theInfo.name(), theInfo);
+        for (AnnotationInstance annotation : combinedIndexBuildItem.getIndex().getAnnotations(REGISTER_REST_CLIENT)) {
+            AnnotationTarget target = annotation.target();
+            ClassInfo theInfo;
+            if (target.kind() == AnnotationTarget.Kind.CLASS) {
+                theInfo = target.asClass();
+            } else if (target.kind() == AnnotationTarget.Kind.METHOD) {
+                theInfo = target.asMethod().declaringClass();
+            } else {
+                continue;
             }
+            if (!Modifier.isInterface(theInfo.flags())) {
+                continue;
+            }
+            interfaces.put(theInfo.name(), theInfo);
+        }
+        
+        if (interfaces.isEmpty()) {
+            return;
         }
 
         for (Map.Entry<DotName, ClassInfo> entry : interfaces.entrySet()) {
@@ -133,33 +129,30 @@ class RestClientProcessor {
             proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem(iName, ResteasyClientProxy.class.getName()));
             proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem(iName, RestClientProxy.class.getName()));
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, iName));
-
-            //now generate CDI beans
-            //TODO: do we need to check if CDI is enabled? Are we just assuming it always is?
-            String className = iName + "$$RestClientProxy";
-            AtomicReference<byte[]> bytes = new AtomicReference<>();
-            try (ClassCreator creator = new ClassCreator(new ClassOutput() {
-                @Override
-                public void write(String name, byte[] data) {
-                    bytes.set(data);
-                    generatedClass.produce(new GeneratedClassBuildItem(true, name, data));
-                }
-            }, className, null, RestClientBase.class.getName())) {
-
-                creator.addAnnotation(Dependent.class);
-                MethodCreator producer = creator.getMethodCreator("producerMethod", iName);
-                producer.addAnnotation(Produces.class);
-                producer.addAnnotation(RestClient.class);
-                producer.addAnnotation(ApplicationScoped.class);
-
-                ResultHandle ret = producer.invokeVirtualMethod(MethodDescriptor.ofMethod(RestClientBase.class, "create", Object.class), producer.getThis());
-                producer.returnValue(ret);
-
-                MethodCreator ctor = creator.getMethodCreator(MethodDescriptor.ofConstructor(className));
-                ctor.invokeSpecialMethod(MethodDescriptor.ofConstructor(RestClientBase.class, Class.class), ctor.getThis(), ctor.loadClass(iName));
-                ctor.returnValue(null);
-            }
-            generatedBeans.produce(new GeneratedBeanBuildItem(className, bytes.get()));
         }
+        
+        BeanRegistrar beanRegistrar = new BeanRegistrar() {
+
+            @Override
+            public void register(RegistrationContext registrationContext) {
+                for (Map.Entry<DotName, ClassInfo> entry : interfaces.entrySet()) {
+                    BeanConfigurator<Object> configurator = registrationContext.configure(entry.getKey());
+                    // The spec is not clear whether we should add superinterfaces too - let's keep aligned with SmallRye for now
+                    configurator.addType(entry.getKey());
+                    // We use @Singleton here as we do not need another proxy
+                    configurator.scope(ScopeInfo.SINGLETON);
+                    configurator.addQualifier(REST_CLIENT);
+                    configurator.creator(m -> {
+                        // return new RestClientBase(proxyType).create();
+                        ResultHandle interfaceHandle = m.loadClass(entry.getKey().toString());
+                        ResultHandle baseHandle = m.newInstance(MethodDescriptor.ofConstructor(RestClientBase.class, Class.class), interfaceHandle);
+                        ResultHandle ret = m.invokeVirtualMethod(MethodDescriptor.ofMethod(RestClientBase.class, "create", Object.class), baseHandle);
+                        m.returnValue(ret);
+                    });
+                    configurator.done();
+                }
+            }
+        };
+        beanRegistrars.produce(new BeanRegistrarBuildItem(beanRegistrar));
     }
 }

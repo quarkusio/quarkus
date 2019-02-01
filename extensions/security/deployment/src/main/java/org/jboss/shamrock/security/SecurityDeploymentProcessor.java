@@ -26,6 +26,7 @@ import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.annotations.ExecutionTime;
 import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.deployment.ShamrockConfig;
+import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import org.jboss.shamrock.runtime.RuntimeValue;
@@ -51,6 +52,11 @@ class SecurityDeploymentProcessor {
     private static final Logger log = Logger.getLogger(SecurityDeploymentProcessor.class.getName());
 
     SecurityConfig security;
+
+    @BuildStep
+    void registerFeature(BuildProducer<FeatureBuildItem> feature) {
+        feature.produce(new FeatureBuildItem(FeatureBuildItem.SECURITY));
+    }
 
     /**
      * Register the Elytron-provided password factory SPI implementation

@@ -51,7 +51,7 @@
     "artifactId": "shamrock-health-deployment"
   },
   {
-    "name": "JaxRS",
+    "name": "JAX-RS",
     "labels": [
       "jaxrs",
       "resteasy",

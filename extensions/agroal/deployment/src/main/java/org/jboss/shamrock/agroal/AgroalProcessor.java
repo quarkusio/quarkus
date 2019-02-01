@@ -64,7 +64,7 @@ class AgroalProcessor {
                 java.sql.ResultSet[].class.getName()
         ));
 
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, datasource.url.get()));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, datasource.driver.get()));
 
         if (datasource.driver.isPresent()) {
             datasourceDriver.produce(new DataSourceDriverBuildItem(datasource.driver.get()));

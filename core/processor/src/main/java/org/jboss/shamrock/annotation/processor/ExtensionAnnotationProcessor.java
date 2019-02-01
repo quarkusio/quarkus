@@ -149,7 +149,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
             return;
         }
         final URI uri = tempResource.toUri();
-        tempResource.delete();
+//        tempResource.delete();
         Path path;
         try {
             path = Paths.get(uri).getParent();

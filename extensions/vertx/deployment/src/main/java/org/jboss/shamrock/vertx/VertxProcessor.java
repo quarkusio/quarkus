@@ -16,15 +16,12 @@
 
 package org.jboss.shamrock.vertx;
 
-import java.util.Optional;
-
 import javax.inject.Inject;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shamrock.annotations.BuildProducer;
-import org.jboss.shamrock.annotations.BuildStep;
-import org.jboss.shamrock.annotations.ExecutionTime;
-import org.jboss.shamrock.annotations.Record;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.ExecutionTime;
+import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
 import org.jboss.shamrock.arc.deployment.BeanContainerListenerBuildItem;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
@@ -63,8 +60,7 @@ class VertxProcessor {
     /**
      * The Vert.x configuration, if set.
      */
-    @ConfigProperty(name = "shamrock.vertx")
-    Optional<VertxConfiguration> vertxConfig;
+    VertxConfiguration vertx;
 
     @BuildStep
     AdditionalBeanBuildItem registerBean() {
@@ -75,9 +71,7 @@ class VertxProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     BeanContainerListenerBuildItem build(VertxTemplate template, BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.VERTX));
-        return vertxConfig
-                .map(conf -> new BeanContainerListenerBuildItem(template.configureVertx(conf)))
-                .orElseGet(() -> new BeanContainerListenerBuildItem(template.configureVertx(null)));
+        return new BeanContainerListenerBuildItem(template.configureVertx(vertx));
     }
 
 

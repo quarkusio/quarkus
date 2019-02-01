@@ -79,6 +79,23 @@
             <groupId>org.wildfly.common</groupId>
             <artifactId>wildfly-common</artifactId>
         </dependency>
+
+        <!--
+          This is required to ensure that the extension processor is built.
+          If we move the extension processor to a separate project, this can be removed.
+        -->
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-extension-processor</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Test -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
@@ -94,7 +111,13 @@
                             <goal>compile</goal>
                         </goals>
                         <configuration>
-                            <compilerArgument>-proc:none</compilerArgument>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>org.jboss.shamrock</groupId>
+                                    <artifactId>shamrock-extension-processor</artifactId>
+                                    <version>${project.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
                         </configuration>
                     </execution>
                 </executions>

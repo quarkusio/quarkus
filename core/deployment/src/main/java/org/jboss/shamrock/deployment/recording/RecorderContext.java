@@ -48,6 +48,12 @@ public interface RecorderContext {
      */
     <F, T> void registerSubstitution(Class<F> from, Class<T> to, Class<? extends ObjectSubstitution<F, T>> substitution);
 
+    /**
+     * Register an object loader.
+     *
+     * @param loader the object loader (must not be {@code null})
+     */
+    void registerObjectLoader(ObjectLoader loader);
 
     /**
      * Creates a Class instance that can be passed to a recording proxy as a substitute for a class that is not loadable

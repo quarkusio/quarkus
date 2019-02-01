@@ -15,7 +15,7 @@
  */
 package org.jboss.shamrock.reactivemessaging.deployment;
 
-import static org.jboss.shamrock.annotations.ExecutionTime.STATIC_INIT;
+import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,9 +31,9 @@ import org.jboss.logging.Logger;
 import org.jboss.protean.arc.processor.AnnotationStore;
 import org.jboss.protean.arc.processor.BeanDeploymentValidator;
 import org.jboss.protean.arc.processor.BeanInfo;
-import org.jboss.shamrock.annotations.BuildProducer;
-import org.jboss.shamrock.annotations.BuildStep;
-import org.jboss.shamrock.annotations.Record;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
 import org.jboss.shamrock.arc.deployment.BeanContainerBuildItem;
 import org.jboss.shamrock.arc.deployment.BeanDeploymentValidatorBuildItem;

@@ -198,15 +198,15 @@ public final class BuildChainBuilder {
                 if (! id.isMulti() && entry.getValue().getConstraint() == Constraint.REAL) {
                     // ensure only one producer
                     if (initialIds.contains(id)) {
-                        final ChainBuildException cbe = new ChainBuildException("Item " + id + " cannot be produced here (it is an initial resource)");
+                        final ChainBuildException cbe = new ChainBuildException("Item " + id + " cannot be produced here (it is an initial resource) (" + entry.getValue().getStepBuilder().getBuildStep() + ")");
                         cbe.setStackTrace(steps.get(entry.getValue().getStepBuilder()));
                         throw cbe;
                     }
                     for (Produce produce : list) {
                         if (produce.getConstraint() == Constraint.REAL) {
-                            final Throwable cause = new Throwable("This is the location of the conflicting producer");
+                            final Throwable cause = new Throwable("This is the location of the conflicting producer (" + entry.getValue().getStepBuilder().getBuildStep() + ")");
                             cause.setStackTrace(steps.get(entry.getValue().getStepBuilder()));
-                            final ChainBuildException cbe = new ChainBuildException("Multiple producers of item " + id, cause);
+                            final ChainBuildException cbe = new ChainBuildException("Multiple producers of item " + id + " (" + produce.getStepBuilder().getBuildStep() + ")", cause);
                             cbe.setStackTrace(steps.get(produce.getStepBuilder()));
                             throw cbe;
                         }

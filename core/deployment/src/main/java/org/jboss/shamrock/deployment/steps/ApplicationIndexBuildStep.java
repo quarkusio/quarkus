@@ -26,7 +26,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
-import org.jboss.shamrock.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.builditem.ApplicationIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.ArchiveRootBuildItem;
 

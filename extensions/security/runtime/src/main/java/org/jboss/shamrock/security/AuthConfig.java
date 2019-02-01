@@ -19,7 +19,7 @@ public class AuthConfig {
     @ConfigProperty(name = "realmName", defaultValue = "Shamrock")
     public String realmName;
 
-    private Class type;
+    private Class<?> type;
 
     public AuthConfig(String authMechanism, String realmName, Class type) {
         this.authMechanism = authMechanism;
@@ -46,7 +46,7 @@ public class AuthConfig {
         this.realmName = realmName;
     }
 
-    public Class getType() {
+    public Class<?> getType() {
         return type;
     }
 }

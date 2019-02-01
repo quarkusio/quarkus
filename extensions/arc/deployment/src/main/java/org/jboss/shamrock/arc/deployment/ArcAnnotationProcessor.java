@@ -16,7 +16,7 @@
 
 package org.jboss.shamrock.arc.deployment;
 
-import static org.jboss.shamrock.annotations.ExecutionTime.STATIC_INIT;
+import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -32,7 +32,6 @@ import javax.enterprise.context.Dependent;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
@@ -51,9 +50,9 @@ import org.jboss.protean.arc.processor.BeanProcessor.Builder;
 import org.jboss.protean.arc.processor.DotNames;
 import org.jboss.protean.arc.processor.ReflectionRegistration;
 import org.jboss.protean.arc.processor.ResourceOutput;
-import org.jboss.shamrock.annotations.BuildProducer;
-import org.jboss.shamrock.annotations.BuildStep;
-import org.jboss.shamrock.annotations.Record;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.arc.deployment.UnremovableBeanBuildItem.BeanClassNameExclusion;
 import org.jboss.shamrock.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
 import org.jboss.shamrock.arc.runtime.ArcDeploymentTemplate;
@@ -109,9 +108,11 @@ public class ArcAnnotationProcessor {
     
     @Inject
     List<UnremovableBeanBuildItem> removalExclusions;
-    
-    @ConfigProperty(name = "shamrock.arc")
-    ArcConfig config;
+
+    /**
+     * The configuration for ArC, the CDI-based injection facility.
+     */
+    ArcConfig arc;
     
     @BuildStep(providesCapabilities = Capabilities.CDI_ARC, applicationArchiveMarkers = { "META-INF/beans.xml",
             "META-INF/services/javax.enterprise.inject.spi.Extension" })
@@ -216,7 +217,7 @@ public class ArcAnnotationProcessor {
         for (BeanDeploymentValidatorBuildItem item : beanDeploymentValidators) {
             builder.addBeanDeploymentValidator(item.getBeanDeploymentValidator());
         }
-        builder.setRemoveUnusedBeans(config.removeUnusedBeans);
+        builder.setRemoveUnusedBeans(arc.removeUnusedBeans);
         builder.addRemovalExclusion(new BeanClassNameExclusion(LifecycleEventRunner.class.getName()));
         for (AdditionalBeanBuildItem additionalBean : this.additionalBeans) {
             if (!additionalBean.isRemovable()) {

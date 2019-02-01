@@ -30,7 +30,6 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.infinispan.client.hotrod.exceptions.HotRodClientException;
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
 import org.infinispan.client.hotrod.logging.Log;
@@ -45,10 +44,10 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Type;
-import org.jboss.shamrock.annotations.BuildProducer;
-import org.jboss.shamrock.annotations.BuildStep;
-import org.jboss.shamrock.annotations.ExecutionTime;
-import org.jboss.shamrock.annotations.Record;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.ExecutionTime;
+import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
 import org.jboss.shamrock.arc.deployment.BeanContainerListenerBuildItem;
 import org.jboss.shamrock.arc.deployment.UnremovableBeanBuildItem;
@@ -166,22 +165,21 @@ class InfinispanClientProcessor {
     /**
      * The Infinispan client configuration, if set.
      */
-    @ConfigProperty(name = "shamrock.infinispan-client")
-    Optional<InfinispanConfiguration> infinispanConfig;
+    InfinispanConfiguration infinispanClient;
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     BeanContainerListenerBuildItem build(InfinispanTemplate template, PropertiesBuildItem builderBuildItem) {
         Properties properties = builderBuildItem.getProperties();
-        if (infinispanConfig.isPresent()) {
-            InfinispanConfiguration conf = infinispanConfig.get();
+        InfinispanConfiguration conf = infinispanClient;
+        final Optional<String> serverList = conf.serverList;
+        if (serverList.isPresent()) {
             log.debugf("Applying micro profile configuration on top of hotrod properties: %s", conf);
             if (properties == null) {
                 properties = new Properties();
             }
-            properties.put(ConfigurationProperties.SERVER_LIST, conf.serverList);
+            properties.put(ConfigurationProperties.SERVER_LIST, serverList);
         }
-
         return new BeanContainerListenerBuildItem(template.configureInfinispan(properties));
     }
 

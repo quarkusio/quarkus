@@ -1,9 +1,11 @@
 package org.jboss.shamrock.vertx.runtime;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shamrock.runtime.ConfigGroup;
+import org.jboss.shamrock.runtime.annotations.ConfigGroup;
+import org.jboss.shamrock.runtime.annotations.ConfigItem;
 
+import java.time.Duration;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 @ConfigGroup
 public class ClusterConfiguration {
@@ -11,42 +13,42 @@ public class ClusterConfiguration {
     /**
      * The host name.
      */
-    @ConfigProperty(name = "host", defaultValue = "localhost")
+    @ConfigItem(defaultValue = "localhost")
     public String host;
 
     /**
      * The port.
      */
-    @ConfigProperty(name = "port", defaultValue = "0")
-    public int port;
+    @ConfigItem
+    public OptionalInt port;
 
     /**
      * The public host name.
      */
-    @ConfigProperty(name = "public-host")
+    @ConfigItem
     public Optional<String> publicHost;
 
     /**
      * The public port.
      */
-    @ConfigProperty(name = "public-port", defaultValue = "-1")
-    public int publicPort;
+    @ConfigItem
+    public OptionalInt publicPort;
 
     /**
      * Enables or disables the clustering.
      */
-    @ConfigProperty(name = "clustered", defaultValue = "false")
+    @ConfigItem
     public boolean clustered;
 
     /**
-     * The ping interval in milliseconds.
+     * The ping interval.
      */
-    @ConfigProperty(name = "ping-interval", defaultValue = "20000")
-    public int pingInterval;
+    @ConfigItem(defaultValue = "PT20S")
+    public Duration pingInterval;
 
     /**
-     * The ping reply interval in milliseconds.
+     * The ping reply interval.
      */
-    @ConfigProperty(name = "ping-reply-interval", defaultValue = "20000")
-    public int pingReplyInterval;
+    @ConfigItem(defaultValue = "PT20S")
+    public Duration pingReplyInterval;
 }

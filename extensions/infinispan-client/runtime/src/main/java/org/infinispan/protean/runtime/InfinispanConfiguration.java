@@ -1,18 +1,23 @@
 package org.infinispan.protean.runtime;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shamrock.runtime.ConfigGroup;
+import java.util.Optional;
+
+import org.jboss.shamrock.runtime.annotations.ConfigGroup;
+import org.jboss.shamrock.runtime.annotations.ConfigItem;
+import org.jboss.shamrock.runtime.annotations.ConfigPhase;
+import org.jboss.shamrock.runtime.annotations.ConfigRoot;
 
 /**
  * @author William Burns
  */
 @ConfigGroup
+@ConfigRoot(phase = ConfigPhase.STATIC_INIT)
 public class InfinispanConfiguration {
    /**
     * Sets the host name to connect to
     */
-   @ConfigProperty(name = "server_list")
-   public String serverList;
+   @ConfigItem
+   public Optional<String> serverList;
 
    @Override
    public String toString() {

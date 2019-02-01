@@ -18,7 +18,7 @@ package org.jboss.shamrock.agroal.runtime;
 
 import org.jboss.shamrock.arc.runtime.BeanContainer;
 import org.jboss.shamrock.arc.runtime.BeanContainerListener;
-import org.jboss.shamrock.runtime.Template;
+import org.jboss.shamrock.runtime.annotations.Template;
 
 @Template
 public class DataSourceTemplate {
@@ -29,19 +29,19 @@ public class DataSourceTemplate {
             public void created(BeanContainer beanContainer) {
                 DataSourceProducer producer = beanContainer.instance(DataSourceProducer.class);
                 try {
-                    producer.setDriver(Class.forName(config.driver, true, Thread.currentThread().getContextClassLoader()));
+                    producer.setDriver(Class.forName(config.driver.get(), true, Thread.currentThread().getContextClassLoader()));
                 } catch (ClassNotFoundException e) {
                     throw new RuntimeException(e);
                 }
-                producer.setUrl(config.url);
-                if (config.user.isPresent()) {
-                    producer.setUserName(config.user.get());
+                producer.setUrl(config.url.get());
+                if (config.username.isPresent()) {
+                    producer.setUserName(config.username.get());
                 }
                 if (config.password.isPresent()) {
                     producer.setPassword(config.password.get());
                 }
-                producer.setMinSize(config.minSize);
-                producer.setMaxSize(config.maxSize);
+                producer.setMinSize(Integer.valueOf(config.minSize));
+                producer.setMaxSize(Integer.valueOf(config.maxSize));
             }
         };
     }

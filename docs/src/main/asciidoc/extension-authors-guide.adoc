@@ -16,7 +16,7 @@ There are three distinct bootstrap phases of a Shamrock app:
 Augmentation::
     This is the first phase, and is done by the <<Build Step Processors>>. These processors have access to Jandex annotation
     information and can parse any descriptors and read annotations, but should not attempt to load any application classes. The output of these
-    build steps is some recorded bytecode, using an extension of the ObjectWeb ASM project called Gizmo(ext/gizmo), that is used to actually bootstrap the application at runtime. Depending on the `org.jboss.shamrock.annotations.ExecutionTime` value of the `@org.jboss.shamrock.annotations.Record` annotation associated with the build step, 
+    build steps is some recorded bytecode, using an extension of the ObjectWeb ASM project called Gizmo(ext/gizmo), that is used to actually bootstrap the application at runtime. Depending on the `org.jboss.shamrock.deployment.annotations.ExecutionTime` value of the `@org.jboss.shamrock.deployment.annotations.Record` annotation associated with the build step,
     the step may be run in a different JVM based on the following two modes.
 
 Static Init::
@@ -104,9 +104,9 @@ NOTE: For historical reasons the `augment` step is still called `deployment`, th
 == Build Step Processors
 
 Work is done at deployment time by producing and consuming instances of `org.jboss.builder.item.BuildItem`. This is done
-by creating a class that has method(s) annotated with `org.jboss.shamrock.annotations.BuildStep`. These classes can
+by creating a class that has method(s) annotated with `org.jboss.shamrock.deployment.annotations.BuildStep`. These classes can
 consume items by injection, and produce items by either returning them from the method or by injecting an
-instance of `org.jboss.shamrock.annotations.BuildProducer` for the produced type. These processors can also record
+instance of `org.jboss.shamrock.deployment.annotations.BuildProducer` for the produced type. These processors can also record
 bytecode invocations, which is mapped to a `BuildItem` transparently.
 
 There are two distinct types of `BuildItem`, `SimpleBuildItem` and `MultiBuildItem`. `SimpleBuildItem` will only ever
@@ -178,12 +178,12 @@ public class MetricsProcessor {
 
 The value of these properties is configured in a `META-INF/microprofile-config.properties` file that conforms to the MicroProfile config format.
 
-An extension of MicroProfile config to allow configuration objects to be injected is available using the `@org.jboss.shamrock.runtime.ConfigGroup` annotation. You place this annotation on the configuration object which in turn uses @ConfigProperty for it's configurable values as follows:
+An extension of MicroProfile config to allow configuration objects to be injected is available using the `@org.jboss.shamrock.runtime.annotations.ConfigGroup` annotation. You place this annotation on the configuration object which in turn uses @ConfigProperty for it's configurable values as follows:
 
 [source%nowrap,java]
 ----
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shamrock.runtime.ConfigGroup;
+import org.jboss.shamrock.runtime.annotations.ConfigGroup;
 
 @ConfigGroup <1>
 public class FileConfig {

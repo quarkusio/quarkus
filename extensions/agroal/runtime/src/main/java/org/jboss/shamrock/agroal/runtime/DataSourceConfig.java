@@ -18,46 +18,49 @@ package org.jboss.shamrock.agroal.runtime;
 
 import java.util.Optional;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shamrock.runtime.ConfigGroup;
+import org.jboss.shamrock.runtime.annotations.ConfigGroup;
+import org.jboss.shamrock.runtime.annotations.ConfigItem;
+import org.jboss.shamrock.runtime.annotations.ConfigPhase;
+import org.jboss.shamrock.runtime.annotations.ConfigRoot;
 
 @ConfigGroup
+@ConfigRoot(phase = ConfigPhase.STATIC_INIT)
 public class DataSourceConfig {
 
     /**
      * The datasource driver class name
      */
-    @ConfigProperty(name = "driver")
-    public String driver;
+    @ConfigItem
+    public Optional<String> driver;
 
     /**
      * The datasource URL
      */
-    @ConfigProperty(name = "url")
-    public String url;
+    @ConfigItem
+    public Optional<String> url;
 
     /**
      * The datasource username
      */
-    @ConfigProperty(name = "username")
-    public Optional<String> user;
+    @ConfigItem
+    public Optional<String> username;
 
     /**
      * The datasource password
      */
-    @ConfigProperty(name = "password")
+    @ConfigItem
     public Optional<String> password;
 
     /**
      * The datasource pool minimum size
      */
-    @ConfigProperty(name = "minSize", defaultValue = "5")
+    @ConfigItem(defaultValue = "5")
     public int minSize;
 
     /**
      * The datasource pool maximum size
      */
-    @ConfigProperty(name = "maxSize", defaultValue = "20")
+    @ConfigItem(defaultValue = "20")
     public int maxSize;
 
 }

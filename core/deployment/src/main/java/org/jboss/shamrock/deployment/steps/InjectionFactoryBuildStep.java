@@ -18,9 +18,9 @@ package org.jboss.shamrock.deployment.steps;
 
 import java.util.List;
 
-import org.jboss.shamrock.annotations.BuildStep;
-import org.jboss.shamrock.annotations.ExecutionTime;
-import org.jboss.shamrock.annotations.Record;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.ExecutionTime;
+import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.deployment.builditem.InjectionFactoryBuildItem;
 import org.jboss.shamrock.deployment.builditem.InjectionProviderBuildItem;
 import org.jboss.shamrock.runtime.DefaultInjectionTemplate;

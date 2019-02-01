@@ -2587,7 +2587,11 @@ public abstract class Logger implements Serializable, BasicLogger {
      * @return the logger
      */
     public static Logger getLogger(String name) {
-        return LoggerProviders.PROVIDER.getLogger(name);
+        try {
+            return LoggerProviders.PROVIDER.getLogger(name);
+        } catch (Throwable t) {
+            return NoOpLogger.getInstance();
+        }
     }
 
     /**

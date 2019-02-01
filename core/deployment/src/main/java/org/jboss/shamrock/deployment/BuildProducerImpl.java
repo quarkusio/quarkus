@@ -18,7 +18,7 @@ package org.jboss.shamrock.deployment;
 
 import org.jboss.builder.BuildContext;
 import org.jboss.builder.item.BuildItem;
-import org.jboss.shamrock.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
 
 /**
  * Producer class used by the source generated from the annotation processor

@@ -1,80 +1,82 @@
 package org.jboss.shamrock.vertx.runtime;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shamrock.runtime.ConfigGroup;
+import org.jboss.shamrock.runtime.annotations.ConfigGroup;
+import org.jboss.shamrock.runtime.annotations.ConfigItem;
+import org.jboss.shamrock.runtime.annotations.ConfigPhase;
+import org.jboss.shamrock.runtime.annotations.ConfigRoot;
 
-import java.util.Optional;
+import java.time.Duration;
+import java.util.OptionalInt;
 
 @ConfigGroup
+@ConfigRoot(phase = ConfigPhase.STATIC_INIT)
 public class VertxConfiguration {
 
     /**
      * Enables or disables the Vert.x cache.
      */
-    @ConfigProperty(name = "caching", defaultValue = "true")
-    public boolean fileResolverCachingEnabled;
+    @ConfigItem(defaultValue = "true")
+    public boolean caching;
 
     /**
      * Enables or disabled the Vert.x classpath resource resolver.
      */
-    @ConfigProperty(name = "classpathResolving", defaultValue = "true")
-    public boolean classpathResolvingEnabled;
+    @ConfigItem(defaultValue = "true")
+    public boolean classpathResolving;
 
     /**
      * The number of event loops. 2 x the number of core by default.
      */
-    @ConfigProperty(name = "eventLoopsPoolSize", defaultValue = "-1")
-    public int eventLoopsPoolSize;
-
-//   TODO Wait until the long support is implemented.
-//    /**
-//     * The maximum amount of time the event loop can be blocked. In nano seconds.
-//     */
-//    @ConfigProperty(name = "maxEventLoopExecuteTime", defaultValue = "2000000000")
-//    public long maxEventLoopExecuteTime;
+    @ConfigItem
+    public OptionalInt eventLoopsPoolSize;
 
     /**
-     * The amount of time before a warning is displayed if the event loop is blocked. In milliseconds.
+     * The maximum amount of time the event loop can be blocked.
      */
-    @ConfigProperty(name = "warningExceptionTime", defaultValue = "2000")
-    public int warningExceptionTime;
+    @ConfigItem(defaultValue = "PT2S")
+    public Duration maxEventLoopExecuteTime;
+
+    /**
+     * The amount of time before a warning is displayed if the event loop is blocked.
+     */
+    @ConfigItem(defaultValue = "PT2S")
+    public Duration warningExceptionTime;
 
     /**
      * The size of the worker thread pool.
      */
-    @ConfigProperty(name = "workerPoolSize", defaultValue = "20")
+    @ConfigItem(defaultValue = "20")
     public int workerPoolSize;
 
-//    TODO Wait until the long support is implemented.
-//    /**
-//     * The maximum amount of time the worker thread can be blocked. In nano seconds.
-//     */
-//    @ConfigProperty(name = "maxWorkerExecuteTime", defaultValue = "60000000000")
-//    public long maxWorkerExecuteTime;
+    /**
+     * The maximum amount of time the worker thread can be blocked.
+     */
+    @ConfigItem(defaultValue = "PT60S")
+    public Duration maxWorkerExecuteTime;
 
     /**
      * The size of the internal thread pool (used for the file system).
      */
-    @ConfigProperty(name = "internalBlockingPoolSize", defaultValue = "20")
+    @ConfigItem(defaultValue = "20")
     public int internalBlockingPoolSize;
 
     /**
      * Enables the async DNS resolver.
      */
-    @ConfigProperty(name = "useAsyncDNS", defaultValue = "false")
+    @ConfigItem
     public boolean useAsyncDNS;
 
     /**
      * The event bus configuration.
      */
-    @ConfigProperty(name = "eventbus")
-    public Optional<EventBusConfiguration> eventBusConfiguration;
+    @ConfigItem
+    public EventBusConfiguration eventbus;
 
     /**
      * The cluster configuration.
      */
-    @ConfigProperty(name = "cluster")
-    public Optional<ClusterConfiguration> clusterConfiguration;
+    @ConfigItem
+    public ClusterConfiguration cluster;
 
 
 }

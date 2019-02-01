@@ -16,7 +16,6 @@
 
 package org.jboss.shamrock.jpa;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.H2Dialect;
@@ -28,9 +27,10 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
-import org.jboss.shamrock.annotations.BuildProducer;
-import org.jboss.shamrock.annotations.BuildStep;
-import org.jboss.shamrock.annotations.Record;
+import org.jboss.shamrock.agroal.DataSourceDriverBuildItem;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
 import org.jboss.shamrock.arc.deployment.BeanContainerBuildItem;
 import org.jboss.shamrock.arc.deployment.BeanContainerListenerBuildItem;
@@ -55,6 +55,7 @@ import org.jboss.shamrock.jpa.runtime.JPAConfig;
 import org.jboss.shamrock.jpa.runtime.JPADeploymentTemplate;
 import org.jboss.shamrock.jpa.runtime.TransactionEntityManagers;
 import org.jboss.shamrock.jpa.runtime.boot.scan.ShamrockScanner;
+import org.jboss.shamrock.runtime.annotations.ConfigItem;
 
 import javax.enterprise.inject.Produces;
 import javax.persistence.PersistenceContext;
@@ -72,8 +73,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.jboss.shamrock.annotations.ExecutionTime.RUNTIME_INIT;
-import static org.jboss.shamrock.annotations.ExecutionTime.STATIC_INIT;
+import static org.jboss.shamrock.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 /**
  * Simulacrum of JPA bootstrap.
@@ -91,16 +92,10 @@ public final class HibernateResourceProcessor {
     private static final DotName PRODUCES = DotName.createSimple(Produces.class.getName());
 
     /**
-     * TODO why document this, is it exposed
-     */
-    @ConfigProperty(name = "shamrock.datasource.driver")
-    Optional<String> driver;
-
-    /**
      * Hibernate ORM configuration
      */
-    @ConfigProperty(name = "shamrock.hibernate")
-    Optional<HibernateOrmConfig> hibernateOrmConfig;
+    @ConfigItem
+    HibernateOrmConfig hibernate;
 
     @BuildStep
     HotDeploymentConfigFileBuildItem configFile() {
@@ -112,9 +107,11 @@ public final class HibernateResourceProcessor {
                                               BuildProducer<SubstrateResourceBuildItem> resourceProducer,
                                               BuildProducer<HotDeploymentConfigFileBuildItem> hotDeploymentProducer,
                                               ArchiveRootBuildItem root,
-                                              ApplicationArchivesBuildItem applicationArchivesBuildItem) throws IOException {
+                                              ApplicationArchivesBuildItem applicationArchivesBuildItem,
+                                              Optional<DataSourceDriverBuildItem> driverBuildItem
+    ) throws IOException {
         List<ParsedPersistenceXmlDescriptor> descriptors = loadOriginalXMLParsedDescriptors();
-        handleHibernateORMWithNoPersistenceXml(descriptors, resourceProducer, hotDeploymentProducer, root, applicationArchivesBuildItem );
+        handleHibernateORMWithNoPersistenceXml(descriptors, resourceProducer, hotDeploymentProducer, root, driverBuildItem, applicationArchivesBuildItem);
         for (ParsedPersistenceXmlDescriptor i : descriptors) {
             persistenceProducer.produce(new PersistenceUnitDescriptorBuildItem(i));
         }
@@ -238,12 +235,13 @@ public final class HibernateResourceProcessor {
             BuildProducer<SubstrateResourceBuildItem> resourceProducer,
             BuildProducer<HotDeploymentConfigFileBuildItem> hotDeploymentProducer,
             ArchiveRootBuildItem root,
+            Optional<DataSourceDriverBuildItem> driverBuildItem,
             ApplicationArchivesBuildItem applicationArchivesBuildItem) {
         if ( descriptors.isEmpty() ) {
             //we have no persistence.xml so we will create a default one
-            Optional<String> dialect = hibernateOrmConfig.flatMap(c -> c.dialect);
+            Optional<String> dialect = hibernate.dialect;
             if (!dialect.isPresent()) {
-                dialect = guessDialect(driver);
+                dialect = guessDialect(driverBuildItem.map(DataSourceDriverBuildItem::getDriver));
             }
             dialect.ifPresent(s -> {
                 // we found one
@@ -251,23 +249,17 @@ public final class HibernateResourceProcessor {
                 desc.setName("default");
                 desc.setTransactionType(PersistenceUnitTransactionType.JTA);
                 desc.getProperties().setProperty(AvailableSettings.DIALECT, s);
-                hibernateOrmConfig
-                        .flatMap(c -> c.schemaGeneration)
-                        .ifPresent( p -> desc.getProperties().setProperty(AvailableSettings.HBM2DDL_DATABASE_ACTION, p) );
-                hibernateOrmConfig
-                        .flatMap(c -> c.showSql)
-                        .ifPresent( sql -> {
-                            if (sql.equals(Boolean.TRUE)) {
-                                desc.getProperties().setProperty(AvailableSettings.SHOW_SQL, "true");
-                                desc.getProperties().setProperty(AvailableSettings.FORMAT_SQL, "true");
-                            }
-                        });
+                hibernate.schemaGeneration.ifPresent(
+                    p -> desc.getProperties().setProperty(AvailableSettings.HBM2DDL_DATABASE_ACTION, p)
+                );
+                if (hibernate.showSql) {
+                    desc.getProperties().setProperty(AvailableSettings.SHOW_SQL, "true");
+                    desc.getProperties().setProperty(AvailableSettings.FORMAT_SQL, "true");
+                }
 
                 // sql-load-script-source
                 // explicit file or default one
-                String file = hibernateOrmConfig
-                        .flatMap(c -> c.sqlLoadScriptSource)
-                        .orElse("import.sql"); //default Hibernate ORM file imported
+                String file = hibernate.sqlLoadScriptSource.orElse("import.sql"); //default Hibernate ORM file imported
 
                 Optional<Path> loadScriptPath = Optional.ofNullable(applicationArchivesBuildItem.getRootArchive().getChildPath(file));
                 // enlist resource if present
@@ -281,7 +273,7 @@ public final class HibernateResourceProcessor {
                         });
 
                 //raise exception if explicit file is not present (i.e. not the default)
-                hibernateOrmConfig.flatMap(c -> c.sqlLoadScriptSource)
+                hibernate.sqlLoadScriptSource
                         .filter(o -> !loadScriptPath.filter( path -> !Files.isDirectory(path)).isPresent())
                         .ifPresent(
                             c -> { throw new ConfigurationError(
@@ -294,11 +286,9 @@ public final class HibernateResourceProcessor {
             });
         }
         else {
-            if (hibernateOrmConfig.isPresent() && hibernateOrmConfig.get().isAnyPropertySet()) {
-                hibernateOrmConfig.ifPresent(c -> {
-                    throw new ConfigurationError("Hibernate ORM configuration present in persistence.xml and Shamrock config file at the same time\n"
-                            + "If you use persistence.xml remove all shamrock.hibernate.* properties from the Shamrock config file.");
-                });
+            if (hibernate.isAnyPropertySet()) {
+                throw new ConfigurationError("Hibernate ORM configuration present in persistence.xml and Shamrock config file at the same time\n"
+                    + "If you use persistence.xml remove all shamrock.hibernate.* properties from the Shamrock config file.");
             }
         }
     }

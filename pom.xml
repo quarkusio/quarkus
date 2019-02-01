@@ -42,6 +42,7 @@
     <properties>
         <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>
         <postgres.url>${env.DATABASE_URL}</postgres.url>
+        <version.compiler.plugin>3.8.0-jboss-2</version.compiler.plugin>
     </properties>
 
     <modules>

@@ -1,7 +1,7 @@
 package org.jboss.shamrock.arc.deployment;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shamrock.runtime.ConfigGroup;
+import org.jboss.shamrock.runtime.annotations.ConfigGroup;
+import org.jboss.shamrock.runtime.annotations.ConfigItem;
 
 @ConfigGroup
 public class ArcConfig {
@@ -22,7 +22,7 @@ public class ArcConfig {
      * 
      * @see UnremovableBeanBuildItem
      */
-    @ConfigProperty(name = "remove-unused-beans", defaultValue = "true")
+    @ConfigItem(defaultValue = "true")
     public boolean removeUnusedBeans;
 
 }

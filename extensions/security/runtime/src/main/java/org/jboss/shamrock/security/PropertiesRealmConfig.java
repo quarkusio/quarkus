@@ -16,8 +16,8 @@
 
 package org.jboss.shamrock.security;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shamrock.runtime.ConfigGroup;
+import org.jboss.shamrock.runtime.annotations.ConfigGroup;
+import org.jboss.shamrock.runtime.annotations.ConfigItem;
 
 /**
  * A configuration object for a properties resource based realm configuration, {@linkplain org.wildfly.security.auth.realm.LegacyPropertiesSecurityRealm}
@@ -35,31 +35,31 @@ public class PropertiesRealmConfig {
     /**
      * The authentication mechanism
      */
-    @ConfigProperty(name = "authMechanism", defaultValue = "BASIC")
+    @ConfigItem(defaultValue = "BASIC")
     public String authMechanism;
 
     /**
      * The authentication mechanism
      */
-    @ConfigProperty(name = "realmName", defaultValue = "Shamrock")
+    @ConfigItem(defaultValue = "Shamrock")
     public String realmName;
 
     /**
      * If the properties store is enabled.
      */
-    @ConfigProperty(name = "enabled", defaultValue = "false")
+    @ConfigItem
     public boolean enabled;
 
     /**
      * The location of the users property resource
      */
-    @ConfigProperty(name = "users", defaultValue = "users.properties")
+    @ConfigItem(defaultValue = "users.properties")
     public String users;
 
     /**
      * The location of the roles property file
      */
-    @ConfigProperty(name = "roles", defaultValue = "roles.properties")
+    @ConfigItem(defaultValue = "roles.properties")
     public String roles;
 
     public String help() {

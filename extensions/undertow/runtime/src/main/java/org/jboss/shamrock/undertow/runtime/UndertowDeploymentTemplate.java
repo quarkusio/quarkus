@@ -38,7 +38,7 @@ import org.jboss.shamrock.runtime.InjectionFactory;
 import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.runtime.ShutdownContext;
-import org.jboss.shamrock.runtime.Template;
+import org.jboss.shamrock.runtime.annotations.Template;
 
 import io.undertow.Undertow;
 import io.undertow.server.HandlerWrapper;
@@ -245,10 +245,10 @@ public class UndertowDeploymentTemplate {
                     .addHttpListener(config.port, config.host)
                     .setHandler(rootHandler);
             if (config.ioThreads.isPresent()) {
-                builder.setIoThreads(config.ioThreads.get());
+                builder.setIoThreads(config.ioThreads.getAsInt());
             }
             if (config.workerThreads.isPresent()) {
-                builder.setWorkerThreads(config.workerThreads.get());
+                builder.setWorkerThreads(config.workerThreads.getAsInt());
             }
             undertow = builder
                     .build();

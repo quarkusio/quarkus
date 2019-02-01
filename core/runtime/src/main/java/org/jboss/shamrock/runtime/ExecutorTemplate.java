@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.shamrock.runtime.annotations.Template;
 import org.jboss.threads.EnhancedQueueExecutor;
 import org.jboss.threads.JBossExecutors;
 import org.jboss.threads.JBossThreadFactory;

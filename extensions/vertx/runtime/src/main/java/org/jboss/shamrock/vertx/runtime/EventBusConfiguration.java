@@ -1,7 +1,11 @@
 package org.jboss.shamrock.vertx.runtime;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shamrock.runtime.ConfigGroup;
+import java.time.Duration;
+import java.util.Optional;
+import java.util.OptionalInt;
+
+import org.jboss.shamrock.runtime.annotations.ConfigGroup;
+import org.jboss.shamrock.runtime.annotations.ConfigItem;
 
 @ConfigGroup
 public class EventBusConfiguration {
@@ -9,133 +13,133 @@ public class EventBusConfiguration {
     /**
      * The key configuration for the PEM format.
      */
-    @ConfigProperty(name = "key-certificate-pem")
-    public PemKeyCertConfiguration keyPem;
+    @ConfigItem
+    public PemKeyCertConfiguration keyCertificatePem;
 
     /**
      * The key configuration for the JKS format.
      */
-    @ConfigProperty(name = "key-certificate-jks")
-    public JksConfiguration keyJks;
+    @ConfigItem
+    public JksConfiguration keyCertificateJks;
 
     /**
      * The key configuration for the PFX format.
      */
-    @ConfigProperty(name = "key-certificate-pfx")
-    public PfxConfiguration keyPfx;
+    @ConfigItem
+    public PfxConfiguration keyCertificatePfx;
 
     /**
      * The trust key configuration for the PEM format.
      */
-    @ConfigProperty(name = "trust-certificate-pem")
-    public PemTrustCertConfiguration trustPem;
+    @ConfigItem
+    public PemTrustCertConfiguration trustCertificatePem;
 
     /**
      * The trust key configuration for the JKS format.
      */
-    @ConfigProperty(name = "trust-certificate-jks")
-    public JksConfiguration trustJks;
+    @ConfigItem
+    public JksConfiguration trustCertificateJks;
 
     /**
      * The trust key configuration for the PFX format.
      */
-    @ConfigProperty(name = "trust-certificate-pfx")
-    public PfxConfiguration trustPfx;
+    @ConfigItem
+    public PfxConfiguration trustCertificatePfx;
 
     /**
      * The accept backlog.
      */
-    @ConfigProperty(name = "acceptBacklog", defaultValue = "-1")
-    public int acceptBacklog;
+    @ConfigItem
+    public OptionalInt acceptBacklog;
 
     /**
      * The client authentication.
      */
-    @ConfigProperty(name = "clientAuth", defaultValue = "NONE")
+    @ConfigItem(defaultValue = "NONE")
     public String clientAuth;
 
     /**
-     * The connect timeout in milliseconds.
+     * The connect timeout.
      */
-    @ConfigProperty(name = "connectTimeout", defaultValue = "60000")
-    public int connectTimeout;
+    @ConfigItem(defaultValue = "PT60S")
+    public Duration connectTimeout;
 
     /**
      * The idle timeout in milliseconds.
      */
-    @ConfigProperty(name = "idleTimeout", defaultValue = "0")
-    public int idleTimeout;
+    @ConfigItem
+    public Optional<Duration> idleTimeout;
 
     /**
      * The receive buffer size.
      */
-    @ConfigProperty(name = "receiveBufferSize", defaultValue = "-1")
-    public int receiveBufferSize;
+    @ConfigItem
+    public OptionalInt receiveBufferSize;
 
     /**
      * The number of reconnection attempts.
      */
-    @ConfigProperty(name = "reconnect-attempts", defaultValue = "0")
+    @ConfigItem
     public int reconnectAttempts;
 
     /**
      * The reconnection interval in milliseconds.
      */
-    @ConfigProperty(name = "reconnect-interval", defaultValue = "1000")
-    public int reconnectInterval;
+    @ConfigItem(defaultValue = "PT1S")
+    public Duration reconnectInterval;
 
     /**
      * Whether or not to reuse the address.
      */
-    @ConfigProperty(name = "reuse-address", defaultValue = "true")
+    @ConfigItem(defaultValue = "true")
     public boolean reuseAddress;
 
     /**
      * Whether or not to reuse the port.
      */
-    @ConfigProperty(name = "reuse-port", defaultValue = "false")
+    @ConfigItem
     public boolean reusePort;
 
     /**
      * The send buffer size.
      */
-    @ConfigProperty(name = "sendBufferSize", defaultValue = "-1")
-    public int sendBufferSize;
+    @ConfigItem
+    public OptionalInt sendBufferSize;
 
     /**
      * The so linger.
      */
-    @ConfigProperty(name = "soLinger", defaultValue = "-1")
-    public int soLinger;
+    @ConfigItem(name = "soLinger")
+    public OptionalInt soLinger;
 
     /**
      * Enables or Disabled SSL.
      */
-    @ConfigProperty(name = "ssl", defaultValue = "false")
+    @ConfigItem
     public boolean ssl;
 
     /**
      * Whether or not to keep the TCP connection opened (keep-alive).
      */
-    @ConfigProperty(name = "tcpKeepAlive", defaultValue = "false")
+    @ConfigItem
     public boolean tcpKeepAlive;
 
     /**
      * Configure the TCP no delay.
      */
-    @ConfigProperty(name = "tcpNoDelay", defaultValue = "true")
+    @ConfigItem(defaultValue = "true")
     public boolean tcpNoDelay;
 
     /**
      * Configure the traffic class.
      */
-    @ConfigProperty(name = "trafficClass", defaultValue = "-1")
-    public int trafficClass;
+    @ConfigItem
+    public OptionalInt trafficClass;
 
     /**
      * Enables or disables the trust all parameter.
      */
-    @ConfigProperty(name = "trustAll", defaultValue = "false")
+    @ConfigItem
     public boolean trustAll;
 
 

@@ -18,7 +18,7 @@ package org.jboss.shamrock.dev;
 
 import java.io.File;
 import java.nio.file.Paths;
-import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -58,8 +58,8 @@ public class RuntimeCompilationSetup {
             HttpConfig config = new HttpConfig();
             config.port = ShamrockConfig.getInt("shamrock.http.port", "8080");
             config.host = ShamrockConfig.getString("shamrock.http.host", "localhost", true);
-            config.ioThreads = Optional.empty();
-            config.workerThreads = Optional.empty();
+            config.ioThreads = OptionalInt.empty();
+            config.workerThreads = OptionalInt.empty();
 
             UndertowDeploymentTemplate.startUndertowEagerly(config, wrapper);
             return processor;

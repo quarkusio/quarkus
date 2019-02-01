@@ -2,10 +2,8 @@ package org.jboss.shamrock.security;
 
 import java.util.Map;
 
-import javax.inject.Inject;
-
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shamrock.runtime.ConfigGroup;
+import org.jboss.shamrock.runtime.annotations.ConfigGroup;
+import org.jboss.shamrock.runtime.annotations.ConfigItem;
 
 /**
  * Configuration information used to populate a {@linkplain org.wildfly.security.auth.realm.SimpleMapBackedSecurityRealm}
@@ -17,31 +15,27 @@ public class MPRealmConfig {
     /**
      * The authentication mechanism
      */
-    @Inject
-    @ConfigProperty(name = "authMechanism", defaultValue = "BASIC")
+    @ConfigItem(defaultValue = "BASIC")
     public String authMechanism;
 
     /**
      * The authentication mechanism
      */
-    @Inject
-    @ConfigProperty(name = "realmName", defaultValue = "Shamrock")
+    @ConfigItem(defaultValue = "Shamrock")
     public String realmName;
 
     /**
      * If the embedded store is enabled.
      */
-    @Inject
-    @ConfigProperty(name = "enabled", defaultValue = "false")
+    @ConfigItem
     public boolean enabled;
 
     /** The realm users user1=password\nuser2=password2... mapping*/
-    @Inject
-    @ConfigProperty(name = "users")
+    @ConfigItem
     Map<String, String> users;
+
     /** The realm roles user1=role1,role2,...\nuser2=role1,role2,... mapping*/
-    @Inject
-    @ConfigProperty(name = "roles")
+    @ConfigItem
     Map<String, String> roles;
 
     public String getAuthMechanism() {

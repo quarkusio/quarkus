@@ -73,7 +73,7 @@ public final class HibernateEntityEnhancer implements BiFunction<String, ClassVi
         private final ClassVisitor outputClassVisitor;
 
         public HibernateEnhancingClassVisitor(String className, ClassVisitor outputClassVisitor) {
-            super(Opcodes.ASM6, new ClassWriter(0));
+            super(Opcodes.ASM6, new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS));
             this.className = className;
             this.outputClassVisitor = outputClassVisitor;
         }

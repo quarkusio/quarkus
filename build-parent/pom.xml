@@ -1,19 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  ~ Copyright 2018 Red Hat, Inc.
-  ~
-  ~ Licensed under the Apache License, Version 2.0 (the "License");
-  ~ you may not use this file except in compliance with the License.
-  ~ You may obtain a copy of the License at
-  ~
-  ~     http://www.apache.org/licenses/LICENSE-2.0
-  ~
-  ~ Unless required by applicable law or agreed to in writing, software
-  ~ distributed under the License is distributed on an "AS IS" BASIS,
-  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  ~ See the License for the specific language governing permissions and
-  ~ limitations under the License.
-  -->
+<!-- ~ Copyright 2018 Red Hat, Inc. ~ ~ Licensed under the Apache License, 
+   Version 2.0 (the "License"); ~ you may not use this file except in compliance 
+   with the License. ~ You may obtain a copy of the License at ~ ~ http://www.apache.org/licenses/LICENSE-2.0 
+   ~ ~ Unless required by applicable law or agreed to in writing, software ~ 
+   distributed under the License is distributed on an "AS IS" BASIS, ~ WITHOUT 
+   WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. ~ See the 
+   License for the specific language governing permissions and ~ limitations 
+   under the License. -->
+
 <project xmlns="http://maven.apache.org/POM/4.0.0"
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -53,6 +47,7 @@
       <smallrye-fault-tolerance.version>1.1.0</smallrye-fault-tolerance.version>
       <smallrye-reactive-streams-operators.version>1.0.0</smallrye-reactive-streams-operators.version>
       <smallrye-reactive-messaging.version>0.0.4</smallrye-reactive-messaging.version>
+      <smallrye-jwt.version>1.1.0</smallrye-jwt.version>
       <javax.activation.version>1.1.1</javax.activation.version>
       <javax.inject.version>1</javax.inject.version>
       <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
@@ -105,7 +100,7 @@
       <wildfly-common.version>1.5.0.Alpha4-format-002</wildfly-common.version>
       <wildfly-client-config.version>1.0.0.Final</wildfly-client-config.version>
       <!-- This requires a release build of the https://github.com/jbossas/protean-wildfly-elytron-embedded project -->
-      <wildfly-elytron.version>1.8.0.Alpha1</wildfly-elytron.version>
+      <wildfly-elytron.version>2.0.0.Alpha1</wildfly-elytron.version>
       <jboss-modules.version>1.8.7.Final</jboss-modules.version>
       <jboss-threads.version>3.0.0.Alpha4</jboss-threads.version>
       <vertx.version>3.6.2</vertx.version>
@@ -324,12 +319,12 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jaxrs-json-deployment</artifactId>
+            <artifactId>shamrock-jwt-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jaxrs-json-runtime</artifactId>
+            <artifactId>shamrock-jwt-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
@@ -761,6 +756,21 @@
             <groupId>io.smallrye</groupId>
             <artifactId>smallrye-fault-tolerance</artifactId>
             <version>${smallrye-fault-tolerance.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>io.smallrye</groupId>
+            <artifactId>smallrye-jwt</artifactId>
+            <version>${smallrye-jwt.version}</version>
+            <exclusions>
+               <exclusion>
+                  <groupId>org.jboss.logging</groupId>
+                  <artifactId>jboss-logging</artifactId>
+               </exclusion>
+               <exclusion>
+                  <groupId>javax</groupId>
+                  <artifactId>javaee-api</artifactId>
+               </exclusion>
+            </exclusions>
          </dependency>
          <dependency>
             <groupId>javax.activation</groupId>

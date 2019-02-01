@@ -198,7 +198,13 @@ public class DevMojo extends AbstractMojo {
             //this stuff does not change
             StringBuilder classPath = new StringBuilder();
             for (Artifact artifact : project.getArtifacts()) {
-                classPath.append(artifact.getFile().toPath().toAbsolutePath().toUri().toURL().toString());
+                final URI uri = artifact.getFile().toPath().toAbsolutePath().toUri();
+                // https://bugs.openjdk.java.net/browse/JDK-8216401
+                if (uri.isAbsolute() && ! uri.getScheme().equals("file")) {
+                    throw new IllegalArgumentException("Disallowed URI scheme '" + uri.getScheme() + "'");
+                } else {
+                    classPath.append(uri.getPath());
+                }
                 classPath.append(" ");
             }
             args.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");

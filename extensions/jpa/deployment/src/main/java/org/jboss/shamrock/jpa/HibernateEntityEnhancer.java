@@ -16,6 +16,9 @@
 
 package org.jboss.shamrock.jpa;
 
+import java.net.URLClassLoader;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.function.BiFunction;
 
 import org.hibernate.bytecode.enhance.spi.DefaultEnhancementContext;
@@ -51,8 +54,9 @@ public final class HibernateEntityEnhancer implements BiFunction<String, ClassVi
             }
 
             @Override
-            public boolean doExtendedEnhancement(UnloadedClass classDescriptor) {
-                return true;
+            public boolean doDirtyCheckingInline(UnloadedClass classDescriptor) {
+                // perhaps only for subtypes of Model/RxModel?
+                return false;
             }
         };
         this.enhancer = provider.getEnhancer(enhancementContext);

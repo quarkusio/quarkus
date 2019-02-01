@@ -48,6 +48,7 @@
 
         <!-- REST services -->
         <module>jaxrs</module>
+        <module>jaxrs-json</module>
         <module>rest-client</module>
         <module>openapi</module>
 

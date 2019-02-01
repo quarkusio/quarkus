@@ -444,7 +444,7 @@ public class JaxrsScanningProcessor {
         }
 
 
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.JAX_RS));
+        feature.produce(new FeatureBuildItem(FeatureBuildItem.JAXRS));
         List<Function<Object, Object>> unwrappers = new ArrayList<>();
         for (ProxyUnwrapperBuildItem i : proxyUnwrappers) {
             unwrappers.add(i.getUnwrapper());

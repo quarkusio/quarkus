@@ -111,6 +111,13 @@
 
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-jaxrs-json-deployment</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+         </dependency>
+
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-openssl-deployment</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>

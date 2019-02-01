@@ -26,6 +26,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>shamrock-security-runtime</artifactId>
+    <name>Shamrock - Security - Runtime</name>
 
     <dependencies>
         <dependency>

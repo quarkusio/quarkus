@@ -27,6 +27,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>shamrock-creator</artifactId>
+    <name>Shamrock - Creator</name>
 
     <dependencies>
         <dependency>

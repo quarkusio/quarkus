@@ -22,7 +22,7 @@ import org.jboss.protean.gizmo.FunctionCreator;
 import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
-import org.jboss.shamrock.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
 import org.jboss.shamrock.panache.PanacheResourceProcessor.ProcessorClassOutput;
 

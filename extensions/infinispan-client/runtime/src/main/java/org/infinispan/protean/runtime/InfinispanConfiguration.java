@@ -11,7 +11,7 @@ import org.jboss.shamrock.runtime.annotations.ConfigRoot;
  * @author William Burns
  */
 @ConfigGroup
-@ConfigRoot(phase = ConfigPhase.STATIC_INIT)
+@ConfigRoot(phase = ConfigPhase.BUILD)
 public class InfinispanConfiguration {
    /**
     * Sets the host name to connect to

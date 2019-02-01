@@ -177,7 +177,7 @@ class InfinispanClientProcessor {
             if (properties == null) {
                 properties = new Properties();
             }
-            properties.put(ConfigurationProperties.SERVER_LIST, serverList);
+            properties.put(ConfigurationProperties.SERVER_LIST, serverList.get());
         }
         return new BeanContainerListenerBuildItem(template.configureInfinispan(properties));
     }

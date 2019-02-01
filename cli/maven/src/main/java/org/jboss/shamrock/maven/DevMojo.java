@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.Socket;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -313,8 +314,9 @@ public class DevMojo extends AbstractMojo {
 
 
     private void addToClassPaths(StringBuilder classPathManifest, StringBuilder classPath, File file) throws MalformedURLException {
-        classPathManifest.append(file.toPath().toAbsolutePath());
-        classPath.append(file.toPath().toAbsolutePath().toUri().toURL().toString());
+        URI uri = file.toPath().toAbsolutePath().toUri();
+        classPathManifest.append(uri.getPath());
+        classPath.append(uri.toURL().toString());
         if(file.isDirectory()) {
             classPathManifest.append("/");
             classPath.append("/");

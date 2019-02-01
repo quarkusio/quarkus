@@ -34,7 +34,6 @@ import org.infinispan.client.hotrod.exceptions.HotRodClientException;
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
 import org.infinispan.client.hotrod.logging.Log;
 import org.infinispan.client.hotrod.logging.LogFactory;
-import org.infinispan.commons.util.FileLookupFactory;
 import org.infinispan.commons.util.Util;
 import org.infinispan.protean.runtime.InfinispanClientProducer;
 import org.infinispan.protean.runtime.InfinispanConfiguration;
@@ -78,7 +77,7 @@ class InfinispanClientProcessor {
         hotDeployment.produce(new HotDeploymentConfigFileBuildItem(HOTROD_CLIENT_PROPERTIES));
 
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        InputStream stream = FileLookupFactory.newInstance().lookupFile(HOTROD_CLIENT_PROPERTIES, cl);
+        InputStream stream = cl.getResourceAsStream(HOTROD_CLIENT_PROPERTIES);
         Properties properties;
         if (stream == null) {
             properties = null;

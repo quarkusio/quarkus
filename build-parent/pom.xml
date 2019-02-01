@@ -421,6 +421,16 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-panache-deployment</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-panache-runtime</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-arc-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
@@ -1186,6 +1196,11 @@
          <dependency>
             <groupId>org.jboss.protean.arc</groupId>
             <artifactId>arc-runtime</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.panache</groupId>
+            <artifactId>panache</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>

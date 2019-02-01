@@ -53,8 +53,21 @@
         <module>core</module>
         <module>test-framework</module>
 
-        <!-- Integration Tests -->
-        <module>integration-tests</module>
+        <!-- External projects -->
+        <module>ext/gizmo</module>
+        <module>ext/arc</module>
+        <module>ext/hibernate-orm-protean</module>
+        <module>ext/panache</module>
+
+        <!-- Plumbing -->
+        <module>arc</module>
+        <module>scheduler</module>
+        <module>panache</module>
+
+        <!-- HTTP -->
+        <module>undertow</module>
+        <module>openssl</module>
+        <module>websockets</module>
 
         <!-- Extensions -->
         <module>extensions</module>

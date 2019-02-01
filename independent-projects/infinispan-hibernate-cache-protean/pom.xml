@@ -30,7 +30,7 @@
         <!-- Dependency versions -->
 
         <version.caffeine>2.6.2</version.caffeine>
-        <version.hibernate>5.4.0-protean-0.0.1</version.hibernate>
+        <version.hibernate>5.4.1.Final</version.hibernate>
         <version.jboss-logging>1.0.0.Alpha1-SNAPSHOT</version.jboss-logging>
 
         <!-- Build settings -->
@@ -76,18 +76,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!--<dependency>-->
-            <!--<groupId>org.hibernate.protean</groupId>-->
-            <!--<artifactId>hibernate-orm-protean</artifactId>-->
-            <!--<version>${project.version}</version>-->
-            <!--<exclusions>-->
-                <!--&lt;!&ndash; Byte Buddy might be needed during build but not at runtime &ndash;&gt;-->
-                <!--<exclusion>-->
-                    <!--<groupId>net.bytebuddy</groupId>-->
-                    <!--<artifactId>byte-buddy</artifactId>-->
-                <!--</exclusion>-->
-            <!--</exclusions>-->
-        <!--</dependency>-->
 
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
@@ -99,11 +87,6 @@
     <build>
         <pluginManagement>
             <plugins>
-                <plugin>
-                    <groupId>org.hibernate.orm.tooling</groupId>
-                    <artifactId>hibernate-enhance-maven-plugin</artifactId>
-                    <version>${version.org.hibernate.tooling}</version>
-                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
@@ -153,53 +136,6 @@
             </plugin>
         </plugins>
     </build>
-
-    <repositories>
-        <repository>
-            <id>redhat-ga-repository</id>
-            <name>Red Hat GA repository</name>
-            <url>http://maven.repository.redhat.com/ga/</url>
-            <layout>default</layout>
-            <releases>
-                <enabled>true</enabled>
-                <updatePolicy>never</updatePolicy>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-                <updatePolicy>daily</updatePolicy>
-            </snapshots>
-        </repository><!-- Forgot the password? see https://github.com/protean-project/hibernate-protean/wiki/Protean-Nexus-credentials -->
-        <repository>
-            <id>protean-nexus-release</id>
-            <name>Protean AWS Nexus - Releases</name>
-            <url>http://ec2-18-234-117-118.compute-1.amazonaws.com:8081/nexus/content/repositories/releases/</url>
-            <layout>default</layout>
-            <releases>
-                <enabled>true</enabled>
-                <updatePolicy>never</updatePolicy>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-
-        <!-- Forgot the password? see https://github.com/protean-project/hibernate-protean/wiki/Protean-Nexus-credentials -->
-        <repository>
-            <id>protean-nexus-snapshot</id>
-            <name>Protean AWS Nexus - Snapshots</name>
-            <url>http://ec2-18-234-117-118.compute-1.amazonaws.com:8081/nexus/content/repositories/snapshots/</url>
-            <layout>default</layout>
-            <releases>
-                <enabled>true</enabled>
-                <updatePolicy>never</updatePolicy>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-                <!-- 10 minutes. Or enforce refresh by using -U option to Maven -->
-                <updatePolicy>daily</updatePolicy>
-            </snapshots>
-        </repository>
-    </repositories>
 
     <distributionManagement>
         <repository>

@@ -40,8 +40,8 @@ public class DataSourceTemplate {
                 if (config.password.isPresent()) {
                     producer.setPassword(config.password.get());
                 }
-                producer.setMinSize(Integer.valueOf(config.minSize));
-                producer.setMaxSize(Integer.valueOf(config.maxSize));
+                producer.setMinSize(config.minSize);
+                producer.setMaxSize(config.maxSize);
             }
         };
     }

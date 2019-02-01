@@ -1,6 +1,4 @@
-<#if package_name??>
 package ${package_name};
-</#if>
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;

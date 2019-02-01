@@ -3,6 +3,8 @@ package org.jboss.shamrock.maven.it;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import org.apache.commons.io.FileUtils;
+import org.apache.maven.model.Dependency;
+import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.shared.invoker.*;
@@ -16,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import java.io.*;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,7 +63,9 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(new File(testDir, "src/main/docker/Dockerfile")).isFile();
 
         Model model = load(testDir);
-        assertThat(model.getDependencyManagement().getDependencies().stream().anyMatch(d ->
+        final DependencyManagement dependencyManagement = model.getDependencyManagement();
+        final List<Dependency> dependencies = dependencyManagement.getDependencies();
+        assertThat(dependencies.stream().anyMatch(d ->
                 d.getArtifactId().equalsIgnoreCase(MojoUtils.getBomArtifactId())
                         && d.getVersion().equalsIgnoreCase("${shamrock.version}")
                         && d.getScope().equalsIgnoreCase("import")
@@ -273,7 +278,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         ));
         request.setProperties(params);
         getEnv().forEach(request::addShellEnvironment);
-        File log = new File(testDir.getParentFile(), "build-create-" + testDir.getName() + ".log");
+        File log = new File(testDir, "build-create-" + testDir.getName() + ".log");
         PrintStreamLogger logger = new PrintStreamLogger(new PrintStream(new FileOutputStream(log)),
                 InvokerLogger.DEBUG);
         invoker.setLogger(logger);

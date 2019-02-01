@@ -104,10 +104,6 @@ public class ClientProxyGenerator extends AbstractGenerator {
         for (MethodInfo method : getDelegatingMethods(bean)) {
 
             MethodDescriptor originalMethodDescriptor = MethodDescriptor.of(method);
-            MethodDescriptor virtualMethod = MethodDescriptor.ofMethod(providerTypeName, 
-                                                                       originalMethodDescriptor.getName(), 
-                                                                       originalMethodDescriptor.getReturnType(), 
-                                                                       originalMethodDescriptor.getParameterTypes());
 
             MethodCreator forward = clientProxy.getMethodCreator(originalMethodDescriptor);
 
@@ -125,6 +121,11 @@ public class ClientProxyGenerator extends AbstractGenerator {
                     .invokeVirtualMethod(MethodDescriptor.ofMethod(generatedName, "delegate", DescriptorUtils.typeToString(providerType)), forward.getThis());
             ResultHandle ret;
 
+            /**
+             * Note that we don't have to check for default interface methods if this is an interface,
+             * as it just works, and the reflection case cannot be true since it's not possible to have
+             * non-public default interface methods.
+             */
             if (isInterface) {
                 ret = forward.invokeInterfaceMethod(method, delegate, params);
             } else if (isReflectionFallbackNeeded(method, targetPackage)) {
@@ -143,6 +144,12 @@ public class ClientProxyGenerator extends AbstractGenerator {
                 ret = forward.invokeStaticMethod(MethodDescriptors.REFLECTIONS_INVOKE_METHOD, forward.loadClass(method.declaringClass().name().toString()),
                         forward.load(method.name()), paramTypesArray, delegate, argsArray);
             } else {
+                // make sure we do not use the original method descriptor as it could point to
+                // a default interface method containing class: make sure we invoke it on the provider type.
+                MethodDescriptor virtualMethod = MethodDescriptor.ofMethod(providerTypeName, 
+                                                                           originalMethodDescriptor.getName(), 
+                                                                           originalMethodDescriptor.getReturnType(), 
+                                                                           originalMethodDescriptor.getParameterTypes());
                 ret = forward.invokeVirtualMethod(virtualMethod, delegate, params);
             }
             // Finally write the bytecode

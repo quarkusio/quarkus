@@ -213,6 +213,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
         final AppArtifactResolver depResolver = appState.getArtifactResolver();
         final List<AppDependency> appDeps = appState.getEffectiveDeps();
 
+        URLClassLoader runnerClassLoader = null;
         try {
             // we need to make sure all the deployment artifacts are on the class path
             final List<URL> cpUrls = new ArrayList<>();
@@ -265,7 +266,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                 throw new AppCreatorException(problems.toString());
             }
 
-            final URLClassLoader runnerClassLoader = new URLClassLoader(cpUrls.toArray(new URL[cpUrls.size()]), getClass().getClassLoader());
+            runnerClassLoader = new URLClassLoader(cpUrls.toArray(new URL[cpUrls.size()]), getClass().getClassLoader());
             final Path wiringClassesDirectory = wiringClassesDir;
             ClassOutput classOutput = new ClassOutput() {
                 @Override
@@ -369,6 +370,14 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
             }
         } catch (Exception e) {
             throw new AppCreatorException("Failed to augment application classes", e);
+        } finally {
+            if(runnerClassLoader != null) {
+                try {
+                    runnerClassLoader.close();
+                } catch (IOException e) {
+                    log.warn("Failed to close runner classloader", e);
+                }
+            }
         }
     }
 

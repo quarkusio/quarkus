@@ -105,9 +105,8 @@ public class Main {
 
             URLClassLoader ucl = new URLClassLoader(urls.toArray(new URL[urls.size()]), Main.class.getClassLoader());
             ClassLoader old = Thread.currentThread().getContextClassLoader();
-            try {
-                Thread.currentThread().setContextClassLoader(ucl);
-                RuntimeRunner runner = new RuntimeRunner(ucl, archive, archive, null, paths);
+            Thread.currentThread().setContextClassLoader(ucl);
+            try(RuntimeRunner runner = new RuntimeRunner(ucl, archive, archive, null, paths)) {
                 runner.run();
             } finally {
                 Thread.currentThread().setContextClassLoader(old);

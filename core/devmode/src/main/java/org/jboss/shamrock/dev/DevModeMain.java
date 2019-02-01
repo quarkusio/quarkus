@@ -95,6 +95,13 @@ public class DevModeMain {
                             e.printStackTrace();
                         }
                     }
+                    if(runtimeCl != null) {
+                        try {
+                            runtimeCl.close();
+                        } catch(IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
                 }
             }
         }, "Shamrock Shutdown Thread"));

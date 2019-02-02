@@ -21,7 +21,6 @@
     </properties>
 
     <dependencies>
-
         <dependency>
             <groupId>io.reactivex.rxjava2</groupId>
             <artifactId>rxjava</artifactId>
@@ -91,7 +90,6 @@
         <plugins>
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.1.1</version>
                 <configuration>
                     <includeGroupIds>${gen-source-groupId}</includeGroupIds>
                     <includeArtifactIds>${gen-source-artifactId}</includeArtifactIds>
@@ -115,33 +113,13 @@
                 </executions>
             </plugin>
 
-            <!-- Configure the execution of the compiler to execute the codegen processor -->
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>default-testCompile</id>
-                        <configuration>
-                            <annotationProcessors>
-                                <annotationProcessor>io.vertx.codegen.CodeGenProcessor</annotationProcessor>
-                            </annotationProcessors>
-                            <compilerArgs>
-                                <arg>-Acodegen.output=${project.basedir}/src/test</arg>
-                                <arg>-Acodegen.generators=RxJava2</arg>
-                            </compilerArgs>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
             <plugin>
                 <groupId>org.bsc.maven</groupId>
                 <artifactId>maven-processor-plugin</artifactId>
                 <version>3.3.3</version>
                 <configuration>
                     <systemProperties>
-                        <java.util.logging.SimpleFormatter.format>%4$s: %3$s - %5$s %6$s%n
-                        </java.util.logging.SimpleFormatter.format>
+                        <java.util.logging.SimpleFormatter.format>%4$s: %3$s - %5$s %6$s%n</java.util.logging.SimpleFormatter.format>
                         <mvel2.disable.jit>true</mvel2.disable.jit>
                     </systemProperties>
                 </configuration>
@@ -161,9 +139,6 @@
                             <optionMap>
                                 <codegen.generators>Axle</codegen.generators>
                             </optionMap>
-                            <excludes>
-                                <exclude>examples/**/*.java</exclude>
-                            </excludes>
                         </configuration>
                     </execution>
 
@@ -186,6 +161,7 @@
                     </execution>
                 </executions>
 
+                <!-- Log dependencies required by Vert.x -->
                 <dependencies>
                     <dependency>
                         <groupId>log4j</groupId>

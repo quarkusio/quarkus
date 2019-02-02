@@ -85,6 +85,7 @@ import org.jboss.metadata.web.spec.ServletSecurityMetaData;
 import org.jboss.metadata.web.spec.ServletsMetaData;
 import org.jboss.metadata.web.spec.TransportGuaranteeType;
 import org.jboss.metadata.web.spec.WebMetaData;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.deployment.ApplicationArchive;
@@ -94,6 +95,7 @@ import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
 import org.jboss.shamrock.deployment.builditem.HttpServerBuiltItem;
 import org.jboss.shamrock.deployment.builditem.InjectionFactoryBuildItem;
+import org.jboss.shamrock.deployment.builditem.ObjectSubstitutionBuildItem;
 import org.jboss.shamrock.deployment.builditem.ServiceStartBuildItem;
 import org.jboss.shamrock.deployment.builditem.ShutdownContextBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
@@ -175,9 +177,11 @@ public class UndertowBuildStep {
                                             List<ServletExtensionBuildItem> extensions,
                                             InjectionFactoryBuildItem injectionFactory,
                                             InjectionFactoryBuildItem bc,
+                                            BuildProducer<ObjectSubstitutionBuildItem> substitutions,
                                             Consumer<ReflectiveClassBuildItem> reflectiveClasses) throws Exception {
 
-        context.registerSubstitution(ServletSecurityInfo.class, ServletSecurityInfoProxy.class, ServletSecurityInfoSubstitution.class);
+        ObjectSubstitutionBuildItem.Holder holder = new ObjectSubstitutionBuildItem.Holder(ServletSecurityInfo.class, ServletSecurityInfoProxy.class, ServletSecurityInfoSubstitution.class);
+        substitutions.produce(new ObjectSubstitutionBuildItem(holder));
         reflectiveClasses.accept(new ReflectiveClassBuildItem(false, false, DefaultServlet.class.getName(), "io.undertow.server.protocol.http.HttpRequestParser$$generated"));
 
         //we need to check for web resources in order to get welcome files to work

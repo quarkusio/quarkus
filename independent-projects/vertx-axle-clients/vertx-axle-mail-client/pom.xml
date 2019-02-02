@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>vertx-axle-mail-client</artifactId>
+    <name>Vert.x Axle - Mail Client</name>
 
     <properties>
         <gen-source-groupId>io.vertx</gen-source-groupId>
@@ -45,7 +46,10 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
         </dependency>
 
     </dependencies>

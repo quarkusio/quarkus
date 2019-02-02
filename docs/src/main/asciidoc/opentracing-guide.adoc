@@ -34,7 +34,7 @@ First, we need a new project. Create a new project with the following command:
 
 [source, subs=attributes+]
 ----
-mvn -B org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
+mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=using-opentracing \
     -DclassName="org.acme.opentracing.TracedResource" \

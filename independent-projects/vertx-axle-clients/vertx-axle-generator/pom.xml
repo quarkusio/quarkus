@@ -12,7 +12,7 @@
 
     <artifactId>vertx-axle-generator</artifactId>
 
-    <name>Vert.x Axle Clients Code Generator</name>
+    <name>Vert.x Axle - Code Generator</name>
 
     <properties>
         <lang>java</lang>
@@ -125,31 +125,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <!--<plugin>-->
-                <!--<artifactId>maven-resources-plugin</artifactId>-->
-                <!--<version>3.0.2</version>-->
-                <!--<executions>-->
-                    <!--<execution>-->
-                        <!--<id>copy-codegen-extra</id>-->
-                        <!--<goals>-->
-                            <!--<goal>copy-resources</goal>-->
-                        <!--</goals>-->
-                        <!--<phase>generate-test-sources</phase>-->
-                        <!--<configuration>-->
-                            <!--<outputDirectory>${project.basedir}/src/test/java/</outputDirectory>-->
-                            <!--<resources>-->
-                                <!--<resource>-->
-                                    <!--<directory>${project.basedir}/../rx-java-codegen/src/test/java</directory>-->
-                                    <!--<includes>-->
-                                        <!--<include>io/vertx/codegen/extra/**</include>-->
-                                    <!--</includes>-->
-                                <!--</resource>-->
-                            <!--</resources>-->
-                        <!--</configuration>-->
-                    <!--</execution>-->
-                <!--</executions>-->
-            <!--</plugin>-->
-
             <!-- Configure the execution of the compiler to execute the codegen processor -->
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

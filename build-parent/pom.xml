@@ -126,6 +126,7 @@
       <caffeine.version>2.6.2</caffeine.version>
       <netty.version>4.1.30.Final</netty.version>
       <reactive-streams.version>1.0.2</reactive-streams.version>
+      <test-containers.version>1.10.6</test-containers.version>
    </properties>
 
    <dependencyManagement>
@@ -911,6 +912,12 @@
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
             <version>${assertj.version}</version>
+            <scope>test</scope>
+         </dependency>
+         <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>${test-containers.version}</version>
             <scope>test</scope>
          </dependency>
          

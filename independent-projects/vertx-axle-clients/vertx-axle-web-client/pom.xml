@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>vertx-axle-clients</artifactId>
+        <version>1.0.0.Alpha1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>vertx-axle-web-client</artifactId>
+    <name>Vert.x Axle - Web Client</name>
+
+    <properties>
+        <gen-source-groupId>io.vertx</gen-source-groupId>
+        <gen-source-artifactId>vertx-web-client</gen-source-artifactId>
+        <gen.output>${project.build.directory}/sources/java</gen.output>
+    </properties>
+
+    <dependencies>
+        <!-- Generation source -->
+        <dependency>
+            <groupId>${gen-source-groupId}</groupId>
+            <artifactId>${gen-source-artifactId}</artifactId>
+            <version>${vertx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${gen-source-groupId}</groupId>
+            <artifactId>vertx-web-common</artifactId>
+            <version>${vertx.version}</version>
+        </dependency>
+
+        <!-- Vert.x Axle Core -->
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>vertx-axle-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+
+        <!-- Extra dependencies -->
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>vertx-axle-generator</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <configuration>
+                    <includeGroupIds>${gen-source-groupId}</includeGroupIds>
+                    <includeArtifactIds>${gen-source-artifactId},vertx-web-common</includeArtifactIds>
+                    <classifier>sources</classifier>
+                    <includeTypes>jar</includeTypes>
+                </configuration>
+                <executions>
+                    <!-- Unpack java sources to target/java-sources -->
+                    <execution>
+                        <id>unpack-java</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>unpack-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <includes>io/vertx/**/*.java</includes>
+                            <excludes>**/impl/**/*.java</excludes>
+                            <outputDirectory>${gen.output}</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.bsc.maven</groupId>
+                <artifactId>maven-processor-plugin</artifactId>
+                <version>3.3.3</version>
+                <configuration>
+                    <systemProperties>
+                        <java.util.logging.SimpleFormatter.format>%4$s: %3$s - %5$s %6$s%n</java.util.logging.SimpleFormatter.format>
+                        <mvel2.disable.jit>true</mvel2.disable.jit>
+                    </systemProperties>
+                </configuration>
+                <executions>
+                    <!-- Run the annotation processor on java sources and generate the API -->
+                    <execution>
+                        <id>generate-api</id>
+                        <goals>
+                            <goal>process</goal>
+                        </goals>
+                        <phase>generate-sources</phase>
+                        <configuration>
+                            <sourceDirectory>${project.build.directory}/sources/java</sourceDirectory>
+                            <processors>
+                                <processor>io.vertx.codegen.CodeGenProcessor</processor>
+                            </processors>
+                            <optionMap>
+                                <codegen.generators>Axle</codegen.generators>
+                            </optionMap>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+    
+</project>

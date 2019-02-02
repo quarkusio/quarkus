@@ -1,4 +1,4 @@
-package org.jboss.shamrock.jdbc.h2.runtime.graalsubstitutions;
+package org.jboss.shamrock.jdbc.h2.runtime.graal;
 
 import org.h2.engine.SysProperties;
 

@@ -1,4 +1,4 @@
-package org.jboss.shamrock.jdbc.h2.runtime.graalsubstitutions;
+package org.jboss.shamrock.jdbc.h2.runtime.graal;
 
 import com.oracle.svm.core.annotate.Delete;
 import com.oracle.svm.core.annotate.TargetClass;

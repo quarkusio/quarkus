@@ -55,7 +55,7 @@ Your extension project should be setup as a multi-module project with two submod
 
 1. A deployment time submodule that handles the build time processing and bytecode recording.
 
-2. A runtime submodule that contains the runtime behavior that will provide the exentsion behavior in the native image or runtime JVM.
+2. A runtime submodule that contains the runtime behavior that will provide the extension behavior in the native image or runtime JVM.
 
 Your runtime artifact should depend on shamrock-core-runtime, and possibly the runtime artifacts of other Shamrock
 modules if you want to use functionality provided by them. You will also need to include the `maven-dependency-plugin`
@@ -159,94 +159,198 @@ file will be indexed.
 
 == Configuration
 
-Simple configuration is done via the  https://github.com/eclipse/microprofile-config[MicroProfile Config] `@org.eclipse.microprofile.config.inject.ConfigProperty` annotations.
-
-[source%nowrap,java]
-----
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-
-public class MetricsProcessor {
-
-    /**
-     * The path to the metrics Servlet
-     */
-    // <1>
-    @ConfigProperty(name = "shamrock.metrics.path", defaultValue = "/metrics")
-    String path;
-----
-<1> Note that there is no @Inject qualifier here. This is a feature of the CDI implementation used by the Shamrock core to process @ConfigProperty only available to the deployment time extension.
+Configuration in Shamrock is based on SmallRye Config, an implementation of the MicroProfile Config specification.
+All of the standard features of MP-Config are supported; in addition, there are several extensions which are made available
+by the SmallRye Config project as well as by Shamrock itself.
 
 The value of these properties is configured in a `META-INF/microprofile-config.properties` file that conforms to the MicroProfile config format.
 
-An extension of MicroProfile config to allow configuration objects to be injected is available using the `@org.jboss.shamrock.runtime.annotations.ConfigGroup` annotation. You place this annotation on the configuration object which in turn uses @ConfigProperty for it's configurable values as follows:
+Configuration of Shamrock extensions is injection-based, using annotations.
+
+=== Configuration Keys
+
+Leaf configuration keys are mapped to non-`private` fields via the `@org.jboss.shamrock.runtime.annotations.ConfigItem` annotation.
+
+NOTE: Though the SmallRye Config project is used for implementation, the standard `@ConfigProperty` annotation does not have the
+same semantics that are needed to support configuration within extensions.
+
+Configuration keys are normally derived from the field names that they are tied to.  This is done by de-camel-casing the name and then
+joining the segments with hyphens (`-`).  Some examples:
+
+* `bindAddress` becomes `bind-address`
+* `keepAliveTime` becomes `keep-alive-time`
+* `requestDNSTimeout` becomes `request-dns-timeout`
+
+The name can also be explicitly specified by giving a `name` attribute to the `@ConfigItem` annotation.
+
+NOTE: Though it is possible to override the configuration key name using the `name` attribute of `@ConfigItem`,
+normally this should only be done in cases where (for example) the configuration key name is the same as a Java keyword.
+
+=== Configuration Value types
+
+The type of the field with the `@ConfigItem` annotation determines the conversion that is applied to it.  Shamrock
+extensions may use the full range of configuration types made available by SmallRye Config, which includes:
+
+* All primitive types and primitive wrapper types
+* `String`
+* Any type which has a constructor accepting a single argument of type `String` or `CharSequence`
+* Any type which has a static method named `of` which accepts a single argument of type `String`
+* Any type which has a static method named `valueOf` or `parse` which accepts a single argument of type `CharSequence` or `String`
+* A `List` or `Optional` of any of the above types
+* `OptionalInt`, `OptionalLong`, `OptionalDouble`
+
+In addition, custom converters may be registered by build extensions using the `org.jboss.shamrock.deployment.builditem.ConfigurationCustomConverterBuildItem`
+class.
+
+Though these implicit converters use reflection, Shamrock will automatically ensure that they are loaded at the appropriate time.
+
+=== Configuration Groups
+
+Configuration values are always collected into grouping classes which are marked with the `@org.jboss.shamrock.runtime.annotations.ConfigGroup`
+annotation.  These classes contain a field for each key within its group.  In addition, configuration groups can be nested.
+
+=== Configuration Maps
+
+A `Map` can be used for configuration at any position where a configuration group would be allowed.  The key type of such a
+map *must* be `String`, and its value may be either a configuration group class or a valid leaf type.  The configuration
+key segment following the map's key segment will be used as the key for map values.
+
+=== Configuration Roots
+
+Configuration roots are configuration groups that appear in the root of the configuration tree.  A configuration property's full
+name is determined by joining the string `shamrock.` with the hyphenated name of the fields that form the path from the root to the
+leaf field.  For example, if I define a configuration root group called `ThreadPool`, with a nested group in a field named `sizing`
+that in turn contains a field called `minSize`, the final configuration property will be called `shamrock.thread-pool.sizing.min-size`.
+
+A configuration root's name can be given with the `name` property, or it can be inferred from the class name.  If the latter,
+then the configuration key will be the class name, minus any `Config` or `Configuration` suffix, broken up by camel-case,
+lowercased, and re-joined using hyphens (`-`).
+
+Note: The current implementation is still using injection site to determine the root set, so to avoid migration problems, it
+is recommended that the injection site (field or parameter) have the same name as the configuration root class until
+this change is complete.
+
+==== Configuration Root Phases
+
+A configuration root dictates when its contained keys are read from configuration, and when they are available to applications.  The phases defined by `org.jboss.shamrock.runtime.annotations.ConfigPhase` are as follows:
+
+[cols="<3m,^1,^1,^1,^1,<8",options="header"]
+|===
+| Phase name
+| Read & avail. at build time
+| Avail. at run time
+| Read during static init
+| Re-read during startup (native image)
+| Notes
+
+| BUILD_TIME
+| ✓
+| ✗
+| ✗
+| ✗
+| Appropriate for things which affect build.
+
+| BUILD_AND_RUN_TIME_FIXED
+| ✓
+| ✓
+| ✗
+| ✗
+| Appropriate for things which affect build and must be visible for run time code.  Not read from config at run time.
+
+| RUN_TIME_STATIC
+| ✗
+| ✓
+| ✓
+| ✗
+| Not available at build, read on start in JVM mode, fixed in native image mode.
+
+| RUN_TIME
+| ✗
+| ✓
+| ✓
+| ✓
+| Not available at build, read at start in all modes.
+
+|===
+
+For all cases other than the `BUILD_TIME` case, the configuration root class and all of the configuration groups and types contained therein must be located in, or reachable from, the extension's run time artifact.  Configuration roots of phase `BUILD_TIME` may be located in or reachable from either of the extension's run time or deployment artifacts.
+
+=== Configuration Example
 
 [source%nowrap,java]
 ----
-import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.shamrock.runtime.annotations.ConfigItem;
 import org.jboss.shamrock.runtime.annotations.ConfigGroup;
+
+import java.io.File;
+import java.util.logging.Level;
 
 @ConfigGroup <1>
 public class FileConfig {
 
     /**
-     * If file logging should be enabled
+     * Enable file logging.
      */
-    @ConfigProperty(name = "enable", defaultValue = "true")
+    @ConfigItem(defaultValue = "true")
     boolean enable;
 
     /**
-     * The log format
+     * The log format.
      */
-    @ConfigProperty(name = "format", defaultValue = "%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c{1.}] (%t) %s%e%n")
+    @ConfigItem(defaultValue = "%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c{1.}] (%t) %s%e%n")
     String format;
 
     /**
-     * The file log level
+     * The file log level.
      */
-    @ConfigProperty(name = "level", defaultValue = "ALL")
-    String level;
+    @ConfigItem(defaultValue = "ALL")
+    Level level;
 
     /**
-     * The file logging log level
+     * The file logging log level.
      */
-    @ConfigProperty(name = "path", defaultValue = "shamrock.log")
-    String path;
+    @ConfigItem(defaultValue = "shamrock.log")
+    File path;
 
+}
+
+/**
+ * Logging configuration.
+ */
+@ConfigRoot(phase = ConfigPhase.RUN_TIME) <2>
+public class LogConfiguration {
+
+    // ...
+
+    /**
+     * Configuration properties for the logging file handler.
+     */
+    File file;
 }
 
 public class LoggingProcessor {
-...
+    // ...
+
     /**
-     * File logging config
+     * Logging configuration.
      */
-    <2>
-    @ConfigProperty(name = "shamrock.log.file")
-    FileConfig file;
+    <3>
+    LogConfiguration config;
 }
 ----
-<1> The FileConfig object is annotated with @ConfigGroup to indcate that this is an aggregate
-configuration object containing a collection of configurable properties.
-<2> Here the LoggingProcessor injects a FileConfig instance using the MicroProfile Config annotation with the property name "shamrock.log.file". 
+<1> The `FileConfig` class is annotated with `@ConfigGroup` to indicate that this is an aggregate
+configuration object containing a collection of configurable properties, rather than being a simple configuration
+key type.
+<2> The `@ConfigRoot` annotation indicates that this object is a configuration root group, whose property names will have a parent only of `shamrock.`.  In this case the properties within the group will begin with `shamrock.log.*`.
+<3> Here the `LoggingProcessor` injects a `LogConfiguration` instance automatically by detecting the `@ConfigRoot` annotation.
 
-A corresponding `META-INF/microprofile-config.properties` file for the FileConfig values could be:
+A corresponding `META-INF/microprofile-config.properties` file for the `File` values could be:
 [source%nowrap,properties]
 ----
 shamrock.log.file.enable=true
 shamrock.log.file.level=DEBUG
 shamrock.log.file.path=/tmp/debug.log
 ----
-
-The full property name in the configuraiton file is the property name used to inject the @ConfigGroup annotated object + the local property names in the configuration object.
-
-[WARNING]
-====
-The support for @ConfigProperty in deployment time extensions may change in the future.
-====
-
-[NOTE]
-====
-Relationship between @GroupConfig and generated META-INF/shamrock-descriptions.properties needed?
-====
 
 == Bytecode Recording
 

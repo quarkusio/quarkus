@@ -5,6 +5,8 @@ import io.vertx.axle.ext.web.client.HttpResponse;
 import io.vertx.axle.ext.web.client.WebClient;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.client.WebClientOptions;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.testcontainers.containers.BindMode;
@@ -21,10 +23,21 @@ public class WebClientTest {
             .withExposedPorts(80)
             .withFileSystemBind("target", "/tmp/fakemail", BindMode.READ_WRITE);
 
+    private Vertx vertx;
+
+    @Before
+    public void setUp() {
+        vertx = Vertx.vertx();
+        assertThat(vertx, is(notNullValue()));
+    }
+
+    @After
+    public void tearDown() {
+        vertx.close();
+    }
+
     @Test
     public void testWebClient() {
-        Vertx vertx = Vertx.vertx();
-        assertThat(vertx, is(notNullValue()));
         WebClient client = WebClient.create(vertx, new WebClientOptions()
                 .setDefaultPort(container.getMappedPort(80))
                 .setDefaultHost(container.getContainerIpAddress())

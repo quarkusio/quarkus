@@ -4,6 +4,8 @@ import io.vertx.axle.core.Vertx;
 import io.vertx.axle.ext.mail.MailClient;
 import io.vertx.ext.mail.MailConfig;
 import io.vertx.ext.mail.MailMessage;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.testcontainers.containers.BindMode;
@@ -20,10 +22,21 @@ public class MailClientTest {
             .withExposedPorts(25)
             .withFileSystemBind("target", "/tmp/fakemail", BindMode.READ_WRITE);
 
+    private Vertx vertx;
+
+    @Before
+    public void setUp() {
+        vertx = Vertx.vertx();
+        assertThat(vertx, is(notNullValue()));
+    }
+
+    @After
+    public void tearDown() {
+        vertx.close();
+    }
+
     @Test
     public void testAxleAPI() {
-        Vertx vertx = Vertx.vertx();
-        assertThat(vertx, is(notNullValue()));
         MailClient client = MailClient.createShared(vertx, new MailConfig()
                 .setPort(container.getMappedPort(25))
                 .setHostname(container.getContainerIpAddress())

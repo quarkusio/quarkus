@@ -3,6 +3,8 @@ package io.vertx.axle.mongo;
 import io.vertx.axle.core.Vertx;
 import io.vertx.axle.ext.mongo.MongoClient;
 import io.vertx.core.json.JsonObject;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.testcontainers.containers.GenericContainer;
@@ -17,10 +19,21 @@ public class MongoClientTest {
     public GenericContainer container = new GenericContainer("mongo")
             .withExposedPorts(27017);
 
+    private Vertx vertx;
+
+    @Before
+    public void setUp() {
+        vertx = Vertx.vertx();
+        assertThat(vertx).isNotNull();
+    }
+
+    @After
+    public void tearDown() {
+        vertx.close();
+    }
+
     @Test
     public void testAxleAPI() {
-        Vertx vertx = Vertx.vertx();
-        assertThat(vertx).isNotNull();
         MongoClient client = MongoClient.createShared(vertx, new JsonObject()
                 .put("db_name", "axle-test")
                 .put("connection_string", "mongodb://" + container.getContainerIpAddress()

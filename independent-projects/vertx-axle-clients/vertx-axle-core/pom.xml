@@ -14,6 +14,12 @@
 
     <name>Vert.x Axle - Core</name>
 
+    <properties>
+        <gen-source-groupId>io.vertx</gen-source-groupId>
+        <gen-source-artifactId>vertx-core</gen-source-artifactId>
+        <gen.output>${project.build.directory}/sources/java</gen.output>
+    </properties>
+
     <dependencies>
 
         <dependency>
@@ -23,38 +29,12 @@
         <dependency>
             <groupId>org.reactivestreams</groupId>
             <artifactId>reactive-streams</artifactId>
-            <version>1.0.2</version>
         </dependency>
 
-        <!-- Stack dependencies -->
+        <!-- Generation source -->
         <dependency>
-            <groupId>io.vertx</groupId>
-            <artifactId>vertx-codegen</artifactId>
-            <version>${vertx.version}</version>
-            <scope>provided</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-core</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>io.vertx</groupId>
-            <artifactId>vertx-codetrans</artifactId>
-            <optional>true</optional>
-            <version>${vertx.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-core</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>io.vertx</groupId>
-            <artifactId>vertx-core</artifactId>
+            <groupId>${gen-source-groupId}</groupId>
+            <artifactId>${gen-source-artifactId}</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>com.fasterxml.jackson.core</groupId>
@@ -113,10 +93,8 @@
                 <artifactId>maven-dependency-plugin</artifactId>
                 <version>3.1.1</version>
                 <configuration>
-                    <includeGroupIds>io.vertx</includeGroupIds>
-                    <includeArtifactIds>
-                        vertx-core
-                    </includeArtifactIds>
+                    <includeGroupIds>${gen-source-groupId}</includeGroupIds>
+                    <includeArtifactIds>${gen-source-artifactId}</includeArtifactIds>
                     <classifier>sources</classifier>
                     <includeTypes>jar</includeTypes>
                 </configuration>
@@ -129,13 +107,9 @@
                             <goal>unpack-dependencies</goal>
                         </goals>
                         <configuration>
-                            <includes>
-                                io/vertx/**/*.java,examples/**/*.java
-                            </includes>
-                            <excludes>
-                                **/impl/**/*.java,io/vertx/groovy/**,io/vertx/reactivex/**,io/vertx/rxjava/**,examples/override/**
-                            </excludes>
-                            <outputDirectory>${project.build.directory}/sources/java</outputDirectory>
+                            <includes>io/vertx/**/*.java</includes>
+                            <excludes>**/impl/**/*.java</excludes>
+                            <outputDirectory>${gen.output}</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>

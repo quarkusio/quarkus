@@ -120,7 +120,9 @@ public class BasicRest extends ShamrockTemplate {
                  final BufferedReader stream = new BufferedReader(new InputStreamReader(getClass().getResourceAsStream(path)))) {
                 String template = stream.lines().collect(Collectors.joining("\n"));
                 for (Entry<String, Object> e : context.entrySet()) {
-                    template = template.replace(format("${%s}", e.getKey()), e.getValue().toString());
+                    if (e.getValue() != null) { // Exclude null values (classname and path can be null)
+                        template = template.replace(format("${%s}", e.getKey()), e.getValue().toString());
+                    }
                 }
                 out.write(template);
             }

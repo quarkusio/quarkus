@@ -18,6 +18,8 @@
         <module>vertx-axle-generator</module>
         <module>vertx-axle-core</module>
         <module>vertx-axle-mail-client</module>
+        <module>vertx-axle-web-client</module>
+        <module>vertx-axle-mongo-client</module>
     </modules>
     
 </project>

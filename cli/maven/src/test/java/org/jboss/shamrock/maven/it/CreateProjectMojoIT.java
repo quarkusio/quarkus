@@ -51,7 +51,12 @@ public class CreateProjectMojoIT extends MojoTestBase {
         Properties properties = new Properties();
         properties.put("projectGroupId", "org.acme");
         properties.put("projectArtifactId", "acme");
+        properties.put("projectVersion", "1.0-SNAPSHOT");
         setup(properties);
+
+        // As the directory is not empty (log) navigate to the artifactID directory
+        testDir = new File(testDir, "acme");
+
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/main/resources/META-INF/microprofile-config.properties")).isFile();
@@ -92,6 +97,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(testDir).isDirectory();
         init(testDir);
         setup(new Properties());
+
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
                 .contains(MojoUtils.getPluginGroupId(), MojoUtils.SHAMROCK_VERSION_PROPERTY, MojoUtils.getPluginGroupId());
@@ -123,6 +129,10 @@ public class CreateProjectMojoIT extends MojoTestBase {
         properties.put("projectArtifactId", "acme");
         properties.put("className", "org.acme.MyResource.java");
         setup(properties);
+
+        // As the directory is not empty (log) navigate to the artifactID directory
+        testDir = new File(testDir, "acme");
+
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(new File(testDir, "src/main/java")).isDirectory();
 
@@ -135,8 +145,6 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(testDir).isDirectory();
         init(testDir);
         Properties properties = new Properties();
-        properties.put("projectGroupId", "org.acme");
-        properties.put("projectArtifactId", "acme");
         properties.put("className", "org.acme.MyResource.java");
         setup(properties);
 
@@ -157,8 +165,11 @@ public class CreateProjectMojoIT extends MojoTestBase {
         properties.put("projectArtifactId", "acme");
         properties.put("className", "org.acme.MyResource");
         properties.put("extensions", "web,metrics,missing");
-
         setup(properties);
+
+        // As the directory is not empty (log) navigate to the artifactID directory
+        testDir = new File(testDir, "acme");
+
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(new File(testDir, "src/main/java")).isDirectory();
 
@@ -194,6 +205,10 @@ public class CreateProjectMojoIT extends MojoTestBase {
         properties.put("className", "org.acme.MyResource");
         properties.put("extensions", "commons-io:commons-io:2.5");
         setup(properties);
+
+        // As the directory is not empty (log) navigate to the artifactID directory
+        testDir = new File(testDir, "acme");
+
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(new File(testDir, "src/main/java/org/acme/MyResource.java")).isFile();
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
@@ -222,15 +237,46 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(testDir).isDirectory();
         init(testDir);
         Properties properties = new Properties();
-        properties.put("projectGroupId", "org.acme");
-        properties.put("projectArtifactId", "acme");
         properties.put("className", "org.acme.MyResource");
         properties.put("extensions", "commons-io:commons-io:2.5");
         setup(properties);
-
         check(new File(testDir, "src/main/java/org/acme/MyResource.java"), "package org.acme;");
         check(new File(testDir, "pom.xml"), "commons-io");
     }
+
+    /**
+     * Reproducer for https://github.com/jbossas/protean-shamrock/issues/671
+     */
+    @Test
+    public void testThatDefaultPackageAreReplaced() throws Exception {
+        testDir = initEmptyProject("projects/default-package-test");
+        assertThat(testDir).isDirectory();
+        init(testDir);
+        Properties properties = new Properties();
+        properties.put("className", "MyGreatResource");
+        setup(properties);
+        // As the directory is not empty (log) navigate to the artifactID directory
+        testDir = new File(testDir, "my-shamrock-project");
+        check(new File(testDir, "src/main/java/org/acme/shamrock/sample/MyGreatResource.java"), "package org.acme.shamrock.sample;");
+    }
+
+
+    /**
+     * Reproducer for https://github.com/jbossas/protean-shamrock/issues/673
+     */
+    @Test
+    public void testThatGenerationFailedWhenTheUserPassGAVonExistingPom() throws Exception {
+        testDir = initProject("projects/simple-pom-it","projects/fail-on-gav-and-existing-pom");
+        assertThat(testDir).isDirectory();
+        init(testDir);
+        Properties properties = new Properties();
+        properties.put("projectGroupId", "org.acme");
+        properties.put("className", "MyResource");
+        InvocationResult result = setup(properties);
+        assertThat(result.getExitCode()).isNotZero();
+        assertThat(new File(testDir, "src/main/java/org/acme/MyResource.java")).doesNotExist();
+    }
+
 
     private void check(final File resource, final String contentsToFind) throws IOException {
         assertThat(resource).isFile();
@@ -258,6 +304,8 @@ public class CreateProjectMojoIT extends MojoTestBase {
         setup(properties);
 
         // Run
+        // As the directory is not empty (log) navigate to the artifactID directory
+        testDir = new File(testDir, "acme");
         running = new RunningInvoker(testDir, false);
         running.execute(Arrays.asList("compile", "shamrock:dev"), Collections.emptyMap());
 
@@ -270,7 +318,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(greeting).containsIgnoringCase("hello");
     }
 
-    private void setup(Properties params) throws MavenInvocationException, FileNotFoundException {
+    private InvocationResult setup(Properties params) throws MavenInvocationException, FileNotFoundException {
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);
         request.setGoals(Collections.singletonList(
@@ -282,7 +330,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         PrintStreamLogger logger = new PrintStreamLogger(new PrintStream(new FileOutputStream(log)),
                 InvokerLogger.DEBUG);
         invoker.setLogger(logger);
-        invoker.execute(request);
+        return invoker.execute(request);
     }
 
 }

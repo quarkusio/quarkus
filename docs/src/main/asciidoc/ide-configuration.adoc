@@ -15,6 +15,9 @@ mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
     -DclassName="org.my.group.MyResource"
 ----
 
+NOTE: If you just launch `mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create` the Maven plugin asks
+for user inputs. You can disable (and use default values) this interactive mode by passing `-B` to the Maven command.
+
 The following table lists the attributes you can pass to the `create` command:
 
 [cols=3*,options="header"]
@@ -24,20 +27,16 @@ The following table lists the attributes you can pass to the `create` command:
 | Description
 
 | `projectGroupId`
-| _mandatory_
+| `org.acme.sample`
 | The group id of the created project
 
 | `projectArtifactId`
 | _mandatory_
-| The artifact id of the created project
+| The artifact id of the created project. Not passing it triggers the interactive mode.
 
 | `projectVersion`
-| 1.0-SNAPSHOT
+| `1.0-SNAPSHOT`
 | The version of the created project
-
-| `shamrockVersion`
-| {shamrock-version}
-| The Shamrock version
 
 | `className`
 | _Not created if omitted_

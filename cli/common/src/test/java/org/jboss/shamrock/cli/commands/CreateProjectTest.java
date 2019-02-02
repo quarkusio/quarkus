@@ -31,7 +31,7 @@ public class CreateProjectTest {
     }
 
     @Test
-    public void createOnTopPom() throws IOException {
+    public void createOnTopPomWithoutResource() throws IOException {
         final File testDir = new File("target/existing");
         delete(testDir);
         testDir.mkdirs();
@@ -55,12 +55,60 @@ public class CreateProjectTest {
         assertThat(new File(testDir, "src/test/java")).isDirectory();
 
         assertThat(new File(testDir, "src/main/resources/META-INF/microprofile-config.properties")).exists();
-        assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).exists();
+        assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).isFile();
+        assertThat(new File(testDir, "src/main/java")).isDirectory().matches(f -> {
+            String[] list = f.list();
+            return list != null  && list.length == 0;
+        });
+        assertThat(new File(testDir, "src/test/java")).isDirectory().matches(f -> {
+            String[] list = f.list();
+            return list != null  && list.length == 0;
+        });
 
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
             .containsIgnoringCase(getBomArtifactId());
 
     }
+
+
+    @Test
+    public void createOnTopPomWithResource() throws IOException {
+        final File testDir = new File("target/existing");
+        delete(testDir);
+        testDir.mkdirs();
+
+        Model model = new Model();
+        model.setModelVersion("4.0.0");
+        model.setGroupId("com.acme");
+        model.setArtifactId("foobar");
+        model.setVersion("10.1.2");
+        final File pom = new File(testDir, "pom.xml");
+        MojoUtils.write(model, pom);
+        final CreateProject createProject = new CreateProject(testDir).groupId("something.is")
+                .artifactId("wrong")
+                .version("1.0.0-SNAPSHOT");
+
+        Map<String, Object> ctxt = new HashMap<>();
+        ctxt.put("className", "org.foo.MyResource");
+        Assertions.assertTrue(createProject.doCreateProject(ctxt));
+
+        assertThat(FileUtils.readFileToString(pom, "UTF-8"))
+                .contains(getPluginArtifactId(), SHAMROCK_VERSION_PROPERTY, getPluginGroupId());
+        assertThat(new File(testDir, "src/main/java")).isDirectory();
+        assertThat(new File(testDir, "src/test/java")).isDirectory();
+
+        assertThat(new File(testDir, "src/main/resources/META-INF/microprofile-config.properties")).exists();
+        assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).exists();
+        assertThat(new File(testDir, "src/main/java")).isDirectory();
+        assertThat(new File(testDir, "src/main/java/org/foo/MyResource.java")).isFile();
+        assertThat(new File(testDir, "src/test/java")).isDirectory();
+        assertThat(new File(testDir, "src/test/java/org/foo/MyResourceTest.java")).isFile();
+
+        assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
+                .containsIgnoringCase(getBomArtifactId());
+
+    }
+
     @Test
     public void createNewWithCustomizations() throws IOException {
         final File testDir = new File("target/existing");

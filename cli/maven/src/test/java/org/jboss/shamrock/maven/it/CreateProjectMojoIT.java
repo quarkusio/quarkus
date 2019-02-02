@@ -53,6 +53,10 @@ public class CreateProjectMojoIT extends MojoTestBase {
         properties.put("projectArtifactId", "acme");
         properties.put("projectVersion", "1.0-SNAPSHOT");
         setup(properties);
+
+        // As the directory is not empty (log) navigate to the artifactID directory
+        testDir = new File(testDir, "acme");
+
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/main/resources/META-INF/microprofile-config.properties")).isFile();
@@ -93,6 +97,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(testDir).isDirectory();
         init(testDir);
         setup(new Properties());
+
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
                 .contains(MojoUtils.getPluginGroupId(), MojoUtils.SHAMROCK_VERSION_PROPERTY, MojoUtils.getPluginGroupId());
@@ -124,6 +129,10 @@ public class CreateProjectMojoIT extends MojoTestBase {
         properties.put("projectArtifactId", "acme");
         properties.put("className", "org.acme.MyResource.java");
         setup(properties);
+
+        // As the directory is not empty (log) navigate to the artifactID directory
+        testDir = new File(testDir, "acme");
+
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(new File(testDir, "src/main/java")).isDirectory();
 
@@ -156,8 +165,11 @@ public class CreateProjectMojoIT extends MojoTestBase {
         properties.put("projectArtifactId", "acme");
         properties.put("className", "org.acme.MyResource");
         properties.put("extensions", "web,metrics,missing");
-
         setup(properties);
+
+        // As the directory is not empty (log) navigate to the artifactID directory
+        testDir = new File(testDir, "acme");
+
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(new File(testDir, "src/main/java")).isDirectory();
 
@@ -193,6 +205,10 @@ public class CreateProjectMojoIT extends MojoTestBase {
         properties.put("className", "org.acme.MyResource");
         properties.put("extensions", "commons-io:commons-io:2.5");
         setup(properties);
+
+        // As the directory is not empty (log) navigate to the artifactID directory
+        testDir = new File(testDir, "acme");
+
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(new File(testDir, "src/main/java/org/acme/MyResource.java")).isFile();
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
@@ -224,7 +240,6 @@ public class CreateProjectMojoIT extends MojoTestBase {
         properties.put("className", "org.acme.MyResource");
         properties.put("extensions", "commons-io:commons-io:2.5");
         setup(properties);
-
         check(new File(testDir, "src/main/java/org/acme/MyResource.java"), "package org.acme;");
         check(new File(testDir, "pom.xml"), "commons-io");
     }
@@ -240,6 +255,10 @@ public class CreateProjectMojoIT extends MojoTestBase {
         Properties properties = new Properties();
         properties.put("className", "MyGreatResource");
         setup(properties);
+
+        // As the directory is not empty (log) navigate to the artifactID directory
+        testDir = new File(testDir, "my-shamrock-project");
+
         check(new File(testDir, "src/main/java/org/acme/shamrock/sample/MyGreatResource.java"), "package org.acme.shamrock.sample;");
     }
 
@@ -287,6 +306,8 @@ public class CreateProjectMojoIT extends MojoTestBase {
         setup(properties);
 
         // Run
+        // As the directory is not empty (log) navigate to the artifactID directory
+        testDir = new File(testDir, "acme");
         running = new RunningInvoker(testDir, false);
         running.execute(Arrays.asList("compile", "shamrock:dev"), Collections.emptyMap());
 
@@ -311,8 +332,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         PrintStreamLogger logger = new PrintStreamLogger(new PrintStream(new FileOutputStream(log)),
                 InvokerLogger.DEBUG);
         invoker.setLogger(logger);
-        InvocationResult result = invoker.execute(request);
-        return result;
+        return invoker.execute(request);
     }
 
 }

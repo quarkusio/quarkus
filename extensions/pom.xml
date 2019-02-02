@@ -36,7 +36,6 @@
 
         <!-- HTTP -->
         <module>undertow</module>
-        <module>openssl</module>
         <module>websockets</module>
 
         <!-- Monitoring -->

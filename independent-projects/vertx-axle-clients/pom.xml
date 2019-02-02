@@ -20,6 +20,10 @@
         <module>vertx-axle-mail-client</module>
         <module>vertx-axle-web-client</module>
         <module>vertx-axle-mongo-client</module>
+        <module>vertx-axle-redis-client</module>
+        <module>vertx-axle-cassandra-client</module>
+        <module>vertx-axle-consul-client</module>
+        <module>vertx-axle-kafka-client</module>
     </modules>
     
 </project>

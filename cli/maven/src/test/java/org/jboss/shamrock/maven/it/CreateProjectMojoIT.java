@@ -255,10 +255,8 @@ public class CreateProjectMojoIT extends MojoTestBase {
         Properties properties = new Properties();
         properties.put("className", "MyGreatResource");
         setup(properties);
-
         // As the directory is not empty (log) navigate to the artifactID directory
         testDir = new File(testDir, "my-shamrock-project");
-
         check(new File(testDir, "src/main/java/org/acme/shamrock/sample/MyGreatResource.java"), "package org.acme.shamrock.sample;");
     }
 

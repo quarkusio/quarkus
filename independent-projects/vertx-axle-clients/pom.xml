@@ -24,6 +24,7 @@
         <module>vertx-axle-cassandra-client</module>
         <module>vertx-axle-consul-client</module>
         <module>vertx-axle-kafka-client</module>
+        <module>vertx-axle-rabbitmq-client</module>
     </modules>
     
 </project>

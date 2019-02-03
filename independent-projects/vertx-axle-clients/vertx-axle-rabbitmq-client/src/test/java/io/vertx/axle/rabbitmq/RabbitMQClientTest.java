@@ -57,7 +57,7 @@ public class RabbitMQClientTest {
         RabbitMQConsumer consumer = client.basicConsumer(QUEUE).toCompletableFuture().join();
         CompletionStage<Optional<String>> stage = ReactiveStreams.fromPublisher(consumer.toPublisher())
                 .map(m -> m.body().toString()).findFirst().run();
-        
+
         client.basicPublish("", QUEUE, new JsonObject().put("body", uuid))
                 .toCompletableFuture().join();
 

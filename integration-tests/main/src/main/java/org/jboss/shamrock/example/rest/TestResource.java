@@ -35,7 +35,10 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
 import javax.xml.bind.annotation.XmlRootElement;
+
+import org.jboss.shamrock.runtime.annotations.RegisterForReflection;
 
 import io.reactivex.Single;
 
@@ -144,6 +147,16 @@ public class TestResource {
         child.setName("my name");
         child.setValue("my value");
         return child;
+    }
+
+    @GET
+    @Path("/response")
+    @Produces("application/json")
+    public Response response() {
+        MyEntity entity = new MyEntity();
+        entity.setName("my entity name");
+        entity.setValue("my entity value");
+        return Response.ok(entity).build();
     }
 
     @GET
@@ -260,5 +273,27 @@ public class TestResource {
         String getValue();
 
         String getName();
+    }
+
+    @RegisterForReflection
+    public static class MyEntity {
+        private String name;
+        private String value;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
+        }
     }
 }

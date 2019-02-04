@@ -51,11 +51,21 @@
         </dependency>
 
         <!--
-           Re-import this so to dodge the Byte Buddy exclusion we declared in shamrock-jpa-runtime
-           I prefer to use exclusions only so to transitively let Hibernate ORM manage the versions -->
+           Exclusions currently not listed in the parent pom as they need to be different in runtime vs deployment:
+           Re-import this so to dodge the Byte Buddy exclusion we declared in shamrock-jpa-runtime;
+           to help Java 11 users the explicit dependency to XML parsers might also be useful
+           (yet not needed at runtime).
+           I prefer to use exclusions only so to transitively let Hibernate ORM manage the versions.
+           -->
         <dependency>
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-core</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.javassist</groupId>
+                    <artifactId>javassist</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

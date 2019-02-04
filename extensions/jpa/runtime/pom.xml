@@ -43,11 +43,39 @@
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-core</artifactId>
             <exclusions>
+
                 <!-- Byte Buddy is needed during augmentation but not at runtime -->
                 <exclusion>
                     <groupId>net.bytebuddy</groupId>
                     <artifactId>byte-buddy</artifactId>
                 </exclusion>
+
+                <!-- Javassist is never used in Protean -->
+                <exclusion>
+                    <groupId>org.javassist</groupId>
+                    <artifactId>javassist</artifactId>
+                </exclusion>
+
+                <!-- XML parsers only needed to parse configurations during the deployment phase -->
+                <exclusion>
+                    <groupId>javax.xml.bind</groupId>
+                    <artifactId>jaxb-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.glassfish.jaxb</groupId>
+                    <artifactId>jaxb-runtime</artifactId>
+                </exclusion>
+
+                <!-- Following dependencies are only necessary during metadata initialization -->
+                <exclusion>
+                    <groupId>org.jboss</groupId>
+                    <artifactId>jandex</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>javax.activation</groupId>
+                    <artifactId>javax.activation-api</artifactId>
+                </exclusion>
+
             </exclusions>
         </dependency>
         <dependency>

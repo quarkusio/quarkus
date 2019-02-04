@@ -16,6 +16,7 @@
 
 package org.jboss.shamrock.jaeger.runtime;
 
+import org.jboss.shamrock.runtime.annotations.ConfigItem;
 import org.jboss.shamrock.runtime.annotations.Template;
 import java.util.Optional;
 
@@ -28,7 +29,6 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.runtime.Template;
 
 @Template
 public class JaegerDeploymentTemplate {
@@ -36,23 +36,27 @@ public class JaegerDeploymentTemplate {
 
     private static final Logger log = Logger.getLogger(JaegerDeploymentTemplate.class);
 
-    public void registerTracer() {
+    public void registerTracer(JaegerConfig jaegerConfig) {
         if (!registered) {
-            if (isValidConfig()) {
+            if (isValidConfig(jaegerConfig)) {
                 GlobalTracer.register(new ShamrockJaegerTracer());
             }
             registered = true;
         }
     }
 
-    private static boolean isValidConfig() {
-        Config config = ConfigProvider.getConfig();
-        Optional<String> serviceName = config.getOptionalValue(JAEGER_SERVICE_NAME, String.class);
-        Optional<String> endpoint = config.getOptionalValue(JAEGER_ENDPOINT, String.class);
-        if (!serviceName.isPresent()) {
-            log.warn("Property 'JAEGER_SERVICE_NAME' has not been defined");
-        } else if (!endpoint.isPresent()) {
-            log.warn("Property 'JAEGER_ENDPOINT' has not been defined");
+    private boolean isValidConfig(JaegerConfig config) {
+        System.out.println("JaegerDeploymentTemplate config = "+config);
+        System.out.println("JaegerDeploymentTemplate config.serviceName = " + config.serviceName);
+        System.out.println("JaegerDeploymentTemplate config.jaegerServiceName = " + config.jaegerServiceName);
+        Config mpconfig = ConfigProvider.getConfig();
+        Optional<String> serviceName = mpconfig.getOptionalValue(JAEGER_SERVICE_NAME, String.class);
+        System.out.println("MP-config JAEGER_SERVICE_NAME = " + serviceName);
+        Optional<String> endpoint = mpconfig.getOptionalValue(JAEGER_ENDPOINT, String.class);
+        if (!config.serviceName.isPresent() && !serviceName.isPresent()) {
+            log.warn("Jaeger service name has not been defined (e.g. JAEGER_SERVICE_NAME environment variable or system properties)");
+        } else if (!config.endpoint.isPresent() && !endpoint.isPresent()) {
+            log.warn("Jaeger collector endpoint has not been defined (e.g. JAEGER_ENDPOINT environment variable or system properties)");
             // Return true for now, so we can reproduce issue with UdpSender
             return true;
         } else {

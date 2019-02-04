@@ -15,7 +15,6 @@ import java.io.PrintWriter;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import javax.persistence.EntityManager;
@@ -85,7 +84,8 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint extends HttpServlet {
         counts = new TreeMap<>();
         counts.put(Country.class.getName(), new Counts(0, 1, 0, 3));
         counts.put(Country.class.getName() + "##NaturalId", new Counts(0, 1, 0, 3));
-        verifyFindCountryByNaturalId(entityManagerFactory, "+41", "Switzerland", counts);
+        final Statistics stats = verifyFindCountryByNaturalId(entityManagerFactory, "+41", "Switzerland");
+        assertRegionStats(counts, stats);
     }
 
     private static void storeTestCountries(final EntityManagerFactory emf, Map<String, Counts> counts) {
@@ -109,10 +109,9 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint extends HttpServlet {
         ManualTestService manualTestService = regionFactory.getTimeService();
         manualTestService.advance(120, TimeUnit.SECONDS);
 
-        Map<String, Counts> counts = new TreeMap<>();
-        counts.put(Country.class.getName(), new Counts(1, 0, 1, 1));
-        counts.put(Country.class.getName() + "##NaturalId", new Counts(0, 1, 0, 3));
-        verifyFindCountryByNaturalId(entityManagerFactory, "+41", "Switzerland", counts);
+        final Statistics stats = verifyFindCountryByNaturalId(entityManagerFactory, "+41", "Switzerland");
+        assertRegionStatsEventually(new Counts(1, 0, 1, 1), Country.class.getName(), stats);
+        assertRegionStats(new Counts(0, 1, 0, 3), Country.class.getName() + "##NaturalId", stats);
     }
 
     private static void testReadWriteNaturalId(EntityManagerFactory entityManagerFactory) {
@@ -137,7 +136,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint extends HttpServlet {
         verifyFindCitizenByNaturalId(entityManagerFactory, "78902007R", "Stark", counts);
     }
 
-    private static void verifyFindCountryByNaturalId(EntityManagerFactory emf, String callingCode, String expectedName, Map<String, Counts> counts) {
+    private static Statistics verifyFindCountryByNaturalId(EntityManagerFactory emf, String callingCode, String expectedName) {
         Statistics stats = getStatistics(emf);
 
         EntityManager em = emf.createEntityManager();
@@ -154,7 +153,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint extends HttpServlet {
         transaction.commit();
         em.close();
 
-        assertRegionStats(counts, stats);
+        return stats;
     }
 
     private static void updateNaturalId(EntityManagerFactory emf, Map<String, Counts> counts) {
@@ -731,13 +730,10 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint extends HttpServlet {
     }
 
     private static void assertCountEquals(Counts expected, Counts actual, String msg) {
-        //FIXME this is currently failing often on CI, needs to be investigated.
-        //Seems to fail more often in native mode.
-        // - https://github.com/jbossas/protean-shamrock/issues/694
-        /*if (!expected.equals(actual))
+        if (!expected.equals(actual))
             throw new RuntimeException(
                     "[" + msg + "] expected " + expected + " second level cache count, instead got: " + actual
-        );*/
+        );
     }
 
     private static void assertRegionStatsEventually(Counts expected, String region, Statistics stats) {

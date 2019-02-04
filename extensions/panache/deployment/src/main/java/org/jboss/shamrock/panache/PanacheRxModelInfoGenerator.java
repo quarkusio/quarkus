@@ -18,6 +18,7 @@ import org.jboss.protean.gizmo.AssignableResultHandle;
 import org.jboss.protean.gizmo.BranchResult;
 import org.jboss.protean.gizmo.BytecodeCreator;
 import org.jboss.protean.gizmo.ClassCreator;
+import org.jboss.protean.gizmo.FieldCreator;
 import org.jboss.protean.gizmo.FieldDescriptor;
 import org.jboss.protean.gizmo.FunctionCreator;
 import org.jboss.protean.gizmo.MethodCreator;
@@ -26,6 +27,7 @@ import org.jboss.protean.gizmo.ResultHandle;
 import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
 import org.jboss.shamrock.panache.PanacheResourceProcessor.ProcessorClassOutput;
+import org.objectweb.asm.Opcodes;
 
 import io.reactiverse.reactivex.pgclient.Row;
 import io.reactiverse.reactivex.pgclient.Tuple;
@@ -34,7 +36,6 @@ import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.SingleSource;
 import io.reactivex.functions.Function;
-import net.bytebuddy.jar.asm.Opcodes;
 
 public class PanacheRxModelInfoGenerator {
     
@@ -121,7 +122,7 @@ public class PanacheRxModelInfoGenerator {
         else
             tableName = modelClassName;
         
-        String modelInfoClassName = modelClassName+"$__MODEL";
+        String modelInfoClassName = modelClassName+PanacheRxModelEnhancer.RX_MODEL_SUFFIX;
         
         ClassCreator modelClass = ClassCreator.builder().className(modelInfoClassName)
             .classOutput(new ProcessorClassOutput(generatedClasses))
@@ -130,6 +131,16 @@ public class PanacheRxModelInfoGenerator {
             .build();
         
         // no arg constructor is auto-created by gizmo
+        
+        // instance field
+        FieldCreator instanceField = modelClass.getFieldCreator(PanacheRxModelEnhancer.RX_MODEL_FIELD_NAME, modelInfoClassName);
+        instanceField.setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL | Opcodes.ACC_STATIC);
+
+        MethodCreator staticInit = modelClass.getMethodCreator("<clinit>", void.class);
+        staticInit.setModifiers(Opcodes.ACC_STATIC);
+        staticInit.writeStaticField(instanceField.getFieldDescriptor(), 
+                                    staticInit.newInstance(MethodDescriptor.ofConstructor(modelInfoClassName)));
+        staticInit.returnValue(null);
         
         // getEntityClass
         MethodCreator getEntityClass = modelClass.getMethodCreator("getEntityClass", Class.class);

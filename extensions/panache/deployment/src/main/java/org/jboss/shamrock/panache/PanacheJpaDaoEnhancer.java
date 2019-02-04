@@ -10,7 +10,6 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.signature.SignatureReader;
-import org.objectweb.asm.signature.SignatureVisitor;
 
 public class PanacheJpaDaoEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
 
@@ -18,46 +17,19 @@ public class PanacheJpaDaoEnhancer implements BiFunction<String, ClassVisitor, C
     public final static String DAO_BASE_BINARY_NAME = DAO_BASE_NAME.replace('.', '/');
     public final static String DAO_BASE_SIGNATURE = "L"+DAO_BASE_BINARY_NAME+";";
 
-    private static class DaoTypeFetcher extends SignatureVisitor {
-
-        String foundType;
-
-        public DaoTypeFetcher() {
-            super(Opcodes.ASM6);
-        }
-
-        @Override
-        public SignatureVisitor visitInterface() {
-            return new SignatureVisitor(Opcodes.ASM6) {
-                private boolean recordNextType;
-
-                @Override
-                public void visitClassType(String name) {
-                    if(recordNextType) {
-                        foundType = name;
-                    }else if(name.equals(DAO_BASE_BINARY_NAME)) {
-                        recordNextType = true;
-                    }
-                    super.visitClassType(name);
-                }
-            };
-        }
-}
-
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
-        return new ModelEnhancingClassVisitor(className, outputClassVisitor);
+        return new DaoEnhancingClassVisitor(className, outputClassVisitor);
     }
 
-    static class ModelEnhancingClassVisitor extends ClassVisitor {
-
+    static class DaoEnhancingClassVisitor extends ClassVisitor {
 
         private Type entityType;
         private String entitySignature;
         private String entityBinaryType;
         private String daoBinaryName;
 
-        public ModelEnhancingClassVisitor(String className, ClassVisitor outputClassVisitor) {
+        public DaoEnhancingClassVisitor(String className, ClassVisitor outputClassVisitor) {
             super(Opcodes.ASM6, outputClassVisitor);
             daoBinaryName = className.replace('.', '/');
         }
@@ -66,7 +38,7 @@ public class PanacheJpaDaoEnhancer implements BiFunction<String, ClassVisitor, C
         public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
             super.visit(version, access, name, signature, superName, interfaces);
             SignatureReader signatureReader = new SignatureReader(signature);
-            DaoTypeFetcher daoTypeFetcher = new DaoTypeFetcher();
+            DaoTypeFetcher daoTypeFetcher = new DaoTypeFetcher(DAO_BASE_BINARY_NAME);
             signatureReader.accept(daoTypeFetcher);
             entityBinaryType = daoTypeFetcher.foundType;
             entitySignature = "L"+entityBinaryType+";";
@@ -219,9 +191,6 @@ public class PanacheJpaDaoEnhancer implements BiFunction<String, ClassVisitor, C
             mv.visitMaxs(0, 0);
             mv.visitEnd();
 
-            // FIXME: "instance" methods
-            // FIXME: bridge methods
-            
             super.visitEnd();
         }
     }

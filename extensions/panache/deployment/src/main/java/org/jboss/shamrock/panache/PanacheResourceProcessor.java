@@ -34,6 +34,7 @@ import org.jboss.panache.jpa.DaoBase;
 import org.jboss.panache.jpa.EntityBase;
 import org.jboss.panache.jpa.Model;
 import org.jboss.panache.rx.PgPoolProducer;
+import org.jboss.panache.rx.RxDaoBase;
 import org.jboss.panache.rx.RxEntityBase;
 import org.jboss.panache.rx.RxModel;
 import org.jboss.protean.arc.processor.BeanInfo;
@@ -58,6 +59,7 @@ public final class PanacheResourceProcessor {
 
     private static final DotName DOTNAME_CONTROLLER_BASE = DotName.createSimple(Controller.class.getName());
     private static final DotName DOTNAME_DAO_BASE = DotName.createSimple(DaoBase.class.getName());
+    private static final DotName DOTNAME_RX_DAO_BASE = DotName.createSimple(RxDaoBase.class.getName());
     private static final DotName DOTNAME_ENTITY_BASE = DotName.createSimple(EntityBase.class.getName());
     private static final DotName DOTNAME_RX_ENTITY_BASE = DotName.createSimple(RxEntityBase.class.getName());
     private static final DotName DOTNAME_MODEL = DotName.createSimple(Model.class.getName());
@@ -119,6 +121,10 @@ public final class PanacheResourceProcessor {
         PanacheJpaDaoEnhancer daoEnhancer = new PanacheJpaDaoEnhancer();
         for (ClassInfo classInfo : index.getIndex().getKnownDirectImplementors(DOTNAME_DAO_BASE)) {
             transformers.produce(new BytecodeTransformerBuildItem(classInfo.name().toString(), daoEnhancer));
+        }
+        PanacheRxDaoEnhancer rxDaoEnhancer = new PanacheRxDaoEnhancer();
+        for (ClassInfo classInfo : index.getIndex().getKnownDirectImplementors(DOTNAME_RX_DAO_BASE)) {
+            transformers.produce(new BytecodeTransformerBuildItem(classInfo.name().toString(), rxDaoEnhancer));
         }
 
         PanacheJpaModelEnhancer modelEnhancer = new PanacheJpaModelEnhancer();

@@ -172,7 +172,7 @@ public class TestEndpoint extends Controller {
     }
 
     @GET
-    @Path("rxmodel")
+    @Path("rx-model")
     public Single<String> testRxModel() {
         return RxPerson.findAll().toList()
             .flatMap(persons -> {
@@ -250,9 +250,16 @@ public class TestEndpoint extends Controller {
                     }).flatMapSingle(d -> d.owner)
                     // check the lazy list
                     .flatMap(p -> p.dogs.toList())
-                    .map(dogs -> {
+                    .flatMap(dogs -> {
                         Assertions.assertEquals(1, dogs.size());
-                        
+
+                        // cleanup
+                        return RxPerson.deleteAll();
+                    }).flatMap(count -> {
+                        Assertions.assertEquals(1, count.longValue());
+                        return RxDog.deleteAll();  
+                    }).map(count -> {
+                        Assertions.assertEquals(1, count.longValue());
                         return "OK";
                     });
             });
@@ -266,6 +273,119 @@ public class TestEndpoint extends Controller {
 //        person.address.save();
         try {
             return person.save();
+        }catch(Throwable t) {
+            t.printStackTrace();
+            throw new RuntimeException(t);
+        }
+    }
+
+    @Inject
+    RxPersonDao rxPersonDao;
+    @Inject
+    RxDogDao rxDogDao;
+
+    @GET
+    @Path("rx-model-dao")
+    public Single<String> testRxModelDao() {
+        return rxPersonDao.findAll().toList()
+            .flatMap(persons -> {
+                Assertions.assertEquals(0, persons.size());
+
+                return makeSavedRxPersonDao();
+            }).flatMap(person -> {
+                Assertions.assertNotNull(person.id);
+
+                return rxPersonDao.findAll().toList()
+                    .flatMapMaybe(persons -> {
+                        Assertions.assertEquals(1, persons.size());
+                        Assertions.assertEquals(person, persons.get(0));
+
+                        return rxPersonDao.findById(person.id);
+                    }).flatMapSingle(byId -> {
+                        Assertions.assertEquals(person, byId);
+
+                        return rxPersonDao.find("name = ?1", "stef").toList();
+                    }).flatMap(persons -> {
+                        Assertions.assertEquals(1, persons.size());
+                        Assertions.assertEquals(person, persons.get(0));
+
+                        return RxPerson.find("name = ?1", "emmanuel").toList();
+                    }).flatMap(persons -> {
+                        Assertions.assertEquals(0, persons.size());
+
+                        return rxPersonDao.count();
+                    }).flatMap(count -> {
+                        Assertions.assertEquals(1, (long)count);
+                        
+                        return rxPersonDao.count("name = ?1", "stef");
+                    }).flatMapCompletable(count -> {
+                        Assertions.assertEquals(1, (long)count);
+
+                        return rxPersonDao.delete(person);
+                    })
+                    .andThen(Single.defer(() -> rxPersonDao.count()))
+                    .flatMap(count -> {
+                        Assertions.assertEquals(0, (long)count);
+                        
+                        return makeSavedRxPersonDao();
+                    })
+                    .flatMap(p -> rxPersonDao.count())
+                    .flatMap(count -> {
+                        Assertions.assertEquals(1, (long)count);
+                        
+                        return rxPersonDao.deleteAll();
+                    }).flatMap(count -> {
+                        Assertions.assertEquals(1, (long)count);
+
+                        return rxPersonDao.count();
+                    }).flatMap(count -> {
+                        Assertions.assertEquals(0, (long)count);
+                        
+                        return makeSavedRxPersonDao();
+                    }).flatMap(p ->  RxPerson.delete("name = ?1", "emmanuel"))
+                    .flatMap(count -> {
+                        Assertions.assertEquals(0, (long)count);
+                        
+                        return rxPersonDao.delete("name = ?1", "stef");
+                    }).flatMap(count -> {
+                        Assertions.assertEquals(1, (long)count);
+                        
+                        return makeSavedRxPersonDao();
+                    }).flatMap(p -> {
+                        
+                        RxDog dog = new RxDog("octave", "dalmatian");
+                        dog.owner = Single.just(p);
+                        return rxDogDao.save(dog);
+                    }).flatMapMaybe(d -> {
+                        // get it from the DB
+                        return rxDogDao.findById(d.id);
+                        // check the lazy single
+                    }).flatMapSingle(d -> d.owner)
+                    // check the lazy list
+                    .flatMap(p -> p.dogs.toList())
+                    .flatMap(dogs -> {
+                        Assertions.assertEquals(1, dogs.size());
+                        
+                        // cleanup
+                        return rxPersonDao.deleteAll();
+                    }).flatMap(count -> {
+                        Assertions.assertEquals(1, count.longValue());
+                        return rxDogDao.deleteAll();  
+                    }).map(count -> {
+                        Assertions.assertEquals(1, count.longValue());
+                        return "OK";
+                    });
+            });
+    }
+
+    private Single<? extends RxPerson> makeSavedRxPersonDao() {
+        RxPerson person = new RxPerson();
+        person.name = "stef";
+        person.status = Status.LIVING;
+//        person.address = new SequencedAddress("stef street");
+//        person.address.save();
+        try {
+            return rxPersonDao.save(person);
         }catch(Throwable t) {
             t.printStackTrace();
             throw new RuntimeException(t);

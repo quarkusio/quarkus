@@ -1,4 +1,4 @@
-package org.infinispan.protean.runtime;
+package org.jboss.shamrock.infinispan.client.runtime;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;

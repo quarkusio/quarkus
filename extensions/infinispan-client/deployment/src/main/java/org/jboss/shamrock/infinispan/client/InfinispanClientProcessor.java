@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.infinispan;
+package org.jboss.shamrock.infinispan.client;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,27 +35,27 @@ import org.infinispan.client.hotrod.impl.ConfigurationProperties;
 import org.infinispan.client.hotrod.logging.Log;
 import org.infinispan.client.hotrod.logging.LogFactory;
 import org.infinispan.commons.util.Util;
-import org.infinispan.protean.runtime.InfinispanClientProducer;
-import org.infinispan.protean.runtime.InfinispanConfiguration;
-import org.infinispan.protean.runtime.InfinispanTemplate;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Type;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.annotations.ExecutionTime;
-import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
 import org.jboss.shamrock.arc.deployment.BeanContainerListenerBuildItem;
 import org.jboss.shamrock.arc.deployment.UnremovableBeanBuildItem;
 import org.jboss.shamrock.deployment.ApplicationArchive;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.ExecutionTime;
+import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
 import org.jboss.shamrock.deployment.builditem.ApplicationIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
 import org.jboss.shamrock.deployment.builditem.SystemPropertyBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import org.jboss.shamrock.infinispan.client.runtime.InfinispanClientProducer;
+import org.jboss.shamrock.infinispan.client.runtime.InfinispanConfiguration;
+import org.jboss.shamrock.infinispan.client.runtime.InfinispanTemplate;
 
 class InfinispanClientProcessor {
     private static final Log log = LogFactory.getLog(InfinispanClientProcessor.class);

@@ -32,7 +32,7 @@ import org.infinispan.query.remote.client.ProtobufMetadataManagerConstants;
 public class InfinispanClientProducer {
    private static final Log log = LogFactory.getLog(InfinispanClientProducer.class);
 
-   static final String protobufMarshallerClassName = "org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller";
+   public static final String PROTOBUF_MARSHALLER_CLASS_NAME = "org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller";
    public static final String PROTOBUF_FILE_PREFIX = "infinispan.client.hotrod.protofile.";
 
     private Properties properties;
@@ -127,7 +127,7 @@ public class InfinispanClientProducer {
        // proto stream is optional and we can't do Class.forName at Runtime and we don't want to attempt to load
        // it in this class so we check the name and if present invoke another class that handles it
        return marshallerInstance != null &&
-             marshallerInstance.getClass().getName().equals("org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller");
+             marshallerInstance.getClass().getName().equals(PROTOBUF_MARSHALLER_CLASS_NAME);
     }
 
     @PreDestroy

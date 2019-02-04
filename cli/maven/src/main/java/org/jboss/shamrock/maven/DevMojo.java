@@ -21,13 +21,11 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.JarURLConnection;
+import java.net.MalformedURLException;
 import java.net.Socket;
-import java.net.URL;
 import java.net.URI;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -196,17 +194,17 @@ public class DevMojo extends AbstractMojo {
 
             //build a class-path string for the base platform
             //this stuff does not change
+            // Do not include URIs in the manifest, because some JVMs do not like that
+            StringBuilder classPathManifest = new StringBuilder();
             StringBuilder classPath = new StringBuilder();
             for (Artifact artifact : project.getArtifacts()) {
-                classPath.append(artifact.getFile().toPath().toAbsolutePath().toUri().toURL().toString());
-                classPath.append(" ");
+                addToClassPaths(classPathManifest, classPath, artifact.getFile());
             }
             args.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
             File wiringClassesDirectory = new File(buildDir, "wiring-classes");
             wiringClassesDirectory.mkdirs();
 
-            classPath.append(wiringClassesDirectory.toPath().toAbsolutePath().toUri().toURL().toString()).append("/");
-            classPath.append(' ');
+            addToClassPaths(classPathManifest, classPath, wiringClassesDirectory);
 
             if (fakereplace) {
                 File target = new File(buildDir, "fakereplace.jar");
@@ -237,20 +235,19 @@ public class DevMojo extends AbstractMojo {
             //this allows us to just directly use classes, without messing around copying them
             //to the runner jar
             URL classFile = DevModeMain.class.getClassLoader().getResource(DevModeMain.class.getName().replace('.', '/') + ".class");
-            Path path;
+            File path;
             if (classFile.getProtocol().equals("jar")) {
                 String jarPath = classFile.getPath().substring(0, classFile.getPath().lastIndexOf('!'));
-                path = Paths.get(new URI(jarPath));
+                if(jarPath.startsWith("file:"))
+                    jarPath = jarPath.substring(5);
+                path = new File(jarPath);
             } else if (classFile.getProtocol().equals("file")) {
                 String filePath = classFile.getPath().substring(0, classFile.getPath().lastIndexOf(DevModeMain.class.getName().replace('.', '/')));
-                path = Paths.get(new URI(classFile.getProtocol(), classFile.getHost(), filePath, null));
+                path = new File(filePath);
             } else {
                 throw new MojoFailureException("Unsupported DevModeMain artifact URL:" + classFile);
             }
-            classPath.append(path.toAbsolutePath().toUri().toURL().toString());
-            if (classFile.getProtocol().equals("file")) {
-                classPath.append('/');
-            }
+            addToClassPaths(classPathManifest, classPath, path);
 
             //now we need to build a temporary jar to actually run
 
@@ -262,7 +259,7 @@ public class DevMojo extends AbstractMojo {
                 out.putNextEntry(new ZipEntry("META-INF/"));
                 Manifest manifest = new Manifest();
                 manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
-                manifest.getMainAttributes().put(Attributes.Name.CLASS_PATH, classPath.toString());
+                manifest.getMainAttributes().put(Attributes.Name.CLASS_PATH, classPathManifest.toString());
                 manifest.getMainAttributes().put(Attributes.Name.MAIN_CLASS, DevModeMain.class.getName());
                 out.putNextEntry(new ZipEntry("META-INF/MANIFEST.MF"));
                 manifest.write(out);
@@ -313,6 +310,19 @@ public class DevMojo extends AbstractMojo {
         } catch (Exception e) {
             throw new MojoFailureException("Failed to run", e);
         }
+    }
+
+
+    private void addToClassPaths(StringBuilder classPathManifest, StringBuilder classPath, File file) throws MalformedURLException {
+        URI uri = file.toPath().toAbsolutePath().toUri();
+        classPathManifest.append(uri.getPath());
+        classPath.append(uri.toURL().toString());
+        if(file.isDirectory()) {
+            classPathManifest.append("/");
+            classPath.append("/");
+        }
+        classPathManifest.append(" ");
+        classPath.append(" ");
     }
 
 }

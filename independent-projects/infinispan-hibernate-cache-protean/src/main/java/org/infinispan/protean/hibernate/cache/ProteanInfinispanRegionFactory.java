@@ -16,11 +16,10 @@ import org.jboss.logging.Logger;
 
 import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
-public final class InfinispanRegionFactory implements RegionFactory {
+public final class ProteanInfinispanRegionFactory implements RegionFactory {
 
-    private static final Logger log = Logger.getLogger(InfinispanRegionFactory.class);
+    private static final Logger log = Logger.getLogger(ProteanInfinispanRegionFactory.class);
 
     private static final String PREFIX = "hibernate.cache.";
     private static final String SIZE_SUFFIX = ".memory.size";
@@ -37,12 +36,12 @@ public final class InfinispanRegionFactory implements RegionFactory {
 
     private TimeService timeService;
 
-    public InfinispanRegionFactory() {
+    public ProteanInfinispanRegionFactory() {
     }
 
     // Required by Hibernate
     @SuppressWarnings({"UnusedParameters", "unused"})
-    public InfinispanRegionFactory(Properties props) {
+    public ProteanInfinispanRegionFactory(Properties props) {
         this();
     }
 

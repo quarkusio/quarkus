@@ -6,7 +6,7 @@ import org.hibernate.cache.spi.RegionFactory;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
-import org.infinispan.protean.hibernate.cache.InfinispanRegionFactory;
+import org.infinispan.protean.hibernate.cache.ProteanInfinispanRegionFactory;
 
 import java.util.Map;
 import java.util.Properties;
@@ -56,7 +56,7 @@ public final class ProteanRegionFactoryInitiator implements StandardServiceIniti
          }
       }
 
-      return new InfinispanRegionFactory();
+      return new ProteanInfinispanRegionFactory();
    }
 
    @SuppressWarnings({"WeakerAccess", "unused"})

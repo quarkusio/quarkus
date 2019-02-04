@@ -17,9 +17,6 @@
 package org.jboss.shamrock.jaeger.runtime;
 
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.Optional;
-
-import javax.inject.Inject;
 
 import io.jaegertracing.Configuration;
 import io.opentracing.ScopeManager;
@@ -28,31 +25,9 @@ import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
-
 public class ShamrockJaegerTracer implements Tracer {
 
     static AtomicReference<Tracer> REF = new AtomicReference<>();
-
-    static String[] CONFIG_PROPERTIES = {
-        Configuration.JAEGER_ENDPOINT,
-        Configuration.JAEGER_AUTH_TOKEN,
-        Configuration.JAEGER_USER,
-        Configuration.JAEGER_PASSWORD,
-        Configuration.JAEGER_AGENT_HOST,
-        Configuration.JAEGER_AGENT_PORT,
-        Configuration.JAEGER_REPORTER_LOG_SPANS,
-        Configuration.JAEGER_REPORTER_MAX_QUEUE_SIZE,
-        Configuration.JAEGER_REPORTER_FLUSH_INTERVAL,
-        Configuration.JAEGER_SAMPLER_TYPE,
-        Configuration.JAEGER_SAMPLER_PARAM,
-        Configuration.JAEGER_SAMPLER_MANAGER_HOST_PORT,
-        Configuration.JAEGER_SERVICE_NAME,
-        Configuration.JAEGER_TAGS,
-        Configuration.JAEGER_PROPAGATION,
-        Configuration.JAEGER_SENDER_FACTORY
-    };
 
     public ShamrockJaegerTracer() {
     }
@@ -67,17 +42,6 @@ public class ShamrockJaegerTracer implements Tracer {
             if (orig != null) {
                 return orig;
             }
-
-            Config config = ConfigProvider.getConfig();
-            // Copy the Jaeger properties from MP-Config into system properties for
-            // use by the Jaeger configuration builder.
-            for (int i=0; i < CONFIG_PROPERTIES.length; i++) {
-                Optional<String> val = config.getOptionalValue(CONFIG_PROPERTIES[i], String.class);
-                if (val.isPresent()) {
-                    System.setProperty(CONFIG_PROPERTIES[i], val.get());
-                }
-            }
-
             return Configuration.fromEnv().withMetricsFactory(new ShamrockJaegerMetricsFactory()).getTracer();
         });
     }

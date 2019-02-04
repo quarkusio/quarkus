@@ -58,7 +58,6 @@ final class JpaJandexScavenger {
     private static final DotName EMBEDDABLE = DotName.createSimple(Embeddable.class.getName());
     private static final DotName EMBEDDED = DotName.createSimple(Embedded.class.getName());
     private static final DotName MAPPED_SUPERCLASS = DotName.createSimple(MappedSuperclass.class.getName());
-    private static final DotName PATH = DotName.createSimple("javax.ws.rs.Path");
 
     private static final DotName ENUM = DotName.createSimple(Enum.class.getName());
     private static final Logger log = Logger.getLogger("org.jboss.shamrock.jpa");
@@ -88,7 +87,6 @@ final class JpaJandexScavenger {
         enlistJPAModelClasses(indexView, domainObjectCollector, enumTypeCollector, EMBEDDABLE);
         enlistJPAModelClasses(indexView, domainObjectCollector, enumTypeCollector, MAPPED_SUPERCLASS);
         enlistReturnType(indexView, domainObjectCollector, enumTypeCollector);
-        enlistControllerClasses(PATH, domainObjectCollector, indexView);
 
         for (PersistenceUnitDescriptor pud : descriptors) {
             enlistExplicitClasses(indexView, domainObjectCollector, enumTypeCollector, pud.getManagedClassNames());
@@ -156,20 +154,6 @@ final class JpaJandexScavenger {
                 }
                 addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, targetDotName);
                 domainObjectCollector.addEntity(targetDotName.toString());
-            }
-        }
-    }
-
-    private static void enlistControllerClasses(DotName dotName, DomainObjectSet collector, IndexView index) {
-        // FIXME: in the end only enhance users of the model classes
-        Collection<AnnotationInstance> jpaAnnotations = index.getAnnotations(dotName);
-        if (jpaAnnotations != null && jpaAnnotations.size() > 0) {
-            for (AnnotationInstance annotation : jpaAnnotations) {
-                if(annotation.target().kind() != AnnotationTarget.Kind.CLASS)
-                    continue;
-                ClassInfo klass = annotation.target().asClass();
-                DotName targetDotName = klass.name();
-                collector.addEntity(targetDotName.toString());
             }
         }
     }

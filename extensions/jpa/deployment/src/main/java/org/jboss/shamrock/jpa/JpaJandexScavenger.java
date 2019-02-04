@@ -155,7 +155,6 @@ final class JpaJandexScavenger {
                     continue;
                 }
                 addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, targetDotName);
-                System.err.println("Adding for JPA enhancement: "+targetDotName);
                 domainObjectCollector.addEntity(targetDotName.toString());
             }
         }
@@ -170,7 +169,6 @@ final class JpaJandexScavenger {
                     continue;
                 ClassInfo klass = annotation.target().asClass();
                 DotName targetDotName = klass.name();
-                System.err.println("Adding controller for JPA enhancement: "+targetDotName);
                 collector.addEntity(targetDotName.toString());
             }
         }

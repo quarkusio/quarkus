@@ -74,16 +74,19 @@ public class RxOperations {
         if(trimmed.isEmpty())
             return "SELECT * FROM "+getEntityName(modelInfo);
         
-        String lc = query.toLowerCase();
+        String trimmedLc = trimmed.toLowerCase();
         String translatedQuery = translateQuery(query);
-        if(lc.startsWith("from ")) {
+        if(trimmedLc.startsWith("from ")) {
             return "SELECT * " + translatedQuery;
         }
-        if(lc.startsWith("select ")) {
+        if(trimmedLc.startsWith("select ")) {
             throw new IllegalArgumentException("Select queries not yet supported");
         }
-        if(lc.startsWith("order by ")) {
+        if(trimmedLc.startsWith("order by ")) {
             return "SELECT * FROM "+getEntityName(modelInfo) + " " + translatedQuery;
+        }
+        if (trimmedLc.indexOf(' ') == -1 && trimmedLc.indexOf('=') == -1 && params != null && params.length == 1) {
+            translatedQuery += " = $1";
         }
         return "SELECT * FROM "+getEntityName(modelInfo)+" WHERE "+translatedQuery;
     }
@@ -100,14 +103,17 @@ public class RxOperations {
         if(trimmed.isEmpty())
             return "SELECT COUNT(*) FROM "+getEntityName(modelInfo);
         
-        String lc = query.toLowerCase();
+        String trimmedLc = trimmed.toLowerCase();
         String translatedQuery = translateQuery(query);
-        if(lc.startsWith("from ")) {
+        if(trimmedLc.startsWith("from ")) {
             return "SELECT COUNT(*) "+translatedQuery;
         }
-        if(lc.startsWith("order by ")) {
+        if(trimmedLc.startsWith("order by ")) {
             // ignore it
             return "SELECT COUNT(*) FROM "+getEntityName(modelInfo);
+        }
+        if (trimmedLc.indexOf(' ') == -1 && trimmedLc.indexOf('=') == -1 && params != null && params.length == 1) {
+            translatedQuery += " = $1";
         }
         return "SELECT COUNT(*) FROM "+getEntityName(modelInfo)+" WHERE "+translatedQuery;
     }
@@ -120,14 +126,17 @@ public class RxOperations {
         if(trimmed.isEmpty())
             return "DELETE FROM "+getEntityName(modelInfo);
         
-        String lc = query.toLowerCase();
+        String trimmedLc = trimmed.toLowerCase();
         String translatedQuery = translateQuery(query);
-        if(lc.startsWith("from ")) {
+        if(trimmedLc.startsWith("from ")) {
             return "DELETE "+translatedQuery;
         }
-        if(lc.startsWith("order by ")) {
+        if(trimmedLc.startsWith("order by ")) {
             // ignore it
             return "DELETE FROM "+getEntityName(modelInfo);
+        }
+        if (trimmedLc.indexOf(' ') == -1 && trimmedLc.indexOf('=') == -1 && params != null && params.length == 1) {
+            translatedQuery += " = $1";
         }
         return "DELETE FROM "+getEntityName(modelInfo)+" WHERE "+translatedQuery;
     }

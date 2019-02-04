@@ -196,7 +196,7 @@ public class TestEndpoint extends Controller {
                         Assertions.assertEquals(1, persons.size());
                         Assertions.assertEquals(person, persons.get(0));
 
-                        return RxPerson.find("name = ?1", "emmanuel").toList();
+                        return RxPerson.find("name", "emmanuel").toList();
                     }).flatMap(persons -> {
                         Assertions.assertEquals(0, persons.size());
 
@@ -205,6 +205,10 @@ public class TestEndpoint extends Controller {
                         Assertions.assertEquals(1, (long)count);
                         
                         return RxPerson.count("name = ?1", "stef");
+                    }).flatMap(count -> {
+                        Assertions.assertEquals(1, (long)count);
+
+                        return RxPerson.count("name", "stef");
                     }).flatMapCompletable(count -> {
                         Assertions.assertEquals(1, (long)count);
 
@@ -233,7 +237,7 @@ public class TestEndpoint extends Controller {
                     .flatMap(count -> {
                         Assertions.assertEquals(0, (long)count);
                         
-                        return RxPerson.delete("name = ?1", "stef");
+                        return RxPerson.delete("name", "stef");
                     }).flatMap(count -> {
                         Assertions.assertEquals(1, (long)count);
                         
@@ -309,7 +313,7 @@ public class TestEndpoint extends Controller {
                         Assertions.assertEquals(1, persons.size());
                         Assertions.assertEquals(person, persons.get(0));
 
-                        return RxPerson.find("name = ?1", "emmanuel").toList();
+                        return RxPerson.find("name", "emmanuel").toList();
                     }).flatMap(persons -> {
                         Assertions.assertEquals(0, persons.size());
 
@@ -318,6 +322,10 @@ public class TestEndpoint extends Controller {
                         Assertions.assertEquals(1, (long)count);
                         
                         return rxPersonDao.count("name = ?1", "stef");
+                    }).flatMap(count -> {
+                        Assertions.assertEquals(1, (long)count);
+
+                        return rxPersonDao.count("name", "stef");
                     }).flatMapCompletable(count -> {
                         Assertions.assertEquals(1, (long)count);
 
@@ -346,7 +354,7 @@ public class TestEndpoint extends Controller {
                     .flatMap(count -> {
                         Assertions.assertEquals(0, (long)count);
                         
-                        return rxPersonDao.delete("name = ?1", "stef");
+                        return rxPersonDao.delete("name", "stef");
                     }).flatMap(count -> {
                         Assertions.assertEquals(1, (long)count);
                         

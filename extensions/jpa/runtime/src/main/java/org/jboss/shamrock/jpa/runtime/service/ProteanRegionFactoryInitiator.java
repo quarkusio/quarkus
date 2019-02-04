@@ -39,12 +39,12 @@ public final class ProteanRegionFactoryInitiator implements StandardServiceIniti
       final Boolean useSecondLevelCache = ConfigurationHelper.getBooleanWrapper(
          AvailableSettings.USE_SECOND_LEVEL_CACHE,
          configurationValues,
-         null
+         Boolean.TRUE
       );
       final Boolean useQueryCache = ConfigurationHelper.getBooleanWrapper(
          AvailableSettings.USE_QUERY_CACHE,
          configurationValues,
-         null
+         Boolean.TRUE
       );
 
       // We should immediately return NoCachingRegionFactory if either:

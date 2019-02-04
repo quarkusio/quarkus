@@ -36,6 +36,10 @@ import static org.hibernate.cfg.AvailableSettings.COLLECTION_CACHE_PREFIX;
 import static org.hibernate.cfg.AvailableSettings.PERSISTENCE_UNIT_NAME;
 import static org.hibernate.cfg.AvailableSettings.WRAP_RESULT_SETS;
 import static org.hibernate.cfg.AvailableSettings.XML_MAPPING_ENABLED;
+import static org.hibernate.cfg.AvailableSettings.USE_SECOND_LEVEL_CACHE;
+import static org.hibernate.cfg.AvailableSettings.USE_QUERY_CACHE;
+import static org.hibernate.cfg.AvailableSettings.USE_DIRECT_REFERENCE_CACHE_ENTRIES;
+import static org.hibernate.cfg.AvailableSettings.JPA_SHARED_CACHE_MODE;
 import static org.hibernate.internal.HEMLogging.messageLogger;
 
 import java.util.ArrayList;
@@ -46,6 +50,7 @@ import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.persistence.PersistenceException;
+import javax.persistence.SharedCacheMode;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 
 import org.hibernate.boot.CacheRegionDefinition;
@@ -232,6 +237,8 @@ public class FastBootMetadataBuilder {
         }
         mergedSettings.configurationValues.remove(JACC_ENABLED);
 
+        enableCachingByDefault(mergedSettings.configurationValues);
+
         // here we are going to iterate the merged config settings looking for:
         // 1) additional JACC permissions
         // 2) additional cache region declarations
@@ -268,6 +275,17 @@ public class FastBootMetadataBuilder {
         mergedSettings.configurationValues.put( org.hibernate.cfg.AvailableSettings.CACHE_REGION_FACTORY, InfinispanRegionFactory.class.getName());
 
         return mergedSettings;
+    }
+
+    /**
+     * Enable 2LC for entities and queries by default. Also allow "reference caching" by default.
+     */
+    private void enableCachingByDefault(final Map configurationValues) {
+        //Only set these if the user isn't making an explicit choice:
+        configurationValues.putIfAbsent(USE_DIRECT_REFERENCE_CACHE_ENTRIES, Boolean.TRUE);
+        configurationValues.putIfAbsent(USE_SECOND_LEVEL_CACHE, Boolean.TRUE);
+        configurationValues.putIfAbsent(USE_QUERY_CACHE, Boolean.TRUE);
+        configurationValues.putIfAbsent(JPA_SHARED_CACHE_MODE, SharedCacheMode.ENABLE_SELECTIVE);
     }
 
     public RecordedState build() {

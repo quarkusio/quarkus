@@ -41,6 +41,8 @@ import org.jboss.protean.arc.CreationalContextImpl;
 import org.jboss.protean.arc.InjectableBean;
 import org.jboss.protean.arc.InjectableContext;
 import org.jboss.protean.arc.processor.ResourceOutput.Resource;
+import org.jboss.protean.gizmo.AssignableResultHandle;
+import org.jboss.protean.gizmo.BytecodeCreator;
 import org.jboss.protean.gizmo.ClassCreator;
 import org.jboss.protean.gizmo.DescriptorUtils;
 import org.jboss.protean.gizmo.FieldCreator;
@@ -178,10 +180,13 @@ public class ClientProxyGenerator extends AbstractGenerator {
         // getContext()
         ResultHandle context = creator.invokeInterfaceMethod(MethodDescriptor.ofMethod(ArcContainer.class, "getContext", InjectableContext.class, Class.class),
                 container, scope);
-        // new CreationalContextImpl<>()
-        ResultHandle creationContext = creator.newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class));
-        ResultHandle result = creator.invokeInterfaceMethod(MethodDescriptors.CONTEXT_GET, context, bean, creationContext);
-        creator.returnValue(result);
+        AssignableResultHandle ret = creator.createVariable(Object.class);
+        creator.assign(ret, creator.invokeInterfaceMethod(MethodDescriptors.CONTEXT_GET_IF_PRESENT, context, bean));
+        BytecodeCreator isNullBranch = creator.ifNull(ret).trueBranch();
+        // Create a new contextual instance - new CreationalContextImpl<>()
+        ResultHandle creationContext = isNullBranch.newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class));
+        isNullBranch.assign(ret, isNullBranch.invokeInterfaceMethod(MethodDescriptors.CONTEXT_GET, context, bean, creationContext));
+        creator.returnValue(ret);
     }
 
     void implementGetContextualInstance(ClassCreator clientProxy, String providerTypeName) {

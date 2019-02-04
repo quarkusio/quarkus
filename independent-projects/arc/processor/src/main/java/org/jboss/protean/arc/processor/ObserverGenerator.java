@@ -31,7 +31,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
 import javax.enterprise.inject.spi.EventContext;
@@ -67,8 +66,6 @@ public class ObserverGenerator extends AbstractGenerator {
 
     private static final Logger LOGGER = Logger.getLogger(ObserverGenerator.class);
 
-    private static final AtomicInteger OBSERVER_INDEX = new AtomicInteger();
-
     private final AnnotationLiteralProcessor annotationLiterals;
 
     private final Predicate<DotName> applicationClassPredicate;
@@ -97,13 +94,20 @@ public class ObserverGenerator extends AbstractGenerator {
             declaringClassBase = DotNames.simpleName(declaringClass.name());
         }
 
-        String baseName = declaringClassBase + OBSERVER_SUFFIX + OBSERVER_INDEX.incrementAndGet();
+        StringBuilder sigBuilder = new StringBuilder();
+        sigBuilder.append(observer.getObserverMethod().name())
+                .append("_")
+                .append(observer.getObserverMethod().returnType().name().toString());
+        for(org.jboss.jandex.Type paramType : observer.getObserverMethod().parameters()) {
+            sigBuilder.append(paramType.name().toString());
+        }
+        String baseName = declaringClassBase + OBSERVER_SUFFIX + "_" + observer.getObserverMethod().name() + "_" + Hashes.sha1(sigBuilder.toString());
         String generatedName = DotNames.packageName(declaringClass.name()).replace('.', '/') + "/" + baseName;
 
         boolean isApplicationClass = applicationClassPredicate.test(observer.getObserverMethod().declaringClass().name());
         ResourceClassOutput classOutput = new ResourceClassOutput(isApplicationClass, name -> name.equals(generatedName) ? SpecialType.OBSERVER : null);
 
-        // Foo_Observer1 implements ObserverMethod<T>
+        // Foo_Observer_fooMethod_hash implements ObserverMethod<T>
         ClassCreator observerCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName).interfaces(InjectableObserverMethod.class)
                 .build();
 
@@ -176,7 +180,10 @@ public class ObserverGenerator extends AbstractGenerator {
 
         ResultHandle declaringProviderHandle = notify
                 .readInstanceField(FieldDescriptor.of(observerCreator.getClassName(), "declaringProvider", InjectableBean.class.getName()), notify.getThis());
-        ResultHandle ctxHandle = notify.newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class));
+        
+        // It is safe to skip CreationalContext.release() for normal scoped declaring provider and no injection points
+        boolean skipRelease = observer.getDeclaringBean().getScope().isNormal() && observer.getInjection().injectionPoints.isEmpty();
+        ResultHandle ctxHandle = skipRelease ? notify.loadNull() : notify.newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class));
         ResultHandle declaringProviderInstanceHandle = notify.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, declaringProviderHandle,
                 ctxHandle);
 
@@ -222,7 +229,9 @@ public class ObserverGenerator extends AbstractGenerator {
         }
 
         // Destroy @Dependent instances injected into method parameters of an observer method
-        notify.invokeInterfaceMethod(MethodDescriptors.CREATIONAL_CTX_RELEASE, ctxHandle);
+        if (!skipRelease) {
+            notify.invokeInterfaceMethod(MethodDescriptors.CREATIONAL_CTX_RELEASE, ctxHandle);
+        }
 
         // If the declaring bean is @Dependent we must destroy the instance afterwards
         if (ScopeInfo.DEPENDENT.equals(observer.getDeclaringBean().getScope())) {

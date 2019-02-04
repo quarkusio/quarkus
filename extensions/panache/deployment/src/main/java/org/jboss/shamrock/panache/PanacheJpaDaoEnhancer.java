@@ -4,7 +4,7 @@ import static org.jboss.shamrock.panache.PanacheJpaModelEnhancer.JPA_OPERATIONS_
 
 import java.util.function.BiFunction;
 
-import org.jboss.panache.DaoBase;
+import org.jboss.panache.jpa.DaoBase;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;

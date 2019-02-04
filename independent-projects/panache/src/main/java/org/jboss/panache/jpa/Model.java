@@ -1,4 +1,4 @@
-package org.jboss.panache;
+package org.jboss.panache.jpa;
 
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;

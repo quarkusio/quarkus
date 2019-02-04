@@ -3,8 +3,8 @@ package org.jboss.shamrock.example.panache;
 import javax.persistence.Entity;
 import javax.persistence.ManyToOne;
 
-import org.jboss.panache.NotReallyJpa;
-import org.jboss.panache.RxModel;
+import org.jboss.panache.rx.NotReallyJpa;
+import org.jboss.panache.rx.RxModel;
 
 import io.reactivex.Single;
 

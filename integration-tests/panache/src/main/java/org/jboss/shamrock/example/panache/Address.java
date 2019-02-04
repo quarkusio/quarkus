@@ -18,7 +18,7 @@ package org.jboss.shamrock.example.panache;
 
 import javax.persistence.Entity;
 
-import org.jboss.panache.Model;
+import org.jboss.panache.jpa.Model;
 
 @Entity
 public class Address extends Model {

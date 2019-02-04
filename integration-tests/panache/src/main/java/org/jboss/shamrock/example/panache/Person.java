@@ -25,7 +25,7 @@ import javax.persistence.FetchType;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 
-import org.jboss.panache.Model;
+import org.jboss.panache.jpa.Model;
 
 @Entity
 public class Person extends Model {

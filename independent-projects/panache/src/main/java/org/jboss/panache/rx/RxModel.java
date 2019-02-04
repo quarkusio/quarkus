@@ -1,4 +1,4 @@
-package org.jboss.panache;
+package org.jboss.panache.rx;
 
 import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;

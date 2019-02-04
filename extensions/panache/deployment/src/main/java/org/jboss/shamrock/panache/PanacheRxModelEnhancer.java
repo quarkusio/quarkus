@@ -2,8 +2,8 @@ package org.jboss.shamrock.panache;
 
 import java.util.function.BiFunction;
 
-import org.jboss.panache.RxEntityBase;
-import org.jboss.panache.RxModel;
+import org.jboss.panache.rx.RxEntityBase;
+import org.jboss.panache.rx.RxModel;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;

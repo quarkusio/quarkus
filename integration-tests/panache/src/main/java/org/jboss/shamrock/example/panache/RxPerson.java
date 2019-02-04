@@ -21,8 +21,8 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.OneToMany;
 
-import org.jboss.panache.NotReallyJpa;
-import org.jboss.panache.RxModel;
+import org.jboss.panache.rx.NotReallyJpa;
+import org.jboss.panache.rx.RxModel;
 
 import io.reactivex.Observable;
 

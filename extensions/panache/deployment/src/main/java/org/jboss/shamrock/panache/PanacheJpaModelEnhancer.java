@@ -2,8 +2,8 @@ package org.jboss.shamrock.panache;
 
 import java.util.function.BiFunction;
 
-import org.jboss.panache.EntityBase;
-import org.jboss.panache.JpaOperations;
+import org.jboss.panache.jpa.EntityBase;
+import org.jboss.panache.jpa.JpaOperations;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;

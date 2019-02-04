@@ -59,7 +59,7 @@ final class JpaJandexScavenger {
     private static final DotName EMBEDDED = DotName.createSimple(Embedded.class.getName());
     private static final DotName MAPPED_SUPERCLASS = DotName.createSimple(MappedSuperclass.class.getName());
     private static final DotName PATH = DotName.createSimple("javax.ws.rs.Path");
-    private static final DotName NOT_REALLY_JPA = DotName.createSimple("org.jboss.panache.NotReallyJpa");
+    private static final DotName NOT_REALLY_JPA = DotName.createSimple("org.jboss.panache.rx.NotReallyJpa");
 
     private static final DotName ENUM = DotName.createSimple(Enum.class.getName());
     private static final Logger log = Logger.getLogger("org.jboss.shamrock.jpa");

@@ -11,8 +11,8 @@ import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Transient;
 
-import org.jboss.panache.RxEntityBase;
-import org.jboss.panache.RxModel;
+import org.jboss.panache.rx.RxEntityBase;
+import org.jboss.panache.rx.RxModel;
 import org.jboss.protean.gizmo.AssignableResultHandle;
 import org.jboss.protean.gizmo.BranchResult;
 import org.jboss.protean.gizmo.BytecodeCreator;

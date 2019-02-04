@@ -1,4 +1,4 @@
-package org.jboss.panache;
+package org.jboss.panache.jpa;
 
 import java.util.List;
 

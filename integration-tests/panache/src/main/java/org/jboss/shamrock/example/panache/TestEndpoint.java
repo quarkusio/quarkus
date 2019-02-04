@@ -23,7 +23,7 @@ import javax.transaction.Transactional;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
-import org.jboss.panache.Controller;
+import org.jboss.panache.jpa.Controller;
 import org.jboss.panache.router.Router;
 import org.jboss.resteasy.annotations.jaxrs.PathParam;
 import org.junit.jupiter.api.Assertions;

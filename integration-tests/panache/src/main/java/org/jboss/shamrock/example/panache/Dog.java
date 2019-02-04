@@ -3,7 +3,7 @@ package org.jboss.shamrock.example.panache;
 import javax.persistence.Entity;
 import javax.persistence.ManyToOne;
 
-import org.jboss.panache.Model;
+import org.jboss.panache.jpa.Model;
 
 @Entity
 public class Dog extends Model {

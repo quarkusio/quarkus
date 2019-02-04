@@ -1,4 +1,4 @@
-package org.jboss.panache;
+package org.jboss.panache.rx;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.RetentionPolicy;

@@ -20,6 +20,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
 import org.jboss.shamrock.test.junit.ShamrockTest;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.restassured.RestAssured;
@@ -39,7 +40,13 @@ public class RestClientTestCase {
                 .body(is("TEST"));
     }
 
+    /**
+     * Disabled by default as it establishes external connections.
+     * <p>
+     * Uncomment when you want to test SSL support.
+     */
     @Test
+    @Disabled
     public void testDegradedSslSupport() {
         RestAssured.when().get("/ssl").then()
                 .statusCode(500)

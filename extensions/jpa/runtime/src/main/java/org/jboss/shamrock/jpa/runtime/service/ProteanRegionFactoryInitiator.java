@@ -9,7 +9,6 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.infinispan.protean.hibernate.cache.ProteanInfinispanRegionFactory;
 
 import java.util.Map;
-import java.util.Properties;
 
 import static java.lang.Boolean.FALSE;
 
@@ -27,15 +26,6 @@ public final class ProteanRegionFactoryInitiator implements StandardServiceIniti
 
    @Override
    public RegionFactory initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
-      final RegionFactory regionFactory = resolveRegionFactory( configurationValues, registry );
-      return regionFactory;
-   }
-
-   @SuppressWarnings({"unchecked", "WeakerAccess"})
-   protected RegionFactory resolveRegionFactory(Map configurationValues, ServiceRegistryImplementor registry) {
-      final Properties p = new Properties();
-      p.putAll( configurationValues );
-
       final Boolean useSecondLevelCache = ConfigurationHelper.getBooleanWrapper(
          AvailableSettings.USE_SECOND_LEVEL_CACHE,
          configurationValues,
@@ -57,11 +47,6 @@ public final class ProteanRegionFactoryInitiator implements StandardServiceIniti
       }
 
       return new ProteanInfinispanRegionFactory();
-   }
-
-   @SuppressWarnings({"WeakerAccess", "unused"})
-   protected RegionFactory getFallback(Map configurationValues, ServiceRegistryImplementor registry) {
-      return null;
    }
 
 }

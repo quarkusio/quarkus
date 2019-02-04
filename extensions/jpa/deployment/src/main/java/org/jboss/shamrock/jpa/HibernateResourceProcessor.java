@@ -19,9 +19,7 @@ package org.jboss.shamrock.jpa;
 import static org.jboss.shamrock.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -74,6 +72,7 @@ import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildI
 import org.jboss.shamrock.deployment.configuration.ConfigurationError;
 import org.jboss.shamrock.deployment.index.IndexingUtil;
 import org.jboss.shamrock.deployment.recording.RecorderContext;
+import org.jboss.shamrock.deployment.util.IoUtil;
 import org.jboss.shamrock.jpa.runtime.DefaultEntityManagerFactoryProducer;
 import org.jboss.shamrock.jpa.runtime.DefaultEntityManagerProducer;
 import org.jboss.shamrock.jpa.runtime.JPAConfig;
@@ -344,8 +343,8 @@ public final class HibernateResourceProcessor {
         }
         for (AdditionalJpaModelBuildItem additionalJpaModel : additionalJpaModelBuildItems) {
             String className = additionalJpaModel.getClassName();
-            try (InputStream stream = HibernateResourceProcessor.class.getClassLoader().getResourceAsStream(className.replace('.', '/') + ".class")) {
-                byte[] bytes = read(stream);
+            try {
+                byte[] bytes = IoUtil.readClassAsBytes(HibernateResourceProcessor.class.getClassLoader(), className);
                 byte[] enhanced = hibernateEntityEnhancer.enhance(className, bytes);
                 additionalClasses.produce(new GeneratedClassBuildItem(true, className, enhanced != null ? enhanced : bytes));
             } catch (IOException e) {
@@ -360,15 +359,5 @@ public final class HibernateResourceProcessor {
         // (check for the runtime provided properties to be empty as well)
         Map<Object, Object> configurationOverrides = Collections.emptyMap();
         return PersistenceXmlParser.locatePersistenceUnits(configurationOverrides);
-    }
-    
-    private byte[] read(InputStream is) throws IOException {
-        ByteArrayOutputStream os = new ByteArrayOutputStream(); 
-        byte[] buffer = new byte[4096];
-        int len;
-        while((len = is.read(buffer)) != -1) {
-            os.write(buffer, 0, len);
-        }
-        return os.toByteArray();
     }
 }

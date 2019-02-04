@@ -10,6 +10,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
+import org.jboss.shamrock.deployment.util.IoUtil;
 
 public class IndexingUtil {
 
@@ -26,7 +27,7 @@ public class IndexingUtil {
         ClassInfo beanInfo = shamrockIndex.getClassByName(beanClassName);
         if (beanInfo == null) {
             log.debugf("Index bean class: %s", beanClass);
-            try (InputStream stream = classLoader.getResourceAsStream(beanClass.replace('.', '/') + ".class")) {
+            try (InputStream stream = IoUtil.readClass(classLoader, beanClass)) {
                 beanInfo = indexer.index(stream);
                 additionalIndex.add(beanInfo.name());
             } catch (IOException e) {
@@ -38,8 +39,7 @@ public class IndexingUtil {
         }
         for (DotName annotationName : beanInfo.annotations().keySet()) {
             if (!additionalIndex.contains(annotationName) && shamrockIndex.getClassByName(annotationName) == null) {
-                try (InputStream annotationStream = classLoader
-                        .getResourceAsStream(annotationName.toString().replace('.', '/') + ".class")) {
+                try (InputStream annotationStream = IoUtil.readClass(classLoader, annotationName.toString())) {
                     log.debugf("Index annotation: %s", annotationName);
                     indexer.index(annotationStream);
                     additionalIndex.add(annotationName);
@@ -75,8 +75,7 @@ public class IndexingUtil {
         }
         for (DotName annotationName : beanInfo.annotations().keySet()) {
             if (!additionalIndex.contains(annotationName) && shamrockIndex.getClassByName(annotationName) == null) {
-                try (InputStream annotationStream = classLoader
-                        .getResourceAsStream(annotationName.toString().replace('.', '/') + ".class")) {
+                try (InputStream annotationStream = IoUtil.readClass(classLoader, annotationName.toString())) {
                     log.debugf("Index annotation: %s", annotationName);
                     indexer.index(annotationStream);
                     additionalIndex.add(annotationName);

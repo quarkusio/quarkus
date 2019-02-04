@@ -1,6 +1,5 @@
 package org.jboss.panache.rx;
 
-import org.jboss.panache.rx.RxEntityBase.RxModelInfo;
 import org.jboss.protean.arc.Arc;
 
 import io.reactiverse.reactivex.pgclient.PgPool;

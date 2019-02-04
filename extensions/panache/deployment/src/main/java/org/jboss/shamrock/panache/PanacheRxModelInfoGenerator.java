@@ -13,6 +13,7 @@ import javax.persistence.Transient;
 
 import org.jboss.panache.rx.RxEntityBase;
 import org.jboss.panache.rx.RxModel;
+import org.jboss.panache.rx.RxModelInfo;
 import org.jboss.protean.gizmo.AssignableResultHandle;
 import org.jboss.protean.gizmo.BranchResult;
 import org.jboss.protean.gizmo.BytecodeCreator;
@@ -124,7 +125,7 @@ public class PanacheRxModelInfoGenerator {
         
         ClassCreator modelClass = ClassCreator.builder().className(modelInfoClassName)
             .classOutput(new ProcessorClassOutput(generatedClasses))
-            .interfaces(RxEntityBase.RxModelInfo.class)
+            .interfaces(RxModelInfo.class)
             .signature("Ljava/lang/Object;L"+PanacheRxModelEnhancer.RX_MODEL_INFO_BINARY_NAME+"<"+modelSignature+">;")
             .build();
         

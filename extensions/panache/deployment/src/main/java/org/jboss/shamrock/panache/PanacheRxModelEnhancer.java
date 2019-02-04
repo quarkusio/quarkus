@@ -4,6 +4,8 @@ import java.util.function.BiFunction;
 
 import org.jboss.panache.rx.RxEntityBase;
 import org.jboss.panache.rx.RxModel;
+import org.jboss.panache.rx.RxModelInfo;
+import org.jboss.panache.rx.RxOperations;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
@@ -14,7 +16,11 @@ public class PanacheRxModelEnhancer implements BiFunction<String, ClassVisitor, 
     public final static String RX_ENTITY_BASE_BINARY_NAME = RX_ENTITY_BASE_NAME.replace('.', '/');
     public final static String RX_ENTITY_BASE_SIGNATURE = "L"+RX_ENTITY_BASE_BINARY_NAME+";";
 
-    public final static String RX_MODEL_INFO_NAME = RxEntityBase.RxModelInfo.class.getName();
+    public final static String RX_OPERATIONS_NAME = RxOperations.class.getName();
+    public final static String RX_OPERATIONS_BINARY_NAME = RX_OPERATIONS_NAME.replace('.', '/');
+    public final static String RX_OPERATIONS_SIGNATURE = "L"+RX_OPERATIONS_BINARY_NAME+";";
+
+    public final static String RX_MODEL_INFO_NAME = RxModelInfo.class.getName();
     public final static String RX_MODEL_INFO_BINARY_NAME = RX_MODEL_INFO_NAME.replace('.', '/');
     public final static String RX_MODEL_INFO_SIGNATURE = "L"+RX_MODEL_INFO_BINARY_NAME+";";
 
@@ -109,7 +115,7 @@ public class PanacheRxModelEnhancer implements BiFunction<String, ClassVisitor, 
             mv.visitFieldInsn(Opcodes.GETSTATIC, thisName.replace('.', '/'), fieldName, modelDesc);
             mv.visitIntInsn(Opcodes.ALOAD, 0);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                               RX_ENTITY_BASE_BINARY_NAME, 
+                               RX_OPERATIONS_BINARY_NAME, 
                                "findById", 
                                "("+RX_MODEL_INFO_SIGNATURE+"Ljava/lang/Object;)Lio/reactivex/Maybe;", false);
             mv.visitInsn(Opcodes.ARETURN);
@@ -129,7 +135,7 @@ public class PanacheRxModelEnhancer implements BiFunction<String, ClassVisitor, 
             mv.visitIntInsn(Opcodes.ALOAD, 0);
             mv.visitIntInsn(Opcodes.ALOAD, 1);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                               RX_ENTITY_BASE_BINARY_NAME, 
+                               RX_OPERATIONS_BINARY_NAME, 
                                "find", 
                                "("+RX_MODEL_INFO_SIGNATURE+"Ljava/lang/String;[Ljava/lang/Object;)Lio/reactivex/Observable;", false);
             mv.visitInsn(Opcodes.ARETURN);
@@ -145,7 +151,7 @@ public class PanacheRxModelEnhancer implements BiFunction<String, ClassVisitor, 
             mv.visitCode();
             mv.visitFieldInsn(Opcodes.GETSTATIC, thisName.replace('.', '/'), fieldName, modelDesc);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                               RX_ENTITY_BASE_BINARY_NAME, 
+                               RX_OPERATIONS_BINARY_NAME, 
                                "findAll", 
                                "("+RX_MODEL_INFO_SIGNATURE+")Lio/reactivex/Observable;", false);
             mv.visitInsn(Opcodes.ARETURN);
@@ -161,7 +167,7 @@ public class PanacheRxModelEnhancer implements BiFunction<String, ClassVisitor, 
             mv.visitCode();
             mv.visitFieldInsn(Opcodes.GETSTATIC, thisName.replace('.', '/'), fieldName, modelDesc);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                               RX_ENTITY_BASE_BINARY_NAME, 
+                               RX_OPERATIONS_BINARY_NAME, 
                                "count", 
                                "("+RX_MODEL_INFO_SIGNATURE+")Lio/reactivex/Single;", false);
             mv.visitInsn(Opcodes.ARETURN);
@@ -181,7 +187,7 @@ public class PanacheRxModelEnhancer implements BiFunction<String, ClassVisitor, 
             mv.visitIntInsn(Opcodes.ALOAD, 0);
             mv.visitIntInsn(Opcodes.ALOAD, 1);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                               RX_ENTITY_BASE_BINARY_NAME, 
+                               RX_OPERATIONS_BINARY_NAME, 
                                "count", 
                                "("+RX_MODEL_INFO_SIGNATURE+"Ljava/lang/String;[Ljava/lang/Object;)Lio/reactivex/Single;", false);
             mv.visitInsn(Opcodes.ARETURN);
@@ -197,7 +203,7 @@ public class PanacheRxModelEnhancer implements BiFunction<String, ClassVisitor, 
             mv.visitCode();
             mv.visitFieldInsn(Opcodes.GETSTATIC, thisName.replace('.', '/'), fieldName, modelDesc);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                               RX_ENTITY_BASE_BINARY_NAME, 
+                               RX_OPERATIONS_BINARY_NAME, 
                                "deleteAll", 
                                "("+RX_MODEL_INFO_SIGNATURE+")Lio/reactivex/Single;", false);
             mv.visitInsn(Opcodes.ARETURN);
@@ -217,14 +223,13 @@ public class PanacheRxModelEnhancer implements BiFunction<String, ClassVisitor, 
             mv.visitIntInsn(Opcodes.ALOAD, 0);
             mv.visitIntInsn(Opcodes.ALOAD, 1);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC, 
-                               RX_ENTITY_BASE_BINARY_NAME, 
+                               RX_OPERATIONS_BINARY_NAME, 
                                "delete", 
                                "("+RX_MODEL_INFO_SIGNATURE+"Ljava/lang/String;[Ljava/lang/Object;)Lio/reactivex/Single;", false);
             mv.visitInsn(Opcodes.ARETURN);
             mv.visitMaxs(0, 0);
             mv.visitEnd();
 
-            // FIXME: inner class?
             super.visitEnd();
             
         }

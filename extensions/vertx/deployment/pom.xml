@@ -46,6 +46,11 @@
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-vertx-runtime</artifactId>
         </dependency>
+        
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-junit5-internal</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

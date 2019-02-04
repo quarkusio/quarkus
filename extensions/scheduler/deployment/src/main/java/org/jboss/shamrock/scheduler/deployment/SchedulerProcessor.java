@@ -200,16 +200,21 @@ public class SchedulerProcessor {
     @BuildStep
     @Record(STATIC_INIT)
     public void build(SchedulerDeploymentTemplate template, BeanContainerBuildItem beanContainer, List<ScheduledBusinessMethodItem> scheduledBusinessMethods,
-            BuildProducer<GeneratedClassBuildItem> generatedResource, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<GeneratedClassBuildItem> generatedClass, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<FeatureBuildItem> feature) {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SCHEDULER));
         List<Map<String, Object>> scheduleConfigurations = new ArrayList<>();
-        ProcessorClassOutput processorClassOutput = new ProcessorClassOutput(generatedResource);
+        ClassOutput classOutput = new ClassOutput() {
+            @Override
+            public void write(String name, byte[] data) {
+                generatedClass.produce(new GeneratedClassBuildItem(true, name, data));
+            }
+        };
 
         for (ScheduledBusinessMethodItem businessMethod : scheduledBusinessMethods) {
             Map<String, Object> config = new HashMap<>();
-            String invokerClass = generateInvoker(businessMethod.getBean(), businessMethod.getMethod(), processorClassOutput);
+            String invokerClass = generateInvoker(businessMethod.getBean(), businessMethod.getMethod(), classOutput);
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, invokerClass));
             config.put(SchedulerDeploymentTemplate.INVOKER_KEY, invokerClass);
             List<Map<String, Object>> schedules = new ArrayList<>();
@@ -227,7 +232,7 @@ public class SchedulerProcessor {
         template.registerSchedules(scheduleConfigurations, beanContainer.getValue());
     }
 
-    private String generateInvoker(BeanInfo bean, MethodInfo method, ProcessorClassOutput processorClassOutput) {
+    private String generateInvoker(BeanInfo bean, MethodInfo method, ClassOutput classOutput) {
 
         String baseName;
         if (bean.getImplClazz().enclosingClass() != null) {
@@ -238,7 +243,7 @@ public class SchedulerProcessor {
         String targetPackage = DotNames.packageName(bean.getImplClazz().name());
         String generatedName = targetPackage.replace('.', '/') + "/" + baseName + INVOKER_SUFFIX + INVOKER_INDEX.incrementAndGet();
 
-        ClassCreator invokerCreator = ClassCreator.builder().classOutput(processorClassOutput).className(generatedName).interfaces(ScheduledInvoker.class)
+        ClassCreator invokerCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName).interfaces(ScheduledInvoker.class)
                 .build();
 
         MethodCreator invoke = invokerCreator.getMethodCreator("invoke", void.class, ScheduledExecution.class);
@@ -312,20 +317,6 @@ public class SchedulerProcessor {
                 validationContext.addDeploymentProblem(new IllegalStateException("@Scheduled must declare either cron() or every(): " + schedule));
             }
         }
-    }
-
-    static final class ProcessorClassOutput implements ClassOutput {
-        private final BuildProducer<GeneratedClassBuildItem> producer;
-
-        ProcessorClassOutput(BuildProducer<GeneratedClassBuildItem> producer) {
-            this.producer = producer;
-        }
-
-        @Override
-        public void write(final String name, final byte[] data) {
-            producer.produce(new GeneratedClassBuildItem(true, name, data));
-        }
-
     }
 
 }

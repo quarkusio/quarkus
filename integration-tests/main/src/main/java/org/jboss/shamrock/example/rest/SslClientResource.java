@@ -18,11 +18,15 @@ package org.jboss.shamrock.example.rest;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
-import javax.ws.rs.Path;
 
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
-@Path("/ssl")
+/**
+ * Disabled by default as it establishes external connections.
+ * <p>
+ * Uncomment when you want to test SSL support.
+ */
+//@Path("/ssl")
 public class SslClientResource {
 
     @Inject

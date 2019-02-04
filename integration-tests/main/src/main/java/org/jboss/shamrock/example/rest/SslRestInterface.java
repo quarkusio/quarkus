@@ -17,12 +17,14 @@
 package org.jboss.shamrock.example.rest;
 
 import javax.ws.rs.GET;
-import javax.ws.rs.Path;
 
-import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
-
-@Path("/")
-@RegisterRestClient
+/**
+ * Disabled by default as it establishes external connections.
+ * <p>
+ * Uncomment when you want to test SSL support.
+ */
+//@Path("/")
+//@RegisterRestClient
 public interface SslRestInterface {
 
     @GET

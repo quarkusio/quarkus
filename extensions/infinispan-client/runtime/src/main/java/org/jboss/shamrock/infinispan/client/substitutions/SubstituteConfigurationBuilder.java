@@ -1,4 +1,4 @@
-package org.infinispan.protean.substitutions;
+package org.jboss.shamrock.infinispan.client.substitutions;
 
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
 import org.infinispan.client.hotrod.marshall.BytesOnlyMarshaller;

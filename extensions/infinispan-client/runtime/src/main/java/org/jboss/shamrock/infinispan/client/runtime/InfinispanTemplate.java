@@ -1,4 +1,4 @@
-package org.infinispan.protean.runtime;
+package org.jboss.shamrock.infinispan.client.runtime;
 
 import java.util.Properties;
 

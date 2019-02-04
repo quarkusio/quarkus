@@ -1,11 +1,11 @@
-package org.infinispan.protean.substitutions;
+package org.jboss.shamrock.infinispan.client.substitutions;
 
 import java.io.IOException;
 import java.util.function.BooleanSupplier;
 
-import org.infinispan.protean.runtime.InfinispanClientProducer;
 import org.infinispan.protostream.SerializationContext;
 import org.infinispan.query.remote.client.impl.MarshallerRegistration;
+import org.jboss.shamrock.infinispan.client.runtime.InfinispanClientProducer;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;

@@ -1,4 +1,4 @@
-package org.infinispan.protean.substitutions;
+package org.jboss.shamrock.infinispan.client.substitutions;
 
 import java.util.Properties;
 

@@ -3,7 +3,6 @@ package org.jboss.panache.rx;
 import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
 
-@NotReallyJpa
 @MappedSuperclass
 public abstract class RxModel<T extends RxModel<T>> extends RxEntityBase<T> {
     

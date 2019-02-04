@@ -47,6 +47,7 @@ import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import org.jboss.shamrock.jpa.AdditionalJpaModelBuildItem;
+import org.jboss.shamrock.jpa.NonJpaModelBuildItem;
 
 import io.reactiverse.reactivex.pgclient.PgPool;
 
@@ -102,7 +103,8 @@ public final class PanacheResourceProcessor {
     void build(CombinedIndexBuildItem index,
                BuildProducer<BytecodeTransformerBuildItem> transformers,
                BuildProducer<GeneratedClassBuildItem> generatedClasses,
-               BuildProducer<SubstrateResourceBuildItem> resources) throws Exception {
+               BuildProducer<SubstrateResourceBuildItem> resources,
+               BuildProducer<NonJpaModelBuildItem> nonJpaModelBuildItems) throws Exception {
 
         // FIXME: harmonize with ORM
         URL load = Thread.currentThread().getContextClassLoader().getResource("META-INF/load.sql");
@@ -148,6 +150,7 @@ public final class PanacheResourceProcessor {
         for (String rxModelClass : rxModelClasses) {
             transformers.produce(new BytecodeTransformerBuildItem(rxModelClass, rxModelEnhancer));
             PanacheRxModelInfoGenerator.generateModelClass(rxModelClass, generatedClasses);
+            nonJpaModelBuildItems.produce(new NonJpaModelBuildItem(rxModelClass));
         }
 
         // this just deadlocks, probably fighting with JPA

@@ -169,6 +169,7 @@ public final class HibernateResourceProcessor {
     public BeanContainerListenerBuildItem build(RecorderContext recorder, JPADeploymentTemplate template,
                                                 List<PersistenceUnitDescriptorBuildItem> descItems, 
                                                 List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
+                                                List<NonJpaModelBuildItem> nonJpaModelBuildItems,
                                                 CombinedIndexBuildItem index,
                                                 ApplicationIndexBuildItem applicationIndex,
                                                 BuildProducer<BytecodeTransformerBuildItem> transformers,
@@ -188,7 +189,10 @@ public final class HibernateResourceProcessor {
         }
         CompositeIndex compositeIndex = CompositeIndex.create(index.getIndex(), indexer.complete());
         
-        JpaJandexScavenger scavenger = new JpaJandexScavenger(reflectiveClass, descriptors, compositeIndex);
+        Set<String> nonJpaModelClasses = nonJpaModelBuildItems.stream()
+                .map(NonJpaModelBuildItem::getClassName)
+                .collect(Collectors.toSet());
+        JpaJandexScavenger scavenger = new JpaJandexScavenger(reflectiveClass, descriptors, compositeIndex, nonJpaModelClasses);
         final KnownDomainObjects domainObjects = scavenger.discoverModelAndRegisterForReflection();
 
         for (String className : domainObjects.getClassNames()) {

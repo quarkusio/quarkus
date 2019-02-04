@@ -59,7 +59,6 @@ final class JpaJandexScavenger {
     private static final DotName EMBEDDED = DotName.createSimple(Embedded.class.getName());
     private static final DotName MAPPED_SUPERCLASS = DotName.createSimple(MappedSuperclass.class.getName());
     private static final DotName PATH = DotName.createSimple("javax.ws.rs.Path");
-    private static final DotName NOT_REALLY_JPA = DotName.createSimple("org.jboss.panache.rx.NotReallyJpa");
 
     private static final DotName ENUM = DotName.createSimple(Enum.class.getName());
     private static final Logger log = Logger.getLogger("org.jboss.shamrock.jpa");
@@ -67,11 +66,16 @@ final class JpaJandexScavenger {
     private final List<ParsedPersistenceXmlDescriptor> descriptors;
     private final BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
     private final IndexView indexView;
+    private final Set<String> nonJpaModelClasses;
 
-    JpaJandexScavenger(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, List<ParsedPersistenceXmlDescriptor> descriptors, IndexView indexView) {
+    JpaJandexScavenger(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, 
+                       List<ParsedPersistenceXmlDescriptor> descriptors, 
+                       IndexView indexView,
+                       Set<String> nonJpaModelClasses) {
         this.reflectiveClass = reflectiveClass;
         this.descriptors = descriptors;
         this.indexView = indexView;
+        this.nonJpaModelClasses = nonJpaModelClasses;
     }
 
     public KnownDomainObjects discoverModelAndRegisterForReflection() throws IOException {
@@ -140,16 +144,16 @@ final class JpaJandexScavenger {
         }
     }
 
-    private static void enlistJPAModelClasses(IndexView index, DomainObjectSet domainObjectCollector, Set<String> enumTypeCollector, DotName dotName) {
+    private void enlistJPAModelClasses(IndexView index, DomainObjectSet domainObjectCollector, Set<String> enumTypeCollector, DotName dotName) {
         Collection<AnnotationInstance> jpaAnnotations = index.getAnnotations(dotName);
         if (jpaAnnotations != null && jpaAnnotations.size() > 0) {
             for (AnnotationInstance annotation : jpaAnnotations) {
                 ClassInfo klass = annotation.target().asClass();
-                // temporary?
-                if(hasAnnotation(NOT_REALLY_JPA, klass)) {
+                DotName targetDotName = klass.name();
+                // ignore non-jpa model classes that we think belong to JPA
+                if(nonJpaModelClasses.contains(targetDotName.toString())) {
                     continue;
                 }
-                DotName targetDotName = klass.name();
                 addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, targetDotName);
                 System.err.println("Adding for JPA enhancement: "+targetDotName);
                 domainObjectCollector.addEntity(targetDotName.toString());
@@ -170,14 +174,6 @@ final class JpaJandexScavenger {
                 collector.addEntity(targetDotName.toString());
             }
         }
-    }
-
-    private static boolean hasAnnotation(DotName annotation, ClassInfo klass) {
-        for (AnnotationInstance classAnnotation : klass.classAnnotations()) {
-            if(classAnnotation.name().equals(annotation))
-                return true;
-        }
-        return false;
     }
 
     /**

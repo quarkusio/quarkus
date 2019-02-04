@@ -24,12 +24,12 @@ public class AddExtensionsTest {
             .doCreateProject(new HashMap<>());
 
         new AddExtensions(pom)
-            .addExtensions(asList("agroal", "arc", "bean-validation"));
+            .addExtensions(asList("agroal", "arc", "hibernate-validator"));
 
         Model model = MojoUtils.readPom(pom);
         hasDependency(model, "shamrock-agroal-deployment");
         hasDependency(model, "shamrock-arc-deployment");
-        hasDependency(model, "shamrock-bean-validation-deployment");
+        hasDependency(model, "shamrock-hibernate-validator-deployment");
     }
 
     private void hasDependency(final Model model, final String artifactId) {

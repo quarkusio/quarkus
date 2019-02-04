@@ -138,12 +138,12 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-bean-validation-deployment</artifactId>
+            <artifactId>shamrock-hibernate-validator-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-bean-validation-runtime</artifactId>
+            <artifactId>shamrock-hibernate-validator-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>

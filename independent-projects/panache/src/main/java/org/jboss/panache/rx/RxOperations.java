@@ -17,7 +17,8 @@ public class RxOperations {
     
     public static <T extends RxEntityBase<?>> Single<? extends T> save(T entity) {
         PgPool pool = getPgPool();
-        RxModelInfo<T> modelInfo = (RxModelInfo)entity.getModelInfo();
+        @SuppressWarnings("unchecked")
+        RxModelInfo<T> modelInfo = (RxModelInfo<T>)entity.getModelInfo();
         // FIXME: custom id generation
         return modelInfo.toTuple(entity)
                 .flatMap(t -> {

@@ -25,6 +25,7 @@ public abstract class RxEntityBase<T extends RxEntityBase<?>> {
         throw new RuntimeException("Should never be called");
     }
 
+    @SuppressWarnings("rawtypes")
     @Override
     public boolean equals(Object obj) {
         if(obj == null)

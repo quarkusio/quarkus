@@ -47,12 +47,10 @@ import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
-import org.jboss.logging.Logger;
 import org.jboss.shamrock.agroal.DataSourceDriverBuildItem;
 import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
 import org.jboss.shamrock.arc.deployment.BeanContainerBuildItem;
@@ -74,6 +72,7 @@ import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import org.jboss.shamrock.deployment.configuration.ConfigurationError;
+import org.jboss.shamrock.deployment.index.IndexingUtil;
 import org.jboss.shamrock.deployment.recording.RecorderContext;
 import org.jboss.shamrock.jpa.runtime.DefaultEntityManagerFactoryProducer;
 import org.jboss.shamrock.jpa.runtime.DefaultEntityManagerProducer;
@@ -97,9 +96,6 @@ public final class HibernateResourceProcessor {
     private static final DotName PERSISTENCE_CONTEXT = DotName.createSimple(PersistenceContext.class.getName());
     private static final DotName PERSISTENCE_UNIT = DotName.createSimple(PersistenceUnit.class.getName());
     private static final DotName PRODUCES = DotName.createSimple(Produces.class.getName());
-    private static final DotName JAVA_LANG_OBJECT = DotName.createSimple(Object.class.getName());
-
-    private static final Logger log = Logger.getLogger("org.jboss.shamrock.arc.deployment.processor");
 
     /**
      * Hibernate ORM configuration
@@ -185,7 +181,8 @@ public final class HibernateResourceProcessor {
         Indexer indexer = new Indexer();
         Set<DotName> additionalIndex = new HashSet<>();
         for(AdditionalJpaModelBuildItem jpaModel : additionalJpaModelBuildItems) {
-            indexModelClass(jpaModel.getClassName(), indexer, index.getIndex(), additionalIndex);
+            IndexingUtil.indexClass(jpaModel.getClassName(), indexer, index.getIndex(), additionalIndex, 
+                                    HibernateResourceProcessor.class.getClassLoader());
         }
         CompositeIndex compositeIndex = CompositeIndex.create(index.getIndex(), indexer.complete());
         
@@ -219,44 +216,6 @@ public final class HibernateResourceProcessor {
         return new BeanContainerListenerBuildItem(template.initMetadata(descriptors, scanner));
     }
 
-    // FIXME: this needs to move to a library
-    private void indexModelClass(String beanClass, Indexer indexer, IndexView shamrockIndex, Set<DotName> additionalIndex) {
-        DotName beanClassName = DotName.createSimple(beanClass);
-        if (additionalIndex.contains(beanClassName)) {
-            return;
-        }
-        ClassInfo beanInfo = shamrockIndex.getClassByName(beanClassName);
-        if (beanInfo == null) {
-            log.debugf("Index model class: %s", beanClass);
-            try (InputStream stream = HibernateResourceProcessor.class.getClassLoader().getResourceAsStream(beanClass.replace('.', '/') + ".class")) {
-                beanInfo = indexer.index(stream);
-                additionalIndex.add(beanInfo.name());
-            } catch (IOException e) {
-                throw new IllegalStateException("Failed to index: " + beanClass);
-            }
-        } else {
-            // The class could be indexed by shamrock - we still need to distinguish framework classes
-            additionalIndex.add(beanClassName);
-        }
-        for (DotName annotationName : beanInfo.annotations().keySet()) {
-            if (!additionalIndex.contains(annotationName) && shamrockIndex.getClassByName(annotationName) == null) {
-                try (InputStream annotationStream = HibernateResourceProcessor.class.getClassLoader()
-                        .getResourceAsStream(annotationName.toString().replace('.', '/') + ".class")) {
-                    log.debugf("Index annotation: %s", annotationName);
-                    indexer.index(annotationStream);
-                    additionalIndex.add(annotationName);
-                } catch (IOException e) {
-                    throw new IllegalStateException("Failed to index: " + beanClass);
-                }
-            }
-        }
-        if (!beanInfo.superName().equals(JAVA_LANG_OBJECT)) {
-            indexModelClass(beanInfo.superName().toString(), indexer, shamrockIndex, additionalIndex);
-        }
-
-    }
-
-    
     @BuildStep
     @Record(STATIC_INIT)
     public void build(JPADeploymentTemplate template,

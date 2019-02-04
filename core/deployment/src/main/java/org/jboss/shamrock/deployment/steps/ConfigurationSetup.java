@@ -429,12 +429,12 @@ public class ConfigurationSetup {
                 try (BytecodeCreator ccIsNotImage = ccIfImage.falseBranch()) {
                     // common case: JVM mode, or image-building initialization
                     final ResultHandle mccConfig = ccIsNotImage.invokeStaticMethod(createAndRegisterConfig);
-                    writeParsing(ccIsNotImage, mccConfig, staticInitPatterns);
+                    writeParsing(cc, ccIsNotImage, mccConfig, staticInitPatterns);
                 }
                 try (BytecodeCreator ccIsImage = ccIfImage.trueBranch()) {
                     // native image run time only (class reinitialization)
                     final ResultHandle mccConfig = ccIsImage.invokeStaticMethod(createAndRegisterConfig);
-                    writeParsing(ccIsImage, mccConfig, runTimePatterns);
+                    writeParsing(cc, ccIsImage, mccConfig, runTimePatterns);
                 }
                 ccInit.returnValue(null);
             }
@@ -453,7 +453,7 @@ public class ConfigurationSetup {
         runTimeInitConsumer.accept(new RuntimeReinitializedClassBuildItem(CONFIG_HELPER));
     }
 
-    private void writeParsing(final BytecodeCreator body, final ResultHandle config, final ConfigPatternMap<LeafConfigType> keyMap) {
+    private void writeParsing(final ClassCreator cc, final BytecodeCreator body, final ResultHandle config, final ConfigPatternMap<LeafConfigType> keyMap) {
         // setup
         // Iterable iterable = config.getPropertyNames();
         final ResultHandle iterable = body.invokeVirtualMethod(MethodDescriptor.ofMethod(SmallRyeConfig.class, "getPropertyNames", Iterable.class), config);
@@ -476,7 +476,8 @@ public class ConfigurationSetup {
                 hasNext.ifNonZero(hasNext.invokeVirtualMethod(NI_NEXT_EQUALS, keyIter, hasNext.load("shamrock"))).falseBranch().continueScope(loop);
                 // keyIter.next(); // skip "shamrock"
                 hasNext.invokeVirtualMethod(NI_NEXT, keyIter);
-                generateParserBody(hasNext, config, keyIter, keyMap, loop);
+                // parse(config, keyIter);
+                hasNext.invokeStaticMethod(generateParserBody(cc, keyMap, new StringBuilder("parseKey"), new HashMap<>()), config, keyIter);
                 // continue loop;
                 hasNext.continueScope(loop);
             }
@@ -486,38 +487,55 @@ public class ConfigurationSetup {
         body.returnValue(body.loadNull());
     }
 
-    private void generateParserBody(final BytecodeCreator body, final ResultHandle config, final ResultHandle keyIter, final ConfigPatternMap<LeafConfigType> keyMap, final BytecodeCreator loop) {
-        final LeafConfigType matched = keyMap.getMatched();
-        if (matched != null) {
+    private MethodDescriptor generateParserBody(final ClassCreator cc, final ConfigPatternMap<LeafConfigType> keyMap, final StringBuilder methodName, final Map<String, MethodDescriptor> parseMethodCache) {
+        final String methodNameStr = methodName.toString();
+        final MethodDescriptor existing = parseMethodCache.get(methodNameStr);
+        if (existing != null) return existing;
+        try (MethodCreator body = cc.getMethodCreator(methodName.toString(), void.class, SmallRyeConfig.class, NameIterator.class)) {
+            body.setModifiers(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC);
+            final ResultHandle config = body.getMethodParam(0);
+            final ResultHandle keyIter = body.getMethodParam(1);
+            final LeafConfigType matched = keyMap.getMatched();
             // if (! keyIter.hasNext()) {
             try (BytecodeCreator matchedBody = body.ifNonZero(body.invokeVirtualMethod(NI_HAS_NEXT, keyIter)).falseBranch()) {
-                // (exact match generated code)
-                matched.generateAcceptConfigurationValue(matchedBody, keyIter, config);
-                // continue loop;
-                matchedBody.continueScope(loop);
+                if (matched != null) {
+                    // (exact match generated code)
+                    matched.generateAcceptConfigurationValue(matchedBody, keyIter, config);
+                } else {
+                    // todo: unknown name warning goes here
+                }
+                // return;
+                matchedBody.returnValue(null);
             }
             // }
-        }
-        // branches for each next-string
-        final Iterable<String> names = keyMap.childNames();
-        for (String name : names) {
-            if (name.equals(ConfigPatternMap.WC_SINGLE) || name.equals(ConfigPatternMap.WC_MULTI)) {
-                // skip
-            } else {
-                // TODO: string switch
-                // if (keyIter.nextSegmentEquals(name)) {
-                try (BytecodeCreator nameMatched = body.ifNonZero(body.invokeVirtualMethod(NI_NEXT_EQUALS, keyIter, body.load(name))).trueBranch()) {
-                    // keyIter.next();
-                    nameMatched.invokeVirtualMethod(NI_NEXT, keyIter);
-                    // (generated recursive)
-                    generateParserBody(nameMatched, config, keyIter, keyMap.getChild(name), loop);
-                    // continue loop;
-                    nameMatched.continueScope(loop);
+            // branches for each next-string
+            final Iterable<String> names = keyMap.childNames();
+            for (String name : names) {
+                if (name.equals(ConfigPatternMap.WC_SINGLE) || name.equals(ConfigPatternMap.WC_MULTI)) {
+                    // skip
+                } else {
+                    // TODO: string switch
+                    // if (keyIter.nextSegmentEquals(name)) {
+                    try (BytecodeCreator nameMatched = body.ifNonZero(body.invokeVirtualMethod(NI_NEXT_EQUALS, keyIter, body.load(name))).trueBranch()) {
+                        // keyIter.next();
+                        nameMatched.invokeVirtualMethod(NI_NEXT, keyIter);
+                        // (generated recursive)
+                        final int length = methodName.length();
+                        methodName.append('_').append(name);
+                        nameMatched.invokeStaticMethod(generateParserBody(cc, keyMap.getChild(name), methodName, parseMethodCache), config, keyIter);
+                        methodName.setLength(length);
+                        // return;
+                        nameMatched.returnValue(null);
+                    }
+                    // }
                 }
-                // }
             }
+            // todo: unknown name warning goes here
+            body.returnValue(null);
+            final MethodDescriptor md = body.getMethodDescriptor();
+            parseMethodCache.put(methodNameStr, md);
+            return md;
         }
-        // todo: unknown name warning goes here
     }
 
     @BuildStep

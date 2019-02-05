@@ -208,7 +208,10 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
                                     @Override
                                     public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
                                         throws IOException {
-                                        addDir(runnerZipFs, dir, root.relativize(dir).toString());
+                                        final String relativePath = root.relativize(dir).toString();
+                                        if (!relativePath.isEmpty()) {
+                                            addDir(runnerZipFs, dir, relativePath);
+                                        }
                                         return FileVisitResult.CONTINUE;
                                     }
                                     @Override

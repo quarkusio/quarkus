@@ -252,7 +252,11 @@ public class VertxProducer {
     @SuppressWarnings("unchecked")
     private EventConsumerInvoker createInvoker(String invokerClassName) {
         try {
-            Class<? extends EventConsumerInvoker> invokerClazz = (Class<? extends EventConsumerInvoker>) Thread.currentThread().getContextClassLoader().loadClass(invokerClassName);
+            ClassLoader cl = Thread.currentThread().getContextClassLoader();
+            if (cl == null) {
+                cl = VertxProducer.class.getClassLoader();
+            }
+            Class<? extends EventConsumerInvoker> invokerClazz = (Class<? extends EventConsumerInvoker>) cl.loadClass(invokerClassName);
             return invokerClazz.getDeclaredConstructor().newInstance();
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | NoSuchMethodException | InvocationTargetException e) {
             throw new IllegalStateException("Unable to create invoker: " + invokerClassName, e);

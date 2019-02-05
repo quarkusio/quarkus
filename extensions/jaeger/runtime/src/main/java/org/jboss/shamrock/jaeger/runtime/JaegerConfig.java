@@ -15,73 +15,74 @@ import org.jboss.shamrock.runtime.annotations.ConfigRoot;
 public class JaegerConfig {
 
     /**
-     * The endpoint
+     * The traces endpoint, in case the client should connect directly to the Collector,
+     * like http://jaeger-collector:14268/api/traces
      */
     @ConfigItem
     public Optional<String> endpoint;
 
     /**
-     * The endpoint
+     * Authentication Token to send as "Bearer" to the endpoint
      */
     @ConfigItem
     public Optional<String> authToken;
 
     /**
-     * The endpoint
+     * Username to send as part of "Basic" authentication to the endpoint
      */
     @ConfigItem
     public Optional<String> user;
 
     /**
-     * The endpoint
+     * Password to send as part of "Basic" authentication to the endpoint
      */
     @ConfigItem
     public Optional<String> password;
 
     /**
-     * The endpoint
+     * The hostname for communicating with agent via UDP
      */
     @ConfigItem
     public Optional<String> agentHost;
 
     /**
-     * The endpoint
+     * The port for communicating with agent via UDP
      */
     @ConfigItem
     public Optional<String> agentPort;
 
     /**
-     * The endpoint
+     * Whether the reporter should also log the spans
      */
     @ConfigItem
     public Optional<String> reporterLogSpans;
 
     /**
-     * The endpoint
+     * The reporter's maximum queue size
      */
     @ConfigItem
     public Optional<String> reporterMaxQueueSize;
 
     /**
-     * The endpoint
+     * The reporter's flush interval (ms)
      */
     @ConfigItem
     public Optional<String> reporterFlushInterval;
 
     /**
-     * The sampler type
+     * The sampler type (const, probabilistic, ratelimiting or remote)
      */
     @ConfigItem
     public Optional<String> samplerType;
 
     /**
-     * The sampler paramater
+     * The sampler parameter (number)
      */
     @ConfigItem
     public Optional<String> samplerParam;
 
     /**
-     * The sampler paramater
+     * The host name and port when using the remote controlled sampler
      */
     @ConfigItem
     public Optional<String> samplerManagerHostPort;
@@ -93,19 +94,23 @@ public class JaegerConfig {
     public Optional<String> serviceName;
 
     /**
-     * The service name
+     * A comma separated list of name = value tracer level tags, which get added to all reported
+     * spans. The value can also refer to an environment variable using the format ${envVarName:default},
+     * where the :default is optional, and identifies a value to be used if the environment variable
+     * cannot be found
      */
     @ConfigItem
     public Optional<String> tags;
 
     /**
-     * The service name
+     * Comma separated list of formats to use for propagating the trace context. Defaults to the
+     * standard Jaeger format. Valid values are jaeger and b3
      */
     @ConfigItem
     public Optional<String> propagation;
 
     /**
-     * The service name
+     * The sender factory class name
      */
     @ConfigItem
     public Optional<String> senderFactory;

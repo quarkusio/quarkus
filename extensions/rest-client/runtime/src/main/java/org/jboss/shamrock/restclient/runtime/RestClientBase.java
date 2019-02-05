@@ -23,8 +23,6 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 
-import com.oracle.svm.core.jdk.UnsupportedFeatureError;
-
 public class RestClientBase {
 
     public static final String REST_URL_FORMAT = "%s/mp-rest/url";
@@ -45,8 +43,11 @@ public class RestClientBase {
             return builder.baseUrl(new URL(baseUrl)).build(proxyType);
         } catch (MalformedURLException e) {
             throw new IllegalArgumentException("The value of URL was invalid " + baseUrl);
-        } catch (UnsupportedFeatureError e) {
-            throw new IllegalArgumentException(baseUrl + " requires SSL support but it is disabled. You probably have set shamrock.ssl.native to false.");
+        } catch (Exception e) {
+            if ("com.oracle.svm.core.jdk.UnsupportedFeatureError".equals(e.getClass().getCanonicalName())) {
+                throw new IllegalArgumentException(baseUrl + " requires SSL support but it is disabled. You probably have set shamrock.ssl.native to false.");
+            }
+            throw e;
         }
     }
 

@@ -256,4 +256,45 @@ public class Gift {
 <1> Inject your entity manager and have fun
 <2> Mark your CDI bean method as `@Transactional` and the `EntityManager` will enlist and flush at commit.
 
+== Configuring second-level cache
+
+Applications that frequently read same entities can see their performance improved when Hibernate ORM second-level cache is enabled.
+To enable second-level cache, select those entities are read most often and annotate them with `@Cacheable`:
+
+[source,java]
+--
+@Entity
+@Cacheable
+public class Gift {
+    // ...
+}
+--
+
+Then, set `hibernate.cache.use_second_level_cache` to `true` to enable second-level cache.
+Also set `javax.persistence.sharedCache.mode` to `ENABLE_SELECTIVE` so that only those entities that are annotated are cached.
+
+By default entities are cached in regions named after their fully qualified name.
+The size of each region can be controlled via `hibernate.cache.<region_name>.memory.size` properties.
+Currently size is defined as the number of entities stored in this region.
+
+Setting maximum idle time is another way of controlling the boundaries of each cached region.
+Entities that exceed maximum idle time without being accessed are evicted from the cache.
+The time is specified in number of seconds and it's set via `hibernate.cache.<region_name>.expiration.max_idle` property.
+
+[NOTE]
+--
+Hibernate caches are kept locally, so they are not aware of changes made to the persistent store by other applications.
+Also, when running multiple copies of the same application (e.g. Kubernetes/OpenShift), caches in separate copies of the application don't talk to each other.
+Please set use aggressive eviction size or time values in these scenarios to prevent accessing stale data.
+--
+
+Queries executed regularly that return the same results can also benefit from second-level caching.
+In the absence of updates to entities involved in a query, cached query results can be immediately returned to the caller.
+To enable query caching, set `hibernate.cache.use_query_cache` to `true` and mark the query as cacheable:
+
+[source,java]
+--
+Query query = ...
+query.setHint("org.hibernate.cacheable", Boolean.TRUE);
+--
 

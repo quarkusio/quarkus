@@ -16,6 +16,7 @@
 
 package org.jboss.shamrock.deployment.steps;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -25,6 +26,7 @@ import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import org.jboss.shamrock.deployment.builditem.SslNativeConfigBuildItem;
+import org.jboss.shamrock.deployment.builditem.SystemPropertyBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildItem;
@@ -45,7 +47,9 @@ class SubstrateConfigBuildStep {
                BuildProducer<SubstrateResourceBundleBuildItem> resourceBundle,
                BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit,
                BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReinit,
-               BuildProducer<SubstrateSystemPropertyBuildItem> nativeImage) {
+               BuildProducer<SubstrateSystemPropertyBuildItem> nativeImage,
+               BuildProducer<SystemPropertyBuildItem> systemProperty
+               ) {
         for (SubstrateConfigBuildItem substrateConfigBuildItem : substrateConfigBuildItems) {
             for (String i : substrateConfigBuildItem.getRuntimeInitializedClasses()) {
                 runtimeInit.produce(new RuntimeInitializedClassBuildItem(i));
@@ -64,18 +68,40 @@ class SubstrateConfigBuildStep {
             }
         }
 
+        Boolean sslNativeEnabled = isSslNativeEnabled(sslNativeConfig, extensionSslNativeSupport);
+
+        if (sslNativeEnabled) {
+            // This is an ugly hack but for now it's the only way to make the SunEC library
+            // available to the native image.
+            // This makes the native image dependent on the local path used to build it.
+            // If you want to push your native image to a different environment, you will
+            // need to put libsunec.so aside the native image or override java.library.path.
+
+            String graalVmHome = System.getenv("GRAALVM_HOME");
+
+            if (graalVmHome == null) {
+                throw new RuntimeException("GRAALVM_HOME environment variable required");
+            }
+
+            systemProperty.produce(
+                    new SystemPropertyBuildItem("java.library.path", graalVmHome + File.separator + "jre" + File.separator + "lib" + File.separator + "amd64"));
+        }
+
+        nativeImage.produce(new SubstrateSystemPropertyBuildItem("shamrock.ssl.native", sslNativeEnabled.toString()));
+    }
+
+    private Boolean isSslNativeEnabled(SslNativeConfigBuildItem sslNativeConfig, List<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport) {
         if (sslNativeConfig.isEnabled()) {
-            nativeImage.produce(new SubstrateSystemPropertyBuildItem("shamrock.ssl.native", "true"));
+            return Boolean.TRUE;
         } else if (!sslNativeConfig.isExplicitlyDisabled() && !extensionSslNativeSupport.isEmpty()) {
             // we have extensions desiring the SSL support and it's not explicitly disabled
-            nativeImage.produce(new SubstrateSystemPropertyBuildItem("shamrock.ssl.native", "true"));
-
             if (log.isDebugEnabled()) {
                 log.debugf("Native SSL support enabled due to extensions [%s] requiring it",
                         extensionSslNativeSupport.stream().map(s -> s.getExtension()).collect(Collectors.joining(", ")));
             }
-        } else {
-            nativeImage.produce(new SubstrateSystemPropertyBuildItem("shamrock.ssl.native", "false"));
+            return Boolean.TRUE;
         }
+
+        return Boolean.FALSE;
     }
 }

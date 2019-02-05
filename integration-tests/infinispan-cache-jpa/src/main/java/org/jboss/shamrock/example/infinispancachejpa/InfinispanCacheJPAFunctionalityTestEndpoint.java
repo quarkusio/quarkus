@@ -7,7 +7,7 @@ import org.hibernate.cache.spi.CacheImplementor;
 import org.hibernate.cache.spi.RegionFactory;
 import org.hibernate.stat.CacheRegionStatistics;
 import org.hibernate.stat.Statistics;
-import org.infinispan.protean.hibernate.cache.InfinispanRegionFactory;
+import org.infinispan.protean.hibernate.cache.ProteanInfinispanRegionFactory;
 import org.infinispan.protean.hibernate.cache.ManualTestService;
 
 import java.io.IOException;
@@ -15,7 +15,6 @@ import java.io.PrintWriter;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 import javax.persistence.EntityManager;
@@ -105,7 +104,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint extends HttpServlet {
 
     private static void testMaxIdle(EntityManagerFactory entityManagerFactory) {
         final CacheImplementor cacherImplementor = entityManagerFactory.getCache().unwrap(CacheImplementor.class);
-        final InfinispanRegionFactory regionFactory = (InfinispanRegionFactory) cacherImplementor.getRegionFactory();
+        final ProteanInfinispanRegionFactory regionFactory = (ProteanInfinispanRegionFactory) cacherImplementor.getRegionFactory();
         ManualTestService manualTestService = regionFactory.getTimeService();
         manualTestService.advance(120, TimeUnit.SECONDS);
 

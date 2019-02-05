@@ -26,7 +26,7 @@ final class QueryResultsRegionImpl implements QueryResultsRegion, ExtendedStatis
 
     private final ConcurrentMap<Object, Map> transactionContext = new ConcurrentHashMap<>();
 
-    public QueryResultsRegionImpl(InternalCache cache, String name, InfinispanRegionFactory regionFactory) {
+    public QueryResultsRegionImpl(InternalCache cache, String name, ProteanInfinispanRegionFactory regionFactory) {
         this.cache = cache;
         this.name = name;
         this.regionFactory = regionFactory;

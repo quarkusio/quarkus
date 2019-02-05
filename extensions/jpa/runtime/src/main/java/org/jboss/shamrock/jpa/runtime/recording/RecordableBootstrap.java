@@ -66,6 +66,7 @@ import org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractorInitiator;
 import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 import org.jboss.shamrock.jpa.runtime.service.DialectFactoryInitiator;
 import org.jboss.shamrock.jpa.runtime.service.DisabledJMXInitiator;
+import org.jboss.shamrock.jpa.runtime.service.ProteanRegionFactoryInitiator;
 
 /**
  * Has to extend StandardServiceRegistryBuilder even if we don't want: needs to
@@ -145,7 +146,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 
         serviceInitiators.add(SessionFactoryServiceRegistryFactoryInitiator.INSTANCE);
 
-        serviceInitiators.add(RegionFactoryInitiator.INSTANCE);
+        serviceInitiators.add(ProteanRegionFactoryInitiator.INSTANCE);
 
         serviceInitiators.add(TransactionCoordinatorBuilderInitiator.INSTANCE);
 

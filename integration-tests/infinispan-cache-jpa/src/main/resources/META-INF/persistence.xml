@@ -13,9 +13,11 @@
             <property name="hibernate.dialect" value="org.hibernate.dialect.H2Dialect"/>
             <property name="javax.persistence.schema-generation.database.action" value="drop-and-create"/>
 
+            <!-- These are the new defaults when running in Protean:
             <property name="hibernate.cache.use_second_level_cache" value="true"/>
             <property name="hibernate.cache.use_query_cache" value="true"/>
             <property name="javax.persistence.sharedCache.mode" value="ENABLE_SELECTIVE"/>
+            -->
 
             <!-- Limit size of region -->
             <property name="hibernate.cache.org.jboss.shamrock.example.infinispancachejpa.Item.memory.size" value="3"/>

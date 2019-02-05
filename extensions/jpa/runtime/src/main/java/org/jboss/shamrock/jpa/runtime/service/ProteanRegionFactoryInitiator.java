@@ -6,10 +6,9 @@ import org.hibernate.cache.spi.RegionFactory;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
-import org.infinispan.protean.hibernate.cache.InfinispanRegionFactory;
+import org.infinispan.protean.hibernate.cache.ProteanInfinispanRegionFactory;
 
 import java.util.Map;
-import java.util.Properties;
 
 import static java.lang.Boolean.FALSE;
 
@@ -27,24 +26,15 @@ public final class ProteanRegionFactoryInitiator implements StandardServiceIniti
 
    @Override
    public RegionFactory initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
-      final RegionFactory regionFactory = resolveRegionFactory( configurationValues, registry );
-      return regionFactory;
-   }
-
-   @SuppressWarnings({"unchecked", "WeakerAccess"})
-   protected RegionFactory resolveRegionFactory(Map configurationValues, ServiceRegistryImplementor registry) {
-      final Properties p = new Properties();
-      p.putAll( configurationValues );
-
       final Boolean useSecondLevelCache = ConfigurationHelper.getBooleanWrapper(
          AvailableSettings.USE_SECOND_LEVEL_CACHE,
          configurationValues,
-         null
+         Boolean.TRUE
       );
       final Boolean useQueryCache = ConfigurationHelper.getBooleanWrapper(
          AvailableSettings.USE_QUERY_CACHE,
          configurationValues,
-         null
+         Boolean.TRUE
       );
 
       // We should immediately return NoCachingRegionFactory if either:
@@ -56,12 +46,7 @@ public final class ProteanRegionFactoryInitiator implements StandardServiceIniti
          }
       }
 
-      return new InfinispanRegionFactory();
-   }
-
-   @SuppressWarnings({"WeakerAccess", "unused"})
-   protected RegionFactory getFallback(Map configurationValues, ServiceRegistryImplementor registry) {
-      return null;
+      return new ProteanInfinispanRegionFactory();
    }
 
 }

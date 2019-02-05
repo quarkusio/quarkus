@@ -36,7 +36,7 @@ public class BuildException extends Exception {
      * @param diagnostics the diagnostics associated with the build failure (not {@code null})
      */
     public BuildException(final List<Diagnostic> diagnostics) {
-        Assert.checkNotNullParam("diagnostics", diagnostics);
+        super(constructMessage(null, Assert.checkNotNullParam("diagnostics", diagnostics)));
         this.diagnostics = diagnostics;
     }
 
@@ -48,7 +48,7 @@ public class BuildException extends Exception {
      * @param diagnostics the diagnostics associated with the build failure (not {@code null})
      */
     public BuildException(final String msg, final List<Diagnostic> diagnostics) {
-        super(msg + diagnostics);
+        super(constructMessage(msg, Assert.checkNotNullParam("diagnostics", diagnostics)));
         Assert.checkNotNullParam("diagnostics", diagnostics);
         this.diagnostics = diagnostics;
         for(Diagnostic d : diagnostics) {
@@ -65,7 +65,7 @@ public class BuildException extends Exception {
      * @param diagnostics the diagnostics associated with the build failure (not {@code null})
      */
     public BuildException(final Throwable cause, final List<Diagnostic> diagnostics) {
-        super(cause);
+        super(constructMessage(null, Assert.checkNotNullParam("diagnostics", diagnostics)), cause);
         Assert.checkNotNullParam("diagnostics", diagnostics);
         this.diagnostics = diagnostics;
     }
@@ -78,7 +78,7 @@ public class BuildException extends Exception {
      * @param diagnostics the diagnostics associated with the build failure (not {@code null})
      */
     public BuildException(final String msg, final Throwable cause, final List<Diagnostic> diagnostics) {
-        super(msg, cause);
+        super(constructMessage(msg, Assert.checkNotNullParam("diagnostics", diagnostics)), cause);
         Assert.checkNotNullParam("diagnostics", diagnostics);
         this.diagnostics = diagnostics;
     }
@@ -90,5 +90,18 @@ public class BuildException extends Exception {
      */
     public List<Diagnostic> getDiagnostics() {
         return diagnostics;
+    }
+
+    private static String constructMessage(String msg, List<Diagnostic> diagnostics) {
+        final StringBuilder b = new StringBuilder();
+        b.append("Build failure");
+        if (msg != null) {
+            b.append(": ").append(msg);
+        }
+        for (Diagnostic d : diagnostics) {
+            b.append("\n\t");
+            d.toString(b);
+        }
+        return b.toString();
     }
 }

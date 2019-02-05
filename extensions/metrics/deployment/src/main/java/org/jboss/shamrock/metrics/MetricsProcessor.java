@@ -42,8 +42,8 @@ import org.jboss.shamrock.deployment.builditem.ShutdownContextBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.metrics.runtime.MetricsDeploymentTemplate;
 import org.jboss.shamrock.metrics.runtime.MetricsServlet;
-import org.jboss.shamrock.runtime.annotations.ConfigGroup;
 import org.jboss.shamrock.runtime.annotations.ConfigItem;
+import org.jboss.shamrock.runtime.annotations.ConfigRoot;
 import org.jboss.shamrock.undertow.ServletBuildItem;
 
 import io.smallrye.metrics.MetricProducer;
@@ -58,10 +58,10 @@ import io.smallrye.metrics.interceptors.TimedInterceptor;
 
 public class MetricsProcessor {
 
-    Config metrics;
+    MetricsConfig metrics;
 
-    @ConfigGroup
-    static final class Config {
+    @ConfigRoot
+    static final class MetricsConfig {
 
         /**
          * The path to the metrics Servlet.

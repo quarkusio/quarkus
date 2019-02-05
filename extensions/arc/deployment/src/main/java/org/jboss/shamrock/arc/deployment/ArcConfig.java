@@ -1,9 +1,11 @@
 package org.jboss.shamrock.arc.deployment;
 
-import org.jboss.shamrock.runtime.annotations.ConfigGroup;
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
+import static org.jboss.shamrock.runtime.annotations.ConfigPhase.BUILD_TIME;
 
-@ConfigGroup
+import org.jboss.shamrock.runtime.annotations.ConfigItem;
+import org.jboss.shamrock.runtime.annotations.ConfigRoot;
+
+@ConfigRoot(phase = BUILD_TIME)
 public class ArcConfig {
 
     /**

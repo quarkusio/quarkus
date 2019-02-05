@@ -2,7 +2,7 @@ package org.jboss.shamrock.runtime.annotations;
 
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
-import static org.jboss.shamrock.runtime.annotations.ConfigPhase.BUILD;
+import static org.jboss.shamrock.runtime.annotations.ConfigPhase.BUILD_TIME;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
@@ -17,5 +17,17 @@ import java.lang.annotation.Target;
 @Target(TYPE)
 @Documented
 public @interface ConfigRoot {
-    ConfigPhase[] phase() default { BUILD };
+    /**
+     * Determine the phase of this configuration root.
+     *
+     * @return the phase
+     */
+    ConfigPhase phase() default BUILD_TIME;
+
+    /**
+     * Determine the base key of the configuration root.
+     *
+     * @return the base key name
+     */
+    String name() default ConfigItem.HYPHENATED_ELEMENT_NAME;
 }

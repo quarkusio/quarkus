@@ -52,18 +52,24 @@ import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
 import org.jboss.shamrock.deployment.builditem.ApplicationIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.ArchiveRootBuildItem;
 import org.jboss.shamrock.runtime.annotations.ConfigItem;
+import org.jboss.shamrock.runtime.annotations.ConfigPhase;
+import org.jboss.shamrock.runtime.annotations.ConfigRoot;
 
 public class ApplicationArchiveBuildStep {
 
     private static final String JANDEX_INDEX = "META-INF/jandex.idx";
 
-    /**
-     * Artifacts on the class path that should also be indexed, which will allow classes in the index to be
-     * processed by shamrocks processors
-     */
-    @ConfigItem
-    Map<String, IndexDependencyConfig> indexDependency;
+    IndexDependencyConfiguration config;
 
+    @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
+    static final class IndexDependencyConfiguration {
+        /**
+         * Artifacts on the class path that should also be indexed, which will allow classes in the index to be
+         * processed by shamrocks processors
+         */
+        @ConfigItem(name = ConfigItem.PARENT)
+        Map<String, IndexDependencyConfig> indexDependency;
+    }
 
     @BuildStep
     ApplicationArchivesBuildItem build(ArchiveRootBuildItem root, ApplicationIndexBuildItem appindex, List<AdditionalApplicationArchiveMarkerBuildItem> appMarkers) throws IOException {
@@ -82,7 +88,7 @@ public class ApplicationArchiveBuildStep {
 
         Set<Path> dependenciesToIndex = new HashSet<>();
         //get paths that are included via index-dependencies
-        dependenciesToIndex.addAll(getIndexDependencyPaths(indexDependency, classLoader));
+        dependenciesToIndex.addAll(getIndexDependencyPaths(classLoader));
         //get paths that are included via marker files
         Set<String> markers = new HashSet<>(applicationArchiveFiles);
         markers.add(JANDEX_INDEX);
@@ -96,12 +102,12 @@ public class ApplicationArchiveBuildStep {
         return indexPaths(dependenciesToIndex, classLoader);
     }
 
-    public List<Path> getIndexDependencyPaths(Map<String, IndexDependencyConfig> config, ClassLoader classLoader) {
+    public List<Path> getIndexDependencyPaths(ClassLoader classLoader) {
         ArtifactIndex artifactIndex = new ArtifactIndex(new ClassPathArtifactResolver(classLoader));
         try {
             List<Path> ret = new ArrayList<>();
 
-            for (Map.Entry<String, IndexDependencyConfig> entry : indexDependency.entrySet()) {
+            for (Map.Entry<String, IndexDependencyConfig> entry : this.config.indexDependency.entrySet()) {
                 Path path;
                 if (entry.getValue().classifier.isEmpty()) {
                     path = artifactIndex.getPath(entry.getValue().groupId, entry.getValue().artifactId, null);

@@ -3,6 +3,7 @@ package org.jboss.shamrock.deployment.util;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 /**
  */
@@ -103,6 +104,70 @@ public final class StringUtil {
             }
         }
         return b.toString();
+    }
+
+    public static String join(Iterator<String> it) {
+        final StringBuilder b = new StringBuilder();
+        if (it.hasNext()) {
+            b.append(it.next());
+            while (it.hasNext()) {
+                b.append(it.next());
+            }
+        }
+        return b.toString();
+    }
+
+    public static Iterator<String> lowerCastFirst(Iterator<String> orig) {
+        return new Iterator<String>() {
+            boolean first = true;
+
+            public boolean hasNext() {
+                return orig.hasNext();
+            }
+
+            public String next() {
+                final String next = orig.next();
+                if (first) {
+                    first = false;
+                    return next.toLowerCase(Locale.ROOT);
+                } else {
+                    return next;
+                }
+            }
+        };
+    }
+
+    public static Iterator<String> withoutSuffix(Iterator<String> orig, String... suffixes) {
+        return new Iterator<String>() {
+            String next = null;
+
+            public boolean hasNext() {
+                if (next == null) {
+                    if (! orig.hasNext()) return false;
+                    final String next = orig.next();
+                    if (! orig.hasNext() && arrayContains(next, suffixes)) {
+                        return false;
+                    }
+                    this.next = next;
+                }
+                return true;
+            }
+
+            public String next() {
+                if (! hasNext()) throw new NoSuchElementException();
+                final String next = this.next;
+                this.next = null;
+                return next;
+            }
+        };
+    }
+
+    @SafeVarargs
+    private static <T> boolean arrayContains(final T item, final T... array) {
+        for (T arrayItem : array) {
+            if (Objects.equals(arrayItem, item)) return true;
+        }
+        return false;
     }
 
     public static String hyphenate(String orig) {

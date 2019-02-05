@@ -22,6 +22,13 @@ public abstract class LeafConfigType extends ConfigType {
     }
 
     /**
+     * Get the class of the individual item.  This is the unwrapped type of {@code Optional}, {@code Collection}, etc.
+     *
+     * @return the item class (must not be {@code null})
+     */
+    public abstract Class<?> getItemClass();
+
+    /**
      * Handle a configuration key from the input file.
      *  @param name the configuration property name
      * @param config the source configuration

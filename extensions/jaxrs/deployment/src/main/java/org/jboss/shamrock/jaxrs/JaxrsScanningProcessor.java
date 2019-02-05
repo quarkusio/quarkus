@@ -84,8 +84,8 @@ import org.jboss.shamrock.jaxrs.runtime.ResteasyFilter;
 import org.jboss.shamrock.jaxrs.runtime.RolesFilterRegistrar;
 import org.jboss.shamrock.jaxrs.runtime.graal.JaxrsTemplate;
 import org.jboss.shamrock.jaxrs.runtime.graal.ShamrockInjectorFactory;
-import org.jboss.shamrock.runtime.annotations.ConfigGroup;
 import org.jboss.shamrock.runtime.annotations.ConfigItem;
+import org.jboss.shamrock.runtime.annotations.ConfigRoot;
 import org.jboss.shamrock.undertow.FilterBuildItem;
 import org.jboss.shamrock.undertow.ServletBuildItem;
 import org.jboss.shamrock.undertow.ServletInitParamBuildItem;
@@ -168,10 +168,10 @@ public class JaxrsScanningProcessor {
     /**
      * JAX-RS configuration.
      */
-    Config jaxrs;
+    JaxrsConfig jaxrs;
 
-    @ConfigGroup
-    static final class Config {
+    @ConfigRoot
+    static final class JaxrsConfig {
         /**
          * If this is true then JAX-RS will use only a single instance of a resource
          * class to service all requests.
@@ -208,8 +208,8 @@ public class JaxrsScanningProcessor {
     private static final Logger log = Logger.getLogger("org.jboss.shamrock.jaxrs");
 
     @BuildStep
-    JaxrsConfig exportConfig() {
-        return new JaxrsConfig(jaxrs.path);
+    org.jboss.shamrock.jaxrs.JaxrsConfig exportConfig() {
+        return new org.jboss.shamrock.jaxrs.JaxrsConfig(jaxrs.path);
     }
 
     @BuildStep

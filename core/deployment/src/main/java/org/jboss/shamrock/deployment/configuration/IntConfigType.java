@@ -85,7 +85,7 @@ public class IntConfigType extends LeafConfigType {
         body.invokeStaticMethod(setter, enclosing, body.invokeVirtualMethod(INT_VALUE_METHOD, getConvertedDefault(body, config)));
     }
 
-    public ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorMaker, final ResultHandle smallRyeConfig) {
+    public ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorFinder, final ResultHandle smallRyeConfig) {
         return body.invokeVirtualMethod(INT_VALUE_METHOD, getConvertedDefault(body, smallRyeConfig));
     }
 

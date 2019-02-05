@@ -23,8 +23,8 @@ import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
 import org.jboss.shamrock.health.runtime.HealthServlet;
-import org.jboss.shamrock.runtime.annotations.ConfigGroup;
 import org.jboss.shamrock.runtime.annotations.ConfigItem;
+import org.jboss.shamrock.runtime.annotations.ConfigRoot;
 import org.jboss.shamrock.undertow.ServletBuildItem;
 
 import io.smallrye.health.SmallRyeHealthReporter;
@@ -34,10 +34,10 @@ class HealthProcessor {
     /**
      * The configuration for health checking.
      */
-    Config health;
+    HealthConfig health;
 
-    @ConfigGroup
-    static final class Config {
+    @ConfigRoot
+    static final class HealthConfig {
         /**
          * The path of the health-checking servlet.
          */

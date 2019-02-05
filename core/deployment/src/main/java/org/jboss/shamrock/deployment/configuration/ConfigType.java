@@ -68,13 +68,6 @@ public abstract class ConfigType {
         return containingName;
     }
 
-    /**
-     * Get the class of the individual item.  This is the unwrapped type of {@code Optional}, {@code Collection}, etc.
-     *
-     * @return the item class (must not be {@code null})
-     */
-    public abstract Class<?> getItemClass();
-
     public CompoundConfigType getContainer() {
         return container;
     }
@@ -117,18 +110,7 @@ public abstract class ConfigType {
 
     abstract void generateGetDefaultValueIntoEnclosingGroup(final BytecodeCreator body, final ResultHandle enclosing, final MethodDescriptor setter, final ResultHandle config);
 
-    public abstract ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorMaker, final ResultHandle smallRyeConfig);
-
-    /**
-     * Get the next-root-most enclosing type, or {@code null} if no such type exists (i.e. this is already a root-most
-     * type).
-     *
-     * @return the next-root-most type, or {@code null} if there is none
-     */
-    public CompoundConfigType getNextRootType() {
-        final CompoundConfigType container = getContainer();
-        return container instanceof ConfigDefinition ? null : container.isRoot() ? container : container.getNextRootType();
-    }
+    public abstract ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorFinder, final ResultHandle smallRyeConfig);
 
     public ConfigDefinition getConfigDefinition() {
         return container.getConfigDefinition();

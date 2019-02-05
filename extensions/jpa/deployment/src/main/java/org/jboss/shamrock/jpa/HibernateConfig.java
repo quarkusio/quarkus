@@ -1,15 +1,15 @@
 package org.jboss.shamrock.jpa;
 
-import org.jboss.shamrock.runtime.annotations.ConfigGroup;
 import org.jboss.shamrock.runtime.annotations.ConfigItem;
+import org.jboss.shamrock.runtime.annotations.ConfigRoot;
 
 import java.util.Optional;
 
 /**
  * @author Emmanuel Bernard emmanuel@hibernate.org
  */
-@ConfigGroup()
-public class HibernateOrmConfig {
+@ConfigRoot
+public class HibernateConfig {
     /**
      * The hibernate ORM dialect class name
      */

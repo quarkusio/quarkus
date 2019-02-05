@@ -30,6 +30,7 @@ import org.jboss.builder.item.BuildItem;
 import org.jboss.logging.Logger;
 import org.jboss.shamrock.deployment.builditem.ArchiveRootBuildItem;
 import org.jboss.shamrock.deployment.builditem.ClassOutputBuildItem;
+import org.jboss.shamrock.deployment.builditem.ExtensionClassLoaderBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedResourceBuildItem;
 import org.jboss.shamrock.deployment.builditem.ShutdownContextBuildItem;
@@ -62,7 +63,7 @@ public class ShamrockAugmentor {
 
             final BuildChainBuilder chainBuilder = BuildChain.builder();
 
-            ExtensionStepLoader.loadStepsFrom(classLoader).accept(chainBuilder);
+            ExtensionLoader.loadStepsFrom(classLoader).accept(chainBuilder);
             chainBuilder.loadProviders(classLoader);
 
             chainBuilder
@@ -70,7 +71,8 @@ public class ShamrockAugmentor {
                 .addInitial(SubstrateResourceBuildItem.class)
                 .addInitial(ArchiveRootBuildItem.class)
                 .addInitial(ShutdownContextBuildItem.class)
-                .addInitial(ClassOutputBuildItem.class);
+                .addInitial(ClassOutputBuildItem.class)
+                .addInitial(ExtensionClassLoaderBuildItem.class);
             for (Class<? extends BuildItem> i : finalResults) {
                 chainBuilder.addFinal(i);
             }
@@ -89,6 +91,7 @@ public class ShamrockAugmentor {
                 .produce(new ArchiveRootBuildItem(root))
                 .produce(new ClassOutputBuildItem(output))
                 .produce(new ShutdownContextBuildItem())
+                .produce(new ExtensionClassLoaderBuildItem(classLoader))
                 .execute();
 
             //TODO: this seems wrong

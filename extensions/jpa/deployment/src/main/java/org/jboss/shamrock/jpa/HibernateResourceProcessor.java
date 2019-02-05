@@ -55,7 +55,6 @@ import org.jboss.shamrock.jpa.runtime.JPAConfig;
 import org.jboss.shamrock.jpa.runtime.JPADeploymentTemplate;
 import org.jboss.shamrock.jpa.runtime.TransactionEntityManagers;
 import org.jboss.shamrock.jpa.runtime.boot.scan.ShamrockScanner;
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
 
 import javax.enterprise.inject.Produces;
 import javax.persistence.PersistenceContext;
@@ -94,8 +93,7 @@ public final class HibernateResourceProcessor {
     /**
      * Hibernate ORM configuration
      */
-    @ConfigItem
-    HibernateOrmConfig hibernate;
+    HibernateConfig hibernate;
 
     @BuildStep
     HotDeploymentConfigFileBuildItem configFile() {

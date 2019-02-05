@@ -123,7 +123,7 @@ public class CreateProject {
     }
 
     private void addNativeProfile(Model model) {
-        final boolean match = model.getProfiles().stream().anyMatch(p -> p.getId().equals("native-image"));
+        final boolean match = model.getProfiles().stream().anyMatch(p -> p.getId().equals("native"));
         if (!match) {
             PluginExecution exec = new PluginExecution();
             exec.addGoal("native-image");
@@ -136,12 +136,12 @@ public class CreateProject {
             buildBase.addPlugin(plg);
 
             Profile profile = new Profile();
-            profile.setId("native-image");
+            profile.setId("native");
             profile.setBuild(buildBase);
 
             final Activation activation = new Activation();
             final ActivationProperty property = new ActivationProperty();
-            property.setName("!no-native");
+            property.setName("native");
 
             activation.setProperty(property);
             profile.setActivation(activation);

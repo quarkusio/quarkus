@@ -79,6 +79,9 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(model.getDependencies().stream().anyMatch(d ->
                 d.getArtifactId().equalsIgnoreCase("shamrock-jaxrs-deployment")
                         && d.getVersion() == null)).isTrue();
+
+        assertThat(model.getProfiles()).hasSize(1);
+        assertThat(model.getProfiles().get(0).getId()).isEqualTo("native");
     }
 
     private Model load(File directory) {
@@ -117,6 +120,9 @@ public class CreateProjectMojoIT extends MojoTestBase {
                         && d.getType().equalsIgnoreCase("pom"))).isTrue();
 
         assertThat(model.getDependencies()).isEmpty();
+
+        assertThat(model.getProfiles()).hasSize(1);
+        assertThat(model.getProfiles().get(0).getId()).isEqualTo("native");
     }
 
     @Test

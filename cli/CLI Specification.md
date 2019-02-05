@@ -26,7 +26,7 @@ Regardless of the initial conditions, the final product should include:
     3. shamrock-jaxrs-deployment
     4. shamrock-junit4
 5. The shamrock-maven-plugin
-5. The native-image profile
+5. The `native` profile
 6. A common property to track shamrock versions  (Debatable!)
 
 ## Target applications:

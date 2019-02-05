@@ -73,7 +73,7 @@ public class SetupVerifier {
         // Check profile
         assertThat(model.getProfiles()).hasSize(1);
         Profile profile = model.getProfiles().get(0);
-        assertThat(profile.getId()).isEqualTo("native-image");
+        assertThat(profile.getId()).isEqualTo("native");
         Plugin actual = profile.getBuild().getPluginsAsMap().get(CreateProjectMojo.PLUGIN_KEY);
         assertThat(actual).isNotNull();
         assertThat(actual.getExecutions()).hasSize(1).allSatisfy(exec -> {

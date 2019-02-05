@@ -29,7 +29,7 @@ import javax.persistence.EntityManager;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
-import org.jboss.panache.jpa.Controller;
+import org.jboss.panache.controller.Controller;
 import org.jboss.panache.jpa.DaoBase;
 import org.jboss.panache.jpa.EntityBase;
 import org.jboss.panache.jpa.Model;

@@ -1,4 +1,4 @@
-package org.jboss.panache;
+package org.jboss.panache.controller;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;

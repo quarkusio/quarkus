@@ -29,7 +29,6 @@ import javax.persistence.EntityManager;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
-import org.jboss.panache.controller.Controller;
 import org.jboss.panache.jpa.DaoBase;
 import org.jboss.panache.jpa.EntityBase;
 import org.jboss.panache.jpa.Model;
@@ -57,7 +56,6 @@ import io.reactiverse.reactivex.pgclient.PgPool;
 public final class PanacheResourceProcessor {
 
 
-    private static final DotName DOTNAME_CONTROLLER_BASE = DotName.createSimple(Controller.class.getName());
     private static final DotName DOTNAME_DAO_BASE = DotName.createSimple(DaoBase.class.getName());
     private static final DotName DOTNAME_RX_DAO_BASE = DotName.createSimple(RxDaoBase.class.getName());
     private static final DotName DOTNAME_ENTITY_BASE = DotName.createSimple(EntityBase.class.getName());
@@ -113,11 +111,6 @@ public final class PanacheResourceProcessor {
         if(load != null)
             resources.produce(new SubstrateResourceBuildItem("META-INF/load.sql"));
         
-        PanacheRouterEnhancer routerEnhancer = new PanacheRouterEnhancer();
-        for (ClassInfo classInfo : index.getIndex().getKnownDirectSubclasses(DOTNAME_CONTROLLER_BASE)) {
-            transformers.produce(new BytecodeTransformerBuildItem(classInfo.name().toString(), routerEnhancer));
-        }
-
         PanacheJpaDaoEnhancer daoEnhancer = new PanacheJpaDaoEnhancer();
         for (ClassInfo classInfo : index.getIndex().getKnownDirectImplementors(DOTNAME_DAO_BASE)) {
             transformers.produce(new BytecodeTransformerBuildItem(classInfo.name().toString(), daoEnhancer));

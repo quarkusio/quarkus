@@ -23,9 +23,6 @@ import javax.transaction.Transactional;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
-import org.jboss.panache.controller.Controller;
-import org.jboss.panache.router.Router;
-import org.jboss.resteasy.annotations.jaxrs.PathParam;
 import org.junit.jupiter.api.Assertions;
 
 import io.reactivex.Single;
@@ -34,7 +31,7 @@ import io.reactivex.Single;
  * Various tests covering Panache functionality. All tests should work in both standard JVM and SubstrateVM.
  */
 @Path("test")
-public class TestEndpoint extends Controller {
+public class TestEndpoint {
 
     @GET
     @Path("model")
@@ -398,30 +395,5 @@ public class TestEndpoint extends Controller {
             t.printStackTrace();
             throw new RuntimeException(t);
         }
-    }
-
-    @GET
-    @Path("router-test/{pathParam}")
-    public String testMethod1(@PathParam String pathParam) {
-        return "Hello";
-    }
-
-    @GET
-    @Path("router-test/{p1}-{p2}")
-    public String testMethod2(@PathParam int p1,
-            @PathParam byte[] p2) {
-        return "Hello";
-    }
-
-    @GET
-    @Path("router")
-    public String testRouter() {
-        
-        Assertions.assertEquals("http://localhost:8080/test/router", Router.getURI(TestEndpoint::testRouter).toString());
-        Assertions.assertEquals("http://localhost:8080/test/router-test/stef", Router.getURI(TestEndpoint::testMethod1, "stef").toString());
-        Assertions.assertTrue(Router.getURI(TestEndpoint::testMethod2, 2, new byte[] {20}).toString()
-                .startsWith("http://localhost:8080/test/router-test/2-"));
-        
-        return "OK";
     }
 }

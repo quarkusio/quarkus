@@ -137,10 +137,15 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                 }
             }
         }
-        // Finally process beans that are not dependencies
+        // Finally process beans and interceptors that are not dependencies
         for (BeanInfo bean : beanDeployment.getBeans()) {
             if (!processed.contains(bean)) {
                 addBean(getComponents, beansHandle, bean, beanToGeneratedName, beanToResultHandle);
+            }
+        }
+        for (BeanInfo interceptor : beanDeployment.getInterceptors()) {
+            if (!processed.contains(interceptor)) {
+                addBean(getComponents, beansHandle, interceptor, beanToGeneratedName, beanToResultHandle);
             }
         }
 

@@ -61,6 +61,8 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
 
     static final String ANNOTATION_LITERAL_SUFFIX = "_AnnotationLiteral";
 
+    static final String SHARED_SUFFIX = "_Shared";
+
     private static final Logger LOGGER = Logger.getLogger(AnnotationLiteralGenerator.class);
 
     /**
@@ -292,15 +294,14 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
         return arrayType.component().name().toString();
     }
 
-    static String generatedSharedName(DotName annotationName, AtomicInteger index) {
-        // com.foo.MyQualifier -> com.foo.MyQualifier1_AnnotationLiteral
-        return DotNames.packageName(annotationName) + "." + DotNames.simpleName(annotationName) + index.incrementAndGet()
-                + AnnotationLiteralGenerator.ANNOTATION_LITERAL_SUFFIX;
+    static String generatedSharedName(DotName annotationName) {
+        // com.foo.MyQualifier -> com.foo.MyQualifier1_Shared_AnnotationLiteral
+        return DotNames.packageName(annotationName) + "." + DotNames.simpleName(annotationName) + SHARED_SUFFIX + ANNOTATION_LITERAL_SUFFIX;
     }
 
-    static String generatedLocalName(String targetPackage, String simpleName, AtomicInteger index) {
-        // com.foo.MyQualifier -> com.bar.MyQualifier1_AnnotationLiteral
-        return targetPackage + "." + simpleName + index.incrementAndGet() + AnnotationLiteralGenerator.ANNOTATION_LITERAL_SUFFIX;
+    static String generatedLocalName(String targetPackage, String simpleName, String hash) {
+        // com.foo.MyQualifier -> com.bar.MyQualifier_somehashvalue_AnnotationLiteral
+        return targetPackage + "." + simpleName + hash + AnnotationLiteralGenerator.ANNOTATION_LITERAL_SUFFIX;
     }
 
 }

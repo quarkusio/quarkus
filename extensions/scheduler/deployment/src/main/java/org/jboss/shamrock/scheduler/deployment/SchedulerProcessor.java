@@ -17,15 +17,18 @@ package org.jboss.shamrock.scheduler.deployment;
 
 import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.inject.Singleton;
 
@@ -52,15 +55,15 @@ import org.jboss.protean.gizmo.ClassOutput;
 import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
 import org.jboss.shamrock.arc.deployment.AnnotationsTransformerBuildItem;
 import org.jboss.shamrock.arc.deployment.BeanContainerBuildItem;
 import org.jboss.shamrock.arc.deployment.BeanDeploymentValidatorBuildItem;
-import org.jboss.shamrock.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
 import org.jboss.shamrock.arc.deployment.UnremovableBeanBuildItem;
+import org.jboss.shamrock.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
@@ -91,8 +94,6 @@ public class SchedulerProcessor {
     static final Type SCHEDULED_EXECUTION_TYPE = Type.create(DotName.createSimple(ScheduledExecution.class.getName()), Kind.CLASS);
 
     static final String INVOKER_SUFFIX = "_ScheduledInvoker";
-
-    private static final AtomicInteger INVOKER_INDEX = new AtomicInteger();
 
     @BuildStep
     List<AdditionalBeanBuildItem> beans() {
@@ -235,8 +236,13 @@ public class SchedulerProcessor {
         } else {
             baseName = DotNames.simpleName(bean.getImplClazz().name());
         }
+        StringBuilder sigBuilder = new StringBuilder();
+        sigBuilder.append(method.name()).append("_").append(method.returnType().name().toString());
+        for (Type i : method.parameters()) {
+            sigBuilder.append(i.name().toString());
+        }
         String targetPackage = DotNames.packageName(bean.getImplClazz().name());
-        String generatedName = targetPackage.replace('.', '/') + "/" + baseName + INVOKER_SUFFIX + INVOKER_INDEX.incrementAndGet();
+        String generatedName = targetPackage.replace('.', '/') + "/" + baseName + INVOKER_SUFFIX + "_" + method.name() + "_" + sha1(sigBuilder.toString());
 
         ClassCreator invokerCreator = ClassCreator.builder().classOutput(processorClassOutput).className(generatedName).interfaces(ScheduledInvoker.class)
                 .build();
@@ -265,6 +271,16 @@ public class SchedulerProcessor {
 
         invokerCreator.close();
         return generatedName.replace('/', '.');
+    }
+    
+    static String sha1(String value) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-1");
+            return Base64.getUrlEncoder()
+                    .encodeToString(md.digest(value.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     private Object getValue(AnnotationValue annotationValue) {

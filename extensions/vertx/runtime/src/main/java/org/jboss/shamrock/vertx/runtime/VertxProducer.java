@@ -4,6 +4,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.EventBusOptions;
+import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.file.FileSystemOptions;
 import io.vertx.core.http.ClientAuth;
 import io.vertx.core.net.JksOptions;
@@ -16,8 +17,10 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
 import javax.inject.Singleton;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
@@ -30,9 +33,8 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class VertxProducer {
 
-
-    private VertxConfiguration conf;
-    private Vertx vertx;
+    private volatile VertxConfiguration conf;
+    private volatile Vertx vertx;
 
     private void initialize() {
         if (conf == null) {
@@ -216,5 +218,48 @@ public class VertxProducer {
 
     void configure(VertxConfiguration config) {
         this.conf = config;
+    }
+
+    void registerMessageConsumers(List<Map<String, String>> messageConsumers) {
+        if (!messageConsumers.isEmpty()) {
+            EventBus eventBus = eventbus();
+            CountDownLatch latch = new CountDownLatch(messageConsumers.size());
+            for (Map<String, String> messageConsumer : messageConsumers) {
+                EventConsumerInvoker invoker = createInvoker(messageConsumer.get("invokerClazz"));
+                String address = messageConsumer.get("address");
+                MessageConsumer<Object> consumer;
+                if (Boolean.valueOf(messageConsumer.get("local"))) {
+                    consumer = eventBus.localConsumer(address);
+                } else {
+                    consumer = eventBus.consumer(address);
+                }
+                consumer.handler(m -> invoker.invoke(m));
+                consumer.completionHandler(ar -> {
+                    if (ar.succeeded()) {
+                        latch.countDown();
+                    }
+                });
+            }
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Unable to register all message consumer methods", e);
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private EventConsumerInvoker createInvoker(String invokerClassName) {
+        try {
+            ClassLoader cl = Thread.currentThread().getContextClassLoader();
+            if (cl == null) {
+                cl = VertxProducer.class.getClassLoader();
+            }
+            Class<? extends EventConsumerInvoker> invokerClazz = (Class<? extends EventConsumerInvoker>) cl.loadClass(invokerClassName);
+            return invokerClazz.getDeclaredConstructor().newInstance();
+        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | NoSuchMethodException | InvocationTargetException e) {
+            throw new IllegalStateException("Unable to create invoker: " + invokerClassName, e);
+        }
     }
 }

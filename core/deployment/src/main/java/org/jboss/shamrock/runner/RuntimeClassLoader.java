@@ -270,7 +270,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
 
     @Override
     public void writeClass(boolean applicationClass, String className, byte[] data) {
-        if (applicationClass || className.contains("$__MODEL")) {
+        if (applicationClass) {
             appClasses.put(className.replace('/', '.'), data);
         } else {
             //this is pretty horrible

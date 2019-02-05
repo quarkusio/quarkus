@@ -52,17 +52,8 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-vertx-deployment</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-jdbc-postgresql-deployment</artifactId>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-rxjava2</artifactId>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>

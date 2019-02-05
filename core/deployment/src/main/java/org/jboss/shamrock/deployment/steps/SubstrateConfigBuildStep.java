@@ -79,12 +79,13 @@ class SubstrateConfigBuildStep {
 
             String graalVmHome = System.getenv("GRAALVM_HOME");
 
-            if (graalVmHome == null) {
-                throw new RuntimeException("GRAALVM_HOME environment variable required");
+            if (graalVmHome != null) {
+                systemProperty.produce(
+                        new SystemPropertyBuildItem("java.library.path", graalVmHome + File.separator + "jre" + File.separator + "lib" + File.separator + "amd64"));
+            } else {
+                log.warn(
+                        "SSL is enabled but the GRAALVM_HOME environment variable is not set. The java.library.path property has not been set and will need to be set manually.");
             }
-
-            systemProperty.produce(
-                    new SystemPropertyBuildItem("java.library.path", graalVmHome + File.separator + "jre" + File.separator + "lib" + File.separator + "amd64"));
         }
 
         nativeImage.produce(new SubstrateSystemPropertyBuildItem("shamrock.ssl.native", sslNativeEnabled.toString()));

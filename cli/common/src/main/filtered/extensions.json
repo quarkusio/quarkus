@@ -20,13 +20,14 @@
     "artifactId": "shamrock-arc-deployment"
   },
   {
-    "name": "Bean Validation",
+    "name": "Hibernate Validator",
     "labels": [
+      "hibernate-validator",
       "bean-validation",
       "validation"
     ],
     "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-bean-validation-deployment"
+    "artifactId": "shamrock-hibernate-validator-deployment"
   },
   {
     "name": "Fault Tolerance",

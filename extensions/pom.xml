@@ -62,7 +62,7 @@
         <module>agroal</module>
         <module>jdbc</module>
         <module>jpa</module>
-        <module>bean-validation</module>
+        <module>hibernate-validator</module>
 
         <!-- Spring -->
         <module>spring-di</module>

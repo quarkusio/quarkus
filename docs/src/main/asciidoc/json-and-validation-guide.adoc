@@ -41,10 +41,10 @@ mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
     -DprojectArtifactId=input-validation \
     -DclassName="org.acme.validation.BookResource" \
     -Dpath="/books" \
-    -Dextensions="jaxrs-json, validation"
+    -Dextensions="jaxrs-json, hibernate-validator"
 ----
 
-This command generates a Maven structure importing the JAX-RS, JSON and validation support.
+This command generates a Maven structure importing the JAX-RS, JSON and Hibernate Validator/Bean Validation support.
 
 == Accessing the Validator
 

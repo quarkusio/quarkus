@@ -98,8 +98,8 @@ public class ListExtensionsTest {
                 assertTrue(line.startsWith("update"), "JAX-RS should list as having an update: " + line);
                 assertTrue(line.endsWith(getPluginVersion()), "JAX-RS should list as having an update: " + line);
                 jaxrs = true;
-            } else if (line.contains(" Bean Validation  ")) {
-                assertTrue(line.startsWith("   "), "Bean Validation should not list as anything: " + line);
+            } else if (line.contains(" Hibernate Validator  ")) {
+                assertTrue(line.startsWith("   "), "Hibernate Validator should not list as anything: " + line);
                 bean = true;
             }
         }

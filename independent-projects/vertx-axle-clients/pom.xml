@@ -8,6 +8,7 @@
         <artifactId>shamrock-build-parent</artifactId>
         <groupId>org.jboss.shamrock</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
+        <relativePath>../../build-parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>vertx-axle-clients</artifactId>

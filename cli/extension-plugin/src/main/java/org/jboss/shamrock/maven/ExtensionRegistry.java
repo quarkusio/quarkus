@@ -77,33 +77,29 @@ class ExtensionRegistry {
     }
 
     private static class Key {
-        private final String groupId;
-        private final String artifactId;
-        private final String version;
+        private final String gav;
 
         Key(String groupId, String artifactId, String version) {
-            this.groupId = groupId;
-            this.artifactId = artifactId;
-            this.version = version;
+            this.gav = groupId + ":" + artifactId + ":" + version;
         }
 
-        String compositeKey() {
-            return this.groupId + ":" + this.artifactId + ":" + this.version;
+        String gav() {
+            return this.gav;
         }
 
         @Override
         public int hashCode() {
-            return compositeKey().hashCode();
+            return gav().hashCode();
         }
 
         @Override
         public boolean equals(Object obj) {
-            return obj instanceof Key && compositeKey().equals(((Key) obj).compositeKey());
+            return obj instanceof Key && gav().equals(((Key) obj).gav());
         }
 
         @Override
         public String toString() {
-            return compositeKey();
+            return gav();
         }
 
         static Key of(MavenProject project) {

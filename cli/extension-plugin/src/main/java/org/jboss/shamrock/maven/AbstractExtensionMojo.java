@@ -97,6 +97,7 @@ public abstract class AbstractExtensionMojo extends AbstractMojo {
     }
 
     private boolean isExtension(MavenProject project) {
+        //TODO Change how we determine what is the "extension" artifact when Toronto model implemented
         return project.getArtifactId().contains("-deployment");
     }
 }

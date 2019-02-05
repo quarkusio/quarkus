@@ -167,12 +167,12 @@ public class Extension {
         return dependency;
     }
 
-    public String ga() {
+    public String managementKey() {
         return getGroupId() + ":" + getArtifactId();
     }
 
     public String gav() {
-        return ga() + ":" + version;
+        return managementKey() + ":" + version;
     }
 
     @Override

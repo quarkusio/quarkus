@@ -46,6 +46,7 @@ import java.util.Set;
 )
 public class ExtensionListMojo extends AbstractExtensionMojo {
 
+    //TODO Change file name when we replace the current hand coded file
     private static final String FILE_NAME = "extension-list";
 
     @Parameter(defaultValue = "${project.version}", readonly = true)

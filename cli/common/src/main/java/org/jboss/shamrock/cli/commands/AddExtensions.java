@@ -46,13 +46,13 @@ public class AddExtensions {
                 final Extension extension = optional.get();
 
                 if (!MojoUtils.hasDependency(model, extension.getGroupId(), extension.getArtifactId())) {
-                    System.out.println("Adding extension " + extension.ga());
+                    System.out.println("Adding extension " + extension.managementKey());
                     model.addDependency(extension
                                             .toDependency(containsBOM(model) &&
                                                           isDefinedInBom(dependenciesFromBom, extension)));
                     updated = true;
                 } else {
-                    System.out.println("Skipping extension " + extension.ga() + ": already present");
+                    System.out.println("Skipping extension " + extension.managementKey() + ": already present");
                 }
             } else if (dependency.contains(":")) {
                 Dependency parsed = MojoUtils.parse(dependency);

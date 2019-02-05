@@ -26,6 +26,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String REACTIVE_CONVERTERS = "reactive-type-converters";
     public static final String HIBERNATE_VALIDATOR = "hibernate-validator";
     public static final String JPA = "jpa";
+    public static final String JAEGER = "jaeger";
     public static final String SCHEDULER = "scheduler";
     public static final String SECURITY = "security";
     public static final String VERTX = "vertx";

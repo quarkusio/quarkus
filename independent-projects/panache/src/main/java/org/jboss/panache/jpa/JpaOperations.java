@@ -17,13 +17,11 @@ public class JpaOperations {
         if (!em.contains(entity)) {
             em.persist(entity);
         }
-        em.flush();
     }
 
     static void delete(Object entity) {
         EntityManager em = getEntityManager();
         em.remove(entity);
-        em.flush();
     }
 
     static boolean isPersistent(Object entity) {

@@ -126,24 +126,24 @@ public class MessageConsumerMethodTest {
         }
         
         @ConsumeEvent("foo")
-        String send(String message) {
+        String reply(String message) {
             return message.toUpperCase();
         }
 
         @ConsumeEvent("pub")
-        void pub(String message) {
+        void consume(String message) {
             MESSAGES.add(message.toLowerCase());
             latch.countDown();
         }
 
         @ConsumeEvent("pub")
-        void pub(Message<String> message) {
+        void consume(Message<String> message) {
             MESSAGES.add(message.body().toUpperCase());
             latch.countDown();
         }
         
         @ConsumeEvent("foo-async")
-        CompletionStage<String> sendAsync(String message) {
+        CompletionStage<String> replyAsync(String message) {
             return CompletableFuture.completedFuture(new StringBuilder(message).reverse().toString());
         }
     }

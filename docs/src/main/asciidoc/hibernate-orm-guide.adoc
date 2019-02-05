@@ -74,7 +74,7 @@ public class Gift {
     private Long id;
     private String name;
 
-    @Id @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="personSeq")
+    @Id @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="giftSeq")
     public Long getId() {
         return id;
     }
@@ -234,7 +234,7 @@ public class Gift {
     private Long id;
     private String name;
 
-    @Id @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="personSeq")
+    @Id @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="giftSeq")
     public Long getId() {
         return id;
     }

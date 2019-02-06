@@ -41,4 +41,9 @@ public class JaegerProcessor {
         jdt.registerTracer();
     }
 
+    @BuildStep
+    public void build(BuildProducer<FeatureBuildItem> feature) {
+        feature.produce(new FeatureBuildItem(FeatureBuildItem.JAEGER));
+    }
+
 }

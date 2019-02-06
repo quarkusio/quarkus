@@ -1,7 +1,7 @@
 package org.jboss.shamrock.deployment.configuration;
 
 import java.lang.reflect.Field;
-import java.util.OptionalInt;
+import java.util.OptionalLong;
 
 import io.smallrye.config.SmallRyeConfig;
 import org.jboss.protean.gizmo.BytecodeCreator;
@@ -13,14 +13,14 @@ import org.wildfly.common.Assert;
 
 /**
  */
-public class IntConfigType extends LeafConfigType {
+public class LongConfigType extends LeafConfigType {
 
-    private static final MethodDescriptor OPTINT_OR_ELSE_METHOD = MethodDescriptor.ofMethod(OptionalInt.class, "orElse", int.class, int.class);
-    private static final MethodDescriptor INT_VALUE_METHOD = MethodDescriptor.ofMethod(Integer.class, "intValue", int.class);
+    private static final MethodDescriptor OPTLONG_OR_ELSE_METHOD = MethodDescriptor.ofMethod(OptionalLong.class, "orElse", long.class, long.class);
+    private static final MethodDescriptor LONG_VALUE_METHOD = MethodDescriptor.ofMethod(Long.class, "longValue", long.class);
 
     final String defaultValue;
 
-    public IntConfigType(final String containingName, final CompoundConfigType container, final boolean consumeSegment, final String defaultValue) {
+    public LongConfigType(final String containingName, final CompoundConfigType container, final boolean consumeSegment, final String defaultValue) {
         super(containingName, container, consumeSegment);
         Assert.checkNotEmptyParam("defaultValue", defaultValue);
         this.defaultValue = defaultValue;
@@ -44,14 +44,14 @@ public class IntConfigType extends LeafConfigType {
 
     public void acceptConfigurationValueIntoGroup(final Object enclosing, final Field field, final NameIterator name, final SmallRyeConfig config) {
         try {
-            field.setInt(enclosing, config.getValue(name.toString(), OptionalInt.class).orElse(config.convert(defaultValue, Integer.class).intValue()));
+            field.setLong(enclosing, config.getValue(name.toString(), OptionalLong.class).orElse(config.convert(defaultValue, Long.class).longValue()));
         } catch (IllegalAccessException e) {
             throw toError(e);
         }
     }
 
     public void generateAcceptConfigurationValueIntoGroup(final BytecodeCreator body, final ResultHandle enclosing, final MethodDescriptor setter, final ResultHandle name, final ResultHandle config) {
-        // config.getValue(name.toString(), OptionalInt.class).orElse(config.convert(defaultValue, Integer.class).intValue())
+        // config.getValue(name.toString(), OptionalLong.class).orElse(config.convert(defaultValue, Long.class).longValue())
         final ResultHandle optionalValue = body.checkCast(body.invokeVirtualMethod(
             SRC_GET_VALUE,
             config,
@@ -59,36 +59,36 @@ public class IntConfigType extends LeafConfigType {
                 OBJ_TO_STRING_METHOD,
                 name
             ),
-            body.loadClass(OptionalInt.class)
-        ), OptionalInt.class);
+            body.loadClass(OptionalLong.class)
+        ), OptionalLong.class);
         final ResultHandle convertedDefault = getConvertedDefault(body, config);
         final ResultHandle defaultedValue = body.checkCast(body.invokeVirtualMethod(
-            OPTINT_OR_ELSE_METHOD,
+            OPTLONG_OR_ELSE_METHOD,
             optionalValue,
             convertedDefault
-        ), Integer.class);
-        final ResultHandle intValue = body.invokeVirtualMethod(INT_VALUE_METHOD, defaultedValue);
-        body.invokeStaticMethod(setter, enclosing, intValue);
+        ), Long.class);
+        final ResultHandle longValue = body.invokeVirtualMethod(LONG_VALUE_METHOD, defaultedValue);
+        body.invokeStaticMethod(setter, enclosing, longValue);
     }
 
     public Class<?> getItemClass() {
-        return int.class;
+        return long.class;
     }
 
     void getDefaultValueIntoEnclosingGroup(final Object enclosing, final SmallRyeConfig config, final Field field) {
         try {
-            field.setInt(enclosing, config.convert(defaultValue, Integer.class).intValue());
+            field.setLong(enclosing, config.convert(defaultValue, Long.class).longValue());
         } catch (IllegalAccessException e) {
             throw toError(e);
         }
     }
 
     void generateGetDefaultValueIntoEnclosingGroup(final BytecodeCreator body, final ResultHandle enclosing, final MethodDescriptor setter, final ResultHandle config) {
-        body.invokeStaticMethod(setter, enclosing, body.invokeVirtualMethod(INT_VALUE_METHOD, getConvertedDefault(body, config)));
+        body.invokeStaticMethod(setter, enclosing, body.invokeVirtualMethod(LONG_VALUE_METHOD, getConvertedDefault(body, config)));
     }
 
     public ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorFinder, final ResultHandle smallRyeConfig) {
-        return body.invokeVirtualMethod(INT_VALUE_METHOD, getConvertedDefault(body, smallRyeConfig));
+        return body.invokeVirtualMethod(LONG_VALUE_METHOD, getConvertedDefault(body, smallRyeConfig));
     }
 
     private ResultHandle getConvertedDefault(final BytecodeCreator body, final ResultHandle config) {
@@ -96,7 +96,7 @@ public class IntConfigType extends LeafConfigType {
             SRC_CONVERT_METHOD,
             config,
             body.load(defaultValue),
-            body.loadClass(Integer.class)
-        ), Integer.class);
+            body.loadClass(Long.class)
+        ), Long.class);
     }
 }

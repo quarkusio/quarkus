@@ -23,7 +23,7 @@
     <groupId>org.jboss.shamrock</groupId>
     <artifactId>shamrock-cli</artifactId>
     <name>Shamrock - CLI Native Tool</name>
-    <version>1.0.0.Alpha1-SNAPSHOT</version>
+    <version>0.8.0</version>
 
     <properties>
         <test.level>INFO</test.level>

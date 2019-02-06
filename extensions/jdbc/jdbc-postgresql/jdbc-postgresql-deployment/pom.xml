@@ -21,7 +21,7 @@
     <parent>
         <artifactId>shamrock-jdbc-postgresql</artifactId>
         <groupId>org.jboss.shamrock</groupId>
-        <version>1.0.0.Alpha1-SNAPSHOT</version>
+        <version>0.8.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 

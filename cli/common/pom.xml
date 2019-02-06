@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.jboss.shamrock</groupId>
         <artifactId>shamrock-cli-all</artifactId>
-        <version>1.0.0.Alpha1-SNAPSHOT</version>
+        <version>0.8.0</version>
     </parent>
 
     <artifactId>cli-common</artifactId>

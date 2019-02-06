@@ -47,7 +47,7 @@ public class ShamrockClassWriter extends ClassWriter {
         if (c1 != null && c2 != null) {
             return super.getCommonSuperClass(type1, type2);
         }
-        return Object.class.getName();
+        return Object.class.getName().replace('.', '/');
     }
 
 

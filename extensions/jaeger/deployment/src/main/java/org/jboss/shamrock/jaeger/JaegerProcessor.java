@@ -44,7 +44,6 @@ public class JaegerProcessor {
         // Indicates that this extension would like the SSL support to be enabled
         extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.JAEGER));
 
-        System.out.println("JaegerProcessor service name = "+jaeger.serviceName);
         jdt.registerTracer(jaeger);
     }
 

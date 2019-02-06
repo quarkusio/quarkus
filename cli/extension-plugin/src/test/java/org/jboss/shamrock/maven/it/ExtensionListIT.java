@@ -118,7 +118,7 @@ public class ExtensionListIT {
     }
 
     public static void installPluginToLocalRepository(File local) {
-        File repo = new File(local, "org.jboss.shamrock/shamrock-extension-plugin/" + System.getProperty("project.version"));
+        File repo = new File(local, "org/jboss/shamrock/shamrock-extension-plugin/" + System.getProperty("project.version"));
         if (!repo.isDirectory()) {
             boolean mkdirs = repo.mkdirs();
             Logger.getLogger(ExtensionListIT.class.getName())

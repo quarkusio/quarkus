@@ -179,7 +179,7 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>common-core</artifactId>
+            <artifactId>cli-common-core</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>

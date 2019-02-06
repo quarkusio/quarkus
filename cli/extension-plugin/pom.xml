@@ -48,7 +48,7 @@
 
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>common-core</artifactId>
+            <artifactId>cli-common-core</artifactId>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

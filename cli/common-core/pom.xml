@@ -26,8 +26,8 @@
         <version>1.0.0.Alpha1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>common-core</artifactId>
-    <name>Shamrock - Common Core</name>
+    <artifactId>cli-common-core</artifactId>
+    <name>Shamrock - CLI Common Core</name>
 
     <dependencies>
         <dependency>

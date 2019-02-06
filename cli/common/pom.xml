@@ -51,7 +51,7 @@
     <dependencies>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>common-core</artifactId>
+            <artifactId>cli-common-core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.maven</groupId>

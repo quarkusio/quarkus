@@ -1,10 +1,16 @@
 package org.jboss.shamrock.panache;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 
 import org.jboss.panache.jpa.EntityBase;
 import org.jboss.panache.jpa.JpaOperations;
+import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -27,6 +33,9 @@ public class PanacheJpaModelEnhancer implements BiFunction<String, ClassVisitor,
     static class ModelEnhancingClassVisitor extends ClassVisitor {
 
         private Type thisClass;
+        private Map<String,EntityField> fields = new HashMap<>();
+        // set of name + "/" + descriptor (only for suspected accessor names)
+        private Set<String> methods = new HashSet<>();
 
         public ModelEnhancingClassVisitor(String className, ClassVisitor outputClassVisitor) {
             super(Opcodes.ASM6, outputClassVisitor);
@@ -34,8 +43,39 @@ public class PanacheJpaModelEnhancer implements BiFunction<String, ClassVisitor,
         }
 
         @Override
+        public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
+            FieldVisitor superVisitor = super.visitField(access, name, descriptor, signature, value);
+            if((access & Opcodes.ACC_PUBLIC) == 0
+                    || (access & Opcodes.ACC_TRANSIENT) != 0
+                    || name.startsWith("$$_hibernate_"))
+                return superVisitor;
+            // only look at fields we're interested in
+            return new FieldVisitor(Opcodes.ASM6, superVisitor) {
+                boolean ignore = false;
+                @Override
+                public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+                    if(descriptor.equals("Ljavax/persistence/Transient;"))
+                        ignore = true;
+                    return super.visitAnnotation(descriptor, visible);
+                }
+                
+                @Override
+                public void visitEnd() {
+                    if(!ignore) {
+                        fields.put(name, new EntityField(name, descriptor));
+                    }
+                    super.visitEnd();
+                }
+            };
+        }
+        
+        @Override
         public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-            // FIXME: do not add method if already present
+            if(name.startsWith("get")
+                    || name.startsWith("set")
+                    || name.startsWith("is"))
+                methods.add(name + "/" + descriptor);
+            // FIXME: do not add method if already present 
             return super.visitMethod(access, name, descriptor, signature, exceptions);
         }
 
@@ -161,7 +201,68 @@ public class PanacheJpaModelEnhancer implements BiFunction<String, ClassVisitor,
             mv.visitMaxs(0, 0);
             mv.visitEnd();
 
+            generateAccessors();
+            
             super.visitEnd();
+        }
+
+        private void generateAccessors() {
+            for (EntityField field : fields.values()) {
+                // Getter
+                String getterName = field.getGetterName();
+                String getterDescriptor = "()"+field.descriptor;
+                if(!methods.contains(getterName + "/" + getterDescriptor)) {
+                    MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC, 
+                                                         getterName, getterDescriptor, null, null);
+                    mv.visitCode();
+                    mv.visitIntInsn(Opcodes.ALOAD, 0);
+                    mv.visitFieldInsn(Opcodes.GETFIELD, thisClass.getInternalName(), field.name, field.descriptor);
+                    int returnCode;
+                    switch(field.descriptor) {
+                    case "Z":
+                    case "B":
+                    case "C":
+                    case "S":
+                    case "I":
+                        returnCode = Opcodes.IRETURN; break;
+                    case "J": returnCode = Opcodes.LRETURN; break;
+                    case "F": returnCode = Opcodes.FRETURN; break;
+                    case "D": returnCode = Opcodes.DRETURN; break;
+                    default: returnCode = Opcodes.ARETURN; break;
+                    }
+                    mv.visitInsn(returnCode);
+                    mv.visitMaxs(0, 0);
+                    mv.visitEnd();
+                }
+                
+                // Setter
+                String setterName = field.getSetterName();
+                String setterDescriptor = "("+field.descriptor+")V";
+                if(!methods.contains(setterName + "/" + setterDescriptor)) {
+                    MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC, 
+                                                         setterName, setterDescriptor, null, null);
+                    mv.visitCode();
+                    mv.visitIntInsn(Opcodes.ALOAD, 0);
+                    int loadCode;
+                    switch(field.descriptor) {
+                    case "Z":
+                    case "B":
+                    case "C":
+                    case "S":
+                    case "I":
+                        loadCode = Opcodes.ILOAD; break;
+                    case "J": loadCode = Opcodes.LLOAD; break;
+                    case "F": loadCode = Opcodes.FLOAD; break;
+                    case "D": loadCode = Opcodes.DLOAD; break;
+                    default: loadCode = Opcodes.ALOAD; break;
+                    }
+                    mv.visitIntInsn(loadCode, 1);
+                    mv.visitFieldInsn(Opcodes.PUTFIELD, thisClass.getInternalName(), field.name, field.descriptor);
+                    mv.visitInsn(Opcodes.RETURN);
+                    mv.visitMaxs(0, 0);
+                    mv.visitEnd();
+                }
+            }
         }
     }
 }

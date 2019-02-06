@@ -47,18 +47,20 @@ import java.util.zip.ZipFile;
 import org.eclipse.microprofile.config.Config;
 import org.jboss.builder.BuildResult;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.creator.AppArtifact;
-import org.jboss.shamrock.creator.AppArtifactResolver;
+import org.jboss.shamrock.bootstrap.BootstrapDependencyProcessingException;
+import org.jboss.shamrock.bootstrap.resolver.AppArtifact;
+import org.jboss.shamrock.bootstrap.resolver.AppArtifactResolverException;
+import org.jboss.shamrock.bootstrap.resolver.AppArtifactResolver;
+import org.jboss.shamrock.bootstrap.resolver.AppDependency;
+import org.jboss.shamrock.bootstrap.util.IoUtils;
+import org.jboss.shamrock.bootstrap.util.ZipUtils;
 import org.jboss.shamrock.creator.AppCreationPhase;
 import org.jboss.shamrock.creator.AppCreator;
 import org.jboss.shamrock.creator.AppCreatorException;
-import org.jboss.shamrock.creator.AppDependency;
 import org.jboss.shamrock.creator.config.reader.MappedPropertiesHandler;
 import org.jboss.shamrock.creator.config.reader.PropertiesHandler;
 import org.jboss.shamrock.creator.outcome.OutcomeProviderRegistration;
 import org.jboss.shamrock.creator.phase.curate.CurateOutcome;
-import org.jboss.shamrock.creator.util.IoUtils;
-import org.jboss.shamrock.creator.util.ZipUtils;
 import org.jboss.shamrock.deployment.ClassOutput;
 import org.jboss.shamrock.deployment.ShamrockAugmentor;
 import org.jboss.shamrock.deployment.ShamrockClassWriter;
@@ -81,7 +83,6 @@ import io.smallrye.config.SmallRyeConfigProviderResolver;
 public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutcome {
 
     private static final String DEPENDENCIES_RUNTIME = "dependencies.runtime";
-    private static final String FILENAME_STEP_CLASSES = "META-INF/shamrock-build-steps.list";
     private static final String PROVIDED = "provided";
 
     private static final Logger log = Logger.getLogger(AugmentPhase.class);
@@ -176,7 +177,12 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
 
         if (appClassesDir == null) {
             appClassesDir = outputDir.resolve("classes");
-            final Path appJar = appState.getArtifactResolver().resolve(appState.getAppArtifact());
+            Path appJar;
+            try {
+                appJar = appState.getArtifactResolver().resolve(appState.getAppArtifact());
+            } catch (AppArtifactResolverException e) {
+                throw new AppCreatorException("Failed to resolve application dependency", e);
+            }
             try {
                 ZipUtils.unzip(appJar, appClassesDir);
             } catch (IOException e) {
@@ -214,7 +220,12 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
         }
 
         final AppArtifactResolver depResolver = appState.getArtifactResolver();
-        final List<AppDependency> appDeps = appState.getEffectiveDeps();
+        List<AppDependency> appDeps;
+        try {
+            appDeps = appState.getEffectiveDeps().getBuildClasspath();
+        } catch (BootstrapDependencyProcessingException e) {
+            throw new AppCreatorException("Failed to resolve application build classpath", e);
+        }
 
         URLClassLoader runnerClassLoader = null;
         try {

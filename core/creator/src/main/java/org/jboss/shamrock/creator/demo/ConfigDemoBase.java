@@ -30,12 +30,12 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
+import org.jboss.shamrock.bootstrap.util.IoUtils;
+import org.jboss.shamrock.bootstrap.util.PropertyUtils;
 import org.jboss.shamrock.creator.AppCreator;
 import org.jboss.shamrock.creator.config.reader.PropertiesConfigReader;
 import org.jboss.shamrock.creator.config.reader.PropertiesHandler;
 import org.jboss.shamrock.creator.phase.curate.CuratePhase;
-import org.jboss.shamrock.creator.util.IoUtils;
-import org.jboss.shamrock.creator.util.PropertyUtils;
 
 /**
  *
@@ -51,7 +51,7 @@ public class ConfigDemoBase {
 
     public void run() throws Exception {
 
-        final long startTime = System.currentTimeMillis();
+        final long startTime = System.nanoTime();
 
         final Path appJar = getAppJar();
         if (!Files.exists(appJar)) {
@@ -78,9 +78,7 @@ public class ConfigDemoBase {
             }
         }
 
-        final long time = System.currentTimeMillis() - startTime;
-        final long seconds = time / 1000;
-        System.out.println("Done in " + seconds + "." + (time - seconds * 1000) + " seconds");
+        System.out.println(IoUtils.tookTime("Demo", startTime));
     }
 
     protected void demo(AppCreator creator) throws Exception {

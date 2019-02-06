@@ -42,7 +42,7 @@
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-integration-test-class-transformer</artifactId>
-            <scope>provided</scope>
+            <!-- <scope>provided</scope> -->
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
@@ -50,74 +50,62 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-metrics-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>shamrock-smallrye-metrics-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-openapi-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>shamrock-smallrye-openapi-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-opentracing-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>shamrock-smallrye-opentracing-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-arc-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>shamrock-arc-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-health-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>shamrock-smallrye-health-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-reactive-streams-operators-deployment</artifactId>
+            <artifactId>shamrock-smallrye-reactive-streams-operators-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-hibernate-validator-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>shamrock-hibernate-validator-runtime</artifactId>
+            <!-- <scope>provided</scope> -->
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-narayana-jta-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>shamrock-narayana-jta-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-undertow-websockets-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>shamrock-undertow-websockets-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-fault-tolerance-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>shamrock-smallrye-fault-tolerance-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-scheduler-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>shamrock-scheduler-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-security-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>shamrock-security-runtime</artifactId>
         </dependency>
 
         <!-- JAX-RS -->
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-resteasy-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>shamrock-resteasy-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-resteasy-jsonb-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>shamrock-resteasy-jsonb-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
@@ -133,20 +121,21 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-rest-client-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>shamrock-rest-client-runtime</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-rest-client-runtime</artifactId>
         </dependency>
 
         <!-- JPA -->
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-hibernate-orm-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>shamrock-hibernate-orm-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jdbc-h2-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>shamrock-jdbc-h2-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
@@ -169,6 +158,12 @@
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-lang3</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 
@@ -211,8 +206,7 @@
             <dependencies>
                 <dependency>
                     <groupId>org.jboss.shamrock</groupId>
-                    <artifactId>shamrock-jdbc-postgresql-deployment</artifactId>
-                    <scope>provided</scope>
+                    <artifactId>shamrock-jdbc-postgresql-runtime</artifactId>
                 </dependency>
             </dependencies>
         </profile>

@@ -175,6 +175,11 @@
             <version>${project.version}</version>
          </dependency>
          <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>shamrock-core-bootstrap</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-core-deployment</artifactId>
             <version>${project.version}</version>
@@ -888,7 +893,6 @@
             <artifactId>maven-settings-builder</artifactId>
             <version>${maven-core.version}</version>
          </dependency>
-         
          <dependency>
             <groupId>org.apache.maven.plugin-tools</groupId>
             <artifactId>maven-plugin-annotations</artifactId>
@@ -927,7 +931,6 @@
             <version>${test-containers.version}</version>
             <scope>test</scope>
          </dependency>
-         
          <dependency>
             <groupId>org.codehaus.plexus</groupId>
             <artifactId>plexus-utils</artifactId>

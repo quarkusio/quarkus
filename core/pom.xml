@@ -30,6 +30,7 @@
     <name>Shamrock - Core</name>
     <packaging>pom</packaging>
     <modules>
+        <module>bootstrap</module>
         <module>deployment</module>
         <module>runtime</module>
         <module>processor</module>

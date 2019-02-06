@@ -28,12 +28,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 
+import org.jboss.shamrock.bootstrap.resolver.AppArtifactResolver;
+import org.jboss.shamrock.bootstrap.util.IoUtils;
 import org.jboss.shamrock.creator.config.reader.MappedPropertiesHandler;
 import org.jboss.shamrock.creator.config.reader.PropertiesConfigReaderException;
 import org.jboss.shamrock.creator.config.reader.PropertiesHandler;
 import org.jboss.shamrock.creator.outcome.OutcomeResolver;
 import org.jboss.shamrock.creator.outcome.OutcomeResolverFactory;
-import org.jboss.shamrock.creator.util.IoUtils;
 
 /**
  *

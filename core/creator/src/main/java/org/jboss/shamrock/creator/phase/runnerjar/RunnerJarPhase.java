@@ -42,19 +42,20 @@ import java.util.function.Consumer;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.creator.AppArtifact;
-import org.jboss.shamrock.creator.AppArtifactResolver;
+import org.jboss.shamrock.bootstrap.resolver.AppArtifact;
+import org.jboss.shamrock.bootstrap.resolver.AppArtifactResolverException;
+import org.jboss.shamrock.bootstrap.resolver.AppArtifactResolver;
+import org.jboss.shamrock.bootstrap.resolver.AppDependency;
+import org.jboss.shamrock.bootstrap.util.IoUtils;
+import org.jboss.shamrock.bootstrap.util.ZipUtils;
 import org.jboss.shamrock.creator.AppCreationPhase;
 import org.jboss.shamrock.creator.AppCreator;
 import org.jboss.shamrock.creator.AppCreatorException;
-import org.jboss.shamrock.creator.AppDependency;
 import org.jboss.shamrock.creator.config.reader.MappedPropertiesHandler;
 import org.jboss.shamrock.creator.config.reader.PropertiesHandler;
 import org.jboss.shamrock.creator.outcome.OutcomeProviderRegistration;
 import org.jboss.shamrock.creator.phase.augment.AugmentOutcome;
 import org.jboss.shamrock.creator.phase.curate.CurateOutcome;
-import org.jboss.shamrock.creator.util.IoUtils;
-import org.jboss.shamrock.creator.util.ZipUtils;
 
 /**
  * Based on the provided {@link org.jboss.shamrock.creator.phase.augment.AugmentOutcome},
@@ -163,7 +164,12 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         libDir = IoUtils.mkdirs(libDir == null ? outputDir.resolve("lib") : libDir);
 
         if (finalName == null) {
-            final String name = appState.getArtifactResolver().resolve(appState.getAppArtifact()).getFileName().toString();
+            String name;
+            try {
+                name = appState.getArtifactResolver().resolve(appState.getAppArtifact()).getFileName().toString();
+            } catch (AppArtifactResolverException e) {
+                throw new AppCreatorException("Failed to resolve application artifact, e");
+            }
             int i = name.lastIndexOf('.');
             if (i > 0) {
                 finalName = name.substring(0, i);
@@ -196,11 +202,11 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         log.info("Building jar: " + runnerJar);
 
         final AppArtifactResolver depResolver = appState.getArtifactResolver();
-        final List<AppDependency> appDeps = appState.getEffectiveDeps();
         final Set<String> seen = new HashSet<>();
         final StringBuilder classPath = new StringBuilder();
         final Map<String, List<byte[]>> services = new HashMap<>();
 
+        final List<AppDependency> appDeps = appState.getEffectiveDeps().getAppClasspath();
         for (AppDependency appDep : appDeps) {
             if (appDep.getScope().equals(PROVIDED) && !augmentOutcome.isWhitelisted(appDep)) {
                 continue;

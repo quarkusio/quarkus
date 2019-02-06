@@ -43,10 +43,12 @@ import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.HttpServerBuiltItem;
 import org.jboss.shamrock.deployment.builditem.MainBytecodeRecorderBuildItem;
 import org.jboss.shamrock.deployment.builditem.MainClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.ObjectSubstitutionBuildItem;
 import org.jboss.shamrock.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import org.jboss.shamrock.deployment.builditem.SystemPropertyBuildItem;
 import org.jboss.shamrock.deployment.recording.BytecodeRecorderImpl;
 import org.jboss.shamrock.runtime.Application;
+import org.jboss.shamrock.runtime.ObjectSubstitution;
 import org.jboss.shamrock.runtime.StartupContext;
 import org.jboss.shamrock.runtime.StartupTask;
 import org.jboss.shamrock.runtime.Timing;
@@ -61,6 +63,7 @@ class MainClassBuildStep {
 
     @BuildStep
     MainClassBuildItem build(List<StaticBytecodeRecorderBuildItem> staticInitTasks,
+                             List<ObjectSubstitutionBuildItem> substitutions,
                              List<MainBytecodeRecorderBuildItem> mainMethod,
                              List<SystemPropertyBuildItem> properties,
                              Optional<HttpServerBuiltItem> httpServer,
@@ -95,6 +98,11 @@ class MainClassBuildStep {
         for (StaticBytecodeRecorderBuildItem holder : staticInitTasks) {
             final BytecodeRecorderImpl recorder = holder.getBytecodeRecorder();
             if (! recorder.isEmpty()) {
+                // Register substitutions in all recorders
+                for (ObjectSubstitutionBuildItem sub : substitutions) {
+                    ObjectSubstitutionBuildItem.Holder holder1 = sub.holder;
+                    recorder.registerSubstitution(holder1.from, holder1.to, holder1.substitution);
+                }
                 for (BytecodeRecorderObjectLoaderBuildItem item : loaders) {
                     recorder.registerObjectLoader(item.getObjectLoader());
                 }
@@ -181,3 +189,4 @@ class MainClassBuildStep {
     }
 
 }
+

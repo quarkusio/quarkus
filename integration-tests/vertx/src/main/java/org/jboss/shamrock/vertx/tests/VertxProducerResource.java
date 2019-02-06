@@ -1,20 +1,28 @@
 package org.jboss.shamrock.vertx.tests;
 
 
-import io.vertx.core.Vertx;
-import io.vertx.core.eventbus.EventBus;
-import io.vertx.core.eventbus.MessageConsumer;
+import java.security.cert.CertificateException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+
+import io.vertx.core.Vertx;
+import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.eventbus.MessageConsumer;
+import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.net.SelfSignedCertificate;
+import io.vertx.ext.web.client.WebClient;
+import io.vertx.ext.web.client.WebClientOptions;
+import io.vertx.ext.web.codec.BodyCodec;
 
 @Path("/")
 public class VertxProducerResource {
@@ -25,6 +33,42 @@ public class VertxProducerResource {
     @Inject
     private EventBus eventBus;
 
+    @Path("https-server")
+    @GET
+    public CompletionStage<String> httpsServer() throws CertificateException{
+        SelfSignedCertificate cert = SelfSignedCertificate.create("localhost");
+        HttpServer server = vertx.createHttpServer(new HttpServerOptions()
+                                                   .setSsl(true)
+                                                   .setKeyCertOptions(cert.keyCertOptions())
+                                                   .setTrustOptions(cert.trustOptions())
+                                                   );
+        server.requestHandler(req -> {
+            System.err.println("Serving an https request");
+            req.response().end("OK");
+        });
+        server.listen(0, "localhost");
+        
+        WebClient client = WebClient.create(vertx, new WebClientOptions()
+                                            .setSsl(true)
+                                            .setKeyCertOptions(cert.keyCertOptions())
+                                            .setTrustOptions(cert.trustOptions())
+                                            .setTrustAll(true));
+        CompletableFuture<String> cf = new CompletableFuture<>();
+        client.get(server.actualPort(), "localhost", "/")
+            .as(BodyCodec.string())
+            .send(resp -> {
+            if(resp.failed())
+                cf.completeExceptionally(resp.cause());
+            else
+                cf.complete(resp.result().body());
+        });
+        
+        return cf.thenApply(body -> {
+            server.close();
+            return body;
+        });
+    }
+    
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public Map<String, Boolean> test() {

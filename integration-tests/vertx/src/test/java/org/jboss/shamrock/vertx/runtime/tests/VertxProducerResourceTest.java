@@ -1,6 +1,7 @@
 package org.jboss.shamrock.vertx.runtime.tests;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 
 import org.jboss.shamrock.test.junit.ShamrockTest;
 import org.junit.jupiter.api.Test;
@@ -22,4 +23,9 @@ public class VertxProducerResourceTest {
                 .body(containsString("hello shamrock"));
     }
 
+    @Test
+    public void testHttps() {
+        RestAssured.when().get("/vertx-test/https-server").then()
+                .body(equalTo("OK"));
+    }
 }

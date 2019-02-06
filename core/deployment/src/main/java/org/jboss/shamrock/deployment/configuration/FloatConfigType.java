@@ -1,9 +1,10 @@
 package org.jboss.shamrock.deployment.configuration;
 
 import java.lang.reflect.Field;
-import java.util.OptionalInt;
 
 import io.smallrye.config.SmallRyeConfig;
+import org.jboss.protean.gizmo.AssignableResultHandle;
+import org.jboss.protean.gizmo.BranchResult;
 import org.jboss.protean.gizmo.BytecodeCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
@@ -13,14 +14,13 @@ import org.wildfly.common.Assert;
 
 /**
  */
-public class IntConfigType extends LeafConfigType {
+public class FloatConfigType extends LeafConfigType {
 
-    private static final MethodDescriptor OPTINT_OR_ELSE_METHOD = MethodDescriptor.ofMethod(OptionalInt.class, "orElse", int.class, int.class);
-    private static final MethodDescriptor INT_VALUE_METHOD = MethodDescriptor.ofMethod(Integer.class, "intValue", int.class);
+    private static final MethodDescriptor FLOAT_VALUE_METHOD = MethodDescriptor.ofMethod(Float.class, "floatValue", float.class);
 
     final String defaultValue;
 
-    public IntConfigType(final String containingName, final CompoundConfigType container, final boolean consumeSegment, final String defaultValue) {
+    public FloatConfigType(final String containingName, final CompoundConfigType container, final boolean consumeSegment, final String defaultValue) {
         super(containingName, container, consumeSegment);
         Assert.checkNotEmptyParam("defaultValue", defaultValue);
         this.defaultValue = defaultValue;
@@ -44,51 +44,65 @@ public class IntConfigType extends LeafConfigType {
 
     public void acceptConfigurationValueIntoGroup(final Object enclosing, final Field field, final NameIterator name, final SmallRyeConfig config) {
         try {
-            field.setInt(enclosing, config.getValue(name.toString(), OptionalInt.class).orElse(config.convert(defaultValue, Integer.class).intValue()));
+            final Float floatValue = config.getValue(name.toString(), Float.class);
+            final float f = floatValue != null ? floatValue.floatValue() : config.convert(defaultValue, Float.class).floatValue();
+            field.setFloat(enclosing, f);
         } catch (IllegalAccessException e) {
             throw toError(e);
         }
     }
 
     public void generateAcceptConfigurationValueIntoGroup(final BytecodeCreator body, final ResultHandle enclosing, final MethodDescriptor setter, final ResultHandle name, final ResultHandle config) {
-        // config.getValue(name.toString(), OptionalInt.class).orElse(config.convert(defaultValue, Integer.class).intValue())
-        final ResultHandle optionalValue = body.checkCast(body.invokeVirtualMethod(
+        // final Float floatValue = config.getValue(name.toString(), Float.class);
+        // final float f = floatValue != null ? floatValue.floatValue() : config.convert(defaultValue, Float.class).floatValue();
+        final AssignableResultHandle result = body.createVariable(float.class);
+        final ResultHandle floatValue = body.checkCast(body.invokeVirtualMethod(
             SRC_GET_VALUE,
             config,
             body.invokeVirtualMethod(
                 OBJ_TO_STRING_METHOD,
                 name
             ),
-            body.loadClass(OptionalInt.class)
-        ), OptionalInt.class);
-        final ResultHandle convertedDefault = getConvertedDefault(body, config);
-        final ResultHandle defaultedValue = body.checkCast(body.invokeVirtualMethod(
-            OPTINT_OR_ELSE_METHOD,
-            optionalValue,
-            convertedDefault
-        ), Integer.class);
-        final ResultHandle intValue = body.invokeVirtualMethod(INT_VALUE_METHOD, defaultedValue);
-        body.invokeStaticMethod(setter, enclosing, intValue);
+            body.loadClass(Float.class)
+        ), Float.class);
+        final BranchResult ifNull = body.ifNull(floatValue);
+        final BytecodeCreator isNull = ifNull.trueBranch();
+        isNull.assign(result,
+            isNull.checkCast(isNull.invokeVirtualMethod(
+                FLOAT_VALUE_METHOD,
+                floatValue,
+                getConvertedDefault(isNull, config)
+            ),
+            Float.class)
+        );
+        final BytecodeCreator isNotNull = ifNull.falseBranch();
+        isNotNull.assign(result,
+            isNotNull.invokeVirtualMethod(
+                FLOAT_VALUE_METHOD,
+                floatValue
+            )
+        );
+        body.invokeStaticMethod(setter, enclosing, result);
     }
 
     public Class<?> getItemClass() {
-        return int.class;
+        return float.class;
     }
 
     void getDefaultValueIntoEnclosingGroup(final Object enclosing, final SmallRyeConfig config, final Field field) {
         try {
-            field.setInt(enclosing, config.convert(defaultValue, Integer.class).intValue());
+            field.setFloat(enclosing, config.convert(defaultValue, Float.class).floatValue());
         } catch (IllegalAccessException e) {
             throw toError(e);
         }
     }
 
     void generateGetDefaultValueIntoEnclosingGroup(final BytecodeCreator body, final ResultHandle enclosing, final MethodDescriptor setter, final ResultHandle config) {
-        body.invokeStaticMethod(setter, enclosing, body.invokeVirtualMethod(INT_VALUE_METHOD, getConvertedDefault(body, config)));
+        body.invokeStaticMethod(setter, enclosing, body.invokeVirtualMethod(FLOAT_VALUE_METHOD, getConvertedDefault(body, config)));
     }
 
     public ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorFinder, final ResultHandle smallRyeConfig) {
-        return body.invokeVirtualMethod(INT_VALUE_METHOD, getConvertedDefault(body, smallRyeConfig));
+        return body.invokeVirtualMethod(FLOAT_VALUE_METHOD, getConvertedDefault(body, smallRyeConfig));
     }
 
     private ResultHandle getConvertedDefault(final BytecodeCreator body, final ResultHandle config) {
@@ -96,7 +110,7 @@ public class IntConfigType extends LeafConfigType {
             SRC_CONVERT_METHOD,
             config,
             body.load(defaultValue),
-            body.loadClass(Integer.class)
-        ), Integer.class);
+            body.loadClass(Float.class)
+        ), Float.class);
     }
 }

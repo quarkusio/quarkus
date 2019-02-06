@@ -189,6 +189,12 @@ public class ConfigDefinition extends CompoundConfigType {
                     gct.addField(leaf = new BooleanConfigType(field.getName(), gct, consume, defaultValue.equals(ConfigItem.NO_DEFAULT) ? "false" : defaultValue));
                 } else if (fieldClass == int.class) {
                     gct.addField(leaf = new IntConfigType(field.getName(), gct, consume, defaultValue.equals(ConfigItem.NO_DEFAULT) ? "0" : defaultValue));
+                } else if (fieldClass == long.class) {
+                    gct.addField(leaf = new LongConfigType(field.getName(), gct, consume, defaultValue.equals(ConfigItem.NO_DEFAULT) ? "0" : defaultValue));
+                } else if (fieldClass == double.class) {
+                    gct.addField(leaf = new DoubleConfigType(field.getName(), gct, consume, defaultValue.equals(ConfigItem.NO_DEFAULT) ? "0" : defaultValue));
+                } else if (fieldClass == float.class) {
+                    gct.addField(leaf = new FloatConfigType(field.getName(), gct, consume, defaultValue.equals(ConfigItem.NO_DEFAULT) ? "0" : defaultValue));
                 } else {
                     throw reportError(field, "Unsupported primitive field type");
                 }

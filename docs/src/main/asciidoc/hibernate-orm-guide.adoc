@@ -256,4 +256,76 @@ public class Gift {
 <1> Inject your entity manager and have fun
 <2> Mark your CDI bean method as `@Transactional` and the `EntityManager` will enlist and flush at commit.
 
+== Configuring second-level cache
 
+Applications that frequently read the same entities can see their performance improved when Hibernate ORM second-level cache is enabled.
+To enable second-level cache, select those entities that are read most often and annotate them with `@Cache`:
+
+[source,java]
+--
+@Entity
+@Cache(CacheConcurrencyStrategy.READ_ONLY)
+public class Country {
+    int dialInCode;
+    // ...
+}
+--
+
+When an entity is annotated with `@Cache`, all its fields are cached except for collections.
+Entity collections need to be individually annotated to be cached:
+
+[source,java]
+--
+package com.acme;
+
+@Entity
+@Cache(CacheConcurrencyStrategy.READ_ONLY)
+public class Country {
+    // ...
+
+    @OneToMany
+    @Cache(CacheConcurrencyStrategy.READ_ONLY)
+    List<City> cities;
+
+    // ...
+}
+--
+
+Queries executed regularly that return the same results can also benefit from second-level caching.
+In the absence of updates to entities involved in a query, cached query results can be immediately returned to the caller.
+To cache a query, mark it as cacheable:
+
+[source,java]
+--
+Query query = ...
+query.setHint("org.hibernate.cacheable", Boolean.TRUE);
+--
+
+By default entities are cached in regions named after their fully qualified name, e.g. `com.acme.Country`.
+Collections are cached in regions named after the fully qualified named of their owner entity and collection field name, separated by `#` character, e.g. `com.acme.Country#cities`.
+All queries are kept in a exclusive region dedicated to them called `default-query-results-region`.
+All regions are size and time bounded by default.
+Each region is configured with at a maximum of `10000` entries, and `100` seconds as maximum idle time.
+
+The size of each region can be customized via `hibernate.cache.<region_name>.memory.object.count` property.
+To tweak the maximum idle time, provide number of seconds via `hibernate.cache.<region_name>.expiration.max_idle` property.
+
+[NOTE]
+--
+Hibernate caches are kept locally, so they are not aware of changes made to the persistent store by other applications.
+Also, when running multiple copies of the same application (e.g. Kubernetes/OpenShift), caches in separate copies of the application don't talk to each other.
+For these reasons, it is strongly recommended that only read-only entities/collections, and queries based on those, are cached.
+Following this advice guarantees applications get the most performance out of the second-level cache and avoid unexpected behaviour.
+
+Within a single {project-name} application instance, concurrent entity read and removes can result in either the entity being removed from the cache (if present), or the last value of entity remaining in the cache.
+It is also possible that in the presence of concurrent entity updates and removes, the cache ends up with: the value of the entity before the update, the value of the entity after update, or no entity at all.
+Both scenarios are also possible if manually evicting the entity region or evicting a individual entity instance, instead of removing the entity.
+Further stale data scenarios can happen when running multiple copies of a {project-name} application.
+Updates or entity removes happening in one instance won't be communicated with the other instances.
+
+Other than types that are intensively read, types for which some degree of staleness is an acceptable tradeoff to improve performance should be cached;
+where the "degree of staleness" can be tuned by setting eviction properties.
+--
+
+Finally, the second-level cache can be disabled explicitly setting `hibernate.cache.use_second_level_cache` to `false`.
+When second-level cache is disable, all cache annotations are ignored.

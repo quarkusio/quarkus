@@ -90,19 +90,21 @@ public final class PanacheResourceProcessor {
                BuildProducer<NonJpaModelBuildItem> nonJpaModelBuildItems) throws Exception {
 
         PanacheJpaDaoEnhancer daoEnhancer = new PanacheJpaDaoEnhancer();
-        for (ClassInfo classInfo : index.getIndex().getKnownDirectImplementors(DOTNAME_DAO_BASE)) {
+        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_DAO_BASE)) {
             transformers.produce(new BytecodeTransformerBuildItem(classInfo.name().toString(), daoEnhancer));
         }
 
         PanacheJpaModelEnhancer modelEnhancer = new PanacheJpaModelEnhancer();
         Set<String> modelClasses = new HashSet<>();
-        for (ClassInfo classInfo : index.getIndex().getKnownDirectSubclasses(DOTNAME_ENTITY_BASE)) {
+        // Note that we do this in two passes because for some reason Jandex does not give us subtypes
+        // of Model if we ask for subtypes of EntityBase
+        for (ClassInfo classInfo : index.getIndex().getAllKnownSubclasses(DOTNAME_ENTITY_BASE)) {
             // skip Model
             if(classInfo.name().equals(DOTNAME_MODEL))
                 continue;
             modelClasses.add(classInfo.name().toString());
         }
-        for (ClassInfo classInfo : index.getIndex().getKnownDirectSubclasses(DOTNAME_MODEL)) {
+        for (ClassInfo classInfo : index.getIndex().getAllKnownSubclasses(DOTNAME_MODEL)) {
             modelClasses.add(classInfo.name().toString());
         }
         for (String modelClass : modelClasses) {

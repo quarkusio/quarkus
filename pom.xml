@@ -65,6 +65,7 @@
         <module>independent-projects/infinispan-hibernate-cache-protean</module>
         <module>independent-projects/jboss-logmanager-embedded</module>
         <module>independent-projects/jboss-logging-embedded</module>
+        <module>independent-projects/panache</module>
 
         <!-- CLI and Maven -->
         <module>cli</module>

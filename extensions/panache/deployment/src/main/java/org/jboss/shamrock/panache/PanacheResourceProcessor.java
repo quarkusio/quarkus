@@ -105,6 +105,7 @@ public final class PanacheResourceProcessor {
             modelClasses.add(classInfo.name().toString());
         }
         for (ClassInfo classInfo : index.getIndex().getAllKnownSubclasses(DOTNAME_MODEL)) {
+            modelEnhancer.collectFields(classInfo);
             modelClasses.add(classInfo.name().toString());
         }
         for (String modelClass : modelClasses) {

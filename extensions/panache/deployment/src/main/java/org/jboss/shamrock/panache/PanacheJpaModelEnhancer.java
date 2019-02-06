@@ -1,16 +1,21 @@
 package org.jboss.shamrock.panache;
 
+import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 
+import javax.persistence.Transient;
+
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
 import org.jboss.panache.jpa.EntityBase;
 import org.jboss.panache.jpa.JpaOperations;
-import org.objectweb.asm.AnnotationVisitor;
+import org.jboss.protean.gizmo.DescriptorUtils;
 import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -24,51 +29,28 @@ public class PanacheJpaModelEnhancer implements BiFunction<String, ClassVisitor,
     public final static String JPA_OPERATIONS_NAME = JpaOperations.class.getName();
     public final static String JPA_OPERATIONS_BINARY_NAME = JPA_OPERATIONS_NAME.replace('.', '/');
     public final static String JPA_OPERATIONS_SIGNATURE = "L"+JPA_OPERATIONS_BINARY_NAME+";";
+    
+    private static final DotName DOTNAME_TRANSIENT = DotName.createSimple(Transient.class.getName());
+    private Map<String, EntityModel> entities = new HashMap<>();
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
-        return new ModelEnhancingClassVisitor(className, outputClassVisitor);
+        return new ModelEnhancingClassVisitor(className, outputClassVisitor, entities.get(className));
     }
 
     static class ModelEnhancingClassVisitor extends ClassVisitor {
 
         private Type thisClass;
-        private Map<String,EntityField> fields = new HashMap<>();
+        private Map<String,EntityField> fields;
         // set of name + "/" + descriptor (only for suspected accessor names)
         private Set<String> methods = new HashSet<>();
 
-        public ModelEnhancingClassVisitor(String className, ClassVisitor outputClassVisitor) {
+        public ModelEnhancingClassVisitor(String className, ClassVisitor outputClassVisitor, EntityModel entityModel) {
             super(Opcodes.ASM6, outputClassVisitor);
             thisClass = Type.getType("L"+className.replace('.', '/')+";");
+            fields = entityModel != null ? entityModel.fields : null;
         }
 
-        @Override
-        public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-            FieldVisitor superVisitor = super.visitField(access, name, descriptor, signature, value);
-            if((access & Opcodes.ACC_PUBLIC) == 0
-                    || (access & Opcodes.ACC_TRANSIENT) != 0
-                    || name.startsWith("$$_hibernate_"))
-                return superVisitor;
-            // only look at fields we're interested in
-            return new FieldVisitor(Opcodes.ASM6, superVisitor) {
-                boolean ignore = false;
-                @Override
-                public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-                    if(descriptor.equals("Ljavax/persistence/Transient;"))
-                        ignore = true;
-                    return super.visitAnnotation(descriptor, visible);
-                }
-                
-                @Override
-                public void visitEnd() {
-                    if(!ignore) {
-                        fields.put(name, new EntityField(name, descriptor));
-                    }
-                    super.visitEnd();
-                }
-            };
-        }
-        
         @Override
         public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
             if(name.startsWith("get")
@@ -207,6 +189,8 @@ public class PanacheJpaModelEnhancer implements BiFunction<String, ClassVisitor,
         }
 
         private void generateAccessors() {
+            if(fields == null)
+                return;
             for (EntityField field : fields.values()) {
                 // Getter
                 String getterName = field.getGetterName();
@@ -264,5 +248,19 @@ public class PanacheJpaModelEnhancer implements BiFunction<String, ClassVisitor,
                 }
             }
         }
+    }
+
+    public void collectFields(ClassInfo classInfo) {
+        Map<String, EntityField> fields = new HashMap<>();
+        for (FieldInfo fieldInfo : classInfo.fields()) {
+            String name = fieldInfo.name();
+            if(Modifier.isPublic(fieldInfo.flags())
+                    && !Modifier.isTransient(fieldInfo.flags())
+                    && !fieldInfo.hasAnnotation(DOTNAME_TRANSIENT)
+                    && !name.startsWith("$$_hibernate_")) {
+                fields.put(name, new EntityField(name, DescriptorUtils.typeToString(fieldInfo.type())));
+            }
+        }
+        entities.put(classInfo.name().toString(), new EntityModel(classInfo, fields));
     }
 }

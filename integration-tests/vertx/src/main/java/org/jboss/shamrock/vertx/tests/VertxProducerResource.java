@@ -43,30 +43,32 @@ public class VertxProducerResource {
                                                    .setTrustOptions(cert.trustOptions())
                                                    );
         server.requestHandler(req -> {
-            System.err.println("Serving an https request");
             req.response().end("OK");
         });
-        server.listen(0, "localhost");
-        
-        WebClient client = WebClient.create(vertx, new WebClientOptions()
-                                            .setSsl(true)
-                                            .setKeyCertOptions(cert.keyCertOptions())
-                                            .setTrustOptions(cert.trustOptions())
-                                            .setTrustAll(true));
+
         CompletableFuture<String> cf = new CompletableFuture<>();
-        client.get(server.actualPort(), "localhost", "/")
-            .as(BodyCodec.string())
-            .send(resp -> {
-            if(resp.failed())
-                cf.completeExceptionally(resp.cause());
-            else
-                cf.complete(resp.result().body());
+        server.listen(0, "localhost", res -> {
+            if(res.failed()) {
+                server.close();
+                cf.completeExceptionally(res.cause());
+            } else {
+                WebClient client = WebClient.create(vertx, new WebClientOptions()
+                                                    .setSsl(true)
+                                                    .setKeyCertOptions(cert.keyCertOptions())
+                                                    .setTrustOptions(cert.trustOptions()));
+                client.get(server.actualPort(), "localhost", "/")
+                .as(BodyCodec.string())
+                .send(resp -> {
+                    server.close();
+                    if(resp.failed())
+                        cf.completeExceptionally(resp.cause());
+                    else
+                        cf.complete(resp.result().body());
+                });
+            }
         });
         
-        return cf.thenApply(body -> {
-            server.close();
-            return body;
-        });
+        return cf;
     }
     
     @GET

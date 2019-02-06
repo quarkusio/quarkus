@@ -28,6 +28,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.jboss.shamrock.bootstrap.util.IoUtils;
+import org.jboss.shamrock.bootstrap.util.PropertyUtils;
 import org.jboss.shamrock.creator.AppCreator;
 import org.jboss.shamrock.creator.phase.augment.AugmentPhase;
 import org.jboss.shamrock.creator.phase.curate.CuratePhase;
@@ -35,8 +37,6 @@ import org.jboss.shamrock.creator.phase.nativeimage.NativeImageOutcome;
 import org.jboss.shamrock.creator.phase.nativeimage.NativeImagePhase;
 import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarOutcome;
 import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarPhase;
-import org.jboss.shamrock.creator.util.IoUtils;
-import org.jboss.shamrock.creator.util.PropertyUtils;
 
 /**
  *

@@ -19,7 +19,7 @@ package org.jboss.shamrock.creator.phase.curate;
 
 import java.util.List;
 
-import org.jboss.shamrock.creator.AppArtifact;
+import org.jboss.shamrock.bootstrap.resolver.AppArtifact;
 import org.jboss.shamrock.creator.AppCreatorException;
 
 /**

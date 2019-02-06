@@ -20,14 +20,16 @@ import static org.jboss.shamrock.test.common.PathTestHelper.getAppClassLocation;
 import static org.jboss.shamrock.test.common.PathTestHelper.getTestClassesLocation;
 
 import java.io.Closeable;
-
-import org.jboss.shamrock.runner.RuntimeRunner;
-import org.jboss.shamrock.runtime.LaunchMode;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.URLClassLoader;
+import java.nio.file.Path;
+import org.jboss.shamrock.bootstrap.BootstrapClassLoaderBuilder;
+import org.jboss.shamrock.bootstrap.BootstrapException;
 import org.jboss.shamrock.test.common.NativeImageLauncher;
 import org.jboss.shamrock.test.common.RestAssuredURLManager;
 import org.jboss.shamrock.test.common.TestResourceManager;
 import org.jboss.shamrock.test.common.http.TestHttpResourceManager;
-import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -38,6 +40,7 @@ import org.junit.jupiter.api.extension.TestInstantiationException;
 
 public class ShamrockTestExtension implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback, TestInstanceFactory {
 
+    private URLClassLoader appCl;
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
@@ -65,14 +68,35 @@ public class ShamrockTestExtension implements BeforeAllCallback, BeforeEachCallb
     }
 
     private ExtensionState doJavaStart(ExtensionContext context, TestResourceManager testResourceManager) {
-        RuntimeRunner runtimeRunner = RuntimeRunner.builder()
-                .setLaunchMode(LaunchMode.TEST)
-                .setClassLoader(getClass().getClassLoader())
-                .setTarget(getAppClassLocation(context.getRequiredTestClass()))
-                .setFrameworkClassesPath(getTestClassesLocation(context.getRequiredTestClass()))
-                .build();
-        runtimeRunner.run();
-        return new ExtensionState(testResourceManager, runtimeRunner, false);
+
+        final Path appClasses = getAppClassLocation(context.getRequiredTestClass());
+        final Path frameworkClasses = getTestClassesLocation(context.getRequiredTestClass());
+
+        try {
+            appCl = BootstrapClassLoaderBuilder.newInstance()
+                    .setAppClasses(appClasses)
+                    .setFrameworkClasses(frameworkClasses)
+                    .setLocalProjectsDiscovery(true)
+                    .build();
+        } catch (BootstrapException e) {
+            throw new IllegalStateException("Failed to create the boostrap class loader", e);
+        }
+
+        final ClassLoader originalCl = setCCL(appCl);
+        try {
+            final Class<?> rrClass = appCl.loadClass("org.jboss.shamrock.runner.RuntimeRunner");
+            final Method m = rrClass.getMethod("runTest", Path.class, Path.class);
+            final Closeable c = (Closeable) m.invoke(null, appClasses, frameworkClasses);
+            return new ExtensionState(testResourceManager, c, false);
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException("Failed to load runner class", e);
+        } catch (NoSuchMethodException | SecurityException e) {
+            throw new IllegalStateException("Failed to locate runner method", e);
+        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            throw new IllegalStateException("Failed to invoke runner", e);
+        } finally {
+            setCCL(originalCl);
+        }
     }
 
     @Override
@@ -96,8 +120,14 @@ public class ShamrockTestExtension implements BeforeAllCallback, BeforeEachCallb
         }
     }
 
+    private static ClassLoader setCCL(ClassLoader cl) {
+        final Thread thread = Thread.currentThread();
+        final ClassLoader original = thread.getContextClassLoader();
+        thread.setContextClassLoader(cl);
+        return original;
+    }
 
-    static class ExtensionState implements ExtensionContext.Store.CloseableResource {
+    class ExtensionState implements ExtensionContext.Store.CloseableResource {
 
         private final TestResourceManager testResourceManager;
         private final Closeable resource;
@@ -112,7 +142,17 @@ public class ShamrockTestExtension implements BeforeAllCallback, BeforeEachCallb
         @Override
         public void close() throws Throwable {
             testResourceManager.stop();
-            resource.close();
+            final ClassLoader originalCl = appCl == null ? null : setCCL(appCl);
+            try {
+                resource.close();
+            } finally {
+                if(originalCl != null) {
+                    setCCL(originalCl);
+                }
+            }
+            if(appCl != null) {
+                appCl.close();
+            }
         }
 
         public boolean isSubstrate() {

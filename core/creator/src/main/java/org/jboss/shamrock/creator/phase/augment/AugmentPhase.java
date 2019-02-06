@@ -47,18 +47,19 @@ import java.util.zip.ZipFile;
 import org.eclipse.microprofile.config.Config;
 import org.jboss.builder.BuildResult;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.creator.AppArtifact;
-import org.jboss.shamrock.creator.AppArtifactResolver;
+import org.jboss.shamrock.bootstrap.resolver.AppArtifact;
+import org.jboss.shamrock.bootstrap.resolver.AppArtifactResolverException;
+import org.jboss.shamrock.bootstrap.resolver.AppArtifactResolver;
+import org.jboss.shamrock.bootstrap.resolver.AppDependency;
+import org.jboss.shamrock.bootstrap.util.IoUtils;
+import org.jboss.shamrock.bootstrap.util.ZipUtils;
 import org.jboss.shamrock.creator.AppCreationPhase;
 import org.jboss.shamrock.creator.AppCreator;
 import org.jboss.shamrock.creator.AppCreatorException;
-import org.jboss.shamrock.creator.AppDependency;
 import org.jboss.shamrock.creator.config.reader.MappedPropertiesHandler;
 import org.jboss.shamrock.creator.config.reader.PropertiesHandler;
 import org.jboss.shamrock.creator.outcome.OutcomeProviderRegistration;
 import org.jboss.shamrock.creator.phase.curate.CurateOutcome;
-import org.jboss.shamrock.creator.util.IoUtils;
-import org.jboss.shamrock.creator.util.ZipUtils;
 import org.jboss.shamrock.deployment.ClassOutput;
 import org.jboss.shamrock.deployment.ShamrockAugmentor;
 import org.jboss.shamrock.deployment.ShamrockClassWriter;
@@ -176,7 +177,12 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
 
         if (appClassesDir == null) {
             appClassesDir = outputDir.resolve("classes");
-            final Path appJar = appState.getArtifactResolver().resolve(appState.getAppArtifact());
+            Path appJar;
+            try {
+                appJar = appState.getArtifactResolver().resolve(appState.getAppArtifact());
+            } catch (AppArtifactResolverException e) {
+                throw new AppCreatorException("Failed to resolve application dependency", e);
+            }
             try {
                 ZipUtils.unzip(appJar, appClassesDir);
             } catch (IOException e) {

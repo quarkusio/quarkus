@@ -19,8 +19,9 @@ package org.jboss.shamrock.creator.phase.curate;
 
 import java.util.List;
 
-import org.jboss.shamrock.creator.AppArtifact;
-import org.jboss.shamrock.creator.AppArtifactResolver;
+import org.jboss.shamrock.bootstrap.resolver.AppArtifact;
+import org.jboss.shamrock.bootstrap.resolver.AppArtifactResolverException;
+import org.jboss.shamrock.bootstrap.resolver.AppArtifactResolver;
 import org.jboss.shamrock.creator.AppCreatorException;
 
 /**
@@ -39,12 +40,20 @@ public class DefaultUpdateDiscovery implements UpdateDiscovery {
 
     @Override
     public List<String> listUpdates(AppArtifact artifact) throws AppCreatorException {
-        return resolver.listLaterVersions(artifact, resolveUpToVersion(artifact), false);
+        try {
+            return resolver.listLaterVersions(artifact, resolveUpToVersion(artifact), false);
+        } catch (AppArtifactResolverException e) {
+            throw new AppCreatorException("Failed to collect later versions", e);
+        }
     }
 
     @Override
     public String getNextVersion(AppArtifact artifact) throws AppCreatorException {
-        return resolver.getNextVersion(artifact, resolveUpToVersion(artifact), false);
+        try {
+            return resolver.getNextVersion(artifact, resolveUpToVersion(artifact), false);
+        } catch (AppArtifactResolverException e) {
+            throw new AppCreatorException("Failed to determine the next available version", e);
+        }
     }
 
     @Override
@@ -61,7 +70,11 @@ public class DefaultUpdateDiscovery implements UpdateDiscovery {
         }
         return latestStr;
         */
-        return resolver.getLatestVersion(artifact, resolveUpToVersion(artifact), false);
+        try {
+            return resolver.getLatestVersion(artifact, resolveUpToVersion(artifact), false);
+        } catch (AppArtifactResolverException e) {
+            throw new AppCreatorException("Failed to determine the latest available version", e);
+        }
     }
 
     private String resolveUpToVersion(AppArtifact artifact) throws AppCreatorException {

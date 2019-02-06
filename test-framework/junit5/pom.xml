@@ -32,6 +32,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>shamrock-core-bootstrap</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-test-common</artifactId>
         </dependency>

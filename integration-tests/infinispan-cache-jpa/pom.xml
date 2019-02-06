@@ -33,20 +33,17 @@
         <!-- Enables the JPA capabilities -->
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-hibernate-orm-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>shamrock-hibernate-orm-runtime</artifactId>
         </dependency>
         <!-- We'll be using the H2 database -->
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jdbc-h2-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>shamrock-jdbc-h2-runtime</artifactId>
         </dependency>
         <!-- .. and some REST endpoints -->
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-resteasy-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>shamrock-resteasy-runtime</artifactId>
         </dependency>
 
         <!-- test dependencies -->
@@ -64,6 +61,12 @@
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-lang3</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 

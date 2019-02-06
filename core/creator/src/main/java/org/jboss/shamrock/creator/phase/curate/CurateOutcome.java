@@ -26,13 +26,15 @@ import org.apache.maven.model.Exclusion;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Repository;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.creator.AppArtifact;
-import org.jboss.shamrock.creator.AppArtifactResolver;
+import org.jboss.shamrock.bootstrap.resolver.AppArtifact;
+import org.jboss.shamrock.bootstrap.resolver.AppArtifactResolverException;
+import org.jboss.shamrock.bootstrap.resolver.AppArtifactResolver;
+import org.jboss.shamrock.bootstrap.resolver.AppDependency;
+import org.jboss.shamrock.bootstrap.resolver.NoOpArtifactResolver;
+import org.jboss.shamrock.bootstrap.resolver.aether.AetherArtifactResolver;
+import org.jboss.shamrock.bootstrap.resolver.localproject.ModelUtils;
 import org.jboss.shamrock.creator.AppCreator;
 import org.jboss.shamrock.creator.AppCreatorException;
-import org.jboss.shamrock.creator.AppDependency;
-import org.jboss.shamrock.creator.NoOpArtifactResolver;
-import org.jboss.shamrock.creator.resolver.aether.AetherArtifactResolver;
 
 /**
  *
@@ -150,7 +152,11 @@ public class CurateOutcome {
         if(updatedDeps.isEmpty()) {
             return effectiveDeps = initialDeps;
         }
-        return effectiveDeps = resolver.collectDependencies(appArtifact, updatedDeps);
+        try {
+            return effectiveDeps = resolver.collectDependencies(appArtifact, updatedDeps);
+        } catch (AppArtifactResolverException e) {
+            throw new AppCreatorException("Failed to resolve effective application dependencies", e);
+        }
     }
 
     public boolean isPersisted() {
@@ -169,7 +175,7 @@ public class CurateOutcome {
 
         AppArtifact stateArtifact;
         if(this.stateArtifact == null) {
-            stateArtifact = Utils.getStateArtifact(appArtifact);
+            stateArtifact = ModelUtils.getStateArtifact(appArtifact);
         } else {
             stateArtifact = new AppArtifact(this.stateArtifact.getGroupId(),
                     this.stateArtifact.getArtifactId(),
@@ -237,9 +243,13 @@ public class CurateOutcome {
             }
         }
 */
-        Utils.persistModel(statePom, model);
 
-        ((AetherArtifactResolver)resolver).install(stateArtifact, statePom);
+        try {
+            ModelUtils.persistModel(statePom, model);
+            ((AetherArtifactResolver)resolver).install(stateArtifact, statePom);
+        } catch (Exception e) {
+            throw new AppCreatorException("Failed to persist application state artifact", e);
+        }
 
         log.info("Persisted provisioning state as " + stateArtifact);
         //ctx.getArtifactResolver().relink(stateArtifact, statePom);

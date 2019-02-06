@@ -18,7 +18,8 @@
 package org.jboss.shamrock.creator.phase.augment;
 
 import java.nio.file.Path;
-import org.jboss.shamrock.creator.AppDependency;
+
+import org.jboss.shamrock.bootstrap.resolver.AppDependency;
 
 /**
  * Represents an outcome of {@link AugmentPhase}

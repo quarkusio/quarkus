@@ -16,18 +16,15 @@
     <dependencies>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-resteasy-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>shamrock-resteasy-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-hibernate-validator-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>shamrock-hibernate-validator-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-arc-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>shamrock-arc-runtime</artifactId>
         </dependency>
 
         <!-- EL implementation -->
@@ -47,6 +44,12 @@
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-lang3</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 

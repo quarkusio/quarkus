@@ -31,6 +31,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>shamrock-spring-di-runtime</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-core-deployment</artifactId>
         </dependency>
@@ -48,6 +52,9 @@
 
     <build>
         <plugins>
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+            </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>

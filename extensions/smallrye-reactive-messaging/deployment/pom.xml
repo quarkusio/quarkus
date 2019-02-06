@@ -27,17 +27,19 @@
       <groupId>org.jboss.shamrock</groupId>
       <artifactId>shamrock-smallrye-reactive-messaging-runtime</artifactId>
     </dependency>
-    
-    
+
     <dependency>
       <groupId>org.jboss.shamrock</groupId>
       <artifactId>shamrock-junit5-internal</artifactId>
     </dependency>
-    
+
   </dependencies>
 
   <build>
     <plugins>
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+      </plugin>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>

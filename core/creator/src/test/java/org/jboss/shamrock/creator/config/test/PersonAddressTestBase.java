@@ -26,10 +26,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import org.jboss.shamrock.bootstrap.util.IoUtils;
 import org.jboss.shamrock.creator.config.reader.PropertiesConfigReader;
 import org.jboss.shamrock.creator.config.reader.PropertiesHandler;
 import org.jboss.shamrock.creator.config.reader.PropertyLine;
-import org.jboss.shamrock.creator.util.IoUtils;
 import org.junit.Test;
 
 /**

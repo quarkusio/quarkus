@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
+import org.jboss.shamrock.bootstrap.util.IoUtils;
 import org.jboss.shamrock.creator.AppCreationPhase;
 import org.jboss.shamrock.creator.AppCreator;
 import org.jboss.shamrock.creator.AppCreatorException;
@@ -43,7 +44,6 @@ import org.jboss.shamrock.creator.config.reader.PropertyContext;
 import org.jboss.shamrock.creator.outcome.OutcomeProviderRegistration;
 import org.jboss.shamrock.creator.phase.augment.AugmentOutcome;
 import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarOutcome;
-import org.jboss.shamrock.creator.util.IoUtils;
 
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 

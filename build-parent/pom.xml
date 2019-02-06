@@ -61,7 +61,6 @@
       <jboss-jaxrs-api_2.1_spec.version>1.0.2.Final</jboss-jaxrs-api_2.1_spec.version>
       <asm.version>6.2.1</asm.version>
       <cdi-api.version>2.0.SP1</cdi-api.version>
-      <fakereplace.version>1.0.0.Alpha7</fakereplace.version>
       <jboss-metadata-web.version>11.0.0.Final</jboss-metadata-web.version>
       <maven-core.version>3.5.4</maven-core.version>
       <maven-resolver.version>1.1.1</maven-resolver.version>
@@ -924,11 +923,6 @@
             <groupId>org.eclipse.microprofile.opentracing</groupId>
             <artifactId>microprofile-opentracing-api</artifactId>
             <version>${microprofile-opentracing-api.version}</version>
-         </dependency>
-         <dependency>
-            <groupId>org.fakereplace</groupId>
-            <artifactId>fakereplace</artifactId>
-            <version>${fakereplace.version}</version>
          </dependency>
          <dependency>
             <groupId>org.glassfish</groupId>

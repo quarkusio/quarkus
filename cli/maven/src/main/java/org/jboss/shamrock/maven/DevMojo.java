@@ -67,9 +67,6 @@ public class DevMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     protected MavenProject project;
 
-    @Parameter(defaultValue = "${fakereplace}")
-    private boolean fakereplace = false;
-
     /**
      * If this server should be started in debug mode. The default is to start in debug mode without suspending and listen on
      * port 5005. It supports the following options:
@@ -205,31 +202,6 @@ public class DevMojo extends AbstractMojo {
             wiringClassesDirectory.mkdirs();
 
             addToClassPaths(classPathManifest, classPath, wiringClassesDirectory);
-
-            if (fakereplace) {
-                File target = new File(buildDir, "fakereplace.jar");
-                if (!target.exists()) {
-                    //this is super yuck, but there does not seen to be an easy way
-                    //to get dependency artifacts. Fakereplace must be called fakereplace.jar to work
-                    //so we copy it to the target directory
-                    URL resource = getClass().getClassLoader().getResource("org/fakereplace/core/Fakereplace.class");
-                    if (resource == null) {
-                        throw new RuntimeException("Could not determine Fakereplace location");
-                    }
-                    String filePath = resource.getPath();
-                    try (FileInputStream in = new FileInputStream(filePath.substring(5, filePath.lastIndexOf('!')))) {
-                        try (FileOutputStream out = new FileOutputStream(target)) {
-                            byte[] buffer = new byte[1024];
-                            int r;
-                            while ((r = in.read(buffer)) > 0) {
-                                out.write(buffer, 0, r);
-                            }
-                        }
-                    }
-                }
-                args.add("-javaagent:" + target.getAbsolutePath());
-                args.add("-Dshamrock.fakereplace=true");
-            }
 
             //we also want to add the maven plugin jar to the class path
             //this allows us to just directly use classes, without messing around copying them

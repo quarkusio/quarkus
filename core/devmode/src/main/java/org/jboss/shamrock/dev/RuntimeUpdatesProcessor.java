@@ -31,8 +31,6 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.fakereplace.core.Fakereplace;
-import org.fakereplace.replacement.AddedClass;
 import org.jboss.logging.Logger;
 
 import io.undertow.server.HttpHandler;
@@ -49,26 +47,10 @@ public class RuntimeUpdatesProcessor {
     private volatile long lastChange = System.currentTimeMillis();
     private final ClassLoaderCompiler compiler;
 
-    static final UpdateHandler FAKEREPLACE_HANDLER;
-
     private volatile Set<String> configFilePaths = Collections.emptySet();
     private final Map<String, Long> configFileTimestamps = new ConcurrentHashMap<>();
 
     private static final Logger log = Logger.getLogger(RuntimeUpdatesProcessor.class.getPackage().getName());
-
-    static {
-        UpdateHandler fr;
-        try {
-            if (Boolean.getBoolean("shamrock.fakereplace")) {
-                fr = new FakereplaceHandler();
-            } else {
-                fr = null;
-            }
-        } catch (Throwable e) {
-            fr = null;
-        }
-        FAKEREPLACE_HANDLER = fr;
-    }
 
     public RuntimeUpdatesProcessor(Path classesDir, Path sourcesDir, Path resourcesDir, ClassLoaderCompiler compiler) {
         this.classesDir = classesDir;
@@ -107,12 +89,7 @@ public class RuntimeUpdatesProcessor {
         final ConcurrentMap<String, byte[]> changedClasses = scanForChangedClasses();
         if (changedClasses == null) return;
 
-        if (FAKEREPLACE_HANDLER == null) {
-            DevModeMain.restartApp(false);
-        } else {
-            FAKEREPLACE_HANDLER.handle(changedClasses);
-            DevModeMain.restartApp(true);
-        }
+        DevModeMain.restartApp();
         log.info("Hot replace total time: " + (System.currentTimeMillis() - start) + "ms");
     }
 
@@ -249,27 +226,6 @@ public class RuntimeUpdatesProcessor {
         }
 
         return this;
-    }
-
-    private static class FakereplaceHandler implements UpdateHandler {
-
-        @Override
-        public void handle(Map<String, byte[]> changed) {
-            ClassDefinition[] classes = new ClassDefinition[changed.size()];
-            int c = 0;
-            for (Map.Entry<String, byte[]> e : changed.entrySet()) {
-                ClassDefinition cd = null;
-                try {
-                    cd = new ClassDefinition(Class.forName(e.getKey(), false, DevModeMain.getCurrentAppClassLoader()), e.getValue());
-                } catch (ClassNotFoundException e1) {
-                    //TODO: added classes
-                    throw new RuntimeException(e1);
-                }
-                classes[c++] = cd;
-
-            }
-            Fakereplace.redefine(classes, new AddedClass[0], true);
-        }
     }
 
 }

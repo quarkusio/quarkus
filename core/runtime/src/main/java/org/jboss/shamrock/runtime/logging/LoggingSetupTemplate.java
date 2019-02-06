@@ -29,7 +29,7 @@ public class LoggingSetupTemplate {
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
     private static volatile boolean initialized;
 
-    public void initializeLogging(Config config) {
+    public void initializeLogging(LogConfig config) {
         if (initialized || ImageInfo.inImageBuildtimeCode()) {
             // JVM mode, already initialized in static init
             return;

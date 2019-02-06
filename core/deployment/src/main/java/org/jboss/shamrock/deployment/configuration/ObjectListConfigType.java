@@ -82,7 +82,7 @@ public class ObjectListConfigType extends ObjectConfigType {
         body.invokeStaticMethod(setter, enclosing, value);
     }
 
-    public ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorMaker, final ResultHandle smallRyeConfig) {
+    public ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorFinder, final ResultHandle smallRyeConfig) {
         return body.checkCast(body.invokeVirtualMethod(SRC_CONVERT_METHOD, smallRyeConfig, body.load(defaultValue), body.loadClass(expectedType)), List.class);
     }
 }

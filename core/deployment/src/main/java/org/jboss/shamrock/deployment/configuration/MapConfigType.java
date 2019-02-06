@@ -23,10 +23,6 @@ public class MapConfigType extends CompoundConfigType {
         super(containingName, container, consumeSegment);
     }
 
-    public Class<?> getItemClass() {
-        return Map.class;
-    }
-
     public void load() throws ClassNotFoundException {
     }
 
@@ -63,7 +59,6 @@ public class MapConfigType extends CompoundConfigType {
         } else {
             self = new TreeMap<>();
         }
-        if (isRoot()) registerInstance(name.getHeadString(), this, self);
         return self;
     }
 
@@ -85,10 +80,6 @@ public class MapConfigType extends CompoundConfigType {
         }
     }
 
-    public String getClassName() {
-        return Map.class.getName();
-    }
-
     void acceptConfigurationValueIntoLeaf(final LeafConfigType leafType, final NameIterator name, final SmallRyeConfig config) {
         // leaf types directly into map values
         throw Assert.unsupported();
@@ -99,7 +90,7 @@ public class MapConfigType extends CompoundConfigType {
         throw Assert.unsupported();
     }
 
-    public ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorMaker, final ResultHandle smallRyeConfig) {
+    public ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorFinder, final ResultHandle smallRyeConfig) {
         return body.newInstance(TREE_MAP_CTOR);
     }
 

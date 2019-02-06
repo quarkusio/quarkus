@@ -13,10 +13,6 @@ public final class ConfigurationBuildItem extends SimpleBuildItem {
         this.configDefinition = configDefinition;
     }
 
-    public Object getConfigurationObject(final String address) {
-        return configDefinition.getRealizedInstance(address);
-    }
-
     public ConfigDefinition getConfigDefinition() {
         return configDefinition;
     }

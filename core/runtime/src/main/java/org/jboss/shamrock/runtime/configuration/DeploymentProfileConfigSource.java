@@ -12,7 +12,6 @@ import org.wildfly.common.Assert;
  * A configuration source which supports deployment profiles.
  */
 public class DeploymentProfileConfigSource extends AbstractDelegatingConfigSource {
-    private final String profileName;
     private final String profilePrefix;
     private NamesSet namesSet;
 
@@ -25,7 +24,6 @@ public class DeploymentProfileConfigSource extends AbstractDelegatingConfigSourc
     public DeploymentProfileConfigSource(final ConfigSource delegate, final String profileName) {
         super(delegate);
         Assert.checkNotNullParam("profileName", profileName);
-        this.profileName = profileName;
         profilePrefix = "%" + profileName + ".";
     }
 

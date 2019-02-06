@@ -19,7 +19,7 @@ package org.jboss.shamrock.agroal;
 import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.agroal.runtime.DataSourceConfig;
+import org.jboss.shamrock.agroal.runtime.DatasourceConfig;
 import org.jboss.shamrock.agroal.runtime.DataSourceProducer;
 import org.jboss.shamrock.agroal.runtime.DataSourceTemplate;
 import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
@@ -39,7 +39,7 @@ class AgroalProcessor {
     /**
      * The datasource configuration
      */
-    DataSourceConfig datasource;
+    DatasourceConfig datasource;
 
     @BuildStep
     AdditionalBeanBuildItem registerBean() {

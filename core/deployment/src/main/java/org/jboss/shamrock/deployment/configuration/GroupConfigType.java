@@ -63,10 +63,6 @@ public class GroupConfigType extends CompoundConfigType {
         }
     }
 
-    public Class<?> getItemClass() {
-        return class_;
-    }
-
     public void load() throws ClassNotFoundException {
         assert class_ != null && constructor != null;
         if (! fieldInfos.keySet().containsAll(fields.keySet())) {
@@ -84,14 +80,14 @@ public class GroupConfigType extends CompoundConfigType {
         }
     }
 
-    public ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorMaker, final ResultHandle smallRyeConfig) {
-        final ResultHandle instance = body.invokeStaticMethod(accessorMaker.getConstructorFor(MethodDescriptor.ofConstructor(class_)));
+    public ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorFinder, final ResultHandle smallRyeConfig) {
+        final ResultHandle instance = body.invokeStaticMethod(accessorFinder.getConstructorFor(MethodDescriptor.ofConstructor(class_)));
         for (Map.Entry<String, ConfigType> entry : fields.entrySet()) {
             final String fieldName = entry.getKey();
             final ConfigType fieldType = entry.getValue();
             final FieldDescriptor fieldDescriptor = FieldDescriptor.of(fieldInfos.get(fieldName).getField());
-            final ResultHandle value = fieldType.writeInitialization(body, accessorMaker, smallRyeConfig);
-            body.invokeStaticMethod(accessorMaker.getSetterFor(fieldDescriptor), instance, value);
+            final ResultHandle value = fieldType.writeInitialization(body, accessorFinder, smallRyeConfig);
+            body.invokeStaticMethod(accessorFinder.getSetterFor(fieldDescriptor), instance, value);
         }
         return instance;
     }
@@ -128,9 +124,6 @@ public class GroupConfigType extends CompoundConfigType {
         }
         for (Map.Entry<String, ConfigType> entry : fields.entrySet()) {
             entry.getValue().getDefaultValueIntoEnclosingGroup(self, config, findField(entry.getKey()));
-        }
-        if (isRoot()) {
-            registerInstance(getContainingName(), this, self);
         }
         return self;
     }
@@ -209,10 +202,6 @@ public class GroupConfigType extends CompoundConfigType {
             }
         }
         return var;
-    }
-
-    public String getClassName() {
-        return class_.getName();
     }
 
     void acceptConfigurationValueIntoLeaf(final LeafConfigType leafType, final NameIterator name, final SmallRyeConfig config) {

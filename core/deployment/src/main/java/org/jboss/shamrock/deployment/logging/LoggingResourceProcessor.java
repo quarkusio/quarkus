@@ -30,7 +30,7 @@ import org.jboss.shamrock.deployment.builditem.SystemPropertyBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ServiceProviderBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
-import org.jboss.shamrock.runtime.logging.Config;
+import org.jboss.shamrock.runtime.logging.LogConfig;
 import org.jboss.shamrock.runtime.logging.InitialConfigurator;
 import org.jboss.shamrock.runtime.logging.LevelConverter;
 import org.jboss.shamrock.runtime.logging.LoggingSetupTemplate;
@@ -64,13 +64,13 @@ public final class LoggingResourceProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void setupLoggingRuntimeInit(LoggingSetupTemplate setupTemplate, Config log) {
+    void setupLoggingRuntimeInit(LoggingSetupTemplate setupTemplate, LogConfig log) {
         setupTemplate.initializeLogging(log);
     }
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void setupLoggingStaticInit(LoggingSetupTemplate setupTemplate, Config log) {
+    void setupLoggingStaticInit(LoggingSetupTemplate setupTemplate, LogConfig log) {
         setupTemplate.initializeLogging(log);
     }
 

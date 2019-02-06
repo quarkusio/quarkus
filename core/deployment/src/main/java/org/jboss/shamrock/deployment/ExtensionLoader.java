@@ -11,11 +11,7 @@ import static org.jboss.shamrock.deployment.util.ReflectUtil.rawTypeIs;
 import static org.jboss.shamrock.deployment.util.ReflectUtil.rawTypeOf;
 import static org.jboss.shamrock.deployment.util.ReflectUtil.rawTypeOfParameter;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -25,17 +21,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.EnumSet;
-import java.util.Enumeration;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -50,63 +39,31 @@ import org.jboss.builder.ConsumeFlag;
 import org.jboss.builder.ConsumeFlags;
 import org.jboss.builder.ProduceFlag;
 import org.jboss.builder.ProduceFlags;
+import org.jboss.builder.item.BuildItem;
+import org.jboss.builder.item.MultiBuildItem;
+import org.jboss.builder.item.SimpleBuildItem;
 import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.annotations.ExecutionTime;
+import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import org.jboss.shamrock.deployment.builditem.CapabilityBuildItem;
-import org.jboss.shamrock.deployment.builditem.ConfigurationRegistrationBuildItem;
-import org.jboss.shamrock.deployment.builditem.ConfigurationRunTimeKeyBuildItem;
+import org.jboss.shamrock.deployment.builditem.ConfigurationBuildItem;
 import org.jboss.shamrock.deployment.builditem.MainBytecodeRecorderBuildItem;
 import org.jboss.shamrock.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import org.jboss.shamrock.deployment.recording.BytecodeRecorderImpl;
 import org.jboss.shamrock.deployment.recording.RecorderContext;
 import org.jboss.shamrock.deployment.util.ReflectUtil;
-import org.jboss.shamrock.deployment.util.StringUtil;
-import org.jboss.shamrock.runtime.annotations.ConfigGroup;
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
-import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.builder.item.BuildItem;
-import org.jboss.builder.item.MultiBuildItem;
-import org.jboss.builder.item.SimpleBuildItem;
-import org.jboss.shamrock.deployment.builditem.ConfigurationBuildItem;
-import org.jboss.shamrock.runtime.annotations.ConfigPhase;
+import org.jboss.shamrock.deployment.util.ServiceUtil;
 import org.jboss.shamrock.runtime.annotations.ConfigRoot;
 import org.jboss.shamrock.runtime.annotations.Template;
 import org.wildfly.common.function.Functions;
 
 /**
- * Utility class to load build steps from a given extension class.
+ * Utility class to load build steps, runtime templates, and configuration roots from a given extension class.
  */
-public final class ExtensionStepLoader {
-    private ExtensionStepLoader() {}
-
-    private static String nameOf(AnnotatedElement element) {
-        if (element instanceof Parameter) {
-            return ((Parameter) element).getName();
-        } else if (element instanceof Member) {
-            return ((Member) element).getName();
-        } else if (element instanceof Class<?>) {
-            return ((Class) element).getName();
-        } else {
-            return null;
-        }
-    }
-
-    private static String addressOfConfig(AnnotatedElement element) {
-        final ConfigItem itemAnnotation = element.getAnnotation(ConfigItem.class);
-        if (itemAnnotation == null) {
-            return StringUtil.hyphenate(nameOf(element));
-        }
-        String name = itemAnnotation.name();
-        boolean hyphName = name.equals(ConfigItem.HYPHENATED_ELEMENT_NAME);
-        boolean elemName = name.equals(ConfigItem.ELEMENT_NAME);
-        if (elemName || hyphName) {
-            final String elementName = nameOf(element);
-            name = hyphName ? StringUtil.hyphenate(elementName) : elementName;
-        }
-        return name;
-    }
+public final class ExtensionLoader {
+    private ExtensionLoader() {}
 
     private static boolean isTemplate(AnnotatedElement element) {
         return element.isAnnotationPresent(Template.class);
@@ -122,26 +79,8 @@ public final class ExtensionStepLoader {
      */
     public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader) throws IOException, ClassNotFoundException {
         Consumer<BuildChainBuilder> result = Functions.discardingConsumer();
-        final Enumeration<URL> resources = classLoader.getResources("META-INF/shamrock-build-steps.list");
-        final Set<Class<?>> found = new HashSet<>();
-        while (resources.hasMoreElements()) {
-            final URL url = resources.nextElement();
-            try (InputStream is = url.openStream()) {
-                try (BufferedInputStream bis = new BufferedInputStream(is)) {
-                    try (InputStreamReader isr = new InputStreamReader(bis, StandardCharsets.UTF_8)) {
-                        try (BufferedReader br = new BufferedReader(isr)) {
-                            String line;
-                            while ((line = br.readLine()) != null) {
-                                line = line.trim();
-                                final Class<?> clazz = Class.forName(line, true, classLoader);
-                                if (found.add(clazz)) {
-                                    result = result.andThen(ExtensionStepLoader.loadStepsFrom(clazz));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+        for (Class<?> clazz : ServiceUtil.classesNamedIn(classLoader, "META-INF/shamrock-build-steps.list")) {
+            result = result.andThen(ExtensionLoader.loadStepsFrom(clazz));
         }
         return result;
     }
@@ -160,8 +99,6 @@ public final class ExtensionStepLoader {
         Consumer<BuildStepBuilder> stepConfig = Functions.discardingConsumer();
         // this is the build step instance setup that applies to all steps on this class
         BiConsumer<BuildContext, Object> stepInstanceSetup = Functions.discardingBiConsumer();
-        // this is the list of all configuration root types that are injected by this step
-        final List<ConfigurationRegistrationBuildItem> registrationItems = new ArrayList<>();
 
         if (constructors.length != 1) {
             throw reportError(clazz, "Build step classes must have exactly one constructor");
@@ -179,6 +116,7 @@ public final class ExtensionStepLoader {
             ctorParamFns = new ArrayList<>(ctorParameters.length);
             for (Parameter parameter : ctorParameters) {
                 Type parameterType = parameter.getParameterizedType();
+                final Class<?> parameterClass = parameter.getType();
                 if (rawTypeExtends(parameterType, SimpleBuildItem.class)) {
                     final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOf(parameterType).asSubclass(SimpleBuildItem.class);
                     stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass));
@@ -209,23 +147,10 @@ public final class ExtensionStepLoader {
                     ctorParamFns.add(bc -> (Supplier<Optional<? extends SimpleBuildItem>>) () -> Optional.ofNullable(bc.consume(buildItemClass)));
                 } else if (rawTypeOf(parameterType) == Executor.class) {
                     ctorParamFns.add(BuildContext::getExecutor);
-                } else if (parameter.getType().isAnnotationPresent(ConfigGroup.class) || parameter.getType() == Map.class && rawTypeOfParameter(parameterType, 0) == String.class) {
+                } else if (parameterClass.isAnnotationPresent(ConfigRoot.class)) {
                     consumingConfig = true;
-                    final ConfigRoot configRootAnnotation = parameter.getType().getAnnotation(ConfigRoot.class);
-                    final EnumSet<ConfigPhase> phases = phasesOf(configRootAnnotation);
-                    String address = addressOfConfig(parameter);
-                    registrationItems.add(new ConfigurationRegistrationBuildItem(parameter.getParameterizedType(), address, parameter));
-                    ctorParamFns.add(bc -> bc.consume(ConfigurationBuildItem.class).getConfigurationObject(address));
-                    if (phases.contains(ConfigPhase.STATIC_INIT) || phases.contains(ConfigPhase.MAIN)) {
-                        stepInstanceSetup = stepInstanceSetup.andThen((bc, o) ->
-                            bc.produce(new ConfigurationRunTimeKeyBuildItem(
-                                address,
-                                phases,
-                                bc.consume(ConfigurationBuildItem.class).getConfigDefinition().getRootType(address))
-                            )
-                        );
-                    }
-                } else if (isTemplate(parameter.getType())) {
+                    ctorParamFns.add(bc -> bc.consume(ConfigurationBuildItem.class).getConfigDefinition().getRealizedInstance(parameterClass));
+                } else if (isTemplate(parameterClass)) {
                     throw reportError(parameter, "Bytecode recording templates disallowed on constructor parameters");
                 } else {
                     throw reportError(parameter, "Unsupported constructor parameter type " + parameterType);
@@ -250,6 +175,7 @@ public final class ExtensionStepLoader {
             }
             // next, determine the type
             final Type fieldType = field.getGenericType();
+            final Class<?> fieldClass = field.getType();
             if (rawTypeExtends(fieldType, SimpleBuildItem.class)) {
                 final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOf(fieldType).asSubclass(SimpleBuildItem.class);
                 stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass));
@@ -278,26 +204,15 @@ public final class ExtensionStepLoader {
                 final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(rawTypeOfParameter(fieldType, 0), 0).asSubclass(SimpleBuildItem.class);
                 stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass, ConsumeFlags.of(ConsumeFlag.OPTIONAL)));
                 stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, (Supplier<Optional<? extends SimpleBuildItem>>) () -> Optional.ofNullable(bc.consume(buildItemClass))));
-            } else if (field.getType() == Executor.class) {
+            } else if (fieldClass == Executor.class) {
                 stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, bc.getExecutor()));
-            } else if (field.getType().isAnnotationPresent(ConfigGroup.class) || field.getType() == Map.class && rawTypeOfParameter(fieldType, 0) == String.class) {
+            } else if (fieldClass.isAnnotationPresent(ConfigRoot.class)) {
                 consumingConfig = true;
-                final ConfigRoot configRootAnnotation = field.getType().getAnnotation(ConfigRoot.class);
-                final EnumSet<ConfigPhase> phases = phasesOf(configRootAnnotation);
-                String address = addressOfConfig(field);
-                registrationItems.add(new ConfigurationRegistrationBuildItem(field.getGenericType(), address, field));
                 stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> {
                     final ConfigurationBuildItem configurationBuildItem = bc.consume(ConfigurationBuildItem.class);
-                    if (phases.contains(ConfigPhase.STATIC_INIT) || phases.contains(ConfigPhase.MAIN)) {
-                        bc.produce(new ConfigurationRunTimeKeyBuildItem(
-                            address,
-                            phases,
-                            bc.consume(ConfigurationBuildItem.class).getConfigDefinition().getRootType(address))
-                        );
-                    }
-                    ReflectUtil.setFieldVal(field, o, configurationBuildItem.getConfigurationObject(address));
+                    ReflectUtil.setFieldVal(field, o, configurationBuildItem.getConfigDefinition().getRealizedInstance(fieldClass));
                 });
-            } else if (isTemplate(field.getType())) {
+            } else if (isTemplate(fieldClass)) {
                 throw reportError(field, "Bytecode recording templates disallowed on fields");
             } else {
                 throw reportError(field, "Unsupported field type " + fieldType);
@@ -385,22 +300,11 @@ public final class ExtensionStepLoader {
                         methodParamFns.add((bc, bri) -> (Supplier<Optional<? extends SimpleBuildItem>>) () -> Optional.ofNullable(bc.consume(buildItemClass)));
                     } else if (rawTypeOf(parameterType) == Executor.class) {
                         methodParamFns.add((bc, bri) -> bc.getExecutor());
-                    } else if (parameterClass.isAnnotationPresent(ConfigGroup.class) || parameterClass == Map.class && rawTypeOfParameter(parameterType, 0) == String.class) {
+                    } else if (parameterClass.isAnnotationPresent(ConfigRoot.class)) {
                         methodConsumingConfig = true;
-                        final ConfigRoot configRootAnnotation = parameterClass.getAnnotation(ConfigRoot.class);
-                        final EnumSet<ConfigPhase> phases = phasesOf(configRootAnnotation);
-                        String address = addressOfConfig(parameter);
-                        registrationItems.add(new ConfigurationRegistrationBuildItem(parameter.getParameterizedType(), address, parameter));
                         methodParamFns.add((bc, bri) -> {
                             final ConfigurationBuildItem configurationBuildItem = bc.consume(ConfigurationBuildItem.class);
-                            if (phases.contains(ConfigPhase.STATIC_INIT) || phases.contains(ConfigPhase.MAIN)) {
-                                bc.produce(new ConfigurationRunTimeKeyBuildItem(
-                                    address,
-                                    phases,
-                                    bc.consume(ConfigurationBuildItem.class).getConfigDefinition().getRootType(address))
-                                );
-                            }
-                            return configurationBuildItem.getConfigurationObject(address);
+                            return configurationBuildItem.getConfigDefinition().getRealizedInstance(parameterClass);
                         });
                     } else if (isTemplate(parameter.getType())) {
                         if (! isRecorder) {
@@ -440,8 +344,7 @@ public final class ExtensionStepLoader {
 
             if (methodConsumingConfig) {
                 methodStepConfig = methodStepConfig
-                    .andThen(bsb -> bsb.consumes(ConfigurationBuildItem.class))
-                    .andThen(bsb -> bsb.produces(ConfigurationRunTimeKeyBuildItem.class, ProduceFlag.WEAK));
+                    .andThen(bsb -> bsb.consumes(ConfigurationBuildItem.class));
             }
 
             final Consumer<BuildStepBuilder> finalStepConfig = stepConfig.andThen(methodStepConfig).andThen(BuildStepBuilder::build);
@@ -506,20 +409,7 @@ public final class ExtensionStepLoader {
                 }
             })));
         }
-        if (! registrationItems.isEmpty()) {
-            chainConfig = chainConfig.andThen(bcb -> bcb.addBuildStep(bc -> bc.produce(registrationItems)).produces(ConfigurationRegistrationBuildItem.class).build());
-        }
         return chainConfig;
-    }
-
-    private static EnumSet<ConfigPhase> phasesOf(final ConfigRoot configRootAnnotation) {
-        if (configRootAnnotation == null) {
-            return EnumSet.of(ConfigPhase.BUILD);
-        } else {
-            final EnumSet<ConfigPhase> set = EnumSet.noneOf(ConfigPhase.class);
-            Collections.addAll(set, configRootAnnotation.phase());
-            return set;
-        }
     }
 
     private static IllegalArgumentException reportError(AnnotatedElement e, String msg) {

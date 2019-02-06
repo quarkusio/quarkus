@@ -18,13 +18,11 @@ package org.jboss.shamrock.undertow.runtime;
 
 import java.util.OptionalInt;
 
-import org.jboss.shamrock.runtime.annotations.ConfigGroup;
 import org.jboss.shamrock.runtime.annotations.ConfigItem;
 import org.jboss.shamrock.runtime.annotations.ConfigPhase;
 import org.jboss.shamrock.runtime.annotations.ConfigRoot;
 
-@ConfigGroup
-@ConfigRoot(phase = { ConfigPhase.STATIC_INIT, ConfigPhase.MAIN })
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public class HttpConfig {
 
     /**

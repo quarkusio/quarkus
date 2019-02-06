@@ -4,7 +4,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 
-import org.jboss.shamrock.runtime.annotations.ConfigGroup;
 import org.jboss.shamrock.runtime.annotations.ConfigItem;
 import org.jboss.shamrock.runtime.annotations.ConfigPhase;
 import org.jboss.shamrock.runtime.annotations.ConfigRoot;
@@ -12,9 +11,8 @@ import org.jboss.shamrock.runtime.annotations.ConfigRoot;
 /**
  *
  */
-@ConfigGroup
-@ConfigRoot(phase = {ConfigPhase.STATIC_INIT, ConfigPhase.MAIN})
-public final class Config {
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+public final class LogConfig {
     /**
      * The log category config
      */

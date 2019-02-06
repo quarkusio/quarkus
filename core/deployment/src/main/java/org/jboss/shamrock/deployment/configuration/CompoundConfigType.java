@@ -3,11 +3,10 @@ package org.jboss.shamrock.deployment.configuration;
 import io.smallrye.config.SmallRyeConfig;
 import org.jboss.protean.gizmo.BytecodeCreator;
 import org.jboss.protean.gizmo.ResultHandle;
-import org.jboss.shamrock.deployment.AccessorFinder;
 import org.jboss.shamrock.runtime.configuration.NameIterator;
 
 /**
- * A node which can be a root.
+ * A node which contains other nodes.
  */
 public abstract class CompoundConfigType extends ConfigType {
     CompoundConfigType(final String containingName, final CompoundConfigType container, final boolean consumeSegment) {
@@ -49,27 +48,6 @@ public abstract class CompoundConfigType extends ConfigType {
     abstract Object getOrCreate(NameIterator name, SmallRyeConfig config);
 
     abstract ResultHandle generateGetOrCreate(BytecodeCreator body, ResultHandle name, ResultHandle config);
-
-    /**
-     * Register a realized instance.
-     *
-     * @param key the partial actual configuration key of the instance
-     * @param type the type to associate
-     * @param instance the registered instance
-     */
-    void registerInstance(String key, CompoundConfigType type, Object instance) {
-        getContainer().registerInstance(key, type, instance);
-    }
-
-    public void registerRootType(final CompoundConfigType type, final AccessorFinder accessorFinder) {
-        getContainer().registerRootType(type, accessorFinder);
-    }
-
-    public boolean isRoot() {
-        return getContainer() == getConfigDefinition();
-    }
-
-    public abstract String getClassName();
 
     abstract void acceptConfigurationValueIntoLeaf(LeafConfigType leafType, NameIterator name, SmallRyeConfig config);
 

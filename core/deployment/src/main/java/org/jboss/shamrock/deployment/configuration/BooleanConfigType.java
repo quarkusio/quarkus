@@ -84,7 +84,7 @@ public class BooleanConfigType extends LeafConfigType {
         body.invokeStaticMethod(setter, enclosing, value);
     }
 
-    public ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorMaker, final ResultHandle smallRyeConfig) {
+    public ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorFinder, final ResultHandle smallRyeConfig) {
         return body.invokeVirtualMethod(BOOL_VALUE_METHOD, body.checkCast(getConvertedDefault(body, smallRyeConfig), Boolean.class));
     }
 

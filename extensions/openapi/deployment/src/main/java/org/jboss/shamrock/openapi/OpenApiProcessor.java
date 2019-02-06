@@ -44,8 +44,8 @@ import org.jboss.shamrock.jaxrs.JaxrsConfig;
 import org.jboss.shamrock.openapi.runtime.OpenApiDeploymentTemplate;
 import org.jboss.shamrock.openapi.runtime.OpenApiDocumentProducer;
 import org.jboss.shamrock.openapi.runtime.OpenApiServlet;
-import org.jboss.shamrock.runtime.annotations.ConfigGroup;
 import org.jboss.shamrock.runtime.annotations.ConfigItem;
+import org.jboss.shamrock.runtime.annotations.ConfigRoot;
 import org.jboss.shamrock.undertow.ServletBuildItem;
 
 import io.smallrye.openapi.api.OpenApiConfig;
@@ -66,10 +66,10 @@ public class OpenApiProcessor {
     private static final String META_INF_OPENAPI_JSON = "META-INF/openapi.json";
     private static final String WEB_INF_CLASSES_META_INF_OPENAPI_JSON = "WEB-INF/classes/META-INF/openapi.json";
 
-    Configuration openapi;
+    OpenapiConfig openapi;
 
-    @ConfigGroup
-    static final class Configuration {
+    @ConfigRoot
+    static final class OpenapiConfig {
         /**
          * The path at which to register the OpenAPI Servlet.
          */

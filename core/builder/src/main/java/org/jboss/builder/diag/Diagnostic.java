@@ -50,8 +50,9 @@ public final class Diagnostic {
             os.print(location);
             os.print(": ");
         }
+        os.print('[');
         os.print(level);
-        os.print(": ");
+        os.print("]: ");
         os.printf(format, args);
         if (thrown != null) {
             os.print(": ");
@@ -62,16 +63,19 @@ public final class Diagnostic {
 
     @Override
     public String toString() {
-        StringBuilder b = new StringBuilder();
+        return toString(new StringBuilder()).toString();
+    }
+
+    public StringBuilder toString(final StringBuilder b) {
         if (location != null) {
             b.append(location).append(": ");
         }
-        b.append(level).append(": ");
+        b.append('[').append(level).append("]: ");
         b.append(String.format(format, args));
         if (thrown != null) {
             b.append(": ").append(thrown);
         }
-        return b.toString();
+        return b;
     }
 
     public Throwable getThrown() {

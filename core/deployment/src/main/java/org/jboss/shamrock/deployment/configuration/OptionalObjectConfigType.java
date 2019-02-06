@@ -77,7 +77,7 @@ public class OptionalObjectConfigType extends ObjectConfigType {
         body.invokeStaticMethod(setter, enclosing, optionalValue);
     }
 
-    public ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorMaker, final ResultHandle config) {
+    public ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorFinder, final ResultHandle config) {
         if (defaultValue.isEmpty()) {
             return body.invokeStaticMethod(OPT_EMPTY_METHOD);
         } else {

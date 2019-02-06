@@ -1,6 +1,5 @@
 package org.jboss.shamrock.vertx.runtime;
 
-import org.jboss.shamrock.runtime.annotations.ConfigGroup;
 import org.jboss.shamrock.runtime.annotations.ConfigItem;
 import org.jboss.shamrock.runtime.annotations.ConfigPhase;
 import org.jboss.shamrock.runtime.annotations.ConfigRoot;
@@ -8,8 +7,7 @@ import org.jboss.shamrock.runtime.annotations.ConfigRoot;
 import java.time.Duration;
 import java.util.OptionalInt;
 
-@ConfigGroup
-@ConfigRoot(phase = ConfigPhase.STATIC_INIT)
+@ConfigRoot(phase = ConfigPhase.RUN_TIME_STATIC)
 public class VertxConfiguration {
 
     /**

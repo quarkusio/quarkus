@@ -134,17 +134,13 @@ final class Target_io_netty_handler_ssl_SslHandler$SslEngineType {
     @Alias
     public static Target_io_netty_handler_ssl_SslHandler$SslEngineType JDK;
 
-    @Alias
-    public static Target_io_netty_handler_ssl_SslHandler$SslEngineType CONSCRYPT;
-
     @Substitute
     static Target_io_netty_handler_ssl_SslHandler$SslEngineType forEngine(SSLEngine engine) {
-        return (Object)engine instanceof Target_io_netty_handler_ssl_ConscryptAlpnSslEngine ? CONSCRYPT : JDK;
+        return JDK;
     }
-
-
 }
 
+@Delete
 @TargetClass(className = "io.netty.handler.ssl.ConscryptAlpnSslEngine")
 final class Target_io_netty_handler_ssl_ConscryptAlpnSslEngine {
 }

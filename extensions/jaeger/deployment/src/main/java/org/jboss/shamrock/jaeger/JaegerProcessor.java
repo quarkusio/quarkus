@@ -16,20 +16,28 @@
 
 package org.jboss.shamrock.jaeger;
 
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.List;
+import javax.inject.Inject;
 
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.annotations.ExecutionTime;
 import org.jboss.shamrock.deployment.annotations.Record;
+import org.jboss.shamrock.deployment.builditem.ExtensionSslNativeSupportBuildItem;
+import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.jaeger.runtime.JaegerDeploymentTemplate;
 
 public class JaegerProcessor {
 
+    @Inject
+    BuildProducer<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport;
+
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void setupTracer(JaegerDeploymentTemplate jdt) {
+
+        // Indicates that this extension would like the SSL support to be enabled
+        extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.JAEGER));
+
         jdt.registerTracer();
     }
 

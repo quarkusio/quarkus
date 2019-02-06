@@ -50,5 +50,6 @@
         <module>spring-di</module>
         <module>infinispan-cache-jpa</module>
         <module>infinispan-cache-jpa-stress</module>
+        <module>panache</module>
     </modules>
 </project>

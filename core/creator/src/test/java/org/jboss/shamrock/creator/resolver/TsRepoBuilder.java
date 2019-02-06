@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.resolver.test;
+package org.jboss.shamrock.creator.resolver;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -50,6 +50,10 @@ public class TsRepoBuilder {
     }
 
     public void install(TsArtifact artifact) {
+        install(artifact, null);
+    }
+
+    public void install(TsArtifact artifact, Path p) {
         final Path pomXml = workDir.resolve(artifact.getArtifactFileName() + ".pom");
         try {
             Utils.persistModel(pomXml, artifact.getPomModel());
@@ -57,7 +61,7 @@ public class TsRepoBuilder {
             error("Failed to persist pom.xml for " + artifact, e);
         }
         install(artifact.toPomArtifact().toAppArtifact(), pomXml);
-        install(artifact.toAppArtifact(), newTxt(artifact));
+        install(artifact.toAppArtifact(), p == null ? newTxt(artifact) : p);
     }
 
     protected void install(AppArtifact artifact, Path file) {

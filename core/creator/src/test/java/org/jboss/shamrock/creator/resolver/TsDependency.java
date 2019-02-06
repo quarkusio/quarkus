@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.resolver.test;
+package org.jboss.shamrock.creator.resolver;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -53,11 +53,11 @@ public class TsDependency {
     }
 
     public TsDependency exclude(String artifactId) {
-        return exclude(TsArtifact.getGa(artifactId));
+        return exclude(TsArtifact.ga(artifactId));
     }
 
     public TsDependency exclude(String groupId, String artifactId) {
-        return exclude(TsArtifact.getGa(groupId, artifactId));
+        return exclude(TsArtifact.ga(groupId, artifactId));
     }
 
     public TsDependency exclude(TsArtifact artifact) {

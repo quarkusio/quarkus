@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.resolver.test;
+package org.jboss.shamrock.creator.resolver;
 
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 import org.jboss.shamrock.creator.AppCreatorException;
 import org.jboss.shamrock.creator.AppDependency;
@@ -43,7 +44,8 @@ public class ResolverSetupCleanup {
     public void setup() throws Exception {
         workDir = IoUtils.createRandomTmpDir();
         repoHome = IoUtils.mkdirs(workDir.resolve("repo"));
-        resolver = AetherArtifactResolver.getInstance(repoHome, Collections.emptyList());
+        //resolver = AetherArtifactResolver.getInstance(repoHome, Collections.emptyList());
+        resolver = AetherArtifactResolver.getBootstrapResolver(repoHome, Collections.emptyList());
         repo = TsRepoBuilder.getInstance(resolver, workDir);
     }
 
@@ -54,8 +56,17 @@ public class ResolverSetupCleanup {
         }
     }
 
+    protected TsJar newJar() {
+        return new TsJar(workDir.resolve(UUID.randomUUID().toString()));
+    }
+
     protected TsArtifact install(TsArtifact artifact) {
         repo.install(artifact);
+        return artifact;
+    }
+
+    protected TsArtifact install(TsArtifact artifact, Path p) {
+        repo.install(artifact, p);
         return artifact;
     }
 

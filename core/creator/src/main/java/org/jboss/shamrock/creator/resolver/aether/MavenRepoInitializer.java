@@ -123,8 +123,7 @@ public class MavenRepoInitializer {
 
         session.setOffline(settings.isOffline());
 
-        // uncomment to generate dirty trees
-        //session.setDependencyGraphTransformer( null );
+        //session.setDependencyGraphTransformer(new AppCreatorDependencyGraphTransformer(system, session.getDependencyGraphTransformer()));
 
         return session;
     }

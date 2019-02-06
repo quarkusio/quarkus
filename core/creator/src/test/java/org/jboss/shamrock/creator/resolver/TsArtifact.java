@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.resolver.test;
+package org.jboss.shamrock.creator.resolver;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,14 +29,23 @@ import org.jboss.shamrock.creator.AppArtifact;
  */
 public class TsArtifact {
 
-    static final String DEFAULT_GROUP_ID = "org.shamrock.creator.test";
+    public static final String DEFAULT_GROUP_ID = "org.shamrock.creator.test";
+    public static final String DEFAULT_VERSION = "1";
 
-    public static TsArtifact getGa(String groupId, String artifactId) {
+    public static TsArtifact ga(String artifactId) {
+        return ga(DEFAULT_GROUP_ID, artifactId);
+    }
+
+    public static TsArtifact ga(String groupId, String artifactId) {
         return new TsArtifact(groupId, artifactId, null);
     }
 
-    public static TsArtifact getGa(String artifactId) {
-        return getGa(DEFAULT_GROUP_ID, artifactId);
+    public static TsArtifact jar(String artifactId) {
+        return jar(artifactId, DEFAULT_VERSION);
+    }
+
+    public static TsArtifact jar(String artifactId, String version) {
+        return new TsArtifact(DEFAULT_GROUP_ID, artifactId, "", "jar", version);
     }
 
     protected final String groupId;
@@ -48,7 +57,7 @@ public class TsArtifact {
     private List<TsDependency> deps = Collections.emptyList();
 
     public TsArtifact(String artifactId) {
-        this(artifactId, "1");
+        this(artifactId, DEFAULT_VERSION);
     }
 
     public TsArtifact(String artifactId, String version) {
@@ -122,5 +131,12 @@ public class TsArtifact {
 
     public AppArtifact toAppArtifact() {
         return new AppArtifact(groupId, artifactId, classifier, type, version);
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder buf = new StringBuilder(128);
+        buf.append(groupId).append(':').append(artifactId).append(':').append(classifier).append(':').append(type).append(':').append(version);
+        return buf.toString();
     }
 }

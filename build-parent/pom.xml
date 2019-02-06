@@ -879,7 +879,7 @@
             <artifactId>maven-settings-builder</artifactId>
             <version>${maven-core.version}</version>
          </dependency>
-         
+
          <dependency>
             <groupId>org.apache.maven.plugin-tools</groupId>
             <artifactId>maven-plugin-annotations</artifactId>
@@ -912,7 +912,7 @@
             <version>${assertj.version}</version>
             <scope>test</scope>
          </dependency>
-         
+
          <dependency>
             <groupId>org.codehaus.plexus</groupId>
             <artifactId>plexus-utils</artifactId>

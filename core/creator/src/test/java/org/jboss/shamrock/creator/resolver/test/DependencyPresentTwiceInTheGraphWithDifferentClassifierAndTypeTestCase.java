@@ -16,6 +16,9 @@
 
 package org.jboss.shamrock.creator.resolver.test;
 
+import org.jboss.shamrock.creator.resolver.CollectDependenciesBase;
+import org.jboss.shamrock.creator.resolver.TsArtifact;
+
 /**
  *
  * @author Alexey Loubyansky

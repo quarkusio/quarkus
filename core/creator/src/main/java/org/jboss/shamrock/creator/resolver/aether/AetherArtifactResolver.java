@@ -87,6 +87,40 @@ public class AetherArtifactResolver extends AppArtifactResolverBase {
         return resolver;
     }
 
+    public static AetherArtifactResolver getBootstrapResolver(Path repoHome) throws AppCreatorException {
+        return getBootstrapResolver(repoHome, MavenRepoInitializer.getRemoteRepos(MavenRepoInitializer.getSettings()));
+    }
+
+    public static AetherArtifactResolver getBootstrapResolver(Path repoHome, List<RemoteRepository> remoteRepos) throws AppCreatorException {
+        final RepositorySystem repoSystem = MavenRepoInitializer.getRepositorySystem();
+        final Settings settings = MavenRepoInitializer.getSettings();
+        final DefaultRepositorySystemSession repoSession = MavenRepoInitializer.newSession(repoSystem, settings);
+        final AppCreatorLocalRepositoryManager appCreatorLocalRepoManager = new AppCreatorLocalRepositoryManager(
+                repoSystem.newLocalRepositoryManager(repoSession, new LocalRepository(repoHome.toString())),
+                Paths.get(MavenRepoInitializer.getLocalRepo(settings)));
+        repoSession.setLocalRepositoryManager(appCreatorLocalRepoManager);
+        repoSession.setDependencySelector(new AppCreatorDependencySelector(true));
+        repoSession.setDependencyGraphTransformer(new BootstrapDependencyGraphTransformer(repoSystem, repoSession.getDependencyGraphTransformer()));
+        final AetherArtifactResolver resolver = new AetherArtifactResolver(repoSystem, repoSession, remoteRepos);
+        resolver.setLocalRepositoryManager(appCreatorLocalRepoManager);
+        return resolver;
+    }
+
+    public static AetherArtifactResolver getBootstrapResolver(Path repoHome, RepositorySystem repoSystem, RepositorySystemSession repoSession, List<RemoteRepository> remoteRepos) throws AppCreatorException {
+
+        final DefaultRepositorySystemSession bsSession =  new DefaultRepositorySystemSession(repoSession);
+        final AppCreatorLocalRepositoryManager appCreatorLocalRepoManager = new AppCreatorLocalRepositoryManager(
+                repoSystem.newLocalRepositoryManager(bsSession, new LocalRepository(repoHome.toString())),
+                repoSession.getLocalRepository().getBasedir().toPath());
+
+        bsSession.setLocalRepositoryManager(appCreatorLocalRepoManager);
+        bsSession.setDependencyGraphTransformer(new BootstrapDependencyGraphTransformer(repoSystem, repoSession.getDependencyGraphTransformer()));
+        final AetherArtifactResolver resolver = new AetherArtifactResolver(repoSystem, bsSession, remoteRepos);
+        resolver.setLocalRepositoryManager(appCreatorLocalRepoManager);
+        return resolver;
+
+    }
+
     protected final RepositorySystem repoSystem;
     protected final RepositorySystemSession repoSession;
     protected final List<RemoteRepository> remoteRepos;
@@ -143,7 +177,6 @@ public class AetherArtifactResolver extends AppArtifactResolverBase {
         collectRequest.setRepositories(remoteRepos);
 
         final DependencyRequest dependencyRequest = new DependencyRequest(collectRequest, null);
-
         final DependencyResult depResult;
         try {
             depResult = repoSystem.resolveDependencies(repoSession, dependencyRequest);
@@ -156,8 +189,20 @@ public class AetherArtifactResolver extends AppArtifactResolverBase {
             return Collections.emptyList();
         }
 
+        //AppCreatorDependencyGraphTransformer.log(depResult.getRoot());
         final List<AppDependency> appDeps =  new ArrayList<>();
         collect(depNodes, appDeps);
+/*
+        List<String> list = new ArrayList<>(appDeps.size());
+        for(AppDependency dep : appDeps) {
+            list.add(dep.getArtifact().toString());
+        }
+        Collections.sort(list);
+        System.out.println("RESOLVED DEPS");
+        for(String s : list) {
+            System.out.println(s);
+        }
+*/
         return appDeps;
     }
 

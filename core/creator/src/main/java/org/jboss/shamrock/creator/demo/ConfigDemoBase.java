@@ -51,7 +51,7 @@ public class ConfigDemoBase {
 
     public void run() throws Exception {
 
-        final long startTime = System.currentTimeMillis();
+        final long startTime = System.nanoTime();
 
         final Path appJar = getAppJar();
         if (!Files.exists(appJar)) {
@@ -78,9 +78,7 @@ public class ConfigDemoBase {
             }
         }
 
-        final long time = System.currentTimeMillis() - startTime;
-        final long seconds = time / 1000;
-        System.out.println("Done in " + seconds + "." + (time - seconds * 1000) + " seconds");
+        System.out.println(IoUtils.tookTime("Demo", startTime));
     }
 
     protected void demo(AppCreator creator) throws Exception {

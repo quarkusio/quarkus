@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.resolver.test;
+package org.jboss.shamrock.creator.resolver;
 
 import static org.junit.Assert.assertEquals;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -41,7 +42,7 @@ public abstract class CollectDependenciesBase extends ResolverSetupCleanup {
         setupDependencies();
     }
 
-    protected abstract void setupDependencies();
+    protected abstract void setupDependencies() throws Exception;
 
     @Test
     public void testCollectedDependencies() throws Exception {
@@ -51,9 +52,21 @@ public abstract class CollectDependenciesBase extends ResolverSetupCleanup {
     }
 
     protected void install(TsArtifact dep, boolean collected) {
-        install(dep);
-        if(collected) {
-            addCollectedDep(dep);
+        install(dep, collected ? "compile" : null);
+    }
+
+    protected void install(TsArtifact dep, String collectedInScope) {
+        install(dep, null, collectedInScope);
+    }
+
+    protected void install(TsArtifact dep, Path p, boolean collected) {
+        install(dep, p, collected ? "compile" : null);
+    }
+
+    protected void install(TsArtifact dep, Path p, String collectedInScope) {
+        install(dep, p);
+        if(collectedInScope != null) {
+            addCollectedDep(dep, collectedInScope);
         }
     }
 
@@ -62,16 +75,28 @@ public abstract class CollectDependenciesBase extends ResolverSetupCleanup {
     }
 
     protected void installAsDep(TsArtifact dep, boolean collected) {
-        installAsDep(new TsDependency(dep), collected);
+        installAsDep(dep, null, collected);
+    }
+
+    protected void installAsDep(TsArtifact dep, Path p, boolean collected) {
+        installAsDep(new TsDependency(dep), p, collected);
     }
 
     protected void installAsDep(TsDependency dep) {
-        installAsDep(dep, true);
+        installAsDep(dep, null);
+    }
+
+    protected void installAsDep(TsDependency dep, Path p) {
+        installAsDep(dep, p, true);
     }
 
     protected void installAsDep(TsDependency dep, boolean collected) {
+        installAsDep(dep, null, collected);
+    }
+
+    protected void installAsDep(TsDependency dep, Path p, boolean collected) {
         final TsArtifact artifact = dep.artifact;
-        install(artifact);
+        install(artifact, p);
         root.addDependency(dep);
         if(!collected) {
             return;

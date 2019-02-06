@@ -18,8 +18,12 @@
 package org.jboss.shamrock.maven;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
+import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Component;
@@ -39,6 +43,7 @@ import org.jboss.shamrock.creator.phase.augment.AugmentPhase;
 import org.jboss.shamrock.creator.phase.curate.CurateOutcome;
 import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarOutcome;
 import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarPhase;
+import org.jboss.shamrock.creator.resolver.aether.AetherArtifactResolver;
 import org.jboss.shamrock.creator.resolver.maven.ResolvedMavenArtifactDeps;
 
 /**
@@ -106,6 +111,7 @@ public class BuildMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${project.build.directory}")
     private File buildDir;
+
     /**
      * The directory for library jars
      */
@@ -124,12 +130,62 @@ public class BuildMojo extends AbstractMojo {
     @Parameter(defaultValue = "false")
     private boolean uberJar;
 
+    @Parameter(defaultValue = "${project.build.directory}/bootstrap-repo")
+    private File bsRepo;
+
     public BuildMojo() {
         MojoLogger.logSupplier = this::getLog;
     }
 
     @Override
     public void execute() throws MojoExecutionException {
+
+        final AppArtifact appArtifact = new AppArtifact(project.getGroupId(), project.getArtifactId(), project.getVersion());
+        if(false) {
+        final List<AppDependency> appDeps;
+        try {
+            final AetherArtifactResolver bsResolver = AetherArtifactResolver.getBootstrapResolver(bsRepo.toPath(), repoSystem, repoSession, repos);
+            appDeps = bsResolver.collectDependencies(appArtifact);
+        } catch (AppCreatorException e) {
+            throw new MojoExecutionException("Failed to resolve " + appArtifact + " dependencies", e);
+        }
+
+        final List<String> resolvedDepList = new ArrayList<>(appDeps.size());
+        for(AppDependency appDep : appDeps) {
+            resolvedDepList.add(appDep.getArtifact().toString());
+        }
+        Collections.sort(resolvedDepList);
+        }
+        final Set<Artifact> artifacts = project.getArtifacts();
+        final List<String> projectArtifactList = new ArrayList<>(artifacts.size());
+        for(Artifact art : artifacts) {
+            final StringBuilder buf = new StringBuilder();
+            buf.append(art.getGroupId()).append(':').append(art.getArtifactId()).append(':');
+            final String classifier = art.getClassifier();
+            if(classifier != null && !classifier.isEmpty()) {
+                buf.append(classifier);
+            }
+            buf.append(':').append(art.getType()).append(':').append(art.getVersion());
+            projectArtifactList.add(buf.toString());
+        }
+        Collections.sort(projectArtifactList);
+
+        //if(!resolvedDepList.equals(projectArtifactList)) {
+        /*
+            System.out.println("Resolved " + appArtifact + " dependencies:");
+            int i = 0;
+            for(String s : resolvedDepList) {
+                System.out.println(++i + ") " + s);
+            }
+            */
+            System.out.println("Project dependencies:");
+            int i = 0;
+            for(String s : projectArtifactList) {
+                System.out.println(++i + ") " + s);
+            }
+            //throw new MojoExecutionException("Resolved dependencies don't match project dependencies");
+        //}
+        //}
         try(AppCreator appCreator = AppCreator.builder()
                 // configure the build phases we want the app to go through
                 .addPhase(new AugmentPhase()
@@ -144,7 +200,7 @@ public class BuildMojo extends AbstractMojo {
                 .setWorkDir(buildDir.toPath())
                 .build()) {
 
-            final AppArtifact appArtifact = new AppArtifact(project.getGroupId(), project.getArtifactId(), project.getVersion());
+            //final AppArtifact appArtifact = new AppArtifact(project.getGroupId(), project.getArtifactId(), project.getVersion());
             final List<AppDependency> appDeps = new ResolvedMavenArtifactDeps(project.getGroupId(), project.getArtifactId(),
                     project.getVersion(), project.getArtifacts()).collectDependencies(appArtifact);
 

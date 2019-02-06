@@ -30,6 +30,25 @@
     <name>Shamrock - Integration Tests - JPA - Infinispan Cache</name>
     <description>Module that contains JPA related tests with Infinispan second level cache</description>
     <dependencies>
+        <!-- Enables the JPA capabilities - ->
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-jpa-runtime</artifactId>
+        </dependency>
+        -->
+        <!-- We'll be using the H2 database - ->
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-jdbc-h2-runtime</artifactId>
+        </dependency>
+        -->
+        <!-- .. and some REST endpoints - ->
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-jaxrs-runtime</artifactId>
+        </dependency>
+        -->
+
         <!-- Enables the JPA capabilities -->
         <dependency>
             <groupId>org.jboss.shamrock</groupId>

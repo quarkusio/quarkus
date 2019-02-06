@@ -160,4 +160,10 @@ public class IoUtils {
     public static void writeFile(Path file, String content) throws IOException {
         Files.write(file, content.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE);
     }
+
+    public static String tookTime(String action, long startTimeNanos) {
+        final long nanos = Math.abs(System.nanoTime() - startTimeNanos);
+        final long timeSec = nanos / 1000000000;
+        return action + " took " + timeSec + "." + ((nanos - timeSec * 1000000000) / 1000000) + " seconds";
+    }
 }

@@ -1,0 +1,44 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+        mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    compile localGroovy()
+    compile gradleApi()
+    compile fileTree(dir: 'target/dependencies/compile', include: '*.jar')
+    testCompile gradleTestKit()
+    testCompile fileTree(dir: 'target/dependencies/test', include: '*.jar')
+}
+
+jar {
+    manifest {
+        attributes 'Implementation-Version': (version ? version : 'unknown')
+    }
+}
+
+test {
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar) {
+    classifier = "javadoc"
+    from javadoc
+}
+
+artifacts {
+    archives sourcesJar
+    archives javadocJar
+}
+

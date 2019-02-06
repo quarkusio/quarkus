@@ -16,50 +16,9 @@
 
 package org.jboss.shamrock.jpa;
 
-import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
-import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.dialect.H2Dialect;
-import org.hibernate.dialect.MariaDB103Dialect;
-import org.hibernate.dialect.PostgreSQL95Dialect;
-import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
-import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.IndexView;
-import org.jboss.shamrock.agroal.DataSourceDriverBuildItem;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
-import org.jboss.shamrock.arc.deployment.BeanContainerBuildItem;
-import org.jboss.shamrock.arc.deployment.BeanContainerListenerBuildItem;
-import org.jboss.shamrock.arc.deployment.ResourceAnnotationBuildItem;
-import org.jboss.shamrock.deployment.Capabilities;
-import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
-import org.jboss.shamrock.deployment.builditem.ArchiveRootBuildItem;
-import org.jboss.shamrock.deployment.builditem.BytecodeTransformerBuildItem;
-import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
-import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
-import org.jboss.shamrock.deployment.builditem.GeneratedResourceBuildItem;
-import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
-import org.jboss.shamrock.deployment.configuration.ConfigurationError;
-import org.jboss.shamrock.deployment.recording.RecorderContext;
+import static org.jboss.shamrock.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
 
-
-import org.jboss.shamrock.jpa.runtime.DefaultEntityManagerFactoryProducer;
-import org.jboss.shamrock.jpa.runtime.DefaultEntityManagerProducer;
-import org.jboss.shamrock.jpa.runtime.JPAConfig;
-import org.jboss.shamrock.jpa.runtime.JPADeploymentTemplate;
-import org.jboss.shamrock.jpa.runtime.TransactionEntityManagers;
-import org.jboss.shamrock.jpa.runtime.boot.scan.ShamrockScanner;
-
-import javax.enterprise.inject.Produces;
-import javax.persistence.PersistenceContext;
-import javax.persistence.PersistenceUnit;
-import javax.persistence.spi.PersistenceUnitTransactionType;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -72,8 +31,54 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.jboss.shamrock.deployment.annotations.ExecutionTime.RUNTIME_INIT;
-import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
+import javax.enterprise.inject.Produces;
+import javax.persistence.PersistenceContext;
+import javax.persistence.PersistenceUnit;
+import javax.persistence.spi.PersistenceUnitTransactionType;
+
+import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
+import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.dialect.H2Dialect;
+import org.hibernate.dialect.MariaDB103Dialect;
+import org.hibernate.dialect.PostgreSQL95Dialect;
+import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
+import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.CompositeIndex;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.Indexer;
+import org.jboss.shamrock.agroal.DataSourceDriverBuildItem;
+import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
+import org.jboss.shamrock.arc.deployment.BeanContainerBuildItem;
+import org.jboss.shamrock.arc.deployment.BeanContainerListenerBuildItem;
+import org.jboss.shamrock.arc.deployment.ResourceAnnotationBuildItem;
+import org.jboss.shamrock.deployment.Capabilities;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.Record;
+import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
+import org.jboss.shamrock.deployment.builditem.ApplicationIndexBuildItem;
+import org.jboss.shamrock.deployment.builditem.ArchiveRootBuildItem;
+import org.jboss.shamrock.deployment.builditem.BytecodeTransformerBuildItem;
+import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
+import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
+import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.GeneratedResourceBuildItem;
+import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import org.jboss.shamrock.deployment.configuration.ConfigurationError;
+import org.jboss.shamrock.deployment.index.IndexingUtil;
+import org.jboss.shamrock.deployment.recording.RecorderContext;
+import org.jboss.shamrock.deployment.util.IoUtil;
+import org.jboss.shamrock.jpa.runtime.DefaultEntityManagerFactoryProducer;
+import org.jboss.shamrock.jpa.runtime.DefaultEntityManagerProducer;
+import org.jboss.shamrock.jpa.runtime.JPAConfig;
+import org.jboss.shamrock.jpa.runtime.JPADeploymentTemplate;
+import org.jboss.shamrock.jpa.runtime.TransactionEntityManagers;
+import org.jboss.shamrock.jpa.runtime.boot.scan.ShamrockScanner;
 
 /**
  * Simulacrum of JPA bootstrap.
@@ -155,16 +160,33 @@ public final class HibernateResourceProcessor {
     @BuildStep
     @Record(STATIC_INIT)
     public BeanContainerListenerBuildItem build(RecorderContext recorder, JPADeploymentTemplate template,
-                                                List<PersistenceUnitDescriptorBuildItem> descItems, CombinedIndexBuildItem index,
+                                                List<PersistenceUnitDescriptorBuildItem> descItems,
+                                                List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
+                                                List<NonJpaModelBuildItem> nonJpaModelBuildItems,
+                                                CombinedIndexBuildItem index,
+                                                ApplicationIndexBuildItem applicationIndex,
                                                 BuildProducer<BytecodeTransformerBuildItem> transformers,
                                                 BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-                                                BuildProducer<FeatureBuildItem> feature) throws Exception {
+                                                BuildProducer<FeatureBuildItem> feature,
+                                                BuildProducer<GeneratedClassBuildItem> additionalClasses) throws Exception {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.JPA));
 
         List<ParsedPersistenceXmlDescriptor> descriptors = descItems.stream().map(PersistenceUnitDescriptorBuildItem::getDescriptor).collect(Collectors.toList());
 
-        JpaJandexScavenger scavenger = new JpaJandexScavenger(reflectiveClass, descriptors, index.getIndex());
+        // build a composite index with additional jpa model classes
+        Indexer indexer = new Indexer();
+        Set<DotName> additionalIndex = new HashSet<>();
+        for(AdditionalJpaModelBuildItem jpaModel : additionalJpaModelBuildItems) {
+            IndexingUtil.indexClass(jpaModel.getClassName(), indexer, index.getIndex(), additionalIndex,
+                                    HibernateResourceProcessor.class.getClassLoader());
+        }
+        CompositeIndex compositeIndex = CompositeIndex.create(index.getIndex(), indexer.complete());
+
+        Set<String> nonJpaModelClasses = nonJpaModelBuildItems.stream()
+                .map(NonJpaModelBuildItem::getClassName)
+                .collect(Collectors.toSet());
+        JpaJandexScavenger scavenger = new JpaJandexScavenger(reflectiveClass, descriptors, compositeIndex, nonJpaModelClasses);
         final KnownDomainObjects domainObjects = scavenger.discoverModelAndRegisterForReflection();
 
         for (String className : domainObjects.getClassNames()) {
@@ -174,7 +196,7 @@ public final class HibernateResourceProcessor {
         template.callHibernateFeatureInit();
 
         //Modify the bytecode of all entities to enable lazy-loading, dirty checking, etc..
-        enhanceEntities(domainObjects, transformers);
+        enhanceEntities(domainObjects, transformers, additionalJpaModelBuildItems, additionalClasses);
 
         //set up the scanner, as this scanning has already been done we need to just tell it about the classes we
         //have discovered. This scanner is bytecode serializable and is passed directly into the template
@@ -311,10 +333,21 @@ public final class HibernateResourceProcessor {
         throw new ConfigurationError(error);
     }
 
-    private void enhanceEntities(final KnownDomainObjects domainObjects, BuildProducer<BytecodeTransformerBuildItem> transformers) {
+    private void enhanceEntities(final KnownDomainObjects domainObjects, BuildProducer<BytecodeTransformerBuildItem> transformers,
+                                 List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems, BuildProducer<GeneratedClassBuildItem> additionalClasses) {
         HibernateEntityEnhancer hibernateEntityEnhancer = new HibernateEntityEnhancer();
         for (String i : domainObjects.getClassNames()) {
             transformers.produce(new BytecodeTransformerBuildItem(i, hibernateEntityEnhancer));
+        }
+        for (AdditionalJpaModelBuildItem additionalJpaModel : additionalJpaModelBuildItems) {
+            String className = additionalJpaModel.getClassName();
+            try {
+                byte[] bytes = IoUtil.readClassAsBytes(HibernateResourceProcessor.class.getClassLoader(), className);
+                byte[] enhanced = hibernateEntityEnhancer.enhance(className, bytes);
+                additionalClasses.produce(new GeneratedClassBuildItem(true, className, enhanced != null ? enhanced : bytes));
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to read Model class", e);
+            }
         }
     }
 

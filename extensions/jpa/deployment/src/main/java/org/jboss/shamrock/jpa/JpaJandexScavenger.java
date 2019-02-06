@@ -65,11 +65,16 @@ final class JpaJandexScavenger {
     private final List<ParsedPersistenceXmlDescriptor> descriptors;
     private final BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
     private final IndexView indexView;
+    private final Set<String> nonJpaModelClasses;
 
-    JpaJandexScavenger(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, List<ParsedPersistenceXmlDescriptor> descriptors, IndexView indexView) {
+    JpaJandexScavenger(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+                       List<ParsedPersistenceXmlDescriptor> descriptors,
+                       IndexView indexView,
+                       Set<String> nonJpaModelClasses) {
         this.reflectiveClass = reflectiveClass;
         this.descriptors = descriptors;
         this.indexView = indexView;
+        this.nonJpaModelClasses = nonJpaModelClasses;
     }
 
     public KnownDomainObjects discoverModelAndRegisterForReflection() throws IOException {
@@ -137,11 +142,16 @@ final class JpaJandexScavenger {
         }
     }
 
-    private static void enlistJPAModelClasses(IndexView index, DomainObjectSet domainObjectCollector, Set<String> enumTypeCollector, DotName dotName) {
+    private void enlistJPAModelClasses(IndexView index, DomainObjectSet domainObjectCollector, Set<String> enumTypeCollector, DotName dotName) {
         Collection<AnnotationInstance> jpaAnnotations = index.getAnnotations(dotName);
         if (jpaAnnotations != null && jpaAnnotations.size() > 0) {
             for (AnnotationInstance annotation : jpaAnnotations) {
-                DotName targetDotName = annotation.target().asClass().name();
+                ClassInfo klass = annotation.target().asClass();
+                DotName targetDotName = klass.name();
+                // ignore non-jpa model classes that we think belong to JPA
+                if(nonJpaModelClasses.contains(targetDotName.toString())) {
+                    continue;
+                }
                 addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, targetDotName);
                 domainObjectCollector.addEntity(targetDotName.toString());
             }

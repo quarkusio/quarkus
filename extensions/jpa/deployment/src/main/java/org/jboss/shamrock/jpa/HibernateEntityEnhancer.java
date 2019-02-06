@@ -98,4 +98,8 @@ public final class HibernateEntityEnhancer implements BiFunction<String, ClassVi
         return enhanced == null ? originalBytes : enhanced;
     }
 
+    public byte[] enhance(String className, byte[] bytes) {
+        return enhancer.enhance(className, bytes);
+    }
+
 }

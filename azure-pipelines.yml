@@ -92,4 +92,4 @@ jobs:
     displayName: 'Maven Build'
     inputs:
       goals: 'install'
-      options: '-B --settings azure-mvn-settings.xml -Dno-native'
+      options: '-B --settings azure-mvn-settings.xml'

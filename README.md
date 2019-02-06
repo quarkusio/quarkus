@@ -251,8 +251,7 @@ To run the tests from an IDE you will need to make sure the image has been built
 `-Dnative.image.path=full-path-to-image`. If this is not set Shamrock will try and guess the correct image location, by
 assuming that the image name is `*-runner` and is located in the parent directory of the `test-classes` classpath entry.
 
-By default only the `strict` example is run, you can build all native images using `-Dnative`. You can prevent
-the strict image from being built using `-Dno-native`.
+By default only Java mode is run, you can build all native images using `-Dnative`.
 
 ### Reflection
 

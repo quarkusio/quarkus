@@ -71,8 +71,7 @@ mvn clean install
 # Wait... success!
 ```
 
-The default build will create two different native images, which is quite time consuming. You can skip this
-by disabling the `native-image` profile: `mvn install -Dno-native`.
+By default only Java mode is run. You can build native images (which is quite time consuming) by enabling the `native-image` profile: `mvn install -Dnative`.
 
 By default the build will use the native image server. This speeds up the build, but can cause problems due to the cache
 not being invalidated correctly in some cases. To run a build with a new instance of the server you can use

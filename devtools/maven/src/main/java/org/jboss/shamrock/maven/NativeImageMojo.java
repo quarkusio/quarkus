@@ -29,7 +29,6 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.jboss.shamrock.creator.AppCreator;
 import org.jboss.shamrock.creator.AppCreatorException;
-import org.jboss.shamrock.creator.AppDependency;
 import org.jboss.shamrock.creator.phase.augment.AugmentOutcome;
 import org.jboss.shamrock.creator.phase.nativeimage.NativeImageOutcome;
 import org.jboss.shamrock.creator.phase.nativeimage.NativeImagePhase;
@@ -176,11 +175,6 @@ public class NativeImageMojo extends AbstractMojo {
                 }
                 @Override
                 public Path getWiringClassesDir() {
-                    // not relevant for this mojo
-                    throw new UnsupportedOperationException();
-                }
-                @Override
-                public boolean isWhitelisted(AppDependency dep) {
                     // not relevant for this mojo
                     throw new UnsupportedOperationException();
                 }

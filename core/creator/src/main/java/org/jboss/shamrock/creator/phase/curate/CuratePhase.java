@@ -34,17 +34,21 @@ import org.apache.maven.model.Repository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.creator.AppArtifact;
-import org.jboss.shamrock.creator.AppArtifactResolver;
+import org.jboss.shamrock.bootstrap.BootstrapDependencyProcessingException;
+import org.jboss.shamrock.bootstrap.resolver.AppArtifact;
+import org.jboss.shamrock.bootstrap.resolver.AppArtifactResolverException;
+import org.jboss.shamrock.bootstrap.resolver.AppDependencies;
+import org.jboss.shamrock.bootstrap.resolver.AppArtifactResolver;
+import org.jboss.shamrock.bootstrap.resolver.AppDependency;
+import org.jboss.shamrock.bootstrap.resolver.aether.AetherArtifactResolver;
+import org.jboss.shamrock.bootstrap.resolver.workspace.ModelUtils;
 import org.jboss.shamrock.creator.AppCreationPhase;
 import org.jboss.shamrock.creator.AppCreator;
 import org.jboss.shamrock.creator.AppCreatorException;
-import org.jboss.shamrock.creator.AppDependency;
 import org.jboss.shamrock.creator.config.reader.MappedPropertiesHandler;
 import org.jboss.shamrock.creator.config.reader.PropertiesConfigReaderException;
 import org.jboss.shamrock.creator.config.reader.PropertiesHandler;
 import org.jboss.shamrock.creator.outcome.OutcomeProviderRegistration;
-import org.jboss.shamrock.creator.resolver.aether.AetherArtifactResolver;
 
 /**
  *
@@ -142,75 +146,83 @@ public class CuratePhase implements AppCreationPhase<CuratePhase> {
 
         final CurateOutcome.Builder outcome = CurateOutcome.builder();
 
-        final AppArtifact appArtifact = Utils.resolveAppArtifact(appJar);
+        AppArtifact appArtifact;
+        try {
+            appArtifact = ModelUtils.resolveAppArtifact(appJar);
+        } catch (IOException e) {
+            throw new AppCreatorException("Failed to resolve application artifact coordindates from " + appJar, e);
+        }
         outcome.setAppArtifact(appArtifact);
 
         AppArtifactResolver resolver = ctx.getArtifactResolver();
-        if(resolver == null) {
-            final AetherArtifactResolver aetherResolver = AetherArtifactResolver
-                    .getInstance(this.localRepo == null ? ctx.getWorkPath("repo") : this.localRepo);
-            aetherResolver.relink(appArtifact, appJar);
-            final List<RemoteRepository> artifactRepos = aetherResolver.resolveArtifactRepos(appArtifact);
-            if(!artifactRepos.isEmpty()) {
-                aetherResolver.addRemoteRepositories(artifactRepos);
-                final List<Repository> modelRepos = new ArrayList<>(artifactRepos.size());
-                for(RemoteRepository repo : artifactRepos) {
-                    final Repository modelRepo = new Repository();
-                    modelRepo.setId(repo.getId());
-                    modelRepo.setUrl(repo.getUrl());
-                    modelRepo.setLayout(repo.getContentType());
-                    RepositoryPolicy policy = repo.getPolicy(true);
-                    if(policy != null) {
-                        modelRepo.setSnapshots(toMavenRepoPolicy(policy));
+        final AppDependencies initialDepsList;
+        try {
+            if (resolver == null) {
+                final AetherArtifactResolver aetherResolver = AetherArtifactResolver.builder()
+                        .setRepoHome(this.localRepo == null ? ctx.getWorkPath("repo") : this.localRepo)
+                        .build();
+                aetherResolver.relink(appArtifact, appJar);
+                final List<RemoteRepository> artifactRepos = aetherResolver.resolveArtifactRepos(appArtifact);
+                if (!artifactRepos.isEmpty()) {
+                    aetherResolver.addRemoteRepositories(artifactRepos);
+                    final List<Repository> modelRepos = new ArrayList<>(artifactRepos.size());
+                    for (RemoteRepository repo : artifactRepos) {
+                        final Repository modelRepo = new Repository();
+                        modelRepo.setId(repo.getId());
+                        modelRepo.setUrl(repo.getUrl());
+                        modelRepo.setLayout(repo.getContentType());
+                        RepositoryPolicy policy = repo.getPolicy(true);
+                        if (policy != null) {
+                            modelRepo.setSnapshots(toMavenRepoPolicy(policy));
+                        }
+                        policy = repo.getPolicy(false);
+                        if (policy != null) {
+                            modelRepo.setReleases(toMavenRepoPolicy(policy));
+                        }
+                        modelRepos.add(modelRepo);
                     }
-                    policy = repo.getPolicy(false);
-                    if(policy != null) {
-                        modelRepo.setReleases(toMavenRepoPolicy(policy));
-                    }
-                    modelRepos.add(modelRepo);
+                    outcome.setArtifactRepos(modelRepos);
                 }
-                outcome.setArtifactRepos(modelRepos);
+                resolver = aetherResolver;
+            } else {
+                resolver.relink(appArtifact, appJar);
             }
-            resolver = aetherResolver;
-        } else {
-            resolver.relink(appArtifact, appJar);
-        }
-        outcome.setArtifactResolver(resolver);
+            outcome.setArtifactResolver(resolver);
 
-        final List<AppDependency> initialDepsList;
-        if(depsOrigin == DependenciesOrigin.LAST_UPDATE) {
-            log.info("Looking for the state of the last update");
-            Path statePath = null;
-            try {
-                AppArtifact stateArtifact = Utils.getStateArtifact(appArtifact);
-                final String latest = resolver.getLatestVersion(stateArtifact, null, false);
-                if(!stateArtifact.getVersion().equals(latest)) {
-                    stateArtifact = new AppArtifact(stateArtifact.getGroupId(),
-                            stateArtifact.getArtifactId(),
-                            stateArtifact.getClassifier(),
-                            stateArtifact.getType(),
-                            latest);
-                }
-                statePath = resolver.resolve(stateArtifact);
-                outcome.setStateArtifact(stateArtifact);
-                log.info("- located the state at " + statePath);
-            } catch(AppCreatorException e) {
-                // for now let's assume this means artifact does not exist
-                //System.out.println(" no state found");
-            }
-
-            if (statePath != null) {
+            if (depsOrigin == DependenciesOrigin.LAST_UPDATE) {
+                log.info("Looking for the state of the last update");
+                Path statePath = null;
                 try {
-                    final Model model = Utils.readModel(statePath);
+                    AppArtifact stateArtifact = ModelUtils.getStateArtifact(appArtifact);
+                    final String latest = resolver.getLatestVersion(stateArtifact, null, false);
+                    if (!stateArtifact.getVersion().equals(latest)) {
+                        stateArtifact = new AppArtifact(stateArtifact.getGroupId(), stateArtifact.getArtifactId(),
+                                stateArtifact.getClassifier(), stateArtifact.getType(), latest);
+                    }
+                    statePath = resolver.resolve(stateArtifact);
+                    outcome.setStateArtifact(stateArtifact);
+                    log.info("- located the state at " + statePath);
+                } catch (AppArtifactResolverException e) {
+                    // for now let's assume this means artifact does not exist
+                    // System.out.println(" no state found");
+                }
+
+                if (statePath != null) {
+                    Model model;
+                    try {
+                        model = ModelUtils.readModel(statePath);
+                    } catch (IOException e) {
+                        throw new AppCreatorException("Failed to read application state " + statePath, e);
+                    }
                     /*
-                    final Properties props = model.getProperties();
-                    final String appGroupId = props.getProperty(CurateOutcome.CREATOR_APP_GROUP_ID);
-                    final String appArtifactId = props.getProperty(CurateOutcome.CREATOR_APP_ARTIFACT_ID);
-                    final String appClassifier = props.getProperty(CurateOutcome.CREATOR_APP_CLASSIFIER);
-                    final String appType = props.getProperty(CurateOutcome.CREATOR_APP_TYPE);
-                    final String appVersion = props.getProperty(CurateOutcome.CREATOR_APP_VERSION);
-                    final AppArtifact modelAppArtifact = new AppArtifact(appGroupId, appArtifactId, appClassifier, appType, appVersion);
-                    */
+                     * final Properties props = model.getProperties(); final String appGroupId =
+                     * props.getProperty(CurateOutcome.CREATOR_APP_GROUP_ID); final String appArtifactId =
+                     * props.getProperty(CurateOutcome.CREATOR_APP_ARTIFACT_ID); final String appClassifier =
+                     * props.getProperty(CurateOutcome.CREATOR_APP_CLASSIFIER); final String appType =
+                     * props.getProperty(CurateOutcome.CREATOR_APP_TYPE); final String appVersion =
+                     * props.getProperty(CurateOutcome.CREATOR_APP_VERSION); final AppArtifact modelAppArtifact = new
+                     * AppArtifact(appGroupId, appArtifactId, appClassifier, appType, appVersion);
+                     */
                     final List<Dependency> modelStateDeps = model.getDependencies();
                     final List<AppDependency> updatedDeps = new ArrayList<>(modelStateDeps.size());
                     final String groupIdProp = "${" + CurateOutcome.CREATOR_APP_GROUP_ID + "}";
@@ -219,20 +231,19 @@ public class CuratePhase implements AppCreationPhase<CuratePhase> {
                             continue;
                         }
                         updatedDeps.add(new AppDependency(new AppArtifact(modelDep.getGroupId(), modelDep.getArtifactId(),
-                                modelDep.getClassifier(), modelDep.getType(), modelDep.getVersion()), modelDep.getScope()));
+                                modelDep.getClassifier(), modelDep.getType(), modelDep.getVersion()), modelDep.getScope(), modelDep.isOptional()));
                     }
                     initialDepsList = resolver.collectDependencies(appArtifact, updatedDeps);
                     outcome.setLoadedFromState();
-                } catch (IOException e) {
-                    throw new AppCreatorException("Failed to load application state POM " + statePath, e);
+                } else {
+                    initialDepsList = resolver.collectDependencies(appArtifact);
                 }
             } else {
                 initialDepsList = resolver.collectDependencies(appArtifact);
             }
-        } else {
-            initialDepsList = resolver.collectDependencies(appArtifact);
+        } catch (AppArtifactResolverException e) {
+            throw new AppCreatorException("Failed to resolve initial application dependencies", e);
         }
-
         //logDeps("INITIAL:", initialDepsList);
 
         outcome.setInitialDeps(initialDepsList);
@@ -242,7 +253,12 @@ public class CuratePhase implements AppCreationPhase<CuratePhase> {
         }
 
         log.info("Checking for available updates");
-        final List<AppDependency> appDeps = Utils.getUpdateCandidates(Utils.readAppModel(appJar, appArtifact).getDependencies(), initialDepsList, updateGroupIds);
+        List<AppDependency> appDeps;
+        try {
+            appDeps = ModelUtils.getUpdateCandidates(ModelUtils.readAppModel(appJar, appArtifact).getDependencies(), initialDepsList.getBuildClasspath(), updateGroupIds);
+        } catch (IOException | BootstrapDependencyProcessingException e) {
+            throw new AppCreatorException("Failed to determine the list of dependencies to update", e);
+        }
         final UpdateDiscovery ud = new DefaultUpdateDiscovery(resolver, updateNumber);
         List<AppDependency> availableUpdates = null;
         int i = 0;

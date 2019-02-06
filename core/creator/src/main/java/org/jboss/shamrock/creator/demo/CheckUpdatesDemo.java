@@ -19,8 +19,8 @@ package org.jboss.shamrock.creator.demo;
 
 import java.util.Properties;
 
+import org.jboss.shamrock.bootstrap.resolver.AppDependency;
 import org.jboss.shamrock.creator.AppCreator;
-import org.jboss.shamrock.creator.AppDependency;
 import org.jboss.shamrock.creator.phase.curate.CurateOutcome;
 import org.jboss.shamrock.creator.phase.curate.CuratePhase;
 import org.jboss.shamrock.creator.phase.curate.VersionUpdate;

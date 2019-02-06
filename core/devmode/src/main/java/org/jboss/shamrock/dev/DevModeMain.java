@@ -39,7 +39,6 @@ public class DevModeMain {
 
     private static final Logger log = Logger.getLogger(DevModeMain.class);
 
-    private static volatile boolean keepCl = false;
     private static volatile ClassLoader currentAppClassLoader;
     private static volatile URLClassLoader runtimeCl;
     private static File classesRoot;
@@ -109,9 +108,7 @@ public class DevModeMain {
 
     private static synchronized void doStart() {
         try {
-            if (runtimeCl == null || !keepCl) {
-                runtimeCl = new URLClassLoader(new URL[]{classesRoot.toURL()}, ClassLoader.getSystemClassLoader());
-            }
+            runtimeCl = new URLClassLoader(new URL[]{classesRoot.toURL()}, ClassLoader.getSystemClassLoader());
             currentAppClassLoader = runtimeCl;
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             //we can potentially throw away this class loader, and reload the app
@@ -132,10 +129,8 @@ public class DevModeMain {
         }
     }
 
-    public static synchronized void restartApp(boolean keepClassloader) {
-        keepCl = keepClassloader;
+    public static synchronized void restartApp() {
         if (closeable != null) {
-
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             Thread.currentThread().setContextClassLoader(runtimeCl);
             try {

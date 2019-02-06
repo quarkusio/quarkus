@@ -68,6 +68,7 @@ import org.jboss.shamrock.deployment.builditem.ShutdownContextBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveFieldBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveMethodBuildItem;
+import org.jboss.shamrock.deployment.index.IndexingUtil;
 
 public class ArcAnnotationProcessor {
 
@@ -137,11 +138,13 @@ public class ArcAnnotationProcessor {
         Indexer indexer = new Indexer();
         Set<DotName> additionalIndex = new HashSet<>();
         for (String beanClass : additionalBeans) {
-            indexBeanClass(beanClass, indexer, beanArchiveIndex.getIndex(), additionalIndex);
+            IndexingUtil.indexClass(beanClass, indexer, beanArchiveIndex.getIndex(), additionalIndex, 
+                                    ArcAnnotationProcessor.class.getClassLoader());
         }
         Set<DotName> generatedClassNames = new HashSet<>();
         for (GeneratedBeanBuildItem beanClass : generatedBeans) {
-            indexBeanClass(beanClass.getName(), indexer, beanArchiveIndex.getIndex(), additionalIndex, beanClass.getData());
+            IndexingUtil.indexClass(beanClass.getName(), indexer, beanArchiveIndex.getIndex(), additionalIndex, 
+                                    ArcAnnotationProcessor.class.getClassLoader(), beanClass.getData());
             generatedClassNames.add(DotName.createSimple(beanClass.getName()));
         }
 
@@ -255,72 +258,5 @@ public class ArcAnnotationProcessor {
             injectionProvider.produce(new InjectionProviderBuildItem(arcTemplate.setupInjection(container)));
 
         return new BeanContainerBuildItem(beanContainer);
-    }
-
-    private void indexBeanClass(String beanClass, Indexer indexer, IndexView shamrockIndex, Set<DotName> additionalIndex) {
-        DotName beanClassName = DotName.createSimple(beanClass);
-        if (additionalIndex.contains(beanClassName)) {
-            return;
-        }
-        ClassInfo beanInfo = shamrockIndex.getClassByName(beanClassName);
-        if (beanInfo == null) {
-            log.debugf("Index bean class: %s", beanClass);
-            try (InputStream stream = ArcAnnotationProcessor.class.getClassLoader().getResourceAsStream(beanClass.replace('.', '/') + ".class")) {
-                beanInfo = indexer.index(stream);
-                additionalIndex.add(beanInfo.name());
-            } catch (IOException e) {
-                throw new IllegalStateException("Failed to index: " + beanClass);
-            }
-        } else {
-            // The class could be indexed by shamrock - we still need to distinguish framework classes
-            additionalIndex.add(beanClassName);
-        }
-        for (DotName annotationName : beanInfo.annotations().keySet()) {
-            if (!additionalIndex.contains(annotationName) && shamrockIndex.getClassByName(annotationName) == null) {
-                try (InputStream annotationStream = ArcAnnotationProcessor.class.getClassLoader()
-                        .getResourceAsStream(annotationName.toString().replace('.', '/') + ".class")) {
-                    log.debugf("Index annotation: %s", annotationName);
-                    indexer.index(annotationStream);
-                    additionalIndex.add(annotationName);
-                } catch (IOException e) {
-                    throw new IllegalStateException("Failed to index: " + beanClass);
-                }
-            }
-        }
-        if (!beanInfo.superName().equals(DotNames.OBJECT)) {
-            indexBeanClass(beanInfo.superName().toString(), indexer, shamrockIndex, additionalIndex);
-        }
-    }
-
-    private void indexBeanClass(String beanClass, Indexer indexer, IndexView shamrockIndex, Set<DotName> additionalIndex, byte[] beanData) {
-        DotName beanClassName = DotName.createSimple(beanClass);
-        if (additionalIndex.contains(beanClassName)) {
-            return;
-        }
-        ClassInfo beanInfo = shamrockIndex.getClassByName(beanClassName);
-        if (beanInfo == null) {
-            log.debugf("Index bean class: %s", beanClass);
-            try (InputStream stream = new ByteArrayInputStream(beanData)) {
-                beanInfo = indexer.index(stream);
-                additionalIndex.add(beanInfo.name());
-            } catch (IOException e) {
-                throw new IllegalStateException("Failed to index: " + beanClass);
-            }
-        } else {
-            // The class could be indexed by shamrock - we still need to distinguish framework classes
-            additionalIndex.add(beanClassName);
-        }
-        for (DotName annotationName : beanInfo.annotations().keySet()) {
-            if (!additionalIndex.contains(annotationName) && shamrockIndex.getClassByName(annotationName) == null) {
-                try (InputStream annotationStream = ArcAnnotationProcessor.class.getClassLoader()
-                        .getResourceAsStream(annotationName.toString().replace('.', '/') + ".class")) {
-                    log.debugf("Index annotation: %s", annotationName);
-                    indexer.index(annotationStream);
-                    additionalIndex.add(annotationName);
-                } catch (IOException e) {
-                    throw new IllegalStateException("Failed to index: " + beanClass);
-                }
-            }
-        }
     }
 }

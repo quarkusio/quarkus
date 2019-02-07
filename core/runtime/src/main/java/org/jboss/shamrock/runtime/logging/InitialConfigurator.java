@@ -21,7 +21,7 @@ public final class InitialConfigurator implements EmbeddedConfigurator {
     }
 
     public Level getLevelOf(final String loggerName) {
-        return Level.INFO;
+        return loggerName.isEmpty() ? Level.ALL : null;
     }
 
     public Handler[] getHandlersOf(final String loggerName) {

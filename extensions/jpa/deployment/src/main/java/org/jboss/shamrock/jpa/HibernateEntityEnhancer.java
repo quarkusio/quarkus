@@ -16,9 +16,6 @@
 
 package org.jboss.shamrock.jpa;
 
-import java.net.URLClassLoader;
-import java.util.Arrays;
-import java.util.Objects;
 import java.util.function.BiFunction;
 
 import org.hibernate.bytecode.enhance.spi.DefaultEnhancementContext;

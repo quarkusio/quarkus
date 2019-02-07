@@ -77,10 +77,10 @@ final class JpaJandexScavenger {
         this.nonJpaModelClasses = nonJpaModelClasses;
     }
 
-    public KnownDomainObjects discoverModelAndRegisterForReflection() throws IOException {
+    public JpaEntitiesBuildItems discoverModelAndRegisterForReflection() throws IOException {
         // list all entities and create a JPADeploymentTemplate out of it
         // Not functional as we will need one deployment template per persistence unit
-        final DomainObjectSet domainObjectCollector = new DomainObjectSet();
+        final JpaEntitiesBuildItems domainObjectCollector = new JpaEntitiesBuildItems();
         final Set<String> enumTypeCollector = new HashSet<>();
 
         enlistJPAModelClasses(indexView, domainObjectCollector, enumTypeCollector, JPA_ENTITY);
@@ -104,7 +104,7 @@ final class JpaJandexScavenger {
         return domainObjectCollector;
     }
 
-    private static void enlistExplicitClasses(IndexView index, DomainObjectSet domainObjectCollector, Set<String> enumTypeCollector, List<String> managedClassNames) {
+    private static void enlistExplicitClasses(IndexView index, JpaEntitiesBuildItems domainObjectCollector, Set<String> enumTypeCollector, List<String> managedClassNames) {
         for (String className : managedClassNames) {
             DotName dotName = DotName.createSimple(className);
             boolean isInIndex = index.getClassByName(dotName) != null;
@@ -119,7 +119,7 @@ final class JpaJandexScavenger {
         }
     }
 
-    private static void enlistReturnType(IndexView index, DomainObjectSet domainObjectCollector, Set<String> enumTypeCollector) {
+    private static void enlistReturnType(IndexView index, JpaEntitiesBuildItems domainObjectCollector, Set<String> enumTypeCollector) {
         Collection<AnnotationInstance> annotations = index.getAnnotations(EMBEDDED);
         if (annotations != null && annotations.size() > 0) {
             for (AnnotationInstance annotation : annotations) {
@@ -142,7 +142,7 @@ final class JpaJandexScavenger {
         }
     }
 
-    private void enlistJPAModelClasses(IndexView index, DomainObjectSet domainObjectCollector, Set<String> enumTypeCollector, DotName dotName) {
+    private void enlistJPAModelClasses(IndexView index, JpaEntitiesBuildItems domainObjectCollector, Set<String> enumTypeCollector, DotName dotName) {
         Collection<AnnotationInstance> jpaAnnotations = index.getAnnotations(dotName);
         if (jpaAnnotations != null && jpaAnnotations.size() > 0) {
             for (AnnotationInstance annotation : jpaAnnotations) {
@@ -165,7 +165,7 @@ final class JpaJandexScavenger {
      * TODO this approach fails if the Jandex index is not complete (e.g. misses somes interface or super types)
      * TODO should we also return the return types of all methods and fields? It could container Enums for example.
      */
-    private static void addClassHierarchyToReflectiveList(IndexView index, DomainObjectSet domainObjectCollector, Set<String> enumTypeCollector, DotName className) {
+    private static void addClassHierarchyToReflectiveList(IndexView index, JpaEntitiesBuildItems domainObjectCollector, Set<String> enumTypeCollector, DotName className) {
         // If type is not Object
         // recursively add superclass and interfaces
         if (className == null) {
@@ -198,25 +198,4 @@ final class JpaJandexScavenger {
             addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, interfaceDotName);
         }
     }
-
-    private static class DomainObjectSet implements KnownDomainObjects {
-
-        private final Set<String> classNames = new HashSet<String>();
-
-        void addEntity(final String className) {
-            classNames.add(className);
-        }
-
-        void registerAllForReflection(final BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-            for (String className : classNames) {
-                reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
-            }
-        }
-
-        @Override
-        public Set<String> getClassNames() {
-            return classNames;
-        }
-    }
-
 }

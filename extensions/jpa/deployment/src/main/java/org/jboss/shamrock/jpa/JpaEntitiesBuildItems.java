@@ -16,13 +16,32 @@
 
 package org.jboss.shamrock.jpa;
 
+import java.util.HashSet;
 import java.util.Set;
+
+import org.jboss.builder.item.SimpleBuildItem;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 
 /**
  * Internal model to represent which objects are likely needing enhancement
  * via HibernateEntityEnhancer.
  */
-public interface KnownDomainObjects {
+public final class JpaEntitiesBuildItems extends SimpleBuildItem {
 
-    Set<String> getClassNames();
+    private final Set<String> classNames = new HashSet<String>();
+    
+    void addEntity(final String className) {
+        classNames.add(className);
+    }
+
+    void registerAllForReflection(final BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        for (String className : classNames) {
+            reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
+        }
+    }
+
+    public Set<String> getClassNames() {
+        return classNames;
+    }
 }

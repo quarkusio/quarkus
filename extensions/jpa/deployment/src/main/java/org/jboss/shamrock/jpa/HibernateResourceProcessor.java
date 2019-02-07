@@ -165,10 +165,9 @@ public final class HibernateResourceProcessor {
                                                 List<NonJpaModelBuildItem> nonJpaModelBuildItems,
                                                 CombinedIndexBuildItem index,
                                                 ApplicationIndexBuildItem applicationIndex,
-                                                BuildProducer<BytecodeTransformerBuildItem> transformers,
                                                 BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
                                                 BuildProducer<FeatureBuildItem> feature,
-                                                BuildProducer<GeneratedClassBuildItem> additionalClasses) throws Exception {
+                                                BuildProducer<JpaEntitiesBuildItems> domainObjectsProducer) throws Exception {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.JPA));
 
@@ -187,7 +186,7 @@ public final class HibernateResourceProcessor {
                 .map(NonJpaModelBuildItem::getClassName)
                 .collect(Collectors.toSet());
         JpaJandexScavenger scavenger = new JpaJandexScavenger(reflectiveClass, descriptors, compositeIndex, nonJpaModelClasses);
-        final KnownDomainObjects domainObjects = scavenger.discoverModelAndRegisterForReflection();
+        final JpaEntitiesBuildItems domainObjects = scavenger.discoverModelAndRegisterForReflection();
 
         for (String className : domainObjects.getClassNames()) {
             template.addEntity(className);
@@ -195,8 +194,8 @@ public final class HibernateResourceProcessor {
         template.enlistPersistenceUnit();
         template.callHibernateFeatureInit();
 
-        //Modify the bytecode of all entities to enable lazy-loading, dirty checking, etc..
-        enhanceEntities(domainObjects, transformers, additionalJpaModelBuildItems, additionalClasses);
+        // remember how to run the enhancers later
+        domainObjectsProducer.produce(domainObjects);
 
         //set up the scanner, as this scanning has already been done we need to just tell it about the classes we
         //have discovered. This scanner is bytecode serializable and is passed directly into the template
@@ -213,6 +212,17 @@ public final class HibernateResourceProcessor {
         return new BeanContainerListenerBuildItem(template.initMetadata(descriptors, scanner));
     }
 
+    @BuildStep
+    public HibernateEnhancersRegisteredBuildItem enhancerDomainObjects(JpaEntitiesBuildItems domainObjects,
+                                                                       BuildProducer<BytecodeTransformerBuildItem> transformers,
+                                                                       List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
+                                                                       BuildProducer<GeneratedClassBuildItem> additionalClasses) {
+        // Modify the bytecode of all entities to enable lazy-loading, dirty checking, etc..
+        enhanceEntities(domainObjects, transformers, additionalJpaModelBuildItems, additionalClasses);
+        // this allows others to register their enhancers after Hibernate, so they run before ours
+        return new HibernateEnhancersRegisteredBuildItem();
+    }
+    
     @BuildStep
     @Record(STATIC_INIT)
     public void build(JPADeploymentTemplate template,
@@ -333,7 +343,7 @@ public final class HibernateResourceProcessor {
         throw new ConfigurationError(error);
     }
 
-    private void enhanceEntities(final KnownDomainObjects domainObjects, BuildProducer<BytecodeTransformerBuildItem> transformers,
+    private void enhanceEntities(final JpaEntitiesBuildItems domainObjects, BuildProducer<BytecodeTransformerBuildItem> transformers, 
                                  List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems, BuildProducer<GeneratedClassBuildItem> additionalClasses) {
         HibernateEntityEnhancer hibernateEntityEnhancer = new HibernateEntityEnhancer();
         for (String i : domainObjects.getClassNames()) {

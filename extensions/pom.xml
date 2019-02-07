@@ -63,6 +63,7 @@
         <module>jdbc</module>
         <module>jpa</module>
         <module>hibernate-validator</module>
+	<module>panache</module>
 
         <!-- Spring -->
         <module>spring-di</module>

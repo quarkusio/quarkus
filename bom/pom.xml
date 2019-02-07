@@ -181,6 +181,13 @@
 
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-panache-deployment</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+         </dependency>
+
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-websockets-deployment</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>

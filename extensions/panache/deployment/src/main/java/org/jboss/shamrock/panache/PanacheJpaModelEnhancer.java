@@ -31,11 +31,11 @@ public class PanacheJpaModelEnhancer implements BiFunction<String, ClassVisitor,
     public final static String JPA_OPERATIONS_SIGNATURE = "L"+JPA_OPERATIONS_BINARY_NAME+";";
     
     private static final DotName DOTNAME_TRANSIENT = DotName.createSimple(Transient.class.getName());
-    private Map<String, EntityModel> entities = new HashMap<>();
+    final Map<String, EntityModel> entities = new HashMap<>();
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
-        return new ModelEnhancingClassVisitor(className, outputClassVisitor, entities.get(className));
+        return new ModelEnhancingClassVisitor(className, outputClassVisitor, entities);
     }
 
     static class ModelEnhancingClassVisitor extends ClassVisitor {
@@ -44,29 +44,34 @@ public class PanacheJpaModelEnhancer implements BiFunction<String, ClassVisitor,
         private Map<String,EntityField> fields;
         // set of name + "/" + descriptor (only for suspected accessor names)
         private Set<String> methods = new HashSet<>();
+        private Map<String, EntityModel> entities;
 
-        public ModelEnhancingClassVisitor(String className, ClassVisitor outputClassVisitor, EntityModel entityModel) {
+        public ModelEnhancingClassVisitor(String className, ClassVisitor outputClassVisitor, Map<String, EntityModel> entities) {
             super(Opcodes.ASM6, outputClassVisitor);
             thisClass = Type.getType("L"+className.replace('.', '/')+";");
+            this.entities = entities;
+            EntityModel entityModel = entities.get(className);
             fields = entityModel != null ? entityModel.fields : null;
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-            if(name.startsWith("get")
-                    || name.startsWith("set")
-                    || name.startsWith("is"))
-                methods.add(name + "/" + descriptor);
+        public MethodVisitor visitMethod(int access, String methodName, String descriptor, String signature, String[] exceptions) {
+            if(methodName.startsWith("get")
+                    || methodName.startsWith("set")
+                    || methodName.startsWith("is"))
+                methods.add(methodName + "/" + descriptor);
             // FIXME: do not add method if already present 
-            return super.visitMethod(access, name, descriptor, signature, exceptions);
+            MethodVisitor superVisitor = super.visitMethod(access, methodName, descriptor, signature, exceptions);
+            return new PanacheFieldAccessMethodVisitor(superVisitor, thisClass.getInternalName(), methodName, descriptor, entities);
         }
 
         @Override
         public void visitEnd() {
-            MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC,
-                    "findById",
-                    "(Ljava/lang/Object;)"+ENTITY_BASE_SIGNATURE+"",
-                    "<T:"+ENTITY_BASE_SIGNATURE+">(Ljava/lang/Object;)TT;",
+            // FIXME: generate default constructor
+            MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC, 
+                    "findById", 
+                    "(Ljava/lang/Object;)"+ENTITY_BASE_SIGNATURE+"", 
+                    "<T:"+ENTITY_BASE_SIGNATURE+">(Ljava/lang/Object;)TT;", 
                     null);
             mv.visitParameter("id", 0);
             mv.visitCode();
@@ -256,8 +261,7 @@ public class PanacheJpaModelEnhancer implements BiFunction<String, ClassVisitor,
             String name = fieldInfo.name();
             if(Modifier.isPublic(fieldInfo.flags())
                     && !Modifier.isTransient(fieldInfo.flags())
-                    && !fieldInfo.hasAnnotation(DOTNAME_TRANSIENT)
-                    && !name.startsWith("$$_hibernate_")) {
+                    && !fieldInfo.hasAnnotation(DOTNAME_TRANSIENT)) {
                 fields.put(name, new EntityField(name, DescriptorUtils.typeToString(fieldInfo.type())));
             }
         }

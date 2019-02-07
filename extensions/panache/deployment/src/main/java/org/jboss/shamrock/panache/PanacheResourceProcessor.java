@@ -36,12 +36,12 @@ import org.jboss.protean.gizmo.ClassOutput;
 import org.jboss.shamrock.arc.deployment.UnremovableBeanBuildItem;
 import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.annotations.BuildStep;
+import org.jboss.shamrock.deployment.builditem.ApplicationIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.BytecodeTransformerBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import org.jboss.shamrock.jpa.AdditionalJpaModelBuildItem;
-import org.jboss.shamrock.jpa.NonJpaModelBuildItem;
+import org.jboss.shamrock.jpa.HibernateEnhancersRegisteredBuildItem;
 
 /**
  */
@@ -84,10 +84,9 @@ public final class PanacheResourceProcessor {
 
     @BuildStep
     void build(CombinedIndexBuildItem index,
+               ApplicationIndexBuildItem applicationIndex,
                BuildProducer<BytecodeTransformerBuildItem> transformers,
-               BuildProducer<GeneratedClassBuildItem> generatedClasses,
-               BuildProducer<SubstrateResourceBuildItem> resources,
-               BuildProducer<NonJpaModelBuildItem> nonJpaModelBuildItems) throws Exception {
+               HibernateEnhancersRegisteredBuildItem hibernateMarker) throws Exception {
 
         PanacheJpaDaoEnhancer daoEnhancer = new PanacheJpaDaoEnhancer();
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_DAO_BASE)) {
@@ -110,6 +109,14 @@ public final class PanacheResourceProcessor {
         }
         for (String modelClass : modelClasses) {
             transformers.produce(new BytecodeTransformerBuildItem(modelClass, modelEnhancer));
+        }
+        
+        PanacheFieldAccessEnhancer panacheFieldAccessEnhancer = new PanacheFieldAccessEnhancer(modelEnhancer.entities);
+        for (ClassInfo classInfo : applicationIndex.getIndex().getKnownClasses()) {
+            String className = classInfo.name().toString();
+            if(!modelClasses.contains(className)) {
+                transformers.produce(new BytecodeTransformerBuildItem(className, panacheFieldAccessEnhancer));
+            }
         }
     }
 

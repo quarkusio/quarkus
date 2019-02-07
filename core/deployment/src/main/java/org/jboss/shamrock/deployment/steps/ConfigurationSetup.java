@@ -3,6 +3,8 @@ package org.jboss.shamrock.deployment.steps;
 import static org.jboss.shamrock.deployment.util.ReflectUtil.toError;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -29,6 +31,7 @@ import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
 import org.jboss.shamrock.deployment.AccessorFinder;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
 import org.jboss.shamrock.deployment.builditem.ConfigurationBuildItem;
@@ -42,11 +45,15 @@ import org.jboss.shamrock.deployment.configuration.LeafConfigType;
 import org.jboss.shamrock.deployment.recording.ObjectLoader;
 import org.jboss.shamrock.deployment.util.ServiceUtil;
 import org.jboss.shamrock.runtime.annotations.ConfigPhase;
+import org.jboss.shamrock.runtime.configuration.CidrAddressConverter;
 import org.jboss.shamrock.runtime.configuration.ConverterFactory;
 import org.jboss.shamrock.runtime.configuration.ExpandingConfigSource;
+import org.jboss.shamrock.runtime.configuration.InetAddressConverter;
+import org.jboss.shamrock.runtime.configuration.InetSocketAddressConverter;
 import org.jboss.shamrock.runtime.configuration.NameIterator;
 import org.jboss.shamrock.runtime.configuration.SimpleConfigurationProviderResolver;
 import org.objectweb.asm.Opcodes;
+import org.wildfly.common.net.CidrAddress;
 
 /**
  * Setup steps for configuration purposes.
@@ -80,6 +87,25 @@ public class ConfigurationSetup {
     private static final FieldDescriptor ECS_WRAPPER = FieldDescriptor.of(ExpandingConfigSource.class, "WRAPPER", UnaryOperator.class);
 
     public ConfigurationSetup() {}
+
+    @BuildStep
+    public void setUpConverters(BuildProducer<ConfigurationCustomConverterBuildItem> configurationTypes) {
+        configurationTypes.produce(new ConfigurationCustomConverterBuildItem(
+            200,
+            InetSocketAddress.class,
+            InetSocketAddressConverter.class
+        ));
+        configurationTypes.produce(new ConfigurationCustomConverterBuildItem(
+            200,
+            CidrAddress.class,
+            CidrAddressConverter.class
+        ));
+        configurationTypes.produce(new ConfigurationCustomConverterBuildItem(
+            200,
+            InetAddress.class,
+            InetAddressConverter.class
+        ));
+    }
 
     /**
      * Run before anything that consumes configuration; sets up the main configuration definition instance.

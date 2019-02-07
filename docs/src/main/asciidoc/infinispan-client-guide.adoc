@@ -1,0 +1,367 @@
+= {project-name} - Infinispan Client
+
+Infinispan is an in memory data grid that allows running in a server outside of application processes. This extension
+provides functionality to allow the client that can connect to said server when running in {project-name}.
+
+More information can be found about Infinispan at http://www.infinispan.org and the client/server at
+http://infinispan.org/docs/dev/user_guide/user_guide.html#client_server
+
+== Configuration
+
+Once you have your {project-name} project configured you can add the `infinispan-client` extension
+to your project by running the following from the command line in your project base directory.
+
+[source]
+mvn shamrock:add-extension -Dextensions="infinispan-client"
+
+This will add the following to your pom.xml
+
+[source,xml]
+----
+    <dependency>
+        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>shamrock-infinispan-client-deployment</artifactId>
+    </dependency>
+----
+
+The Infinispan client is configurable via a Java properties file named `hotrod-client.properties`.
+This file will be automatically picked up during the static initialization time from the `META-INF`
+directory and parsed as it would normally.
+
+You can also define some properties in the `microprofile-config.properties` file that can be
+provided in the `META-INF` directory. Note that if both this and the `hotrod-client.properties`
+file are found the microprofile configuration takes precedence. These are the properties that
+can be configured in this file:
+
+[cols=3*,options="header"]
+|===
+| Property
+| Default Value
+| Description
+
+| `shamrock.infinispan-client.server-list`
+| <empty>
+| Defines the list of servers to connect to upon startup (same as server_list in hotrod properties file)
+
+|===
+
+== Marshalling (Key Value types support)
+
+By default the client will only support keys and values of the type byte[]. This can be configured
+through the `hotrod-client.properties` file mentioned above through the `infinispan.client.hotrod.marshaller`
+property. You can either supply your own marshaller implementation or use the `ProtoStreamMarshaller` as described
+in the user guide linked above.
+
+The recommended approach is to use `ProtoStreamMarshaller` as this provides support for String,
+boxed primitives (Long, Integer etc.) and byte[] types with no additional work. Also using this
+marshaller allows for indexed and non indexed querying, which can be useful.
+
+=== ProtoStream Marshaller
+
+Infinispan provides an optional module that can be used to provide protostream, a protobuf based, marshaller
+for clients. To enable proto stream marshaller you must add the `infinispan-remote-query-client` module
+to your project manually. This can be done as shown here:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.infinispan</groupId>
+    <artifactId>infinispan-remote-query-client</artifactId>
+    <exclusions>
+        <exclusion>
+            <groupId>org.jboss.logging</groupId>
+            <artifactId>jboss-logging</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+----
+
+Note that you must exclude `jboss-logging` as this module is currently not supported with {project-name}.
+
+Then you must configure the marshaller in your `hotrod-client.properties` file.
+
+[source]
+infinispan.client.hotrod.marshaller=org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller
+
+Doing this allows you to use byte[], primitive wrappers (eg. Integer, Long, Double etc.),
+String, Date and Instant class instances in your cache immediately.
+
+==== User Types
+
+Once the `ProtoStreamMarshaller` is configured we can now start adding in our own custom user types
+for serialization. This requires two steps: defining proto buf schema for the type(s) and a marshaller(s).
+
+Protobuf schema:: You can supply a protobuf schema through either one of two ways.
+  . Proto File
+  +
+  You can put the `.proto` file in the `META-INF` directory of the project. These files will
+automatically be picked up at initialization time.
++
+.library.proto
+----
+package book_sample;
+
+message Book {
+  required string title = 1;
+  required string description = 2;
+  required int32 publicationYear = 3; // no native Date type available in Protobuf
+
+  repeated Author authors = 4;
+}
+
+message Author {
+  required string name = 1;
+  required string surname = 2;
+}
+----
+  . In Code
+  +
+  Or you can define the proto schema directly in user code by defining a produced bean of type
+`org.infinispan.protostream.FileDescriptorSource`.
++
+[source,java]
+----
+   @Produces
+   FileDescriptorSource bookProtoDefinition() {
+      return FileDescriptorSource.fromString("library.proto", "package book_sample;\n" +
+            "\n" +
+            "message Book {\n" +
+            "  required string title = 1;\n" +
+            "  required string description = 2;\n" +
+            "  required int32 publicationYear = 3; // no native Date type available in Protobuf\n" +
+            "\n" +
+            "  repeated Author authors = 4;\n" +
+            "}\n" +
+            "\n" +
+            "message Author {\n" +
+            "  required string name = 1;\n" +
+            "  required string surname = 2;\n" +
+            "}");
+   }
+----
+User Marshaller::
+The last thing to do is to provide a `org.infinispan.protostream.MessageMarshaller` implementation
+for each user class defined in the proto schema. This class is then provided via `@Produces` in a similar
+fashion to the code based proto schema definition above.
++
+Here is the Marshaller class for our Author class.
++
+NOTE: The type name must match the `<protobuf package>.<protobuf message>` exactly!
++
+.AuthorMarshaller.java
+----
+public class AuthorMarshaller implements MessageMarshaller<Author> {
+
+   @Override
+   public String getTypeName() {
+      return "book_sample.Author";
+   }
+
+   @Override
+   public Class<? extends Author> getJavaClass() {
+      return Author.class;
+   }
+
+   @Override
+   public void writeTo(ProtoStreamWriter writer, Author author) throws IOException {
+      writer.writeString("name", author.getName());
+      writer.writeString("surname", author.getSurname());
+   }
+
+   @Override
+   public Author readFrom(ProtoStreamReader reader) throws IOException {
+      String name = reader.readString("name");
+      String surname = reader.readString("surname");
+      return new Author(name, surname);
+   }
+}
+----
++
+And you pass the marshaller by defining the following:
++
+[source,java]
+----
+   @Produces
+   MessageMarshaller authorMarshaller() {
+      return new AuthorMarshaller();
+   }
+----
+
+NOTE: Annotation based proto stream marshalling is not yet supported in
+the {project-name} infinispan client.
+
+=== Providing your own Marshaller
+
+You can implement the `org.infinispan.commons.marshaller.Marshaller` interface. This will allow you
+to put keys and values of the types it supports directly with the client. All that is required is to have your
+class available in classpath and configure the property value to be the fully qualified class name. This
+method does not require any optional dependencies.
+
+It is recommended to extend from the `org.infinispan.commons.marshall.AbstractMarshaller` class to reduce
+the lines of the class. Here is an example of a Marshaller implementation for String instances.
+
+With that class in your project/classpath, all you need to do is add the following to your
+hotrod-client.properties as mentioned above.
+
+[source]
+infinispan.client.hotrod.marshaller=com.example.MyMarshaller
+
+Note that the Marshaller implementation must have a no arg constructor or static factory method named
+`getInstance`.
+
+== Dependency Injection
+
+As you saw above we support the user injecting Marshaller configuration. You can do the inverse with
+the infinispan client extension providing injection for `RemoteCacheManager` and `RemoteCache` objects.
+There is one global `RemoteCacheManager` that takes all of the configuration
+parameters setup in the above sections.
+
+It is very simple to inject these components. All you need to do is to add the Inject annotation to
+the field, constructor or method. In the below code we utilize field and constructor injection.
+
+.SomeClass.java
+----
+    @Inject SomeClass(RemoteCacheManager remoteCacheManager) {
+       this.remoteCacheManager = remoteCacheManager;
+    }
+
+    @Inject @Remote("myCache")
+    RemoteCache<String, Book> cache;
+
+    RemoteCacheManager remoteCacheManager;
+----
+
+If you notice the `RemoteCache` declaration has an additional optional annotation named `Remote`.
+This is a qualifier annotation allowing you to specify which named cache that will be injected. This
+annotation is not required and if it is not supplied, the default cache will be injected.
+
+NOTE: Other types may be supported for injection, please see other sections for more information
+
+== Querying
+
+The Infinispan client supports both indexed and non indexed querying as long as the 
+`ProtoStreamMarshaller` is configured above. This allows the user to query based on the
+properties of the proto schema.
+
+Query builds upon the proto definitions you can configure when setting up the `ProtoStreamMarshaller`.
+Make sure to configure this marshaller before attempting querying. Once this is completed
+you must add another optional depdency: `infinispan-query-dsl` to start using queries.
+
+You can do this by adding the following dependency to your project.
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.infinispan</groupId>
+    <artifactId>infinispan-query-dsl</artifactId>
+</dependency>
+----
+
+With this added you can use Infinispan querying just as you would normally, nothing special required.
+You can read more about this at http://infinispan.org/docs/dev/user_guide/user_guide.html#query_dsl.
+
+You can use either the Query DSL or the Ickle Query language with the {project-name} infinispan client
+extension.
+
+== Counters
+
+Infinispan also has a notion of counters and the {project-name} infinispan client supports them out of
+the box.
+
+The {project-name} infinispan client extension allows for Dependency Injection
+of the `CounterManager` directly. All you need to do is annotate your field, constructor or method
+and you get it with no fuss. You can then use counters as you would normally.
+
+[source,java]
+----
+@Inject
+CounterManager counterManager;
+----
+
+== Near Caching
+
+Near caching requires no changes other than the normal settings in the hotrod-client.properties file.
+
+== Encryption
+
+Encryption at this point requires additional steps to get working.
+
+The first step is to configure the `hotrod-client.properties` file to point to your truststore
+and/or keystore. This is further detailed at
+http://infinispan.org/docs/dev/user_guide/user_guide.html#hr_encryption.
+
+The reason that {project-name} is different is that SubstrateVM does not come with security
+services enabled. This is mentioned at
+https://github.com/oracle/graal/blob/master/substratevm/JCA-SECURITY-SERVICES.md. To
+do this you will need to set the `<enableAllSecurityServices>true</enableAllSecurityServices>` value
+in the `shamrock-maven-plugin` configuration values.
+
+An example is as shown here, with a comment highlighting them:
+
+[source,xml]
+----
+<plugin>
+   <groupId>${project.groupId}</groupId>
+   <artifactId>shamrock-maven-plugin</artifactId>
+   <executions>
+       <execution>
+           <id>native-image</id>
+           <goals>
+               <goal>native-image</goal>
+           </goals>
+           <configuration>
+               <enableHttpUrlHandler>true</enableHttpUrlHandler>
+               <!-- next two are to enable security - If not needed it is recommended not to enable these-->
+               <enableJni>true</enableJni>
+               <enableAllSecurityServices>true</enableAllSecurityServices>
+           </configuration>
+       </execution>
+   </executions>
+</plugin>
+----
+
+If you notice the example XML above also enabled JNI. This is currently needed depending on the
+configured security provider. If JNI is required then you must locate the shared library used. In
+testing it was utilizing the `sunec` library. This shared library
+should be at `<JAVA_HOME>/jre/lib/<platform>/libsunec.so` and must be added to `java.library.path`
+for encryption to work properly.
+
+== Authentication
+
+This chart illustrates what mechanisms have been verified to be working properly with
+the {project-name} Infinispan Client extension.
+
+.Mechanisms
+|===
+| Name | Verified | Notes
+
+| DIGEST-MD5
+| [green]*Y*
+|
+
+| PLAIN
+| [green]*Y*
+|
+
+| EXTERNAL
+| [green]*Y*
+| Requires steps from Encryption section above
+
+| GSSAPI
+| [red]*N*
+| Not tested
+
+| Custom
+| [red]*N*
+| Not tested
+
+|===
+
+The guide for configuring these can be found at http://infinispan.org/docs/dev/user_guide/user_guide.html#authentication.
+However you need to configure these through the `hotrod-client.properties` file if using Dependency Injection.
+
+== Additional Features
+
+The Infinispan Client has additional features that were not mentioned here. This means this
+feature was not tested in a {project-name} environment and they may or may not work. Please let us
+know if you need these added!

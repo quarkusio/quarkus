@@ -52,6 +52,15 @@
     "artifactId": "shamrock-health-deployment"
   },
   {
+    "name": "Infinispan Client",
+    "labels": [
+      "infinispan-client",
+      "data-grid-client"
+    ],
+    "groupId": "org.jboss.shamrock",
+    "artifactId": "shamrock-infinispan-client-deployment"
+  },
+  {
     "name": "JAX-RS",
     "labels": [
       "jaxrs",

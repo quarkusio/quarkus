@@ -393,6 +393,16 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-resteasy-common-deployment</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-resteasy-common-runtime</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-integration-test-shared-library</artifactId>
             <version>${project.version}</version>
          </dependency>

@@ -46,6 +46,7 @@
         <module>jaeger</module>
 
         <!-- REST services -->
+        <module>resteasy-common</module>
         <module>jaxrs</module>
         <module>jaxrs-json</module>
         <module>rest-client</module>

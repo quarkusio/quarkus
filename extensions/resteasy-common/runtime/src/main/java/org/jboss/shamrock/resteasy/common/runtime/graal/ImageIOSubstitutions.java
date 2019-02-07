@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.jaxrs.runtime.graal;
+package org.jboss.shamrock.resteasy.common.runtime.graal;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;

@@ -1,12 +1,8 @@
 package org.jboss.shamrock.smallrye.openapi;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Enumeration;
 import java.util.List;
 
 import org.eclipse.microprofile.openapi.models.parameters.Parameter.In;
@@ -18,6 +14,7 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
+import org.jboss.shamrock.deployment.util.ServiceUtil;
 import org.jboss.shamrock.jaxrs.JaxrsConfig;
 
 import io.smallrye.openapi.api.OpenApiConstants;
@@ -52,15 +49,9 @@ public class RESTEasyExtension extends DefaultAnnotationScannerExtension {
         try {
             Class<?> asyncResponseProvider = Class.forName("org.jboss.resteasy.spi.AsyncResponseProvider");
             // can't use the ServiceLoader API because Providers is not an interface
-            Enumeration<URL> resources = getClass().getClassLoader().getResources("META-INF/services/javax.ws.rs.ext.Providers");
-            while(resources.hasMoreElements()) {
-                URL resource = resources.nextElement();
-                try(BufferedReader r = new BufferedReader(new InputStreamReader(resource.openStream()))){
-                    String line;
-                    while((line = r.readLine()) != null) {
-                        scanAsyncResponseProvidersFromClassName(asyncResponseProvider, line.trim());
-                    }
-                }
+            for (String provider : ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
+                    "META-INF/services/javax.ws.rs.ext.Providers")) {
+                scanAsyncResponseProvidersFromClassName(asyncResponseProvider, provider);
             }
         } catch (IOException e) {
             // failed to index, never mind

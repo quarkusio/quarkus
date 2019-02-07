@@ -5,28 +5,9 @@
              version="2.1">
 
     <persistence-unit name="templatePU" transaction-type="JTA">
-        <!--
-        <shared-cache-mode>ENABLE_SELECTIVE</shared-cache-mode>
-        TODO does not work ^
-        -->
         <properties>
             <property name="hibernate.dialect" value="org.hibernate.dialect.H2Dialect"/>
             <property name="javax.persistence.schema-generation.database.action" value="drop-and-create"/>
-
-            <!-- These are the new defaults when running in Protean:
-            <property name="hibernate.cache.use_second_level_cache" value="true"/>
-            <property name="hibernate.cache.use_query_cache" value="true"/>
-            <property name="javax.persistence.sharedCache.mode" value="ENABLE_SELECTIVE"/>
-            -->
-
-            <!-- Limit size of region -->
-            <property name="hibernate.cache.org.jboss.shamrock.example.infinispancachejpa.Item.memory.size" value="3"/>
-
-            <!-- Limit max idle (seconds) of region -->
-            <property name="hibernate.cache.org.jboss.shamrock.example.infinispancachejpa.Country.expiration.max_idle" value="60"/>
-
-            <!-- Testing only: use manual time service -->
-            <property name="test.hibernate.cache.time_service" value="manual"/>
 
             <!-- Generate statistics to see effects of second level cache -->
             <property name="hibernate.generate_statistics" value="true" />

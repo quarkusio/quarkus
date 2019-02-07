@@ -33,6 +33,10 @@
         <version.hibernate>5.4.1.Final</version.hibernate>
         <version.jboss-logging>3.3.2.Final</version.jboss-logging>
 
+        <!-- Test dependency versions -->
+        <junit4.version>4.12</junit4.version>
+        <mockito-core.version>2.22.0</mockito-core.version>
+
         <!-- Build settings -->
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -75,6 +79,25 @@
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
             <version>${version.caffeine}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit4.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito-core.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>net.bytebuddy</groupId>
+                    <artifactId>byte-buddy-agent</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 

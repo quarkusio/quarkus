@@ -223,7 +223,7 @@ public class Utils {
         }
     }
 
-    static void persistModel(Path pomFile, Model model) throws AppCreatorException {
+    public static void persistModel(Path pomFile, Model model) throws AppCreatorException {
         final MavenXpp3Writer xpp3Writer = new MavenXpp3Writer();
         try (BufferedWriter pomFileWriter = Files.newBufferedWriter(pomFile)) {
             xpp3Writer.write(pomFileWriter, model);

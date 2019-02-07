@@ -210,6 +210,22 @@ public class TestEndpoint {
             Assertions.fail("transient field should have no setter: trans2");
         }catch(NoSuchMethodException x) {}
 
+        // Now check that accessors are called
+        AccessorEntity entity = new AccessorEntity();
+        byte b = entity.b;
+        Assertions.assertEquals(1, entity.getBCalls);
+        entity.i = 2;
+        Assertions.assertEquals(1, entity.setICalls);
+        Object trans = entity.trans1b;
+        Assertions.assertEquals(0, entity.getTrans1bCalls);
+        entity.trans1b = trans;
+        Assertions.assertEquals(0, entity.setTrans2bCalls);
+        
+        // accessors inside the entity itself
+        entity.method();
+        Assertions.assertEquals(2, entity.getBCalls);
+        Assertions.assertEquals(2, entity.setICalls);
+        
         return "OK";
     }
 

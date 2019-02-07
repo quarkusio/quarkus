@@ -73,7 +73,7 @@ final class JDKSpecific {
                         return;
                     }
                 }
-                if (j == classes.length) {
+                if (j == stackTrace.length) {
                     logRecord.setUnknownCaller();
                     return;
                 }

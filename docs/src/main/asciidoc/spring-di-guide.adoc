@@ -1,0 +1,254 @@
+= {project-name} - Using our Spring Dependency Injection annotations compatibility layer
+
+While you are encouraged to use CDI annotations for injection, {project-name} provides a compatibility layer for Spring dependency injection in the form of the `spring-di` extension.
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* an IDE
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven 3.5.3+
+
+Remember, you need to configure Maven as indicated in the link:maven-config.html[Maven configuration page].
+
+
+== Solution
+
+We recommend you to follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone https://github.com/jbossas/protean-quickstarts.git`, or download an https://github.com/jbossas/protean-quickstarts/archive/master.zip[archive].
+
+The solution is located in the `using-spring-di` directory.
+
+== Creating the Maven project
+
+First, we need a new project. Create a new project with the following command:
+
+[source, subs=attributes+]
+----
+mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=using-spring-di \
+    -DclassName="org.acme.spring.di.GreeterResource" \
+    -Dpath="/greeting" \
+    -Dextensions="spring-di"
+----
+
+This command generates the Maven project with a REST endpoint and imports the `spring-di` extension.
+
+=== Examine the pom.xml file
+
+In the `pom.xml` file we see that the `shamrock-spring-di-deployment` dependency has been added.
+We also need to add a dependency on the `spring-context` artifact, which we can do by adding:
+
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-context</artifactId>
+    <version>${spring.version}</version>
+</dependency>
+----
+
+where `spring.version` can be any version higher than `3.2.0.RELEASE`.
+
+
+== Add beans using Spring annotations
+
+Let's proceed to create some beans using various Spring annotations.
+
+First we will create a `StringFunction` interface that some of our beans will implement and that will be injected into another bean later on.
+Create a `src/main/java/org/acme/spring/di/StringFunction.java` file and set the following content:
+
+[source,java]
+----
+package org.acme.spring.di;
+
+import java.util.function.Function;
+
+public interface StringFunction extends Function<String, String> {
+
+}
+----
+
+With the interface in place, we will add an `AppConfiguration` class which will use the Spring's Java Config style of defining a bean. It will be used to create a `StringFunction` bean that will capitalize the text passed as parameter.
+Create a `src/main/java/org/acme/spring/di/AppConfiguration.java` file with the following content:
+
+[source,java]
+----
+package org.acme.spring.di;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class AppConfiguration {
+
+    @Bean(name = "capitalizeFunction")
+    public StringFunction capitalizer() {
+        return String::toUpperCase;
+    }
+}
+----
+
+Now we define another bean that will implement `StringFunction` using Spring's stereotype annotation style. This bean will effectively be a no-op bean that simply returns the input it is passed.
+Create a `src/main/java/org/acme/spring/di/NoOpSingleStringFunction.java` file and set the following content:
+
+[source,java]
+----
+package org.acme.spring.di;
+
+import org.springframework.stereotype.Component;
+
+@Component("noopFunction")
+public class NoOpSingleStringFunction implements StringFunction {
+
+    @Override
+    public String apply(String s) {
+        return s;
+    }
+}
+----
+
+{project-name} also provides support for injecting configuration values using Spring's `@Value` annotation.
+To see that in action, first edit the `src/main/resources/META-INF/microprofile-config.properties` with the following content:
+
+[source]
+----
+# Your configuration properties
+greeting.message = hello
+----
+
+Next create a new Spring bean in `src/main/java/org/acme/spring/di/MessageProducer.java` with the following content:
+
+
+[source,java]
+----
+package org.acme.spring.di;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+@Service
+public class MessageProducer {
+
+    @Value("${greeting.message}")
+    private String message;
+
+    public String getPrefix() {
+        return message;
+    }
+}
+----
+
+The final bean we will create ties together all the previous beans.
+Create a `src/main/java/org/acme/spring/di/GreeterBean.java` file and set the following content:
+
+[source,java]
+----
+package org.acme.spring.di;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+@Component
+public class GreeterBean {
+
+    private final MessageProducer messageProducer;
+
+    @Autowired
+    @Qualifier("noopFunction")
+    private StringFunction noopStringFunction;
+
+    @Autowired
+    @Qualifier("capitalizeFunction")
+    private StringFunction capitalizerStringFunction;
+
+    @Value("${greeting.suffix:!}")
+    private String suffix;
+
+    public GreeterBean(MessageProducer messageProducer) {
+        this.messageProducer = messageProducer;
+    }
+
+    public String greet(String name) {
+        final String initialValue = messageProducer.getPrefix() + " " + name + suffix;
+        return noopStringFunction.andThen(capitalizerStringFunction).apply(initialValue);
+    }
+}
+----
+
+In the code above, we see that both field injection and constructor injection is being used (note that constructor injection does not need the `@Autowired` annotation since there is a single constructor).
+Furthermore, the `@Value` annotation has also defined a default value, which in this case will be used since we have not defined `greeting.suffix` in `microprofile-config.properties`.
+
+
+=== Update the JAX-RS resource
+
+Open the `src/main/java/org/acme/spring/di/GreeterResource.java` file and update it with the following content:
+
+[source,java]
+----
+package org.acme.spring.di;
+
+import org.springframework.beans.factory.annotation.Autowired;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("/greeting")
+public class GreeterResource {
+
+    @Autowired
+    private GreeterBean greeterBean;
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String hello() {
+        return greeterBean.greet("world");
+    }
+}
+----
+
+== Update the test
+
+We also need to update the functional test to reflect the changes made to the endpoint.
+Edit the `src/test/java/org/acme/spring/di/GreetingResourceTest.java` file and change the content of the `testHelloEndpoint` method to:
+
+
+[source, java]
+----
+import org.jboss.shamrock.test.junit.ShamrockTest;
+import org.junit.jupiter.api.Test;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.is;
+
+@ShamrockTest
+public class GreetingResourceTest {
+
+    @Test
+    public void testHelloEndpoint() {
+        given()
+            .when().get("/greeting")
+            .then()
+                .statusCode(200)
+                .body(is("HELLO WORLD!"));
+    }
+
+}
+----
+
+== Package and run the application
+
+Run the application with: `mvn compile shamrock:dev`.
+Open your browser to http://localhost:8080/greeting.
+
+The result should be: `HELLO WORLD`

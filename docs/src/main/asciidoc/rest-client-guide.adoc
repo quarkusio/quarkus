@@ -1,0 +1,263 @@
+= {project-name} - Using the REST Client
+
+This guide explains how to use the MicroProfile REST Client in order to interact with REST APIs
+with very little effort.
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* between 10 and 15 minutes
+* an IDE
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven 3.5.3+
+
+Remember, you need to configure Maven as indicated in the link:maven-config.html[Maven configuration page].
+
+== Solution
+
+We recommend you to follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone https://github.com/jbossas/protean-quickstarts.git`, or download an https://github.com/jbossas/protean-quickstarts/archive/master.zip[archive].
+
+The solution is located in the `rest-client` directory.
+
+== Creating the Maven project
+
+First, we need a new project. Create a new project with the following command:
+
+[source, subs=attributes+]
+----
+mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=rest-client \
+    -DclassName="org.acme.restclient.CountriesResource" \
+    -Dpath="/country" \
+    -Dextensions="rest-client, jaxrs-json"
+----
+
+This command generates the Maven project with a REST endpoint and imports the `rest-client` and `jaxrs-json` extensions.
+
+
+== Setting up the model
+
+In this guide we will be demonstrating how to consume part of the REST API supplied by the link:https://restcountries.eu[restcountries.eu] service.
+Our first order of business is to setup the part of the model we will be using, which is that of a `Country`.
+
+Create a `src/main/java/org/acme/restclient/Country.java` file and set the following content:
+
+[source,java]
+----
+package org.acme.restclient;
+
+import java.util.List;
+
+public class Country {
+
+    private String name;
+    private String alpha2Code;
+    private String capital;
+    private List<Currency> currencies;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getAlpha2Code() {
+        return alpha2Code;
+    }
+
+    public void setAlpha2Code(String alpha2Code) {
+        this.alpha2Code = alpha2Code;
+    }
+
+    public String getCapital() {
+        return capital;
+    }
+
+    public void setCapital(String capital) {
+        this.capital = capital;
+    }
+
+    public List<Currency> getCurrencies() {
+        return currencies;
+    }
+
+    public void setCurrencies(List<Currency> currencies) {
+        this.currencies = currencies;
+    }
+
+    public static class Currency {
+        private String code;
+        private String name;
+        private String symbol;
+
+        public String getCode() {
+            return code;
+        }
+
+        public void setCode(String code) {
+            this.code = code;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getSymbol() {
+            return symbol;
+        }
+
+        public void setSymbol(String symbol) {
+            this.symbol = symbol;
+        }
+    }
+
+}
+----
+
+The model above in only a subset of the fields provided by the service, but it suffices for the purposes of this guide.
+
+== Create the interface
+
+Using the MicroProfile REST Client is as simple as creating an interface using the proper JAX-RS and MicroProfile annotations. In our case the interface should be created at `src/main/java/org/acme/restclient/CountriesService.java` and have the following content:
+
+[source, java]
+----
+package org.acme.restclient;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import java.util.Set;
+
+@Path("/v2")
+@RegisterRestClient
+public interface CountriesService {
+
+    @GET
+    @Path("/name/{name}")
+    @Produces("application/json")
+    Set<Country> getByName(@PathParam("name") String name);
+}
+----
+
+The `getByName` method gives our code the ability to query a country from the REST Countries API by name. The client with handle all the networking and marshalling leaving our code clean of such technical details.
+
+The purpose of the annotations in the code above is the following:
+
+. `@RegisterRestClient` allows {project-name} to know that this interface is meant to be used as a REST Client
+. `@Path("/v2")` means that the sub-path constructed for each method within the interface will be prefixed with `/v2`
+. `@GET` indicates that an invocation of `getByName` method will create an HTTP GET request
+. `@Path("/name/{name}")` indicates that the sub-path created for the request will be `/name` followed by the value of the argument of the `getByName` method
+. `@PathParam("name")` is necessary in order to indicate that the value of the parameter will be used to substitute the path in the aforementioned `@Path` annotation
+. `@Produces("application/json")` is added to instruct the client to unmarshall the json response which we know the remote service returns
+
+== Create the configuration
+
+In order to determine the base URL to which REST calls will be made, the REST Client uses configuration from `META-INF/microprofile-config.properties`.
+The name of the property needs to follow a certain convention which is best displayed in the following code:
+
+[source]
+----
+# Your configuration properties
+org.acme.restclient.CountriesService/mp-rest/url=https://restcountries.eu/rest
+----
+
+Having this configuration means that all requests performed using `org.acme.restclient.CountriesService` will use `https://restcountries.eu/rest` as the base URL.
+
+Note that `org.acme.restclient.CountriesService` _must_ match the fully qualified name of the `CountriesService` interface we created in the previous section.
+
+Using the configuration above, calling the `getByName` method of `CountriesService` with a value of `France` would result in an HTTP GET being made request to `https://restcountries.eu/rest/v2/name/France`.
+
+=== Update the JAX-RS resource
+
+Open the `src/main/java/org/acme/restclient/CountriesResource.java` file and update it with the following content:
+
+[source,java]
+----
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import java.util.Set;
+
+@Path("/country")
+public class CountriesResource {
+
+    @Inject
+    @RestClient
+    private CountriesService countriesService;
+
+
+    @GET
+    @Path("/name/{name}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Set<Country> name(@PathParam("name") String name) {
+        return countriesService.getByName(name);
+    }
+}
+----
+
+Note that in addition to the standard CDI `@Inject` annotation, we also need to use the MicroProfile `@RestClient` annotation to inject `CountriesService`.
+
+== Update the test
+
+We also need to update the functional test to reflect the changes made to the endpoint.
+Edit the `src/test/java/org/acme/restclient/CountriesResourceTest.java` file and change the content of the `testCountryNameEndpoint` method to:
+
+
+[source, java]
+----
+package org.acme.restclient;
+
+import org.jboss.shamrock.test.junit.ShamrockTest;
+import org.junit.jupiter.api.Test;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.is;
+
+@ShamrockTest
+public class CountriesResourceTest {
+
+    @Test
+    public void testCountryNameEndpoint() {
+        given()
+          .when().get("/country/name/greece")
+          .then()
+             .statusCode(200)
+             .body("$.size()", is(1),
+                     "[0].alpha2Code", is("GR"),
+                     "[0].capital", is("Athens"),
+                     "[0].currencies.size()", is(1),
+                     "[0].currencies[0].name", is("Euro")
+             );
+    }
+
+}
+----
+
+The code above uses link:http://rest-assured.io/[REST-Assured]'s link:https://github.com/rest-assured/rest-assured/wiki/GettingStarted#jsonpath[json-path] capabilities
+
+== Package and run the application
+
+Run the application with: `mvn compile shamrock:dev`.
+Open your browser to http://localhost:8080/country/name/greece.
+
+You should see a JSON object containing the some basic information about Greece.

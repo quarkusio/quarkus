@@ -10,7 +10,8 @@ import org.jboss.shamrock.runtime.annotations.ConfigRoot;
  * @author William Burns
  */
 @ConfigRoot(phase = ConfigPhase.RUN_TIME_STATIC)
-public class InfinispanConfiguration {
+public class InfinispanClientConfiguration {
+
    /**
     * Sets the host name to connect to
     */
@@ -19,7 +20,7 @@ public class InfinispanConfiguration {
 
    @Override
    public String toString() {
-      return "InfinispanConfiguration{" +
+      return "InfinispanClientConfiguration{" +
             "serverList='" + serverList + '\'' +
             '}';
    }

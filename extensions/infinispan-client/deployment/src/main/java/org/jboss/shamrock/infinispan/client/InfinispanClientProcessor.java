@@ -54,7 +54,7 @@ import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
 import org.jboss.shamrock.deployment.builditem.SystemPropertyBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.infinispan.client.runtime.InfinispanClientProducer;
-import org.jboss.shamrock.infinispan.client.runtime.InfinispanConfiguration;
+import org.jboss.shamrock.infinispan.client.runtime.InfinispanClientConfiguration;
 import org.jboss.shamrock.infinispan.client.runtime.InfinispanTemplate;
 
 class InfinispanClientProcessor {
@@ -164,13 +164,13 @@ class InfinispanClientProcessor {
     /**
      * The Infinispan client configuration, if set.
      */
-    InfinispanConfiguration infinispanClient;
+    InfinispanClientConfiguration infinispanClient;
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     BeanContainerListenerBuildItem build(InfinispanTemplate template, PropertiesBuildItem builderBuildItem) {
         Properties properties = builderBuildItem.getProperties();
-        InfinispanConfiguration conf = infinispanClient;
+        InfinispanClientConfiguration conf = infinispanClient;
         final Optional<String> serverList = conf.serverList;
         if (serverList.isPresent()) {
             log.debugf("Applying micro profile configuration on top of hotrod properties: %s", conf);

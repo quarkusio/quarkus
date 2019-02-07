@@ -258,8 +258,9 @@ public class Gift {
 
 == Configuring second-level cache
 
-Applications that frequently read the same entities can see their performance improved when Hibernate ORM second-level cache is enabled.
-To enable second-level cache, select those entities that are read most often and annotate them with `@Cache`:
+Applications that frequently read the same entities can see their performance improved when the Hibernate ORM second-level cache is enabled.
+
+To enable second-level cache, mark the entities that you want cached with `@Cache`:
 
 [source,java]
 --
@@ -271,8 +272,11 @@ public class Country {
 }
 --
 
-When an entity is annotated with `@Cache`, all its fields are cached except for collections.
-Entity collections need to be individually annotated to be cached:
+When an entity is annotated with `@Cache`, all its field values are cached except for collections and relations to other entities.
+
+This means the entity can be loaded without querying the database, but be careful as it implies the loaded entity might not reflect recent changes in the database.
+
+Collections and relations need to be individually annotated to be cached:
 
 [source,java]
 --
@@ -291,9 +295,11 @@ public class Country {
 }
 --
 
-Queries executed regularly that return the same results can also benefit from second-level caching.
-In the absence of updates to entities involved in a query, cached query results can be immediately returned to the caller.
-To cache a query, mark it as cacheable:
+Queries can also benefit from second-level caching. Cached query results can be returned immediately to the caller, avoiding to run the query on the database.
+
+Be careful as this implies the results might not reflect recent changes.
+
+To cache a query, mark it as cacheable on the `Query` instance:
 
 [source,java]
 --
@@ -302,30 +308,35 @@ query.setHint("org.hibernate.cacheable", Boolean.TRUE);
 --
 
 By default entities are cached in regions named after their fully qualified name, e.g. `com.acme.Country`.
-Collections are cached in regions named after the fully qualified named of their owner entity and collection field name, separated by `#` character, e.g. `com.acme.Country#cities`.
-All queries are kept in a exclusive region dedicated to them called `default-query-results-region`.
-All regions are size and time bounded by default.
-Each region is configured with at a maximum of `10000` entries, and `100` seconds as maximum idle time.
 
-The size of each region can be customized via `hibernate.cache.<region_name>.memory.object.count` property.
-To tweak the maximum idle time, provide number of seconds via `hibernate.cache.<region_name>.expiration.max_idle` property.
+Collections are cached in regions named after the fully qualified name of their owner entity and collection field name, separated by `#` character, e.g. `com.acme.Country#cities`.
+
+All cached queries are by default kept in a single region dedicated to them called `default-query-results-region`.
+
+All regions are bounded by size and time by default. The defaults are `10000` max entries, and `100` seconds as maximum idle time.
+
+The size of each region can be customized via the `hibernate.cache.<region_name>.memory.object.count` property (Replace _<region_name>_ with the actual region name).
+
+To set the maximum idle time, provide the number of seconds via the `hibernate.cache.<region_name>.expiration.max_idle` property (Replace _<region_name>_ with the actual region name).
 
 [NOTE]
 --
-Hibernate caches are kept locally, so they are not aware of changes made to the persistent store by other applications.
-Also, when running multiple copies of the same application (e.g. Kubernetes/OpenShift), caches in separate copies of the application don't talk to each other.
-For these reasons, it is strongly recommended that only read-only entities/collections, and queries based on those, are cached.
-Following this advice guarantees applications get the most performance out of the second-level cache and avoid unexpected behaviour.
+These caches are kept locally, so they are not invalidated or updated when changes are made to the persistent store by other applications.
 
-Within a single {project-name} application instance, concurrent entity read and removes can result in either the entity being removed from the cache (if present), or the last value of entity remaining in the cache.
-It is also possible that in the presence of concurrent entity updates and removes, the cache ends up with: the value of the entity before the update, the value of the entity after update, or no entity at all.
-Both scenarios are also possible if manually evicting the entity region or evicting a individual entity instance, instead of removing the entity.
-Further stale data scenarios can happen when running multiple copies of a {project-name} application.
-Updates or entity removes happening in one instance won't be communicated with the other instances.
+Also, when running multiple copies of the same application (in a cluster, for example on Kubernetes/OpenShift), caches in separate copies of the application aren't synchronized.
 
-Other than types that are intensively read, types for which some degree of staleness is an acceptable tradeoff to improve performance should be cached;
-where the "degree of staleness" can be tuned by setting eviction properties.
+For these reasons, enabling caching is only suitable when certain assumptions can be made: we strongly recommend that only entities, collections and queries which never change are cached. Or at most, that when indeed such an entity is mutated and allowed to be read out of date (stale) this has no impact on the expectations of the application.
+
+Following this advice guarantees applications get the best performance out of the second-level cache and yet avoid unexpected behaviour.
+
+On top of immutable data, in certain contexts it might be acceptable to enable caching also on mutable data; this could be a necessary tradeoff on selected
+ entities which are read frequently and for which some degree of staleness is acceptable; this " acceptable degree of staleness" can be tuned by setting eviction properties.
+ This is however not recommended and should be done with extreme care, as it might
+ produce unexpected and unforeseen effects on the data.
+
+Rather than enabling caching on mutable data, ideally a better solution would be to use a clustered cache; however at this time {project-name} doesn't provide any such implementation: feel free to get in touch and let this need known so that the team can take this into account.
 --
 
-Finally, the second-level cache can be disabled explicitly setting `hibernate.cache.use_second_level_cache` to `false`.
-When second-level cache is disable, all cache annotations are ignored.
+Finally, the second-level cache can be disabled globally by setting `hibernate.cache.use_second_level_cache` to `false`.
+
+When second-level cache is disabled, all cache annotations are ignored and all queries are run ignoring caches; this is generally useful only to diagnose issues.

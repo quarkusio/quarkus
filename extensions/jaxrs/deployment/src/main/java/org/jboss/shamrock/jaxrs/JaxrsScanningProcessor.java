@@ -75,10 +75,10 @@ import org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildIte
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import org.jboss.shamrock.deployment.util.ServiceUtil;
+import org.jboss.shamrock.jaxrs.runtime.JaxrsTemplate;
 import org.jboss.shamrock.jaxrs.runtime.ResteasyFilter;
 import org.jboss.shamrock.jaxrs.runtime.RolesFilterRegistrar;
-import org.jboss.shamrock.jaxrs.runtime.graal.JaxrsTemplate;
-import org.jboss.shamrock.jaxrs.runtime.graal.ShamrockInjectorFactory;
+import org.jboss.shamrock.jaxrs.runtime.ShamrockInjectorFactory;
 import org.jboss.shamrock.runtime.annotations.ConfigItem;
 import org.jboss.shamrock.runtime.annotations.ConfigRoot;
 import org.jboss.shamrock.undertow.FilterBuildItem;

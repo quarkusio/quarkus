@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.jaxrs.runtime.graal;
+package org.jboss.shamrock.jaxrs.runtime;
 
 import java.util.List;
 import java.util.function.Function;
@@ -22,9 +22,6 @@ import java.util.function.Function;
 import org.jboss.shamrock.arc.runtime.BeanContainer;
 import org.jboss.shamrock.runtime.annotations.Template;
 
-/**
- * Created by bob on 7/31/18.
- */
 @Template
 public class JaxrsTemplate {
 

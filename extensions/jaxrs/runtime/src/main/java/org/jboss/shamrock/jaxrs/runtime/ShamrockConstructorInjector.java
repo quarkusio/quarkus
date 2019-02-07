@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.jaxrs.runtime.graal;
+package org.jboss.shamrock.jaxrs.runtime;
 
 import java.lang.reflect.Constructor;
 import java.util.concurrent.CompletableFuture;

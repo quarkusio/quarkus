@@ -29,6 +29,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String JAEGER = "jaeger";
     public static final String SCHEDULER = "scheduler";
     public static final String SECURITY = "security";
+    public static final String SPRING_DI = "spring-di";
     public static final String VERTX = "vertx";
 
     private final String info;

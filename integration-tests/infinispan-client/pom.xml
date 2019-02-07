@@ -35,12 +35,6 @@
             <artifactId>shamrock-infinispan-client-deployment</artifactId>
         </dependency>
 
-        <!-- adds in remote querying protobuf marshalling -->
-        <dependency>
-            <groupId>org.infinispan</groupId>
-            <artifactId>infinispan-remote-query-client</artifactId>
-        </dependency>
-
         <!-- This is required to use DSL queries -->
         <dependency>
             <groupId>org.infinispan</groupId>

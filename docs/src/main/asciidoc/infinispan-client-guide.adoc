@@ -45,51 +45,50 @@ can be configured in this file:
 
 |===
 
-== Marshalling (Key Value types support)
+== Serialization (Key Value types support)
 
-By default the client will only support keys and values of the type byte[]. This can be configured
-through the `hotrod-client.properties` file mentioned above through the `infinispan.client.hotrod.marshaller`
-property. You can either supply your own marshaller implementation or use the `ProtoStreamMarshaller` as described
-in the user guide linked above.
+By default the client will support keys and values of the following types: byte[],
+primitive wrappers (eg. Integer, Long, Double etc.), String, Date and Instant. User types require
+some additional steps that are detailed here. Let's say we have the following user classes:
 
-The recommended approach is to use `ProtoStreamMarshaller` as this provides support for String,
-boxed primitives (Long, Integer etc.) and byte[] types with no additional work. Also using this
-marshaller allows for indexed and non indexed querying, which can be useful.
-
-=== ProtoStream Marshaller
-
-Infinispan provides an optional module that can be used to provide protostream, a protobuf based, marshaller
-for clients. To enable proto stream marshaller you must add the `infinispan-remote-query-client` module
-to your project manually. This can be done as shown here:
-
-[source,xml]
+.Author.java
 ----
-<dependency>
-    <groupId>org.infinispan</groupId>
-    <artifactId>infinispan-remote-query-client</artifactId>
-    <exclusions>
-        <exclusion>
-            <groupId>org.jboss.logging</groupId>
-            <artifactId>jboss-logging</artifactId>
-        </exclusion>
-    </exclusions>
-</dependency>
+public class Author {
+   private final String name;
+   private final String surname;
+
+   public Author(String name, String surname) {
+      this.name = Objects.requireNonNull(name);
+      this.surname = Objects.requireNonNull(surname);
+   }
+   // Getter/Setter/equals/hashCode/toString ommitted
+}
 ----
 
-Note that you must exclude `jboss-logging` as this module is currently not supported with {project-name}.
+.Book.java
+----
+public class Book {
+   private final String title;
+   private final String description;
+   private final int publicationYear;
+   private final Set<Author> authors;
 
-Then you must configure the marshaller in your `hotrod-client.properties` file.
+   public Book(String title, String description, int publicationYear, Set<Author> authors) {
+      this.title = Objects.requireNonNull(title);
+      this.description = Objects.requireNonNull(description);
+      this.publicationYear = publicationYear;
+      this.authors = Objects.requireNonNull(authors);
+   }
+   // Getter/Setter/equals/hashCode/toString ommitted
+}
+----
 
-[source]
-infinispan.client.hotrod.marshaller=org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller
+The default serialization is done using a library based on protobuf. We need to define the proto
+buf schema and a marshaller for each user type(s).
 
-Doing this allows you to use byte[], primitive wrappers (eg. Integer, Long, Double etc.),
-String, Date and Instant class instances in your cache immediately.
-
-==== User Types
-
-Once the `ProtoStreamMarshaller` is configured we can now start adding in our own custom user types
-for serialization. This requires two steps: defining proto buf schema for the type(s) and a marshaller(s).
+NOTE: Annotation based proto stream marshalling is not yet supported in
+the {project-name} Infinispan client. This will be added soon, allowing you to only annotate your classes,
+skipping the following steps.
 
 Protobuf schema:: You can supply a protobuf schema through either one of two ways.
   . Proto File
@@ -144,7 +143,7 @@ The last thing to do is to provide a `org.infinispan.protostream.MessageMarshall
 for each user class defined in the proto schema. This class is then provided via `@Produces` in a similar
 fashion to the code based proto schema definition above.
 +
-Here is the Marshaller class for our Author class.
+Here is the Marshaller class for our Author & Book classes.
 +
 NOTE: The type name must match the `<protobuf package>.<protobuf message>` exactly!
 +
@@ -177,6 +176,39 @@ public class AuthorMarshaller implements MessageMarshaller<Author> {
 }
 ----
 +
+.BookMarshaller.java
+----
+public class BookMarshaller implements MessageMarshaller<Book> {
+
+   @Override
+   public String getTypeName() {
+      return "book_sample.Book";
+   }
+
+   @Override
+   public Class<? extends Book> getJavaClass() {
+      return Book.class;
+   }
+
+   @Override
+   public void writeTo(ProtoStreamWriter writer, Book book) throws IOException {
+      writer.writeString("title", book.getTitle());
+      writer.writeString("description", book.getDescription());
+      writer.writeInt("publicationYear", book.getPublicationYear());
+      writer.writeCollection("authors", book.getAuthors(), Author.class);
+   }
+
+   @Override
+   public Book readFrom(ProtoStreamReader reader) throws IOException {
+      String title = reader.readString("title");
+      String description = reader.readString("description");
+      int publicationYear = reader.readInt("publicationYear");
+      Set<Author> authors = reader.readCollection("authors", new HashSet<>(), Author.class);
+      return new Book(title, description, publicationYear, authors);
+   }
+}
+----
++
 And you pass the marshaller by defining the following:
 +
 [source,java]
@@ -185,29 +217,14 @@ And you pass the marshaller by defining the following:
    MessageMarshaller authorMarshaller() {
       return new AuthorMarshaller();
    }
+
+   @Produces
+   MessageMarshaller bookMarshaller() {
+      return new BookMarshaller();
+   }
 ----
 
-NOTE: Annotation based proto stream marshalling is not yet supported in
-the {project-name} infinispan client.
-
-=== Providing your own Marshaller
-
-You can implement the `org.infinispan.commons.marshaller.Marshaller` interface. This will allow you
-to put keys and values of the types it supports directly with the client. All that is required is to have your
-class available in classpath and configure the property value to be the fully qualified class name. This
-method does not require any optional dependencies.
-
-It is recommended to extend from the `org.infinispan.commons.marshall.AbstractMarshaller` class to reduce
-the lines of the class. Here is an example of a Marshaller implementation for String instances.
-
-With that class in your project/classpath, all you need to do is add the following to your
-hotrod-client.properties as mentioned above.
-
-[source]
-infinispan.client.hotrod.marshaller=com.example.MyMarshaller
-
-Note that the Marshaller implementation must have a no arg constructor or static factory method named
-`getInstance`.
+Now you can add entries into the cache of the types defi
 
 == Dependency Injection
 

@@ -16,27 +16,6 @@ import com.oracle.svm.core.annotate.TargetClass;
  */
 final class QuerySubstitutions { }
 
-@TargetClass(value = InfinispanClientProducer.class, onlyWith = Selector.class)
-final class SubstituteInfinispanClientProducer {
-   @Substitute
-   private void injectProtoMarshallers(Object marshallerInstance) {
-      // Don't even attempt proto stream updates
-   }
-}
-
-final class Selector implements BooleanSupplier {
-   @Override
-   public boolean getAsBoolean() {
-      try {
-         Class.forName(InfinispanClientProducer.PROTOBUF_MARSHALLER_CLASS_NAME);
-         return false;
-      } catch (ClassNotFoundException | NoClassDefFoundError e) {
-         // If the classes aren't found we have to remove the places that reference it
-         return true;
-      }
-   }
-}
-
 @TargetClass(value = MarshallerRegistration.class)
 final class SubstituteMarshallerRegistration {
    @Substitute

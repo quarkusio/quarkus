@@ -34,6 +34,7 @@ import org.infinispan.client.hotrod.exceptions.HotRodClientException;
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
 import org.infinispan.client.hotrod.logging.Log;
 import org.infinispan.client.hotrod.logging.LogFactory;
+import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
 import org.infinispan.commons.util.Util;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -98,9 +99,10 @@ class InfinispanClientProcessor {
                 reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.github.benmanes.caffeine.cache.PSMS"));
             }
 
+            // This is always non null
             Object marshaller = properties.get(ConfigurationProperties.MARSHALLER);
 
-            if (InfinispanClientProducer.isProtoBufAvailable(marshaller)) {
+            if (marshaller instanceof ProtoStreamMarshaller) {
                ApplicationArchive applicationArchive = applicationArchivesBuildItem.getRootArchive();
                // If we have properties file we may have to care about
                Path metaPath = applicationArchive.getChildPath(META_INF);
@@ -123,7 +125,7 @@ class InfinispanClientProcessor {
                         new String(bytes));
                }
 
-               InfinispanClientProducer.handleQueryRequirements(properties);
+               InfinispanClientProducer.handleProtoStreamRequirements(properties);
             }
         }
 

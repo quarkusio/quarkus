@@ -22,8 +22,6 @@ import java.security.SecureRandom;
 import java.util.EventListener;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
@@ -32,6 +30,7 @@ import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
+import org.jboss.logging.Logger;
 import org.jboss.protean.arc.ManagedContext;
 import org.jboss.shamrock.arc.runtime.BeanContainer;
 import org.jboss.shamrock.runtime.InjectionFactory;
@@ -74,7 +73,7 @@ import io.undertow.servlet.handlers.ServletPathMatches;
 @Template
 public class UndertowDeploymentTemplate {
 
-    private static final Logger log = Logger.getLogger(UndertowDeploymentTemplate.class.getName());
+    private static final Logger log = Logger.getLogger("org.jboss.shamrock.undertow");
 
     public static final HttpHandler ROOT_HANDLER = new HttpHandler() {
         @Override
@@ -235,7 +234,7 @@ public class UndertowDeploymentTemplate {
      */
     public static void startUndertowEagerly(HttpConfig config, HandlerWrapper hotDeploymentWrapper) throws ServletException {
         if (undertow == null) {
-            log.log(Level.FINE, "Starting Undertow on port " + config.port);
+            log.debugf("Starting Undertow on port %d", config.port);
             HttpHandler rootHandler = new CanonicalPathHandler(ROOT_HANDLER);
             if (hotDeploymentWrapper != null) {
                 rootHandler = hotDeploymentWrapper.wrap(rootHandler);

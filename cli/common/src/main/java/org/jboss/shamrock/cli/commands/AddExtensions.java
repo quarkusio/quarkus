@@ -1,21 +1,23 @@
 package org.jboss.shamrock.cli.commands;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.maven.model.Dependency;
-import org.apache.maven.model.Model;
-import org.jboss.shamrock.dependencies.Extension;
-import org.jboss.shamrock.maven.utilities.MojoUtils;
+import static org.jboss.shamrock.maven.utilities.MojoUtils.getBomArtifactId;
+import static org.jboss.shamrock.maven.utilities.MojoUtils.readPom;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
-import static org.jboss.shamrock.maven.utilities.MojoUtils.getBomArtifactId;
-import static org.jboss.shamrock.maven.utilities.MojoUtils.readPom;
+import org.apache.maven.model.Dependency;
+import org.apache.maven.model.Model;
+import org.jboss.shamrock.dependencies.Extension;
+import org.jboss.shamrock.maven.utilities.MojoUtils;
+
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class AddExtensions {
     private Model model;
@@ -40,7 +42,7 @@ public class AddExtensions {
         }
     }
 
-    public boolean addExtensions(final List<String> extensions) throws IOException {
+    public boolean addExtensions(final Set<String> extensions) throws IOException {
         if (extensions == null || extensions.isEmpty()) {
             return false;
         }

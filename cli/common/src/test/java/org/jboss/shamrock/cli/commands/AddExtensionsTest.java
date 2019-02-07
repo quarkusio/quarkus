@@ -1,15 +1,16 @@
 package org.jboss.shamrock.cli.commands;
 
-import org.apache.maven.model.Model;
-import org.jboss.shamrock.maven.utilities.MojoUtils;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import static java.util.Arrays.asList;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 
-import static java.util.Arrays.asList;
+import org.apache.maven.model.Model;
+import org.jboss.shamrock.maven.utilities.MojoUtils;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class AddExtensionsTest {
     @Test
@@ -24,7 +25,7 @@ public class AddExtensionsTest {
             .doCreateProject(new HashMap<>());
 
         new AddExtensions(pom)
-            .addExtensions(asList("agroal", "arc", "hibernate-validator"));
+            .addExtensions(new HashSet<>(asList("agroal", "arc", " hibernate-validator")));
 
         Model model = MojoUtils.readPom(pom);
         hasDependency(model, "shamrock-agroal-deployment");

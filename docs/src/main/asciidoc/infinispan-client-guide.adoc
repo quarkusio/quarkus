@@ -1,14 +1,14 @@
 = {project-name} - Infinispan Client
 
 Infinispan is an in memory data grid that allows running in a server outside of application processes. This extension
-provides functionality to allow the client that can connect to said server when running in protean.
+provides functionality to allow the client that can connect to said server when running in {project-name}.
 
 More information can be found about Infinispan at http://www.infinispan.org and the client/server at
 http://infinispan.org/docs/dev/user_guide/user_guide.html#client_server
 
 == Configuration
 
-Once you have your shamrock project configured you can add the `infinispan-client` extension
+Once you have your {project-name} project configured you can add the `infinispan-client` extension
 to your project by running the following from the command line in your project base directory.
 
 [source]
@@ -24,9 +24,8 @@ This will add the following to your pom.xml
     </dependency>
 ----
 
-If you are familiar or noticed in the above client server guide, the Infinispan client
-is configurable via a Java properties file named `hotrod-client.properties`. This file
-will be automatically picked up during the static initialization time from the `META-INF`
+The Infinispan client is configurable via a Java properties file named `hotrod-client.properties`.
+This file will be automatically picked up during the static initialization time from the `META-INF`
 directory and parsed as it would normally.
 
 You can also define some properties in the `microprofile-config.properties` file that can be
@@ -77,7 +76,7 @@ to your project manually. This can be done as shown here:
 </dependency>
 ----
 
-Note that you must exclude `jboss-logging` as this module is currently not supported with shamrock.
+Note that you must exclude `jboss-logging` as this module is currently not supported with {project-name}.
 
 Then you must configure the marshaller in your `hotrod-client.properties` file.
 
@@ -117,8 +116,8 @@ message Author {
 ----
   . In Code
   +
-  Or you can define the proto schema directly in code providing an injected
-`org.infinispan.protostream.FileDescriptorSource`. Note this code is equivalent to above.
+  Or you can define the proto schema directly in user code by defining a produced bean of type
+`org.infinispan.protostream.FileDescriptorSource`.
 +
 [source,java]
 ----
@@ -189,7 +188,7 @@ And you pass the marshaller by defining the following:
 ----
 
 NOTE: Annotation based proto stream marshalling is not yet supported in
-the shamrock infinispan client.
+the {project-name} infinispan client.
 
 === Providing your own Marshaller
 
@@ -261,18 +260,17 @@ You can do this by adding the following dependency to your project.
 With this added you can use Infinispan querying just as you would normally, nothing special required.
 You can read more about this at http://infinispan.org/docs/dev/user_guide/user_guide.html#query_dsl.
 
-You can use either the Query DSL or the Ickle Query language with the shamrock infinispan client
+You can use either the Query DSL or the Ickle Query language with the {project-name} infinispan client
 extension.
 
 == Counters
 
-Infinispan also has a notion of counters and the shamrock infinispan client supports them out of
-the box with no changes required. You can directly access the `CounterManager` from the
-`RemoteCacheManager` with the `RemoteCounterManagerFactory` class.
+Infinispan also has a notion of counters and the {project-name} infinispan client supports them out of
+the box.
 
-To make using counters even easier the shamrock infinispan client allows for Dependency Injection
+The {project-name} infinispan client extension allows for Dependency Injection
 of the `CounterManager` directly. All you need to do is annotate your field, constructor or method
-and you get it with no fuss.
+and you get it with no fuss. You can then use counters as you would normally.
 
 [source,java]
 ----
@@ -282,15 +280,9 @@ CounterManager counterManager;
 
 == Near Caching
 
-Near caching just works out of the box, nothing additional to configure, just the normal
-settings in the hotrod-client.properties file.
+Near caching requires no changes other than the normal settings in the hotrod-client.properties file.
 
-== Security
-
-The Infinispan Client comes already packed with features to allow for security. However to configure
-these you may need to slightly tweak them to work within Shamrock.
-
-=== Encryption
+== Encryption
 
 Encryption at this point requires additional steps to get working.
 
@@ -298,7 +290,7 @@ The first step is to configure the `hotrod-client.properties` file to point to y
 and/or keystore. This is further detailed at
 http://infinispan.org/docs/dev/user_guide/user_guide.html#hr_encryption.
 
-The reason that Shamrock is different is that the Native does not come with security
+The reason that {project-name} is different is that SubstrateVM does not come with security
 services enabled. This is mentioned at
 https://github.com/oracle/graal/blob/master/substratevm/JCA-SECURITY-SERVICES.md. To
 do this you will need to set the `<enableAllSecurityServices>true</enableAllSecurityServices>` value
@@ -325,7 +317,7 @@ An example is as shown here, with a comment highlighting them:
            </configuration>
        </execution>
    </executions>
-/plugin>
+</plugin>
 ----
 
 If you notice the example XML above also enabled JNI. This is currently needed depending on the
@@ -334,10 +326,10 @@ testing it was utilizing the `sunec` library. This shared library
 should be at `<JAVA_HOME>/jre/lib/<platform>/libsunec.so` and must be added to `java.library.path`
 for encryption to work properly.
 
-=== Authentication
+== Authentication
 
 This chart illustrates what mechanisms have been verified to be working properly with
-the Shamrock Infinispan Client extension.
+the {project-name} Infinispan Client extension.
 
 .Mechanisms
 |===
@@ -365,8 +357,11 @@ the Shamrock Infinispan Client extension.
 
 |===
 
+The guide for configuring these can be found at http://infinispan.org/docs/dev/user_guide/user_guide.html#authentication.
+However you need to configure these through the `hotrod-client.properties` file if using Dependency Injection.
+
 == Additional Features
 
 The Infinispan Client has additional features that were not mentioned here. This means this
-feature was not tested in a Shamrock environment and they may or may not work. Please let us
+feature was not tested in a {project-name} environment and they may or may not work. Please let us
 know if you need these added!

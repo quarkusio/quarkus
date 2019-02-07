@@ -1,22 +1,25 @@
 package org.jboss.shamrock.cli.commands;
 
-import org.apache.maven.model.Dependency;
-import org.apache.maven.model.Model;
-import org.jboss.shamrock.maven.utilities.MojoUtils;
-import org.jboss.shamrock.maven.utilities.ShamrockDependencyPredicate;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import static java.util.Arrays.asList;
+import static org.jboss.shamrock.maven.utilities.MojoUtils.getPluginGroupId;
+import static org.jboss.shamrock.maven.utilities.MojoUtils.getPluginVersion;
+import static org.jboss.shamrock.maven.utilities.MojoUtils.readPom;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
-import static java.util.Arrays.asList;
-import static org.jboss.shamrock.maven.utilities.MojoUtils.*;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.apache.maven.model.Dependency;
+import org.apache.maven.model.Model;
+import org.jboss.shamrock.maven.utilities.MojoUtils;
+import org.jboss.shamrock.maven.utilities.ShamrockDependencyPredicate;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class ListExtensionsTest {
 
@@ -34,7 +37,7 @@ public class ListExtensionsTest {
             .doCreateProject(context);
 
         new AddExtensions(pom)
-            .addExtensions(asList("commons-io:commons-io:2.5", "Agroal"));
+            .addExtensions(new HashSet<>(asList("commons-io:commons-io:2.5", "Agroal")));
 
         Model model = readPom(pom);
 
@@ -43,6 +46,38 @@ public class ListExtensionsTest {
         final Map<String, Dependency> installed = listExtensions.findInstalled();
 
         Assertions.assertNotNull(installed.get(getPluginGroupId() + ":shamrock-agroal-deployment"));
+    }
+
+    /**
+     * When creating a project with Maven, you could have -Dextensions="jaxrs, hibernate-validator".
+     * <p>
+     * Having a space is not automatically handled by the Maven converter injecting the properties
+     * so we added code for that and we need to test it.
+     */
+    @Test
+    public void listWithBomExtensionWithSpaces() throws IOException {
+        final File pom = new File("target/list-extensions-test", "pom.xml");
+
+        CreateProjectTest.delete(pom.getParentFile());
+        final HashMap<String, Object> context = new HashMap<>();
+
+        new CreateProject(pom.getParentFile())
+            .groupId(getPluginGroupId())
+            .artifactId("add-extension-test")
+            .version("0.0.1-SNAPSHOT")
+            .doCreateProject(context);
+
+        new AddExtensions(pom)
+            .addExtensions(new HashSet<>(asList("jaxrs", " hibernate-validator ")));
+
+        Model model = readPom(pom);
+
+        final ListExtensions listExtensions = new ListExtensions(model);
+
+        final Map<String, Dependency> installed = listExtensions.findInstalled();
+
+        Assertions.assertNotNull(installed.get(getPluginGroupId() + ":shamrock-jaxrs-deployment"));
+        Assertions.assertNotNull(installed.get(getPluginGroupId() + ":shamrock-hibernate-validator-deployment"));
     }
 
     @Test
@@ -68,7 +103,7 @@ public class ListExtensionsTest {
         MojoUtils.write(model, pom);
 
         new AddExtensions(pom)
-            .addExtensions(asList("commons-io:commons-io:2.5", "Agroal"));
+            .addExtensions(new HashSet<>(asList("commons-io:commons-io:2.5", "Agroal")));
 
         model = readPom(pom);
 

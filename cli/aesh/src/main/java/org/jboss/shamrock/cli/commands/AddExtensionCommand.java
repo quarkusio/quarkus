@@ -1,5 +1,9 @@
 package org.jboss.shamrock.cli.commands;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Collections;
+
 import org.aesh.command.Command;
 import org.aesh.command.CommandDefinition;
 import org.aesh.command.CommandException;
@@ -9,11 +13,6 @@ import org.aesh.command.option.Argument;
 import org.aesh.command.option.Option;
 import org.aesh.io.Resource;
 import org.jboss.shamrock.dependencies.Extension;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
@@ -30,6 +29,7 @@ public class AddExtensionCommand implements Command<CommandInvocation>{
     @Argument(required = true, description = "Path to the project pom the extension will be added")
     private Resource pom;
 
+    @Override
     public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
         if(help) {
             commandInvocation.println(commandInvocation.getHelpInfo("protean add-extension"));
@@ -43,7 +43,7 @@ public class AddExtensionCommand implements Command<CommandInvocation>{
             else if (pom.isLeaf()){
                 try {
                     AddExtensions project = new AddExtensions(new File(pom.getAbsolutePath()));
-                    project.addExtensions(Arrays.asList(extension));
+                    project.addExtensions(Collections.singleton(extension));
                 }
                 catch(IOException e) {
                     e.printStackTrace();

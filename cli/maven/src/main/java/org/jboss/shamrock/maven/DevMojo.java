@@ -17,7 +17,6 @@
 package org.jboss.shamrock.maven;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;

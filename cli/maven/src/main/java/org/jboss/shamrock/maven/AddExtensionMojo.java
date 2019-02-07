@@ -1,5 +1,9 @@
 package org.jboss.shamrock.maven;
 
+import java.io.IOException;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.apache.maven.model.Model;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -7,10 +11,6 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.jboss.shamrock.cli.commands.AddExtensions;
-import org.jboss.shamrock.maven.utilities.MojoUtils;
-
-import java.io.IOException;
-import java.util.List;
 
 @Mojo(name = "add-extension")
 public class AddExtensionMojo extends AbstractMojo {
@@ -22,7 +22,7 @@ public class AddExtensionMojo extends AbstractMojo {
     protected MavenProject project;
 
     @Parameter(property = "extensions")
-    private List<String> extensions;
+    private Set<String> extensions;
 
     @Override
     public void execute() throws MojoExecutionException {
@@ -30,7 +30,7 @@ public class AddExtensionMojo extends AbstractMojo {
             Model model = project.getOriginalModel().clone();
 
             new AddExtensions(model.getPomFile())
-                .addExtensions(extensions);
+                .addExtensions(extensions.stream().map(String::trim).collect(Collectors.toSet()));
         } catch (IOException e) {
             throw new MojoExecutionException("Unable to update the pom.xml file", e);
         }

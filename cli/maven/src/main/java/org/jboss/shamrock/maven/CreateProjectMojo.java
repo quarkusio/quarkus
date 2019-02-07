@@ -17,6 +17,15 @@
 
 package org.jboss.shamrock.maven;
 
+import static org.fusesource.jansi.Ansi.ansi;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
@@ -30,14 +39,6 @@ import org.jboss.shamrock.cli.commands.AddExtensions;
 import org.jboss.shamrock.cli.commands.CreateProject;
 import org.jboss.shamrock.maven.components.Prompter;
 import org.jboss.shamrock.maven.utilities.MojoUtils;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.fusesource.jansi.Ansi.ansi;
 
 /**
  * This goal helps in setting up Shamrock Maven project with shamrock-maven-plugin, with sensible defaults
@@ -68,7 +69,7 @@ public class CreateProjectMojo extends AbstractMojo {
     private String className;
 
     @Parameter(property = "extensions")
-    private List<String> extensions;
+    private Set<String> extensions;
 
     @Parameter(defaultValue = "${session}")
     private MavenSession session;
@@ -223,6 +224,8 @@ public class CreateProjectMojo extends AbstractMojo {
                 path = "/" + path;
             }
         }
+
+        extensions = extensions.stream().map(String::trim).collect(Collectors.toSet());
     }
 
     private void printUserInstructions(File root) {

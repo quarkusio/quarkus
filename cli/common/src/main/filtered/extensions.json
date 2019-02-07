@@ -189,5 +189,13 @@
     ],
     "groupId": "org.jboss.shamrock",
     "artifactId": "shamrock-websockets-deployment"
+  },
+  {
+    "name": "Spring DI compatibility layer",
+    "labels": [
+      "spring-di"
+    ],
+    "groupId": "org.jboss.shamrock",
+    "artifactId": "shamrock-spring-di-deployment"
   }
 ]

@@ -16,22 +16,28 @@
 
 package org.jboss.shamrock.spring.deployment;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.jandex.*;
-import org.jboss.logging.Logger;
-import org.jboss.protean.arc.processor.AnnotationsTransformer;
-import org.jboss.protean.arc.processor.DotNames;
-import org.jboss.protean.arc.processor.ScopeInfo;
-import org.jboss.protean.arc.processor.Transformation;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.arc.deployment.AnnotationsTransformerBuildItem;
+import static org.jboss.jandex.AnnotationInstance.create;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static org.jboss.jandex.AnnotationInstance.create;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.protean.arc.processor.AnnotationsTransformer;
+import org.jboss.protean.arc.processor.DotNames;
+import org.jboss.protean.arc.processor.ScopeInfo;
+import org.jboss.protean.arc.processor.Transformation;
+import org.jboss.shamrock.arc.deployment.AnnotationsTransformerBuildItem;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
+import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 
 /*
  * A simple processor that maps annotations Spring DI annotation to CDI annotation
@@ -39,8 +45,6 @@ import static org.jboss.jandex.AnnotationInstance.create;
  * suits this sort of handling perfectly
  */
 public class SpringDIProcessor {
-
-    private static final Logger LOGGER = Logger.getLogger("org.jboss.shamrock.spring.deployment.SpringProcessor");
 
     private static final DotName SPRING_SCOPE_ANNOTATION
             = DotName.createSimple("org.springframework.context.annotation.Scope");
@@ -73,6 +77,11 @@ public class SpringDIProcessor {
     private static final DotName CDI_INJECT_ANNOTATION = DotNames.INJECT;
     private static final DotName CDI_PRODUCES_ANNOTATION = DotNames.PRODUCES;
     private static final DotName MP_CONFIG_PROPERTY_ANNOTATION = DotName.createSimple(ConfigProperty.class.getName());
+
+    @BuildStep
+    FeatureBuildItem registerFeature() {
+        return new FeatureBuildItem(FeatureBuildItem.SPRING_DI);
+    }
 
     @BuildStep
     AnnotationsTransformerBuildItem beanTransformer() {
@@ -254,7 +263,6 @@ public class SpringDIProcessor {
             }
 
             private String determineName(AnnotationValue annotationValue) {
-                final String className = annotationValue.getClass().getName();
                 if (annotationValue.kind() == AnnotationValue.Kind.ARRAY) {
                     return annotationValue.asStringArray()[0];
                 } else if (annotationValue.kind() == AnnotationValue.Kind.STRING) {

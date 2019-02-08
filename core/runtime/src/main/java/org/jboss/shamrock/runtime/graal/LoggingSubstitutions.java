@@ -18,6 +18,8 @@ package org.jboss.shamrock.runtime.graal;
 
 import java.util.logging.Handler;
 
+import org.jboss.logmanager.handlers.DelayedHandler;
+import org.jboss.shamrock.runtime.logging.InitialConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +45,13 @@ final class Target_org_slf4j_LoggerFactory {
     public static Logger getLogger(Class<?> clazz) {
         return LoggerFactory.getLogger(clazz.getName());
     }
+}
+
+@TargetClass(InitialConfigurator.class)
+final class Target_org_jboss_shamrock_runtime_logging_InitialConfigurator {
+    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.FromAlias)
+    @Alias
+    public static DelayedHandler DELAYED_HANDLER = new DelayedHandler();
 }
 
 final class LoggingSubstitutions {}

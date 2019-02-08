@@ -27,9 +27,13 @@ public final class InitialConfigurator implements EmbeddedConfigurator {
     public Handler[] getHandlersOf(final String loggerName) {
         if (loggerName.isEmpty()) {
             if (ImageInfo.inImageBuildtimeCode()) {
-                return new Handler[] { new ConsoleHandler(new PatternFormatter(
+                final ConsoleHandler handler = new ConsoleHandler(new PatternFormatter(
                     "%d{HH:mm:ss,SSS} %-5p [%c{1.}] %s%e%n"
-                )) };
+                ));
+                handler.setLevel(Level.INFO);
+                return new Handler[] {
+                    handler
+                };
             } else {
                 return new Handler[] { DELAYED_HANDLER };
             }

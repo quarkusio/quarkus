@@ -28,7 +28,6 @@ class PanacheFieldAccessMethodVisitor extends MethodVisitor {
         if((opcode == Opcodes.GETFIELD
                 || opcode == Opcodes.PUTFIELD)
                 && isEntityField(owner.replace('/', '.'), fieldName)) {
-            System.err.println("Visiting field access to "+owner+"."+fieldName+" in method "+methodName);
             String methodName;
             String methodDescriptor;
             if(opcode == Opcodes.GETFIELD) {

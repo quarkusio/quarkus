@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
 
 /**
  * Indicate that the given item is a configuration root.  Instances of classes with this annotation will
- * be made available to build steps or run time templates, according to the {@linkplain #phase() phase) of the
+ * be made available to build steps or run time templates, according to the {@linkplain #phase() phase} of the
  * value.
  */
 @Retention(RUNTIME)

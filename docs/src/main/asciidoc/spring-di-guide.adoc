@@ -1,6 +1,8 @@
-= {project-name} - Using our Spring Dependency Injection annotations compatibility layer
+= {project-name} - Using our Spring Dependency Injection compatibility layer
 
 While you are encouraged to use CDI annotations for injection, {project-name} provides a compatibility layer for Spring dependency injection in the form of the `spring-di` extension.
+
+This guide explains how your {project-name} application can leverage the well known Dependency Injection annotations included in the Spring Framework.
 
 == Prerequisites
 
@@ -37,11 +39,11 @@ mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
     -Dextensions="spring-di"
 ----
 
-This command generates the Maven project with a REST endpoint and imports the `spring-di` extension.
+This command generates a Maven project with a REST endpoint and imports the `spring-di` extension.
 
 === Examine the pom.xml file
 
-In the `pom.xml` file we see that the `shamrock-spring-di-deployment` dependency has been added.
+In the `pom.xml` file, we see that the `shamrock-spring-di-deployment` dependency has been added.
 We also need to add a dependency on the `spring-context` artifact, which we can do by adding:
 
 
@@ -61,7 +63,7 @@ where `spring.version` can be any version higher than `3.2.0.RELEASE`.
 
 Let's proceed to create some beans using various Spring annotations.
 
-First we will create a `StringFunction` interface that some of our beans will implement and that will be injected into another bean later on.
+First we will create a `StringFunction` interface that some of our beans will implement and which will be injected into another bean later on.
 Create a `src/main/java/org/acme/spring/di/StringFunction.java` file and set the following content:
 
 [source,java]
@@ -75,7 +77,8 @@ public interface StringFunction extends Function<String, String> {
 }
 ----
 
-With the interface in place, we will add an `AppConfiguration` class which will use the Spring's Java Config style of defining a bean. It will be used to create a `StringFunction` bean that will capitalize the text passed as parameter.
+With the interface in place, we will add an `AppConfiguration` class which will use the Spring's Java Config style for defining a bean.
+It will be used to create a `StringFunction` bean that will capitalize the text passed as parameter.
 Create a `src/main/java/org/acme/spring/di/AppConfiguration.java` file with the following content:
 
 [source,java]
@@ -95,7 +98,8 @@ public class AppConfiguration {
 }
 ----
 
-Now we define another bean that will implement `StringFunction` using Spring's stereotype annotation style. This bean will effectively be a no-op bean that simply returns the input it is passed.
+Now we define another bean that will implement `StringFunction` using Spring's stereotype annotation style.
+This bean will effectively be a no-op bean that simply returns the input as is.
 Create a `src/main/java/org/acme/spring/di/NoOpSingleStringFunction.java` file and set the following content:
 
 [source,java]
@@ -146,7 +150,7 @@ public class MessageProducer {
 ----
 
 The final bean we will create ties together all the previous beans.
-Create a `src/main/java/org/acme/spring/di/GreeterBean.java` file and set the following content:
+Create a `src/main/java/org/acme/spring/di/GreeterBean.java` file and copy the following content:
 
 [source,java]
 ----
@@ -184,8 +188,8 @@ public class GreeterBean {
 }
 ----
 
-In the code above, we see that both field injection and constructor injection is being used (note that constructor injection does not need the `@Autowired` annotation since there is a single constructor).
-Furthermore, the `@Value` annotation has also defined a default value, which in this case will be used since we have not defined `greeting.suffix` in `microprofile-config.properties`.
+In the code above, we see that both field injection and constructor injection are being used (note that constructor injection does not need the `@Autowired` annotation since there is a single constructor).
+Furthermore, the `@Value` annotation on `suffix` has also a default value defined, which in this case will be used since we have not defined `greeting.suffix` in `microprofile-config.properties`.
 
 
 === Update the JAX-RS resource
@@ -251,4 +255,4 @@ public class GreetingResourceTest {
 Run the application with: `mvn compile shamrock:dev`.
 Open your browser to http://localhost:8080/greeting.
 
-The result should be: `HELLO WORLD`
+The result should be: `HELLO WORLD!`.

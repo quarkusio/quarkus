@@ -193,18 +193,10 @@ public class TestEndpoint {
         checkMethod(AccessorEntity.class, "setT2", void.class, Object.class);
         
         try {
-            checkMethod(AccessorEntity.class, "getTrans1", Object.class);
-            Assertions.fail("transient field should have no getter: trans1");
-        }catch(NoSuchMethodException x) {}
-        try {
             checkMethod(AccessorEntity.class, "getTrans2", Object.class);
             Assertions.fail("transient field should have no getter: trans2");
         }catch(NoSuchMethodException x) {}
 
-        try {
-            checkMethod(AccessorEntity.class, "setTrans1", void.class, Object.class);
-            Assertions.fail("transient field should have no setter: trans1");
-        }catch(NoSuchMethodException x) {}
         try {
             checkMethod(AccessorEntity.class, "setTrans2", void.class, Object.class);
             Assertions.fail("transient field should have no setter: trans2");
@@ -216,10 +208,10 @@ public class TestEndpoint {
         Assertions.assertEquals(1, entity.getBCalls);
         entity.i = 2;
         Assertions.assertEquals(1, entity.setICalls);
-        Object trans = entity.trans1b;
-        Assertions.assertEquals(0, entity.getTrans1bCalls);
-        entity.trans1b = trans;
-        Assertions.assertEquals(0, entity.setTrans2bCalls);
+        Object trans = entity.trans;
+        Assertions.assertEquals(0, entity.getTransCalls);
+        entity.trans = trans;
+        Assertions.assertEquals(0, entity.setTransCalls);
         
         // accessors inside the entity itself
         entity.method();

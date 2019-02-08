@@ -260,7 +260,6 @@ public class PanacheJpaModelEnhancer implements BiFunction<String, ClassVisitor,
         for (FieldInfo fieldInfo : classInfo.fields()) {
             String name = fieldInfo.name();
             if(Modifier.isPublic(fieldInfo.flags())
-                    && !Modifier.isTransient(fieldInfo.flags())
                     && !fieldInfo.hasAnnotation(DOTNAME_TRANSIENT)) {
                 fields.put(name, new EntityField(name, DescriptorUtils.typeToString(fieldInfo.type())));
             }

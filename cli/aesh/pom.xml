@@ -18,16 +18,19 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>shamrock-build-parent</artifactId>
+        <groupId>org.jboss.shamrock</groupId>
+        <version>1.0.0.Alpha1-SNAPSHOT</version>
+      	<relativePath>../../build-parent/pom.xml</relativePath>
+    </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.jboss.shamrock</groupId>
     <artifactId>shamrock-cli</artifactId>
     <name>Shamrock - CLI Native Tool</name>
-    <version>1.0.0.Alpha1-SNAPSHOT</version>
 
     <properties>
         <test.level>INFO</test.level>
-
         <!-- maven-compiler-plugin -->
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.source>1.8</maven.compiler.source>
@@ -42,14 +45,10 @@
         <dependency>
             <groupId>org.aesh</groupId>
             <artifactId>aesh</artifactId>
-            <version>1.11</version>
         </dependency>
-
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.12</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 

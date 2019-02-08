@@ -9,9 +9,8 @@ import org.jboss.shamrock.runtime.annotations.Template;
 @Template
 public class VertxTemplate {
 
-    public void configureVertx(BeanContainer container, VertxConfiguration config, List<Map<String, String>> messageConsumerConfigurations) {
+    public void configureVertx(BeanContainer container, List<Map<String, String>> messageConsumerConfigurations) {
         VertxProducer instance = container.instance(VertxProducer.class);
-        instance.configure(config);
         instance.registerMessageConsumers(messageConsumerConfigurations);
     }
 }

@@ -2,9 +2,7 @@ package org.jboss.shamrock.vertx.runtime;
 
 import org.junit.Test;
 
-import java.time.Duration;
 import java.util.Optional;
-import java.util.OptionalInt;
 
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -16,7 +14,13 @@ public class VertxProducerTest {
     @Test
     public void shouldNotFailWithoutConfig() {
         VertxProducer producer = new VertxProducer();
-        producer.configure(null);
+        producer.clustered = false;
+        producer.workerPoolSize = 20;
+        producer.internalBlockingPoolSize = 20;
+        producer.warningExceptionTime = 2;
+        producer.eventLoopsPoolSize = Optional.empty();
+        producer.maxEventLoopExecuteTime = 2;
+        producer.maxWorkerExecuteTime = 60;
 
         assertThat(producer.vertx(), is(notNullValue()));
         assertFalse(producer.vertx().isClustered());
@@ -28,11 +32,13 @@ public class VertxProducerTest {
     @Test
     public void shouldNotFailWithDefaultConfig() {
         VertxProducer producer = new VertxProducer();
-        VertxConfiguration configuration = createDefaultConfiguration();
-        configuration.workerPoolSize = 10;
-        configuration.warningExceptionTime = Duration.ofSeconds(1);
-        configuration.internalBlockingPoolSize = 5;
-        producer.configure(configuration);
+        producer.clustered = false;
+        producer.workerPoolSize = 5;
+        producer.internalBlockingPoolSize = 20;
+        producer.warningExceptionTime = 2;
+        producer.eventLoopsPoolSize = Optional.empty();
+        producer.maxEventLoopExecuteTime = 1;
+        producer.maxWorkerExecuteTime = 10;
 
         assertThat(producer.vertx(), is(notNullValue()));
         assertFalse(producer.vertx().isClustered());
@@ -44,20 +50,35 @@ public class VertxProducerTest {
     @Test
     public void shouldEnableClustering() {
         VertxProducer producer = new VertxProducer();
-        VertxConfiguration configuration = createDefaultConfiguration();
-        ClusterConfiguration cc = configuration.cluster;
-        cc.clustered = true;
-        cc.pingReplyInterval = Duration.ofSeconds(2);
-        cc.pingInterval = Duration.ofSeconds(2);
-        cc.publicHost = Optional.empty();
-        configuration.workerPoolSize = 10;
-        configuration.warningExceptionTime = Duration.ofSeconds(1);
-        configuration.internalBlockingPoolSize = 5;
-        configuration.eventbus.connectTimeout = Duration.ofMinutes(1);
-        configuration.eventbus.acceptBacklog = OptionalInt.empty();
-        configuration.cluster = cc;
+        producer.clustered = true;
+        producer.pingReplyInterval = 2;
+        producer.pingInterval = 2;
+        producer.clusterPublicHost = Optional.empty();
+        producer.clusterPublicPort = Optional.empty();
+        producer.clusterHost = "localhost";
+        producer.clusterPort = Optional.empty();
+        producer.workerPoolSize = 5;
+        producer.internalBlockingPoolSize = 20;
+        producer.warningExceptionTime = 2;
+        producer.eventLoopsPoolSize = Optional.empty();
+        producer.maxEventLoopExecuteTime = 1;
+        producer.maxWorkerExecuteTime = 10;
 
-        producer.configure(configuration);
+        producer.workerPoolSize = 10;
+        producer.warningExceptionTime = 1;
+        producer.internalBlockingPoolSize = 5;
+        producer.connectTimeout = Optional.of(60L);
+        producer.clientAuth = Optional.empty();
+        producer.idleTimeout = Optional.empty();
+        producer.ssl = false;
+        producer.reconnectAttempts = Optional.empty();
+        producer.reconnectInterval = Optional.empty();
+        producer.reuseAddress = Optional.empty();
+        producer.reusePort = Optional.empty();
+        producer.keyStorePath = Optional.empty();
+        producer.trustStorePath = Optional.empty();
+
+
         try {
             producer.vertx();
             fail("It should not have a cluster manager on the classpath, and so fail the creation");
@@ -66,61 +87,5 @@ public class VertxProducerTest {
         }
 
         producer.destroy();
-    }
-
-    private VertxConfiguration createDefaultConfiguration() {
-        final VertxConfiguration vc = new VertxConfiguration();
-        vc.caching = true;
-        vc.classpathResolving = true;
-        vc.eventLoopsPoolSize = OptionalInt.empty();
-        vc.maxEventLoopExecuteTime = Duration.ofSeconds(2);
-        vc.warningExceptionTime = Duration.ofSeconds(2);
-        vc.workerPoolSize = 20;
-        vc.maxWorkerExecuteTime = Duration.ofSeconds(1);
-        vc.internalBlockingPoolSize = 20;
-        vc.useAsyncDNS = false;
-        vc.eventbus = new EventBusConfiguration();
-        vc.eventbus.keyCertificatePem = new PemKeyCertConfiguration();
-        vc.eventbus.keyCertificatePem.keys = Optional.empty();
-        vc.eventbus.keyCertificatePem.certs = Optional.empty();
-        vc.eventbus.keyCertificateJks = new JksConfiguration();
-        vc.eventbus.keyCertificateJks.path = Optional.empty();
-        vc.eventbus.keyCertificateJks.password = Optional.empty();
-        vc.eventbus.keyCertificatePfx = new PfxConfiguration();
-        vc.eventbus.keyCertificatePfx.path = Optional.empty();
-        vc.eventbus.keyCertificatePfx.password = Optional.empty();
-        vc.eventbus.trustCertificatePem = new PemTrustCertConfiguration();
-        vc.eventbus.trustCertificatePem.certs = Optional.empty();
-        vc.eventbus.trustCertificateJks = new JksConfiguration();
-        vc.eventbus.trustCertificateJks.path = Optional.empty();
-        vc.eventbus.trustCertificateJks.password = Optional.empty();
-        vc.eventbus.trustCertificatePfx = new PfxConfiguration();
-        vc.eventbus.trustCertificatePfx.path = Optional.empty();
-        vc.eventbus.trustCertificatePfx.password = Optional.empty();
-        vc.eventbus.acceptBacklog = OptionalInt.empty();
-        vc.eventbus.clientAuth = "NONE";
-        vc.eventbus.connectTimeout = Duration.ofSeconds(60);
-        vc.eventbus.idleTimeout = Optional.empty();
-        vc.eventbus.receiveBufferSize = OptionalInt.empty();
-        vc.eventbus.reconnectAttempts = 0;
-        vc.eventbus.reconnectInterval = Duration.ofSeconds(1);
-        vc.eventbus.reuseAddress = true;
-        vc.eventbus.reusePort = false;
-        vc.eventbus.sendBufferSize =  OptionalInt.empty();
-        vc.eventbus.soLinger = OptionalInt.empty();
-        vc.eventbus.ssl = false;
-        vc.eventbus.tcpKeepAlive = false;
-        vc.eventbus.tcpNoDelay = true;
-        vc.eventbus.trafficClass = OptionalInt.empty();
-        vc.eventbus.trustAll = false;
-        vc.cluster = new ClusterConfiguration();
-        vc.cluster.host = "localhost";
-        vc.cluster.port = OptionalInt.empty();
-        vc.cluster.publicHost = Optional.empty();
-        vc.cluster.publicPort = OptionalInt.empty();
-        vc.cluster.clustered = false;
-        vc.cluster.pingInterval = Duration.ofSeconds(20);
-        vc.cluster.pingReplyInterval = Duration.ofSeconds(20);
-        return vc;
     }
 }

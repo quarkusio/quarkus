@@ -69,7 +69,6 @@ import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildIte
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import org.jboss.shamrock.vertx.runtime.ConsumeEvent;
 import org.jboss.shamrock.vertx.runtime.EventConsumerInvoker;
-import org.jboss.shamrock.vertx.runtime.VertxConfiguration;
 import org.jboss.shamrock.vertx.runtime.VertxProducer;
 import org.jboss.shamrock.vertx.runtime.VertxTemplate;
 
@@ -106,11 +105,6 @@ class VertxProcessor {
                 .build();
     }
 
-    /**
-     * The Vert.x configuration, if set.
-     */
-    VertxConfiguration vertx;
-
     @BuildStep
     AdditionalBeanBuildItem registerBean() {
         return new AdditionalBeanBuildItem(false, VertxProducer.class);
@@ -139,7 +133,7 @@ class VertxProcessor {
             config.put("local", localValue != null ? localValue.asString() : Boolean.FALSE.toString());
             messageConsumerConfigurations.add(config);
         }
-        template.configureVertx(beanContainer.getValue(), vertx, messageConsumerConfigurations);
+        template.configureVertx(beanContainer.getValue(), messageConsumerConfigurations);
     }
     
     @BuildStep

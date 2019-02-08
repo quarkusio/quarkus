@@ -1,7 +1,7 @@
 package org.jboss.shamrock.jaeger.runtime;
 
+import java.math.BigDecimal;
 import java.net.URI;
-import java.time.Duration;
 import java.util.Optional;
 
 import org.jboss.shamrock.runtime.annotations.ConfigItem;
@@ -73,7 +73,7 @@ public class JaegerConfig {
      * The sampler parameter (number)
      */
     @ConfigItem
-    public Optional<String> samplerParam;
+    public Optional<BigDecimal> samplerParam;
 
     /**
      * The host name and port when using the remote controlled sampler

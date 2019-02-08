@@ -77,11 +77,11 @@ public class JaegerDeploymentTemplate {
         initTracerProperty("JAEGER_REPORTER_MAX_QUEUE_SIZE", jaeger.reporterMaxQueueSize, size -> size.toString());
         initTracerProperty("JAEGER_REPORTER_FLUSH_INTERVAL", jaeger.reporterFlushInterval, duration -> duration.toString());
         initTracerProperty("JAEGER_SAMPLER_TYPE", jaeger.samplerType, type -> type);
-        initTracerProperty("JAEGER_SAMPLER_PARAM", jaeger.samplerParam, param -> param);
-        initTracerProperty("JAEGER_SAMPLER_MANAGER_HOST_PORT", jaeger.samplerManagerHostPort, hostPort -> hostPort);
+        initTracerProperty("JAEGER_SAMPLER_PARAM", jaeger.samplerParam, param -> param.toString());
+        initTracerProperty("JAEGER_SAMPLER_MANAGER_HOST_PORT", jaeger.samplerManagerHostPort, hostPort -> hostPort.toString());
         initTracerProperty("JAEGER_SERVICE_NAME", jaeger.serviceName, name -> name);
-        initTracerProperty("JAEGER_TAGS", jaeger.tags, tags -> tags);
-        initTracerProperty("JAEGER_PROPAGATION", jaeger.propagation, format -> format);
+        initTracerProperty("JAEGER_TAGS", jaeger.tags, tags -> tags.toString());
+        initTracerProperty("JAEGER_PROPAGATION", jaeger.propagation, format -> format.toString());
         initTracerProperty("JAEGER_SENDER_FACTORY", jaeger.senderFactory, sender -> sender);
     }
 

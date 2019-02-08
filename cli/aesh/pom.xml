@@ -31,7 +31,6 @@
 
     <properties>
         <test.level>INFO</test.level>
-        <aesh.version>1.11</aesh.version>
         <!-- maven-compiler-plugin -->
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.source>1.8</maven.compiler.source>
@@ -46,14 +45,10 @@
         <dependency>
             <groupId>org.aesh</groupId>
             <artifactId>aesh</artifactId>
-            <version>${aesh.version}</version>
         </dependency>
-
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.12</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 

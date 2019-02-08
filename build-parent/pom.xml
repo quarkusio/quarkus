@@ -33,6 +33,7 @@
       <!-- Enable APT by default for Eclipse -->
       <m2e.apt.activation>jdt_apt</m2e.apt.activation>
       
+      <aesh.version>1.11</aesh.version>
       <jandex.version>2.1.0.Final</jandex.version>
       <resteasy.version>4.0.0.Beta8</resteasy.version>
       <opentracing.version>0.31.0</opentracing.version>
@@ -978,6 +979,12 @@
             <artifactId>jandex</artifactId>
             <version>${jandex.version}</version>
          </dependency>
+         <dependency>
+            <groupId>org.aesh</groupId>
+            <artifactId>aesh</artifactId>
+            <version>${aesh.version}</version>
+         </dependency>
+
 
          <dependency>
             <groupId>org.jboss.classfilewriter</groupId>

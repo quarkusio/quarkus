@@ -27,4 +27,6 @@ public interface BootstrapConstants {
     String DESCRIPTOR_PATH = DESCRIPTOR_FILE_NAME;
 
     String PROP_INJECT_DEPS = "inject-dependencies";
+
+    String PROP_REPLACE_WITH_DEP = "replace-with-dependency";
 }

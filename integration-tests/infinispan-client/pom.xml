@@ -33,6 +33,11 @@
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-infinispan-client-deployment</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-infinispan-client-runtime</artifactId>
         </dependency>
 
         <!-- adds in remote querying protobuf marshalling -->
@@ -59,11 +64,19 @@
             <artifactId>shamrock-arc-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-arc-runtime</artifactId>
+        </dependency>
         <!-- .. and some REST endpoints -->
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-jaxrs-deployment</artifactId>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-jaxrs-runtime</artifactId>
         </dependency>
 
 

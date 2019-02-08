@@ -42,7 +42,7 @@
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-integration-test-class-transformer</artifactId>
-            <scope>provided</scope>
+            <!-- <scope>provided</scope> -->
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
@@ -55,8 +55,16 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-metrics-runtime</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-openapi-deployment</artifactId>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-openapi-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
@@ -65,8 +73,16 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-opentracing-runtime</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-arc-deployment</artifactId>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-arc-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
@@ -75,7 +91,16 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-health-runtime</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-reactive-streams-operators-deployment</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-reactive-streams-operators-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
@@ -84,8 +109,16 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-hibernate-validator-runtime</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-transactions-deployment</artifactId>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-transactions-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
@@ -94,8 +127,16 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-websockets-runtime</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-fault-tolerance-deployment</artifactId>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-fault-tolerance-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
@@ -104,8 +145,16 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-scheduler-runtime</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-security-deployment</artifactId>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-security-runtime</artifactId>
         </dependency>
 
         <!-- JAX-RS -->
@@ -116,8 +165,16 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-jaxrs-runtime</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-jaxrs-json-deployment</artifactId>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-jaxrs-json-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
@@ -136,6 +193,10 @@
             <artifactId>shamrock-rest-client-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-rest-client-runtime</artifactId>
+        </dependency>
 
         <!-- JPA -->
         <dependency>
@@ -145,8 +206,16 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-jpa-runtime</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-jdbc-h2-deployment</artifactId>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-jdbc-h2-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>

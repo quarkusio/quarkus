@@ -44,7 +44,6 @@ import org.jboss.shamrock.creator.phase.curate.CurateOutcome;
 import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarOutcome;
 import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarPhase;
 import org.jboss.shamrock.creator.resolver.aether.AetherArtifactResolver;
-import org.jboss.shamrock.creator.resolver.maven.ResolvedMavenArtifactDeps;
 
 /**
  *
@@ -141,7 +140,6 @@ public class BuildMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException {
 
         final AppArtifact appArtifact = new AppArtifact(project.getGroupId(), project.getArtifactId(), project.getVersion());
-        if(false) {
         final List<AppDependency> appDeps;
         try {
             final AetherArtifactResolver bsResolver = AetherArtifactResolver.getBootstrapResolver(bsRepo.toPath(), repoSystem, repoSession, repos);
@@ -155,7 +153,7 @@ public class BuildMojo extends AbstractMojo {
             resolvedDepList.add(appDep.getArtifact().toString());
         }
         Collections.sort(resolvedDepList);
-        }
+
         final Set<Artifact> artifacts = project.getArtifacts();
         final List<String> projectArtifactList = new ArrayList<>(artifacts.size());
         for(Artifact art : artifacts) {
@@ -170,22 +168,22 @@ public class BuildMojo extends AbstractMojo {
         }
         Collections.sort(projectArtifactList);
 
-        //if(!resolvedDepList.equals(projectArtifactList)) {
-        /*
+        if(!resolvedDepList.equals(projectArtifactList)) {
+
             System.out.println("Resolved " + appArtifact + " dependencies:");
             int i = 0;
             for(String s : resolvedDepList) {
                 System.out.println(++i + ") " + s);
             }
-            */
+
             System.out.println("Project dependencies:");
-            int i = 0;
+            i = 0;
             for(String s : projectArtifactList) {
                 System.out.println(++i + ") " + s);
             }
-            //throw new MojoExecutionException("Resolved dependencies don't match project dependencies");
-        //}
-        //}
+            throw new MojoExecutionException("Resolved dependencies don't match project dependencies");
+        }
+
         try(AppCreator appCreator = AppCreator.builder()
                 // configure the build phases we want the app to go through
                 .addPhase(new AugmentPhase()
@@ -201,8 +199,8 @@ public class BuildMojo extends AbstractMojo {
                 .build()) {
 
             //final AppArtifact appArtifact = new AppArtifact(project.getGroupId(), project.getArtifactId(), project.getVersion());
-            final List<AppDependency> appDeps = new ResolvedMavenArtifactDeps(project.getGroupId(), project.getArtifactId(),
-                    project.getVersion(), project.getArtifacts()).collectDependencies(appArtifact);
+            //final List<AppDependency> appDeps = new ResolvedMavenArtifactDeps(project.getGroupId(), project.getArtifactId(),
+            //        project.getVersion(), project.getArtifacts()).collectDependencies(appArtifact);
 
             // push resolved application state
             appCreator.pushOutcome(CurateOutcome.builder()

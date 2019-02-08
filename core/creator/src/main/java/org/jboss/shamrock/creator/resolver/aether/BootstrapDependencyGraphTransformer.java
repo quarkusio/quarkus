@@ -16,9 +16,13 @@
 
 package org.jboss.shamrock.creator.resolver.aether;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
 import org.eclipse.aether.RepositoryException;
 import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.collection.DependencyGraphTransformationContext;
 import org.eclipse.aether.collection.DependencyGraphTransformer;
 import org.eclipse.aether.graph.DependencyNode;
@@ -42,6 +46,7 @@ public class BootstrapDependencyGraphTransformer implements DependencyGraphTrans
     private final ConflictMarker conflictMarker;
     private final ConflictIdSorter conflictIdSorter;
     private boolean injectDeps = true;
+    private Set<String> changeTriggers = new HashSet<>(1);
 
     public BootstrapDependencyGraphTransformer(RepositorySystem system, DependencyGraphTransformer delegate) {
         this.system = system;
@@ -85,24 +90,58 @@ public class BootstrapDependencyGraphTransformer implements DependencyGraphTrans
     }
 
     private boolean injectDeps(DependencyNode node, AetherBootstrapDependencyProcessingContext ctx) throws RepositoryException {
+        if(changeTriggers.contains(getKey(node))) {
+            return true;
+        }
         ctx.setDependency(node);
         try {
             appDepProcessor.process(ctx);
-            if(ctx.isUpdated()) {
+            if (ctx.isReprocess()) {
+                final String key = getKey(node);
+                changeTriggers.add(key);
+                try {
+                    injectDeps(node, ctx);
+                } finally {
+                    changeTriggers.remove(key);
+                }
                 return true;
             }
         } catch (BootstrapDependencyProcessingException e) {
             throw new RepositoryException("Failed to process dependency " + node.getDependency(), e);
         }
         final List<DependencyNode> children = node.getChildren();
-        if(children.isEmpty()) {
-            return false;
+        if (children.isEmpty()) {
+            return ctx.isUpdated();
         }
-        boolean added = false;
-        for(DependencyNode child : children) {
-            added |= injectDeps(child, ctx);
+
+        boolean injected = false;
+        String key = null;
+        if(ctx.isUpdated()) {
+            key = getKey(node);
+            changeTriggers.add(key);
+            injected = true;
         }
-        return added;
+        try {
+            for (DependencyNode child : children) {
+                injected |= injectDeps(child, ctx);
+            }
+        } finally {
+            if(key != null) {
+                changeTriggers.remove(key);
+            }
+        }
+        return injected;
+    }
+
+    private static String getKey(DependencyNode node) {
+        final Artifact art = node.getArtifact();
+        final StringBuilder buf = new StringBuilder(128);
+        buf.append(art.getGroupId()).append(':').append(':').append(art.getArtifactId()).append(':');
+        final String classifier = art.getClassifier();
+        if(classifier != null && !classifier.isEmpty()) {
+            buf.append(classifier).append(':');
+        }
+        return buf.append(art.getExtension()).append(':').append(art.getVersion()).toString();
     }
 
     public static void log(String header, DependencyNode node) {

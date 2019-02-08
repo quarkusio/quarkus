@@ -59,31 +59,21 @@ public class BootstrapDependencyProcessor {
 
         log.info("Processing platform artifact " + ctx.getGroupId() + ':' + ctx.getArtifactId() + ':' + ctx.getClassifier() + ':' + ctx.getType() + ':' + ctx.getVersion());
 
-        final String depsStr = rtProps.getProperty(BootstrapConstants.PROP_INJECT_DEPS);
-        if(depsStr != null) {
-            final String[] deps = depsStr.split(INJECT_DEPS_SPLIT_EXPR);
+        String value = rtProps.getProperty(BootstrapConstants.PROP_REPLACE_WITH_DEP);
+        if(value != null) {
+            replaceWith(ctx, value);
+        }
+
+        value = rtProps.getProperty(BootstrapConstants.PROP_INJECT_DEPS);
+        if(value != null) {
+            final String[] deps = value.split(INJECT_DEPS_SPLIT_EXPR);
             for(String dep : deps) {
-                injectDependency(ctx, dep);
+                injectChildDependency(ctx, dep);
             }
         }
     }
 
-    private Properties resolveDescriptor(final Path rtPropsPath) throws BootstrapDependencyProcessingException {
-        final Properties rtProps;
-        if (!Files.exists(rtPropsPath)) {
-            // not a platform artifact
-            return null;
-        }
-        rtProps = new Properties();
-        try (BufferedReader reader = Files.newBufferedReader(rtPropsPath)) {
-            rtProps.load(reader);
-        } catch (IOException e) {
-            throw new BootstrapDependencyProcessingException("Failed to load ");
-        }
-        return rtProps;
-    }
-
-    private void injectDependency(BootstrapDependencyProcessingContext ctx, String str) throws BootstrapDependencyProcessingException {
+    private void replaceWith(BootstrapDependencyProcessingContext ctx, String str) throws BootstrapDependencyProcessingException {
         String groupId = null;
         String artifactId = null;
         String classifier = "";
@@ -134,7 +124,76 @@ public class BootstrapDependencyProcessor {
             //illegalDependencyFormat(str);
         }
 
-        ctx.injectDependency(groupId, artifactId, classifier, type, version);
+        ctx.replaceWith(groupId, artifactId, classifier, type, version);
+    }
+
+    private Properties resolveDescriptor(final Path rtPropsPath) throws BootstrapDependencyProcessingException {
+        final Properties rtProps;
+        if (!Files.exists(rtPropsPath)) {
+            // not a platform artifact
+            return null;
+        }
+        rtProps = new Properties();
+        try (BufferedReader reader = Files.newBufferedReader(rtPropsPath)) {
+            rtProps.load(reader);
+        } catch (IOException e) {
+            throw new BootstrapDependencyProcessingException("Failed to load ");
+        }
+        return rtProps;
+    }
+
+    private void injectChildDependency(BootstrapDependencyProcessingContext ctx, String str) throws BootstrapDependencyProcessingException {
+        String groupId = null;
+        String artifactId = null;
+        String classifier = "";
+        String type = "jar";
+        String version = null;
+
+        int colon = str.indexOf(':');
+        final int length = str.length();
+        if(colon < 1 || colon == length - 1) {
+            illegalDependencyFormat(str);
+        }
+        groupId = str.substring(0, colon);
+        int offset = colon + 1;
+        colon = str.indexOf(':', offset);
+        if(colon < 0) {
+            artifactId = str.substring(offset, length);
+        } else {
+            if(colon == length - 1) {
+                illegalDependencyFormat(str);
+            }
+            artifactId = str.substring(offset, colon);
+            offset = colon + 1;
+            colon = str.indexOf(':', offset);
+            if(colon < 0) {
+                version = str.substring(offset, length);
+            } else {
+                if(colon == length - 1) {
+                    illegalDependencyFormat(str);
+                }
+                type = str.substring(offset, colon);
+                offset = colon + 1;
+                colon = str.indexOf(':', offset);
+                if(colon < 0) {
+                    version = str.substring(offset, length);
+                } else {
+                    if (colon == length - 1) {
+                        illegalDependencyFormat(str);
+                    }
+                    classifier = type;
+                    type = str.substring(offset, colon);
+                    version = str.substring(colon + 1);
+                }
+            }
+        }
+
+        if(version == null || version.isEmpty()) {
+            version = ctx.getVersion();
+            //illegalDependencyFormat(str);
+        }
+
+        ctx.injectChild(groupId, artifactId, classifier, type, version);
     }
 
     private static void illegalDependencyFormat(String str) throws BootstrapDependencyProcessingException {

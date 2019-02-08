@@ -38,9 +38,11 @@ public interface BootstrapDependencyProcessingContext {
 
     void overrideVersion(String version);
 
-    default void injectDependency(String groupId, String artifactId, String version) throws BootstrapDependencyProcessingException {
-        injectDependency(groupId, artifactId, "", "jar", version);
+    default void injectChild(String groupId, String artifactId, String version) throws BootstrapDependencyProcessingException {
+        injectChild(groupId, artifactId, "", "jar", version);
     }
 
-    void injectDependency(String groupId, String artifactId, String classifier, String type, String version) throws BootstrapDependencyProcessingException;
+    void injectChild(String groupId, String artifactId, String classifier, String type, String version) throws BootstrapDependencyProcessingException;
+
+    void replaceWith(String groupId, String artifactId, String classifier, String type, String version) throws BootstrapDependencyProcessingException;
 }

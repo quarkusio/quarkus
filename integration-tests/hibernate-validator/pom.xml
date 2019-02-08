@@ -16,21 +16,12 @@
     <dependencies>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jaxrs-runtime</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-hibernate-validator-runtime</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-arc-runtime</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-jaxrs-deployment</artifactId>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-jaxrs-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
@@ -39,8 +30,16 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-hibernate-validator-runtime</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-arc-deployment</artifactId>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-arc-runtime</artifactId>
         </dependency>
 
         <!-- EL implementation -->

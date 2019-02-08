@@ -19,7 +19,6 @@ package org.jboss.shamrock.creator.resolver.aether;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
@@ -32,7 +31,6 @@ import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.DependencyRequest;
 import org.eclipse.aether.resolution.DependencyResolutionException;
-import org.eclipse.aether.resolution.DependencyResult;
 import org.jboss.logging.Logger;
 import org.jboss.shamrock.bootstrap.BootstrapDependencyProcessingContext;
 import org.jboss.shamrock.bootstrap.BootstrapDependencyProcessingException;
@@ -51,7 +49,7 @@ public class AetherBootstrapDependencyProcessingContext implements BootstrapDepe
     private Artifact artifact;
     private Path path;
     private boolean updated;
-
+    private boolean reprocess;
 
     public AetherBootstrapDependencyProcessingContext(RepositorySystem system, RepositorySystemSession session) {
         this.system = system;
@@ -63,10 +61,15 @@ public class AetherBootstrapDependencyProcessingContext implements BootstrapDepe
         artifact = node.getArtifact();
         path = null;
         updated = false;
+        reprocess = false;
     }
 
     boolean isUpdated() {
         return updated;
+    }
+
+    boolean isReprocess() {
+        return reprocess;
     }
 
     @Override
@@ -117,25 +120,36 @@ public class AetherBootstrapDependencyProcessingContext implements BootstrapDepe
     }
 
     @Override
-    public void injectDependency(String groupId, String artifactId, String classifier, String type, String version) throws BootstrapDependencyProcessingException {
+    public void injectChild(String groupId, String artifactId, String classifier, String type, String version) throws BootstrapDependencyProcessingException {
+        final DependencyNode depNode = resolve(groupId, artifactId, classifier, type, version);
+        final List<DependencyNode> children = node.getChildren();
+        final List<DependencyNode> augmented = new ArrayList<>(children.size() + 1);
+        //augmented.add(depResult.getRoot());
+        augmented.addAll(children);
+        augmented.add(depNode);
+        node.setChildren(augmented);
+        updated = true;
+    }
+
+    @Override
+    public void replaceWith(String groupId, String artifactId, String classifier, String type, String version) throws BootstrapDependencyProcessingException {
+        final DependencyNode depNode = resolve(groupId, artifactId, classifier, type, version);
+        node.setArtifact(depNode.getArtifact());
+        node.setChildren(depNode.getChildren());
+        reprocess = true;
+    }
+
+    private DependencyNode resolve(String groupId, String artifactId, String classifier, String type, String version)
+            throws BootstrapDependencyProcessingException {
         log.info("Injecting dependency " + groupId + ":" + artifactId + ":" + classifier + ":" + type + ":" + version);
         final CollectRequest collectRequest = new CollectRequest();
         collectRequest.setRoot(new Dependency(new DefaultArtifact(groupId, artifactId, classifier, type, version), "runtime"));
         collectRequest.setRepositories(node.getRepositories());
         final DependencyRequest dependencyRequest = new DependencyRequest(collectRequest, null);
-        final DependencyResult depResult;
         try {
-            depResult = system.resolveDependencies(session, dependencyRequest);
+            return system.resolveDependencies(session, dependencyRequest).getRoot();
         } catch (DependencyResolutionException e) {
             throw new BootstrapDependencyProcessingException("Failed to resolve injected dependency", e);
         }
-
-        final List<DependencyNode> children = node.getChildren();
-        final List<DependencyNode> augmented = new ArrayList<>(children.size() + 1);
-        //augmented.add(depResult.getRoot());
-        augmented.addAll(children);
-        augmented.add(depResult.getRoot());
-        node.setChildren(augmented);
-        updated = true;
     }
 }

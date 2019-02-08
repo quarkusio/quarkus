@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.IntFunction;
 
 import io.smallrye.config.SmallRyeConfig;
 import org.jboss.protean.gizmo.BytecodeCreator;
@@ -20,7 +21,7 @@ public class ObjectListConfigType extends ObjectConfigType {
 
     static final MethodDescriptor ALF_GET_INST_METHOD = MethodDescriptor.ofMethod(ArrayListFactory.class, "getInstance", ArrayListFactory.class);
     static final MethodDescriptor EMPTY_LIST_METHOD = MethodDescriptor.ofMethod(Collections.class, "emptyList", List.class);
-    static final MethodDescriptor CU_GET_DEFAULTS_METHOD = MethodDescriptor.ofMethod(ConfigUtils.class, "getDefaults", Collection.class);
+    static final MethodDescriptor CU_GET_DEFAULTS_METHOD = MethodDescriptor.ofMethod(ConfigUtils.class, "getDefaults", Collection.class, SmallRyeConfig.class, String.class, Class.class, IntFunction.class);
 
     public ObjectListConfigType(final String containingName, final CompoundConfigType container, final boolean consumeSegment, final String defaultValue, final Class<?> expectedType) {
         super(containingName, container, consumeSegment, defaultValue, expectedType);
@@ -82,7 +83,7 @@ public class ObjectListConfigType extends ObjectConfigType {
         body.invokeStaticMethod(setter, enclosing, value);
     }
 
-    public ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorFinder, final ResultHandle smallRyeConfig) {
-        return body.checkCast(body.invokeVirtualMethod(SRC_CONVERT_METHOD, smallRyeConfig, body.load(defaultValue), body.loadClass(expectedType)), List.class);
+    public ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorFinder, final ResultHandle config) {
+        return body.checkCast(body.invokeStaticMethod(CU_GET_DEFAULTS_METHOD, config, body.load(defaultValue), body.loadClass(expectedType), body.invokeStaticMethod(ALF_GET_INST_METHOD)), List.class);
     }
 }

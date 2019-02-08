@@ -44,6 +44,7 @@ import org.apache.commons.beanutils.PropertyUtils;
 import org.jboss.invocation.proxy.ProxyConfiguration;
 import org.jboss.invocation.proxy.ProxyFactory;
 import org.jboss.protean.gizmo.AssignableResultHandle;
+import org.jboss.protean.gizmo.BytecodeCreator;
 import org.jboss.protean.gizmo.CatchBlockCreator;
 import org.jboss.protean.gizmo.ClassCreator;
 import org.jboss.protean.gizmo.FieldDescriptor;
@@ -52,12 +53,11 @@ import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
 import org.jboss.protean.gizmo.TryBlock;
 import org.jboss.shamrock.deployment.ClassOutput;
-import org.jboss.shamrock.deployment.ShamrockConfig;
-import org.jboss.shamrock.runtime.ConfigHelper;
 import org.jboss.shamrock.runtime.ObjectSubstitution;
 import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.runtime.StartupContext;
 import org.jboss.shamrock.runtime.StartupTask;
+import org.wildfly.common.Assert;
 
 /**
  * A class that can be used to record invocations to bytecode so they can be replayed later. This is done through the
@@ -100,6 +100,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
     private final Map<Class<?>, NonDefaultConstructorHolder> nonDefaultConstructors = new HashMap<>();
     private final String className;
 
+    private final List<ObjectLoader> loaders = new ArrayList<>();
+    private final IdentityHashMap<Object, ResultHandle> loadedObjects = new IdentityHashMap<>();
 
     public BytecodeRecorderImpl(ClassLoader classLoader, boolean staticInit, String className) {
         this.classLoader = classLoader;
@@ -125,6 +127,12 @@ public class BytecodeRecorderImpl implements RecorderContext {
         nonDefaultConstructors.put(constructor.getDeclaringClass(), new NonDefaultConstructorHolder(constructor, (Function<Object, List<Object>>) parameters));
     }
 
+    @Override
+    public void registerObjectLoader(ObjectLoader loader) {
+        Assert.checkNotNullParam("loader", loader);
+        loaders.add(loader);
+    }
+
     public <T> T getRecordingProxy(Class<T> theClass) {
         return methodRecorder.getRecordingProxy(theClass);
     }
@@ -132,9 +140,9 @@ public class BytecodeRecorderImpl implements RecorderContext {
     @Override
     public Class<?> classProxy(String name) {
         ProxyFactory<Object> factory = new ProxyFactory<>(new ProxyConfiguration<Object>()
-                .setSuperClass(Object.class)
-                .setClassLoader(classLoader)
-                .setProxyName(getClass().getName() + "$$ClassProxy" + COUNT.incrementAndGet()));
+                                                                  .setSuperClass(Object.class)
+                                                                  .setClassLoader(classLoader)
+                                                                  .setProxyName(getClass().getName() + "$$ClassProxy" + COUNT.incrementAndGet()));
         Class theClass = factory.defineClass();
         classProxies.put(theClass, name);
         return theClass;
@@ -162,9 +170,9 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 return theClass.cast(existingProxyClasses.get(theClass));
             }
             ProxyFactory<T> factory = new ProxyFactory<T>(new ProxyConfiguration<T>()
-                    .setSuperClass(theClass)
-                    .setClassLoader(classLoader)
-                    .setProxyName(getClass().getName() + "$$RecordingProxyProxy" + COUNT.incrementAndGet()));
+                                                                  .setSuperClass(theClass)
+                                                                  .setClassLoader(classLoader)
+                                                                  .setProxyName(getClass().getName() + "$$RecordingProxyProxy" + COUNT.incrementAndGet()));
             try {
                 T recordingProxy = factory.newInstance(new InvocationHandler() {
                     @Override
@@ -264,10 +272,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 for (int i = 0; i < call.parameters.length; ++i) {
                     Class<?> targetType = call.method.getParameterTypes()[i];
                     if (call.parameters[i] != null) {
-                        Object param = call.parameters[i];
-                        ResultHandle out;
-                        out = loadObjectInstance(method, param, returnValueResults, targetType);
-                        params[i] = out;
+                        params[i] = loadObjectInstance(method, call.parameters[i], returnValueResults, targetType);
                     } else {
                         params[i] = method.loadNull();
                     }
@@ -303,6 +308,9 @@ public class BytecodeRecorderImpl implements RecorderContext {
         ResultHandle out;
         if (param == null) {
             out = method.loadNull();
+
+        } else if (findLoaded(method, param)) {
+            return loadedObjects.get(param);
         } else if (substitutions.containsKey(param.getClass()) || substitutions.containsKey(expectedType)) {
             SubstitutionHolder holder = substitutions.get(param.getClass());
             if (holder == null) {
@@ -312,8 +320,8 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 ObjectSubstitution substitution = holder.sub.newInstance();
                 Object res = substitution.serialize(param);
                 ResultHandle serialized = loadObjectInstance(method, res, returnValueResults, holder.to);
-                ResultHandle subInstane = method.newInstance(MethodDescriptor.ofConstructor(holder.sub));
-                out = method.invokeInterfaceMethod(ofMethod(ObjectSubstitution.class, "deserialize", Object.class, Object.class), subInstane, serialized);
+                ResultHandle subInstance = method.newInstance(MethodDescriptor.ofConstructor(holder.sub));
+                out = method.invokeInterfaceMethod(ofMethod(ObjectSubstitution.class, "deserialize", Object.class, Object.class), subInstance, serialized);
             } catch (Exception e) {
                 throw new RuntimeException("Failed to substitute " + param, e);
             }
@@ -327,36 +335,12 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 return method.invokeStaticMethod(ofMethod(Optional.class, "empty", Optional.class));
             }
         } else if (param instanceof String) {
-            //this allows for runtime config to automatically work
-            //if a string is passed into the template that was obtained from config the config key used to obtain it is recorded
-            //and used to make this value runtime configurable
-            String configParam = ShamrockConfig.getConfigKey(param);
-            if (configParam != null) {
-                out = method.invokeStaticMethod(ofMethod(ConfigHelper.class, "getString", String.class, String.class, String.class), method.load(configParam), method.load((String)param));
-            } else {
-                out = method.load((String) param);
-            }
+            out = method.load((String) param);
         }else if (param instanceof Integer) {
-            //this allows for runtime config to automatically work
-            //if a string is passed into the template that was obtained from config the config key used to obtain it is recorded
-            //and used to make this value runtime configurable
-            String configParam = ShamrockConfig.getConfigKey(param);
-            if (configParam != null) {
-                out = method.invokeStaticMethod(ofMethod(ConfigHelper.class, "getInteger", Integer.class, String.class, int.class), method.load(configParam), method.load((Integer)param));
-            } else {
-                out = method.invokeStaticMethod(ofMethod(Integer.class, "valueOf", Integer.class, int.class), method.load((Integer) param));
-            }
+            out = method.invokeStaticMethod(ofMethod(Integer.class, "valueOf", Integer.class, int.class), method.load((Integer) param));
         } else if (param instanceof Boolean) {
-            //this allows for runtime config to automatically work
-            //if a string is passed into the template that was obtained from config the config key used to obtain it is recorded
-            //and used to make this value runtime configurable
-            String configParam = ShamrockConfig.getConfigKey(param);
-            if (configParam != null) {
-                out = method.invokeStaticMethod(ofMethod(ConfigHelper.class, "getBoolean", Boolean.class, String.class, boolean.class), method.load(configParam), method.load((Boolean) param));
-            } else {
-                out = method.invokeStaticMethod(ofMethod(Boolean.class, "valueOf", Boolean.class, boolean.class), method.load((Boolean) param));
-            }
-        }   else if (param instanceof URL) {
+            out = method.invokeStaticMethod(ofMethod(Boolean.class, "valueOf", Boolean.class, boolean.class), method.load((Boolean) param));
+        } else if (param instanceof URL) {
             String url = ((URL) param).toExternalForm();
             AssignableResultHandle value = method.createVariable(URL.class);
             try (TryBlock et = method.tryBlock()) {
@@ -550,6 +534,20 @@ public class BytecodeRecorderImpl implements RecorderContext {
         return out;
     }
 
+    private boolean findLoaded(final BytecodeCreator body, final Object param) {
+        if (loadedObjects.containsKey(param)) {
+            return true;
+        }
+        for (ObjectLoader loader : loaders) {
+            ResultHandle handle = loader.load(body, param);
+            if (handle != null) {
+                loadedObjects.put(param, handle);
+                return true;
+            }
+        }
+        return false;
+    }
+
     interface BytecodeInstruction {
 
     }
@@ -610,7 +608,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
         }
     }
 
-    class ProxyInstance {
+    private static final class ProxyInstance {
         final Object proxy;
         final String key;
 

@@ -57,84 +57,101 @@ public class VertxProducer {
      * The number of event loops. 2 x the number of core by default.
      */
     @Inject
-    @ConfigProperty(name = "vertx.event-loop-poolsize")
+    @ConfigProperty(name = "vertx.event-loop-pool-size")
     Optional<Integer> eventLoopsPoolSize;
 
     /**
-     * The maximum amount of time the event loop can be blocked in second.
+     * The maximum amount of time the event loop can be blocked in seconds.
      */
+    @Inject
     @ConfigProperty(name = "vertx.max-event-loop-execute-time", defaultValue = "2")
     long maxEventLoopExecuteTime;
 
     /**
-     * The amount of time in second before a warning is displayed if the event loop is blocked.
+     * The amount of time (in seconds) before a warning is displayed if the event loop is blocked.
      */
+    @Inject
     @ConfigProperty(name = "vertx.warning-exception-time", defaultValue = "2")
     long warningExceptionTime;
 
     /**
      * The size of the worker thread pool.
      */
+    @Inject
     @ConfigProperty(name = "vertx.worker-pool-size", defaultValue = "20")
     int workerPoolSize;
 
     /**
-     * The maximum amount of time, in second, the worker thread can be blocked.
+     * The maximum amount of time (in seconds) the worker thread can be blocked.
      */
+    @Inject
     @ConfigProperty(name = "vertx.max-worker-execute-time", defaultValue = "60")
     long maxWorkerExecuteTime;
 
     /**
      * The size of the internal thread pool (used for the file system).
      */
+    @Inject
     @ConfigProperty(name = "vertx.internal-blocking-pool-size", defaultValue = "20")
     int internalBlockingPoolSize;
 
     /**
      * Enables the async DNS resolver.
      */
+    @Inject
     @ConfigProperty(name = "vertx.use-async-dns", defaultValue = "false")
     boolean useAsyncDNS;
 
     /**
      * The host name to be used for clustering.
      */
+    @Inject
     @ConfigProperty(name = "vertx.cluster.host", defaultValue = "localhost")
     String clusterHost;
 
     /**
      * The port to be used for clustering.
      */
+    @Inject
     @ConfigProperty(name = "vertx.cluster.port")
     Optional<Integer> clusterPort;
 
     /**
      * The public facing host name to be used when clustering.
      */
+    @Inject
     @ConfigProperty(name = "vertx.cluster.public-host")
     Optional<String> clusterPublicHost;
 
     /**
      * The public facing host name to be used when clustering.
      */
+    @Inject
     @ConfigProperty(name = "vertx.cluster.public-port")
     Optional<Integer> clusterPublicPort;
 
     /**
      * Enables or disables the clustering.
+     * The clustering can be configured from the {@code vertx.cluster.} properties. The event bus can be configured
+     * from the {@code vertx.eventbus.} properties. Note that if {@code vertx.clustered} is set to {@code false}
+     * (default), the cluster and event bus configuration are ignored.
+     *
      */
-    @ConfigProperty(name = "vertx.cluster.enabled")
+    @Inject
+    @ConfigProperty(name = "vertx.clustered", defaultValue = "false")
     boolean clustered;
 
     /**
      * The cluster ping interval, in seconds.
      */
+    @Inject
     @ConfigProperty(name = "vertx.cluster.ping-interval", defaultValue = "2")
     long pingInterval;
 
     /**
      * The ping reply interval, in seconds.
      */
+    @Inject
     @ConfigProperty(name = "vertx.cluster.ping-reply-interval", defaultValue = "2")
     long pingReplyInterval;
 
@@ -143,6 +160,7 @@ public class VertxProducer {
      * The extension determines the type of key. Are supported {@code .pem}, {@code .jks},and {@code .pfx}.
      * In the case of {@code pem} keys, a comma-separated list can be given.
      */
+    @Inject
     @ConfigProperty(name = "vertx.eventbus.key-store.path")
     Optional<String> keyStorePath;
 
@@ -151,6 +169,7 @@ public class VertxProducer {
      * This value is only used if {@code vertx.eventbus.key-store.path} references a {@code pem} file.
      * The expected value is a comma-separated list paths to the certificate files (Pem format).
      */
+    @Inject
     @ConfigProperty(name = "vertx.eventbus.key-store.certs")
     Optional<String> keyStoreCerts;
 
@@ -158,6 +177,7 @@ public class VertxProducer {
      * The password used to open the key file.
      * This value is only used  if {@code vertx.eventbus.key-store.path} references a {@code jks} or a {@code pfx} file.
      */
+    @Inject
     @ConfigProperty(name = "vertx.eventbus.key-store.password")
     Optional<String> keyStorePassword;
 
@@ -166,6 +186,7 @@ public class VertxProducer {
      * The extension determines the type of key. Are supported {@code .pem}, {@code .jks},and {@code .pfx}.
      * In the case of {@code pem} keys, a comma-separated list can be given.
      */
+    @Inject
     @ConfigProperty(name = "vertx.eventbus.trust-store.path")
     Optional<String> trustStorePath;
 
@@ -173,60 +194,70 @@ public class VertxProducer {
      * Password for the certificate file used for the SSL communication in the event bus.
      * This value is only used  if {@code vertx.eventbus.trust-store.path} references a {@code jks} or a {@code pfx} file.
      */
+    @Inject
     @ConfigProperty(name = "vertx.eventbus.trust-store.password")
     Optional<String> trustStorePassword;
 
     /**
      * The client authentication used for the event bus communication.
      */
+    @Inject
     @ConfigProperty(name = "vertx.eventbus.client-auth")
     Optional<String> clientAuth;
 
     /**
      * The connect timeout used for the event bus communication in seconds.
      */
+    @Inject
     @ConfigProperty(name = "vertx.eventbus.connect-timeout")
     Optional<Long> connectTimeout;
 
     /**
      * The idle timeout in seconds for the event bus communication.
      */
+    @Inject
     @ConfigProperty(name = "vertx.eventbus.idle-timeout")
     Optional<Long> idleTimeout;
 
     /**
      * The number of reconnection attempts for the event bus communication.
      */
+    @Inject
     @ConfigProperty(name = "vertx.eventbus.reconnect-attempts")
     Optional<Integer> reconnectAttempts;
 
     /**
      * The reconnection interval in seconds for the event bus communication.
      */
+    @Inject
     @ConfigProperty(name = "vertx.eventbus.reconnect-interval")
     Optional<Long> reconnectInterval;
 
     /**
      * Whether or not to reuse the address for the event bus communication.
      */
+    @Inject
     @ConfigProperty(name = "vertx.eventbus.reuse-address")
     Optional<Boolean> reuseAddress;
 
     /**
      * Whether or not to reuse the port for the event bus communication.
      */
+    @Inject
     @ConfigProperty(name = "vertx.eventbus.reuse-port")
     Optional<Boolean> reusePort;
 
     /**
      * Enables or Disabled SSL for the event bus.
      */
+    @Inject
     @ConfigProperty(name = "vertx.eventbus.ssl", defaultValue = "false")
     boolean ssl;
 
     /**
      * Enables or disables the trust-all parameter for the event bus.
      */
+    @Inject
     @ConfigProperty(name = "vertx.eventbus.trust-all", defaultValue = "false")
     public boolean trustAll;
 

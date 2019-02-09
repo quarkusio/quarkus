@@ -125,6 +125,8 @@
       <infinispan.version>10.0.0.Alpha3</infinispan.version>
       <caffeine.version>2.6.2</caffeine.version>
       <netty.version>4.1.30.Final</netty.version>
+      <reactive-streams.version>1.0.2</reactive-streams.version>
+      <test-containers.version>1.10.6</test-containers.version>
    </properties>
 
    <dependencyManagement>
@@ -912,6 +914,12 @@
             <version>${assertj.version}</version>
             <scope>test</scope>
          </dependency>
+         <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>${test-containers.version}</version>
+            <scope>test</scope>
+         </dependency>
          
          <dependency>
             <groupId>org.codehaus.plexus</groupId>
@@ -1376,6 +1384,12 @@
             <groupId>org.infinispan</groupId>
             <artifactId>infinispan-query-dsl</artifactId>
             <version>${infinispan.version}</version>
+         </dependency>
+
+         <dependency>
+            <groupId>org.reactivestreams</groupId>
+            <artifactId>reactive-streams</artifactId>
+            <version>${reactive-streams.version}</version>
          </dependency>
 
       </dependencies>

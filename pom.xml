@@ -68,8 +68,8 @@
         <module>independent-projects/panache</module>
         <module>independent-projects/vertx-axle-clients</module>
 
-        <!-- CLI and Maven -->
-        <module>cli</module>
+        <!-- Devtools (maven, cli, gradle) -->
+        <module>devtools</module>
 
         <!-- Misc. -->
         <module>docs</module>

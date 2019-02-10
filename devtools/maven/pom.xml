@@ -22,7 +22,7 @@
         <artifactId>shamrock-build-parent</artifactId>
         <groupId>org.jboss.shamrock</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
-	<relativePath>../../build-parent/pom.xml</relativePath>
+        <relativePath>../../build-parent/pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -37,7 +37,7 @@
 
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>cli-common</artifactId>
+            <artifactId>devtools-common</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

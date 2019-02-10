@@ -319,6 +319,16 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-jaxrs-json-deployment</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-jaxrs-json-runtime</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-jwt-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
@@ -1184,7 +1194,7 @@
          </dependency>
          <dependency>
             <groupId>org.wildfly.security</groupId>
-            <artifactId>wildfly-elytron-embedded</artifactId>
+            <artifactId>wildfly-elytron</artifactId>
             <version>${wildfly-elytron.version}</version>
          </dependency>
 

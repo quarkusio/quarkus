@@ -17,8 +17,6 @@ import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.wildfly.security.authz.Attributes;
-import org.wildfly.security.util.JsonUtil;
 
 public class JwtCallerPrincipalUnitTest {
     @Test

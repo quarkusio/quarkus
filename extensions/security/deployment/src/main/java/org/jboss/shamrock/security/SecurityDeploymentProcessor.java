@@ -18,18 +18,16 @@ package org.jboss.shamrock.security;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.servlet.ServletExtension;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.annotations.BuildProducer;
-import org.jboss.shamrock.annotations.BuildStep;
-import org.jboss.shamrock.annotations.ExecutionTime;
-import org.jboss.shamrock.annotations.Record;
 import org.jboss.shamrock.deployment.ShamrockConfig;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.ExecutionTime;
+import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import org.jboss.shamrock.runtime.RuntimeValue;
@@ -54,18 +52,9 @@ import org.wildfly.security.auth.server.SecurityRealm;
 class SecurityDeploymentProcessor {
     private static final Logger log = Logger.getLogger(SecurityDeploymentProcessor.class.getName());
 
-    /**
-     * The configuration for the {@linkplain org.wildfly.security.auth.realm.LegacyPropertiesSecurityRealm}
-     */
-    @ConfigProperty(name = "shamrock.security.file")
-    Optional<PropertiesRealmConfig> propertiesRealmConfig;
-    /**
-     * The configuration for the {@linkplain org.wildfly.security.auth.realm.SimpleMapBackedSecurityRealm}
-     */
-    @ConfigProperty(name = "shamrock.security.embedded")
-    Optional<MPRealmConfig> mpRealmConfig;
+    SecurityConfig security;
+
     /** Flag to indicate if a password based realm was created by this processor */
-    private volatile boolean createdPasswordRealm;
 
     /**
      * Register the Elytron-provided password factory SPI implementation
@@ -90,17 +79,18 @@ class SecurityDeploymentProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     AuthConfigBuildItem configureFileRealmAuthConfig(SecurityTemplate template,
-                                                    BuildProducer<SubstrateResourceBuildItem> resources,
-                                                    BuildProducer<SecurityRealmBuildItem> securityRealm) throws Exception {
-        if (propertiesRealmConfig.isPresent() && propertiesRealmConfig.get().isEnabled()) {
-            PropertiesRealmConfig realmConfig = propertiesRealmConfig.get();
+                                                     BuildProducer<SubstrateResourceBuildItem> resources,
+                                                     BuildProducer<SecurityRealmBuildItem> securityRealm,
+                                                     BuildProducer<PasswordRealmBuildItem> passwordRealm) throws Exception {
+        if (security.file.enabled) {
+            PropertiesRealmConfig realmConfig = security.file;
             log.debugf("Configuring from PropertiesRealmConfig, users=%s, roles=%s", realmConfig.getUsers(), realmConfig.getRoles());
             // Add the users/roles properties files resource names to build artifact
             resources.produce(new SubstrateResourceBuildItem(realmConfig.users, realmConfig.roles));
             // Have the runtime template create the LegacyPropertiesSecurityRealm and create the build item
-            RuntimeValue<SecurityRealm> realm = template.createRealm(propertiesRealmConfig.get());
-            securityRealm.produce(new SecurityRealmBuildItem(realm, propertiesRealmConfig.get().getAuthConfig()));
-            this.createdPasswordRealm = true;
+            RuntimeValue<SecurityRealm> realm = template.createRealm(realmConfig);
+            securityRealm.produce(new SecurityRealmBuildItem(realm, realmConfig.getAuthConfig()));
+            passwordRealm.produce(new PasswordRealmBuildItem());
             // Return the realm authentication mechanism build item
             return new AuthConfigBuildItem(realmConfig.getAuthConfig());
         }
@@ -120,9 +110,10 @@ class SecurityDeploymentProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     AuthConfigBuildItem configureMPRealmConfig(SecurityTemplate template,
-                                 BuildProducer<SecurityRealmBuildItem> securityRealm) throws Exception {
-        if (mpRealmConfig.isPresent() && mpRealmConfig.get().isEnabled()) {
-            MPRealmConfig realmConfig = mpRealmConfig.get();
+                                               BuildProducer<SecurityRealmBuildItem> securityRealm,
+                                               BuildProducer<PasswordRealmBuildItem> passwordRealm) throws Exception {
+        if (security.embedded.enabled) {
+            MPRealmConfig realmConfig = security.embedded;
             log.info("Configuring from MPRealmConfig");
             // These are not being populated correctly by the core config Map logic for some reason, so reparse them here
             log.debugf("MPRealmConfig.users: %s", realmConfig.users);
@@ -145,7 +136,7 @@ class SecurityDeploymentProcessor {
 
             RuntimeValue<SecurityRealm> realm = template.createRealm(realmConfig);
             securityRealm.produce(new SecurityRealmBuildItem(realm, realmConfig.getAuthConfig()));
-            this.createdPasswordRealm = true;
+            passwordRealm.produce(new PasswordRealmBuildItem());
             return new AuthConfigBuildItem(realmConfig.getAuthConfig());
         }
         return null;
@@ -164,7 +155,7 @@ class SecurityDeploymentProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     SecurityDomainBuildItem build(SecurityTemplate template, BuildProducer<ServletExtensionBuildItem> extension,
                                   List<SecurityRealmBuildItem> realms) throws Exception {
-        log.debugf("build, hasFile=%s, hasMP=%s", propertiesRealmConfig.isPresent(), mpRealmConfig.isPresent());
+        log.debugf("build, hasFile=%s, hasMP=%s", security.file.enabled, security.embedded.enabled);
         if(realms.size() > 0) {
             // Configure the SecurityDomain.Builder from the main realm
             SecurityRealmBuildItem realmBuildItem = realms.get(0);
@@ -195,8 +186,9 @@ class SecurityDeploymentProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void configureIdentityManager(SecurityTemplate template, SecurityDomainBuildItem securityDomain,
-                                  BuildProducer<IdentityManagerBuildItem> identityManagerProducer) {
-        if(createdPasswordRealm) {
+                                  BuildProducer<IdentityManagerBuildItem> identityManagerProducer,
+                                  List<PasswordRealmBuildItem> passwordRealm) {
+        if(passwordRealm.size() > 0) {
             RuntimeValue<IdentityManager> identityManager = template.createIdentityManager(securityDomain.getSecurityDomain());
             identityManagerProducer.produce(new IdentityManagerBuildItem(identityManager));
         }
@@ -227,7 +219,7 @@ class SecurityDeploymentProcessor {
             allAuthConfigs.add(ac);
         }
         ServletExtension idmExt = template.configureUndertowIdentityManager(securityDomain.getSecurityDomain(),
-                                                                   identityManager.getIdentityManager(), allAuthConfigs);
+                                                                            identityManager.getIdentityManager(), allAuthConfigs);
         extension.produce(new ServletExtensionBuildItem(idmExt));
     }
 
@@ -247,9 +239,9 @@ class SecurityDeploymentProcessor {
             if(authConfig.getType() != null) {
                 Class authType = authConfig.getType();
                 if (authType.isAssignableFrom(PropertiesRealmConfig.class)) {
-                    template.loadRealm(realm.getRealm(), propertiesRealmConfig.get());
+                    template.loadRealm(realm.getRealm(), security.file);
                 } else if (authType.isAssignableFrom(MPRealmConfig.class)) {
-                    template.loadRealm(realm.getRealm(), mpRealmConfig.get());
+                    template.loadRealm(realm.getRealm(), security.embedded);
                 }
             }
         }

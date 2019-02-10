@@ -4,7 +4,7 @@ import java.util.List;
 
 import io.undertow.security.idm.IdentityManager;
 import org.jboss.builder.item.MultiBuildItem;
-import org.jboss.shamrock.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import org.jboss.shamrock.runtime.RuntimeValue;
 
 /**

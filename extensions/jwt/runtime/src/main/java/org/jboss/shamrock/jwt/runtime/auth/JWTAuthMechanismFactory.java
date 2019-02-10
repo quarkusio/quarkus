@@ -25,11 +25,8 @@ import org.jboss.logging.Logger;
  */
 @ApplicationScoped
 public class JWTAuthMechanismFactory implements AuthenticationMechanismFactory {
-    private static Logger log = Logger.getLogger(JWTAuthMechanismFactory.class);
-    private final JWTAuthContextInfo contextInfo;
 
-    public JWTAuthMechanismFactory(JWTAuthContextInfo contextInfo) {
-        this.contextInfo = contextInfo;
+    public JWTAuthMechanismFactory() {
     }
 
     /**
@@ -47,7 +44,7 @@ public class JWTAuthMechanismFactory implements AuthenticationMechanismFactory {
      */
     @Override
     public AuthenticationMechanism create(String mechanismName, IdentityManager identityManager, FormParserFactory formParserFactory, final Map<String, String> properties) {
-        return new JWTAuthMechanism(contextInfo, identityManager);
+        return new JWTAuthMechanism(identityManager);
     }
 
 }

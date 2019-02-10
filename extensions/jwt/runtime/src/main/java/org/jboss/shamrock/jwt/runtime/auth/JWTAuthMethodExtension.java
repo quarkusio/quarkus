@@ -11,20 +11,14 @@ import io.undertow.servlet.api.DeploymentInfo;
  * Additionally, registers an Undertow handler that cleans up MP JWT principal
  */
 public class JWTAuthMethodExtension implements ServletExtension {
-    private final String authMechanism;
-    private final JWTAuthContextInfo contextInfo;
-
-    public JWTAuthMethodExtension(String authMechanism, JWTAuthContextInfo contextInfo) {
-        this.authMechanism = authMechanism;
-        this.contextInfo = contextInfo;
-    }
+    private String authMechanism;
 
     public String getAuthMechanism() {
         return authMechanism;
     }
 
-    public JWTAuthContextInfo getContextInfo() {
-        return contextInfo;
+    public void setAuthMechanism(String authMechanism) {
+        this.authMechanism = authMechanism;
     }
 
     /**
@@ -35,7 +29,7 @@ public class JWTAuthMethodExtension implements ServletExtension {
      */
     @Override
     public void handleDeployment(DeploymentInfo deploymentInfo, ServletContext servletContext) {
-        deploymentInfo.addAuthenticationMechanism(authMechanism, new JWTAuthMechanismFactory(contextInfo));
+        deploymentInfo.addAuthenticationMechanism(authMechanism, new JWTAuthMechanismFactory());
         deploymentInfo.addInnerHandlerChainWrapper(MpJwtPrincipalCleanupHandler::new);
     }
 }

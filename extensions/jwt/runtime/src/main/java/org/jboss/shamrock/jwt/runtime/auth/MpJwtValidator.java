@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.Dependent;
+import javax.inject.Inject;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 
@@ -29,12 +32,16 @@ import org.wildfly.security.evidence.BearerTokenEvidence;
 /**
  * Validates a bearer token according to the MP-JWT rules
  */
+@ApplicationScoped
 public class MpJwtValidator implements TokenValidator {
     private static final String ROLE_MAPPINGS = "roleMappings";
     private static Logger log = Logger.getLogger(MpJwtValidator.class);
-    final JWTAuthContextInfo authContextInfo;
+    @Inject
+    JWTAuthContextInfo authContextInfo;
 
-    public MpJwtValidator(final JWTAuthContextInfo authContextInfo) {
+    public MpJwtValidator() {
+    }
+    public MpJwtValidator(JWTAuthContextInfo authContextInfo) {
         this.authContextInfo = authContextInfo;
     }
 

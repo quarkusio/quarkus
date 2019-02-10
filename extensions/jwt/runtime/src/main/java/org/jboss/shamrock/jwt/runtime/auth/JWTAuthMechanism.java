@@ -3,6 +3,8 @@ package org.jboss.shamrock.jwt.runtime.auth;
 import java.util.List;
 import java.util.Locale;
 
+import javax.inject.Inject;
+
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.undertow.UndertowLogger;
 import io.undertow.security.api.AuthenticationMechanism;
@@ -21,12 +23,16 @@ import static io.undertow.util.StatusCodes.UNAUTHORIZED;
  * An AuthenticationMechanism that validates a caller based on a MicroProfile JWT bearer token
  */
 public class JWTAuthMechanism implements AuthenticationMechanism {
+    @Inject
     private JWTAuthContextInfo authContextInfo;
 
     private IdentityManager identityManager;
 
     public JWTAuthMechanism(JWTAuthContextInfo authContextInfo, IdentityManager identityManager) {
         this.authContextInfo = authContextInfo;
+        this.identityManager = identityManager;
+    }
+    public JWTAuthMechanism(IdentityManager identityManager) {
         this.identityManager = identityManager;
     }
 

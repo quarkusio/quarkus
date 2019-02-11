@@ -58,7 +58,7 @@
         <module>reactive-messaging</module>
 
         <!-- Data access and validation -->
-        <module>transactions</module>
+        <module>narayana-jta</module>
         <module>agroal</module>
         <module>jdbc</module>
         <module>jpa</module>

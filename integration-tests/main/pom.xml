@@ -84,7 +84,7 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-transactions-deployment</artifactId>
+            <artifactId>shamrock-narayana-jta-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>

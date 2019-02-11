@@ -155,15 +155,18 @@
     "artifactId": "shamrock-scheduler-deployment"
   },
   {
-    "name": "Transactions",
+    "name": "Narayana JTA",
     "labels": [
+      "narayana-jta",
+      "narayana",
+      "jta",
       "transactions",
       "transaction",
       "tx",
       "txs"
     ],
     "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-transactions-deployment"
+    "artifactId": "shamrock-narayana-jta-deployment"
   },
   {
     "name": "Undertow",

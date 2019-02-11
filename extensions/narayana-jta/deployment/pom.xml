@@ -19,14 +19,15 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>shamrock-jpa</artifactId>
+        <artifactId>shamrock-narayana-jta</artifactId>
         <groupId>org.jboss.shamrock</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
+        <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-jpa-deployment</artifactId>
-    <name>Shamrock - JPA - Deployment</name>
+    <artifactId>shamrock-narayana-jta-deployment</artifactId>
+    <name>Shamrock - Narayana JTA - Deployment</name>
 
     <dependencies>
         <dependency>
@@ -35,43 +36,11 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jpa-runtime</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-narayana-jta-deployment</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-agroal-deployment</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-arc-deployment</artifactId>
         </dependency>
-
-        <!--
-           Re-import this so to dodge the Byte Buddy exclusion we declared in shamrock-jpa-runtime
-           I prefer to use exclusions only so to transitively let Hibernate ORM manage the versions -->
-        <dependency>
-            <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-core</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-junit5-internal</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.protean.gizmo</groupId>
-            <artifactId>gizmo</artifactId>
-            <type>test-jar</type>
-            <scope>test</scope>
+            <artifactId>shamrock-narayana-jta-runtime</artifactId>
         </dependency>
     </dependencies>
 
@@ -91,4 +60,5 @@
             </plugin>
         </plugins>
     </build>
+
 </project>

@@ -11,7 +11,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
 
     public static final String AGROAL = "agroal";
     public static final String CDI = "cdi";
-    public static final String TRANSACTIONS = "transactions";
+    public static final String NARAYANA_JTA = "narayana-jta";
     public static final String UNDERTOW_WEBSOCKETS = "undertow-websockets";
     public static final String JAXRS = "jaxrs";
     public static final String JAXRS_JSON = "jaxrs-json";

@@ -24,13 +24,8 @@ This will add the following to your pom.xml
     </dependency>
 ----
 
-The Infinispan client is configurable via a Java properties file named `hotrod-client.properties`.
-This file will be automatically picked up during the static initialization time from the `META-INF`
-directory and parsed as it would normally.
-
-You can also define some properties in the `microprofile-config.properties` file that can be
-provided in the `META-INF` directory. Note that if both this and the `hotrod-client.properties`
-file are found the microprofile configuration takes precedence. These are the properties that
+The Infinispan client is configurable in the `microprofile-config.properties` file that can be
+provided in the `META-INF` directory. These are the properties that
 can be configured in this file:
 
 [cols=3*,options="header"]
@@ -41,9 +36,20 @@ can be configured in this file:
 
 | `shamrock.infinispan-client.server-list`
 | <empty>
-| Defines the list of servers to connect to upon startup (same as server_list in hotrod properties file)
+| Defines the list of servers to connect to upon startup. This allows for multiple servers separated by a semicolon
+for each. (eg. host1:11222;host:11222)
+
+| `shamrock.infinispan-client.near-cache-max-entries`
+| 0
+| Controls whether the near cache is enabled (allowing repeated retrievals to be stored).
+If this value is zero or less near cache is disabled. A value greater than zero enables near
+cache and only that many entries will be held a time, removing older entries to save memory
+(per cache).
 
 |===
+
+It is also possible to configure a `hotrod-client.properties` as described in the Infinispan user guide. Note that
+the `hotrod-client.properties` values overwrite any matching property from the other configuration values (eg. near cache).
 
 == Serialization (Key Value types support)
 
@@ -224,7 +230,27 @@ And you pass the marshaller by defining the following:
    }
 ----
 
-Now you can add entries into the cache of the types defi
+NOTE: Annotation based proto stream marshalling is not yet supported in
+the {project-name} infinispan client.
+
+=== Providing your own Marshaller
+
+You can implement the `org.infinispan.commons.marshaller.Marshaller` interface. This will allow you
+to put keys and values of the types it supports directly with the client. All that is required is to have your
+class available in classpath and configure the property value to be the fully qualified class name. This
+method does not require any optional dependencies.
+
+It is recommended to extend from the `org.infinispan.commons.marshall.AbstractMarshaller` class to reduce
+the lines of the class. Here is an example of a Marshaller implementation for String instances.
+
+With that class in your project/classpath, all you need to do is add the following to your
+hotrod-client.properties as mentioned above.
+
+[source]
+infinispan.client.hotrod.marshaller=com.example.MyMarshaller
+
+Note that the Marshaller implementation must have a no arg constructor or static factory method named
+`getInstance`.
 
 == Dependency Injection
 
@@ -297,7 +323,10 @@ CounterManager counterManager;
 
 == Near Caching
 
-Near caching requires no changes other than the normal settings in the hotrod-client.properties file.
+Near caching is disabled by default, but you can enable it by setting the profile config property
+`shamrock.infinispan-client.near-cache-max-entries` to a value greater than 0. You can also configure
+a regular expression so that only a subset of caches have near caching applied through the
+`shamrock.infinispan-client.near-cache-name-pattern` attribute.
 
 == Encryption
 

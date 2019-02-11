@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.faulttolerance.deployment;
+package org.jboss.shamrock.smallrye.faulttolerance;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -43,8 +43,8 @@ import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
-import org.jboss.shamrock.faulttolerance.runtime.ShamrockFallbackHandlerProvider;
-import org.jboss.shamrock.faulttolerance.runtime.ShamrockFaultToleranceOperationProvider;
+import org.jboss.shamrock.smallrye.faulttolerance.runtime.ShamrockFallbackHandlerProvider;
+import org.jboss.shamrock.smallrye.faulttolerance.runtime.ShamrockFaultToleranceOperationProvider;
 
 import com.netflix.hystrix.HystrixCircuitBreaker;
 
@@ -55,7 +55,7 @@ import io.smallrye.faulttolerance.HystrixCommandInterceptor;
 import io.smallrye.faulttolerance.HystrixInitializer;
 import io.smallrye.faulttolerance.MetricsCollectorFactory;
 
-public class FaultToleranceAnnotationProcessor {
+public class SmallRyeFaultToleranceProcessor {
 
     private static final DotName[] FT_ANNOTATIONS = { DotName.createSimple(Asynchronous.class.getName()), DotName.createSimple(Bulkhead.class.getName()),
             DotName.createSimple(CircuitBreaker.class.getName()), DotName.createSimple(Fallback.class.getName()), DotName.createSimple(Retry.class.getName()),
@@ -80,7 +80,7 @@ public class FaultToleranceAnnotationProcessor {
     @BuildStep
     public void build(BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer, BuildProducer<FeatureBuildItem> feature) throws Exception {
 
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.MP_FAULT_TOLERANCE));
+        feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_FAULT_TOLERANCE));
         
         IndexView index = combinedIndexBuildItem.getIndex();
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.faulttolerance.runtime.graal;
+package org.jboss.shamrock.smallrye.faulttolerance.runtime.graal;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

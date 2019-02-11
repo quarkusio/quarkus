@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.faulttolerance.runtime;
+package org.jboss.shamrock.smallrye.faulttolerance.runtime;
 
 import java.lang.reflect.Method;
 

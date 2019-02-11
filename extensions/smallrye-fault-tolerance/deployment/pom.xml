@@ -19,15 +19,15 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
-    <artifactId>shamrock-fault-tolerance</artifactId>
+    <artifactId>shamrock-smallrye-fault-tolerance</artifactId>
     <groupId>org.jboss.shamrock</groupId>
     <version>1.0.0.Alpha1-SNAPSHOT</version>
     <relativePath>../</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>shamrock-fault-tolerance-deployment</artifactId>
-  <name>Shamrock - Fault tolerance - Deployment</name>
+  <artifactId>shamrock-smallrye-fault-tolerance-deployment</artifactId>
+  <name>Shamrock - SmallRye Fault tolerance - Deployment</name>
 
   <dependencies>
     <dependency>
@@ -44,7 +44,7 @@
     </dependency>
     <dependency>
       <groupId>org.jboss.shamrock</groupId>
-      <artifactId>shamrock-fault-tolerance-runtime</artifactId>
+      <artifactId>shamrock-smallrye-fault-tolerance-runtime</artifactId>
     </dependency>
     <dependency>
       <groupId>com.oracle.substratevm</groupId>

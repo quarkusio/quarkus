@@ -30,15 +30,16 @@
     "artifactId": "shamrock-hibernate-validator-deployment"
   },
   {
-    "name": "Fault Tolerance",
+    "name": "SmallRye Fault Tolerance",
     "labels": [
+      "smallrye-fault-tolerance",
       "fault-tolerance",
       "microprofile-fault-tolerance",
       "circuit-breaker",
       "bulkhead"
     ],
     "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-fault-tolerance-deployment"
+    "artifactId": "shamrock-smallrye-fault-tolerance-deployment"
   },
   {
     "name": "SmallRye Health",

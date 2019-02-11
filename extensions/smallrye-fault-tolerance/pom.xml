@@ -26,8 +26,8 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-fault-tolerance</artifactId>
-    <name>Shamrock - Fault tolerance</name>
+    <artifactId>shamrock-smallrye-fault-tolerance</artifactId>
+    <name>Shamrock - SmallRye Fault tolerance</name>
 
     <packaging>pom</packaging>
     <modules>

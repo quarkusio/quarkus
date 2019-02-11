@@ -42,7 +42,7 @@
         <module>smallrye-health</module>
         <module>smallrye-metrics</module>
         <module>smallrye-opentracing</module>
-        <module>fault-tolerance</module>
+        <module>smallrye-fault-tolerance</module>
         <module>jaeger</module>
 
         <!-- REST services -->

@@ -453,12 +453,12 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-fault-tolerance-deployment</artifactId>
+            <artifactId>shamrock-smallrye-fault-tolerance-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-fault-tolerance-runtime</artifactId>
+            <artifactId>shamrock-smallrye-fault-tolerance-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>

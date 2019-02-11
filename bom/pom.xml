@@ -167,7 +167,7 @@
 
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-fault-tolerance-deployment</artifactId>
+            <artifactId>shamrock-smallrye-fault-tolerance-deployment</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
          </dependency>

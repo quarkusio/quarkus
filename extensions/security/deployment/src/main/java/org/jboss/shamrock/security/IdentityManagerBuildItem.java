@@ -15,13 +15,13 @@ import org.jboss.shamrock.runtime.RuntimeValue;
  */
 public final class IdentityManagerBuildItem extends MultiBuildItem {
 
-    private final RuntimeValue<IdentityManager> identityManager;
+    private final IdentityManager identityManager;
 
-    public IdentityManagerBuildItem(RuntimeValue<IdentityManager> identityManager) {
+    public IdentityManagerBuildItem(IdentityManager identityManager) {
         this.identityManager = identityManager;
     }
 
-    public RuntimeValue<IdentityManager> getIdentityManager() {
+    public IdentityManager getIdentityManager() {
         return identityManager;
     }
 }

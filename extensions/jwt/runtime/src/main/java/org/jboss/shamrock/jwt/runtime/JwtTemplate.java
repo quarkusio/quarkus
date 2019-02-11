@@ -30,8 +30,8 @@ public class JwtTemplate {
      * @param securityDomain - the SecurityDomain to use for auth decisions
      * @return - the IdentityManager instance to register
      */
-    public RuntimeValue<IdentityManager> createIdentityManager(RuntimeValue<SecurityDomain> securityDomain) {
-        return new RuntimeValue<>(new JwtIdentifyManager(securityDomain.getValue()));
+    public IdentityManager createIdentityManager(RuntimeValue<SecurityDomain> securityDomain) {
+        return new JwtIdentifyManager(securityDomain.getValue());
     }
 
     /**

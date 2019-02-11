@@ -130,7 +130,7 @@ class JwtProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     void configureIdentityManager(JwtTemplate template, SecurityDomainBuildItem securityDomain,
                                   BuildProducer<IdentityManagerBuildItem> identityManagerProducer) {
-        RuntimeValue<IdentityManager> identityManager = template.createIdentityManager(securityDomain.getSecurityDomain());
+        IdentityManager identityManager = template.createIdentityManager(securityDomain.getSecurityDomain());
         identityManagerProducer.produce(new IdentityManagerBuildItem(identityManager));
     }
 

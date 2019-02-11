@@ -242,8 +242,8 @@ public class SecurityTemplate {
      * @param domain - configured SecurityDomain
      * @return runtime value for ElytronIdentityManager
      */
-    public RuntimeValue<IdentityManager> createIdentityManager(RuntimeValue<SecurityDomain> domain) {
-        return new RuntimeValue<>(new ElytronIdentityManager(domain.getValue()));
+    public IdentityManager createIdentityManager(RuntimeValue<SecurityDomain> domain) {
+        return new ElytronIdentityManager(domain.getValue());
     }
 
     /**
@@ -256,7 +256,7 @@ public class SecurityTemplate {
      * @return - the ServletExtension instance to register
      */
     public ServletExtension configureUndertowIdentityManager(RuntimeValue<SecurityDomain> domain,
-                                                             RuntimeValue<IdentityManager> identityManager,
+                                                             IdentityManager identityManager,
                                                              List<AuthConfig> authConfigs) {
         return new ServletExtension() {
             @Override
@@ -271,7 +271,7 @@ public class SecurityTemplate {
                     }
                     deploymentInfo.setLoginConfig(loginConfig);
                 }
-                deploymentInfo.setIdentityManager(identityManager.getValue());
+                deploymentInfo.setIdentityManager(identityManager);
             }
         };
     }

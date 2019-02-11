@@ -197,7 +197,7 @@ class SecurityDeploymentProcessor {
                                   BuildProducer<IdentityManagerBuildItem> identityManagerProducer,
                                   List<PasswordRealmBuildItem> passwordRealm) {
         if(passwordRealm.size() > 0) {
-            RuntimeValue<IdentityManager> identityManager = template.createIdentityManager(securityDomain.getSecurityDomain());
+            IdentityManager identityManager = template.createIdentityManager(securityDomain.getSecurityDomain());
             identityManagerProducer.produce(new IdentityManagerBuildItem(identityManager));
         }
     }

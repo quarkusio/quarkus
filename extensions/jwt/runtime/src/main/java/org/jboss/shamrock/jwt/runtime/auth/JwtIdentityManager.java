@@ -13,11 +13,11 @@ import org.wildfly.security.auth.server.SecurityDomain;
 import org.wildfly.security.auth.server.SecurityIdentity;
 import org.wildfly.security.evidence.BearerTokenEvidence;
 
-public class JwtIdentifyManager implements IdentityManager {
-    private static Logger log = Logger.getLogger(JwtIdentifyManager.class);
+public class JwtIdentityManager implements IdentityManager {
+    private static Logger log = Logger.getLogger(JwtIdentityManager.class);
     private final SecurityDomain domain;
 
-    public JwtIdentifyManager(SecurityDomain domain) {
+    public JwtIdentityManager(SecurityDomain domain) {
         this.domain = domain;
     }
 

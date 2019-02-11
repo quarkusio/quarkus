@@ -8,7 +8,7 @@ import org.jboss.logging.Logger;
 import org.jboss.shamrock.arc.runtime.BeanContainer;
 import org.jboss.shamrock.jwt.runtime.auth.ElytronJwtCallerPrincipal;
 import org.jboss.shamrock.jwt.runtime.auth.JWTAuthMethodExtension;
-import org.jboss.shamrock.jwt.runtime.auth.JwtIdentifyManager;
+import org.jboss.shamrock.jwt.runtime.auth.JwtIdentityManager;
 import org.jboss.shamrock.jwt.runtime.auth.MpJwtValidator;
 import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.runtime.annotations.Template;
@@ -26,12 +26,12 @@ public class JwtTemplate {
     static final Logger log = Logger.getLogger(JwtTemplate.class);
 
     /**
-     * Create the JwtIdentifyManager
+     * Create the JwtIdentityManager
      * @param securityDomain - the SecurityDomain to use for auth decisions
      * @return - the IdentityManager instance to register
      */
     public IdentityManager createIdentityManager(RuntimeValue<SecurityDomain> securityDomain) {
-        return new JwtIdentifyManager(securityDomain.getValue());
+        return new JwtIdentityManager(securityDomain.getValue());
     }
 
     /**

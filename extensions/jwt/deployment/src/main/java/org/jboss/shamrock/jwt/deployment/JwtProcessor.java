@@ -121,7 +121,7 @@ class JwtProcessor {
     }
 
     /**
-     * Create the JwtIdentifyManager
+     * Create the JwtIdentityManager
      * @param template - jwt runtime template
      * @param securityDomain - the previously created TokenSecurityRealm
      * @param identityManagerProducer - producer for the identity manager

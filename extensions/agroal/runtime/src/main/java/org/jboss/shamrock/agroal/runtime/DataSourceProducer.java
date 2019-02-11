@@ -79,14 +79,9 @@ public class DataSourceProducer {
             }
         }
 
-        String targetUrl = System.getenv("DATASOURCE_URL");
-        if (targetUrl == null || targetUrl.isEmpty()) {
-            targetUrl = url;
-        }
-
         AgroalDataSourceConfigurationSupplier dataSourceConfiguration = new AgroalDataSourceConfigurationSupplier();
         final AgroalConnectionPoolConfigurationSupplier poolConfiguration = dataSourceConfiguration.connectionPoolConfiguration();
-        poolConfiguration.connectionFactoryConfiguration().jdbcUrl( targetUrl);
+        poolConfiguration.connectionFactoryConfiguration().jdbcUrl( url );
         poolConfiguration.connectionFactoryConfiguration().connectionProviderClass( providerClass);
 
         if (jta || xa) {

@@ -40,8 +40,6 @@ import org.jboss.shamrock.jwt.runtime.RawClaimTypeProducer;
 import org.jboss.shamrock.jwt.runtime.auth.ClaimAttributes;
 import org.jboss.shamrock.jwt.runtime.auth.ElytronJwtCallerPrincipal;
 import org.jboss.shamrock.jwt.runtime.auth.JWTAuthMethodExtension;
-import org.jboss.shamrock.jwt.runtime.auth.JWTAuthMethodExtensionProxy;
-import org.jboss.shamrock.jwt.runtime.auth.JWTAuthMethodExtensionSubstitution;
 import org.jboss.shamrock.jwt.runtime.auth.MpJwtValidator;
 import org.jboss.shamrock.jwt.runtime.auth.PublicKeyProxy;
 import org.jboss.shamrock.jwt.runtime.auth.PublicKeySubstitution;
@@ -106,10 +104,6 @@ class JwtProcessor {
             ObjectSubstitutionBuildItem.Holder pkHolder = new ObjectSubstitutionBuildItem.Holder(RSAPublicKey.class, PublicKeyProxy.class, PublicKeySubstitution.class);
             ObjectSubstitutionBuildItem pkSub = new ObjectSubstitutionBuildItem(pkHolder);
             objectSubstitution.produce(pkSub);
-            //
-            //ObjectSubstitutionBuildItem.Holder authHolder = new ObjectSubstitutionBuildItem.Holder(JWTAuthMethodExtension.class, JWTAuthMethodExtensionProxy.class, JWTAuthMethodExtensionSubstitution.class);
-            //ObjectSubstitutionBuildItem authSub = new ObjectSubstitutionBuildItem(authHolder);
-            //objectSubstitution.produce(authSub);
             // Have the runtime template create the TokenSecurityRealm and create the build item
             RuntimeValue<SecurityRealm> realm = template.createTokenRealm(container.getValue());
             AuthConfig authConfig = new AuthConfig();

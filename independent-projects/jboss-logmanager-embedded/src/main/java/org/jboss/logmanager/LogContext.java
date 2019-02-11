@@ -86,6 +86,66 @@ public final class LogContext {
         return new LogContext();
     }
 
+    // Attachment mgmt
+
+    /**
+     * Get the attachment value for a given key, or {@code null} if there is no such attachment.
+     * Log context attachments are placed on the root logger and can also be accessed there.
+     *
+     * @param key the key
+     * @param <V> the attachment value type
+     * @return the attachment, or {@code null} if there is none for this key
+     */
+    @SuppressWarnings({ "unchecked" })
+    public <V> V getAttachment(Logger.AttachmentKey<V> key) {
+        return rootLogger.getAttachment(key);
+    }
+
+    /**
+     * Attach an object to this log context under a given key.
+     * A strong reference is maintained to the key and value for as long as this log context exists.
+     * Log context attachments are placed on the root logger and can also be accessed there.
+     *
+     * @param key the attachment key
+     * @param value the attachment value
+     * @param <V> the attachment value type
+     * @return the old attachment, if there was one
+     * @throws SecurityException if a security manager exists and if the caller does not have {@code LoggingPermission(control)}
+     */
+    public <V> V attach(Logger.AttachmentKey<V> key, V value) throws SecurityException {
+        return rootLogger.attach(key, value);
+    }
+
+    /**
+     * Attach an object to this log context under a given key, if such an attachment does not already exist.
+     * A strong reference is maintained to the key and value for as long as this log context exists.
+     * Log context attachments are placed on the root logger and can also be accessed there.
+     *
+     * @param key the attachment key
+     * @param value the attachment value
+     * @param <V> the attachment value type
+     * @return the current attachment, if there is one, or {@code null} if the value was successfully attached
+     * @throws SecurityException if a security manager exists and if the caller does not have {@code LoggingPermission(control)}
+     */
+    @SuppressWarnings({ "unchecked" })
+    public <V> V attachIfAbsent(Logger.AttachmentKey<V> key, V value) throws SecurityException {
+        return rootLogger.attachIfAbsent(key, value);
+    }
+
+    /**
+     * Remove an attachment.
+     * Log context attachments are placed on the root logger and can also be accessed there.
+     *
+     * @param key the attachment key
+     * @param <V> the attachment value type
+     * @return the old value, or {@code null} if there was none
+     * @throws SecurityException if a security manager exists and if the caller does not have {@code LoggingPermission(control)}
+     */
+    @SuppressWarnings({ "unchecked" })
+    public <V> V detach(Logger.AttachmentKey<V> key) throws SecurityException {
+        return rootLogger.detach(key);
+    }
+
     public static LogContext getLogContext() {
         return LogContext.getInstance();
     }
@@ -110,6 +170,20 @@ public final class LogContext {
     public Logger getLoggerIfExists(String name) {
         final LoggerNode node = rootLogger.getIfExists(name);
         return node == null ? null : node.createLogger();
+    }
+
+    /**
+     * Get a logger attachment for a logger name, if it exists.
+     *
+     * @param loggerName the logger name
+     * @param key the attachment key
+     * @param <V> the attachment value type
+     * @return the attachment or {@code null} if the logger or the attachment does not exist
+     */
+    public <V> V getAttachment(String loggerName, Logger.AttachmentKey<V> key) {
+        final LoggerNode node = rootLogger.getIfExists(loggerName);
+        if (node == null) return null;
+        return node.getAttachment(key);
     }
 
     /**

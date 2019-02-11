@@ -67,16 +67,8 @@ to your project manually. This can be done as shown here:
 <dependency>
     <groupId>org.infinispan</groupId>
     <artifactId>infinispan-remote-query-client</artifactId>
-    <exclusions>
-        <exclusion>
-            <groupId>org.jboss.logging</groupId>
-            <artifactId>jboss-logging</artifactId>
-        </exclusion>
-    </exclusions>
 </dependency>
 ----
-
-Note that you must exclude `jboss-logging` as this module is currently not supported with {project-name}.
 
 Then you must configure the marshaller in your `hotrod-client.properties` file.
 

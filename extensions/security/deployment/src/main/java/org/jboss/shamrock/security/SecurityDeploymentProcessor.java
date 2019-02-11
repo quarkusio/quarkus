@@ -28,6 +28,7 @@ import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.annotations.ExecutionTime;
 import org.jboss.shamrock.deployment.annotations.Record;
+import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import org.jboss.shamrock.runtime.RuntimeValue;
@@ -54,7 +55,14 @@ class SecurityDeploymentProcessor {
 
     SecurityConfig security;
 
-    /** Flag to indicate if a password based realm was created by this processor */
+    /**
+     * Register this extension as a MP-JWT feature
+     * @return
+     */
+    @BuildStep
+    FeatureBuildItem feature() {
+        return new FeatureBuildItem(FeatureBuildItem.SECURITY);
+    }
 
     /**
      * Register the Elytron-provided password factory SPI implementation

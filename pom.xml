@@ -94,20 +94,6 @@
                 <enabled>true</enabled>
             </snapshots>
         </repository>
-        <repository>
-            <id>redhat-ga-repository</id>
-            <name>Red Hat GA repository</name>
-            <url>http://maven.repository.redhat.com/ga/</url>
-            <layout>default</layout>
-            <releases>
-                <enabled>true</enabled>
-                <updatePolicy>never</updatePolicy>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-                <updatePolicy>daily</updatePolicy>
-            </snapshots>
-        </repository>
 
         <!-- Forgot the password? see https://github.com/protean-project/hibernate-protean/wiki/Protean-Nexus-credentials -->
         <repository>

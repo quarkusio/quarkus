@@ -51,7 +51,7 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-transactions-deployment</artifactId>
+            <artifactId>shamrock-narayana-jta-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
@@ -63,7 +63,7 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-health-deployment</artifactId>
+            <artifactId>shamrock-smallrye-health-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
@@ -71,11 +71,11 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-metrics-deployment</artifactId>
+            <artifactId>shamrock-smallrye-metrics-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-openapi-deployment</artifactId>
+            <artifactId>shamrock-smallrye-openapi-deployment</artifactId>
         </dependency>
 
     </dependencies>

@@ -234,7 +234,7 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-health-deployment</artifactId>
+            <artifactId>shamrock-smallrye-health-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
@@ -269,37 +269,37 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-health-runtime</artifactId>
+            <artifactId>shamrock-smallrye-health-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-metrics-deployment</artifactId>
+            <artifactId>shamrock-smallrye-metrics-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-metrics-runtime</artifactId>
+            <artifactId>shamrock-smallrye-metrics-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-openapi-deployment</artifactId>
+            <artifactId>shamrock-smallrye-openapi-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-openapi-runtime</artifactId>
+            <artifactId>shamrock-smallrye-openapi-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-opentracing-deployment</artifactId>
+            <artifactId>shamrock-smallrye-opentracing-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-opentracing-runtime</artifactId>
+            <artifactId>shamrock-smallrye-opentracing-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
@@ -398,12 +398,12 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-transactions-deployment</artifactId>
+            <artifactId>shamrock-narayana-jta-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-transactions-runtime</artifactId>
+            <artifactId>shamrock-narayana-jta-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
@@ -448,12 +448,12 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-fault-tolerance-deployment</artifactId>
+            <artifactId>shamrock-smallrye-fault-tolerance-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-fault-tolerance-runtime</artifactId>
+            <artifactId>shamrock-smallrye-fault-tolerance-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
@@ -468,12 +468,12 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-websockets-deployment</artifactId>
+            <artifactId>shamrock-undertow-websockets-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-websockets-runtime</artifactId>
+            <artifactId>shamrock-undertow-websockets-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>

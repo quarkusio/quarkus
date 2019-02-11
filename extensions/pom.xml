@@ -36,20 +36,20 @@
 
         <!-- HTTP -->
         <module>undertow</module>
-        <module>websockets</module>
+        <module>undertow-websockets</module>
 
         <!-- Monitoring -->
-        <module>health</module>
-        <module>metrics</module>
-        <module>opentracing</module>
-        <module>fault-tolerance</module>
+        <module>smallrye-health</module>
+        <module>smallrye-metrics</module>
+        <module>smallrye-opentracing</module>
+        <module>smallrye-fault-tolerance</module>
         <module>jaeger</module>
 
         <!-- REST services -->
         <module>jaxrs</module>
         <module>jaxrs-json</module>
         <module>rest-client</module>
-        <module>openapi</module>
+        <module>smallrye-openapi</module>
 
         <!-- Reactive -->
         <module>vertx</module>
@@ -58,7 +58,7 @@
         <module>reactive-messaging</module>
 
         <!-- Data access and validation -->
-        <module>transactions</module>
+        <module>narayana-jta</module>
         <module>agroal</module>
         <module>jdbc</module>
         <module>jpa</module>

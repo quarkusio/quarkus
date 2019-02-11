@@ -44,7 +44,7 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-transactions-deployment</artifactId>
+            <artifactId>shamrock-narayana-jta-deployment</artifactId>
         </dependency>
     </dependencies>
 

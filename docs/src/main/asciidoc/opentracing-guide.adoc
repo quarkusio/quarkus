@@ -39,10 +39,10 @@ mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
     -DprojectArtifactId=using-opentracing \
     -DclassName="org.acme.opentracing.TracedResource" \
     -Dpath="/hello" \
-    -Dextensions="tracing"
+    -Dextensions="smallrye-opentracing"
 ----
 
-This command generates the Maven project with a REST endpoint and imports the `tracing` extension, which
+This command generates the Maven project with a REST endpoint and imports the `smallrye-opentracing` extension, which
 includes the OpenTracing support and the default https://www.jaegertracing.io/[Jaeger] tracer.
 
 === Examine the JAX-RS resource

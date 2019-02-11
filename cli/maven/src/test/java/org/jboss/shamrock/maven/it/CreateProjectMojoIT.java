@@ -170,7 +170,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         properties.put("projectGroupId", "org.acme");
         properties.put("projectArtifactId", "acme");
         properties.put("className", "org.acme.MyResource");
-        properties.put("extensions", "web,metrics,missing");
+        properties.put("extensions", "jaxrs,smallrye-metrics,missing");
         setup(properties);
 
         // As the directory is not empty (log) navigate to the artifactID directory
@@ -182,7 +182,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         check(new File(testDir, "src/main/java/org/acme/MyResource.java"), "package org.acme;");
 
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
-                .contains("shamrock-jaxrs-deployment", "shamrock-metrics-deployment").doesNotContain("missing");
+                .contains("shamrock-jaxrs-deployment", "shamrock-smallrye-metrics-deployment").doesNotContain("missing");
 
         Model model = load(testDir);
         assertThat(model.getDependencyManagement().getDependencies().stream().anyMatch(d ->
@@ -196,7 +196,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
                         && d.getVersion() == null)).isTrue();
 
         assertThat(model.getDependencies().stream().anyMatch(d ->
-                d.getArtifactId().equalsIgnoreCase("shamrock-metrics-deployment")
+                d.getArtifactId().equalsIgnoreCase("shamrock-smallrye-metrics-deployment")
                         && d.getVersion() == null)).isTrue();
     }
 

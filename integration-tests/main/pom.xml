@@ -50,17 +50,17 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-metrics-deployment</artifactId>
+            <artifactId>shamrock-smallrye-metrics-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-openapi-deployment</artifactId>
+            <artifactId>shamrock-smallrye-openapi-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-opentracing-deployment</artifactId>
+            <artifactId>shamrock-smallrye-opentracing-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -70,7 +70,7 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-health-deployment</artifactId>
+            <artifactId>shamrock-smallrye-health-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -84,17 +84,17 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-transactions-deployment</artifactId>
+            <artifactId>shamrock-narayana-jta-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-websockets-deployment</artifactId>
+            <artifactId>shamrock-undertow-websockets-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-fault-tolerance-deployment</artifactId>
+            <artifactId>shamrock-smallrye-fault-tolerance-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>

@@ -60,7 +60,7 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-opentracing-deployment</artifactId>
+            <artifactId>shamrock-smallrye-opentracing-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>

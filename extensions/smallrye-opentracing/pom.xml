@@ -26,8 +26,8 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-opentracing</artifactId>
-    <name>Shamrock - OpenTracing</name>
+    <artifactId>shamrock-smallrye-opentracing</artifactId>
+    <name>Shamrock - SmallRye OpenTracing</name>
     <packaging>pom</packaging>
     <modules>
         <module>deployment</module>

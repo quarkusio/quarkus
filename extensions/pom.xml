@@ -41,7 +41,7 @@
         <!-- Monitoring -->
         <module>health</module>
         <module>metrics</module>
-        <module>opentracing</module>
+        <module>smallrye-opentracing</module>
         <module>fault-tolerance</module>
         <module>jaeger</module>
 

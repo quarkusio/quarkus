@@ -110,15 +110,16 @@
     "artifactId": "shamrock-openapi-deployment"
   },
   {
-    "name": "Open Tracing",
+    "name": "SmallRye OpenTracing",
     "labels": [
-      "open-tracing",
+      "smallrye-opentracing",
+      "opentracing",
       "tracing",
       "distributed-tracing",
       "jaeger"
     ],
     "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-opentracing-deployment"
+    "artifactId": "shamrock-smallrye-opentracing-deployment"
   },
   {
     "name": "Reactive Streams",

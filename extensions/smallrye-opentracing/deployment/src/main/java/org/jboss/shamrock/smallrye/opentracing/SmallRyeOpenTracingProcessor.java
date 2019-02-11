@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.opentracing;
+package org.jboss.shamrock.smallrye.opentracing;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -29,14 +29,14 @@ import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveMethodBuildItem;
 import org.jboss.shamrock.jaxrs.JaxrsProviderBuildItem;
-import org.jboss.shamrock.opentracing.runtime.ShamrockTracingDynamicFeature;
-import org.jboss.shamrock.opentracing.runtime.TracerProducer;
+import org.jboss.shamrock.smallrye.opentracing.runtime.ShamrockSmallRyeTracingDynamicFeature;
+import org.jboss.shamrock.smallrye.opentracing.runtime.TracerProducer;
 import org.jboss.shamrock.undertow.FilterBuildItem;
 
 import io.opentracing.contrib.interceptors.OpenTracingInterceptor;
 import io.opentracing.contrib.jaxrs2.server.SpanFinishingFilter;
 
-public class OpentracingProcessor {
+public class SmallRyeOpenTracingProcessor {
 
     @BuildStep
     List<AdditionalBeanBuildItem> registerBeans() {
@@ -54,9 +54,9 @@ public class OpentracingProcessor {
                      BuildProducer<FilterBuildItem> filterProducer,
                      BuildProducer<FeatureBuildItem> feature) {
 
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.MP_OPENTRACING));
+        feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_OPENTRACING));
 
-        providers.produce(new JaxrsProviderBuildItem(ShamrockTracingDynamicFeature.class.getName()));
+        providers.produce(new JaxrsProviderBuildItem(ShamrockSmallRyeTracingDynamicFeature.class.getName()));
 
         FilterBuildItem filterInfo = new FilterBuildItem("tracingFilter", SpanFinishingFilter.class.getName());
         filterInfo.setAsyncSupported(true);

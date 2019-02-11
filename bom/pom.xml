@@ -97,7 +97,7 @@
 
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-opentracing-deployment</artifactId>
+            <artifactId>shamrock-smallrye-opentracing-deployment</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
          </dependency>

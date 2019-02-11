@@ -299,12 +299,12 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-opentracing-deployment</artifactId>
+            <artifactId>shamrock-smallrye-opentracing-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-opentracing-runtime</artifactId>
+            <artifactId>shamrock-smallrye-opentracing-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>

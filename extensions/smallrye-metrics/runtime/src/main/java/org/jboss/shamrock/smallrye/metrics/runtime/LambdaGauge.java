@@ -14,53 +14,27 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.metrics.runtime;
+package org.jboss.shamrock.smallrye.metrics.runtime;
 
 import java.util.concurrent.Callable;
 
-import org.eclipse.microprofile.metrics.Counter;
+import org.eclipse.microprofile.metrics.Gauge;
 
-/**
- * Created by bob on 7/31/18.
- */
-public class LambdaCounter implements Counter {
+public class LambdaGauge implements Gauge<Number> {
 
-    private static final String MUST_NOT_BE_CALLED = "Must not be called";
-
-    public LambdaCounter(Callable<Long> callable) {
+    public LambdaGauge(Callable<Number> callable) {
         this.callable = callable;
     }
 
     @Override
-    public void inc() {
-        throw new IllegalStateException(MUST_NOT_BE_CALLED);
-    }
-
-    @Override
-    public void inc(long n) {
-        throw new IllegalStateException(MUST_NOT_BE_CALLED);
-    }
-
-    @Override
-    public void dec() {
-        throw new IllegalStateException(MUST_NOT_BE_CALLED);
-    }
-
-    @Override
-    public void dec(long n) {
-        throw new IllegalStateException(MUST_NOT_BE_CALLED);
-    }
-
-    @Override
-    public long getCount() {
+    public Number getValue() {
         try {
             return this.callable.call();
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         return 0;
     }
 
-    private final Callable<Long> callable;
+    private final Callable<Number> callable;
 }

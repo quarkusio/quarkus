@@ -17,7 +17,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String JAXRS_JSON = "jaxrs-json";
     public static final String SMALLRYE_HEALTH = "smallrye-health";
     public static final String SMALLRYE_OPENAPI = "smallrye-openapi";
-    public static final String MP_METRICS = "mp-metrics";
+    public static final String SMALLRYE_METRICS = "smallrye-metrics";
     public static final String MP_FAULT_TOLERANCE = "mp-fault-tolerance";
     public static final String SMALLRYE_OPENTRACING = "smallrye-opentracing";
     public static final String MP_REST_CLIENT = "mp-rest-client";

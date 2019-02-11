@@ -91,15 +91,16 @@
     "artifactId": "shamrock-jpa-deployment"
   },
   {
-    "name": "Metrics",
+    "name": "SmallRye Metrics",
     "labels": [
+      "smallrye-metrics",
       "metrics",
       "metric",
       "prometheus",
       "monitoring"
     ],
     "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-metrics-deployment"
+    "artifactId": "shamrock-smallrye-metrics-deployment"
   },
   {
     "name": "SmallRye OpenAPI",

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.metrics;
+package org.jboss.shamrock.smallrye.metrics;
 
 import static org.jboss.shamrock.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
@@ -40,10 +40,10 @@ import org.jboss.shamrock.arc.deployment.BeanContainerBuildItem;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.ShutdownContextBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import org.jboss.shamrock.metrics.runtime.MetricsDeploymentTemplate;
-import org.jboss.shamrock.metrics.runtime.MetricsServlet;
 import org.jboss.shamrock.runtime.annotations.ConfigItem;
 import org.jboss.shamrock.runtime.annotations.ConfigRoot;
+import org.jboss.shamrock.smallrye.metrics.runtime.SmallRyeMetricsTemplate;
+import org.jboss.shamrock.smallrye.metrics.runtime.SmallRyeMetricsServlet;
 import org.jboss.shamrock.undertow.ServletBuildItem;
 
 import io.smallrye.metrics.MetricProducer;
@@ -56,12 +56,12 @@ import io.smallrye.metrics.interceptors.MetricsBinding;
 import io.smallrye.metrics.interceptors.MetricsInterceptor;
 import io.smallrye.metrics.interceptors.TimedInterceptor;
 
-public class MetricsProcessor {
+public class SmallRyeMetricsProcessor {
 
-    MetricsConfig metrics;
+    SmallRyeMetricsConfig metrics;
 
-    @ConfigRoot
-    static final class MetricsConfig {
+    @ConfigRoot(name = "smallrye-metrics")
+    static final class SmallRyeMetricsConfig {
 
         /**
          * The path to the metrics Servlet.
@@ -72,7 +72,7 @@ public class MetricsProcessor {
 
     @BuildStep
     ServletBuildItem createServlet() {
-        ServletBuildItem servletBuildItem = new ServletBuildItem("metrics", MetricsServlet.class.getName());
+        ServletBuildItem servletBuildItem = new ServletBuildItem("metrics", SmallRyeMetricsServlet.class.getName());
         servletBuildItem.getMappings().add(metrics.path);
         return servletBuildItem;
     }
@@ -87,19 +87,19 @@ public class MetricsProcessor {
                 CountedInterceptor.class,
                 TimedInterceptor.class,
                 MetricsRequestHandler.class,
-                MetricsServlet.class));
+                SmallRyeMetricsServlet.class));
     }
 
     @BuildStep
     @Record(STATIC_INIT)
     public void build(BeanContainerBuildItem beanContainerBuildItem,
-                      MetricsDeploymentTemplate metrics,
+                      SmallRyeMetricsTemplate metrics,
                       ShutdownContextBuildItem shutdown,
                       BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
                       BeanArchiveIndexBuildItem beanArchiveIndex,
                       BuildProducer<FeatureBuildItem> feature) throws Exception {
 
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.MP_METRICS));
+        feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_METRICS));
 
         reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, Counted.class.getName()));
         reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, MetricsBinding.class.getName()));
@@ -132,7 +132,7 @@ public class MetricsProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    void register(MetricsDeploymentTemplate metrics, ShutdownContextBuildItem shutdown) {
+    void register(SmallRyeMetricsTemplate metrics, ShutdownContextBuildItem shutdown) {
         metrics.registerBaseMetrics(shutdown);
         metrics.registerVendorMetrics(shutdown);
     }

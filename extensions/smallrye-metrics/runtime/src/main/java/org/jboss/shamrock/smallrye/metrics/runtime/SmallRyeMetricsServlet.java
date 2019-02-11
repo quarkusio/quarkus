@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.metrics.runtime;
+package org.jboss.shamrock.smallrye.metrics.runtime;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -28,11 +28,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import io.smallrye.metrics.MetricsRequestHandler;
 
-/**
- * Created by bob on 7/30/18.
- */
 @WebServlet
-public class MetricsServlet extends HttpServlet {
+public class SmallRyeMetricsServlet extends HttpServlet {
 
     @Inject
     MetricsRequestHandler metricsHandler;

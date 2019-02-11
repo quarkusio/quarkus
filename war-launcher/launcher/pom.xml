@@ -71,7 +71,7 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-metrics-deployment</artifactId>
+            <artifactId>shamrock-smallrye-metrics-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>

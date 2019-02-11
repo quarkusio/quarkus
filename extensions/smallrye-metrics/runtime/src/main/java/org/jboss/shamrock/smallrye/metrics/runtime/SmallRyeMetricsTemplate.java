@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.metrics.runtime;
+package org.jboss.shamrock.smallrye.metrics.runtime;
 
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
@@ -34,11 +34,8 @@ import org.jboss.shamrock.runtime.annotations.Template;
 import io.smallrye.metrics.MetricRegistries;
 import io.smallrye.metrics.app.CounterImpl;
 
-/**
- * Created by bob on 7/30/18.
- */
 @Template
-public class MetricsDeploymentTemplate {
+public class SmallRyeMetricsTemplate {
 
     private static final Logger log = Logger.getLogger("org.jboss.shamrock.metrics");
     private static final String MEMORY_HEAP_USAGE = "memory.heap.usage";

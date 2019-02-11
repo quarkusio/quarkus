@@ -26,10 +26,10 @@ import java.util.Map;
  * @author <a href="http://kenfinnigan.me">Ken Finnigan</a>
  */
 class ExtensionRegistry {
-    private static final String EXTENSION_NAME_PROPERTY_NAME = "extension.name";
-    private static final String EXTENSION_DESC_PROPERTY_NAME = "extension.desc";
-    private static final String EXTENSION_LABELS_PROPERTY_NAME = "extension.labels";
-    private static final String EXTENSION_INTERNAL_PROPERTY_NAME = "extension.internal";
+    private static final String EXTENSION_NAME_PROPERTY_NAME = "shamrock.extension.name";
+    private static final String EXTENSION_DESC_PROPERTY_NAME = "shamrock.extension.desc";
+    private static final String EXTENSION_LABELS_PROPERTY_NAME = "shamrock.extension.labels";
+    private static final String EXTENSION_INTERNAL_PROPERTY_NAME = "shamrock.extension.internal";
 
     private Map<Key, Extension> extensionRegistry = new HashMap<>();
 

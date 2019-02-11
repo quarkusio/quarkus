@@ -28,10 +28,10 @@
 
   <artifactId>dummy-extension-deployment</artifactId>
   <properties>
-    <extension.name>Agroal</extension.name>
-    <extension.desc>Description of the Agroal extension</extension.desc>
-    <extension.labels>agroal,database-connection-pool,jsf</extension.labels>
-    <extension.internal>false</extension.internal>
+    <shamrock.extension.name>Agroal</shamrock.extension.name>
+    <shamrock.extension.desc>Description of the Agroal extension</shamrock.extension.desc>
+    <shamrock.extension.labels>agroal,database-connection-pool,jsf</shamrock.extension.labels>
+    <shamrock.extension.internal>false</shamrock.extension.internal>
 
     <maven.compiler.source>1.8</maven.compiler.source>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

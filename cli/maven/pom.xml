@@ -207,6 +207,7 @@
                         <goals>
                             <goal>install</goal>
                             <goal>run</goal>
+                            <goal>verify</goal>
                         </goals>
                     </execution>
                 </executions>

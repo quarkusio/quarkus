@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <settings>
+    <offline>true</offline>
     <profiles>
         <profile>
             <id>it-repo</id>

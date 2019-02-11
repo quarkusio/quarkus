@@ -40,6 +40,7 @@ import org.jboss.shamrock.jwt.runtime.RawClaimTypeProducer;
 import org.jboss.shamrock.jwt.runtime.auth.ClaimAttributes;
 import org.jboss.shamrock.jwt.runtime.auth.ElytronJwtCallerPrincipal;
 import org.jboss.shamrock.jwt.runtime.auth.JWTAuthMethodExtension;
+import org.jboss.shamrock.jwt.runtime.auth.JWTAuthMethodExtensionProxy;
 import org.jboss.shamrock.jwt.runtime.auth.JWTAuthMethodExtensionSubstitution;
 import org.jboss.shamrock.jwt.runtime.auth.MpJwtValidator;
 import org.jboss.shamrock.jwt.runtime.auth.PublicKeyProxy;
@@ -101,9 +102,14 @@ class JwtProcessor {
                                                      BeanContainerBuildItem container,
                                                      BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) throws Exception {
         if (config.enabled) {
-            ObjectSubstitutionBuildItem.Holder holder = new ObjectSubstitutionBuildItem.Holder(RSAPublicKey.class, PublicKeyProxy.class, PublicKeySubstitution.class);
-            ObjectSubstitutionBuildItem pkSub = new ObjectSubstitutionBuildItem(holder);
+            // RSAPublicKey needs to be serialized
+            ObjectSubstitutionBuildItem.Holder pkHolder = new ObjectSubstitutionBuildItem.Holder(RSAPublicKey.class, PublicKeyProxy.class, PublicKeySubstitution.class);
+            ObjectSubstitutionBuildItem pkSub = new ObjectSubstitutionBuildItem(pkHolder);
             objectSubstitution.produce(pkSub);
+            //
+            //ObjectSubstitutionBuildItem.Holder authHolder = new ObjectSubstitutionBuildItem.Holder(JWTAuthMethodExtension.class, JWTAuthMethodExtensionProxy.class, JWTAuthMethodExtensionSubstitution.class);
+            //ObjectSubstitutionBuildItem authSub = new ObjectSubstitutionBuildItem(authHolder);
+            //objectSubstitution.produce(authSub);
             // Have the runtime template create the TokenSecurityRealm and create the build item
             RuntimeValue<SecurityRealm> realm = template.createTokenRealm(container.getValue());
             AuthConfig authConfig = new AuthConfig();
@@ -146,8 +152,6 @@ class JwtProcessor {
         log.debugf("registerJwtAuthExtension");
         ServletExtension authExt = template.createAuthExtension(config.authMechanism, container.getValue());
         ServletExtensionBuildItem sebi = new ServletExtensionBuildItem(authExt);
-        sebi.addObjectSubstitution(PublicKeySubstitution.class);
-        sebi.addObjectSubstitution(JWTAuthMethodExtensionSubstitution.class);
         return sebi;
     }
 }

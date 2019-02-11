@@ -358,13 +358,6 @@ public class UndertowBuildStep {
         }
         for (ServletExtensionBuildItem i : extensions) {
             template.addServletExtension(deployment, i.getValue());
-            List<Class<? extends ObjectSubstitution<?, ?>>> subs = i.getObjSubstitutions();
-            for(Class<? extends ObjectSubstitution<?, ?>> objSubClass : subs) {
-                Type[] typeVars = objSubClass.getGenericInterfaces();
-                Class<Object> fromType = (Class<Object>) ((ParameterizedType) typeVars[0]).getActualTypeArguments()[0];
-                Class<Object> toType = (Class) ((ParameterizedType) typeVars[0]).getActualTypeArguments()[1];
-                context.registerSubstitution(fromType, toType, (Class<? extends ObjectSubstitution<Object, Object>>) objSubClass);
-            }
         }
         return new ServletDeploymentBuildItem(template.bootServletContainer(deployment, bc.getFactory()));
 

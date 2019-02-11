@@ -82,8 +82,10 @@ public class BasicRest extends ShamrockTemplate {
     private void createClasses() throws IOException {
         File classFile = new File(srcMain, className + MojoUtils.JAVA_EXTENSION);
         File testClassFile = new File(testMain, className + "Test" + MojoUtils.JAVA_EXTENSION);
+        File itTestClassFile = new File(testMain, "Native" + className + "IT" + MojoUtils.JAVA_EXTENSION);
         generate("templates/resource-template.ftl", context, classFile, "resource code");
         generate("templates/test-resource-template.ftl", context, testClassFile, "test code");
+        generate("templates/native-test-resource-template.ftl", context, itTestClassFile, "IT code");
     }
 
     @SuppressWarnings("unchecked")

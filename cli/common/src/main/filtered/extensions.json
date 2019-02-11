@@ -164,10 +164,10 @@
     "artifactId": "shamrock-transactions-deployment"
   },
   {
-    "name": "Servlet",
+    "name": "Undertow",
     "labels": [
-      "servlet",
-      "undertow"
+      "undertow",
+      "servlet"
     ],
     "groupId": "org.jboss.shamrock",
     "artifactId": "shamrock-undertow-deployment"

@@ -17,7 +17,6 @@
 package org.jboss.shamrock.dependencies;
 
 import org.apache.maven.model.Dependency;
-import org.jboss.shamrock.maven.utilities.MojoUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,24 +25,32 @@ import java.util.stream.Stream;
 
 /**
  * @author <a href="http://escoffier.me">Clement Escoffier</a>
+ * @author <a href="http://kenfinnigan.me">Ken Finnigan</a>
  */
 public class Extension {
 
     private String artifactId;
     private String groupId;
     private String scope;
-    private String version = MojoUtils.SHAMROCK_VERSION_PROPERTY;
+    private String version;
 
     private String type;
     private String classifier;
 
     private String name;
+    private String description;
+    private boolean internal = false;
     private String[] labels;
 
     public Extension() {
         // Use by mapper.
     }
 
+    public Extension(String groupId, String artifactId, String version) {
+        this.groupId = groupId;
+        this.artifactId = artifactId;
+        this.version = version;
+    }
 
     public String getArtifactId() {
         return artifactId;
@@ -117,6 +124,24 @@ public class Extension {
         return this;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
+    public Extension setDescription(String description) {
+        this.description = description;
+        return this;
+    }
+
+    public boolean isInternal() {
+        return internal;
+    }
+
+    public Extension setInternal(boolean internal) {
+        this.internal = internal;
+        return this;
+    }
+
     public List<String> labels() {
         List<String> list = new ArrayList<>();
         if (labels != null) {
@@ -142,8 +167,69 @@ public class Extension {
         return dependency;
     }
 
-    public String toCoordinates() {
+    public String managementKey() {
         return getGroupId() + ":" + getArtifactId();
     }
-}
 
+    public String gav() {
+        return managementKey() + ":" + version;
+    }
+
+    @Override
+    public String toString() {
+        return gav();
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((groupId == null) ? 0 : groupId.hashCode());
+        result = prime * result + ((artifactId == null) ? 0 : artifactId.hashCode());
+        result = prime * result + ((version == null) ? 0 : version.hashCode());
+
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+
+        if (obj == null) {
+            return false;
+        }
+
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+
+        Extension other = (Extension) obj;
+        if (groupId == null) {
+            if (other.groupId != null) {
+                return false;
+            }
+        } else if (!groupId.equals(other.groupId)) {
+            return false;
+        }
+
+        if (artifactId == null) {
+            if (other.artifactId != null) {
+                return false;
+            }
+        } else if (!artifactId.equals(other.artifactId)) {
+            return false;
+        }
+
+        if (version == null) {
+            if (other.version != null) {
+                return false;
+            }
+        } else if (!version.equals(other.version)) {
+            return false;
+        }
+
+        return true;
+    }
+}

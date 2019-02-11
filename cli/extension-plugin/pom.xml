@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2018 Red Hat, Inc.
+  ~ Copyright 2019 Red Hat, Inc.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -22,23 +22,15 @@
         <artifactId>shamrock-build-parent</artifactId>
         <groupId>org.jboss.shamrock</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
-	<relativePath>../../build-parent/pom.xml</relativePath>
+        <relativePath>../../build-parent/pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-maven-plugin</artifactId>
+    <artifactId>shamrock-extension-plugin</artifactId>
     <packaging>maven-plugin</packaging>
-    <name>Shamrock - Maven Plugin</name>
+    <name>Shamrock - Extension plugin</name>
 
-    <properties>
-        <shamrock.version>${project.version}</shamrock.version>
-    </properties>
     <dependencies>
-
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>cli-common</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-plugin-api</artifactId>
@@ -53,57 +45,17 @@
             <artifactId>maven-plugin-annotations</artifactId>
             <scope>provided</scope>
         </dependency>
+
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-creator</artifactId>
+            <artifactId>cli-common-core</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-development-mode</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.shared</groupId>
-            <artifactId>maven-artifact-transfer</artifactId>
-            <version>0.10.0</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.codehaus.plexus</groupId>
-                    <artifactId>plexus-classworlds</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>commons-codec</groupId>
-                    <artifactId>commons-codec</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.maven.shared</groupId>
-                    <artifactId>maven-shared-utils</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.maven</groupId>
-                    <artifactId>maven-model</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.maven</groupId>
-                    <artifactId>maven-artifact</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <!-- user prompt -->
-        <dependency>
-            <groupId>jline</groupId>
-            <artifactId>jline</artifactId>
-            <version>2.14.6</version>
-        </dependency>
-
-        <!-- extensions reader -->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
         </dependency>
 
-        <!-- test -->
+        <!-- Test -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
@@ -117,63 +69,24 @@
             <artifactId>junit-jupiter-engine</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.apache.maven.shared</groupId>
             <artifactId>maven-invoker</artifactId>
             <version>3.0.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.awaitility</groupId>
-            <artifactId>awaitility</artifactId>
-            <version>3.1.5</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jprocesses</groupId>
-            <artifactId>jProcesses</artifactId>
-            <version>1.6.5</version>
-            <scope>test</scope>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
         </dependency>
     </dependencies>
 
     <build>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-            </resource>
-            <resource>
-                <directory>src/main/templates</directory>
-                <filtering>false</filtering>
-            </resource>
-        </resources>
         <plugins>
-            <plugin>
-                <groupId>org.codehaus.plexus</groupId>
-                <artifactId>plexus-component-metadata</artifactId>
-                <version>1.7.1</version>
-                <configuration>
-                    <staticMetadataDirectory>${basedir}/target/filtered-resources/META-INF/plexus</staticMetadataDirectory>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>generate-metadata</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-plugin-plugin</artifactId>
                 <version>3.5.2</version>
                 <configuration>
-                    <goalPrefix>shamrock</goalPrefix>
                     <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
                 </configuration>
                 <executions>
@@ -229,11 +142,11 @@
                         <!--suppress MavenModelInspection -->
                         <maven.home>${maven.home}</maven.home>
                         <maven.repo>${settings.localRepository}</maven.repo>
+                        <project.version>${project.version}</project.version>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>
     </build>
-
 
 </project>

@@ -163,13 +163,23 @@
             </exclusions>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-caffeine-deployment</artifactId>
-            <version>${project.version}</version>
+             <groupId>org.jboss.shamrock</groupId>
+             <artifactId>shamrock-caffeine-deployment</artifactId>
+             <version>${project.version}</version>
+         </dependency>
+         <dependency>
+             <groupId>org.jboss.shamrock</groupId>
+             <artifactId>shamrock-caffeine-runtime</artifactId>
+             <version>${project.version}</version>
+         </dependency>
+         <dependency>
+             <groupId>org.jboss.shamrock</groupId>
+             <artifactId>cli-common</artifactId>
+             <version>${project.version}</version>
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-caffeine-runtime</artifactId>
+            <artifactId>cli-common-core</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>

@@ -49,7 +49,7 @@
         <module>jaxrs</module>
         <module>jaxrs-json</module>
         <module>rest-client</module>
-        <module>openapi</module>
+        <module>smallrye-openapi</module>
 
         <!-- Reactive -->
         <module>vertx</module>

@@ -289,12 +289,12 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-openapi-deployment</artifactId>
+            <artifactId>shamrock-smallrye-openapi-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-openapi-runtime</artifactId>
+            <artifactId>shamrock-smallrye-openapi-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>

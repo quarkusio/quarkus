@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.openapi;
+package org.jboss.shamrock.smallrye.openapi;
 
 import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
 
@@ -41,11 +41,11 @@ import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
 import org.jboss.shamrock.jaxrs.JaxrsConfig;
-import org.jboss.shamrock.openapi.runtime.OpenApiDeploymentTemplate;
-import org.jboss.shamrock.openapi.runtime.OpenApiDocumentProducer;
-import org.jboss.shamrock.openapi.runtime.OpenApiServlet;
 import org.jboss.shamrock.runtime.annotations.ConfigItem;
 import org.jboss.shamrock.runtime.annotations.ConfigRoot;
+import org.jboss.shamrock.smallrye.openapi.runtime.OpenApiDocumentProducer;
+import org.jboss.shamrock.smallrye.openapi.runtime.OpenApiServlet;
+import org.jboss.shamrock.smallrye.openapi.runtime.SmallRyeOpenApiTemplate;
 import org.jboss.shamrock.undertow.ServletBuildItem;
 
 import io.smallrye.openapi.api.OpenApiConfig;
@@ -57,7 +57,7 @@ import io.smallrye.openapi.runtime.scanner.OpenApiAnnotationScanner;
 /**
  * @author Ken Finnigan
  */
-public class OpenApiProcessor {
+public class SmallRyeOpenApiProcessor {
 
     private static final String META_INF_OPENAPI_YAML = "META-INF/openapi.yaml";
     private static final String WEB_INF_CLASSES_META_INF_OPENAPI_YAML = "WEB-INF/classes/META-INF/openapi.yaml";
@@ -66,10 +66,10 @@ public class OpenApiProcessor {
     private static final String META_INF_OPENAPI_JSON = "META-INF/openapi.json";
     private static final String WEB_INF_CLASSES_META_INF_OPENAPI_JSON = "WEB-INF/classes/META-INF/openapi.json";
 
-    OpenapiConfig openapi;
+    SmallRyeOpenApiConfig openapi;
 
-    @ConfigRoot
-    static final class OpenapiConfig {
+    @ConfigRoot(name = "smallrye-openapi")
+    static final class SmallRyeOpenApiConfig {
         /**
          * The path at which to register the OpenAPI Servlet.
          */
@@ -98,10 +98,10 @@ public class OpenApiProcessor {
 
     @BuildStep
     @Record(STATIC_INIT)
-    public BeanContainerListenerBuildItem build(OpenApiDeploymentTemplate template, ApplicationArchivesBuildItem archivesBuildItem,
+    public BeanContainerListenerBuildItem build(SmallRyeOpenApiTemplate template, ApplicationArchivesBuildItem archivesBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem, BuildProducer<FeatureBuildItem> feature,
 	    JaxrsConfig jaxrsConfig) throws Exception {
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.MP_OPENAPI));
+        feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_OPENAPI));
         Result resourcePath = findStaticModel(archivesBuildItem);
         OpenAPI sm = generateStaticModel(resourcePath == null ? null : resourcePath.path, resourcePath == null ? OpenApiSerializer.Format.YAML : resourcePath.format);
         OpenAPI am = generateAnnotationModel(combinedIndexBuildItem.getIndex(), jaxrsConfig);

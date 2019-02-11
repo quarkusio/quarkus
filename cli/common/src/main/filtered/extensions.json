@@ -102,13 +102,14 @@
     "artifactId": "shamrock-metrics-deployment"
   },
   {
-    "name": "OpenAPI",
+    "name": "SmallRye OpenAPI",
     "labels": [
+      "smallrye-openapi",
       "openapi",
       "open-api"
     ],
     "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-openapi-deployment"
+    "artifactId": "shamrock-smallrye-openapi-deployment"
   },
   {
     "name": "SmallRye OpenTracing",

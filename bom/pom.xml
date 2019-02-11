@@ -90,7 +90,7 @@
 
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-openapi-deployment</artifactId>
+            <artifactId>shamrock-smallrye-openapi-deployment</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
          </dependency>

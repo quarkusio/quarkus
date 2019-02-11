@@ -1,4 +1,4 @@
-package org.jboss.shamrock.openapi;
+package org.jboss.shamrock.smallrye.openapi;
 
 import java.io.BufferedReader;
 import java.io.IOException;

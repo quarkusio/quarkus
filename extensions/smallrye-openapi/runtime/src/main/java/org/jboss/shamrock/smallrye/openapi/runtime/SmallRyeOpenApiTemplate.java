@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.openapi.runtime;
+package org.jboss.shamrock.smallrye.openapi.runtime;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -34,7 +34,7 @@ import io.smallrye.openapi.runtime.OpenApiProcessor;
  * @author Ken Finnigan
  */
 @Template
-public class OpenApiDeploymentTemplate {
+public class SmallRyeOpenApiTemplate {
 
     public BeanContainerListener setupModel(OpenAPI staticModel, OpenAPI annotationModel) {
         return new BeanContainerListener() {

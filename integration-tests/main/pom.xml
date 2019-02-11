@@ -55,7 +55,7 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-openapi-deployment</artifactId>
+            <artifactId>shamrock-smallrye-openapi-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>

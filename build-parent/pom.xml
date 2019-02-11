@@ -102,7 +102,7 @@
       <log4j2.version>2.0</log4j2.version>
       <slf4j.version>1.7.25</slf4j.version>
       <slf4j-jboss-logging.version>1.1.0.Final</slf4j-jboss-logging.version>
-      <wildfly-common.version>1.5.0.Alpha3-format-001</wildfly-common.version>
+      <wildfly-common.version>1.5.0.Alpha4-format-002</wildfly-common.version>
       <wildfly-client-config.version>1.0.0.Final</wildfly-client-config.version>
       <!-- This requires a release build of the https://github.com/jbossas/protean-wildfly-elytron-embedded project -->
       <wildfly-elytron.version>1.8.0.Alpha1</wildfly-elytron.version>
@@ -127,6 +127,7 @@
       <netty.version>4.1.30.Final</netty.version>
       <reactive-streams.version>1.0.2</reactive-streams.version>
       <test-containers.version>1.10.6</test-containers.version>
+      <jboss-logging.version>3.3.2.Final</jboss-logging.version>
    </properties>
 
    <dependencyManagement>
@@ -155,12 +156,6 @@
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-builder</artifactId>
             <version>${project.version}</version>
-            <exclusions>
-               <exclusion>
-                  <groupId>org.jboss.logging</groupId>
-                  <artifactId>jboss-logging</artifactId>
-               </exclusion>
-            </exclusions>
          </dependency>
          <dependency>
              <groupId>org.jboss.shamrock</groupId>
@@ -528,8 +523,8 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.logging</groupId>
-            <artifactId>jboss-logging-embedded</artifactId>
-            <version>${project.version}</version>
+            <artifactId>jboss-logging</artifactId>
+            <version>${jboss-logging.version}</version>
          </dependency>
          <dependency>
             <groupId>org.jboss.logmanager</groupId>
@@ -701,10 +696,6 @@
             <version>${undertow.version}</version>
             <exclusions>
                <exclusion>
-                  <groupId>org.jboss.logging</groupId>
-                  <artifactId>jboss-logging</artifactId>
-               </exclusion>
-               <exclusion>
                   <groupId>org.jboss.spec.javax.annotation</groupId>
                   <artifactId>jboss-annotations-api_1.2_spec</artifactId>
                </exclusion>
@@ -716,10 +707,6 @@
             <version>${undertow.version}</version>
             <exclusions>
                <exclusion>
-                  <groupId>org.jboss.logging</groupId>
-                  <artifactId>jboss-logging</artifactId>
-               </exclusion>
-               <exclusion>
                   <groupId>org.jboss.spec.javax.annotation</groupId>
                   <artifactId>jboss-annotations-api_1.2_spec</artifactId>
                </exclusion>
@@ -730,10 +717,6 @@
             <artifactId>smallrye-config</artifactId>
             <version>${smallrye-config.version}</version>
             <exclusions>
-               <exclusion>
-                  <groupId>org.jboss.logging</groupId>
-                  <artifactId>jboss-logging</artifactId>
-               </exclusion>
             </exclusions>
          </dependency>
          <dependency>
@@ -747,10 +730,6 @@
             <version>${smallrye-metrics.version}</version>
             <exclusions>
                <exclusion>
-                  <groupId>org.jboss.logging</groupId>
-                  <artifactId>jboss-logging</artifactId>
-               </exclusion>
-               <exclusion>
                   <groupId>javax</groupId>
                   <artifactId>javaee-api</artifactId>
                </exclusion>
@@ -761,10 +740,6 @@
             <artifactId>smallrye-open-api</artifactId>
             <version>${smallrye-open-api.version}</version>
             <exclusions>
-               <exclusion>
-                  <groupId>org.jboss.logging</groupId>
-                  <artifactId>jboss-logging</artifactId>
-               </exclusion>
                <exclusion>
                   <groupId>javax</groupId>
                   <artifactId>javaee-api</artifactId>
@@ -777,10 +752,6 @@
             <version>${smallrye-opentracing.version}</version>
             <exclusions>
                <exclusion>
-                  <groupId>org.jboss.logging</groupId>
-                  <artifactId>jboss-logging</artifactId>
-               </exclusion>
-               <exclusion>
                   <groupId>javax</groupId>
                   <artifactId>javaee-api</artifactId>
                </exclusion>
@@ -790,12 +761,6 @@
             <groupId>io.smallrye</groupId>
             <artifactId>smallrye-fault-tolerance</artifactId>
             <version>${smallrye-fault-tolerance.version}</version>
-            <exclusions>
-               <exclusion>
-                  <groupId>org.jboss.logging</groupId>
-                  <artifactId>jboss-logging</artifactId>
-               </exclusion>
-            </exclusions>
          </dependency>
          <dependency>
             <groupId>javax.activation</groupId>
@@ -1036,12 +1001,6 @@
             <groupId>org.jboss.metadata</groupId>
             <artifactId>jboss-metadata-web</artifactId>
             <version>${jboss-metadata-web.version}</version>
-            <exclusions>
-               <exclusion>
-                  <groupId>org.jboss.logging</groupId>
-                  <artifactId>jboss-logging</artifactId>
-               </exclusion>
-            </exclusions>
          </dependency>
 
          <dependency>
@@ -1068,22 +1027,12 @@
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-client</artifactId>
             <version>${resteasy.version}</version>
-            <exclusions>
-               <exclusion>
-                  <groupId>org.jboss.logging</groupId>
-                  <artifactId>jboss-logging</artifactId>
-               </exclusion>
-            </exclusions>
          </dependency>
          <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-core</artifactId>
             <version>${resteasy.version}</version>
             <exclusions>
-               <exclusion>
-                  <groupId>org.jboss.logging</groupId>
-                  <artifactId>jboss-logging</artifactId>
-               </exclusion>
                <exclusion>
                   <groupId>org.jboss.spec.javax.annotation</groupId>
                   <artifactId>jboss-annotations-api_1.3_spec</artifactId>
@@ -1100,10 +1049,6 @@
             <version>${resteasy.version}</version>
             <exclusions>
                <exclusion>
-                  <groupId>org.jboss.logging</groupId>
-                  <artifactId>jboss-logging</artifactId>
-               </exclusion>
-               <exclusion>
                   <groupId>org.jboss.spec.javax.annotation</groupId>
                   <artifactId>jboss-annotations-api_1.3_spec</artifactId>
                </exclusion>
@@ -1117,33 +1062,17 @@
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-json-binding-provider</artifactId>
             <version>${resteasy.version}</version>
-            <exclusions>
-               <exclusion>
-                  <groupId>org.jboss.logging</groupId>
-                  <artifactId>jboss-logging</artifactId>
-               </exclusion>
-            </exclusions>
          </dependency>
          <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-json-p-provider</artifactId>
             <version>${resteasy.version}</version>
-            <exclusions>
-               <exclusion>
-                  <groupId>org.jboss.logging</groupId>
-                  <artifactId>jboss-logging</artifactId>
-               </exclusion>
-            </exclusions>
          </dependency>
          <dependency>
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-jaxb-provider</artifactId>
             <version>${resteasy.version}</version>
             <exclusions>
-               <exclusion>
-                  <groupId>org.jboss.logging</groupId>
-                  <artifactId>jboss-logging</artifactId>
-               </exclusion>
                <!-- The JBoss JAXB API artifact is used instead -->
                <exclusion>
                   <groupId>javax.xml.bind</groupId>
@@ -1155,12 +1084,6 @@
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-rxjava2</artifactId>
             <version>${resteasy.version}</version>
-            <exclusions>
-               <exclusion>
-                  <groupId>org.jboss.logging</groupId>
-                  <artifactId>jboss-logging</artifactId>
-               </exclusion>
-            </exclusions>
          </dependency>
 
          <dependency>
@@ -1189,12 +1112,6 @@
             <groupId>org.jboss.threads</groupId>
             <artifactId>jboss-threads</artifactId>
             <version>${jboss-threads.version}</version>
-            <exclusions>
-               <exclusion>
-                  <groupId>org.jboss.logging</groupId>
-                  <artifactId>jboss-logging</artifactId>
-               </exclusion>
-            </exclusions>
          </dependency>
          <dependency>
             <groupId>org.jboss</groupId>
@@ -1205,12 +1122,6 @@
             <groupId>org.jboss.protean.arc</groupId>
             <artifactId>arc-processor</artifactId>
             <version>${project.version}</version>
-            <exclusions>
-               <exclusion>
-                  <groupId>org.jboss.logging</groupId>
-                  <artifactId>jboss-logging</artifactId>
-               </exclusion>
-            </exclusions>
          </dependency>
          <dependency>
             <groupId>org.jboss.protean.arc</groupId>
@@ -1260,23 +1171,11 @@
             <groupId>org.wildfly.client</groupId>
             <artifactId>wildfly-client-config</artifactId>
             <version>${wildfly-client-config.version}</version>
-            <exclusions>
-               <exclusion>
-                  <groupId>org.jboss.logging</groupId>
-                  <artifactId>jboss-logging</artifactId>
-               </exclusion>
-            </exclusions>
          </dependency>
          <dependency>
             <groupId>org.wildfly.security</groupId>
             <artifactId>wildfly-elytron-embedded</artifactId>
             <version>${wildfly-elytron.version}</version>
-            <exclusions>
-               <exclusion>
-                  <groupId>org.jboss.logging</groupId>
-                  <artifactId>jboss-logging</artifactId>
-               </exclusion>
-            </exclusions>
          </dependency>
 
          <dependency>
@@ -1303,12 +1202,6 @@
             <groupId>org.jboss.slf4j</groupId>
             <artifactId>slf4j-jboss-logging</artifactId>
             <version>${slf4j-jboss-logging.version}</version>
-            <exclusions>
-               <exclusion>
-                  <groupId>org.jboss.logging</groupId>
-                  <artifactId>jboss-logging</artifactId>
-               </exclusion>
-            </exclusions>
          </dependency>
          <dependency>
             <groupId>javax.enterprise</groupId>
@@ -1319,12 +1212,6 @@
             <groupId>org.hibernate.validator</groupId>
             <artifactId>hibernate-validator</artifactId>
             <version>${hibernate-validator.version}</version>
-            <exclusions>
-               <exclusion>
-                  <groupId>org.jboss.logging</groupId>
-                  <artifactId>jboss-logging</artifactId>
-               </exclusion>
-            </exclusions>
          </dependency>
          <dependency>
             <groupId>org.hibernate</groupId>
@@ -1340,10 +1227,6 @@
                <exclusion>
                   <groupId>com.sun.xml.bind</groupId>
                   <artifactId>jaxb-impl</artifactId>
-               </exclusion>
-               <exclusion>
-                  <groupId>org.jboss.logging</groupId>
-                  <artifactId>jboss-logging</artifactId>
                </exclusion>
             </exclusions>
          </dependency>
@@ -1449,8 +1332,6 @@
                                             <!-- Use javax.annotation-api -->
                                             <exclude>org.jboss.spec.javax.annotation:jboss-annotations-api_1.2_spec</exclude>
                                             <exclude>org.jboss.spec.javax.annotation:jboss-annotations-api_1.3_spec</exclude>
-                                            <!-- use our jboss-logging -->
-                                            <exclude>org.jboss.logging:jboss-logging</exclude>
                                             <!-- use our jboss-logmanager -->
                                             <exclude>org.jboss.logging:jboss-logmanager</exclude>
                                             <!-- We don't want all the API's in one jar-->

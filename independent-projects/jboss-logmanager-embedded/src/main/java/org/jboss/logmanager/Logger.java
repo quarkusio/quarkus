@@ -22,6 +22,7 @@ import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.ResourceBundle;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Filter;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -147,6 +148,63 @@ public final class Logger extends java.util.logging.Logger implements Serializab
     @AlwaysInline("Fast level checks")
     public boolean isLoggable(Level level) {
         return loggerNode.isLoggableLevel(level.intValue());
+    }
+
+    // Attachment mgmt
+
+    /**
+     * Get the attachment value for a given key, or {@code null} if there is no such attachment.
+     *
+     * @param key the key
+     * @param <V> the attachment value type
+     * @return the attachment, or {@code null} if there is none for this key
+     */
+    @SuppressWarnings({"unchecked", "unused"})
+    public <V> V getAttachment(AttachmentKey<V> key) {
+        return loggerNode.getAttachment(key);
+    }
+
+    /**
+     * Attach an object to this logger under a given key.
+     * A strong reference is maintained to the key and value for as long as this logger exists.
+     *
+     * @param key the attachment key
+     * @param value the attachment value
+     * @param <V> the attachment value type
+     * @return the old attachment, if there was one
+     * @throws SecurityException if a security manager exists and if the caller does not have {@code LoggingPermission(control)}
+     */
+    @SuppressWarnings({"unchecked", "unused"})
+    public <V> V attach(AttachmentKey<V> key, V value) throws SecurityException {
+        return loggerNode.attach(key, value);
+    }
+
+    /**
+     * Attach an object to this logger under a given key, if such an attachment does not already exist.
+     * A strong reference is maintained to the key and value for as long as this logger exists.
+     *
+     * @param key the attachment key
+     * @param value the attachment value
+     * @param <V> the attachment value type
+     * @return the current attachment, if there is one, or {@code null} if the value was successfully attached
+     * @throws SecurityException if a security manager exists and if the caller does not have {@code LoggingPermission(control)}
+     */
+    @SuppressWarnings({"unchecked", "unused"})
+    public <V> V attachIfAbsent(AttachmentKey<V> key, V value) throws SecurityException {
+        return loggerNode.attachIfAbsent(key, value);
+    }
+
+    /**
+     * Remove an attachment.
+     *
+     * @param key the attachment key
+     * @param <V> the attachment value type
+     * @return the old value, or {@code null} if there was none
+     * @throws SecurityException if a security manager exists and if the caller does not have {@code LoggingPermission(control)}
+     */
+    @SuppressWarnings({"unchecked", "unused"})
+    public <V> V detach(AttachmentKey<V> key) throws SecurityException {
+        return loggerNode.detach(key);
     }
 
     // Handler mgmt
@@ -706,13 +764,20 @@ public final class Logger extends java.util.logging.Logger implements Serializab
      *
      * @param <V> the attachment value type
      */
-    @SuppressWarnings({ "UnusedDeclaration" })
+    @SuppressWarnings("unused")
     public static final class AttachmentKey<V> {
+        private static final AtomicInteger idSeq = new AtomicInteger();
+
+        final int id = idSeq.getAndIncrement();
 
         /**
          * Construct a new instance.
          */
         public AttachmentKey() {
+        }
+
+        int getId() {
+            return id;
         }
     }
 

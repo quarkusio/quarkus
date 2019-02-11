@@ -17,6 +17,7 @@
 package org.jboss.logmanager;
 
 import com.oracle.svm.core.annotate.AlwaysInline;
+import org.wildfly.common.lock.SpinLock;
 
 import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
@@ -31,6 +32,8 @@ import static java.lang.Math.max;
  * A node in the tree of logger names.  Maintains weak references to children and a strong reference to its parent.
  */
 final class LoggerNode {
+
+    private static final Object[] NO_ATTACHMENTS = new Object[0];
 
     /**
      * The log context.
@@ -91,6 +94,12 @@ final class LoggerNode {
     private final int effectiveMinLevel;
 
     private volatile boolean hasLogger;
+
+    private final SpinLock attachmentLock = new SpinLock();
+
+    private Logger.AttachmentKey<?> attachmentKey;
+
+    private Object attachment;
 
     /**
      * Construct a new root instance.
@@ -349,6 +358,98 @@ final class LoggerNode {
 
     Level getLevel() {
         return level;
+    }
+
+    @SuppressWarnings({ "unchecked" })
+    <V> V getAttachment(final Logger.AttachmentKey<V> key) {
+        if (key == null) {
+            throw new NullPointerException("key is null");
+        }
+        final SpinLock lock = this.attachmentLock;
+        lock.lock();
+        try {
+            return key == attachmentKey ? (V) attachment : null;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @SuppressWarnings({ "unchecked" })
+    <V> V attach(final Logger.AttachmentKey<V> key, final V value) {
+        if (key == null) {
+            throw new NullPointerException("key is null");
+        }
+        if (value == null) {
+            throw new NullPointerException("value is null");
+        }
+        final SpinLock lock = this.attachmentLock;
+        lock.lock();
+        try {
+            final Logger.AttachmentKey<?> attachmentKey = this.attachmentKey;
+            if (attachmentKey == null) {
+                this.attachmentKey = key;
+                attachment = value;
+                return null;
+            } else if (key == attachmentKey) {
+                try {
+                    return (V) attachment;
+                } finally {
+                    attachment = value;
+                }
+            }
+        } finally {
+            lock.unlock();
+        }
+        throw new IllegalStateException("Maximum number of attachments exceeded");
+    }
+
+    @SuppressWarnings({ "unchecked" })
+    <V> V attachIfAbsent(final Logger.AttachmentKey<V> key, final V value) {
+        if (key == null) {
+            throw new NullPointerException("key is null");
+        }
+        if (value == null) {
+            throw new NullPointerException("value is null");
+        }
+        final SpinLock lock = this.attachmentLock;
+        lock.lock();
+        try {
+            final Logger.AttachmentKey<?> attachmentKey = this.attachmentKey;
+            if (attachmentKey == null) {
+                this.attachmentKey = key;
+                attachment = value;
+                return null;
+            } else if (key == attachmentKey) {
+                return (V) attachment;
+            }
+        } finally {
+            lock.unlock();
+        }
+        throw new IllegalStateException("Maximum number of attachments exceeded");
+    }
+
+    @SuppressWarnings({ "unchecked" })
+    public <V> V detach(final Logger.AttachmentKey<V> key) {
+        if (key == null) {
+            throw new NullPointerException("key is null");
+        }
+        final SpinLock lock = this.attachmentLock;
+        lock.lock();
+        try {
+            final Logger.AttachmentKey<?> attachmentKey = this.attachmentKey;
+            if (attachmentKey == key) {
+                try {
+                    return (V) attachment;
+                } finally {
+                    this.attachmentKey = null;
+                    this.attachment = null;
+                }
+            } else {
+                return null;
+            }
+        } finally {
+            lock.unlock();
+        }
     }
 
     LoggerNode getParent() {

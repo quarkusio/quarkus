@@ -53,10 +53,6 @@
                     <groupId>org.jboss.marshalling</groupId>
                     <artifactId>jboss-marshalling-osgi</artifactId>
                 </exclusion>
-                <exclusion>
-                    <groupId>org.jboss.logging</groupId>
-                    <artifactId>jboss-logging</artifactId>
-                </exclusion>
             </exclusions>
         </dependency>
 
@@ -64,12 +60,6 @@
             <groupId>org.infinispan</groupId>
             <artifactId>infinispan-remote-query-client</artifactId>
             <optional>true</optional>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.jboss.logging</groupId>
-                    <artifactId>jboss-logging</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>

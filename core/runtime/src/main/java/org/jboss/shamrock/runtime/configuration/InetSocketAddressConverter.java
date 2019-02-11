@@ -18,7 +18,7 @@ public class InetSocketAddressConverter implements Converter<InetSocketAddress> 
         if (value.isEmpty()) return null;
         final int lastColon = value.lastIndexOf(':');
         final int lastCloseBracket = value.lastIndexOf(']');
-        final String hostPart;
+        String hostPart;
         final int portPart;
         if (lastColon == -1 || lastCloseBracket != -1 && lastColon < lastCloseBracket) {
             // no port #
@@ -28,7 +28,10 @@ public class InetSocketAddressConverter implements Converter<InetSocketAddress> 
             hostPart = value.substring(0, lastColon);
             portPart = Integer.parseInt(value.substring(lastColon + 1));
         }
+        while (hostPart.startsWith("[") && hostPart.endsWith("]")) {
+            hostPart = hostPart.substring(1, hostPart.length() - 1);
+        }
         InetAddress resolved = Inet.parseInetAddress(hostPart);
-        return resolved == null ? InetSocketAddress.createUnresolved(value, 0) : new InetSocketAddress(resolved, portPart);
+        return resolved == null ? InetSocketAddress.createUnresolved(hostPart, portPart) : new InetSocketAddress(resolved, portPart);
     }
 }

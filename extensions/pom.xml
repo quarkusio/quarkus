@@ -36,7 +36,7 @@
 
         <!-- HTTP -->
         <module>undertow</module>
-        <module>websockets</module>
+        <module>undertow-websockets</module>
 
         <!-- Monitoring -->
         <module>health</module>

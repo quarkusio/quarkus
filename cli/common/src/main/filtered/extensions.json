@@ -180,15 +180,17 @@
     "artifactId": "shamrock-vertx-deployment"
   },
   {
-    "name": "Web Sockets",
+    "name": "Undertow WebSockets",
     "labels": [
+      "undertow-websockets",
+      "undertow-websocket",
       "websocket",
       "websockets",
       "web-socket",
       "web-sockets"
     ],
     "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-websockets-deployment"
+    "artifactId": "shamrock-undertow-websockets-deployment"
   },
   {
     "name": "Spring DI compatibility layer",

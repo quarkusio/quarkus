@@ -188,7 +188,7 @@
 
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-websockets-deployment</artifactId>
+            <artifactId>shamrock-undertow-websockets-deployment</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
          </dependency>

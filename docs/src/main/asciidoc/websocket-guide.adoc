@@ -38,10 +38,10 @@ First, we need a new project. Create a new project with the following command:
 mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=using-websockets \
-    -Dextensions="websockets"
+    -Dextensions="undertow-websockets"
 ----
 
-This command generates the Maven project (without any classes) and import the `websockets` extension.
+This command generates the Maven project (without any classes) and import the `undertow-websockets` extension.
 
 == Handling web sockets
 

@@ -473,12 +473,12 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-websockets-deployment</artifactId>
+            <artifactId>shamrock-undertow-websockets-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-websockets-runtime</artifactId>
+            <artifactId>shamrock-undertow-websockets-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.websockets.runtime;
+package org.jboss.shamrock.undertow.websockets.runtime;
 
 import java.util.function.Supplier;
 

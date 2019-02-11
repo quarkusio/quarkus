@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.websockets.runtime;
+package org.jboss.shamrock.undertow.websockets.runtime;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -31,9 +31,9 @@ import io.undertow.Undertow;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
 
 @Template
-public class WebsocketTemplate {
+public class UndertowWebsocketTemplate {
 
-    private static final Logger log = Logger.getLogger(WebsocketTemplate.class);
+    private static final Logger log = Logger.getLogger(UndertowWebsocketTemplate.class);
 
 
     public void setupWorker(RuntimeValue<Undertow> undertow) {
@@ -41,6 +41,7 @@ public class WebsocketTemplate {
     }
 
 
+    @SuppressWarnings("unchecked")
     public WebSocketDeploymentInfo createDeploymentInfo(Set<String> annotatedEndpoints, Set<String> endpoints, Set<String> serverApplicationConfigClasses) {
         WebSocketDeploymentInfo container = new WebSocketDeploymentInfo();
         container.setWorker(new WorkerSupplier());

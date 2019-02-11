@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.websockets;
+package org.jboss.shamrock.undertow.websockets;
 
 import java.lang.reflect.Modifier;
 import java.util.Collection;
@@ -40,12 +40,12 @@ import org.jboss.shamrock.deployment.builditem.ServiceStartBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.undertow.ServletContextAttributeBuildItem;
 import org.jboss.shamrock.undertow.UndertowBuildItem;
-import org.jboss.shamrock.websockets.runtime.WebsocketTemplate;
+import org.jboss.shamrock.undertow.websockets.runtime.UndertowWebsocketTemplate;
 
 import io.undertow.websockets.jsr.JsrWebSocketFilter;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
 
-public class WebsocketBuildStep {
+public class UndertowWebsocketProcessor {
 
     private static final DotName SERVER_ENDPOINT = DotName.createSimple(ServerEndpoint.class.getName());
     private static final DotName CLIENT_ENDPOINT = DotName.createSimple(ClientEndpoint.class.getName());
@@ -55,10 +55,10 @@ public class WebsocketBuildStep {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    public ServletContextAttributeBuildItem deploy(final CombinedIndexBuildItem indexBuildItem, WebsocketTemplate template,
+    public ServletContextAttributeBuildItem deploy(final CombinedIndexBuildItem indexBuildItem, UndertowWebsocketTemplate template,
             BuildProducer<ReflectiveClassBuildItem> reflection, BuildProducer<FeatureBuildItem> feature) throws Exception {
 
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.WEBSOCKET));
+        feature.produce(new FeatureBuildItem(FeatureBuildItem.UNDERTOW_WEBSOCKETS));
 
         final Set<String> annotatedEndpoints = new HashSet<>();
         final Set<String> endpoints = new HashSet<>();
@@ -114,7 +114,7 @@ public class WebsocketBuildStep {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    ServiceStartBuildItem setupWorker(WebsocketTemplate template, UndertowBuildItem undertow) {
+    ServiceStartBuildItem setupWorker(UndertowWebsocketTemplate template, UndertowBuildItem undertow) {
         template.setupWorker(undertow.getUndertow());
         return new ServiceStartBuildItem("Websockets");
     }

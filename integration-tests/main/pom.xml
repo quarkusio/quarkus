@@ -89,7 +89,7 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-websockets-deployment</artifactId>
+            <artifactId>shamrock-undertow-websockets-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>

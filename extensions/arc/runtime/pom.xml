@@ -33,12 +33,6 @@
     <dependency>
       <groupId>org.jboss.protean.arc</groupId>
       <artifactId>arc-runtime</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.jboss.logging</groupId>
-          <artifactId>jboss-logging</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.jboss.shamrock</groupId>

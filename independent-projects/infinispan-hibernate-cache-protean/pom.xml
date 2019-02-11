@@ -31,7 +31,7 @@
 
         <version.caffeine>2.6.2</version.caffeine>
         <version.hibernate>5.4.1.Final</version.hibernate>
-        <version.jboss-logging>1.0.0.Alpha1-SNAPSHOT</version.jboss-logging>
+        <version.jboss-logging>3.3.2.Final</version.jboss-logging>
 
         <!-- Build settings -->
 
@@ -47,7 +47,7 @@
     <dependencies>
         <dependency>
             <groupId>org.jboss.logging</groupId>
-            <artifactId>jboss-logging-embedded</artifactId>
+            <artifactId>jboss-logging</artifactId>
             <version>${version.jboss-logging}</version>
         </dependency>
 

@@ -103,6 +103,7 @@ public class CreateProjectTest {
         assertThat(new File(testDir, "src/main/java/org/foo/MyResource.java")).isFile();
         assertThat(new File(testDir, "src/test/java")).isDirectory();
         assertThat(new File(testDir, "src/test/java/org/foo/MyResourceTest.java")).isFile();
+        assertThat(new File(testDir, "src/test/java/org/foo/NativeMyResourceIT.java")).isFile();
 
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
                 .containsIgnoringCase(getBomArtifactId());

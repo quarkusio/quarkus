@@ -18,8 +18,6 @@ package org.jboss.shamrock.jaeger.runtime;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.inject.Inject;
-
 import io.jaegertracing.Configuration;
 import io.opentracing.ScopeManager;
 import io.opentracing.Span;

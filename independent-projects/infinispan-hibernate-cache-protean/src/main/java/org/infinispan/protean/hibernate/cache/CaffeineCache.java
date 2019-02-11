@@ -24,19 +24,22 @@ final class CaffeineCache implements InternalCache {
     private final String cacheName;
 
     CaffeineCache(String cacheName, InternalCacheConfig config, Time.NanosService nanosTimeService) {
-        Duration maxIdle = config != null ? config.maxIdle : null;
-        long maxSize = config != null ? config.maxSize : -1;
+        Duration maxIdle = config.maxIdle;
+        long objectCount = config.objectCount;
 
         this.cacheName = cacheName;
-        final Caffeine builder = Caffeine.newBuilder()
-                .ticker(nanosTimeService::nanoTime)
-                .expireAfter(new CacheExpiryPolicy(maxIdle));
+        final Caffeine cacheBuilder = Caffeine.newBuilder()
+                .ticker(nanosTimeService::nanoTime);
 
-        if (maxSize >= 0) {
-            builder.maximumSize(maxSize);
+        if (!Time.isForever(maxIdle)) {
+            cacheBuilder.expireAfter(new CacheExpiryPolicy(maxIdle));
         }
 
-        this.cache = builder.build();
+        if (objectCount >= 0) {
+            cacheBuilder.maximumSize(objectCount);
+        }
+
+        this.cache = cacheBuilder.build();
     }
 
     @Override

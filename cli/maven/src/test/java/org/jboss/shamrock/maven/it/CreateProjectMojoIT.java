@@ -170,7 +170,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         properties.put("projectGroupId", "org.acme");
         properties.put("projectArtifactId", "acme");
         properties.put("className", "org.acme.MyResource");
-        properties.put("extensions", "web,smallrye-metrics,missing");
+        properties.put("extensions", "jaxrs,smallrye-metrics,missing");
         setup(properties);
 
         // As the directory is not empty (log) navigate to the artifactID directory

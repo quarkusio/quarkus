@@ -25,6 +25,9 @@ public class PackageIT extends MojoTestBase {
         final MavenProcessInvocationResult result = running.execute(Collections.singletonList("package"), Collections.emptyMap());
 
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
+
+        final File targetDir = getTargetDir();
+        assertThat(getNumberOfFilesEndingWith(targetDir, ".jar")).isEqualTo(2);
     }
 
     @Test
@@ -36,5 +39,18 @@ public class PackageIT extends MojoTestBase {
             put("UBER_JAR", "true");
         }});
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
+
+        final File targetDir = getTargetDir();
+        assertThat(getNumberOfFilesEndingWith(targetDir, ".jar")).isEqualTo(1);
+        assertThat(getNumberOfFilesEndingWith(targetDir, ".original")).isEqualTo(1);
+    }
+
+    private int getNumberOfFilesEndingWith(File dir, String suffix) {
+        final File[] files = dir.listFiles((d, name) -> name.endsWith(suffix));
+        return files != null ? files.length : 0;
+    }
+
+    private File getTargetDir() {
+        return new File(testDir.getAbsoluteFile() + "/target");
     }
 }

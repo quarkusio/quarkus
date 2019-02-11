@@ -45,7 +45,7 @@ import org.jboss.shamrock.creator.resolver.maven.ResolvedMavenArtifactDeps;
  *
  * @author Alexey Loubyansky
  */
-@Mojo(name = "build", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
+@Mojo(name = "build", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class BuildMojo extends AbstractMojo {
 
     /**

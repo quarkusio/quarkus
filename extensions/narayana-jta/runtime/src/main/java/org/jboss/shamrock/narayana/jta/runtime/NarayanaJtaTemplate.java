@@ -34,11 +34,11 @@ public class NarayanaJtaTemplate {
 
     private static final Logger log = Logger.getLogger(NarayanaJtaTemplate.class);
 
-    public void setNodeName(String name) {
+    public void setNodeName(final NarayanaJtaConfiguration transactions) {
 
         try {
-            arjPropertyManager.getCoreEnvironmentBean().setNodeIdentifier(name);
-            TxControl.setXANodeName("shamrock");
+            arjPropertyManager.getCoreEnvironmentBean().setNodeIdentifier(transactions.nodeName);
+            TxControl.setXANodeName(transactions.xaNodeName.orElse(transactions.nodeName));
         } catch (CoreEnvironmentBeanException e) {
             e.printStackTrace();
         }
@@ -61,9 +61,5 @@ public class NarayanaJtaTemplate {
 
     public static Properties getDefaultProperties() {
         return defaultProperties;
-    }
-
-    public void initialize(final NarayanaJtaConfiguration transactions) {
-        setNodeName(transactions.nodeName);
     }
 }

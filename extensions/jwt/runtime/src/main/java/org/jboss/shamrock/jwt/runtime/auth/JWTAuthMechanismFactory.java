@@ -1,29 +1,15 @@
 package org.jboss.shamrock.jwt.runtime.auth;
 
-import io.smallrye.jwt.KeyUtils;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.undertow.security.api.AuthenticationMechanism;
 import io.undertow.security.api.AuthenticationMechanismFactory;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.handlers.form.FormParserFactory;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.security.interfaces.RSAPublicKey;
 import java.util.Map;
-import java.util.Optional;
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Instance;
-import javax.enterprise.inject.spi.CDI;
-import org.jboss.logging.Logger;
 
 /**
  * An AuthenticationMechanismFactory for the MicroProfile JWT RBAC
  */
-@ApplicationScoped
 public class JWTAuthMechanismFactory implements AuthenticationMechanismFactory {
 
     public JWTAuthMechanismFactory() {

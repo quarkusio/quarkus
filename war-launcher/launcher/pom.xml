@@ -63,7 +63,7 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-health-deployment</artifactId>
+            <artifactId>shamrock-smallrye-health-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>

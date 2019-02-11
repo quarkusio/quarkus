@@ -69,7 +69,7 @@
 
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-health-deployment</artifactId>
+            <artifactId>shamrock-smallrye-health-deployment</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
          </dependency>

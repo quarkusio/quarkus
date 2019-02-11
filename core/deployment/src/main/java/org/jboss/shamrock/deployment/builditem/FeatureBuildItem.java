@@ -15,7 +15,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String UNDERTOW_WEBSOCKETS = "undertow-websockets";
     public static final String JAXRS = "jaxrs";
     public static final String JAXRS_JSON = "jaxrs-json";
-    public static final String MP_HEALTH = "mp-health";
+    public static final String SMALLRYE_HEALTH = "smallrye-health";
     public static final String MP_OPENAPI = "mp-openapi";
     public static final String MP_METRICS = "mp-metrics";
     public static final String MP_FAULT_TOLERANCE = "mp-fault-tolerance";

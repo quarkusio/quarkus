@@ -41,15 +41,16 @@
     "artifactId": "shamrock-fault-tolerance-deployment"
   },
   {
-    "name": "Health",
+    "name": "SmallRye Health",
     "labels": [
+      "smallrye-health",
       "health-check",
       "health",
       "microprofile-health",
       "microprofile-health-check"
     ],
     "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-health-deployment"
+    "artifactId": "shamrock-smallrye-health-deployment"
   },
   {
     "name": "Infinispan Client",

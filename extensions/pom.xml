@@ -39,7 +39,7 @@
         <module>undertow-websockets</module>
 
         <!-- Monitoring -->
-        <module>health</module>
+        <module>smallrye-health</module>
         <module>metrics</module>
         <module>smallrye-opentracing</module>
         <module>fault-tolerance</module>

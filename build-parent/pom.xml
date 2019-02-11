@@ -239,7 +239,7 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-health-deployment</artifactId>
+            <artifactId>shamrock-smallrye-health-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
@@ -274,7 +274,7 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-health-runtime</artifactId>
+            <artifactId>shamrock-smallrye-health-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>

@@ -13,18 +13,18 @@ public class JWTAuthContextInfoGroup {
     /**
      * The authentication mechanism
      */
-    @ConfigItem(name = "authMechanism", defaultValue = "MP-JWT")
+    @ConfigItem(defaultValue = "MP-JWT")
     public String authMechanism;
 
     /**
      * The authentication mechanism
      */
-    @ConfigItem(name = "realmName", defaultValue = "Shamrock-JWT")
+    @ConfigItem(defaultValue = "Shamrock-JWT")
     public String realmName;
 
     /**
      * The MP-JWT configuration object
      */
-    @ConfigItem(defaultValue = "false")
-    public boolean enabled;
+    @ConfigItem(defaultValue = "true")
+    public boolean enabled = true;
 }

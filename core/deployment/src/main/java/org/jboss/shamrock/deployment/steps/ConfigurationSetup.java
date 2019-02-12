@@ -444,7 +444,7 @@ public class ConfigurationSetup {
             // branches for each next-string
             final Iterable<String> names = keyMap.childNames();
             for (String name : names) {
-                if (name.equals(ConfigPatternMap.WC_SINGLE) || name.equals(ConfigPatternMap.WC_MULTI)) {
+                if (name.equals(ConfigPatternMap.WILD_CARD)) {
                     // skip
                 } else {
                     // TODO: string switch

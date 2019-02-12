@@ -47,8 +47,8 @@
             <artifactId>shamrock-arc-runtime</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-core</artifactId>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-resteasy-common-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>javax.validation</groupId>

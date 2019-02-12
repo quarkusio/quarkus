@@ -17,17 +17,11 @@ package org.jboss.shamrock.jaxrs;
 
 import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.lang.reflect.Modifier;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -66,11 +60,11 @@ import org.jboss.resteasy.plugins.interceptors.GZIPDecodingInterceptor;
 import org.jboss.resteasy.plugins.interceptors.GZIPEncodingInterceptor;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
+import org.jboss.shamrock.arc.deployment.BeanContainerBuildItem;
+import org.jboss.shamrock.arc.deployment.BeanDefiningAnnotationBuildItem;
 import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.arc.deployment.BeanContainerBuildItem;
-import org.jboss.shamrock.arc.deployment.BeanDefiningAnnotationBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.ProxyUnwrapperBuildItem;
@@ -80,10 +74,11 @@ import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClass
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import org.jboss.shamrock.deployment.util.ServiceUtil;
+import org.jboss.shamrock.jaxrs.runtime.JaxrsTemplate;
 import org.jboss.shamrock.jaxrs.runtime.ResteasyFilter;
 import org.jboss.shamrock.jaxrs.runtime.RolesFilterRegistrar;
-import org.jboss.shamrock.jaxrs.runtime.graal.JaxrsTemplate;
-import org.jboss.shamrock.jaxrs.runtime.graal.ShamrockInjectorFactory;
+import org.jboss.shamrock.jaxrs.runtime.ShamrockInjectorFactory;
 import org.jboss.shamrock.runtime.annotations.ConfigItem;
 import org.jboss.shamrock.runtime.annotations.ConfigRoot;
 import org.jboss.shamrock.undertow.FilterBuildItem;
@@ -230,7 +225,9 @@ public class JaxrsScanningProcessor {
     }
 
     @BuildStep
-    public void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+    public void build(
+                      BuildProducer<FeatureBuildItem> feature,
+                      BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
                       BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
                       BuildProducer<SubstrateProxyDefinitionBuildItem> proxyDefinition,
                       BuildProducer<SubstrateResourceBuildItem> resource,
@@ -240,6 +237,8 @@ public class JaxrsScanningProcessor {
                       BuildProducer<ServletInitParamBuildItem> servletContextParams,
                       CombinedIndexBuildItem combinedIndexBuildItem
     ) throws Exception {
+        feature.produce(new FeatureBuildItem(FeatureBuildItem.JAXRS));
+
         IndexView index = combinedIndexBuildItem.getIndex();
 
         resource.produce(new SubstrateResourceBuildItem("META-INF/services/javax.ws.rs.client.ClientBuilder"));
@@ -387,11 +386,7 @@ public class JaxrsScanningProcessor {
     void registerProviders(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
                            BuildProducer<ServletInitParamBuildItem> servletContextParams,
                            CombinedIndexBuildItem combinedIndexBuildItem,
-                           List<JaxrsProviderBuildItem> contributedProviderBuildItems,
-                           JaxrsTemplate template,
-                           BeanContainerBuildItem beanContainerBuildItem,
-                           List<ProxyUnwrapperBuildItem> proxyUnwrappers,
-                           BuildProducer<FeatureBuildItem> feature) throws Exception {
+                           List<JaxrsProviderBuildItem> contributedProviderBuildItems) throws Exception {
         IndexView index = combinedIndexBuildItem.getIndex();
 
         Set<String> contributedProviders = new HashSet<>();
@@ -399,7 +394,7 @@ public class JaxrsScanningProcessor {
             contributedProviders.add(contributedProviderBuildItem.getName());
         }
 
-        Set<String> availableProviders = getAvailableProviders();
+        Set<String> availableProviders = ServiceUtil.classNamesNamedIn(getClass().getClassLoader(), "META-INF/services/" + Providers.class.getName());
 
         MediaTypeMap<String> categorizedReaders = new MediaTypeMap<>();
         MediaTypeMap<String> categorizedWriters = new MediaTypeMap<>();
@@ -442,9 +437,15 @@ public class JaxrsScanningProcessor {
         for (String providerToRegister : providersToRegister) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, providerToRegister));
         }
+    }
 
+    @Record(STATIC_INIT)
+    @BuildStep
+    void setupInjection(JaxrsTemplate template,
+            BuildProducer<ServletInitParamBuildItem> servletContextParams,
+            BeanContainerBuildItem beanContainerBuildItem,
+            List<ProxyUnwrapperBuildItem> proxyUnwrappers) {
 
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.JAXRS));
         List<Function<Object, Object>> unwrappers = new ArrayList<>();
         for (ProxyUnwrapperBuildItem i : proxyUnwrappers) {
             unwrappers.add(i.getUnwrapper());
@@ -454,7 +455,7 @@ public class JaxrsScanningProcessor {
         servletContextParams.produce(new ServletInitParamBuildItem("resteasy.injector.factory", ShamrockInjectorFactory.class.getName()));
     }
 
-    
+
     @BuildStep
     List<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations() {
         return Collections.singletonList(new BeanDefiningAnnotationBuildItem(PATH, jaxrs.singletonResources ? SINGLETON_SCOPE : null));
@@ -511,31 +512,6 @@ public class JaxrsScanningProcessor {
         // In the case of a constraint violation, these elements might be returned as entities and will be serialized
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ViolationReport.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ResteasyConstraintViolation.class.getName()));
-    }
-
-    private Set<String> getAvailableProviders() throws Exception {
-        Set<String> availableProviders = new HashSet<>();
-        Enumeration<URL> resources = getClass().getClassLoader()
-                .getResources("META-INF/services/" + Providers.class.getName());
-        while (resources.hasMoreElements()) {
-            URL url = resources.nextElement();
-            try (InputStream in = url.openStream()) {
-                BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if (line.contains("#")) {
-                        line = line.substring(line.indexOf("#"));
-                    }
-                    line = line.trim();
-                    if (line.equals("")) {
-                        continue;
-                    }
-
-                    availableProviders.add(line);
-                }
-            }
-        }
-        return availableProviders;
     }
 
     private static void categorizeProviders(Set<String> availableProviders, MediaTypeMap<String> categorizedReaders,

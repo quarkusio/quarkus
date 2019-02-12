@@ -80,8 +80,12 @@ class SubstrateConfigBuildStep {
             String graalVmHome = System.getenv("GRAALVM_HOME");
 
             if (graalVmHome != null) {
+                String graalVmLibDirectory = graalVmHome + File.separator + "jre" + File.separator + "lib" + File.separator;
+
                 systemProperty.produce(
-                        new SystemPropertyBuildItem("java.library.path", graalVmHome + File.separator + "jre" + File.separator + "lib" + File.separator + "amd64"));
+                        new SystemPropertyBuildItem("java.library.path", graalVmLibDirectory + "amd64"));
+                systemProperty.produce(
+                        new SystemPropertyBuildItem("javax.net.ssl.trustStore", graalVmLibDirectory + "security" + File.separator + "cacerts"));
             } else {
                 log.warn(
                         "SSL is enabled but the GRAALVM_HOME environment variable is not set. The java.library.path property has not been set and will need to be set manually.");

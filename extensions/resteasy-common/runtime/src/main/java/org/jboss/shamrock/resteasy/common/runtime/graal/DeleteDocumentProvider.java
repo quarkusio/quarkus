@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.jaxrs.runtime.graal;
+package org.jboss.shamrock.resteasy.common.runtime.graal;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
+
+import org.jboss.resteasy.spi.ResteasyConfiguration;
 import org.w3c.dom.Document;
 
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import java.io.IOException;
@@ -39,6 +42,10 @@ import java.lang.reflect.Type;
  */
 @TargetClass(className = "org.jboss.resteasy.plugins.providers.DocumentProvider")
 final class DeleteDocumentProvider {
+
+    @Substitute
+    public DeleteDocumentProvider(final @Context ResteasyConfiguration config) {
+    }
 
     @Substitute
     public boolean isReadable(Class<?> clazz, Type type, Annotation[] annotation, MediaType mediaType) {

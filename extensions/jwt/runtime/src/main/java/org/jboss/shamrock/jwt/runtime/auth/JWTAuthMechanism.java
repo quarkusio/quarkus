@@ -13,7 +13,6 @@ import io.undertow.security.idm.Account;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpServerExchange;
 import org.eclipse.microprofile.jwt.JsonWebToken;
-import org.jboss.shamrock.jwt.runtime.MPJWTProducer;
 
 import static io.undertow.util.Headers.AUTHORIZATION;
 import static io.undertow.util.Headers.WWW_AUTHENTICATE;
@@ -66,7 +65,7 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
                         Account account = identityManager.verify(credential.getName(), credential);
                         if (account != null) {
                             JsonWebToken jwtPrincipal = (JsonWebToken) account.getPrincipal();
-                            MPJWTProducer.setJWTPrincipal(jwtPrincipal);
+                            //MPJWTProducer.setJWTPrincipal(jwtPrincipal);
                             JWTAccount jwtAccount = new JWTAccount(jwtPrincipal, account);
                             securityContext.authenticationComplete(jwtAccount, "MP-JWT", false);
                             /*

@@ -9,6 +9,10 @@ import org.jose4j.jwt.JwtClaims;
 import org.wildfly.security.authz.Attributes;
 import org.wildfly.security.authz.SimpleAttributesEntry;
 
+/**
+ * An implementation of Elytron attributes interface that builds on the jose4j {@linkplain JwtClaims}.
+ *
+ */
 public class ClaimAttributes implements Attributes {
     private final JwtClaims claimsSet;
     private HashMap<String, Entry> entries = new HashMap<>();

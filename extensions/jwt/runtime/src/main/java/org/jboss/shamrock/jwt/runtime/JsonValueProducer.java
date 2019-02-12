@@ -1,11 +1,11 @@
 package org.jboss.shamrock.jwt.runtime;
 
 
-import java.lang.annotation.Annotation;
 import java.util.Optional;
 
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.InjectionPoint;
+import javax.inject.Inject;
 import javax.json.JsonArray;
 import javax.json.JsonNumber;
 import javax.json.JsonObject;
@@ -13,7 +13,6 @@ import javax.json.JsonString;
 import javax.json.JsonValue;
 
 import org.eclipse.microprofile.jwt.Claim;
-import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
 
 /**
@@ -21,6 +20,9 @@ import org.jboss.logging.Logger;
  */
 public class JsonValueProducer {
     private static Logger log = Logger.getLogger(JsonValueProducer.class);
+
+    @Inject
+    CommonJwtProducer util;
 
     @Produces
     @Claim("")
@@ -70,25 +72,14 @@ public class JsonValueProducer {
 
     public <T extends JsonValue> T getValue(InjectionPoint ip) {
         log.debugf("JsonValueProducer(%s).produce", ip);
-        String name = getName(ip);
-        T jsonValue = (T) MPJWTProducer.generalJsonValueProducer(name);
+        T jsonValue = (T) util.generalJsonValueProducer(ip);
         return jsonValue;
     }
     public <T extends JsonValue> Optional<T> getOptionalValue(InjectionPoint ip) {
         log.debugf("JsonValueProducer(%s).produce", ip);
-        String name = getName(ip);
-        T jsonValue = (T) MPJWTProducer.generalJsonValueProducer(name);
+        T jsonValue = (T) util.generalJsonValueProducer(ip);
         return Optional.ofNullable(jsonValue);
     }
 
-    String getName(InjectionPoint ip) {
-        String name = null;
-        for (Annotation ann : ip.getQualifiers()) {
-            if (ann instanceof Claim) {
-                Claim claim = (Claim) ann;
-                name = claim.standard() == Claims.UNKNOWN ? claim.value() : claim.standard().name();
-            }
-        }
-        return name;
-    }
+
 }

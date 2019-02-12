@@ -2,7 +2,6 @@ package org.jboss.shamrock.jwt.runtime.auth;
 
 import javax.servlet.ServletContext;
 
-import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.undertow.servlet.ServletExtension;
 import io.undertow.servlet.api.DeploymentInfo;
 
@@ -30,6 +29,6 @@ public class JWTAuthMethodExtension implements ServletExtension {
     @Override
     public void handleDeployment(DeploymentInfo deploymentInfo, ServletContext servletContext) {
         deploymentInfo.addAuthenticationMechanism(authMechanism, new JWTAuthMechanismFactory());
-        deploymentInfo.addInnerHandlerChainWrapper(MpJwtPrincipalCleanupHandler::new);
+        deploymentInfo.addInnerHandlerChainWrapper(MpJwtPrincipalHandler::new);
     }
 }

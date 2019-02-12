@@ -1,6 +1,5 @@
 package org.jboss.shamrock.jwt.runtime.auth;
 
-import java.io.StringReader;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -24,6 +23,9 @@ import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.MalformedClaimException;
 import org.wildfly.security.authz.Attributes;
 
+/**
+ * An implementation of JWTCallerPrincipal that builds on the Elytron attributes
+ */
 public class ElytronJwtCallerPrincipal extends JWTCallerPrincipal {
     private static final String TMP = "tmp";
     private static Logger logger = Logger.getLogger(ElytronJwtCallerPrincipal.class);

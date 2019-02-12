@@ -1,17 +1,14 @@
 package org.jboss.shamrock.jwt.runtime;
 
-
+import java.lang.annotation.Annotation;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.annotation.PostConstruct;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Destroyed;
-import javax.enterprise.context.Initialized;
 import javax.enterprise.context.RequestScoped;
-import javax.enterprise.event.Observes;
+import javax.enterprise.inject.spi.InjectionPoint;
+import javax.inject.Inject;
 import javax.json.Json;
 import javax.json.JsonArray;
 import javax.json.JsonArrayBuilder;
@@ -19,51 +16,29 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonValue;
 
+import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.ClaimValue;
+import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
 
-/**
- * A class that tracks the current validated MP-JWT and associated JsonWebToken via a thread
- * local to provide a @RequestScoped JsonWebToken producer method.
- *
- * It also provides utility methods for access the current JsonWebToken claim values.
- */
-@ApplicationScoped
-public class MPJWTProducer {
-    private static Logger log = Logger.getLogger(MPJWTProducer.class);
+@RequestScoped
+public class CommonJwtProducer {
+    private static Logger log = Logger.getLogger(CommonJwtProducer.class);
     private static final String TMP = "tmp";
-    private static ThreadLocal<JsonWebToken> currentPrincipal = new ThreadLocal<>();
 
-    public static void setJWTPrincipal(JsonWebToken principal) {
-        currentPrincipal.set(principal);
-    }
-
-    public static JsonWebToken getJWTPrincpal() {
-        return currentPrincipal.get();
-    }
-
-    @PostConstruct
-    void init() {
-        log.debug("MPJWTProducer initialized");
-    }
-
-    void observeRequestInitialized(@Observes @Initialized(RequestScoped.class) Object event) {
-        log.tracef("observeRequestInitialized, event=%s", event);
-    }
-
-    void observeRequestDestroyed(@Observes @Destroyed(RequestScoped.class) Object event) {
-        log.tracef("observeRequestDestroyed, event=%s", event);
-    }
+    @Inject
+    private JsonWebToken currentToken;
 
     /**
      * A utility method for accessing a claim from the current JsonWebToken as a ClaimValue<Optional<T>> object.
      *
-     * @param name - name of the claim
+     * @param ip - injection point of the claim
      * @param <T>  expected actual type of the claim
      * @return the claim value wrapper object
      */
-    static <T> ClaimValue<Optional<T>> generalClaimValueProducer(String name) {
+    public <T> ClaimValue<Optional<T>> generalClaimValueProducer(InjectionPoint ip) {
+        String name = getName(ip);
         ClaimValueWrapper<Optional<T>> wrapper = new ClaimValueWrapper<>(name);
         T value = getValue(name, false);
         Optional<T> optValue = Optional.ofNullable(value);
@@ -74,23 +49,23 @@ public class MPJWTProducer {
     /**
      * Return the indicated claim value as a JsonValue
      *
-     * @param name - name of the claim
+     * @param ip - injection point of the claim
      * @return a JsonValue wrapper
      */
-    static JsonValue generalJsonValueProducer(String name) {
+    public JsonValue generalJsonValueProducer(InjectionPoint ip) {
+        String name = getName(ip);
         Object value = getValue(name, false);
         JsonValue jsonValue = wrapValue(value);
         return jsonValue;
     }
 
-    public static <T> T getValue(String name, boolean isOptional) {
-        JsonWebToken jwt = getJWTPrincpal();
-        if (jwt == null) {
+    public <T> T getValue(String name, boolean isOptional) {
+        if (currentToken == null) {
             log.debugf("getValue(%s), null JsonWebToken", name);
             return null;
         }
 
-        Optional<T> claimValue = jwt.claim(name);
+        Optional<T> claimValue = currentToken.claim(name);
         if (!isOptional && !claimValue.isPresent()) {
             log.debugf("Failed to find Claim for: %s", name);
         }
@@ -98,7 +73,19 @@ public class MPJWTProducer {
         return claimValue.orElse(null);
     }
 
-    static JsonObject replaceMap(Map<String, Object> map) {
+    public String getName(InjectionPoint ip) {
+        String name = null;
+        for (Annotation ann : ip.getQualifiers()) {
+            if (ann instanceof Claim) {
+                Claim claim = (Claim) ann;
+                name = claim.standard() == Claims.UNKNOWN ? claim.value() : claim.standard().name();
+            }
+        }
+        return name;
+    }
+
+
+    private static JsonObject replaceMap(Map<String, Object> map) {
         JsonObjectBuilder builder = Json.createObjectBuilder();
         for (Map.Entry<String, Object> entry : map.entrySet()) {
             Object entryValue = entry.getValue();
@@ -124,7 +111,7 @@ public class MPJWTProducer {
         return builder.build();
     }
 
-    static JsonValue wrapValue(Object value) {
+    private static JsonValue wrapValue(Object value) {
         JsonValue jsonValue = null;
         if (value instanceof JsonValue) {
             // This may already be a JsonValue

@@ -70,6 +70,9 @@ public class PrimitiveInjectionEndpoint {
     @Inject
     @Claim("customString")
     private String customString;
+    @Inject
+    @Claim("customDouble")
+    private double customDouble;
 
     @GET
     @Path("/verifyInjectedIssuer")
@@ -312,6 +315,29 @@ public class PrimitiveInjectionEndpoint {
         }
         else {
             msg = String.format("customString: %s != %s", customValue, value);
+        }
+        JsonObject result = Json.createObjectBuilder()
+                .add("pass", pass)
+                .add("msg", msg)
+                .build();
+        return result;
+    }
+
+    @GET
+    @Path("/verifyInjectedCustomDouble")
+    @Produces(MediaType.APPLICATION_JSON)
+    public JsonObject verifyInjectedCustomDouble(@QueryParam("value") double value) {
+        boolean pass = false;
+        String msg;
+        if (customDouble == 0) {
+            msg = "customString value is not set or empty, FAIL";
+        }
+        else if (Math.IEEEremainder(customDouble, value) == 0) {
+            msg = "customString PASS";
+            pass = true;
+        }
+        else {
+            msg = String.format("customDouble: %.6f != %.6f", customDouble, value);
         }
         JsonObject result = Json.createObjectBuilder()
                 .add("pass", pass)

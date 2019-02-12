@@ -32,9 +32,9 @@ import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 import org.jboss.shamrock.deployment.builditem.ObjectSubstitutionBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.jwt.runtime.ClaimValueProducer;
+import org.jboss.shamrock.jwt.runtime.CommonJwtProducer;
 import org.jboss.shamrock.jwt.runtime.JsonValueProducer;
 import org.jboss.shamrock.jwt.runtime.JwtTemplate;
-import org.jboss.shamrock.jwt.runtime.MPJWTProducer;
 import org.jboss.shamrock.jwt.runtime.PrincipalProducer;
 import org.jboss.shamrock.jwt.runtime.RawClaimTypeProducer;
 import org.jboss.shamrock.jwt.runtime.auth.ClaimAttributes;
@@ -52,7 +52,9 @@ import org.jboss.shamrock.security.SecurityRealmBuildItem;
 import org.jboss.shamrock.undertow.ServletExtensionBuildItem;
 import org.wildfly.security.auth.server.SecurityRealm;
 
-
+/**
+ * The deployment processor for MP-JWT applications
+ */
 class JwtProcessor {
     private static final Logger log = Logger.getLogger(JwtProcessor.class.getName());
 
@@ -64,15 +66,14 @@ class JwtProcessor {
      */
     @BuildStep
     void registerAdditionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        additionalBeans.produce(new AdditionalBeanBuildItem(JWTAuthContextInfoProvider.class.getName()));
+        additionalBeans.produce(new AdditionalBeanBuildItem(JWTAuthContextInfoProvider.class));
         additionalBeans.produce(new AdditionalBeanBuildItem(false, MpJwtValidator.class));
         additionalBeans.produce(new AdditionalBeanBuildItem(false, JWTAuthMethodExtension.class));
-        additionalBeans.produce(new AdditionalBeanBuildItem(MPJWTProducer.class.getName()));
-        additionalBeans.produce(new AdditionalBeanBuildItem(PrincipalProducer.class.getName()));
-        additionalBeans.produce(new AdditionalBeanBuildItem(RawClaimTypeProducer.class.getName()));
-
-        additionalBeans.produce(new AdditionalBeanBuildItem(ClaimValueProducer.class.getName()));
-        additionalBeans.produce(new AdditionalBeanBuildItem(JsonValueProducer.class.getName()));
+        additionalBeans.produce(new AdditionalBeanBuildItem(CommonJwtProducer.class));
+        additionalBeans.produce(new AdditionalBeanBuildItem(RawClaimTypeProducer.class));
+        additionalBeans.produce(new AdditionalBeanBuildItem(PrincipalProducer.class));
+        additionalBeans.produce(new AdditionalBeanBuildItem(ClaimValueProducer.class));
+        additionalBeans.produce(new AdditionalBeanBuildItem(JsonValueProducer.class));
     }
 
     /**

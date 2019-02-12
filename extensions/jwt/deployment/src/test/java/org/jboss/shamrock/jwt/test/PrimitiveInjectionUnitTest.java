@@ -238,7 +238,7 @@ public class PrimitiveInjectionUnitTest {
     }
 
     /**
-     * Verify that the token exp claim is as expected
+     * Verify that the token customString claim is as expected
      *
      * @throws Exception
      */
@@ -251,6 +251,28 @@ public class PrimitiveInjectionUnitTest {
                 .queryParam("value", "customStringValue")
                 .queryParam(Claims.auth_time.name(), authTimeClaim)
                 .get("/endp/verifyInjectedCustomString").andReturn();
+
+        Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
+        String replyString = response.body().asString();
+        JsonReader jsonReader = Json.createReader(new StringReader(replyString));
+        JsonObject reply = jsonReader.readObject();
+        System.out.println(reply.toString());
+    }
+
+    /**
+     * Verify that the token customString claim is as expected
+     *
+     * @throws Exception
+     */
+    @Test()
+    public void verifyInjectedCustomDouble() throws Exception {
+        System.out.printf("Begin verifyInjectedCustomDouble, token=%s\n", token);
+        io.restassured.response.Response response = RestAssured.given().auth()
+                .oauth2(token)
+                .when()
+                .queryParam("value", 3.141592653589793d)
+                .queryParam(Claims.auth_time.name(), authTimeClaim)
+                .get("/endp/verifyInjectedCustomDouble").andReturn();
 
         Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
         String replyString = response.body().asString();

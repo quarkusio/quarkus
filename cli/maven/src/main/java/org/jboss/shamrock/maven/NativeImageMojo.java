@@ -105,7 +105,7 @@ public class NativeImageMojo extends AbstractMojo {
     private String nativeImageXmx;
 
     @Parameter(defaultValue = "${native-image.docker-build}")
-    private boolean dockerBuild;
+    private String dockerBuild;
 
     @Parameter(defaultValue = "false")
     private boolean enableVMInspection;

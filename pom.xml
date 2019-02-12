@@ -65,7 +65,6 @@
         <module>independent-projects/infinispan-hibernate-cache-protean</module>
         <module>independent-projects/jboss-logmanager-embedded</module>
         <module>independent-projects/panache</module>
-        <module>independent-projects/vertx-axle-clients</module>
 
         <!-- CLI and Maven -->
         <module>cli</module>

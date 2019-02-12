@@ -35,10 +35,18 @@ public class VertxProducer {
 
     private volatile VertxConfiguration conf;
     private volatile Vertx vertx;
+    private io.vertx.axle.core.Vertx axle;
+    private io.vertx.reactivex.core.Vertx rx;
+
+    private void createCompanions(Vertx instance) {
+        this.vertx = instance == null ? Vertx.vertx() : instance;
+        this.axle = io.vertx.axle.core.Vertx.newInstance(this.vertx);
+        this.rx = io.vertx.reactivex.core.Vertx.newInstance(this.vertx);
+    }
 
     private void initialize() {
         if (conf == null) {
-            this.vertx = Vertx.vertx();
+            createCompanions(null);
             return;
         }
 
@@ -57,7 +65,7 @@ public class VertxProducer {
                 if (ar.failed()) {
                     failure.set(ar.cause());
                 } else {
-                    this.vertx = ar.result();
+                    createCompanions(ar.result());
                 }
                 latch.countDown();
             });
@@ -71,7 +79,7 @@ public class VertxProducer {
                 throw new IllegalStateException("Unable to initialize the Vert.x instance", e);
             }
         } else {
-            this.vertx = Vertx.vertx(options);
+            createCompanions(Vertx.vertx(options));
         }
     }
 
@@ -205,6 +213,26 @@ public class VertxProducer {
         }
         initialize();
         return this.vertx;
+    }
+
+    @Singleton
+    @Produces
+    public synchronized io.vertx.axle.core.Vertx axle() {
+        if (this.axle != null) {
+            return this.axle;
+        }
+        initialize();
+        return this.axle;
+    }
+
+    @Singleton
+    @Produces
+    public synchronized io.vertx.reactivex.core.Vertx rx() {
+        if (this.rx != null) {
+            return this.rx;
+        }
+        initialize();
+        return this.rx;
     }
 
     @Singleton

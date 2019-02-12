@@ -36,9 +36,8 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
-import org.jboss.logging.Logger;
-import org.jboss.logging.Logger.Level;
 import org.jboss.protean.arc.InjectableInterceptor;
+import org.jboss.protean.arc.processor.BeanProcessor.PrivateMembersCollector;
 import org.jboss.protean.arc.processor.ResourceOutput.Resource;
 import org.jboss.protean.arc.processor.ResourceOutput.Resource.SpecialType;
 import org.jboss.protean.gizmo.BranchResult;
@@ -57,16 +56,11 @@ import org.jboss.protean.gizmo.ResultHandle;
  */
 public class InterceptorGenerator extends BeanGenerator {
 
-    private static final Logger LOGGER = Logger.getLogger(InterceptorGenerator.class);
-
     protected static final String FIELD_NAME_BINDINGS = "bindings";
 
-    /**
-     *
-     * @param annotationLiterals
-     */
-    public InterceptorGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate) {
-        super(annotationLiterals, applicationClassPredicate);
+    public InterceptorGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate,
+            PrivateMembersCollector privateMembers) {
+        super(annotationLiterals, applicationClassPredicate, privateMembers);
     }
 
     /**
@@ -216,11 +210,8 @@ public class InterceptorGenerator extends BeanGenerator {
             Class<?> retType = InterceptionType.AROUND_INVOKE.equals(interceptionType) ? Object.class : void.class;
             ResultHandle ret;
             if (Modifier.isPrivate(interceptorMethod.flags())) {
-                Level level = isApplicationClass ? Level.INFO : Level.DEBUG;
-                LOGGER.logf(level, "Interceptor method %s#%s is private - users are encouraged to avoid using private interceptor methods",
-                        interceptorMethod.declaringClass()
-                                .name(),
-                        interceptorMethod.name());
+                privateMembers.add(isApplicationClass,
+                        String.format("Interceptor method %s#%s()", interceptorMethod.declaringClass().name(), interceptorMethod.name()));
                 // Use reflection fallback
                 ResultHandle paramTypesArray = trueBranch.newArray(Class.class, trueBranch.load(1));
                 trueBranch.writeArrayValue(paramTypesArray, 0, trueBranch.loadClass(InvocationContext.class));

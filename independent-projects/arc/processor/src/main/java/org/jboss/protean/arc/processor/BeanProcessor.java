@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import javax.enterprise.context.control.ActivateRequestContext;
 import javax.enterprise.inject.Any;
@@ -150,20 +151,21 @@ public class BeanProcessor {
         this.beanRegistrars = initAndSort(beanRegistrars, buildContext);
         this.beanDeploymentValidators = initAndSort(beanDeploymentValidators, buildContext);
     }
-
+    
     public BeanDeployment process() throws IOException {
 
         BeanDeployment beanDeployment = new BeanDeployment(new IndexWrapper(index), additionalBeanDefiningAnnotations, annotationTransformers,
                 resourceAnnotations, beanRegistrars, buildContext, removeUnusedBeans, unusedExclusions);
         beanDeployment.init();
         beanDeployment.validate(buildContext, beanDeploymentValidators);
-
+        
+        PrivateMembersCollector privateMembers = new PrivateMembersCollector();
         AnnotationLiteralProcessor annotationLiterals = new AnnotationLiteralProcessor(sharedAnnotationLiterals, applicationClassPredicate);
-        BeanGenerator beanGenerator = new BeanGenerator(annotationLiterals, applicationClassPredicate);
+        BeanGenerator beanGenerator = new BeanGenerator(annotationLiterals, applicationClassPredicate, privateMembers);
         ClientProxyGenerator clientProxyGenerator = new ClientProxyGenerator(applicationClassPredicate);
-        InterceptorGenerator interceptorGenerator = new InterceptorGenerator(annotationLiterals, applicationClassPredicate);
+        InterceptorGenerator interceptorGenerator = new InterceptorGenerator(annotationLiterals, applicationClassPredicate, privateMembers);
         SubclassGenerator subclassGenerator = new SubclassGenerator(annotationLiterals, applicationClassPredicate);
-        ObserverGenerator observerGenerator = new ObserverGenerator(annotationLiterals, applicationClassPredicate);
+        ObserverGenerator observerGenerator = new ObserverGenerator(annotationLiterals, applicationClassPredicate, privateMembers);
         AnnotationLiteralGenerator annotationLiteralsGenerator = new AnnotationLiteralGenerator();
 
         Map<BeanInfo, String> beanToGeneratedName = new HashMap<>();
@@ -208,6 +210,8 @@ public class BeanProcessor {
                 }
             }
         }
+
+        privateMembers.log();
 
         // Generate _ComponentsProvider
         resources.addAll(new ComponentsProviderGenerator().generate(name, beanDeployment, beanToGeneratedName, observerToGeneratedName));
@@ -560,6 +564,43 @@ public class BeanProcessor {
             return (V) data.put(key, value);
         }
 
+    }
+    
+    static class PrivateMembersCollector {
+        
+        private final List<String> appDescriptions;
+        private final List<String> fwkDescriptions;
+        
+        public PrivateMembersCollector() {
+            this.appDescriptions = new ArrayList<>();
+            this.fwkDescriptions = LOGGER.isDebugEnabled() ? new ArrayList<>() : null;
+        }
+
+        void add(boolean isApplicationClass, String description) {
+            if (isApplicationClass) {
+                appDescriptions.add(description);
+            } else if(fwkDescriptions != null) {
+                fwkDescriptions.add(description);
+            }
+        }
+        
+        private void log() {
+            // Log application problems
+            if (!appDescriptions.isEmpty()) {
+                int limit = LOGGER.isDebugEnabled() ? Integer.MAX_VALUE : 3;
+                String info = appDescriptions.stream().limit(limit).map(d -> "\t- " + d).collect(Collectors.joining(",\n"));
+                if (appDescriptions.size() > limit) {
+                    info += "\n\t- and " + (appDescriptions.size() - limit) + " more - please enable debug logging to see the full list";
+                }
+                LOGGER.infof("Found unrecommended usage of private members in application beans:\n%s", info);
+            }
+            // Log fwk problems
+            if (fwkDescriptions != null && !fwkDescriptions.isEmpty()) {
+                LOGGER.debugf("Found unrecommended usage of private members in framework beans:\n%s",
+                        fwkDescriptions.stream().map(d -> "\t- " + d).collect(Collectors.joining(",\n")));
+            }
+        }
+ 
     }
 
 }

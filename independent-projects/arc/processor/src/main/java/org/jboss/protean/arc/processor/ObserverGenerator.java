@@ -39,13 +39,12 @@ import javax.enterprise.inject.spi.ObserverMethod;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.jboss.logging.Logger;
-import org.jboss.logging.Logger.Level;
 import org.jboss.protean.arc.CreationalContextImpl;
 import org.jboss.protean.arc.CurrentInjectionPointProvider;
 import org.jboss.protean.arc.InjectableBean;
 import org.jboss.protean.arc.InjectableObserverMethod;
 import org.jboss.protean.arc.InjectableReferenceProvider;
+import org.jboss.protean.arc.processor.BeanProcessor.PrivateMembersCollector;
 import org.jboss.protean.arc.processor.ResourceOutput.Resource;
 import org.jboss.protean.arc.processor.ResourceOutput.Resource.SpecialType;
 import org.jboss.protean.gizmo.ClassCreator;
@@ -64,19 +63,17 @@ public class ObserverGenerator extends AbstractGenerator {
 
     static final String OBSERVER_SUFFIX = "_Observer";
 
-    private static final Logger LOGGER = Logger.getLogger(ObserverGenerator.class);
-
     private final AnnotationLiteralProcessor annotationLiterals;
 
     private final Predicate<DotName> applicationClassPredicate;
-    /**
-     *
-     * @param annotationLiterals
-     * @param applicationClassPredicate
-     */
-    public ObserverGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate) {
+    
+    private final PrivateMembersCollector privateMembers;
+    
+    public ObserverGenerator(AnnotationLiteralProcessor annotationLiterals, Predicate<DotName> applicationClassPredicate,
+            PrivateMembersCollector privateMembers) {
         this.annotationLiterals = annotationLiterals;
         this.applicationClassPredicate = applicationClassPredicate;
+        this.privateMembers = privateMembers;
     }
 
     /**
@@ -211,9 +208,8 @@ public class ObserverGenerator extends AbstractGenerator {
         }
 
         if (Modifier.isPrivate(observer.getObserverMethod().flags())) {
-            Level level = isApplicationClass ? Level.INFO : Level.DEBUG;
-            LOGGER.logf(level, "Observer %s#%s is private - users are encouraged to avoid using private observers", observer.getObserverMethod().declaringClass().name(),
-                    observer.getObserverMethod().name());
+            privateMembers.add(isApplicationClass,
+                    String.format("Observer method %s#%s()", observer.getObserverMethod().declaringClass().name(), observer.getObserverMethod().name()));
             ResultHandle paramTypesArray = notify.newArray(Class.class, notify.load(referenceHandles.length));
             ResultHandle argsArray = notify.newArray(Object.class, notify.load(referenceHandles.length));
             for (int i = 0; i < referenceHandles.length; i++) {

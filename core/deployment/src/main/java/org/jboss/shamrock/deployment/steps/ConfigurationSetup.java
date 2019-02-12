@@ -2,9 +2,12 @@ package org.jboss.shamrock.deployment.steps;
 
 import static org.jboss.shamrock.deployment.util.ReflectUtil.toError;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -13,6 +16,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
+import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
@@ -24,6 +28,7 @@ import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.Converter;
 import org.graalvm.nativeimage.ImageInfo;
+import org.jboss.logging.Logger;
 import org.jboss.protean.gizmo.BranchResult;
 import org.jboss.protean.gizmo.BytecodeCreator;
 import org.jboss.protean.gizmo.ClassCreator;
@@ -40,6 +45,8 @@ import org.jboss.shamrock.deployment.builditem.ConfigurationBuildItem;
 import org.jboss.shamrock.deployment.builditem.ConfigurationCustomConverterBuildItem;
 import org.jboss.shamrock.deployment.builditem.ExtensionClassLoaderBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.GeneratedResourceBuildItem;
+import org.jboss.shamrock.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import org.jboss.shamrock.deployment.builditem.RunTimeConfigurationSourceBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem;
 import org.jboss.shamrock.deployment.configuration.ConfigDefinition;
@@ -50,6 +57,7 @@ import org.jboss.shamrock.deployment.util.ServiceUtil;
 import org.jboss.shamrock.runtime.annotations.ConfigPhase;
 import org.jboss.shamrock.runtime.configuration.CidrAddressConverter;
 import org.jboss.shamrock.runtime.configuration.ConverterFactory;
+import org.jboss.shamrock.runtime.configuration.DefaultConfigSource;
 import org.jboss.shamrock.runtime.configuration.ExpandingConfigSource;
 import org.jboss.shamrock.runtime.configuration.InetAddressConverter;
 import org.jboss.shamrock.runtime.configuration.InetSocketAddressConverter;
@@ -62,6 +70,8 @@ import org.wildfly.common.net.CidrAddress;
  * Setup steps for configuration purposes.
  */
 public class ConfigurationSetup {
+
+    private static final Logger log = Logger.getLogger("org.jboss.shamrock.configuration");
 
     public static final String CONFIG_HELPER = "org.jboss.shamrock.runtime.generated.ConfigHelper";
     public static final String CONFIG_HELPER_DATA = "org.jboss.shamrock.runtime.generated.ConfigHelperData";
@@ -150,6 +160,38 @@ public class ConfigurationSetup {
         }
     }
 
+    /**
+     * Write the default run time configuration.
+     */
+    @BuildStep
+    RunTimeConfigurationSourceBuildItem writeDefaults(
+        List<RunTimeConfigurationDefaultBuildItem> defaults,
+        Consumer<GeneratedResourceBuildItem> resourceConsumer
+    ) throws IOException {
+        final Properties properties = new Properties();
+        for (RunTimeConfigurationDefaultBuildItem item : defaults) {
+            final String key = item.getKey();
+            final String value = item.getValue();
+            final String existing = properties.getProperty(key);
+            if (existing != null && ! existing.equals(value)) {
+                log.warnf("Two conflicting default values were specified for configuration key \"%s\": \"%s\" and \"%s\" (using \"%2$s\")",
+                    key,
+                    existing,
+                    value
+                );
+            } else {
+                properties.setProperty(key, value);
+            }
+        }
+        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+            try (OutputStreamWriter osw = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
+                properties.store(osw, "This is the generated set of default configuration values");
+                osw.flush();
+                resourceConsumer.accept(new GeneratedResourceBuildItem(DefaultConfigSource.DEFAULT_CONFIG_PROPERTIES_NAME, os.toByteArray()));
+            }
+        }
+        return new RunTimeConfigurationSourceBuildItem(DefaultConfigSource.class.getName(), OptionalInt.empty());
+    }
 
     /**
      * Generate the bytecode to load configuration objects at static init and run time.

@@ -100,4 +100,51 @@ public class NameIteratorTestCase {
         assertTrue(ni.nextSegmentEquals(items[0]));
         assertFalse(ni.hasPrevious());
     }
+
+    @Test
+    public void testIterationWithQuoted() {
+        String[] rawItems = array("foo", "\"banana\"", "\"bar.bar\"", "ap\"\"ple", "b\\\"az", "g\"r\"a\"p\"e");
+        String[] items = array("foo", "banana", "bar.bar", "apple", "b\"az", "grape");
+        final int length = rawItems.length;
+        String joined = join(rawItems);
+
+        NameIterator ni = new NameIterator(joined);
+        assertTrue(ni.hasNext());
+        assertEquals(items[0], ni.getNextSegment());
+        assertTrue(ni.nextSegmentEquals(items[0]));
+        assertFalse(ni.hasPrevious());
+
+        for (int i = 1; i < length; i ++) {
+            ni.next();
+            assertTrue(ni.hasNext());
+            assertEquals(items[i], ni.getNextSegment());
+            assertTrue(ni.nextSegmentEquals(items[i]));
+            assertTrue(ni.hasPrevious());
+            assertEquals(items[i - 1], ni.getPreviousSegment());
+            assertTrue(ni.previousSegmentEquals(items[i - 1]));
+        }
+
+        ni.next();
+        assertFalse(ni.hasNext());
+        assertTrue(ni.hasPrevious());
+        assertEquals(items[length - 1], ni.getPreviousSegment());
+        assertTrue(ni.previousSegmentEquals(items[length - 1]));
+        ni.previous();
+
+        for (int i = length - 1; i >= 1; i --) {
+            assertTrue(ni.hasNext());
+            assertEquals(items[i], ni.getNextSegment());
+            assertTrue(ni.nextSegmentEquals(items[i]));
+            assertTrue(ni.hasPrevious());
+            assertEquals(items[i - 1], ni.getPreviousSegment());
+            assertTrue(ni.previousSegmentEquals(items[i - 1]));
+            ni.previous();
+        }
+
+        assertEquals(-1, ni.getPosition());
+        assertTrue(ni.hasNext());
+        assertEquals(items[0], ni.getNextSegment());
+        assertTrue(ni.nextSegmentEquals(items[0]));
+        assertFalse(ni.hasPrevious());
+    }
 }

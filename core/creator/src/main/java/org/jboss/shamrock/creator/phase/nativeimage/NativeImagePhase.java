@@ -94,7 +94,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
     private String nativeImageXmx;
 
-    private boolean dockerBuild;
+    private String dockerBuild;
 
     private boolean enableVMInspection;
 
@@ -190,7 +190,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
     }
 
 
-    public NativeImagePhase setDockerBuild(boolean dockerBuild) {
+    public NativeImagePhase setDockerBuild(String dockerBuild) {
         this.dockerBuild = dockerBuild;
         return this;
     }
@@ -258,12 +258,20 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
         HashMap<String, String> env = new HashMap<>(System.getenv());
         List<String> nativeImage;
-        if (dockerBuild) {
+
+        if (dockerBuild != null && !dockerBuild.toLowerCase().equals("false")) {
 
             // E.g. "/usr/bin/docker run -v {{PROJECT_DIR}}:/project --rm protean/graalvm-native-image"
             nativeImage = new ArrayList<>();
             //TODO: use an 'official' image
-            Collections.addAll(nativeImage, "docker", "run", "-v", outputDir.toAbsolutePath() + ":/project:z", "--rm", "swd847/centos-graal-native-image");
+            String image;
+            if(dockerBuild.toLowerCase().equals("true")) {
+                image = "swd847/centos-graal-native-image-rc12";
+            } else {
+                //allow the use of a custom image
+                image = dockerBuild;
+            }
+            Collections.addAll(nativeImage, "docker", "run", "-v", outputDir.toAbsolutePath() + ":/project:z", "--rm", image);
         } else {
             String graalvmHome = this.graalvmHome;
             if (graalvmHome != null) {
@@ -510,7 +518,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
                         t.setNativeImageXmx(value);
                         break;
                     case "docker-build":
-                        t.setDockerBuild(Boolean.parseBoolean(value));
+                        t.setDockerBuild(value);
                         break;
                     case "enable-vm-inspection":
                         t.setEnableVMInspection(Boolean.parseBoolean(value));

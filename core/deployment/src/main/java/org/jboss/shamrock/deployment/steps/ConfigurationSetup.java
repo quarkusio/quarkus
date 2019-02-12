@@ -19,6 +19,7 @@ import java.util.OptionalInt;
 import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
+import java.util.regex.Pattern;
 
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
@@ -62,6 +63,7 @@ import org.jboss.shamrock.runtime.configuration.ExpandingConfigSource;
 import org.jboss.shamrock.runtime.configuration.InetAddressConverter;
 import org.jboss.shamrock.runtime.configuration.InetSocketAddressConverter;
 import org.jboss.shamrock.runtime.configuration.NameIterator;
+import org.jboss.shamrock.runtime.configuration.RegexConverter;
 import org.jboss.shamrock.runtime.configuration.SimpleConfigurationProviderResolver;
 import org.objectweb.asm.Opcodes;
 import org.wildfly.common.net.CidrAddress;
@@ -118,6 +120,11 @@ public class ConfigurationSetup {
             200,
             InetAddress.class,
             InetAddressConverter.class
+        ));
+        configurationTypes.produce(new ConfigurationCustomConverterBuildItem(
+            200,
+            Pattern.class,
+            RegexConverter.class
         ));
     }
 

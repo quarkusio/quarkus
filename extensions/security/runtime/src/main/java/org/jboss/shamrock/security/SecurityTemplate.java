@@ -78,10 +78,10 @@ public class SecurityTemplate {
             return;
         }
         log.debugf("Trying to loader users: /%s", config.users);
-        URL users = getClass().getResource("/" + config.users);
+        URL users = Thread.currentThread().getContextClassLoader().getResource( config.users);
         log.debugf("users: %s", users);
         log.debugf("Trying to loader roles: %s", config.roles);
-        URL roles = getClass().getResource("/" + config.roles);
+        URL roles = Thread.currentThread().getContextClassLoader().getResource( config.roles);
         log.debugf("roles: %s", roles);
         if(users == null && roles == null) {
             String msg = String.format("No PropertiesRealmConfig users/roles settings found. Configure the shamrock.security.file.%s properties", config.help());

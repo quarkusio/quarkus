@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import java.util.Collections;
 
 import javax.annotation.Priority;
 import javax.enterprise.context.Dependent;
@@ -37,6 +36,7 @@ import javax.interceptor.InvocationContext;
 
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
+import org.jboss.protean.arc.processor.BeanProcessor.PrivateMembersCollector;
 import org.jboss.protean.arc.processor.ResourceOutput.Resource;
 import org.jboss.protean.arc.processor.types.Baz;
 import org.junit.Test;
@@ -51,7 +51,7 @@ public class SubclassGeneratorTest {
         deployment.init();
 
         AnnotationLiteralProcessor annotationLiteralProcessor = new AnnotationLiteralProcessor(true, TruePredicate.INSTANCE);
-        BeanGenerator beanGenerator = new BeanGenerator(annotationLiteralProcessor, TruePredicate.INSTANCE);
+        BeanGenerator beanGenerator = new BeanGenerator(annotationLiteralProcessor, TruePredicate.INSTANCE, new PrivateMembersCollector());
         SubclassGenerator generator = new SubclassGenerator(annotationLiteralProcessor, TruePredicate.INSTANCE);
         BeanInfo simpleBean = deployment.getBeans().stream()
                 .filter(b -> b.getTarget().get().asClass().name().equals(DotName.createSimple(SimpleBean.class.getName()))).findAny().get();

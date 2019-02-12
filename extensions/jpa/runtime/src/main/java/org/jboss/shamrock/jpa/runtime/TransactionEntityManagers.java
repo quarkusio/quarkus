@@ -19,8 +19,7 @@ package org.jboss.shamrock.jpa.runtime;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.annotation.PreDestroy;
-import javax.enterprise.context.RequestScoped;
+import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
 import javax.transaction.TransactionManager;
@@ -28,7 +27,6 @@ import javax.transaction.TransactionSynchronizationRegistry;
 
 import org.jboss.shamrock.jpa.runtime.entitymanager.TransactionScopedEntityManager;
 
-@RequestScoped
 public class TransactionEntityManagers {
 
     @Inject
@@ -40,6 +38,9 @@ public class TransactionEntityManagers {
     @Inject
     JPAConfig jpaConfig;
 
+    @Inject
+    Instance<RequestScopedEntityManagerHolder> requestScopedEntityManagers;
+
     private final Map<String, TransactionScopedEntityManager> managers;
 
     public TransactionEntityManagers() {
@@ -48,14 +49,7 @@ public class TransactionEntityManagers {
 
     public EntityManager getEntityManager(String unitName) {
         return managers.computeIfAbsent(unitName,
-                un -> new TransactionScopedEntityManager(tm, tsr, jpaConfig.getEntityManagerFactory(un)));
-    }
-
-    @PreDestroy
-    public void destroy() {
-        for (TransactionScopedEntityManager manager : managers.values()) {
-            manager.requestDone();
-        }
+                un -> new TransactionScopedEntityManager(tm, tsr, jpaConfig.getEntityManagerFactory(un), unitName, requestScopedEntityManagers));
     }
 
 }

@@ -249,6 +249,10 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                                 if (parts.length < 5) {
                                     continue;
                                 }
+                                String scope = parts[4];
+                                if(scope.equals("test")) {
+                                    continue;
+                                }
                                 StringBuilder sb = new StringBuilder();
                                 //the last two bits are version and scope
                                 //which we don't want

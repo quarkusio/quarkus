@@ -16,6 +16,7 @@
 
 package org.jboss.shamrock.narayana.jta;
 
+import static org.jboss.shamrock.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.util.Properties;
@@ -64,7 +65,7 @@ class NarayanaJtaProcessor {
     NarayanaJtaConfiguration transactions;
 
     @BuildStep(providesCapabilities = Capabilities.TRANSACTIONS)
-    @Record(STATIC_INIT)
+    @Record(RUNTIME_INIT)
     public void build(NarayanaJtaTemplate tt, BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.NARAYANA_JTA));
         additionalBeans.produce(new AdditionalBeanBuildItem(NarayanaJtaProducers.class));
@@ -85,7 +86,7 @@ class NarayanaJtaProcessor {
         //we want to force Arjuna to init at static init time
         Properties defaultProperties = PropertiesFactory.getDefaultProperties();
         tt.setDefaultProperties(defaultProperties);
-        tt.initialize(transactions);
+        tt.setNodeName(transactions);
 
     }
 }

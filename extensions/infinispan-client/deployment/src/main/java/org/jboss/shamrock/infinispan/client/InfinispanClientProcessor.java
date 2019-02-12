@@ -30,6 +30,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 
+import org.infinispan.client.hotrod.configuration.NearCacheMode;
 import org.infinispan.client.hotrod.exceptions.HotRodClientException;
 import org.infinispan.client.hotrod.impl.ConfigurationProperties;
 import org.infinispan.client.hotrod.logging.Log;
@@ -54,8 +55,8 @@ import org.jboss.shamrock.deployment.builditem.ApplicationIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
 import org.jboss.shamrock.deployment.builditem.SystemPropertyBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import org.jboss.shamrock.infinispan.client.runtime.InfinispanClientProducer;
 import org.jboss.shamrock.infinispan.client.runtime.InfinispanClientConfiguration;
+import org.jboss.shamrock.infinispan.client.runtime.InfinispanClientProducer;
 import org.jboss.shamrock.infinispan.client.runtime.InfinispanTemplate;
 
 class InfinispanClientProcessor {
@@ -81,12 +82,16 @@ class InfinispanClientProcessor {
         InputStream stream = cl.getResourceAsStream(HOTROD_CLIENT_PROPERTIES);
         Properties properties;
         if (stream == null) {
-            properties = null;
-            log.couldNotFindPropertiesFile(HOTROD_CLIENT_PROPERTIES);
+            properties = new Properties();
+            if (log.isTraceEnabled()) {
+                log.tracef("There was no hotrod-client.properties file found - using defaults");
+            }
         } else {
             try {
                 properties = loadFromStream(stream);
-                log.debugf("Found HotRod properties of %s",  properties);
+                if (log.isDebugEnabled()) {
+                    log.debugf("Found HotRod properties of %s", properties);
+                }
             } finally {
                 Util.close(stream);
             }
@@ -174,13 +179,21 @@ class InfinispanClientProcessor {
         Properties properties = builderBuildItem.getProperties();
         InfinispanClientConfiguration conf = infinispanClient;
         final Optional<String> serverList = conf.serverList;
-        if (serverList.isPresent()) {
-            log.debugf("Applying micro profile configuration on top of hotrod properties: %s", conf);
-            if (properties == null) {
-                properties = new Properties();
-            }
-            properties.put(ConfigurationProperties.SERVER_LIST, serverList.get());
+        if (log.isDebugEnabled()) {
+            log.debugf("Applying micro profile configuration: %s", conf);
         }
+        if (serverList.isPresent()) {
+            // Retain the hotrod-client.properties definition if clashes
+            properties.putIfAbsent(ConfigurationProperties.SERVER_LIST, serverList.get());
+        }
+        int maxEntries = conf.nearCacheMaxEntries;
+        // Only write the entries if is a valid number and it isn't already configured
+        if (maxEntries > 0 && !properties.containsKey(ConfigurationProperties.NEAR_CACHE_MODE)) {
+            // This is already empty so no need for putIfAbsent
+            properties.put(ConfigurationProperties.NEAR_CACHE_MODE, NearCacheMode.INVALIDATED);
+            properties.putIfAbsent(ConfigurationProperties.NEAR_CACHE_MAX_ENTRIES, maxEntries);
+        }
+
         return new BeanContainerListenerBuildItem(template.configureInfinispan(properties));
     }
 

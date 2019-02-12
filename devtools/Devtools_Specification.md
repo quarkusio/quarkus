@@ -1,4 +1,4 @@
-# CLI Specification
+# Devtools Specification
 
 This document will attempt to specify the expected behavior of the various tools (æsh, maven, forge, etc.) developed to help developers onboard and manage their shamrock based work.  Much of this will presume maven based projects as gradle has not even come up in discussion as yet.  There are a few scenarios to cover:
 

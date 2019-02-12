@@ -27,9 +27,9 @@
         <relativePath>../build-parent/pom.xml</relativePath>
     </parent>
 
-    <artifactId>shamrock-cli-all</artifactId>
+    <artifactId>shamrock-devtools-all</artifactId>
     <packaging>pom</packaging>
-    <name>Shamrock - CLI</name>
+    <name>Shamrock - Devtools</name>
 
     <properties>
         <test.level>INFO</test.level>

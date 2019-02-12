@@ -22,12 +22,12 @@
 
     <parent>
         <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-cli-all</artifactId>
+        <artifactId>shamrock-devtools-all</artifactId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>cli-common-core</artifactId>
-    <name>Shamrock - CLI Common Core</name>
+    <artifactId>devtools-common-core</artifactId>
+    <name>Shamrock - Devtools Common Core</name>
 
     <dependencies>
         <dependency>

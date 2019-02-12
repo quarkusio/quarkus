@@ -6,12 +6,12 @@
 
     <parent>
         <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-cli-all</artifactId>
+        <artifactId>shamrock-devtools-all</artifactId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>cli-common</artifactId>
-    <name>Shamrock - CLI Common Code</name>
+    <artifactId>devtools-common</artifactId>
+    <name>Shamrock - Devtools Common Code</name>
 
     <build>
         <resources>
@@ -51,7 +51,7 @@
     <dependencies>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>cli-common-core</artifactId>
+            <artifactId>devtools-common-core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.maven</groupId>

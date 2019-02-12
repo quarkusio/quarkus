@@ -36,6 +36,7 @@ import org.jboss.shamrock.jwt.runtime.JsonValueProducer;
 import org.jboss.shamrock.jwt.runtime.JwtTemplate;
 import org.jboss.shamrock.jwt.runtime.MPJWTProducer;
 import org.jboss.shamrock.jwt.runtime.PrincipalProducer;
+import org.jboss.shamrock.jwt.runtime.RawClaimTypeProducer;
 import org.jboss.shamrock.jwt.runtime.auth.ClaimAttributes;
 import org.jboss.shamrock.jwt.runtime.auth.ElytronJwtCallerPrincipal;
 import org.jboss.shamrock.jwt.runtime.auth.JWTAuthMethodExtension;
@@ -68,6 +69,8 @@ class JwtProcessor {
         additionalBeans.produce(new AdditionalBeanBuildItem(false, JWTAuthMethodExtension.class));
         additionalBeans.produce(new AdditionalBeanBuildItem(MPJWTProducer.class.getName()));
         additionalBeans.produce(new AdditionalBeanBuildItem(PrincipalProducer.class.getName()));
+        additionalBeans.produce(new AdditionalBeanBuildItem(RawClaimTypeProducer.class.getName()));
+
         additionalBeans.produce(new AdditionalBeanBuildItem(ClaimValueProducer.class.getName()));
         additionalBeans.produce(new AdditionalBeanBuildItem(JsonValueProducer.class.getName()));
     }

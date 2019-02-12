@@ -170,12 +170,12 @@
          </dependency>
          <dependency>
              <groupId>org.jboss.shamrock</groupId>
-             <artifactId>cli-common</artifactId>
+             <artifactId>devtools-common</artifactId>
              <version>${project.version}</version>
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>cli-common-core</artifactId>
+            <artifactId>devtools-common-core</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>

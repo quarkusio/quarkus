@@ -66,8 +66,8 @@
         <module>independent-projects/jboss-logmanager-embedded</module>
         <module>independent-projects/panache</module>
 
-        <!-- CLI and Maven -->
-        <module>cli</module>
+          <!-- Devtools (Maven, cli, gradle) -->
+        <module>devtools</module>
 
         <!-- Misc. -->
         <module>docs</module>

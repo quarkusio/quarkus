@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.dev;
+package org.jboss.shamrock.undertow.devmode;
 
 import java.io.IOException;
 import java.io.PrintWriter;

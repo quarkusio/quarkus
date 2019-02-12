@@ -19,7 +19,6 @@ package org.jboss.shamrock.dev;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.instrument.ClassDefinition;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -32,20 +31,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
+import org.jboss.shamrock.deployment.devmode.HotReplacementContext;
 
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-
-public class RuntimeUpdatesProcessor {
-
-    private static final long TWO_SECONDS = 2000;
+public class RuntimeUpdatesProcessor implements HotReplacementContext {
 
     private final Path classesDir;
     private final Path sourcesDir;
     private final Path resourcesDir;
-    private volatile long nextUpdate;
-    private volatile long lastChange = System.currentTimeMillis();
     private final ClassLoaderCompiler compiler;
+    private volatile long lastChange = System.currentTimeMillis();
 
     private volatile Set<String> configFilePaths = Collections.emptySet();
     private final Map<String, Long> configFileTimestamps = new ConcurrentHashMap<>();
@@ -59,32 +53,28 @@ public class RuntimeUpdatesProcessor {
         this.compiler = compiler;
     }
 
-    public void handleRequest(HttpServerExchange exchange, HttpHandler next) throws Exception {
 
-        if (nextUpdate > System.currentTimeMillis()) {
-            if (DevModeMain.deploymentProblem != null) {
-                ReplacementDebugPage.handleRequest(exchange, DevModeMain.deploymentProblem);
-                return;
-            }
-            next.handleRequest(exchange);
-            return;
-        }
-        synchronized (this) {
-            if (nextUpdate < System.currentTimeMillis()) {
-                doScan();
-                //we update at most once every 2s
-                nextUpdate = System.currentTimeMillis() + TWO_SECONDS;
-
-            }
-        }
-        if (DevModeMain.deploymentProblem != null) {
-            ReplacementDebugPage.handleRequest(exchange, DevModeMain.deploymentProblem);
-            return;
-        }
-        next.handleRequest(exchange);
+    @Override
+    public Path getClassesDir() {
+        return classesDir;
     }
 
-    void doScan() throws IOException {
+    @Override
+    public Path getSourcesDir() {
+        return sourcesDir;
+    }
+
+    @Override
+    public Path getResourcesDir() {
+        return resourcesDir;
+    }
+
+    @Override
+    public Throwable getDeploymentProblem() {
+        return DevModeMain.deploymentProblem;
+    }
+
+    public void doScan() throws IOException {
         final long start = System.currentTimeMillis();
         final ConcurrentMap<String, byte[]> changedClasses = scanForChangedClasses();
         if (changedClasses == null) return;
@@ -154,10 +144,10 @@ public class RuntimeUpdatesProcessor {
                     Long existing = configFileTimestamps.get(i);
                     if (value > existing) {
                         ret = true;
-                        if(doCopy) {
+                        if (doCopy) {
                             Path target = classesDir.resolve(i);
                             byte[] data = CopyUtils.readFileContent(config);
-                            try(FileOutputStream out = new FileOutputStream(target.toFile())) {
+                            try (FileOutputStream out = new FileOutputStream(target.toFile())) {
                                 out.write(data);
                             }
                         }
@@ -174,10 +164,10 @@ public class RuntimeUpdatesProcessor {
         try {
             long sourceMod = Files.getLastModifiedTime(p).toMillis();
             boolean recent = sourceMod > lastChange;
-            if(recent) {
+            if (recent) {
                 return true;
             }
-            if(p.toString().endsWith(".java")) {
+            if (p.toString().endsWith(".java")) {
                 String pathName = sourcesDir.relativize(p).toString();
                 String classFileName = pathName.substring(0, pathName.length() - 5) + ".class";
                 Path classFile = classesDir.resolve(classFileName);

@@ -17,6 +17,7 @@
 package org.jboss.shamrock.deployment.logging;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 
@@ -26,6 +27,8 @@ import org.jboss.shamrock.deployment.annotations.ExecutionTime;
 import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.deployment.builditem.ConfigurationCustomConverterBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedResourceBuildItem;
+import org.jboss.shamrock.deployment.builditem.LogCategoryBuildItem;
+import org.jboss.shamrock.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import org.jboss.shamrock.deployment.builditem.SystemPropertyBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ServiceProviderBuildItem;
@@ -42,6 +45,18 @@ public final class LoggingResourceProcessor {
     @BuildStep
     SystemPropertyBuildItem setProperty() {
         return new SystemPropertyBuildItem("java.util.logging.manager", "org.jboss.logmanager.LogManager");
+    }
+
+    @BuildStep
+    void setUpDefaultLevels(List<LogCategoryBuildItem> categories, Consumer<RunTimeConfigurationDefaultBuildItem> configOutput) {
+        for (LogCategoryBuildItem category : categories) {
+            configOutput.accept(
+                new RunTimeConfigurationDefaultBuildItem(
+                    "shamrock.log.categories.\"" + category.getCategory() + "\".level",
+                    category.getLevel().toString()
+                )
+            );
+        }
     }
 
     @BuildStep

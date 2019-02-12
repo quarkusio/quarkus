@@ -2,9 +2,12 @@ package org.jboss.shamrock.deployment.steps;
 
 import static org.jboss.shamrock.deployment.util.ReflectUtil.toError;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -12,16 +15,21 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
+import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
+import java.util.regex.Pattern;
 
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigBuilder;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.Converter;
 import org.graalvm.nativeimage.ImageInfo;
+import org.jboss.logging.Logger;
 import org.jboss.protean.gizmo.BranchResult;
 import org.jboss.protean.gizmo.BytecodeCreator;
 import org.jboss.protean.gizmo.ClassCreator;
@@ -38,6 +46,9 @@ import org.jboss.shamrock.deployment.builditem.ConfigurationBuildItem;
 import org.jboss.shamrock.deployment.builditem.ConfigurationCustomConverterBuildItem;
 import org.jboss.shamrock.deployment.builditem.ExtensionClassLoaderBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.GeneratedResourceBuildItem;
+import org.jboss.shamrock.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import org.jboss.shamrock.deployment.builditem.RunTimeConfigurationSourceBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem;
 import org.jboss.shamrock.deployment.configuration.ConfigDefinition;
 import org.jboss.shamrock.deployment.configuration.ConfigPatternMap;
@@ -47,10 +58,12 @@ import org.jboss.shamrock.deployment.util.ServiceUtil;
 import org.jboss.shamrock.runtime.annotations.ConfigPhase;
 import org.jboss.shamrock.runtime.configuration.CidrAddressConverter;
 import org.jboss.shamrock.runtime.configuration.ConverterFactory;
+import org.jboss.shamrock.runtime.configuration.DefaultConfigSource;
 import org.jboss.shamrock.runtime.configuration.ExpandingConfigSource;
 import org.jboss.shamrock.runtime.configuration.InetAddressConverter;
 import org.jboss.shamrock.runtime.configuration.InetSocketAddressConverter;
 import org.jboss.shamrock.runtime.configuration.NameIterator;
+import org.jboss.shamrock.runtime.configuration.RegexConverter;
 import org.jboss.shamrock.runtime.configuration.SimpleConfigurationProviderResolver;
 import org.objectweb.asm.Opcodes;
 import org.wildfly.common.net.CidrAddress;
@@ -59,6 +72,8 @@ import org.wildfly.common.net.CidrAddress;
  * Setup steps for configuration purposes.
  */
 public class ConfigurationSetup {
+
+    private static final Logger log = Logger.getLogger("org.jboss.shamrock.configuration");
 
     public static final String CONFIG_HELPER = "org.jboss.shamrock.runtime.generated.ConfigHelper";
     public static final String CONFIG_HELPER_DATA = "org.jboss.shamrock.runtime.generated.ConfigHelperData";
@@ -76,6 +91,7 @@ public class ConfigurationSetup {
     private static final MethodDescriptor SCPR_CONSTRUCT = MethodDescriptor.ofConstructor(SimpleConfigurationProviderResolver.class, Config.class);
     private static final MethodDescriptor SRCB_BUILD = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class, "build", Config.class);
     private static final MethodDescriptor SRCB_WITH_CONVERTER = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class, "withConverter", ConfigBuilder.class, Class.class, int.class, Converter.class);
+    private static final MethodDescriptor SRCB_WITH_SOURCES = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class, "withSources", ConfigBuilder.class, ConfigSource[].class);
     private static final MethodDescriptor SRCB_ADD_DEFAULT_SOURCES = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class, "addDefaultSources", ConfigBuilder.class);
     private static final MethodDescriptor SRCB_CONSTRUCT = MethodDescriptor.ofConstructor(SmallRyeConfigBuilder.class);
     private static final MethodDescriptor II_IN_IMAGE_BUILD = MethodDescriptor.ofMethod(ImageInfo.class, "inImageBuildtimeCode", boolean.class);
@@ -104,6 +120,11 @@ public class ConfigurationSetup {
             200,
             InetAddress.class,
             InetAddressConverter.class
+        ));
+        configurationTypes.produce(new ConfigurationCustomConverterBuildItem(
+            200,
+            Pattern.class,
+            RegexConverter.class
         ));
     }
 
@@ -146,6 +167,38 @@ public class ConfigurationSetup {
         }
     }
 
+    /**
+     * Write the default run time configuration.
+     */
+    @BuildStep
+    RunTimeConfigurationSourceBuildItem writeDefaults(
+        List<RunTimeConfigurationDefaultBuildItem> defaults,
+        Consumer<GeneratedResourceBuildItem> resourceConsumer
+    ) throws IOException {
+        final Properties properties = new Properties();
+        for (RunTimeConfigurationDefaultBuildItem item : defaults) {
+            final String key = item.getKey();
+            final String value = item.getValue();
+            final String existing = properties.getProperty(key);
+            if (existing != null && ! existing.equals(value)) {
+                log.warnf("Two conflicting default values were specified for configuration key \"%s\": \"%s\" and \"%s\" (using \"%2$s\")",
+                    key,
+                    existing,
+                    value
+                );
+            } else {
+                properties.setProperty(key, value);
+            }
+        }
+        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+            try (OutputStreamWriter osw = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
+                properties.store(osw, "This is the generated set of default configuration values");
+                osw.flush();
+                resourceConsumer.accept(new GeneratedResourceBuildItem(DefaultConfigSource.DEFAULT_CONFIG_PROPERTIES_NAME, os.toByteArray()));
+            }
+        }
+        return new RunTimeConfigurationSourceBuildItem(DefaultConfigSource.class.getName(), OptionalInt.empty());
+    }
 
     /**
      * Generate the bytecode to load configuration objects at static init and run time.
@@ -160,7 +213,8 @@ public class ConfigurationSetup {
         Consumer<GeneratedClassBuildItem> classConsumer,
         Consumer<RuntimeReinitializedClassBuildItem> runTimeInitConsumer,
         Consumer<BytecodeRecorderObjectLoaderBuildItem> objectLoaderConsumer,
-        List<ConfigurationCustomConverterBuildItem> converters
+        List<ConfigurationCustomConverterBuildItem> converters,
+        List<RunTimeConfigurationSourceBuildItem> runTimeSources
     ) {
         final ClassOutput classOutput = new ClassOutput() {
             public void write(final String name, final byte[] data) {
@@ -202,6 +256,26 @@ public class ConfigurationSetup {
                 carc.setModifiers(Opcodes.ACC_STATIC);
                 final ResultHandle builder = carc.newInstance(SRCB_CONSTRUCT);
                 carc.invokeVirtualMethod(SRCB_ADD_DEFAULT_SOURCES, builder);
+                final int size = runTimeSources.size();
+                if (size > 0) {
+                    final ResultHandle arrayHandle = carc.newArray(ConfigSource[].class, carc.load(size));
+                    for (int i = 0; i < size; i ++) {
+                        final RunTimeConfigurationSourceBuildItem source = runTimeSources.get(i);
+                        final OptionalInt priority = source.getPriority();
+                        final ResultHandle val;
+                        if (priority.isPresent()) {
+                            val = carc.newInstance(MethodDescriptor.ofConstructor(source.getClassName(), int.class), carc.load(priority.getAsInt()));
+                        } else {
+                            val = carc.newInstance(MethodDescriptor.ofConstructor(source.getClassName()));
+                        }
+                        carc.writeArrayValue(arrayHandle, i, val);
+                    }
+                    carc.invokeVirtualMethod(
+                        SRCB_WITH_SOURCES,
+                        builder,
+                        arrayHandle
+                    );
+                }
                 for (ConfigurationCustomConverterBuildItem converter : converters) {
                     carc.invokeVirtualMethod(
                         SRCB_WITH_CONVERTER,

@@ -12,8 +12,7 @@ import org.wildfly.common.Assert;
  * A pattern-matching mapping of configuration key pattern to value.
  */
 public final class ConfigPatternMap<T> implements Iterable<T> {
-    public static final String WC_SINGLE = "{*}";
-    public static final String WC_MULTI = "{**}";
+    public static final String WILD_CARD = "{*}";
     private T matched;
     private final TreeMap<String, ConfigPatternMap<T>> children = new TreeMap<>();
 
@@ -48,16 +47,11 @@ public final class ConfigPatternMap<T> implements Iterable<T> {
     T matchLeaf(NameIterator nameIterator) {
         // current iterator position contains the child string to find
         ConfigPatternMap<T> next;
-        next = children.get(WC_MULTI);
-        if (next != null) {
-            // eager match on `this`
-            return this.match(nameIterator);
-        }
         next = children.get(nameIterator.getPreviousSegment());
         if (next != null) {
             return next.match(nameIterator);
         }
-        next = children.get(WC_SINGLE);
+        next = children.get(WILD_CARD);
         if (next != null) {
             return next.match(nameIterator);
         }
@@ -101,8 +95,7 @@ public final class ConfigPatternMap<T> implements Iterable<T> {
 
     private static String getKey(final NameIterator nameIterator) {
         final String str = nameIterator.getPreviousSegment();
-        if (str.equals(WC_MULTI)) return WC_MULTI;
-        if (str.equals(WC_SINGLE)) return WC_SINGLE;
+        if (str.equals(WILD_CARD)) return WILD_CARD;
         return str;
     }
 

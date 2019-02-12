@@ -228,7 +228,7 @@ public class ConfigDefinition extends CompoundConfigType {
     private MapConfigType processMap(final String containingName, final CompoundConfigType container, final AnnotatedElement containingElement, final boolean consumeSegment, final String baseKey, final Type mapValueType, final AccessorFinder accessorFinder) {
         MapConfigType mct = new MapConfigType(containingName, container, consumeSegment);
         final Class<?> valueClass = rawTypeOf(mapValueType);
-        final String subKey = baseKey + ".{**}";
+        final String subKey = baseKey + ".{*}";
         if (valueClass == Map.class) {
             if (! (mapValueType instanceof ParameterizedType)) throw reportError(containingElement, "Map must be parameterized");
             processMap(NO_CONTAINING_NAME, mct, containingElement, true, subKey, typeOfParameter(mapValueType, 1), accessorFinder);

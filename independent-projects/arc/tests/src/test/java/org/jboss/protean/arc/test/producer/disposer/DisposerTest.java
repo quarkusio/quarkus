@@ -43,8 +43,9 @@ public class DisposerTest {
     @Test
     public void testDisposers() {
         InstanceHandle<Long> longHandle = Arc.container().instance(Long.class);
+        Long longValue = longHandle.get();
         longHandle.close();
-        assertEquals(LongProducer.DISPOSED.get(), longHandle.get());
+        assertEquals(LongProducer.DISPOSED.get(), longValue);
         // String is only injected in Long disposer
         assertNotNull(StringProducer.DISPOSED.get());
         // A new instance is created for produce and dispose

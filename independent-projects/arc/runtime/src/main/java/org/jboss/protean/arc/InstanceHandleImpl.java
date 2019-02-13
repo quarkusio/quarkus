@@ -16,6 +16,8 @@
 
 package org.jboss.protean.arc;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import javax.enterprise.context.Dependent;
 import javax.enterprise.context.spi.CreationalContext;
 
@@ -41,6 +43,8 @@ class InstanceHandleImpl<T> implements InstanceHandle<T> {
     private final CreationalContext<T> creationalContext;
 
     private final CreationalContext<?> parentCreationalContext;
+    
+    private final AtomicBoolean destroyed;
 
     InstanceHandleImpl(InjectableBean<T> bean, T instance, CreationalContext<T> creationalContext) {
         this(bean, instance, creationalContext, null);
@@ -51,6 +55,7 @@ class InstanceHandleImpl<T> implements InstanceHandle<T> {
         this.instance = instance;
         this.creationalContext = creationalContext;
         this.parentCreationalContext = parentCreationalContext;
+        this.destroyed = new AtomicBoolean(false);
     }
 
     @Override
@@ -65,7 +70,7 @@ class InstanceHandleImpl<T> implements InstanceHandle<T> {
 
     @Override
     public void destroy() {
-        if (instance != null) {
+        if (instance != null && destroyed.compareAndSet(false, true)) {
             if (bean.getScope().equals(Dependent.class)) {
                 destroyInternal();
             } else {

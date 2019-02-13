@@ -7,7 +7,7 @@ with very little effort.
 
 To complete this guide, you need:
 
-* between 10 and 15 minutes
+* less than 15 minutes
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.5.3+
@@ -43,7 +43,7 @@ This command generates the Maven project with a REST endpoint and imports the `r
 == Setting up the model
 
 In this guide we will be demonstrating how to consume part of the REST API supplied by the link:https://restcountries.eu[restcountries.eu] service.
-Our first order of business is to setup the part of the model we will be using, which is that of a `Country`.
+Our first order of business is to setup the model we will be using, in the form of a `Country` POJO.
 
 Create a `src/main/java/org/acme/restclient/Country.java` file and set the following content:
 
@@ -154,16 +154,21 @@ public interface CountriesService {
 }
 ----
 
-The `getByName` method gives our code the ability to query a country from the REST Countries API by name. The client with handle all the networking and marshalling leaving our code clean of such technical details.
+The `getByName` method gives our code the ability to query a country by name from the REST Countries API. The client will handle all the networking and marshalling leaving our code clean of such technical details.
 
 The purpose of the annotations in the code above is the following:
 
-. `@RegisterRestClient` allows {project-name} to know that this interface is meant to be used as a REST Client
-. `@Path("/v2")` means that the sub-path constructed for each method within the interface will be prefixed with `/v2`
-. `@GET` indicates that an invocation of `getByName` method will create an HTTP GET request
-. `@Path("/name/{name}")` indicates that the sub-path created for the request will be `/name` followed by the value of the argument of the `getByName` method
-. `@PathParam("name")` is necessary in order to indicate that the value of the parameter will be used to substitute the path in the aforementioned `@Path` annotation
-. `@Produces("application/json")` is added to instruct the client to unmarshall the json response which we know the remote service returns
+* `@RegisterRestClient` allows {project-name} to know that this interface is meant to be used as a REST Client
+* `@Path`, `@GET` and `@PathParam` are the standard JAX-RS annotations used to define how to access the service
+* `@Produces` defines the expected content-type
+
+[NOTE]
+====
+While `@Consumes` and `@Produces` are optional as auto-negotiation is supported,
+it is heavily recommended to annotate your endpoints with them to define precisely the expected content-types.
+
+It will allow to narrow down the number of JAX-RS providers (which can be seen as converters) included in the native image.
+====
 
 == Create the configuration
 
@@ -180,9 +185,9 @@ Having this configuration means that all requests performed using `org.acme.rest
 
 Note that `org.acme.restclient.CountriesService` _must_ match the fully qualified name of the `CountriesService` interface we created in the previous section.
 
-Using the configuration above, calling the `getByName` method of `CountriesService` with a value of `France` would result in an HTTP GET being made request to `https://restcountries.eu/rest/v2/name/France`.
+Using the configuration above, calling the `getByName` method of `CountriesService` with a value of `France` would result in an HTTP GET request being made to `https://restcountries.eu/rest/v2/name/France`.
 
-=== Update the JAX-RS resource
+== Update the JAX-RS resource
 
 Open the `src/main/java/org/acme/restclient/CountriesResource.java` file and update it with the following content:
 
@@ -253,11 +258,14 @@ public class CountriesResourceTest {
 }
 ----
 
-The code above uses link:http://rest-assured.io/[REST-Assured]'s link:https://github.com/rest-assured/rest-assured/wiki/GettingStarted#jsonpath[json-path] capabilities
+The code above uses link:http://rest-assured.io/[REST Assured]'s link:https://github.com/rest-assured/rest-assured/wiki/GettingStarted#jsonpath[json-path] capabilities.
 
 == Package and run the application
 
 Run the application with: `mvn compile shamrock:dev`.
 Open your browser to http://localhost:8080/country/name/greece.
 
-You should see a JSON object containing the some basic information about Greece.
+You should see a JSON object containing some basic information about Greece.
+
+As usual, the application can be packaged using `mvn clean package` and executed using the `-runner.jar` file.
+You can also generate the native executable with `mvn clean package -Pnative`.

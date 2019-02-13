@@ -1,5 +1,8 @@
 package org.shamrock.jpa.tests.configurationless;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
@@ -9,8 +12,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @author Emmanuel Bernard emmanuel@hibernate.org
@@ -38,8 +39,7 @@ public class CRUDResource {
             em.clear();
             gift = em.find(Gift.class, gift.getId());
             map.put("jpa", "Roller coaster".equals(gift.getName()) ? "OK" : "Boooo");
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             map.put("exception message", e.getMessage());
         }
         return map;
@@ -60,13 +60,11 @@ public class CRUDResource {
             gift = em.find(Gift.class, gift.getId());
             transaction.commit();
             map.put("jpa", "Roller coaster".equals(gift.getName()) ? "OK" : "Boooo");
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             map.put("exception message", e.getMessage());
             try {
                 transaction.rollback();
-            }
-            catch (Exception ne) {
+            } catch (Exception ne) {
                 //swallow the bastard
             }
         }
@@ -85,4 +83,12 @@ public class CRUDResource {
         return map;
     }
 
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Transactional
+    @Path("/cake")
+    public String getCake() {
+        Cake c = (Cake) em.createQuery("from Cake").getSingleResult();
+        return c.getType();
+    }
 }

@@ -19,6 +19,7 @@ package org.jboss.shamrock.jpa.runtime.entitymanager;
 import java.util.List;
 import java.util.Map;
 
+import javax.enterprise.inject.Instance;
 import javax.persistence.EntityGraph;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -38,24 +39,26 @@ import javax.transaction.Synchronization;
 import javax.transaction.TransactionManager;
 import javax.transaction.TransactionSynchronizationRegistry;
 
+import org.jboss.shamrock.jpa.runtime.RequestScopedEntityManagerHolder;
+
 public class TransactionScopedEntityManager implements EntityManager {
 
     private final TransactionManager transactionManager;
     private final TransactionSynchronizationRegistry tsr;
     private final EntityManagerFactory emf;
+    private final String unitName;
     private static final Object transactionKey = new Object();
-    private EntityManager fallbackEntityManager;
+    private final Instance<RequestScopedEntityManagerHolder> requestScopedEms;
 
-    public TransactionScopedEntityManager(TransactionManager transactionManager, TransactionSynchronizationRegistry tsr, EntityManagerFactory emf) {
+    public TransactionScopedEntityManager(TransactionManager transactionManager,
+                                          TransactionSynchronizationRegistry tsr,
+                                          EntityManagerFactory emf,
+                                          String unitName, Instance<RequestScopedEntityManagerHolder> requestScopedEms) {
         this.transactionManager = transactionManager;
         this.tsr = tsr;
         this.emf = emf;
-    }
-
-    public void requestDone() {
-        if(fallbackEntityManager != null) {
-            fallbackEntityManager.close();
-        }
+        this.unitName = unitName;
+        this.requestScopedEms = requestScopedEms;
     }
 
     EntityManagerResult getEntityManager() {
@@ -81,10 +84,11 @@ public class TransactionScopedEntityManager implements EntityManager {
             });
             return new EntityManagerResult(newEm, false);
         } else {
-            if(fallbackEntityManager == null) {
-                fallbackEntityManager = emf.createEntityManager();
-            }
-            return new EntityManagerResult(emf.createEntityManager(), false);
+            //this will throw an exception if the request scope is not active
+            //this is expected as either the request scope or an active transaction
+            //is required to properly managed the EM lifecycle
+            RequestScopedEntityManagerHolder requestScopedEms = this.requestScopedEms.get();
+            return new EntityManagerResult(requestScopedEms.getOrCreateEntityManager(unitName, emf), false);
         }
     }
 

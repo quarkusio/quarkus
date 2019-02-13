@@ -16,26 +16,30 @@
 
 package org.jboss.shamrock.smallrye.openapi;
 
-import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
-
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.smallrye.openapi.api.OpenApiConfig;
+import io.smallrye.openapi.api.OpenApiConfigImpl;
+import io.smallrye.openapi.runtime.OpenApiStaticFile;
+import io.smallrye.openapi.runtime.io.OpenApiSerializer;
+import io.smallrye.openapi.runtime.scanner.OpenApiAnnotationScanner;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.jboss.jandex.IndexView;
+import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
+import org.jboss.shamrock.arc.deployment.BeanContainerListenerBuildItem;
 import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
-import org.jboss.shamrock.arc.deployment.BeanContainerListenerBuildItem;
 import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
@@ -48,11 +52,7 @@ import org.jboss.shamrock.smallrye.openapi.runtime.OpenApiServlet;
 import org.jboss.shamrock.smallrye.openapi.runtime.SmallRyeOpenApiTemplate;
 import org.jboss.shamrock.undertow.ServletBuildItem;
 
-import io.smallrye.openapi.api.OpenApiConfig;
-import io.smallrye.openapi.api.OpenApiConfigImpl;
-import io.smallrye.openapi.runtime.OpenApiStaticFile;
-import io.smallrye.openapi.runtime.io.OpenApiSerializer;
-import io.smallrye.openapi.runtime.scanner.OpenApiAnnotationScanner;
+import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 /**
  * @author Ken Finnigan
@@ -102,32 +102,27 @@ public class SmallRyeOpenApiProcessor {
             CombinedIndexBuildItem combinedIndexBuildItem, BuildProducer<FeatureBuildItem> feature,
 	    JaxrsConfig jaxrsConfig) throws Exception {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_OPENAPI));
-        Result resourcePath = findStaticModel(archivesBuildItem);
-        OpenAPI sm = generateStaticModel(resourcePath == null ? null : resourcePath.path, resourcePath == null ? OpenApiSerializer.Format.YAML : resourcePath.format);
+        OpenAPI sm = generateStaticModel(archivesBuildItem);
         OpenAPI am = generateAnnotationModel(combinedIndexBuildItem.getIndex(), jaxrsConfig);
         return new BeanContainerListenerBuildItem(template.setupModel(sm, am));
     }
 
 
-    public OpenAPI generateStaticModel(String resourcePath, OpenApiSerializer.Format format) {
-        if (resourcePath != null) {
-            try (InputStream is = new URL(resourcePath).openStream()) {
-                try (OpenApiStaticFile staticFile = new OpenApiStaticFile(is, format)) {
-                    return io.smallrye.openapi.runtime.OpenApiProcessor.modelFromStaticFile(staticFile);
-                }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+    private OpenAPI generateStaticModel(ApplicationArchivesBuildItem archivesBuildItem) throws IOException {
+        Result result = findStaticModel(archivesBuildItem);
+        if (result != null) {
+            try (InputStream is = Files.newInputStream(result.path);
+                 OpenApiStaticFile staticFile = new OpenApiStaticFile(is, result.format)) {
+                return io.smallrye.openapi.runtime.OpenApiProcessor.modelFromStaticFile(staticFile);
             }
-            // Ignore
         }
-
         return null;
     }
 
-    public OpenAPI generateAnnotationModel(IndexView indexView, JaxrsConfig jaxrsConfig) {
+    private OpenAPI generateAnnotationModel(IndexView indexView, JaxrsConfig jaxrsConfig) {
         Config config = ConfigProvider.getConfig();
         OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
-        return new OpenApiAnnotationScanner(openApiConfig, indexView, Arrays.asList(new RESTEasyExtension(jaxrsConfig, indexView))).scan();
+        return new OpenApiAnnotationScanner(openApiConfig, indexView, Collections.singletonList(new RESTEasyExtension(jaxrsConfig, indexView))).scan();
     }
 
     private Result findStaticModel(ApplicationArchivesBuildItem archivesBuildItem) {
@@ -156,14 +151,14 @@ public class SmallRyeOpenApiProcessor {
             return null;
         }
 
-        return new Result(format, archivesBuildItem.getRootArchive().getArchiveRoot().relativize(resourcePath).toString());
+        return new Result(format, resourcePath);
     }
 
     static class Result {
         final OpenApiSerializer.Format format;
-        final String path;
+        final Path path;
 
-        Result(OpenApiSerializer.Format format, String path) {
+        Result(OpenApiSerializer.Format format, Path path) {
             this.format = format;
             this.path = path;
         }

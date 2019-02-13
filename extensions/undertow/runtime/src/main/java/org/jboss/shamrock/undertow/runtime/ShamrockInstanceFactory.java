@@ -16,31 +16,32 @@
 
 package org.jboss.shamrock.undertow.runtime;
 
-import org.jboss.shamrock.runtime.InjectionInstance;
+import org.jboss.shamrock.arc.runtime.BeanContainer;
 
 import io.undertow.servlet.api.InstanceFactory;
 import io.undertow.servlet.api.InstanceHandle;
 
 public class ShamrockInstanceFactory<T> implements InstanceFactory<T> {
 
-    private final InjectionInstance<T> injectionInstance;
+    private final BeanContainer.Factory<T> factory;
 
-    public ShamrockInstanceFactory(InjectionInstance<T> injectionInstance) {
-        this.injectionInstance = injectionInstance;
+    public ShamrockInstanceFactory(BeanContainer.Factory<T> factory) {
+        this.factory = factory;
     }
 
 
     @Override
     public InstanceHandle<T> createInstance() throws InstantiationException {
+        BeanContainer.Instance<T> instance = factory.create();
         return new InstanceHandle<T>() {
             @Override
             public T getInstance() {
-                return injectionInstance.newInstance();
+                return instance.get();
             }
 
             @Override
             public void release() {
-
+                instance.close();
             }
         };
     }

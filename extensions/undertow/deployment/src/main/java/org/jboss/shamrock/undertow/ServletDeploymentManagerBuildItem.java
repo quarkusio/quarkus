@@ -14,9 +14,21 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.runtime;
+package org.jboss.shamrock.undertow;
 
-public interface InjectionFactory {
+import org.jboss.builder.item.SimpleBuildItem;
 
-    <T> InjectionInstance<T> create(Class<T> type);
+import io.undertow.servlet.api.DeploymentManager;
+
+public final class ServletDeploymentManagerBuildItem extends SimpleBuildItem {
+
+    private final DeploymentManager deploymentManager;
+
+    public ServletDeploymentManagerBuildItem(DeploymentManager deploymentManager) {
+        this.deploymentManager = deploymentManager;
+    }
+
+    public DeploymentManager getDeploymentManager() {
+        return deploymentManager;
+    }
 }

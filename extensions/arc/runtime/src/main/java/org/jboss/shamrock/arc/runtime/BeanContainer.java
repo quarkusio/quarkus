@@ -16,6 +16,7 @@
 
 package org.jboss.shamrock.arc.runtime;
 
+import java.io.Closeable;
 import java.lang.annotation.Annotation;
 
 import org.jboss.protean.arc.ManagedContext;
@@ -32,7 +33,7 @@ public interface BeanContainer {
      * @return a bean instance or {@code null} if no matching bean is found
      */
     default <T> T instance(Class<T> type, Annotation... qualifiers) {
-        return instanceFactory(type, qualifiers).get();
+        return instanceFactory(type, qualifiers).create().get();
     }
 
     /**
@@ -67,7 +68,7 @@ public interface BeanContainer {
         
         Factory<Object> EMPTY = new Factory<Object>() {
             @Override
-            public Object get() {
+            public Instance<Object> create() {
                 return null;
             }
         };
@@ -76,7 +77,20 @@ public interface BeanContainer {
          * 
          * @return a bean instance or {@code null} if no matching bean is found
          */
-        T get();
+        Instance<T> create();
     }
 
+    interface Instance<T> extends AutoCloseable {
+
+        /**
+         *
+         * @return the underlying instance
+         */
+        T get();
+
+        /**
+         * releases the underlying instance
+         */
+        default void close() {};
+    }
 }

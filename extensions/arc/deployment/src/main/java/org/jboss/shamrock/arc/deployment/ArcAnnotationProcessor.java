@@ -58,7 +58,6 @@ import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedResourceBuildItem;
-import org.jboss.shamrock.deployment.builditem.InjectionProviderBuildItem;
 import org.jboss.shamrock.deployment.builditem.ShutdownContextBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveFieldBuildItem;
@@ -113,8 +112,7 @@ public class ArcAnnotationProcessor {
     @BuildStep(providesCapabilities = Capabilities.CDI_ARC, applicationArchiveMarkers = { "META-INF/beans.xml",
             "META-INF/services/javax.enterprise.inject.spi.Extension" })
     @Record(STATIC_INIT)
-    public BeanContainerBuildItem build(ArcDeploymentTemplate arcTemplate,
-            BuildProducer<InjectionProviderBuildItem> injectionProvider, List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems,
+    public BeanContainerBuildItem build(ArcDeploymentTemplate arcTemplate, List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems,
             ApplicationArchivesBuildItem applicationArchivesBuildItem, List<GeneratedBeanBuildItem> generatedBeans,
             List<AnnotationsTransformerBuildItem> annotationTransformers, ShutdownContextBuildItem shutdown, BuildProducer<FeatureBuildItem> feature)
             throws Exception {
@@ -250,7 +248,6 @@ public class ArcAnnotationProcessor {
                     .flatMap(b -> b.getTypes().stream())
                     .map(t -> t.name().toString())
                     .collect(Collectors.toSet()));
-            injectionProvider.produce(new InjectionProviderBuildItem(arcTemplate.setupInjection(container)));
 
         return new BeanContainerBuildItem(beanContainer);
     }

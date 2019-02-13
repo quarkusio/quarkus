@@ -140,9 +140,9 @@ public class BytecodeRecorderImpl implements RecorderContext {
     @Override
     public Class<?> classProxy(String name) {
         ProxyFactory<Object> factory = new ProxyFactory<>(new ProxyConfiguration<Object>()
-                .setSuperClass(Object.class)
-                .setClassLoader(classLoader)
-                .setProxyName(getClass().getName() + "$$ClassProxy" + COUNT.incrementAndGet()));
+                                                                  .setSuperClass(Object.class)
+                                                                  .setClassLoader(classLoader)
+                                                                  .setProxyName(getClass().getName() + "$$ClassProxy" + COUNT.incrementAndGet()));
         Class theClass = factory.defineClass();
         classProxies.put(theClass, name);
         return theClass;
@@ -170,9 +170,9 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 return theClass.cast(existingProxyClasses.get(theClass));
             }
             ProxyFactory<T> factory = new ProxyFactory<T>(new ProxyConfiguration<T>()
-                    .setSuperClass(theClass)
-                    .setClassLoader(classLoader)
-                    .setProxyName(getClass().getName() + "$$RecordingProxyProxy" + COUNT.incrementAndGet()));
+                                                                  .setSuperClass(theClass)
+                                                                  .setClassLoader(classLoader)
+                                                                  .setProxyName(getClass().getName() + "$$RecordingProxyProxy" + COUNT.incrementAndGet()));
             try {
                 T recordingProxy = factory.newInstance(new InvocationHandler() {
                     @Override
@@ -627,4 +627,3 @@ public class BytecodeRecorderImpl implements RecorderContext {
     }
 
 }
-

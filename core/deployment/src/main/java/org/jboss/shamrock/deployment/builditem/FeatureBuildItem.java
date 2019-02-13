@@ -17,6 +17,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String JAXRS_JSON = "jaxrs-json";
     public static final String JPA = "jpa";
     public static final String MP_REST_CLIENT = "mp-rest-client";
+    public static final String MP_JWT = "mp-jwt";
     public static final String MP_REACTIVE_OPERATORS = "mp-reactive-streams-operators";
     public static final String MP_REACTIVE_MESSAGING = "mp-reactive-streams-messaging";
     public static final String NARAYANA_JTA = "narayana-jta";

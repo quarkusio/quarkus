@@ -153,4 +153,4 @@ Changing the configuration file is immediately reflected.
 You can add the `greeting.suffix`, remove the other properties, change the values, etc.
 
 As usual, the application can be packaged using `mvn clean package` and executed using the `-runner.jar` file.
-You can also generate the native executable with `mvn clean package -Pnative`
+You can also generate the native executable with `mvn clean package -Pnative`.

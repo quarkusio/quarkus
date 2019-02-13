@@ -20,6 +20,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +34,7 @@ import org.jboss.shamrock.deployment.ShamrockAugmentor;
 import org.jboss.shamrock.deployment.builditem.ApplicationClassNameBuildItem;
 import org.jboss.shamrock.deployment.builditem.BytecodeTransformerBuildItem;
 import org.jboss.shamrock.runtime.Application;
+import org.jboss.shamrock.runtime.LaunchMode;
 import org.objectweb.asm.ClassVisitor;
 
 /**
@@ -45,19 +47,15 @@ public class RuntimeRunner implements Runnable, Closeable {
     private final RuntimeClassLoader loader;
     private Closeable closeTask;
     private final List<Path> additionalArchives;
-    private final List<Consumer<BuildChainBuilder>> chainCustomizers = new ArrayList<>();
+    private final List<Consumer<BuildChainBuilder>> chainCustomizers;
+    private final LaunchMode launchMode;
 
-
-    public RuntimeRunner(ClassLoader classLoader, Path target, Path frameworkClassesPath, Path transformerCache, List<Path> additionalArchives) {
-        this(classLoader, target, frameworkClassesPath, transformerCache, additionalArchives, Collections.emptyList());
-    }
-
-    public RuntimeRunner(ClassLoader classLoader, Path target, Path frameworkClassesPath, Path transformerCache, List<Path> additionalArchives, List<Consumer<BuildChainBuilder>> chainCustomizers) {
-        this.target = target;
-        this.additionalArchives = additionalArchives;
-        this.chainCustomizers.addAll(chainCustomizers);
-        RuntimeClassLoader rcl = new RuntimeClassLoader(classLoader, target, frameworkClassesPath, transformerCache);
-        this.loader = rcl;
+    public RuntimeRunner(Builder builder) {
+        this.target = builder.target;
+        this.additionalArchives = new ArrayList<>(builder.additionalArchives);
+        this.chainCustomizers = new ArrayList<>(builder.chainCustomizers);
+        this.launchMode = builder.launchMode;
+        this.loader = new RuntimeClassLoader(builder.classLoader, target, builder.frameworkClassesPath, builder.transformerCache);
     }
 
     @Override
@@ -75,6 +73,7 @@ public class RuntimeRunner implements Runnable, Closeable {
             builder.setRoot(target);
             builder.setClassLoader(loader);
             builder.setOutput(loader);
+            builder.setLaunchMode(launchMode);
             for (Path i : additionalArchives) {
                 builder.addAdditionalApplicationArchive(i);
             }
@@ -118,6 +117,71 @@ public class RuntimeRunner implements Runnable, Closeable {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private ClassLoader classLoader;
+        private Path target;
+        private Path frameworkClassesPath;
+        private Path transformerCache;
+        private LaunchMode launchMode = LaunchMode.NORMAL;
+        private final List<Path> additionalArchives = new ArrayList<>();
+        private final List<Consumer<BuildChainBuilder>> chainCustomizers = new ArrayList<>();
+
+        public Builder setClassLoader(ClassLoader classLoader) {
+            this.classLoader = classLoader;
+            return this;
+        }
+
+        public Builder setTarget(Path target) {
+            this.target = target;
+            return this;
+        }
+
+        public Builder setFrameworkClassesPath(Path frameworkClassesPath) {
+            this.frameworkClassesPath = frameworkClassesPath;
+            return this;
+        }
+
+        public Builder setTransformerCache(Path transformerCache) {
+            this.transformerCache = transformerCache;
+            return this;
+        }
+
+        public Builder addAdditionalArchive(Path additionalArchive) {
+            this.additionalArchives.add(additionalArchive);
+            return this;
+        }
+        public Builder addAdditionalArchives(Collection<Path> additionalArchive) {
+            this.additionalArchives.addAll(additionalArchives);
+            return this;
+        }
+
+        public Builder addChainCustomizer(Consumer<BuildChainBuilder> chainCustomizer) {
+            this.chainCustomizers.add(chainCustomizer);
+            return this;
+        }
+        public Builder addChainCustomizers(Collection<Consumer<BuildChainBuilder>> chainCustomizer) {
+            this.chainCustomizers.addAll(chainCustomizer);
+            return this;
+        }
+
+        public LaunchMode getLaunchMode() {
+            return launchMode;
+        }
+
+        public Builder setLaunchMode(LaunchMode launchMode) {
+            this.launchMode = launchMode;
+            return this;
+        }
+
+        public RuntimeRunner build() {
+            return new RuntimeRunner(this);
         }
     }
 }

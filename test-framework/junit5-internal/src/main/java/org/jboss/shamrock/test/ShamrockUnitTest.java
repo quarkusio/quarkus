@@ -195,8 +195,12 @@ public class ShamrockUnitTest implements BeforeAllCallback, AfterAllCallback, Te
                 //ignore
             }
 
-            runtimeRunner = new RuntimeRunner(testClass.getClassLoader(), deploymentDir,
-                    PathTestHelper.getTestClassesLocation(testClass), null, new ArrayList<>(), customiers);
+            runtimeRunner = RuntimeRunner.builder()
+                    .setClassLoader(testClass.getClassLoader())
+                    .setTarget(deploymentDir)
+                    .setFrameworkClassesPath(PathTestHelper.getTestClassesLocation(testClass))
+                    .addChainCustomizers(customiers)
+                    .build();
 
             try {
                 runtimeRunner.run();

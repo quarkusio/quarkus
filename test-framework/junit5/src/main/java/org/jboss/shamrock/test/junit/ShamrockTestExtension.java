@@ -23,6 +23,7 @@ import java.io.Closeable;
 import java.util.Collections;
 
 import org.jboss.shamrock.runner.RuntimeRunner;
+import org.jboss.shamrock.runtime.LaunchMode;
 import org.jboss.shamrock.test.common.NativeImageLauncher;
 import org.jboss.shamrock.test.common.TestResourceManager;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -57,8 +58,12 @@ public class ShamrockTestExtension implements BeforeAllCallback {
     }
 
     private ExtensionState doJavaStart(ExtensionContext context, TestResourceManager testResourceManager) {
-        RuntimeRunner runtimeRunner = new RuntimeRunner(getClass().getClassLoader(), getAppClassLocation(context.getRequiredTestClass()),
-                getTestClassesLocation(context.getRequiredTestClass()), null, Collections.emptyList());
+        RuntimeRunner runtimeRunner = RuntimeRunner.builder()
+                .setLaunchMode(LaunchMode.TEST)
+                .setClassLoader(getClass().getClassLoader())
+                .setTarget(getAppClassLocation(context.getRequiredTestClass()))
+                .setFrameworkClassesPath(getTestClassesLocation(context.getRequiredTestClass()))
+                .build();
         runtimeRunner.run();
         return new ExtensionState(testResourceManager, runtimeRunner, false);
     }

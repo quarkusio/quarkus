@@ -60,6 +60,9 @@ class InstanceHandleImpl<T> implements InstanceHandle<T> {
 
     @Override
     public T get() {
+        if (destroyed.get()) {
+            throw new IllegalStateException("Instance already destroyed");
+        }
         return instance;
     }
 

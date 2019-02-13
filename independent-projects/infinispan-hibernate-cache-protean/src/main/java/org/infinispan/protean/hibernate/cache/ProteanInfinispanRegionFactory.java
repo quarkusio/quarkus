@@ -24,7 +24,6 @@ public final class ProteanInfinispanRegionFactory implements RegionFactory {
     private static final String PREFIX = "hibernate.cache.";
     private static final String SIZE_SUFFIX = ".memory.size";
     private static final String MAX_IDLE_SUFFIX = ".expiration.max_idle";
-    private static final String TEST_TIME_SERVICE = "test.hibernate.cache.time_service";
 
     private final Map<String, InternalCache> caches = new HashMap<>();
 
@@ -34,7 +33,8 @@ public final class ProteanInfinispanRegionFactory implements RegionFactory {
     private List<Region> regions = new ArrayList<>();
     private final Map<String, InternalCacheConfig> cacheConfigs = new HashMap<>();
 
-    private TimeService timeService;
+    private Time.MillisService regionTimeService;
+    private Time.NanosService cacheTimeService;
 
     public ProteanInfinispanRegionFactory() {
     }
@@ -52,6 +52,12 @@ public final class ProteanInfinispanRegionFactory implements RegionFactory {
 
         // determine the CacheKeysFactory to use...
         this.cacheKeysFactory = determineCacheKeysFactory(settings, configValues);
+
+        if (regionTimeService == null)
+            regionTimeService = Time.MillisService.SYSTEM;
+
+        if (cacheTimeService == null)
+            cacheTimeService = CaffeineCache.TIME_SERVICE;
 
         this.settings = settings;
         for (Object k : configValues.keySet()) {
@@ -77,13 +83,6 @@ public final class ProteanInfinispanRegionFactory implements RegionFactory {
                     });
                 }
             }
-        }
-
-        final Object testTimeService = configValues.get(TEST_TIME_SERVICE);
-        if (testTimeService != null && testTimeService.equals("manual")) {
-            timeService = new ManualTestService();
-        } else {
-            timeService = new CaffeineTimeService();
         }
     }
 
@@ -135,12 +134,15 @@ public final class ProteanInfinispanRegionFactory implements RegionFactory {
 
     @Override
     public long nextTimestamp() {
-        return System.currentTimeMillis();
+        return regionTimeService.milliTime();
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends TimeService> T getTimeService() {
-        return (T) timeService;
+    void setRegionTimeService(Time.MillisService regionTimeService) {
+        this.regionTimeService = regionTimeService;
+    }
+
+    void setCacheTimeService(Time.NanosService cacheTimeService) {
+        this.cacheTimeService = cacheTimeService;
     }
 
     @Override
@@ -163,7 +165,7 @@ public final class ProteanInfinispanRegionFactory implements RegionFactory {
         return caches.compute(cacheName, (ignore, cache) -> {
             if (cache == null) {
                 final InternalCacheConfig cacheConfig = cacheConfigs.get(cacheName);
-                cache = new CaffeineCache(cacheName, cacheConfig, timeService);
+                cache = new CaffeineCache(cacheName, cacheConfig, this.cacheTimeService);
             }
 
             return cache;

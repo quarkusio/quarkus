@@ -3,19 +3,14 @@ package org.jboss.shamrock.example.infinispancachejpa;
 import org.hibernate.NaturalIdLoadAccess;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.hibernate.cache.spi.CacheImplementor;
 import org.hibernate.cache.spi.RegionFactory;
 import org.hibernate.stat.CacheRegionStatistics;
 import org.hibernate.stat.Statistics;
-import org.infinispan.protean.hibernate.cache.ProteanInfinispanRegionFactory;
-import org.infinispan.protean.hibernate.cache.ManualTestService;
+import org.jboss.logging.Logger;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -36,6 +31,8 @@ import javax.servlet.http.HttpServletResponse;
  */
 @WebServlet(name = "InfinispanCacheJPAFunctionalityTestEndpoint", urlPatterns = "/infinispan-cache-jpa/testfunctionality")
 public class InfinispanCacheJPAFunctionalityTestEndpoint extends HttpServlet {
+
+    private static final Logger log = Logger.getLogger(InfinispanCacheJPAFunctionalityTestEndpoint.class);
 
     @PersistenceUnit(unitName = "templatePU")
     EntityManagerFactory entityManagerFactory;
@@ -66,9 +63,6 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint extends HttpServlet {
 
         testReadOnlyNaturalId(entityManagerFactory);
         testReadWriteNaturalId(entityManagerFactory);
-
-        testMaxSize(entityManagerFactory);
-        testMaxIdle(entityManagerFactory);
 
         //Delete all
         testDeleteViaRemove(entityManagerFactory);
@@ -101,17 +95,6 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint extends HttpServlet {
         em.close();
 
         assertRegionStats(counts, stats);
-    }
-
-    private static void testMaxIdle(EntityManagerFactory entityManagerFactory) {
-        final CacheImplementor cacherImplementor = entityManagerFactory.getCache().unwrap(CacheImplementor.class);
-        final ProteanInfinispanRegionFactory regionFactory = (ProteanInfinispanRegionFactory) cacherImplementor.getRegionFactory();
-        ManualTestService manualTestService = regionFactory.getTimeService();
-        manualTestService.advance(120, TimeUnit.SECONDS);
-
-        final Statistics stats = verifyFindCountryByNaturalId(entityManagerFactory, "+41", "Switzerland");
-        assertRegionStatsEventually(new Counts(1, 0, 1, 1), Country.class.getName(), stats);
-        assertRegionStats(new Counts(0, 1, 0, 3), Country.class.getName() + "##NaturalId", stats);
     }
 
     private static void testReadWriteNaturalId(EntityManagerFactory entityManagerFactory) {
@@ -392,24 +375,6 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint extends HttpServlet {
         System.out.print(sb);
     }
 
-    private static void testMaxSize(EntityManagerFactory emf) {
-        addItemBeyondMaxSize(emf);
-    }
-
-    private static void addItemBeyondMaxSize(EntityManagerFactory emf) {
-        Statistics stats = getStatistics(emf);
-
-        EntityManager em = emf.createEntityManager();
-        EntityTransaction transaction = em.getTransaction();
-        transaction.begin();
-        final Item cap = new Item("cap", "Hibernate Cap");
-        em.persist(cap);
-        transaction.commit();
-        em.close();
-
-        assertRegionStatsEventually(new Counts(1, 0, 0, 3), Item.class.getName(), stats);
-    }
-
     private static void testQuery(EntityManagerFactory entityManagerFactory) {
         //Load all persons and run some checks on the query results:
         Map<String, Counts> counts = new TreeMap<>();
@@ -429,27 +394,11 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint extends HttpServlet {
         storeTestPersons(entityManagerFactory, new Counts(4, 0, 0, 4));
 
         //Load all persons and run some checks on the cache hits
-        verifyFindByIdPersons(entityManagerFactory, new Counts(0, 4, 0, 4));
-
-        //Evict persons from cache
-        evictPersons(entityManagerFactory);
-
-        //Load all persons and run some checks on the cache hits
-        verifyFindByIdPersons(entityManagerFactory, new Counts(4, 0, 4, 4));
+        Statistics beforeEvictStats = verifyFindByIdPersons(entityManagerFactory);
+        assertRegionStats(new Counts(0, 4, 0, 4), Person.class.getName(), beforeEvictStats);
     }
 
-    private static void evictPersons(final EntityManagerFactory emf) {
-        Statistics stats = getStatistics(emf);
-
-        EntityManager em = emf.createEntityManager();
-        em.getEntityManagerFactory().getCache().evict(Person.class);
-        em.close();
-
-        final Counts expected = new Counts(0, 0, 0, 0);
-        assertRegionStats(expected, Person.class.getName(), stats);
-    }
-
-    private static void verifyFindByIdPersons(final EntityManagerFactory emf, Counts expected) {
+    private static Statistics verifyFindByIdPersons(final EntityManagerFactory emf) {
         Statistics stats = getStatistics(emf);
 
         EntityManager em = emf.createEntityManager();
@@ -459,7 +408,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint extends HttpServlet {
         transaction.commit();
         em.close();
 
-        assertRegionStats(expected, Person.class.getName(), stats);
+        return stats;
     }
 
     private static void findByIdPersons(EntityManager em) {
@@ -681,10 +630,6 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint extends HttpServlet {
         assertRegionStats(expected, Pokemon.class.getName(), stats);
     }
 
-    private static String randomName() {
-        return UUID.randomUUID().toString();
-    }
-
     private void reportException(String errorMessage, final Exception e, final HttpServletResponse resp) throws IOException {
         final PrintWriter writer = resp.getWriter();
         if (errorMessage != null) {
@@ -707,79 +652,35 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint extends HttpServlet {
         for (Map.Entry<String, Counts> entry : counts.entrySet()) {
             final String region = entry.getKey();
             final Counts expected = entry.getValue();
-            final CacheRegionStatistics cacheStats = stats.getDomainDataRegionStatistics(region);
-            final Counts actual = new Counts(
-                    cacheStats.getPutCount()
-                    , cacheStats.getHitCount()
-                    , cacheStats.getMissCount()
-                    , cacheStats.getElementCountInMemory()
-            );
+            final Counts actual = statsToCounts(region, stats);
             assertCountEquals(expected, actual, region);
         }
     }
 
     private static void assertRegionStats(Counts expected, String region, Statistics stats) {
+        final Counts actual = statsToCounts(region, stats);
+        assertCountEquals(expected, actual, region);
+    }
+
+    private static Counts statsToCounts(String region, Statistics stats) {
         final CacheRegionStatistics cacheStats = stats.getDomainDataRegionStatistics(region);
-        final Counts actual = new Counts(
+        return new Counts(
                 cacheStats.getPutCount()
                 , cacheStats.getHitCount()
                 , cacheStats.getMissCount()
                 , cacheStats.getElementCountInMemory()
         );
-        assertCountEquals(expected, actual, region);
     }
 
     private static void assertCountEquals(Counts expected, Counts actual, String msg) {
-        //FIXME this is currently failing often on CI, needs to be investigated.
-        //Seems to fail more often in native mode.
-        // - https://github.com/jbossas/protean-shamrock/issues/694
-        /*if (!expected.equals(actual))
-            throw new RuntimeException(
-                    "[" + msg + "] expected " + expected + " second level cache count, instead got: " + actual
-        );*/
+        if (!expected.equals(actual))
+            throw unequalCounts(expected, msg, actual);
     }
 
-    private static void assertRegionStatsEventually(Counts expected, String region, Statistics stats) {
-        eventually(() -> {
-            final CacheRegionStatistics cacheStats = stats.getDomainDataRegionStatistics(region);
-            final Counts actual = new Counts(
-                    cacheStats.getPutCount()
-                    , cacheStats.getHitCount()
-                    , cacheStats.getMissCount()
-                    , cacheStats.getElementCountInMemory()
-            );
-            if (!expected.equals(actual)) {
-                return new RuntimeException(
-                        "[" + region + "] expected " + expected + " second level cache count, instead got: " + actual
-                );
-            }
-
-            return null;
-        });
-    }
-
-    static void eventually(Supplier<RuntimeException> condition) {
-        eventually(Duration.ofSeconds(10).toMillis(), Duration.ofMillis(500).toMillis(), TimeUnit.MILLISECONDS, condition);
-    }
-
-    static void eventually(long timeout, long pollInterval, TimeUnit unit, Supplier<RuntimeException> condition) {
-        if (pollInterval <= 0) {
-            throw new IllegalArgumentException("Check interval must be positive");
-        }
-        try {
-            long expectedEndTime = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeout, unit);
-            long sleepMillis = TimeUnit.MILLISECONDS.convert(pollInterval, unit);
-            while (expectedEndTime - System.nanoTime() > 0) {
-                if (condition.get() == null) return;
-                Thread.sleep(sleepMillis);
-            }
-
-            final RuntimeException exception = condition.get();
-            if (exception != null)
-                throw exception;
-        } catch (Exception e) {
-            throw new RuntimeException("Unexpected!", e);
-        }
+    private static RuntimeException unequalCounts(Counts expected, String region, Counts actual) {
+        return new RuntimeException(
+                "[" + region + "] expected " + expected + " second level cache count, instead got: " + actual
+        );
     }
 
     static final class Counts {

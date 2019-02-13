@@ -22,14 +22,18 @@ import static org.jboss.shamrock.test.common.PathTestHelper.getTestClassesLocati
 import java.io.Closeable;
 import java.util.Collections;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.shamrock.runner.RuntimeRunner;
 import org.jboss.shamrock.runtime.LaunchMode;
 import org.jboss.shamrock.test.common.NativeImageLauncher;
+import org.jboss.shamrock.test.common.RestAssuredPortManager;
 import org.jboss.shamrock.test.common.TestResourceManager;
+import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-public class ShamrockTestExtension implements BeforeAllCallback {
+public class ShamrockTestExtension implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback {
 
 
     @Override
@@ -66,6 +70,16 @@ public class ShamrockTestExtension implements BeforeAllCallback {
                 .build();
         runtimeRunner.run();
         return new ExtensionState(testResourceManager, runtimeRunner, false);
+    }
+
+    @Override
+    public void afterEach(ExtensionContext context) throws Exception {
+        RestAssuredPortManager.clearPort();
+    }
+
+    @Override
+    public void beforeEach(ExtensionContext context) throws Exception {
+        RestAssuredPortManager.setPort();
     }
 
 

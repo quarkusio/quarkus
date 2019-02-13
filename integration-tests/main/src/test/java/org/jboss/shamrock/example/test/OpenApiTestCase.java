@@ -39,7 +39,7 @@ public class OpenApiTestCase {
 
     @Test
     public void testOpenAPIJSON() throws Exception {
-        URL uri = new URL("http://localhost:8080/openapi");
+        URL uri = new URL("http://localhost:8081/openapi");
         URLConnection connection = uri.openConnection();
         connection.setRequestProperty("Accept", "application/json");
         InputStream in = connection.getInputStream();

@@ -97,6 +97,7 @@ import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
 import org.jboss.shamrock.deployment.builditem.HttpServerBuiltItem;
 import org.jboss.shamrock.deployment.builditem.InjectionFactoryBuildItem;
+import org.jboss.shamrock.deployment.builditem.LaunchModeBuildItem;
 import org.jboss.shamrock.deployment.builditem.ObjectSubstitutionBuildItem;
 import org.jboss.shamrock.deployment.builditem.ServiceStartBuildItem;
 import org.jboss.shamrock.deployment.builditem.ShutdownContextBuildItem;
@@ -104,7 +105,7 @@ import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildIte
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import org.jboss.shamrock.deployment.recording.RecorderContext;
-import org.jboss.shamrock.runtime.ObjectSubstitution;
+import org.jboss.shamrock.runtime.LaunchMode;
 import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.runtime.annotations.ConfigItem;
 import org.jboss.shamrock.undertow.runtime.HttpConfig;
@@ -147,10 +148,13 @@ public class UndertowBuildStep {
                                       List<HttpHandlerWrapperBuildItem> wrappers,
                                       ShutdownContextBuildItem shutdown,
                                       Consumer<UndertowBuildItem> undertowProducer,
-                                      Consumer<HttpServerBuiltItem> serverProducer) throws Exception {
-        RuntimeValue<Undertow> ut = template.startUndertow(shutdown, servletDeploymentBuildItem.getDeployment(), config, wrappers.stream().map(HttpHandlerWrapperBuildItem::getValue).collect(Collectors.toList()));
+                                      Consumer<HttpServerBuiltItem> serverProducer,
+                                      LaunchModeBuildItem launchMode) throws Exception {
+        RuntimeValue<Undertow> ut = template.startUndertow(shutdown, servletDeploymentBuildItem.getDeployment(),
+                config, wrappers.stream().map(HttpHandlerWrapperBuildItem::getValue).collect(Collectors.toList()),
+                launchMode.getLaunchMode());
         undertowProducer.accept(new UndertowBuildItem(ut));
-        serverProducer.accept(new HttpServerBuiltItem(config.host, config.port));
+        serverProducer.accept(new HttpServerBuiltItem(config.host, launchMode.getLaunchMode() == LaunchMode.TEST ? config.testPort : config.port));
         return new ServiceStartBuildItem("undertow");
     }
 

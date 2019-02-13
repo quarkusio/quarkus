@@ -37,7 +37,7 @@ public class WebsocketTestCase {
     @Test
     public void websocketTest() throws Exception {
 
-        final URI uri = new URI("http://localhost:8080/echo");
+        final URI uri = new URI("http://localhost:8081/echo");
 
         LinkedBlockingDeque<String> message = new LinkedBlockingDeque<>();
         Session session = ContainerProvider.getWebSocketContainer().connectToServer(new Endpoint() {

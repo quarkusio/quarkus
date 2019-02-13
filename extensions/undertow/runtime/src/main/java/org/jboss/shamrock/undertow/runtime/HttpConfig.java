@@ -32,6 +32,12 @@ public class HttpConfig {
     public int port;
 
     /**
+     * The HTTP port used to run tests
+     */
+    @ConfigItem(defaultValue = "8081")
+    public int testPort;
+
+    /**
      * The HTTP host
      */
     @ConfigItem(defaultValue = "localhost")

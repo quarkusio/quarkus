@@ -30,7 +30,7 @@ public class FaultToleranceTestCase {
 
     @Test
     public void testRetry() throws Exception {
-        URL uri = new URL("http://localhost:8080/ft");
+        URL uri = new URL("http://localhost:8081/ft");
         URLConnection connection = uri.openConnection();
         InputStream in = connection.getInputStream();
         byte[] buf = new byte[100];

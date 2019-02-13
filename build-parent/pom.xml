@@ -330,6 +330,16 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-jaxrs-multipart-deployment</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-jaxrs-multipart-runtime</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-jwt-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
@@ -1098,6 +1108,21 @@
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-json-p-provider</artifactId>
             <version>${resteasy.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-multipart-provider</artifactId>
+            <version>${resteasy.version}</version>
+            <exclusions>
+               <exclusion>
+                  <groupId>org.jboss.spec.javax.annotation</groupId>
+                  <artifactId>jboss-annotations-api_1.3_spec</artifactId>
+               </exclusion>
+               <exclusion>
+                  <groupId>javax.activation</groupId>
+                  <artifactId>activation</artifactId>
+               </exclusion>
+            </exclusions>
          </dependency>
          <dependency>
             <groupId>org.jboss.resteasy</groupId>

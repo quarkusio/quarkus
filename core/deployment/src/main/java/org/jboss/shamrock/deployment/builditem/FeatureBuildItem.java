@@ -15,6 +15,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String JAEGER = "jaeger";
     public static final String JAXRS = "jaxrs";
     public static final String JAXRS_JSON = "jaxrs-json";
+    public static final String JAXRS_MULTIPART = "jaxrs-multipart";
     public static final String JPA = "jpa";
     public static final String MP_REST_CLIENT = "mp-rest-client";
     public static final String MP_JWT = "mp-jwt";

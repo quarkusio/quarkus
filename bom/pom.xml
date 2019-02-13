@@ -132,6 +132,13 @@
 
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-jaxrs-multipart-deployment</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+         </dependency>
+
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-netty-deployment</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>

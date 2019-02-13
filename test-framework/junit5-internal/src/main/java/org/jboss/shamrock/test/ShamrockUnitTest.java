@@ -45,13 +45,17 @@ import org.jboss.invocation.proxy.ProxyFactory;
 import org.jboss.shamrock.runner.RuntimeRunner;
 import org.jboss.shamrock.runtime.InjectionFactoryTemplate;
 import org.jboss.shamrock.runtime.InjectionInstance;
+import org.jboss.shamrock.runtime.LaunchMode;
 import org.jboss.shamrock.test.common.PathTestHelper;
+import org.jboss.shamrock.test.common.RestAssuredPortManager;
 import org.jboss.shamrock.test.common.TestResourceManager;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestInstanceFactory;
 import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
@@ -60,7 +64,7 @@ import org.junit.jupiter.api.extension.TestInstantiationException;
 /**
  * A test extension for testing Shamrock internals, not intended for end user consumption
  */
-public class ShamrockUnitTest implements BeforeAllCallback, AfterAllCallback, TestInstanceFactory {
+public class ShamrockUnitTest implements BeforeAllCallback, AfterAllCallback, TestInstanceFactory, BeforeEachCallback, AfterEachCallback {
 
     static {
         System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
@@ -195,8 +199,13 @@ public class ShamrockUnitTest implements BeforeAllCallback, AfterAllCallback, Te
                 //ignore
             }
 
-            runtimeRunner = new RuntimeRunner(testClass.getClassLoader(), deploymentDir,
-                    PathTestHelper.getTestClassesLocation(testClass), null, new ArrayList<>(), customiers);
+            runtimeRunner = RuntimeRunner.builder()
+                    .setLaunchMode(LaunchMode.TEST)
+                    .setClassLoader(testClass.getClassLoader())
+                    .setTarget(deploymentDir)
+                    .setFrameworkClassesPath(PathTestHelper.getTestClassesLocation(testClass))
+                    .addChainCustomizers(customiers)
+                    .build();
 
             try {
                 runtimeRunner.run();
@@ -275,4 +284,13 @@ public class ShamrockUnitTest implements BeforeAllCallback, AfterAllCallback, Te
         }
     }
 
+    @Override
+    public void afterEach(ExtensionContext context) throws Exception {
+        RestAssuredPortManager.clearPort();
+    }
+
+    @Override
+    public void beforeEach(ExtensionContext context) throws Exception {
+        RestAssuredPortManager.setPort();
+    }
 }

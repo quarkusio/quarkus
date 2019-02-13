@@ -22,13 +22,18 @@ import static org.jboss.shamrock.test.common.PathTestHelper.getTestClassesLocati
 import java.io.Closeable;
 import java.util.Collections;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.shamrock.runner.RuntimeRunner;
+import org.jboss.shamrock.runtime.LaunchMode;
 import org.jboss.shamrock.test.common.NativeImageLauncher;
+import org.jboss.shamrock.test.common.RestAssuredPortManager;
 import org.jboss.shamrock.test.common.TestResourceManager;
+import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
-public class ShamrockTestExtension implements BeforeAllCallback {
+public class ShamrockTestExtension implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback {
 
 
     @Override
@@ -57,10 +62,24 @@ public class ShamrockTestExtension implements BeforeAllCallback {
     }
 
     private ExtensionState doJavaStart(ExtensionContext context, TestResourceManager testResourceManager) {
-        RuntimeRunner runtimeRunner = new RuntimeRunner(getClass().getClassLoader(), getAppClassLocation(context.getRequiredTestClass()),
-                getTestClassesLocation(context.getRequiredTestClass()), null, Collections.emptyList());
+        RuntimeRunner runtimeRunner = RuntimeRunner.builder()
+                .setLaunchMode(LaunchMode.TEST)
+                .setClassLoader(getClass().getClassLoader())
+                .setTarget(getAppClassLocation(context.getRequiredTestClass()))
+                .setFrameworkClassesPath(getTestClassesLocation(context.getRequiredTestClass()))
+                .build();
         runtimeRunner.run();
         return new ExtensionState(testResourceManager, runtimeRunner, false);
+    }
+
+    @Override
+    public void afterEach(ExtensionContext context) throws Exception {
+        RestAssuredPortManager.clearPort();
+    }
+
+    @Override
+    public void beforeEach(ExtensionContext context) throws Exception {
+        RestAssuredPortManager.setPort();
     }
 
 

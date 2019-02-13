@@ -24,6 +24,12 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import org.eclipse.microprofile.config.ConfigProvider;
 
 public class NativeImageLauncher implements Closeable {
 
@@ -31,9 +37,15 @@ public class NativeImageLauncher implements Closeable {
 
     private final Class<?> testClass;
     private Process shamrockProcess;
+    private final int port;
 
     public NativeImageLauncher(Class<?> testClass) {
+        this(testClass, ConfigProvider.getConfig().getOptionalValue("shamrock.http.test-port", Integer.class).orElse(8081));
+    }
+
+    public NativeImageLauncher(Class<?> testClass, int port) {
         this.testClass = testClass;
+        this.port = port;
     }
 
     public void start() throws Exception {
@@ -42,10 +54,13 @@ public class NativeImageLauncher implements Closeable {
         if (path == null) {
             path = guessPath(testClass);
         }
+        List<String> args = new ArrayList<>();
+        args.add(path);
+        args.add("-Dshamrock.http.port=" + port);
 
-        System.out.println("Executing " + path);
+        System.out.println("Executing " + args);
 
-        shamrockProcess = Runtime.getRuntime().exec(path);
+        shamrockProcess = Runtime.getRuntime().exec(args.toArray(new String[args.size()]));
         new Thread(new ProcessReader(shamrockProcess.getInputStream())).start();
         new Thread(new ProcessReader(shamrockProcess.getErrorStream())).start();
 
@@ -89,8 +104,7 @@ public class NativeImageLauncher implements Closeable {
         System.err.println();
     }
 
-    private static void waitForShamrock() {
-        int port = Integer.getInteger("http.port", 8080);
+    private void waitForShamrock() {
         long bailout = System.currentTimeMillis() + IMAGE_WAIT_TIME;
 
         while (System.currentTimeMillis() < bailout) {

@@ -35,6 +35,7 @@ import org.jboss.protean.arc.ManagedContext;
 import org.jboss.shamrock.arc.runtime.BeanContainer;
 import org.jboss.shamrock.runtime.InjectionFactory;
 import org.jboss.shamrock.runtime.InjectionInstance;
+import org.jboss.shamrock.runtime.LaunchMode;
 import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.runtime.ShutdownContext;
 import org.jboss.shamrock.runtime.annotations.Template;
@@ -203,9 +204,9 @@ public class UndertowDeploymentTemplate {
         info.getValue().addInitParameter(name, value);
     }
 
-    public RuntimeValue<Undertow> startUndertow(ShutdownContext shutdown, Deployment deployment, HttpConfig config, List<HandlerWrapper> wrappers) throws ServletException {
+    public RuntimeValue<Undertow> startUndertow(ShutdownContext shutdown, Deployment deployment, HttpConfig config, List<HandlerWrapper> wrappers, LaunchMode launchMode) throws ServletException {
         if (undertow == null) {
-            startUndertowEagerly(config, null);
+            startUndertowEagerly(config, null, launchMode);
 
             //in development mode undertow is started eagerly
             shutdown.addShutdownTask(new Runnable() {
@@ -232,16 +233,17 @@ public class UndertowDeploymentTemplate {
      * be no chance to use hot deployment to fix the error. In development mode we start Undertow early, so any error
      * on boot can be corrected via the hot deployment handler
      */
-    public static void startUndertowEagerly(HttpConfig config, HandlerWrapper hotDeploymentWrapper) throws ServletException {
+    public static void startUndertowEagerly(HttpConfig config, HandlerWrapper hotDeploymentWrapper, LaunchMode launchMode) throws ServletException {
         if (undertow == null) {
-            log.debugf("Starting Undertow on port %d", config.port);
+            int port = launchMode == LaunchMode.TEST ? config.testPort : config.port;
+            log.debugf("Starting Undertow on port %d", port);
             HttpHandler rootHandler = new CanonicalPathHandler(ROOT_HANDLER);
             if (hotDeploymentWrapper != null) {
                 rootHandler = hotDeploymentWrapper.wrap(rootHandler);
             }
 
             Undertow.Builder builder = Undertow.builder()
-                    .addHttpListener(config.port, config.host)
+                    .addHttpListener(port, config.host)
                     .setHandler(rootHandler);
             if (config.ioThreads.isPresent()) {
                 builder.setIoThreads(config.ioThreads.getAsInt());

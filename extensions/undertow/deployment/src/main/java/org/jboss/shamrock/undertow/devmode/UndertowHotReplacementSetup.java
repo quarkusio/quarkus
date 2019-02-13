@@ -7,6 +7,7 @@ import javax.servlet.ServletException;
 import org.jboss.shamrock.deployment.ShamrockConfig;
 import org.jboss.shamrock.deployment.devmode.HotReplacementContext;
 import org.jboss.shamrock.deployment.devmode.HotReplacementSetup;
+import org.jboss.shamrock.runtime.LaunchMode;
 import org.jboss.shamrock.undertow.runtime.HttpConfig;
 import org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate;
 
@@ -33,7 +34,7 @@ public class UndertowHotReplacementSetup implements HotReplacementSetup {
         config.workerThreads = OptionalInt.empty();
 
         try {
-            UndertowDeploymentTemplate.startUndertowEagerly(config, wrapper);
+            UndertowDeploymentTemplate.startUndertowEagerly(config, wrapper, LaunchMode.DEVELOPMENT);
         } catch (ServletException e) {
             throw new RuntimeException(e);
         }

@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.LinkedHashSet;
+import java.util.ServiceLoader;
 import java.util.Set;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -88,6 +89,10 @@ public class TestResourceManager {
                     | InvocationTargetException | NoSuchMethodException | SecurityException e) {
                 throw new RuntimeException("Unable to instantiate the test resource " + testResourceRunnerClass);
             }
+        }
+
+        for(ShamrockTestResourceLifecycleManager i : ServiceLoader.load(ShamrockTestResourceLifecycleManager.class)) {
+            testResourceRunners.add(i);
         }
 
         return testResourceRunners;

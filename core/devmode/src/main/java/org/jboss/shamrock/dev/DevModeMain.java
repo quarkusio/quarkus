@@ -19,14 +19,12 @@ package org.jboss.shamrock.dev;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
+import org.jboss.shamrock.runner.RuntimeRunner;
+import org.jboss.shamrock.runtime.LaunchMode;
 import org.jboss.shamrock.runtime.Timing;
 
 import io.smallrye.config.PropertiesConfigSource;
@@ -114,11 +112,15 @@ public class DevModeMain {
             //we can potentially throw away this class loader, and reload the app
             try {
                 Thread.currentThread().setContextClassLoader(runtimeCl);
-                Class<?> runnerClass = runtimeCl.loadClass("org.jboss.shamrock.runner.RuntimeRunner");
-                Constructor ctor = runnerClass.getDeclaredConstructor(ClassLoader.class, Path.class, Path.class, Path.class, List.class);
-                Object runner = ctor.newInstance(runtimeCl, classesRoot.toPath(), wiringDir.toPath(), cacheDir.toPath(), new ArrayList<>());
-                ((Runnable) runner).run();
-                closeable = ((Closeable) runner);
+                RuntimeRunner runner = RuntimeRunner.builder()
+                        .setLaunchMode(LaunchMode.DEVELOPMENT)
+                        .setClassLoader(runtimeCl)
+                        .setTarget(classesRoot.toPath())
+                        .setFrameworkClassesPath(wiringDir.toPath())
+                        .setTransformerCache(cacheDir.toPath())
+                        .build();
+                runner.run();
+                closeable = runner;
                 deploymentProblem = null;
             } finally {
                 Thread.currentThread().setContextClassLoader(old);

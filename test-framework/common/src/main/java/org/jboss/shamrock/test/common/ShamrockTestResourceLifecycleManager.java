@@ -22,6 +22,10 @@ package org.jboss.shamrock.test.common;
  * These resources are started before the first test is run, and are closed
  * at the end of the test suite. They are configured via the {@link ShamrockTestResource}
  * annotation, which can be placed on any class in the test suite.
+ *
+ * These can also be loaded via a service loader mechanism, however if a service
+ * loader is used it should not also be annotated as this will result in it being executed
+ * twice
  */
 public interface ShamrockTestResourceLifecycleManager {
 

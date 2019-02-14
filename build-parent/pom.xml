@@ -29,6 +29,7 @@
       
       <aesh.version>1.11</aesh.version>
       <jandex.version>2.1.0.Final</jandex.version>
+      <resteasy.version>4.0.0.Beta8</resteasy.version>
       <opentracing.version>0.31.0</opentracing.version>
       <opentracing-jaxrs.version>0.3.1</opentracing-jaxrs.version>
       <opentracing-web-servlet-filter.version>0.2.2</opentracing-web-servlet-filter.version>
@@ -127,13 +128,6 @@
 
    <dependencyManagement>
       <dependencies>
-         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-bom</artifactId>
-            <version>${project.version}</version>
-             <type>pom</type>
-             <scope>import</scope>
-         </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-agroal-deployment</artifactId>
@@ -1054,6 +1048,73 @@
             <groupId>org.jboss.narayana.jts</groupId>
             <artifactId>narayana-jts-integration</artifactId>
             <version>${narayana.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-cdi</artifactId>
+            <version>${resteasy.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-client</artifactId>
+            <version>${resteasy.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-core</artifactId>
+            <version>${resteasy.version}</version>
+            <exclusions>
+               <exclusion>
+                  <groupId>org.jboss.spec.javax.annotation</groupId>
+                  <artifactId>jboss-annotations-api_1.3_spec</artifactId>
+               </exclusion>
+               <exclusion>
+                  <groupId>javax.activation</groupId>
+                  <artifactId>activation</artifactId>
+               </exclusion>
+            </exclusions>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-core-spi</artifactId>
+            <version>${resteasy.version}</version>
+            <exclusions>
+               <exclusion>
+                  <groupId>org.jboss.spec.javax.annotation</groupId>
+                  <artifactId>jboss-annotations-api_1.3_spec</artifactId>
+               </exclusion>
+               <exclusion>
+                  <groupId>javax.activation</groupId>
+                  <artifactId>activation</artifactId>
+               </exclusion>
+            </exclusions>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-json-binding-provider</artifactId>
+            <version>${resteasy.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-json-p-provider</artifactId>
+            <version>${resteasy.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-jaxb-provider</artifactId>
+            <version>${resteasy.version}</version>
+            <exclusions>
+               <!-- The JBoss JAXB API artifact is used instead -->
+               <exclusion>
+                  <groupId>javax.xml.bind</groupId>
+                  <artifactId>jaxb-api</artifactId>
+               </exclusion>
+            </exclusions>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.resteasy</groupId>
+            <artifactId>resteasy-rxjava2</artifactId>
+            <version>${resteasy.version}</version>
          </dependency>
 
          <dependency>

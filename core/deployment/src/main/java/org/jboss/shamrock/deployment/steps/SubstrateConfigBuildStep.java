@@ -17,6 +17,9 @@
 package org.jboss.shamrock.deployment.steps;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -80,12 +83,18 @@ class SubstrateConfigBuildStep {
             String graalVmHome = System.getenv("GRAALVM_HOME");
 
             if (graalVmHome != null) {
-                String graalVmLibDirectory = graalVmHome + File.separator + "jre" + File.separator + "lib" + File.separator;
+                Path graalVmLibDirectory = Paths.get(graalVmHome, "jre", "lib");
+                Path linuxLibDirectory = graalVmLibDirectory.resolve("amd64");
 
+                if (Files.exists(linuxLibDirectory)) {
+                    // On Linux, the SunEC library is in jre/lib/amd64/
+                    systemProperty.produce(new SystemPropertyBuildItem("java.library.path", linuxLibDirectory.toString()));
+                } else {
+                    // On MacOS, the SunEC library is directly in jre/lib/
+                    systemProperty.produce(new SystemPropertyBuildItem("java.library.path", graalVmLibDirectory.toString()));
+                }
                 systemProperty.produce(
-                        new SystemPropertyBuildItem("java.library.path", graalVmLibDirectory + "amd64"));
-                systemProperty.produce(
-                        new SystemPropertyBuildItem("javax.net.ssl.trustStore", graalVmLibDirectory + "security" + File.separator + "cacerts"));
+                        new SystemPropertyBuildItem("javax.net.ssl.trustStore", graalVmLibDirectory.resolve(Paths.get("security", "cacerts")).toString()));
             } else {
                 log.warn(
                         "SSL is enabled but the GRAALVM_HOME environment variable is not set. The java.library.path property has not been set and will need to be set manually.");

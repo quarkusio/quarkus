@@ -14,4 +14,9 @@ public enum LaunchMode {
      * a test run
      */
     TEST
+    ;
+
+    public boolean isDevOrTest() {
+        return this != NORMAL;
+    }
 }

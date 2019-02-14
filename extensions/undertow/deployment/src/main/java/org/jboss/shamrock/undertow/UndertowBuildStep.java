@@ -155,7 +155,7 @@ public class UndertowBuildStep {
                 config, wrappers.stream().map(HttpHandlerWrapperBuildItem::getValue).collect(Collectors.toList()),
                 launchMode.getLaunchMode());
         undertowProducer.accept(new UndertowBuildItem(ut));
-        serverProducer.accept(new HttpServerBuiltItem(config.host, launchMode.getLaunchMode() == LaunchMode.TEST ? config.testPort : config.port));
+        serverProducer.accept(new HttpServerBuiltItem(config.host, config.determinePort(launchMode.getLaunchMode())));
         return new ServiceStartBuildItem("undertow");
     }
 

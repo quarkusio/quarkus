@@ -262,6 +262,17 @@ public class GreetingResource {
 If you stopped the application, restart the application with `mvn compile shamrock:dev`.
 Then check that http://localhost:8080/hello/greeting/shamrock returns `hello shamrock`.
 
+== Development Mode
+
+`shamrock:dev` runs Shamrock in development mode. This enables hot deployment with background compilation, which means
+that when you modify your Java files and refresh your browser these changes will automatically take effect. The act of
+refreshing the browser triggers a scan of the workspace, and if any changes are detected the Java files are compiled,
+and the application is redeployed, then your request is serviced by the redeployed application. If there are any issues
+with compilation or deployment an error page will let you know.
+
+This will also listen for a debugger on port `5005`. If your want to wait for the debugger to attach before running you
+can pass `-Ddebug` on the command line. If you don't want the debugger at all you can use `-Ddebug=false`.
+
 == Testing
 
 All right, so far so good, but wouldn't it be better with a few tests, just in case.

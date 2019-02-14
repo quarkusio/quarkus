@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.jboss.shamrock</groupId>
         <artifactId>shamrock-devtools-all</artifactId>
-        <version>1.0.0.Alpha1-SNAPSHOT</version>
+        <version>0.9.0</version>
     </parent>
 
     <artifactId>devtools-common-core</artifactId>

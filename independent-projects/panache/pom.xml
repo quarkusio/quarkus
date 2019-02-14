@@ -27,7 +27,7 @@
     <artifactId>panache</artifactId>
     <name>Panache</name>
     <packaging>jar</packaging>
-    <version>1.0.0.Alpha1-SNAPSHOT</version>
+    <version>0.9.0</version>
 
     <licenses>
         <license>
@@ -42,7 +42,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <!-- Versions -->
-        <version.arc>1.0.0.Alpha1-SNAPSHOT</version.arc>
+        <version.arc>0.9.0</version.arc>
         <version.jpa>2.2</version.jpa>
         <version.smallrye-config>1.3.1</version.smallrye-config>
         <version.resteasy>4.0.0.Beta6</version.resteasy>

@@ -28,6 +28,9 @@ public class TestHttpResourceManager {
         System.setProperty("test.url", uri);
     }
 
+    public static String getUri() {
+        return uri;
+    }
 
     public static void inject(Object testCase) {
         Class<?> c = testCase.getClass();

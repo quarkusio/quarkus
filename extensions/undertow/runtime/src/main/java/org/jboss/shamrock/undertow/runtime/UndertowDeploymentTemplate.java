@@ -16,6 +16,7 @@
 
 package org.jboss.shamrock.undertow.runtime;
 
+import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
@@ -49,6 +50,7 @@ import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.resource.CachingResourceManager;
 import io.undertow.server.handlers.resource.ClassPathResourceManager;
 import io.undertow.server.handlers.resource.PathResourceManager;
+import io.undertow.server.handlers.resource.ResourceManager;
 import io.undertow.server.session.SessionIdGenerator;
 import io.undertow.servlet.ServletExtension;
 import io.undertow.servlet.Servlets;
@@ -87,7 +89,7 @@ public class UndertowDeploymentTemplate {
     private static volatile Undertow undertow;
     private static volatile HttpHandler currentRoot = ResponseCodeHandler.HANDLE_404;
 
-    public RuntimeValue<DeploymentInfo> createDeployment(String name, Set<String> knownFile, Set<String> knownDirectories) {
+    public RuntimeValue<DeploymentInfo> createDeployment(String name, Set<String> knownFile, Set<String> knownDirectories, LaunchMode launchMode, ShutdownContext context) {
         DeploymentInfo d = new DeploymentInfo();
         d.setSessionIdGenerator(new ShamrockSessionIdGenerator());
         d.setClassLoader(getClass().getClassLoader());
@@ -100,18 +102,36 @@ public class UndertowDeploymentTemplate {
             };
         }
         d.setClassLoader(cl);
-        //TODO: this is a big hack
-        //TODO: caching configuration once the new config model is in place
+        //TODO: we need better handling of static resources
         String resourcesDir = System.getProperty(RESOURCES_PROP);
+        ResourceManager resourceManager;
         if (resourcesDir == null) {
-            d.setResourceManager(new CachingResourceManager(1000, 0, null, new KnownPathResourceManager(knownFile, knownDirectories, new ClassPathResourceManager(d.getClassLoader(), "META-INF/resources")), 2000));
+            resourceManager = new KnownPathResourceManager(knownFile, knownDirectories, new ClassPathResourceManager(d.getClassLoader(), "META-INF/resources"));
         } else {
-            d.setResourceManager(new CachingResourceManager(1000, 0, null, new PathResourceManager(Paths.get(resourcesDir)), 2000));
+            resourceManager = new PathResourceManager(Paths.get(resourcesDir));
         }
+        if(launchMode == LaunchMode.NORMAL) {
+            //todo: cache configuration
+            resourceManager = new CachingResourceManager(1000, 0, null, resourceManager, 2000);
+        }
+
+        d.setResourceManager(resourceManager);
+
+
         d.addWelcomePages("index.html", "index.htm");
 
         d.addServlet(new ServletInfo(ServletPathMatches.DEFAULT_SERVLET_NAME, DefaultServlet.class).setAsyncSupported(true));
 
+        context.addShutdownTask(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    d.getResourceManager().close();
+                } catch (IOException e) {
+                    log.error("Failed to close Servlet ResourceManager", e);
+                }
+            }
+        });
         return new RuntimeValue<>(d);
     }
 

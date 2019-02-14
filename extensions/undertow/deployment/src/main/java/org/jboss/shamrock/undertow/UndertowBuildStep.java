@@ -107,6 +107,7 @@ import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildI
 import org.jboss.shamrock.deployment.recording.RecorderContext;
 import org.jboss.shamrock.runtime.LaunchMode;
 import org.jboss.shamrock.runtime.RuntimeValue;
+import org.jboss.shamrock.runtime.ShutdownContext;
 import org.jboss.shamrock.runtime.annotations.ConfigItem;
 import org.jboss.shamrock.undertow.runtime.HttpConfig;
 import org.jboss.shamrock.undertow.runtime.ServletSecurityInfoProxy;
@@ -185,7 +186,9 @@ public class UndertowBuildStep {
                                             InjectionFactoryBuildItem injectionFactory,
                                             InjectionFactoryBuildItem bc,
                                             BuildProducer<ObjectSubstitutionBuildItem> substitutions,
-                                            Consumer<ReflectiveClassBuildItem> reflectiveClasses) throws Exception {
+                                            Consumer<ReflectiveClassBuildItem> reflectiveClasses,
+                                            LaunchModeBuildItem launchMode,
+                                            ShutdownContextBuildItem shutdownContext) throws Exception {
 
         ObjectSubstitutionBuildItem.Holder holder = new ObjectSubstitutionBuildItem.Holder(ServletSecurityInfo.class, ServletSecurityInfoProxy.class, ServletSecurityInfoSubstitution.class);
         substitutions.produce(new ObjectSubstitutionBuildItem(holder));
@@ -216,7 +219,7 @@ public class UndertowBuildStep {
             }
         }
 
-        RuntimeValue<DeploymentInfo> deployment = template.createDeployment("test", knownFiles, knownDirectories);
+        RuntimeValue<DeploymentInfo> deployment = template.createDeployment("test", knownFiles, knownDirectories, launchMode.getLaunchMode(), shutdownContext);
 
         WebMetaData result;
         Path webXml = applicationArchivesBuildItem.getRootArchive().getChildPath(WEB_XML);

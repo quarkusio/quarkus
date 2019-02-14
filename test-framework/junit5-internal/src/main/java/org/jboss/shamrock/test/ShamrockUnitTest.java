@@ -49,6 +49,7 @@ import org.jboss.shamrock.runtime.LaunchMode;
 import org.jboss.shamrock.test.common.PathTestHelper;
 import org.jboss.shamrock.test.common.RestAssuredPortManager;
 import org.jboss.shamrock.test.common.TestResourceManager;
+import org.jboss.shamrock.test.common.http.TestHttpResourceManager;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -104,7 +105,9 @@ public class ShamrockUnitTest implements BeforeAllCallback, AfterAllCallback, Te
                     .setSuperClass(testClass));
 
             Object actualTestInstance = extensionContext.getStore(ExtensionContext.Namespace.GLOBAL).get(testClass.getName());
-
+            if(actualTestInstance != null) { //happens if a deployment exception is expected
+                TestHttpResourceManager.inject(actualTestInstance);
+            }
             return factory.newInstance(new InvocationHandler() {
                 @Override
                 public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {

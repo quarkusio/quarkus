@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.shamrock.test.common.http.TestHttpResourceManager;
 
 public class NativeImageLauncher implements Closeable {
 
@@ -57,6 +58,7 @@ public class NativeImageLauncher implements Closeable {
         List<String> args = new ArrayList<>();
         args.add(path);
         args.add("-Dshamrock.http.port=" + port);
+        args.add("-Dtest.url=" + TestHttpResourceManager.getUri());
 
         System.out.println("Executing " + args);
 

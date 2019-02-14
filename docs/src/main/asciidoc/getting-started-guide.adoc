@@ -354,6 +354,23 @@ These tests use http://rest-assured.io/[RestAssured], but feel free to use your 
 
 You can run the test from your IDE directly (be sure you stopped the application first), or from Maven using: `mvn test`.
 
+By default tests will run on port `8081` so as not to conflict with the running application. We automatically
+configure RestAssured to use this port. If you want to use a different client you should use the `@TestHTTPResource`
+annotation to directly inject the URL of the test into a field on the test class. This field can be of the type
+`String`, `URL` or `URI`. This annotation can also be given a value for the test path. For example if I want to test
+a Servlet mapped to `/myservlet` I would just add the following to my test:
+
+
+[source,java]
+----
+@TestHTTPResource("/myservlet")
+URL testUrl;
+----
+
+The test port can be controlled via the `shamrock.http.test-port` config property. Shamrock also creates a system
+property called `test.url` that is set to the base test URL for situations where you cannot use injection.
+
+
 == Packaging and run the application
 
 The application is packaged using `mvn package`.

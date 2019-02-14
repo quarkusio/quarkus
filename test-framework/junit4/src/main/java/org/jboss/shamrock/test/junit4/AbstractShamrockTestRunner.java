@@ -18,6 +18,7 @@ package org.jboss.shamrock.test.junit4;
 
 import java.util.function.BiFunction;
 
+import org.jboss.shamrock.test.common.http.TestHttpResourceManager;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.FrameworkMethod;
@@ -53,5 +54,12 @@ abstract class AbstractShamrockTestRunner extends BlockJUnit4ClassRunner {
         } else {
             notifier.fireTestIgnored(describeChild(method));
         }
+    }
+
+    @Override
+    protected Object createTest() throws Exception {
+        Object instance = super.createTest();
+        TestHttpResourceManager.inject(instance);
+        return instance;
     }
 }

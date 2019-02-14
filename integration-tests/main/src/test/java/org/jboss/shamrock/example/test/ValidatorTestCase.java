@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 
 import javax.json.Json;
 
+import org.jboss.shamrock.test.common.http.TestHTTPResource;
 import org.jboss.shamrock.test.junit.ShamrockTest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -32,9 +33,11 @@ import org.junit.jupiter.api.Test;
 @ShamrockTest
 public class ValidatorTestCase {
 
+    @TestHTTPResource("validator/manual")
+    URL uri;
+
     @Test
     public void testManualValidationFailed() throws Exception {
-        URL uri = new URL("http://localhost:8081/validator/manual");
         URLConnection connection = uri.openConnection();
         connection.setDoOutput(true);
         connection.setRequestProperty("Content-Type", "application/json");
@@ -60,7 +63,6 @@ public class ValidatorTestCase {
 
     @Test
     public void testManualValidationPassed() throws Exception {
-        URL uri = new URL("http://localhost:8081/validator/manual");
         URLConnection connection = uri.openConnection();
         connection.setDoOutput(true);
         connection.setRequestProperty("Content-Type", "application/json");

@@ -23,7 +23,10 @@ import java.util.regex.Pattern;
 
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.SmallRyeConfigProviderResolver;
+
 import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigBuilder;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.config.spi.ConfigSource;
@@ -152,6 +155,7 @@ public class ConfigurationSetup {
         for (Class<?> clazz : ServiceUtil.classesNamedIn(extensionClassLoaderBuildItem.getExtensionClassLoader(), "META-INF/shamrock-config-roots.list")) {
             configDefinition.registerConfigRoot(clazz);
         }
+        SmallRyeConfigProviderResolver.instance().registerConfig(src, Thread.currentThread().getContextClassLoader());
         configDefinition.loadConfiguration(src);
         return new ConfigurationBuildItem(configDefinition);
     }

@@ -5,7 +5,7 @@
    <parent>
       <artifactId>shamrock-build-parent</artifactId>
       <groupId>org.jboss.shamrock</groupId>
-      <version>1.0.0.Alpha1-SNAPSHOT</version>
+      <version>0.9.1</version>
       <relativePath>../../build-parent/pom.xml</relativePath>
    </parent>
 

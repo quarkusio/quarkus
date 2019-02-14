@@ -20,7 +20,7 @@
     <parent>
         <artifactId>shamrock-panache</artifactId>
         <groupId>org.jboss.shamrock</groupId>
-        <version>1.0.0.Alpha1-SNAPSHOT</version>
+        <version>0.9.1</version>
         <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>

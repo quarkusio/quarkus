@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.jboss.shamrock</groupId>
         <artifactId>shamrock-reactive-converters</artifactId>
-        <version>1.0.0.Alpha1-SNAPSHOT</version>
+        <version>0.9.1</version>
     </parent>
 
     <artifactId>shamrock-reactive-converters-runtime</artifactId>

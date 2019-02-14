@@ -27,7 +27,9 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
@@ -170,6 +172,12 @@ public class DevMojo extends AbstractMojo {
             }
             if (jvmArgs != null) {
                 args.addAll(Arrays.asList(jvmArgs.split(" ")));
+            }
+            //we don't want to just copy every system property, as a lot of them are set by the JVM
+            for(Map.Entry<Object, Object> i: System.getProperties().entrySet()) {
+                if(i.getKey().toString().startsWith("shamrock.")) {
+                    args.add("-D" + i.getKey() + "=" + i.getValue());
+                }
             }
 
             for (Resource r : project.getBuild().getResources()) {

@@ -22,10 +22,6 @@
    <name>Shamrock - BOM</name>
    <packaging>pom</packaging>
 
-   <properties>
-      <resteasy.version>4.0.0.Beta8</resteasy.version>
-   </properties>
-
    <dependencyManagement>
       <dependencies>
 
@@ -237,64 +233,6 @@
             <artifactId>shamrock-junit5</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
-         </dependency>
-
-         <!-- Additional artifacts that we need to specify the version for-->
-
-         <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-bom</artifactId>
-            <version>${resteasy.version}</version>
-            <type>pom</type>
-            <scope>import</scope>
-         </dependency>
-
-         <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-rxjava2</artifactId>
-            <version>${resteasy.version}</version>
-         </dependency>
-         <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-core</artifactId>
-            <version>${resteasy.version}</version>
-            <exclusions>
-               <exclusion>
-                  <groupId>org.jboss.spec.javax.annotation</groupId>
-                  <artifactId>jboss-annotations-api_1.3_spec</artifactId>
-               </exclusion>
-               <exclusion>
-                  <groupId>javax.activation</groupId>
-                  <artifactId>activation</artifactId>
-               </exclusion>
-            </exclusions>
-         </dependency>
-         <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-core-spi</artifactId>
-            <version>${resteasy.version}</version>
-            <exclusions>
-               <exclusion>
-                  <groupId>org.jboss.spec.javax.annotation</groupId>
-                  <artifactId>jboss-annotations-api_1.3_spec</artifactId>
-               </exclusion>
-               <exclusion>
-                  <groupId>javax.activation</groupId>
-                  <artifactId>activation</artifactId>
-               </exclusion>
-            </exclusions>
-         </dependency>
-         <dependency>
-            <groupId>org.jboss.resteasy</groupId>
-            <artifactId>resteasy-jaxb-provider</artifactId>
-            <version>${resteasy.version}</version>
-            <exclusions>
-               <!-- The JBoss JAXB API artifact is used instead -->
-               <exclusion>
-                  <groupId>javax.xml.bind</groupId>
-                  <artifactId>jaxb-api</artifactId>
-               </exclusion>
-            </exclusions>
          </dependency>
       </dependencies>
    </dependencyManagement>

@@ -47,7 +47,7 @@ import org.jboss.shamrock.runtime.InjectionFactoryTemplate;
 import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.runtime.LaunchMode;
 import org.jboss.shamrock.test.common.PathTestHelper;
-import org.jboss.shamrock.test.common.RestAssuredPortManager;
+import org.jboss.shamrock.test.common.RestAssuredURLManager;
 import org.jboss.shamrock.test.common.TestResourceManager;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
@@ -286,11 +286,11 @@ public class ShamrockUnitTest implements BeforeAllCallback, AfterAllCallback, Te
 
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
-        RestAssuredPortManager.clearPort();
+        RestAssuredURLManager.clearURL();
     }
 
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
-        RestAssuredPortManager.setPort();
+        RestAssuredURLManager.setURL();
     }
 }

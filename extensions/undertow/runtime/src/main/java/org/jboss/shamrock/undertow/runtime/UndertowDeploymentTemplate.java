@@ -247,9 +247,16 @@ public class UndertowDeploymentTemplate {
                     .setHandler(rootHandler);
             if (config.ioThreads.isPresent()) {
                 builder.setIoThreads(config.ioThreads.getAsInt());
+            } else if(launchMode == LaunchMode.TEST
+                    || launchMode == LaunchMode.DEVELOPMENT) {
+                //we limit the numner of IO and worker threads in development and testing mode
+                builder.setIoThreads(2);
             }
             if (config.workerThreads.isPresent()) {
                 builder.setWorkerThreads(config.workerThreads.getAsInt());
+            } else if(launchMode == LaunchMode.TEST
+                    || launchMode == LaunchMode.DEVELOPMENT) {
+                builder.setWorkerThreads(6);
             }
             undertow = builder
                     .build();

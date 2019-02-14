@@ -19,7 +19,7 @@ package org.jboss.shamrock.test.junit4;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.jboss.shamrock.test.common.RestAssuredPortManager;
+import org.jboss.shamrock.test.common.RestAssuredURLManager;
 import org.jboss.shamrock.test.common.TestResourceManager;
 import org.junit.runner.Description;
 import org.junit.runner.Result;
@@ -46,7 +46,7 @@ abstract class AbstractShamrockRunListener extends RunListener {
 
     @Override
     public void testStarted(Description description) throws Exception {
-        RestAssuredPortManager.setPort();
+        RestAssuredURLManager.setURL();
         if (!started) {
             List<RunListener> stopListeners = new ArrayList<>();
 
@@ -92,7 +92,7 @@ abstract class AbstractShamrockRunListener extends RunListener {
     @Override
     public void testFinished(Description description) throws Exception {
         super.testFinished(description);
-        RestAssuredPortManager.clearPort();
+        RestAssuredURLManager.clearURL();
     }
 
 

@@ -18,6 +18,7 @@ package org.jboss.shamrock.undertow.runtime;
 
 import java.util.OptionalInt;
 
+import org.jboss.shamrock.runtime.LaunchMode;
 import org.jboss.shamrock.runtime.annotations.ConfigItem;
 import org.jboss.shamrock.runtime.annotations.ConfigPhase;
 import org.jboss.shamrock.runtime.annotations.ConfigRoot;
@@ -56,5 +57,9 @@ public class HttpConfig {
      */
     @ConfigItem
     public OptionalInt ioThreads;
+
+    public int determinePort(LaunchMode launchMode) {
+        return launchMode == LaunchMode.TEST ? testPort : port;
+    }
 
 }

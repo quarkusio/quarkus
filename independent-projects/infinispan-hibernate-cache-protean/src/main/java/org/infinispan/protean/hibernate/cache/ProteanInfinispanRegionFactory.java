@@ -22,7 +22,7 @@ public final class ProteanInfinispanRegionFactory implements RegionFactory {
     private static final Logger log = Logger.getLogger(ProteanInfinispanRegionFactory.class);
 
     private static final String PREFIX = "hibernate.cache.";
-    private static final String SIZE_SUFFIX = ".memory.size";
+    private static final String OBJECT_COUNT = ".memory.object.count";
     private static final String MAX_IDLE_SUFFIX = ".expiration.max_idle";
 
     private final Map<String, InternalCache> caches = new HashMap<>();
@@ -31,7 +31,7 @@ public final class ProteanInfinispanRegionFactory implements RegionFactory {
     private CacheKeysFactory cacheKeysFactory;
 
     private List<Region> regions = new ArrayList<>();
-    private final Map<String, InternalCacheConfig> cacheConfigs = new HashMap<>();
+    private Map<String, InternalCacheConfig> cacheConfigs;
 
     private Time.MillisService regionTimeService;
     private Time.NanosService cacheTimeService;
@@ -60,34 +60,11 @@ public final class ProteanInfinispanRegionFactory implements RegionFactory {
             cacheTimeService = CaffeineCache.TIME_SERVICE;
 
         this.settings = settings;
-        for (Object k : configValues.keySet()) {
-            final String key = (String) k;
-            int prefixIndex;
-            if ((prefixIndex = key.indexOf(PREFIX)) != -1) {
-                int prefixIndexEnd = prefixIndex + PREFIX.length();
-                final String regionName = extractRegionName(prefixIndexEnd, key);
-                if (regionName != null) {
-                    cacheConfigs.compute(regionName, (ignore, cacheConfig) -> {
-                        final String value = extractProperty(key, configValues);
-
-                        if (cacheConfig == null)
-                            cacheConfig = new InternalCacheConfig();
-
-                        if (key.contains(SIZE_SUFFIX)) {
-                            cacheConfig.setMaxSize(Long.parseLong(value));
-                        } else if (key.contains(MAX_IDLE_SUFFIX)) {
-                            cacheConfig.setMaxIdle(Duration.ofSeconds(Long.parseLong(value)));
-                        }
-
-                        return cacheConfig;
-                    });
-                }
-            }
-        }
+        this.cacheConfigs = computeCacheConfigs(configValues);
     }
 
     private String extractRegionName(int prefixIndexEnd, String key) {
-        final int suffixIndex = Math.max(key.indexOf(SIZE_SUFFIX), key.indexOf(MAX_IDLE_SUFFIX));
+        final int suffixIndex = Math.max(key.indexOf(OBJECT_COUNT), key.indexOf(MAX_IDLE_SUFFIX));
         if (suffixIndex != -1) {
             return key.substring(prefixIndexEnd, suffixIndex);
         }
@@ -164,7 +141,8 @@ public final class ProteanInfinispanRegionFactory implements RegionFactory {
     private InternalCache getCache(String cacheName) {
         return caches.compute(cacheName, (ignore, cache) -> {
             if (cache == null) {
-                final InternalCacheConfig cacheConfig = cacheConfigs.get(cacheName);
+                final InternalCacheConfig userDefinedCacheConfig = cacheConfigs.get(cacheName);
+                final InternalCacheConfig cacheConfig = userDefinedCacheConfig == null ? defaultDomainCacheConfig() : userDefinedCacheConfig;
                 cache = new CaffeineCache(cacheName, cacheConfig, this.cacheTimeService);
             }
 
@@ -213,6 +191,67 @@ public final class ProteanInfinispanRegionFactory implements RegionFactory {
         // Ensure we cleanup any caches we created
         regions.forEach(Region::destroy);
         regions.clear();
+    }
+
+    private HashMap<String, InternalCacheConfig> computeCacheConfigs(Map configValues) {
+        final HashMap<String, InternalCacheConfig> cacheConfigs = new HashMap<>();
+
+        cacheConfigs.put(DEFAULT_QUERY_RESULTS_REGION_UNQUALIFIED_NAME, defaultQueryCacheConfig());
+        cacheConfigs.put(DEFAULT_UPDATE_TIMESTAMPS_REGION_UNQUALIFIED_NAME, defaultTimestampsCacheConfig());
+
+        for (Object k : configValues.keySet()) {
+            final String key = (String) k;
+            int prefixIndex;
+            if ((prefixIndex = key.indexOf(PREFIX)) != -1) {
+                int prefixIndexEnd = prefixIndex + PREFIX.length();
+                final String regionName = extractRegionName(prefixIndexEnd, key);
+                if (regionName != null) {
+                    cacheConfigs.compute(regionName, (ignore, cacheConfig) -> {
+                        final String value = extractProperty(key, configValues);
+
+                        if (cacheConfig == null) {
+                            // Query and timestamps regions already defined, so it can only be a domain region
+                            cacheConfig = defaultDomainCacheConfig();
+                        }
+
+                        if (key.contains(OBJECT_COUNT)) {
+                            cacheConfig.objectCount = Long.parseLong(value);
+                        } else if (key.contains(MAX_IDLE_SUFFIX)) {
+                            cacheConfig.maxIdle = Duration.ofSeconds(Long.parseLong(value));
+                        }
+
+                        return cacheConfig;
+                    });
+                }
+            }
+        }
+        return cacheConfigs;
+    }
+
+    private static InternalCacheConfig defaultQueryCacheConfig() {
+        // Query results follows same defaults as entity/collections.
+        // That is, sensible defaults to avoid running out of memory.
+        InternalCacheConfig cacheConfig = new InternalCacheConfig();
+        cacheConfig.maxIdle = Duration.ofSeconds(100);
+        cacheConfig.objectCount = 10_000;
+        return cacheConfig;
+    }
+
+    private static InternalCacheConfig defaultTimestampsCacheConfig() {
+        // Update timestamps should not be automatically evicted.
+        // They're required to verify whether a query can be served from cache.
+        InternalCacheConfig cacheConfig = new InternalCacheConfig();
+        cacheConfig.maxIdle = Time.forever();
+        cacheConfig.objectCount = -1;
+        return cacheConfig;
+    }
+
+    private static InternalCacheConfig defaultDomainCacheConfig() {
+        // Sensible defaults to avoid running out of memory
+        InternalCacheConfig cacheConfig = new InternalCacheConfig();
+        cacheConfig.maxIdle = Duration.ofSeconds(100);
+        cacheConfig.objectCount = 10_000;
+        return cacheConfig;
     }
 
 }

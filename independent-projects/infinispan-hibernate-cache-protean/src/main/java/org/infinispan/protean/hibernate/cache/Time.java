@@ -1,6 +1,22 @@
 package org.infinispan.protean.hibernate.cache;
 
-public class Time {
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+
+final class Time {
+
+    private static final Duration FOREVER = ChronoUnit.FOREVER.getDuration();
+
+    private Time() {
+    }
+
+    static Duration forever() {
+        return FOREVER;
+    }
+
+    static boolean isForever(Duration duration) {
+        return FOREVER.equals(duration);
+    }
 
     @FunctionalInterface
     public interface NanosService {

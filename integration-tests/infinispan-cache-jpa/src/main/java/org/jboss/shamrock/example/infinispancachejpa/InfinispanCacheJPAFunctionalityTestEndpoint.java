@@ -6,7 +6,6 @@ import org.hibernate.SessionFactory;
 import org.hibernate.cache.spi.RegionFactory;
 import org.hibernate.stat.CacheRegionStatistics;
 import org.hibernate.stat.Statistics;
-import org.jboss.logging.Logger;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -31,8 +30,6 @@ import javax.servlet.http.HttpServletResponse;
  */
 @WebServlet(name = "InfinispanCacheJPAFunctionalityTestEndpoint", urlPatterns = "/infinispan-cache-jpa/testfunctionality")
 public class InfinispanCacheJPAFunctionalityTestEndpoint extends HttpServlet {
-
-    private static final Logger log = Logger.getLogger(InfinispanCacheJPAFunctionalityTestEndpoint.class);
 
     @PersistenceUnit(unitName = "templatePU")
     EntityManagerFactory entityManagerFactory;

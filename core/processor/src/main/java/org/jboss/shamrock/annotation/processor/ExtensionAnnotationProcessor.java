@@ -502,9 +502,11 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
             final String fieldName = field.getSimpleName().toString();
             final JMethodDef getter = classDef.method(JMod.PUBLIC | JMod.STATIC, publicType, "get_" + fieldName);
+            getter.annotate(SuppressWarnings.class).value("unchecked");
             getter.param(JType.OBJECT, INSTANCE_SYM);
             getter.body()._return(instanceName.cast(clazzType).field(fieldName));
             final JMethodDef setter = classDef.method(JMod.PUBLIC | JMod.STATIC, JType.VOID, "set_" + fieldName);
+            setter.annotate(SuppressWarnings.class).value("unchecked");
             setter.param(JType.OBJECT, INSTANCE_SYM);
             setter.param(publicType, fieldName);
             final JAssignableExpr fieldExpr = JExprs.name(fieldName);

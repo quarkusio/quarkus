@@ -95,6 +95,8 @@ abstract class AbstractShamrockRunListener extends RunListener {
         RestAssuredPortManager.clearPort();
     }
 
+
+
     protected abstract void startShamrock() throws Exception;
 
     protected abstract void stopShamrock() throws Exception;

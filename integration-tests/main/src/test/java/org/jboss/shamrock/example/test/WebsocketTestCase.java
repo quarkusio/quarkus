@@ -27,6 +27,7 @@ import javax.websocket.EndpointConfig;
 import javax.websocket.MessageHandler;
 import javax.websocket.Session;
 
+import org.jboss.shamrock.test.common.http.TestHTTPResource;
 import org.jboss.shamrock.test.junit.ShamrockTest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -34,10 +35,11 @@ import org.junit.jupiter.api.Test;
 @ShamrockTest
 public class WebsocketTestCase {
 
+    @TestHTTPResource("echo")
+    URI uri;
+
     @Test
     public void websocketTest() throws Exception {
-
-        final URI uri = new URI("http://localhost:8081/echo");
 
         LinkedBlockingDeque<String> message = new LinkedBlockingDeque<>();
         Session session = ContainerProvider.getWebSocketContainer().connectToServer(new Endpoint() {

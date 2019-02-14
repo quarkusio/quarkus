@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 
+import org.jboss.shamrock.test.common.http.TestHTTPResource;
 import org.jboss.shamrock.test.junit.ShamrockTest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -28,9 +29,11 @@ import org.junit.jupiter.api.Test;
 @ShamrockTest
 public class FaultToleranceTestCase {
 
+    @TestHTTPResource("ft")
+    URL uri;
+
     @Test
     public void testRetry() throws Exception {
-        URL uri = new URL("http://localhost:8081/ft");
         URLConnection connection = uri.openConnection();
         InputStream in = connection.getInputStream();
         byte[] buf = new byte[100];

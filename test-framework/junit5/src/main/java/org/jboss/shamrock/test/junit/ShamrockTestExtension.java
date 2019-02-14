@@ -28,12 +28,17 @@ import org.jboss.shamrock.runtime.LaunchMode;
 import org.jboss.shamrock.test.common.NativeImageLauncher;
 import org.jboss.shamrock.test.common.RestAssuredPortManager;
 import org.jboss.shamrock.test.common.TestResourceManager;
+import org.jboss.shamrock.test.common.http.TestHttpResourceManager;
+import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.TestInstanceFactory;
+import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
+import org.junit.jupiter.api.extension.TestInstantiationException;
 
-public class ShamrockTestExtension implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback {
+public class ShamrockTestExtension implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback, TestInstanceFactory {
 
 
     @Override
@@ -80,6 +85,17 @@ public class ShamrockTestExtension implements BeforeAllCallback, BeforeEachCallb
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
         RestAssuredPortManager.setPort();
+    }
+
+    @Override
+    public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext) throws TestInstantiationException {
+        try {
+            Object instance = factoryContext.getTestClass().newInstance();
+            TestHttpResourceManager.inject(instance);
+            return instance;
+        } catch (InstantiationException | IllegalAccessException e) {
+            throw new TestInstantiationException("Failed to create test instance", e);
+        }
     }
 
 

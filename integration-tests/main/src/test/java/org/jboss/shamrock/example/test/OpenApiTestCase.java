@@ -27,6 +27,7 @@ import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 
+import org.jboss.shamrock.test.common.http.TestHTTPResource;
 import org.jboss.shamrock.test.junit.ShamrockTest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -37,9 +38,11 @@ import org.junit.jupiter.api.Test;
 @ShamrockTest
 public class OpenApiTestCase {
 
+    @TestHTTPResource("openapi")
+    URL uri;
+
     @Test
     public void testOpenAPIJSON() throws Exception {
-        URL uri = new URL("http://localhost:8081/openapi");
         URLConnection connection = uri.openConnection();
         connection.setRequestProperty("Accept", "application/json");
         InputStream in = connection.getInputStream();

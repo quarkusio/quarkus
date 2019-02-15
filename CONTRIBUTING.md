@@ -22,7 +22,7 @@ All submissions, including submissions by project members, need to be reviewed b
 
 ### Continuous Integration
 
-Because we are all humans, the project use a continuous integration approach and each pull request triggers a full build.
+Because we are all humans, the project uses a continuous integration approach and each pull request triggers a full build.
 Please make sure to monitor the output of the build and act accordingly.
 
 ### Tests and documentation are not optional

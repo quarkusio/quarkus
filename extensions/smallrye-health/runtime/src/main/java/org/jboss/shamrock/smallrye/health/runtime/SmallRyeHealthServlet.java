@@ -43,6 +43,8 @@ public class SmallRyeHealthServlet extends HttpServlet {
         if (health.isDown()) {
             resp.setStatus(503);
         }
+        resp.setContentType("application/json");
+        resp.setCharacterEncoding("UTF-8");
         reporter.reportHealth(resp.getOutputStream(), health);
     }
 }

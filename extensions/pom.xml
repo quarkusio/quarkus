@@ -56,7 +56,7 @@
         <module>vertx</module>
         <module>netty</module>
         <module>reactive-streams-operators</module>
-        <module>reactive-messaging</module>
+        <module>smallrye-reactive-messaging</module>
 
         <!-- Data access and validation -->
         <module>narayana-jta</module>

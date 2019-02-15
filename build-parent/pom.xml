@@ -505,12 +505,12 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-reactive-messaging-deployment</artifactId>
+            <artifactId>shamrock-smallrye-reactive-messaging-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-reactive-messaging-runtime</artifactId>
+            <artifactId>shamrock-smallrye-reactive-messaging-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>

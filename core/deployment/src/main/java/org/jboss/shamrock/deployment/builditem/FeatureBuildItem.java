@@ -19,7 +19,6 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String MP_REST_CLIENT = "mp-rest-client";
     public static final String MP_JWT = "mp-jwt";
     public static final String MP_REACTIVE_OPERATORS = "mp-reactive-streams-operators";
-    public static final String MP_REACTIVE_MESSAGING = "mp-reactive-streams-messaging";
     public static final String NARAYANA_JTA = "narayana-jta";
     public static final String REACTIVE_CONVERTERS = "reactive-type-converters";
     public static final String SCHEDULER = "scheduler";
@@ -29,6 +28,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String SMALLRYE_METRICS = "smallrye-metrics";
     public static final String SMALLRYE_FAULT_TOLERANCE = "smallrye-fault-tolerance";
     public static final String SMALLRYE_OPENTRACING = "smallrye-opentracing";
+    public static final String SMALLRYE_REACTIVE_MESSAGING = "smallrye-reactive-messaging";
     public static final String SPRING_DI = "spring-di";
     public static final String UNDERTOW_WEBSOCKETS = "undertow-websockets";
     public static final String VERTX = "vertx";

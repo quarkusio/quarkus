@@ -19,21 +19,22 @@ package org.jboss.shamrock.example.test;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 
+import io.restassured.http.ContentType;
+import org.hamcrest.Matchers;
 import org.jboss.shamrock.test.junit.ShamrockTest;
 import org.junit.jupiter.api.Test;
 
 import io.restassured.RestAssured;
-import io.restassured.parsing.Parser;
 
 @ShamrockTest
 public class HealthTestCase {
 
     @Test
     public void testHealthCheck() {
-        // the health check does not set a content type so we need to force the parser
         try {
-            RestAssured.defaultParser = Parser.JSON;
             RestAssured.when().get("/health").then()
+                    .contentType(ContentType.JSON)
+                    .header("Content-Type", Matchers.containsString("charset=UTF-8"))
                     .body("outcome", is("UP"),
                             "checks.state", contains("UP"),
                             "checks.name", contains("basic"));

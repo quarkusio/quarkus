@@ -49,6 +49,8 @@ shamrock.datasource.username: sarah
 shamrock.datasource.password: connor
 --
 
+Note that these configuration properties are not the same ones as made available in `{config-file}`: they might differ in names, casing and don't necessarily map 1:1 to each other.
+
 An `EntityManagerFactory` will be created based on {project-name} `datasource` configuration as long as the Hibernate ORM extension is declared in your `pom.xml`.
 The dialect will be selected based on the JDBC driver.
 
@@ -111,7 +113,7 @@ Class name of the Hibernate ORM dialect.
 (e.g. `drop-and-create` which is awesome in development mode). Select whether the database schema is generated or not.
 Options are `none`, `create`, `drop-and-create`, `drop`
 
-`shamrock.hibernate.show_sql`:: (defaults to `false`).
+`shamrock.hibernate.show-sql`:: (defaults to `false`).
 Show SQL logs and format them nicely.
 
 `shamrock.hibernate.sql-load-script-source`::
@@ -256,34 +258,38 @@ public class Gift {
 <1> Inject your entity manager and have fun
 <2> Mark your CDI bean method as `@Transactional` and the `EntityManager` will enlist and flush at commit.
 
-== Configuring second-level cache
+== Caching
 
 Applications that frequently read the same entities can see their performance improved when the Hibernate ORM second-level cache is enabled.
 
-To enable second-level cache, mark the entities that you want cached with `@Cache`:
+=== Caching of entities
+
+To enable second-level cache, mark the entities that you want cached with `@javax.persistence.Cacheable`:
 
 [source,java]
 --
 @Entity
-@Cache(CacheConcurrencyStrategy.READ_ONLY)
+@Cacheable
 public class Country {
     int dialInCode;
     // ...
 }
 --
 
-When an entity is annotated with `@Cache`, all its field values are cached except for collections and relations to other entities.
+When an entity is annotated with `@Cacheable`, all its field values are cached except for collections and relations to other entities.
 
 This means the entity can be loaded without querying the database, but be careful as it implies the loaded entity might not reflect recent changes in the database.
 
-Collections and relations need to be individually annotated to be cached:
+=== Caching of collections and relations
+
+Collections and relations need to be individually annotated to be cached; in this case the Hibernate specific `@org.hibernate.annotations.Cache` should be used, which requires also to specify the `CacheConcurrencyStrategy`:
 
 [source,java]
 --
 package com.acme;
 
 @Entity
-@Cache(CacheConcurrencyStrategy.READ_ONLY)
+@Cacheable
 public class Country {
     // ...
 
@@ -294,6 +300,8 @@ public class Country {
     // ...
 }
 --
+
+=== Caching of queries
 
 Queries can also benefit from second-level caching. Cached query results can be returned immediately to the caller, avoiding to run the query on the database.
 
@@ -307,6 +315,24 @@ Query query = ...
 query.setHint("org.hibernate.cacheable", Boolean.TRUE);
 --
 
+If you have a NamedQuery then you can enable caching directly on its definition, which will usually be on an entity:
+
+[source,java]
+--
+@Entity
+@NamedQuery(name = "Fruits.findAll",
+      query = "SELECT f FROM Fruit f ORDER BY f.name",
+      hints = @QueryHint(name = "org.hibernate.cacheable", value = "true") )
+public class Fruit {
+   ...
+--
+
+That's all! Caching technology is already integrated and enabled by default in {project-name}, so it's enough to set which ones are safe to be cached.
+
+=== Tuning of Cache Regions
+
+Caches store the data in separate regions to isolate different portions of data; such regions are assigned a name, which is useful for configuring each region independently, or to monitor their statistics.
+
 By default entities are cached in regions named after their fully qualified name, e.g. `com.acme.Country`.
 
 Collections are cached in regions named after the fully qualified name of their owner entity and collection field name, separated by `#` character, e.g. `com.acme.Country#cities`.
@@ -318,6 +344,12 @@ All regions are bounded by size and time by default. The defaults are `10000` ma
 The size of each region can be customized via the `hibernate.cache.<region_name>.memory.object.count` property (Replace _<region_name>_ with the actual region name).
 
 To set the maximum idle time, provide the number of seconds via the `hibernate.cache.<region_name>.expiration.max_idle` property (Replace _<region_name>_ with the actual region name).
+
+## Limitations of Caching
+
+The caching technology provided within {project-name} is currently quite rudimentary and limited.
+
+The team thought it was better to have _some_ caching capability to start with, than having nothing; you can expect better caching solution to be integrated in future releases, and any help and feedback in this area is very welcome.
 
 [NOTE]
 --
@@ -337,6 +369,6 @@ On top of immutable data, in certain contexts it might be acceptable to enable c
 Rather than enabling caching on mutable data, ideally a better solution would be to use a clustered cache; however at this time {project-name} doesn't provide any such implementation: feel free to get in touch and let this need known so that the team can take this into account.
 --
 
-Finally, the second-level cache can be disabled globally by setting `hibernate.cache.use_second_level_cache` to `false`.
+Finally, the second-level cache can be disabled globally by setting `hibernate.cache.use_second_level_cache` to `false`; this is a setting that needs to be specified in the `persistence.xml` configuration file.
 
 When second-level cache is disabled, all cache annotations are ignored and all queries are run ignoring caches; this is generally useful only to diagnose issues.

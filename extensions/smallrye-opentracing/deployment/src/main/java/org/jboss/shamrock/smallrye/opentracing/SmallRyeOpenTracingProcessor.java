@@ -28,7 +28,7 @@ import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveMethodBuildItem;
-import org.jboss.shamrock.jaxrs.JaxrsProviderBuildItem;
+import org.jboss.shamrock.resteasy.ResteasyJaxrsProviderBuildItem;
 import org.jboss.shamrock.smallrye.opentracing.runtime.ShamrockSmallRyeTracingDynamicFeature;
 import org.jboss.shamrock.smallrye.opentracing.runtime.TracerProducer;
 import org.jboss.shamrock.undertow.FilterBuildItem;
@@ -50,13 +50,13 @@ public class SmallRyeOpenTracingProcessor {
     }
 
     @BuildStep
-            void setupFilter(BuildProducer<JaxrsProviderBuildItem> providers,
+            void setupFilter(BuildProducer<ResteasyJaxrsProviderBuildItem> providers,
                      BuildProducer<FilterBuildItem> filterProducer,
                      BuildProducer<FeatureBuildItem> feature) {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_OPENTRACING));
 
-        providers.produce(new JaxrsProviderBuildItem(ShamrockSmallRyeTracingDynamicFeature.class.getName()));
+        providers.produce(new ResteasyJaxrsProviderBuildItem(ShamrockSmallRyeTracingDynamicFeature.class.getName()));
 
         FilterBuildItem filterInfo = new FilterBuildItem("tracingFilter", SpanFinishingFilter.class.getName());
         filterInfo.setAsyncSupported(true);

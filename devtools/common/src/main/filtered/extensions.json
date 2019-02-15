@@ -63,24 +63,29 @@
     "artifactId": "shamrock-infinispan-client-deployment"
   },
   {
-    "name": "JAX-RS",
+    "name": "RESTEasy",
     "labels": [
-      "jaxrs",
       "resteasy",
+      "jaxrs",
       "web",
       "rest"
     ],
     "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-jaxrs-deployment"
+    "artifactId": "shamrock-resteasy-deployment"
   },
   {
-    "name": "JAX-RS - JSON",
+    "name": "RESTEasy - JSON-B",
     "labels": [
+      "resteasy-jsonb",
       "jaxrs-json",
-      "resteasy-json"
+      "resteasy-json",
+      "resteasy",
+      "jaxrs",
+      "json",
+      "jsonb"
     ],
     "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-jaxrs-json-deployment"
+    "artifactId": "shamrock-resteasy-jsonb-deployment"
   },
   {
     "name": "JPA",

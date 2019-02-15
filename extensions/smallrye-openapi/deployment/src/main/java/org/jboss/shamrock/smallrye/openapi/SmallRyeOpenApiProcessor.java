@@ -44,7 +44,7 @@ import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
-import org.jboss.shamrock.jaxrs.JaxrsConfig;
+import org.jboss.shamrock.resteasy.ResteasyJaxrsConfig;
 import org.jboss.shamrock.runtime.annotations.ConfigItem;
 import org.jboss.shamrock.runtime.annotations.ConfigRoot;
 import org.jboss.shamrock.smallrye.openapi.runtime.OpenApiDocumentProducer;
@@ -100,7 +100,7 @@ public class SmallRyeOpenApiProcessor {
     @Record(STATIC_INIT)
     public BeanContainerListenerBuildItem build(SmallRyeOpenApiTemplate template, ApplicationArchivesBuildItem archivesBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem, BuildProducer<FeatureBuildItem> feature,
-	    JaxrsConfig jaxrsConfig) throws Exception {
+	    ResteasyJaxrsConfig jaxrsConfig) throws Exception {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_OPENAPI));
         OpenAPI sm = generateStaticModel(archivesBuildItem);
         OpenAPI am = generateAnnotationModel(combinedIndexBuildItem.getIndex(), jaxrsConfig);
@@ -119,7 +119,7 @@ public class SmallRyeOpenApiProcessor {
         return null;
     }
 
-    private OpenAPI generateAnnotationModel(IndexView indexView, JaxrsConfig jaxrsConfig) {
+    private OpenAPI generateAnnotationModel(IndexView indexView, ResteasyJaxrsConfig jaxrsConfig) {
         Config config = ConfigProvider.getConfig();
         OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
         return new OpenApiAnnotationScanner(openApiConfig, indexView, Collections.singletonList(new RESTEasyExtension(jaxrsConfig, indexView))).scan();

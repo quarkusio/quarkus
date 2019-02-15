@@ -47,8 +47,8 @@
 
         <!-- REST services -->
         <module>resteasy-common</module>
-        <module>jaxrs</module>
-        <module>jaxrs-json</module>
+        <module>resteasy</module>
+        <module>resteasy-jsonb</module>
         <module>rest-client</module>
         <module>smallrye-openapi</module>
 

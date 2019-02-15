@@ -49,7 +49,7 @@ public class ListExtensionsTest {
     }
 
     /**
-     * When creating a project with Maven, you could have -Dextensions="jaxrs, hibernate-validator".
+     * When creating a project with Maven, you could have -Dextensions="resteasy, hibernate-validator".
      * <p>
      * Having a space is not automatically handled by the Maven converter injecting the properties
      * so we added code for that and we need to test it.
@@ -68,7 +68,7 @@ public class ListExtensionsTest {
             .doCreateProject(context);
 
         new AddExtensions(pom)
-            .addExtensions(new HashSet<>(asList("jaxrs", " hibernate-validator ")));
+            .addExtensions(new HashSet<>(asList("resteasy", " hibernate-validator ")));
 
         Model model = readPom(pom);
 
@@ -76,7 +76,7 @@ public class ListExtensionsTest {
 
         final Map<String, Dependency> installed = listExtensions.findInstalled();
 
-        Assertions.assertNotNull(installed.get(getPluginGroupId() + ":shamrock-jaxrs-deployment"));
+        Assertions.assertNotNull(installed.get(getPluginGroupId() + ":shamrock-resteasy-deployment"));
         Assertions.assertNotNull(installed.get(getPluginGroupId() + ":shamrock-hibernate-validator-deployment"));
     }
 
@@ -116,7 +116,7 @@ public class ListExtensionsTest {
         } finally {
             System.setOut(out);
         }
-        boolean jaxrs = false;
+        boolean resteasy = false;
         boolean arc = false;
         boolean agroal = false;
         boolean bean = false;
@@ -129,16 +129,16 @@ public class ListExtensionsTest {
                 assertTrue(line.startsWith("update"), "Arc should list as having an update: " + line);
                 assertTrue(line.endsWith(getPluginVersion()), "Arc should list as having an update: " + line);
                 arc = true;
-            } else if (line.contains(" JAX-RS  ")) {
-                assertTrue(line.startsWith("update"), "JAX-RS should list as having an update: " + line);
-                assertTrue(line.endsWith(getPluginVersion()), "JAX-RS should list as having an update: " + line);
-                jaxrs = true;
+            } else if (line.contains(" RESTEasy  ")) {
+                assertTrue(line.startsWith("update"), "RESTEasy should list as having an update: " + line);
+                assertTrue(line.endsWith(getPluginVersion()), "RESTEasy should list as having an update: " + line);
+                resteasy = true;
             } else if (line.contains(" Hibernate Validator  ")) {
                 assertTrue(line.startsWith("   "), "Hibernate Validator should not list as anything: " + line);
                 bean = true;
             }
         }
 
-        assertTrue(agroal && arc && jaxrs && bean);
+        assertTrue(agroal && arc && resteasy && bean);
     }
 }

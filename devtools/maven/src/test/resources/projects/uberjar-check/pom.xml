@@ -14,7 +14,7 @@
   <dependencies>
     <dependency>
       <groupId>@project.groupId@</groupId>
-      <artifactId>shamrock-jaxrs-deployment</artifactId>
+      <artifactId>shamrock-resteasy-deployment</artifactId>
       <version>${shamrock.version}</version>
       <scope>provided</scope>
     </dependency>

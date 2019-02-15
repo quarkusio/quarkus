@@ -49,7 +49,7 @@
     <version.maven>3.5.2</version.maven>
     <version.jboss-logging>3.3.2.Final</version.jboss-logging>
     <version.javax-annotation>1.3.2</version.javax-annotation>
-    <version.gizmo>1.0.0.Alpha1-SNAPSHOT</version.gizmo>
+    <version.gizmo>1.0.0.Alpha1</version.gizmo>
     <version.jpa>2.2</version.jpa>
   </properties>
 
@@ -90,7 +90,7 @@
       </dependency>
 
       <dependency>
-        <groupId>org.jboss.protean.gizmo</groupId>
+        <groupId>org.jboss.gizmo</groupId>
         <artifactId>gizmo</artifactId>
         <version>${version.gizmo}</version>
       </dependency>

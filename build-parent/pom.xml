@@ -73,6 +73,7 @@
       <!-- The Graal version we suggest using in documentation - as that's 
          what we work with by self downloading it: -->
       <graal-sdk.version-for-documentation>1.0.0-rc12</graal-sdk.version-for-documentation>
+      <gizmo.version>1.0.0.Alpha1</gizmo.version>
       <jackson.version>2.9.8</jackson.version>
       <commons-beanutils-core.version>1.8.3</commons-beanutils-core.version>
       <commons-logging.version>1.2</commons-logging.version>
@@ -559,16 +560,16 @@
          </dependency>
 
          <dependency>
-            <groupId>org.jboss.protean.gizmo</groupId>
+            <groupId>org.jboss.gizmo</groupId>
             <artifactId>gizmo</artifactId>
-            <version>${project.version}</version>
+            <version>${gizmo.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.protean.gizmo</groupId>
+            <groupId>org.jboss.gizmo</groupId>
             <artifactId>gizmo</artifactId>
             <type>test-jar</type>
             <scope>test</scope>
-            <version>${project.version}</version>
+            <version>${gizmo.version}</version>
          </dependency>
 
          <!-- Netty dependencies, imported as a BOM -->

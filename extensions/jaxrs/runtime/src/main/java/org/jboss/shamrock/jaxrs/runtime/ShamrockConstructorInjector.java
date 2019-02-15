@@ -59,7 +59,7 @@ public class ShamrockConstructorInjector implements ConstructorInjector {
         if(factory == null) {
             return delegate.construct(request, response, unwrapAsync);
         }
-        return CompletableFuture.completedFuture(factory.get());
+        return CompletableFuture.completedFuture(factory.create().get());
     }
 
     @Override

@@ -64,6 +64,10 @@
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-test-common</artifactId>
         </dependency>
+        <dependency>
+            <groupId>javax.enterprise</groupId>
+            <artifactId>cdi-api</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

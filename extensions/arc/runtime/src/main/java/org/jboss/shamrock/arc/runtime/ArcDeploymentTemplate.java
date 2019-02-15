@@ -26,8 +26,6 @@ import org.jboss.protean.arc.Arc;
 import org.jboss.protean.arc.ArcContainer;
 import org.jboss.protean.arc.InstanceHandle;
 import org.jboss.protean.arc.ManagedContext;
-import org.jboss.shamrock.runtime.InjectionFactory;
-import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.runtime.ShutdownContext;
 import org.jboss.shamrock.runtime.annotations.Template;
 
@@ -68,12 +66,23 @@ public class ArcDeploymentTemplate {
                                 "No matching bean found for type %s and qualifiers %s. The bean might have been marked as unused and removed during build.",
                                 type, qualifiers);
                     }
-                    return (Factory<T>) Factory.EMPTY;
+                    return new DefaultInstanceFactory<>(type);
                 }
                 return new Factory<T>() {
                     @Override
-                    public T get() {
-                        return handleSupplier.get().get();
+                    public Instance<T> create() {
+                        InstanceHandle<T> handle = handleSupplier.get();
+                        return new Instance<T>() {
+                            @Override
+                            public T get() {
+                                return handle.get();
+                            }
+
+                            @Override
+                            public void close() {
+                                handle.close();
+                            }
+                        };
                     }
                 };
             }
@@ -89,34 +98,6 @@ public class ArcDeploymentTemplate {
         return beanContainer;
     }
 
-    public InjectionFactory setupInjection(ArcContainer container) {
-        return new InjectionFactory() {
-            @Override
-            public <T> InjectionInstance<T> create(Class<T> type) {
-                Supplier<InstanceHandle<T>> instance = container.instanceSupplier(type);
-                if (instance != null) {
-                    return new InjectionInstance<T>() {
-                        @Override
-                        public T newInstance() {
-                            return instance.get().get();
-                        }
-                    };
-                } else {
-                    return new InjectionInstance<T>() {
-                        @Override
-                        public T newInstance() {
-                            try {
-                                return type.newInstance();
-                            } catch (Exception e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
-                    };
-                }
-            }
-        };
-    }
-
     public void handleLifecycleEvents(ShutdownContext context, BeanContainer beanContainer) {
         LifecycleEventRunner instance = beanContainer.instance(LifecycleEventRunner.class);
         instance.fireStartupEvent();
@@ -126,6 +107,30 @@ public class ArcDeploymentTemplate {
                 instance.fireShutdownEvent();
             }
         });
+    }
+
+    private static final class DefaultInstanceFactory<T> implements BeanContainer.Factory<T> {
+
+        final Class<T> type;
+
+        private DefaultInstanceFactory(Class<T> type) {
+            this.type = type;
+        }
+
+        @Override
+        public BeanContainer.Instance<T> create() {
+            try {
+                T instance = type.newInstance();
+                return new BeanContainer.Instance<T>() {
+                    @Override
+                    public T get() {
+                        return instance;
+                    }
+                };
+            } catch (InstantiationException | IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
 }

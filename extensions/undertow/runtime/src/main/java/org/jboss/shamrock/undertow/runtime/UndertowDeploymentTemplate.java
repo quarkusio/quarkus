@@ -34,8 +34,6 @@ import javax.servlet.ServletException;
 import org.jboss.logging.Logger;
 import org.jboss.protean.arc.ManagedContext;
 import org.jboss.shamrock.arc.runtime.BeanContainer;
-import org.jboss.shamrock.runtime.InjectionFactory;
-import org.jboss.shamrock.runtime.InjectionInstance;
 import org.jboss.shamrock.runtime.LaunchMode;
 import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.runtime.ShutdownContext;
@@ -55,7 +53,6 @@ import io.undertow.server.session.SessionIdGenerator;
 import io.undertow.servlet.ServletExtension;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.ClassIntrospecter;
-import io.undertow.servlet.api.Deployment;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.FilterInfo;
@@ -144,17 +141,13 @@ public class UndertowDeploymentTemplate {
         return null;
     }
 
-    public <T> InstanceFactory<T> createInstanceFactory(InjectionInstance<T> injectionInstance) {
-        return new ShamrockInstanceFactory<T>(injectionInstance);
-    }
-
     public RuntimeValue<ServletInfo> registerServlet(RuntimeValue<DeploymentInfo> deploymentInfo,
                                                      String name,
                                                      Class<?> servletClass,
                                                      boolean asyncSupported,
                                                      int loadOnStartup,
-                                                     InjectionFactory instanceFactory) throws Exception {
-        ServletInfo servletInfo = new ServletInfo(name, (Class<? extends Servlet>) servletClass, new ShamrockInstanceFactory(instanceFactory.create(servletClass)));
+                                                     BeanContainer beanContainer) throws Exception {
+        ServletInfo servletInfo = new ServletInfo(name, (Class<? extends Servlet>) servletClass, new ShamrockInstanceFactory(beanContainer.instanceFactory(servletClass)));
         deploymentInfo.getValue().addServlet(servletInfo);
         servletInfo.setAsyncSupported(asyncSupported);
         if (loadOnStartup > 0) {
@@ -197,8 +190,8 @@ public class UndertowDeploymentTemplate {
     public RuntimeValue<FilterInfo> registerFilter(RuntimeValue<DeploymentInfo> info,
                                                    String name, Class<?> filterClass,
                                                    boolean asyncSupported,
-                                                   InjectionFactory instanceFactory) throws Exception {
-        FilterInfo filterInfo = new FilterInfo(name, (Class<? extends Filter>) filterClass, new ShamrockInstanceFactory(instanceFactory.create(filterClass)));
+                                                   BeanContainer beanContainer) throws Exception {
+        FilterInfo filterInfo = new FilterInfo(name, (Class<? extends Filter>) filterClass, new ShamrockInstanceFactory(beanContainer.instanceFactory(filterClass)));
         info.getValue().addFilter(filterInfo);
         filterInfo.setAsyncSupported(asyncSupported);
         return new RuntimeValue<>(filterInfo);
@@ -216,15 +209,16 @@ public class UndertowDeploymentTemplate {
         info.getValue().addFilterServletNameMapping(name, mapping, dispatcherType);
     }
 
-    public void registerListener(RuntimeValue<DeploymentInfo> info, Class<?> listenerClass, InjectionFactory factory) {
-        info.getValue().addListener(new ListenerInfo((Class<? extends EventListener>) listenerClass, (InstanceFactory<? extends EventListener>) new ShamrockInstanceFactory<>(factory.create(listenerClass))));
+    public void registerListener(RuntimeValue<DeploymentInfo> info, Class<?> listenerClass, BeanContainer factory) {
+        info.getValue().addListener(new ListenerInfo((Class<? extends EventListener>) listenerClass, (InstanceFactory<? extends EventListener>) new ShamrockInstanceFactory<>(factory.instanceFactory(listenerClass))));
     }
 
     public void addServltInitParameter(RuntimeValue<DeploymentInfo> info, String name, String value) {
         info.getValue().addInitParameter(name, value);
     }
 
-    public RuntimeValue<Undertow> startUndertow(ShutdownContext shutdown, Deployment deployment, HttpConfig config, List<HandlerWrapper> wrappers, LaunchMode launchMode) throws ServletException {
+    public RuntimeValue<Undertow> startUndertow(ShutdownContext shutdown, DeploymentManager manager, HttpConfig config, List<HandlerWrapper> wrappers, LaunchMode launchMode) throws ServletException {
+
         if (undertow == null) {
             startUndertowEagerly(config, null, launchMode);
 
@@ -237,7 +231,18 @@ public class UndertowDeploymentTemplate {
                 }
             });
         }
-        HttpHandler main = deployment.getHandler();
+        shutdown.addShutdownTask(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    manager.stop();
+                } catch (ServletException e) {
+                    log.error("Failed to stop deployment", e);
+                }
+                manager.undeploy();
+            }
+        });
+        HttpHandler main = manager.getDeployment().getHandler();
         for (HandlerWrapper i : wrappers) {
             main = i.wrap(main);
         }
@@ -282,29 +287,29 @@ public class UndertowDeploymentTemplate {
         }
     }
 
-    public Deployment bootServletContainer(RuntimeValue<DeploymentInfo> info, InjectionFactory injectionFactory) {
+    public DeploymentManager bootServletContainer(RuntimeValue<DeploymentInfo> info, BeanContainer beanContainer) {
         try {
             ClassIntrospecter defaultVal = info.getValue().getClassIntrospecter();
             info.getValue().setClassIntrospecter(new ClassIntrospecter() {
                 @Override
                 public <T> InstanceFactory<T> createInstanceFactory(Class<T> clazz) throws NoSuchMethodException {
-                    InjectionInstance<T> res = injectionFactory.create(clazz);
+                    BeanContainer.Factory<T> res = beanContainer.instanceFactory(clazz);
                     if (res == null) {
                         return defaultVal.createInstanceFactory(clazz);
                     }
                     return new InstanceFactory<T>() {
                         @Override
                         public InstanceHandle<T> createInstance() throws InstantiationException {
-                            T ih = res.newInstance();
+                            BeanContainer.Instance<T> ih = res.create();
                             return new InstanceHandle<T>() {
                                 @Override
                                 public T getInstance() {
-                                    return ih;
+                                    return ih.get();
                                 }
 
                                 @Override
                                 public void release() {
-
+                                    ih.close();
                                 }
                             };
                         }
@@ -315,7 +320,7 @@ public class UndertowDeploymentTemplate {
             DeploymentManager manager = servletContainer.addDeployment(info.getValue());
             manager.deploy();
             manager.start();
-            return manager.getDeployment();
+            return manager;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

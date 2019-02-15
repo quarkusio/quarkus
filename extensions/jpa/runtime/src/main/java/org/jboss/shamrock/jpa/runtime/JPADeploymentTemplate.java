@@ -86,7 +86,7 @@ public class JPADeploymentTemplate {
                 if (beanContainer != null) {
                     BeanContainer.Factory<DataSource> ds = beanContainer.instanceFactory(DataSource.class);
                     if (ds != null) {
-                        DataSource dataSource = ds.get();
+                        DataSource dataSource = ds.create().get();
                         for (ParsedPersistenceXmlDescriptor i : parsedPersistenceXmlDescriptors) {
                             if (!i.getProperties().containsKey(CONNECTION_URL)) {
                                 i.setJtaDataSource(dataSource);

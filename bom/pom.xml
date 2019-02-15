@@ -76,14 +76,21 @@
 
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-reactive-streams-operators-deployment</artifactId>
+            <artifactId>shamrock-smallrye-reactive-streams-operators-deployment</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
          </dependency>
 
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-reactive-messaging-deployment</artifactId>
+            <artifactId>shamrock-smallrye-reactive-type-converters-deployment</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+         </dependency>
+
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-smallrye-reactive-messaging-deployment</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
          </dependency>
@@ -118,14 +125,14 @@
 
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jaxrs-deployment</artifactId>
+            <artifactId>shamrock-resteasy-deployment</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
          </dependency>
 
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jaxrs-json-deployment</artifactId>
+            <artifactId>shamrock-resteasy-jsonb-deployment</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
          </dependency>
@@ -174,7 +181,7 @@
 
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jpa-deployment</artifactId>
+            <artifactId>shamrock-hibernate-orm-deployment</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
          </dependency>

@@ -75,7 +75,7 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-reactive-streams-operators-deployment</artifactId>
+            <artifactId>shamrock-smallrye-reactive-streams-operators-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
@@ -111,12 +111,12 @@
         <!-- JAX-RS -->
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jaxrs-deployment</artifactId>
+            <artifactId>shamrock-resteasy-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jaxrs-json-deployment</artifactId>
+            <artifactId>shamrock-resteasy-jsonb-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -140,7 +140,7 @@
         <!-- JPA -->
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jpa-deployment</artifactId>
+            <artifactId>shamrock-hibernate-orm-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>

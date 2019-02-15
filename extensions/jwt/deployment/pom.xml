@@ -67,7 +67,7 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jaxrs-json-runtime</artifactId>
+            <artifactId>shamrock-resteasy-jsonb-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>io.rest-assured</groupId>

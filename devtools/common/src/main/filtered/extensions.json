@@ -63,33 +63,39 @@
     "artifactId": "shamrock-infinispan-client-deployment"
   },
   {
-    "name": "JAX-RS",
+    "name": "RESTEasy",
     "labels": [
-      "jaxrs",
       "resteasy",
+      "jaxrs",
       "web",
       "rest"
     ],
     "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-jaxrs-deployment"
+    "artifactId": "shamrock-resteasy-deployment"
   },
   {
-    "name": "JAX-RS - JSON",
+    "name": "RESTEasy - JSON-B",
     "labels": [
+      "resteasy-jsonb",
       "jaxrs-json",
-      "resteasy-json"
+      "resteasy-json",
+      "resteasy",
+      "jaxrs",
+      "json",
+      "jsonb"
     ],
     "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-jaxrs-json-deployment"
+    "artifactId": "shamrock-resteasy-jsonb-deployment"
   },
   {
-    "name": "JPA",
+    "name": "Hibernate ORM",
     "labels": [
+      "hibernate-orm",
       "jpa",
       "hibernate"
     ],
     "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-jpa-deployment"
+    "artifactId": "shamrock-hibernate-orm-deployment"
   },
   {
     "name": "SmallRye Metrics",
@@ -126,13 +132,40 @@
     "artifactId": "shamrock-smallrye-opentracing-deployment"
   },
   {
-    "name": "Reactive Streams",
+    "name": "SmallRye Reactive Streams Operators",
     "labels": [
+      "smallrye-reactive-streams-operators",
+      "smallrye-reactive-streams",
+      "reactive-streams-operators",
       "reactive-streams",
-      "microprofile-reactive-streams"
+      "microprofile-reactive-streams",
+      "reactive"
     ],
     "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-reactive-streams-operators-deployment"
+    "artifactId": "shamrock-smallrye-reactive-streams-operators-deployment"
+  },
+  {
+    "name": "SmallRye Reactive Type Converters",
+    "labels": [
+      "smallrye-reactive-type-converters",
+      "reactive-type-converters",
+      "reactive-streams-operators",
+      "reactive-streams",
+      "microprofile-reactive-streams",
+      "reactive"
+    ],
+    "groupId": "org.jboss.shamrock",
+    "artifactId": "shamrock-smallrye-reactive-type-converters-deployment"
+  },
+  {
+    "name": "SmallRye Reactive Messaging",
+    "labels": [
+      "smallrye-reactive-messaging",
+      "reactive-messaging",
+      "reactive"
+    ],
+    "groupId": "org.jboss.shamrock",
+    "artifactId": "shamrock-smallrye-reactive-messaging-deployment"
   },
   {
     "name": "Rest Client",
@@ -182,7 +215,8 @@
     "labels": [
       "eclipse-vert.x",
       "vertx",
-      "vert.x"
+      "vert.x",
+      "reactive"
     ],
     "groupId": "org.jboss.shamrock",
     "artifactId": "shamrock-vertx-deployment"

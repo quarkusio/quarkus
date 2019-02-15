@@ -47,8 +47,8 @@
 
         <!-- REST services -->
         <module>resteasy-common</module>
-        <module>jaxrs</module>
-        <module>jaxrs-json</module>
+        <module>resteasy</module>
+        <module>resteasy-jsonb</module>
         <module>rest-client</module>
         <module>smallrye-openapi</module>
 
@@ -56,13 +56,13 @@
         <module>vertx</module>
         <module>netty</module>
         <module>reactive-streams-operators</module>
-        <module>reactive-messaging</module>
+        <module>smallrye-reactive-messaging</module>
 
         <!-- Data access and validation -->
         <module>narayana-jta</module>
         <module>agroal</module>
         <module>jdbc</module>
-        <module>jpa</module>
+        <module>hibernate-orm</module>
         <module>hibernate-validator</module>
         <module>panache</module>
 

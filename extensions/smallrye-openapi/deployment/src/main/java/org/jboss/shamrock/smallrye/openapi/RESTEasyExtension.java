@@ -15,7 +15,7 @@ import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.shamrock.deployment.util.ServiceUtil;
-import org.jboss.shamrock.jaxrs.JaxrsConfig;
+import org.jboss.shamrock.resteasy.ResteasyJaxrsConfig;
 
 import io.smallrye.openapi.api.OpenApiConstants;
 import io.smallrye.openapi.runtime.scanner.DefaultAnnotationScannerExtension;
@@ -37,7 +37,7 @@ public class RESTEasyExtension extends DefaultAnnotationScannerExtension {
     private List<DotName> asyncTypes = new ArrayList<>();
     private String defaultPath;
 
-    public RESTEasyExtension(JaxrsConfig jaxrsConfig, IndexView index) {
+    public RESTEasyExtension(ResteasyJaxrsConfig jaxrsConfig, IndexView index) {
         this.defaultPath = jaxrsConfig.defaultPath;
         // the index is not enough to scan for providers because it does not contain
         // dependencies, so we have to rely on scanning the declared providers via services

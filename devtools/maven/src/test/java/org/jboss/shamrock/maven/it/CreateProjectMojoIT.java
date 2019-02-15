@@ -77,7 +77,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
                         && d.getType().equalsIgnoreCase("pom"))).isTrue();
 
         assertThat(model.getDependencies().stream().anyMatch(d ->
-                d.getArtifactId().equalsIgnoreCase("shamrock-jaxrs-deployment")
+                d.getArtifactId().equalsIgnoreCase("shamrock-resteasy-deployment")
                         && d.getVersion() == null)).isTrue();
 
         assertThat(model.getProfiles()).hasSize(1);
@@ -170,7 +170,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         properties.put("projectGroupId", "org.acme");
         properties.put("projectArtifactId", "acme");
         properties.put("className", "org.acme.MyResource");
-        properties.put("extensions", "jaxrs,smallrye-metrics,missing");
+        properties.put("extensions", "resteasy,smallrye-metrics,missing");
         setup(properties);
 
         // As the directory is not empty (log) navigate to the artifactID directory
@@ -182,7 +182,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         check(new File(testDir, "src/main/java/org/acme/MyResource.java"), "package org.acme;");
 
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
-                .contains("shamrock-jaxrs-deployment", "shamrock-smallrye-metrics-deployment").doesNotContain("missing");
+                .contains("shamrock-resteasy-deployment", "shamrock-smallrye-metrics-deployment").doesNotContain("missing");
 
         Model model = load(testDir);
         assertThat(model.getDependencyManagement().getDependencies().stream().anyMatch(d ->
@@ -192,7 +192,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
                         && d.getType().equalsIgnoreCase("pom"))).isTrue();
 
         assertThat(model.getDependencies().stream().anyMatch(d ->
-                d.getArtifactId().equalsIgnoreCase("shamrock-jaxrs-deployment")
+                d.getArtifactId().equalsIgnoreCase("shamrock-resteasy-deployment")
                         && d.getVersion() == null)).isTrue();
 
         assertThat(model.getDependencies().stream().anyMatch(d ->
@@ -228,7 +228,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
                         && d.getType().equalsIgnoreCase("pom"))).isTrue();
 
         assertThat(model.getDependencies().stream().anyMatch(d ->
-                d.getArtifactId().equalsIgnoreCase("shamrock-jaxrs-deployment")
+                d.getArtifactId().equalsIgnoreCase("shamrock-resteasy-deployment")
                         && d.getVersion() == null)).isTrue();
 
         assertThat(model.getDependencies().stream().anyMatch(d ->

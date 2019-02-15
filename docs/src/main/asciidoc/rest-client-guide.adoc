@@ -34,10 +34,10 @@ mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
     -DprojectArtifactId=rest-client \
     -DclassName="org.acme.restclient.CountriesResource" \
     -Dpath="/country" \
-    -Dextensions="rest-client, jaxrs-json"
+    -Dextensions="rest-client, resteasy-jsonb"
 ----
 
-This command generates the Maven project with a REST endpoint and imports the `rest-client` and `jaxrs-json` extensions.
+This command generates the Maven project with a REST endpoint and imports the `rest-client` and `resteasy-jsonb` extensions.
 
 
 == Setting up the model

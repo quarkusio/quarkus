@@ -119,7 +119,7 @@ If we focus on the dependencies section, you can see 2 extensions allowing the d
 ----
     <dependency>
         <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-jaxrs-deployment</artifactId>
+        <artifactId>shamrock-resteasy-deployment</artifactId>
     </dependency>
     <dependency>
         <groupId>org.jboss.shamrock</groupId>

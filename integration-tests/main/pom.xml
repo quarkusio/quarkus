@@ -140,7 +140,7 @@
         <!-- JPA -->
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jpa-deployment</artifactId>
+            <artifactId>shamrock-hibernate-orm-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>

@@ -40,8 +40,8 @@ import org.jboss.shamrock.deployment.builditem.ApplicationIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.BytecodeTransformerBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
-import org.jboss.shamrock.jpa.AdditionalJpaModelBuildItem;
-import org.jboss.shamrock.jpa.HibernateEnhancersRegisteredBuildItem;
+import org.jboss.shamrock.hibernate.orm.AdditionalJpaModelBuildItem;
+import org.jboss.shamrock.hibernate.orm.HibernateEnhancersRegisteredBuildItem;
 
 /**
  */

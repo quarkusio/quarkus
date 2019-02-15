@@ -150,7 +150,7 @@ NOTE: An integrator must also provide a corresponding `org.jboss.protean.arc.Res
 @BuildStep
 void setupResourceInjection(BuildProducer<ResourceAnnotationBuildItem> resourceAnnotations, BuildProducer<GeneratedResourceBuildItem> resources) {
     resources.produce(new GeneratedResourceBuildItem("META-INF/services/org.jboss.protean.arc.ResourceReferenceProvider",
-        "org.jboss.shamrock.jpa.runtime.JPAResourceReferenceProvider".getBytes()));
+        JPAResourceReferenceProvider.class.getName().getBytes()));
     resourceAnnotations.produce(new ResourceAnnotationBuildItem(DotName.createSimple(PersistenceContext.class.getName())));
 }
 ----

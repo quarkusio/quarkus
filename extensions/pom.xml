@@ -62,7 +62,7 @@
         <module>narayana-jta</module>
         <module>agroal</module>
         <module>jdbc</module>
-        <module>jpa</module>
+        <module>hibernate-orm</module>
         <module>hibernate-validator</module>
         <module>panache</module>
 

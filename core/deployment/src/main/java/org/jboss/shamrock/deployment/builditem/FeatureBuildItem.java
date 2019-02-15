@@ -11,9 +11,9 @@ public final class FeatureBuildItem extends MultiBuildItem {
 
     public static final String AGROAL = "agroal";
     public static final String CDI = "cdi";
+    public static final String HIBERNATE_ORM = "hibernate-orm";
     public static final String HIBERNATE_VALIDATOR = "hibernate-validator";
     public static final String JAEGER = "jaeger";
-    public static final String JPA = "jpa";
     public static final String MP_REST_CLIENT = "mp-rest-client";
     public static final String MP_JWT = "mp-jwt";
     public static final String NARAYANA_JTA = "narayana-jta";

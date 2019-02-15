@@ -16,7 +16,7 @@ and we make some opinionated choices and educated guesses.
 
 In your `pom.xml`, add the following dependencies:
 
-* the JPA extension
+* the Hibernate ORM extension
 * your JDBC driver extension (`shamrock-jdbc-postgresql-deployment`, `shamrock-jdbc-h2-deployment`, `shamrock-jdbc-mariadb-deployment`, ...)
 
 [source,xml]
@@ -25,7 +25,7 @@ In your `pom.xml`, add the following dependencies:
     <!-- Hibernate ORM specific dependencies -->
     <dependency>
         <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-jpa-deployment</artifactId>
+        <artifactId>shamrock-hibernate-orm-deployment</artifactId>
         <scope>provided</scope>
     </dependency>
 
@@ -155,7 +155,7 @@ and only persistence units defined in `persistence.xml` will be taken into accou
 
 In your `pom.xml`, add the following dependencies:
 
-* the JPA extension
+* the Hibernate ORM extension
 * your JDBC driver extension (`shamrock-jdbc-postgresql-deployment`, `shamrock-jdbc-h2-deployment`, `shamrock-jdbc-mariadb-deployment`, ...)
 
 [source,xml]
@@ -164,7 +164,7 @@ In your `pom.xml`, add the following dependencies:
     <!-- Hibernate ORM specific dependencies -->
     <dependency>
         <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-jpa-deployment</artifactId>
+        <artifactId>shamrock-hibernate-orm-deployment</artifactId>
         <scope>provided</scope>
     </dependency>
 

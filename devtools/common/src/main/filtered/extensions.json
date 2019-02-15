@@ -88,13 +88,14 @@
     "artifactId": "shamrock-resteasy-jsonb-deployment"
   },
   {
-    "name": "JPA",
+    "name": "Hibernate ORM",
     "labels": [
+      "hibernate-orm",
       "jpa",
       "hibernate"
     ],
     "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-jpa-deployment"
+    "artifactId": "shamrock-hibernate-orm-deployment"
   },
   {
     "name": "SmallRye Metrics",

@@ -33,7 +33,7 @@
         <!-- Enables the JPA capabilities -->
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jpa-deployment</artifactId>
+            <artifactId>shamrock-hibernate-orm-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <!-- We'll be using the H2 database -->

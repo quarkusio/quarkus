@@ -87,6 +87,9 @@
         <module>camel</module>
 
         <module>kotlin</module>
+
+        <!-- AP4K -->
+        <module>ap4k</module>
     </modules>
 
 </project>

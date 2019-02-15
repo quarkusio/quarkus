@@ -71,6 +71,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
 
     private static final String DEFAULT_MAIN_CLASS = "io.quarkus.runner.GeneratedMain";
     private static final String PROVIDED = "provided";
+    private static final String SYSTEM = "system";
 
     private static final Logger log = Logger.getLogger(RunnerJarPhase.class);
 
@@ -234,6 +235,9 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         final Map<String, List<byte[]>> services = new HashMap<>();
 
         for (AppDependency appDep : appDeps) {
+            if (appDep.getScope().equals(SYSTEM)) {
+                continue;
+            }
             if (appDep.getScope().equals(PROVIDED) && !augmentOutcome.isWhitelisted(appDep)) {
                 continue;
             }

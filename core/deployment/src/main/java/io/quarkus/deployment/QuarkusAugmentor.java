@@ -30,6 +30,7 @@ import org.jboss.builder.item.BuildItem;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
+import io.quarkus.deployment.builditem.BuildInfoBuildItem;
 import io.quarkus.deployment.builditem.ClassOutputBuildItem;
 import io.quarkus.deployment.builditem.ExtensionClassLoaderBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -49,6 +50,7 @@ public class QuarkusAugmentor {
     private final Set<Class<? extends BuildItem>> finalResults;
     private final List<Consumer<BuildChainBuilder>> buildChainCustomizers;
     private final LaunchMode launchMode;
+    private final BuildInfo buildInfo;
 
     QuarkusAugmentor(Builder builder) {
         this.output = builder.output;
@@ -57,6 +59,7 @@ public class QuarkusAugmentor {
         this.finalResults = new HashSet<>(builder.finalResults);
         this.buildChainCustomizers = new ArrayList<>(builder.buildChainCustomizers);
         this.launchMode = builder.launchMode;
+        this.buildInfo = builder.buildInfo;
     }
 
     public BuildResult run() throws Exception {
@@ -78,7 +81,8 @@ public class QuarkusAugmentor {
                     .addInitial(ShutdownContextBuildItem.class)
                     .addInitial(ClassOutputBuildItem.class)
                     .addInitial(LaunchModeBuildItem.class)
-                    .addInitial(ExtensionClassLoaderBuildItem.class);
+                    .addInitial(ExtensionClassLoaderBuildItem.class)
+                    .addInitial(BuildInfoBuildItem.class);
             for (Class<? extends BuildItem> i : finalResults) {
                 chainBuilder.addFinal(i);
             }
@@ -99,6 +103,7 @@ public class QuarkusAugmentor {
                     .produce(new ShutdownContextBuildItem())
                     .produce(new LaunchModeBuildItem(launchMode))
                     .produce(new ExtensionClassLoaderBuildItem(classLoader))
+                    .produce(new BuildInfoBuildItem(buildInfo))
                     .execute();
 
             //TODO: this seems wrong
@@ -128,6 +133,7 @@ public class QuarkusAugmentor {
         Set<Class<? extends BuildItem>> finalResults = new HashSet<>();
         private final List<Consumer<BuildChainBuilder>> buildChainCustomizers = new ArrayList<>();
         LaunchMode launchMode = LaunchMode.NORMAL;
+        BuildInfo buildInfo;
 
         public Builder addBuildChainCustomizer(Consumer<BuildChainBuilder> customizer) {
             this.buildChainCustomizers.add(customizer);
@@ -181,6 +187,11 @@ public class QuarkusAugmentor {
 
         public Builder setRoot(Path root) {
             this.root = root;
+            return this;
+        }
+
+        public Builder setBuildInfo(BuildInfo buildInfo) {
+            this.buildInfo = buildInfo;
             return this;
         }
 

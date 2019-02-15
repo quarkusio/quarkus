@@ -511,6 +511,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-ap4k</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-amazon-lambda-runtime</artifactId>
                 <version>${project.version}</version>
             </dependency>

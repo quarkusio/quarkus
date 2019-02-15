@@ -9,6 +9,16 @@
     "artifactId": "quarkus-agroal"
   },
   {
+    "name": "ap4k",
+    "labels": [
+      "ap4k",
+      "kubernetes",
+      "openshift"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-ap4k-deployment"
+  },
+  {
     "name": "Arc",
     "labels": [
       "arc",

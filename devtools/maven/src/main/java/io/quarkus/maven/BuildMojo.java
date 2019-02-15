@@ -41,6 +41,7 @@ import io.quarkus.creator.phase.curate.CurateOutcome;
 import io.quarkus.creator.phase.runnerjar.RunnerJarOutcome;
 import io.quarkus.creator.phase.runnerjar.RunnerJarPhase;
 import io.quarkus.creator.resolver.maven.ResolvedMavenArtifactDeps;
+import io.quarkus.deployment.BuildInfo;
 
 /**
  *
@@ -125,6 +126,15 @@ public class BuildMojo extends AbstractMojo {
     @Parameter(defaultValue = "false")
     private boolean uberJar;
 
+    @Parameter(defaultValue = "${project.groupId}", required = true, readonly = true)
+    private String group;
+
+    @Parameter(defaultValue = "${project.artifactId}", required = true, readonly = true)
+    private String name;
+
+    @Parameter(defaultValue = "${project.version}", required = true, readonly = true)
+    private String version;
+
     public BuildMojo() {
         MojoLogger.logSupplier = this::getLog;
     }
@@ -136,7 +146,9 @@ public class BuildMojo extends AbstractMojo {
                 .addPhase(new AugmentPhase()
                         .setAppClassesDir(outputDirectory.toPath())
                         .setTransformedClassesDir(transformedClassesDirectory.toPath())
-                        .setWiringClassesDir(wiringClassesDirectory.toPath()))
+                        .setWiringClassesDir(wiringClassesDirectory.toPath())
+                        .setBuildInfo(new BuildInfo(group, name, version, finalName, project.getBasedir().toString(),
+                                wiringClassesDirectory.getAbsolutePath())))
                 .addPhase(new RunnerJarPhase()
                         .setLibDir(libDir.toPath())
                         .setFinalName(finalName)

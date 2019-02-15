@@ -25,6 +25,7 @@ import java.net.URLClassLoader;
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
+import io.quarkus.deployment.BuildInfo;
 import io.quarkus.runner.RuntimeRunner;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.Timing;
@@ -43,6 +44,11 @@ public class DevModeMain {
     private static File classesRoot;
     private static File wiringDir;
     private static File cacheDir;
+    private static String group;
+    private static String name;
+    private static String version;
+    private static String finalName;
+    private static String baseDir;
 
     private static Closeable closeable;
     static volatile Throwable deploymentProblem;
@@ -56,6 +62,11 @@ public class DevModeMain {
         classesRoot = new File(args[0]);
         wiringDir = new File(args[1]);
         cacheDir = new File(args[2]);
+        group = args[3];
+        name = args[4];
+        version = args[5];
+        finalName = args[6];
+        baseDir = args[7];
 
         //first lets look for some config, as it is not on the current class path
         //and we need to load it to start undertow eagerly
@@ -117,6 +128,7 @@ public class DevModeMain {
                         .setTarget(classesRoot.toPath())
                         .setFrameworkClassesPath(wiringDir.toPath())
                         .setTransformerCache(cacheDir.toPath())
+                        .setBuildInfo(new BuildInfo(group, name, version, finalName, baseDir, wiringDir.getAbsolutePath()))
                         .build();
                 runner.run();
                 closeable = runner;

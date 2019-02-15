@@ -64,6 +64,7 @@ import io.quarkus.creator.outcome.OutcomeProviderRegistration;
 import io.quarkus.creator.phase.curate.CurateOutcome;
 import io.quarkus.creator.util.IoUtils;
 import io.quarkus.creator.util.ZipUtils;
+import io.quarkus.deployment.BuildInfo;
 import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.QuarkusAugmentor;
 import io.quarkus.deployment.QuarkusClassWriter;
@@ -92,6 +93,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
     private Path transformedClassesDir;
     private Path wiringClassesDir;
     private Set<String> whitelist = new HashSet<>();
+    private BuildInfo buildInfo;
 
     /**
      * Output directory for the outcome of this phase.
@@ -141,6 +143,11 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
      */
     public AugmentPhase setWiringClassesDir(Path wiringClassesDir) {
         this.wiringClassesDir = wiringClassesDir;
+        return this;
+    }
+
+    public AugmentPhase setBuildInfo(BuildInfo buildInfo) {
+        this.buildInfo = buildInfo;
         return this;
     }
 
@@ -311,6 +318,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                 builder.setRoot(appClassesDir);
                 builder.setClassLoader(runnerClassLoader);
                 builder.setOutput(classOutput);
+                builder.setBuildInfo(buildInfo);
                 builder.addFinal(BytecodeTransformerBuildItem.class).addFinal(MainClassBuildItem.class)
                         .addFinal(SubstrateOutputBuildItem.class);
                 result = builder.build().run();

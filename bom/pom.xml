@@ -133,6 +133,7 @@
         <aws-lambda-java.version>1.1.0</aws-lambda-java.version>
         <kotlin.version>1.3.21</kotlin.version>
         <camel.version>3.0.0-M1</camel.version>
+        <ap4k.version>0.2.3</ap4k.version>
         <javax.xml.soap-api.version>1.4.0</javax.xml.soap-api.version>
         <maven-artifact-transfer.version>0.10.0</maven-artifact-transfer.version>
         <jline.version>2.14.6</jline.version>
@@ -402,6 +403,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-ap4k</artifactId>
+                <version>${project.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-kotlin</artifactId>
                 <version>${project.version}</version>
                 <scope>provided</scope>
@@ -483,6 +490,32 @@
                         <artifactId>saaj-impl</artifactId>
                     </exclusion>
                 </exclusions>
+            </dependency>
+
+            <!-- ap4k -->
+            <dependency>
+                <groupId>io.ap4k</groupId>
+                <artifactId>kubernetes-annotations</artifactId>
+                <version>${ap4k.version}</version>
+                <classifier>noapt</classifier>
+            </dependency>
+            <dependency>
+                <groupId>io.ap4k</groupId>
+                <artifactId>openshift-annotations</artifactId>
+                <version>${ap4k.version}</version>
+                <classifier>noapt</classifier>
+            </dependency>
+            <dependency>
+                <groupId>io.ap4k</groupId>
+                <artifactId>prometheus-annotations</artifactId>
+                <version>${ap4k.version}</version>
+                <classifier>noapt</classifier>
+            </dependency>
+            <dependency>
+                <groupId>io.ap4k</groupId>
+                <artifactId>docker-annotations</artifactId>
+                <version>${ap4k.version}</version>
+                <classifier>noapt</classifier>
             </dependency>
 
             <dependency>

@@ -263,6 +263,11 @@ public class QuarkusDev extends QuarkusTask {
             args.add(extension.outputDirectory().getAbsolutePath());
             args.add(wiringClassesDirectory.getAbsolutePath());
             args.add(new File(getBuildDir(), "transformer-cache").getAbsolutePath());
+            args.add(extension.groupId());
+            args.add(extension.artifactId());
+            args.add(extension.version());
+            args.add(extension.finalName());
+            args.add(extension.sourceDir().getAbsolutePath());
             ProcessBuilder pb = new ProcessBuilder(args.toArray(new String[0]));
             pb.redirectError(ProcessBuilder.Redirect.INHERIT);
             pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);

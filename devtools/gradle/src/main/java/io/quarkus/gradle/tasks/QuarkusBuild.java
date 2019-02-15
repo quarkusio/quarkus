@@ -30,6 +30,7 @@ import io.quarkus.creator.phase.augment.AugmentPhase;
 import io.quarkus.creator.phase.curate.CurateOutcome;
 import io.quarkus.creator.phase.runnerjar.RunnerJarOutcome;
 import io.quarkus.creator.phase.runnerjar.RunnerJarPhase;
+import io.quarkus.deployment.BuildInfo;
 import io.quarkus.gradle.ResolvedGradleArtifactDeps;
 
 /**
@@ -146,7 +147,16 @@ public class QuarkusBuild extends QuarkusTask {
                 .addPhase(new AugmentPhase()
                         .setAppClassesDir(extension().outputDirectory().toPath())
                         .setTransformedClassesDir(getTransformedClassesDirectory().toPath())
-                        .setWiringClassesDir(getWiringClassesDirectory().toPath()))
+                        .setWiringClassesDir(getWiringClassesDirectory().toPath())
+                        .setBuildInfo(
+                                new BuildInfo(
+                                        extension().groupId(),
+                                        extension().artifactId(),
+                                        extension().version(),
+                                        extension().finalName(),
+                                        extension().sourceDir().getAbsolutePath(),
+                                        getWiringClassesDirectory().getAbsolutePath())))
+
                 .addPhase(new RunnerJarPhase()
                         .setLibDir(getLibDir().toPath())
                         .setFinalName(extension().finalName())

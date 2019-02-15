@@ -31,6 +31,7 @@ import org.jboss.builder.BuildChainBuilder;
 import org.jboss.builder.BuildResult;
 import org.objectweb.asm.ClassVisitor;
 
+import io.quarkus.deployment.BuildInfo;
 import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.QuarkusAugmentor;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
@@ -52,6 +53,7 @@ public class RuntimeRunner implements Runnable, Closeable {
     private final List<Path> additionalArchives;
     private final List<Consumer<BuildChainBuilder>> chainCustomizers;
     private final LaunchMode launchMode;
+    private final BuildInfo buildInfo;
 
     public RuntimeRunner(Builder builder) {
         this.target = builder.target;
@@ -69,6 +71,7 @@ public class RuntimeRunner implements Runnable, Closeable {
             this.transformerTarget = builder.transformerTarget;
             this.loader = builder.classLoader;
         }
+        this.buildInfo = builder.buildInfo;
     }
 
     @Override
@@ -87,6 +90,7 @@ public class RuntimeRunner implements Runnable, Closeable {
             builder.setClassLoader(loader);
             builder.setOutput(classOutput);
             builder.setLaunchMode(launchMode);
+            builder.setBuildInfo(buildInfo);
             for (Path i : additionalArchives) {
                 builder.addAdditionalApplicationArchive(i);
             }
@@ -145,6 +149,7 @@ public class RuntimeRunner implements Runnable, Closeable {
         private Path frameworkClassesPath;
         private Path transformerCache;
         private LaunchMode launchMode = LaunchMode.NORMAL;
+        private BuildInfo buildInfo = BuildInfo.unset();
         private final List<Path> additionalArchives = new ArrayList<>();
         private final List<Consumer<BuildChainBuilder>> chainCustomizers = new ArrayList<>();
         private ClassOutput classOutput;
@@ -202,6 +207,11 @@ public class RuntimeRunner implements Runnable, Closeable {
 
         public Builder setTransformerTarget(TransformerTarget transformerTarget) {
             this.transformerTarget = transformerTarget;
+            return this;
+        }
+
+        public Builder setBuildInfo(BuildInfo buildInfo) {
+            this.buildInfo = buildInfo;
             return this;
         }
 

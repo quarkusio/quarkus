@@ -27,7 +27,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.jar.Attributes;
@@ -113,6 +112,18 @@ public class DevMojo extends AbstractMojo {
      */
     @Parameter(defaultValue = "${preventnoverify}")
     private boolean preventnoverify = false;
+
+    @Parameter(defaultValue = "${project.groupId}", required = true, readonly = true)
+    private String group;
+
+    @Parameter(defaultValue = "${project.artifactId}", required = true, readonly = true)
+    private String name;
+
+    @Parameter(defaultValue = "${project.version}", required = true, readonly = true)
+    private String version;
+
+    @Parameter(defaultValue = "${project.build.finalName}", required = true, readonly = true)
+    private String finalName;
 
     @Override
     public void execute() throws MojoFailureException {
@@ -272,6 +283,11 @@ public class DevMojo extends AbstractMojo {
             args.add(outputDirectory.getAbsolutePath());
             args.add(wiringClassesDirectory.getAbsolutePath());
             args.add(new File(buildDir, "transformer-cache").getAbsolutePath());
+            args.add(group);
+            args.add(name);
+            args.add(version);
+            args.add(finalName);
+            args.add(project.getBasedir().toString());
             ProcessBuilder pb = new ProcessBuilder(args.toArray(new String[0]));
             pb.redirectError(ProcessBuilder.Redirect.INHERIT);
             pb.redirectOutput(ProcessBuilder.Redirect.INHERIT);

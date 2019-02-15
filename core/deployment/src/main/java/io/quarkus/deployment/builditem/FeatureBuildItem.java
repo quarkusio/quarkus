@@ -10,6 +10,7 @@ import org.jboss.builder.item.MultiBuildItem;
 public final class FeatureBuildItem extends MultiBuildItem {
 
     public static final String AGROAL = "agroal";
+    public static final String AP4K = "ap4k";
     public static final String CAMEL_CORE = "camel-core";
     public static final String CAMEL_INFINISPAN = "camel-infinispan";
     public static final String CAMEL_NETTY4_HTTP = "camel-netty4-http";

@@ -54,7 +54,7 @@
             <artifactId>jboss-classfilewriter</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.protean.gizmo</groupId>
+            <groupId>org.jboss.gizmo</groupId>
             <artifactId>gizmo</artifactId>
         </dependency>
         <dependency>
@@ -70,7 +70,7 @@
             <artifactId>shamrock-core-runtime</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.protean.gizmo</groupId>
+            <groupId>org.jboss.gizmo</groupId>
             <artifactId>gizmo</artifactId>
             <type>test-jar</type>
             <scope>test</scope>

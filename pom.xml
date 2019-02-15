@@ -60,7 +60,6 @@
         <module>extensions</module>
 
         <!-- External projects -->
-        <module>independent-projects/gizmo</module>
         <module>independent-projects/arc</module>
         <module>independent-projects/infinispan-hibernate-cache-protean</module>
         <module>independent-projects/jboss-logmanager-embedded</module>

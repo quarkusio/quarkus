@@ -152,7 +152,7 @@
                   <exclude>org.jboss.protean.arc:arc-runtime</exclude>
                   <exclude>org.jboss.protean.arc:arc-processor</exclude>
                   <exclude>org.jboss.protean.arc:arc-maven-plugin</exclude>
-                  <exclude>org.jboss.protean.gizmo:gizmo</exclude>
+                  <exclude>org.jboss.gizmo:gizmo</exclude>
                   <exclude>org.ow2.asm:asm</exclude>
                 </excludes>
               </artifactSet>

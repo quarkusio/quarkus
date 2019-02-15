@@ -52,7 +52,7 @@
     </dependency>
 
     <dependency>
-      <groupId>org.jboss.protean.gizmo</groupId>
+      <groupId>org.jboss.gizmo</groupId>
       <artifactId>gizmo</artifactId>
     </dependency>
 

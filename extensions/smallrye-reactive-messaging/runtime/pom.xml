@@ -20,7 +20,7 @@
       </dependency>
       <dependency>
          <groupId>org.jboss.shamrock</groupId>
-         <artifactId>shamrock-reactive-streams-operators-runtime</artifactId>
+         <artifactId>shamrock-smallrye-reactive-streams-operators-runtime</artifactId>
       </dependency>
       <dependency>
          <groupId>io.smallrye.reactive</groupId>

@@ -126,13 +126,15 @@
     "artifactId": "shamrock-smallrye-opentracing-deployment"
   },
   {
-    "name": "Reactive Streams",
+    "name": "SmallRye Reactive Streams Operators",
     "labels": [
+      "smallrye-reactive-streams-operators",
+      "smallrye-reactive-streams",
       "reactive-streams",
       "microprofile-reactive-streams"
     ],
     "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-reactive-streams-operators-deployment"
+    "artifactId": "shamrock-smallrye-reactive-streams-operators-deployment"
   },
   {
     "name": "Rest Client",

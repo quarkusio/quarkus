@@ -76,7 +76,7 @@
 
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-reactive-streams-operators-deployment</artifactId>
+            <artifactId>shamrock-smallrye-reactive-streams-operators-deployment</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
          </dependency>

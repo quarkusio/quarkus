@@ -21,12 +21,12 @@
 
     <parent>
         <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-reactive-converters</artifactId>
+        <artifactId>shamrock-smallrye-reactive-type-converters</artifactId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>shamrock-reactive-converters-runtime</artifactId>
-    <name>Shamrock - Reactive Type Converters - Runtime</name>
+    <artifactId>shamrock-smallrye-reactive-type-converters-runtime</artifactId>
+    <name>Shamrock - SmallRye Reactive Type Converters - Runtime</name>
 
     <dependencies>
         <dependency>

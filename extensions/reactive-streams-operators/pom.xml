@@ -26,12 +26,12 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-reactive-streams-operators-project</artifactId>
-    <name>Shamrock - Reactive Streams Operators - Project</name>
+    <artifactId>shamrock-reactive-streams-operators</artifactId>
+    <name>Shamrock - Reactive Streams Operators</name>
     <packaging>pom</packaging>
     <modules>
-        <module>reactive-streams-operators</module>
-        <module>reactive-type-converters</module>
+        <module>smallrye-reactive-streams-operators</module>
+        <module>smallrye-reactive-type-converters</module>
         <!-- we should also add support for the vertx execution model -->
     </modules>
 </project>

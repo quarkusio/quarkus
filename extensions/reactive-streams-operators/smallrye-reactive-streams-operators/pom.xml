@@ -26,8 +26,8 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-reactive-streams-operators</artifactId>
-    <name>Shamrock - Reactive Streams Operators</name>
+    <artifactId>shamrock-smallrye-reactive-streams-operators</artifactId>
+    <name>Shamrock - SmallRye Reactive Streams Operators</name>
     <packaging>pom</packaging>
 
     <modules>

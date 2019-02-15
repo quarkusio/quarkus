@@ -11,8 +11,8 @@
         <relativePath>../../../build-parent/pom.xml</relativePath>
     </parent>
 
-    <artifactId>shamrock-reactive-converters</artifactId>
-    <name>Shamrock - Reactive Type Converters</name>
+    <artifactId>shamrock-smallrye-reactive-type-converters</artifactId>
+    <name>Shamrock - SmallRye Reactive Type Converters</name>
     <packaging>pom</packaging>
 
     <modules>

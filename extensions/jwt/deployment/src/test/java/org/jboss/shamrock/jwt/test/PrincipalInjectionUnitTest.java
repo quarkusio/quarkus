@@ -47,7 +47,6 @@ public class PrincipalInjectionUnitTest {
         iatClaim = timeClaims.get(Claims.iat.name());
         authTimeClaim = timeClaims.get(Claims.auth_time.name());
         expClaim = timeClaims.get(Claims.exp.name());
-        System.out.printf("BeforeAll.generateToken, %s\n", token);
     }
 
     /**
@@ -56,7 +55,6 @@ public class PrincipalInjectionUnitTest {
      */
     @Test()
     public void verifyInjectedPrincipal() throws Exception {
-        System.out.printf("Begin verifyInjectedPrincipal, token=%s\n", token);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -68,7 +66,6 @@ public class PrincipalInjectionUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        System.out.println(reply.toString());
         Assertions.assertTrue(reply.getBoolean("pass"), reply.getString("msg"));
     }
 }

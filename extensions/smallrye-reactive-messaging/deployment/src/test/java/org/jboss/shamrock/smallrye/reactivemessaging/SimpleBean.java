@@ -35,7 +35,6 @@ public class SimpleBean {
 
     @Incoming("processed-b")
     public void sink(String word) {
-      System.out.println(">> " + word);
       RESULT.add(word);
     }
 

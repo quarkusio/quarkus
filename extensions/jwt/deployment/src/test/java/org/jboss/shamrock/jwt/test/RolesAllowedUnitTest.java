@@ -48,7 +48,6 @@ public class RolesAllowedUnitTest {
         iatClaim = timeClaims.get(Claims.iat.name());
         authTimeClaim = timeClaims.get(Claims.auth_time.name());
         expClaim = timeClaims.get(Claims.exp.name());
-        System.out.printf("BeforeAll.generateToken, %s\n", token);
     }
 
     @Test()
@@ -80,7 +79,6 @@ public class RolesAllowedUnitTest {
      */
     @Test()
     public void callEchoBASIC() throws Exception {
-        System.out.printf("Begin callEchoBASIC, token=%s\n", token);
         Response response = RestAssured.given().auth()
                 .basic("jdoe@example.com", "password")
                 .when()
@@ -89,7 +87,8 @@ public class RolesAllowedUnitTest {
 
         Assertions.assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.getStatusCode());
         String replyString = response.body().asString();
-        System.out.println(replyString);
+        // TODO add proper assertion
+        //System.out.println(replyString);
     }
 
     /**
@@ -98,7 +97,6 @@ public class RolesAllowedUnitTest {
      */
     @Test()
     public void callEcho() throws Exception {
-        System.out.printf("Begin callEcho, token=%s\n", token);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -107,7 +105,6 @@ public class RolesAllowedUnitTest {
 
         Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
         String replyString = response.body().asString();
-        System.out.println(replyString);
         // Must return hello, user={token upn claim}
         Assertions.assertEquals(replyString, "hello, user=jdoe@example.com");
     }
@@ -118,7 +115,6 @@ public class RolesAllowedUnitTest {
      */
     @Test()
     public void callEcho2() throws Exception {
-        System.out.printf("Begin callEcho2, token=%s\n", token);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -127,7 +123,8 @@ public class RolesAllowedUnitTest {
 
         Assertions.assertEquals(HttpURLConnection.HTTP_FORBIDDEN, response.getStatusCode());
         String replyString = response.body().asString();
-        System.out.println(replyString);
+        // TODO add proper assertion
+        //System.out.println(replyString);
     }
 
     /**
@@ -136,7 +133,6 @@ public class RolesAllowedUnitTest {
      */
     @Test()
     public void checkIsUserInRole() throws Exception {
-        System.out.printf("Begin checkIsUserInRole, token=%s\n", token);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -144,7 +140,8 @@ public class RolesAllowedUnitTest {
 
         Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
         String replyString = response.body().asString();
-        System.out.println(replyString);
+        // TODO add proper assertion
+        //System.out.println(replyString);
     }
 
     /**
@@ -154,7 +151,6 @@ public class RolesAllowedUnitTest {
     @Test()
     public void checkIsUserInRoleToken2() throws Exception {
         String token2 = TokenUtils.generateTokenString("/Token2.json");
-        System.out.printf("Begin checkIsUserInRoleToken2, token=%s\n", token2);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token2)
                 .when()
@@ -162,7 +158,8 @@ public class RolesAllowedUnitTest {
 
         Assertions.assertEquals(HttpURLConnection.HTTP_FORBIDDEN, response.getStatusCode());
         String replyString = response.body().asString();
-        System.out.println(replyString);
+        // TODO add proper assertion
+        //System.out.println(replyString);
     }
 
     /**
@@ -172,7 +169,6 @@ public class RolesAllowedUnitTest {
     @Test()
     public void echoNeedsToken2Role() throws Exception {
         String token2 = TokenUtils.generateTokenString("/Token2.json");
-        System.out.printf("Begin echoNeedsToken2Role, token=%s\n", token2);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token2)
                 .when()
@@ -181,7 +177,8 @@ public class RolesAllowedUnitTest {
 
         Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
         String replyString = response.body().asString();
-        System.out.println(replyString);
+        // TODO add proper assertion
+        //System.out.println(replyString);
     }
 
     /**
@@ -191,7 +188,6 @@ public class RolesAllowedUnitTest {
     @Test()
     public void echoWithToken2() throws Exception {
         String token2 = TokenUtils.generateTokenString("/Token2.json");
-        System.out.printf("Begin echoWithToken2, token=%s\n", token2);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token2)
                 .when()
@@ -200,7 +196,8 @@ public class RolesAllowedUnitTest {
 
         Assertions.assertEquals(HttpURLConnection.HTTP_FORBIDDEN, response.getStatusCode());
         String replyString = response.body().asString();
-        System.out.println(replyString);
+        // TODO add proper assertion
+        //System.out.println(replyString);
     }
 
     /**
@@ -209,7 +206,6 @@ public class RolesAllowedUnitTest {
      */
     @Test()
     public void getPrincipalClass() throws Exception {
-        System.out.printf("Begin getPrincipalClass, token=%s\n", token);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -217,7 +213,6 @@ public class RolesAllowedUnitTest {
 
         Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
         String replyString = response.body().asString();
-        System.out.println(replyString);
         // Must return isJsonWebToken:true
         Assertions.assertEquals("isJsonWebToken:true", replyString);
     }
@@ -229,7 +224,6 @@ public class RolesAllowedUnitTest {
      */
     @Test()
     public void testNeedsGroup1Mapping() throws Exception {
-        System.out.printf("Begin testNeedsGroup1Mapping, token=%s\n", token);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -237,7 +231,8 @@ public class RolesAllowedUnitTest {
 
         Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
         String replyString = response.body().asString();
-        System.out.println(replyString);
+        // TODO add proper assertion
+        //System.out.println(replyString);
     }
 
     /**
@@ -246,7 +241,6 @@ public class RolesAllowedUnitTest {
      */
     @Test()
     public void getInjectedPrincipal() throws Exception {
-        System.out.printf("Begin getInjectedPrincipal, token=%s\n", token);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -254,7 +248,6 @@ public class RolesAllowedUnitTest {
 
         Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
         String replyString = response.body().asString();
-        System.out.println(replyString);
         // Must return isJsonWebToken:true
         Assertions.assertEquals("isJsonWebToken:true", replyString);
     }

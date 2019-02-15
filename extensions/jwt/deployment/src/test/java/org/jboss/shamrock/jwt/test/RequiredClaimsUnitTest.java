@@ -51,7 +51,6 @@ public class RequiredClaimsUnitTest {
         iatClaim = timeClaims.get(Claims.iat.name());
         authTimeClaim = timeClaims.get(Claims.auth_time.name());
         expClaim = timeClaims.get(Claims.exp.name());
-        System.out.printf("BeforeAll.generateToken, %s\n", token);
     }
 
     /**
@@ -61,7 +60,6 @@ public class RequiredClaimsUnitTest {
      */
     @Test()
     public void verifyIssuerClaim() throws Exception {
-        System.out.printf("Begin verifyIssuerClaim, token=%s\n", token);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -73,7 +71,6 @@ public class RequiredClaimsUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        System.out.println(reply.toString());
         Assertions.assertTrue(reply.getBoolean("pass"), reply.getString("msg"));
     }
 
@@ -84,7 +81,6 @@ public class RequiredClaimsUnitTest {
      */
     @Test()
     public void verifySubClaim() throws Exception {
-        System.out.printf("Begin verifySubClaim, token=%s\n", token);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -97,7 +93,6 @@ public class RequiredClaimsUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        System.out.println(reply.toString());
         Assertions.assertTrue(reply.getBoolean("pass"), reply.getString("msg"));
     }
 
@@ -108,7 +103,6 @@ public class RequiredClaimsUnitTest {
      */
     @Test()
     public void verifyJTI() throws Exception {
-        System.out.printf("Begin verifyJTI, token=%s\n", token);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -121,7 +115,8 @@ public class RequiredClaimsUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        System.out.println(reply.toString());
+        // TODO add proper assertion
+        //System.out.println(reply.toString());
 
     }
 
@@ -132,7 +127,6 @@ public class RequiredClaimsUnitTest {
      */
     @Test()
     public void verifyUPN() throws Exception {
-        System.out.printf("Begin verifyUPN, token=%s\n", token);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -145,7 +139,8 @@ public class RequiredClaimsUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        System.out.println(reply.toString());
+        // TODO add proper assertion
+        //System.out.println(reply.toString());
     }
 
     /**
@@ -155,7 +150,6 @@ public class RequiredClaimsUnitTest {
      */
     @Test()
     public void verifyAudience() throws Exception {
-        System.out.printf("Begin verifyAudience, token=%s\n", token);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -168,7 +162,8 @@ public class RequiredClaimsUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        System.out.println(reply.toString());
+        // TODO add proper assertion
+        //System.out.println(reply.toString());
     }
 
     /**
@@ -178,7 +173,6 @@ public class RequiredClaimsUnitTest {
      */
     @Test()
     public void verifyAudience2() throws Exception {
-        System.out.printf("Begin verifyAudience2, token=%s\n", token);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -191,7 +185,8 @@ public class RequiredClaimsUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        System.out.println(reply.toString());
+        // TODO add proper assertion
+        //System.out.println(reply.toString());
     }
 
     /**
@@ -201,7 +196,6 @@ public class RequiredClaimsUnitTest {
      */
     @Test()
     public void verifyIssuedAt() throws Exception {
-        System.out.printf("Begin verifyIssuedAt, token=%s\n", token);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -214,7 +208,8 @@ public class RequiredClaimsUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        System.out.println(reply.toString());
+        // TODO add proper assertion
+        //System.out.println(reply.toString());
     }
 
     /**
@@ -224,7 +219,6 @@ public class RequiredClaimsUnitTest {
      */
     @Test()
     public void verifyExpiration() throws Exception {
-        System.out.printf("Begin verifyExpiration, token=%s\n", token);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -237,6 +231,7 @@ public class RequiredClaimsUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        System.out.println(reply.toString());
+        // TODO add proper assertion
+        //System.out.println(reply.toString());
     }
 }

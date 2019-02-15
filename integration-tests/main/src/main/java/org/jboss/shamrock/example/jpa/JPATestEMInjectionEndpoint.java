@@ -57,7 +57,6 @@ public class JPATestEMInjectionEndpoint extends HttpServlet {
 
     public void testStoreLoadOnJPA() throws Exception {
         doStuffWithHibernate();
-        System.out.println("Hibernate EntityManagerFactory: shut down");
 
     }
 

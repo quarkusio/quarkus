@@ -58,7 +58,6 @@ public class BeanInfoTypesTest {
         ClassInfo fooClass = index.getClassByName(fooName);
         BeanInfo fooBean = Beans.createClassBean(fooClass, deployment);
         Set<Type> types = fooBean.getTypes();
-        // System.out.println(types);
         // Foo, AbstractList<String>, AbstractCollection<String>, List<String>, Collection<String>, Iterable<String>
         assertEquals(6, types.size());
         assertTrue(types.contains(Type.create(fooName, Kind.CLASS)));

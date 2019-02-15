@@ -38,14 +38,12 @@ public class CustomAuthEmbeddedTestCase {
     }
     @Test()
     public void testSecureRoleFailure() {
-        System.out.printf("Begin testSecureRoleFailure\n");
         RestAssured.given().auth().preemptive().basic("jdoe", "p4ssw0rd")
                 .when().get("/secure-test").then()
                 .statusCode(403);
     }
     @Test()
     public void testSecureAccessSuccess() {
-        System.out.printf("Begin testSecureAccessSuccess\n");
         RestAssured.given().auth().preemptive().basic("stuart", "test")
                 .when().get("/secure-test").then()
                 .statusCode(200);

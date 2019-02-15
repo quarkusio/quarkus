@@ -68,7 +68,6 @@ public class MojoTestBase {
         Logger.getLogger(MojoTestBase.class.getName())
                 .log(Level.FINE, out.getAbsolutePath() + " created? " + mkdirs);
         try {
-            System.out.println("Copying " + in.getAbsolutePath() + " to " + out.getParentFile().getAbsolutePath());
             org.codehaus.plexus.util.FileUtils.copyDirectoryStructure(in, out);
         } catch (IOException e) {
             throw new RuntimeException("Cannot copy project resources", e);

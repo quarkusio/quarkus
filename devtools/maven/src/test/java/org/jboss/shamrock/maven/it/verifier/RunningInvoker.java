@@ -55,7 +55,6 @@ public class RunningInvoker extends MavenProcessInvoker {
                 .collect(Collectors.toList());
 
         list.stream()
-                .peek(pi -> System.out.println("Sending kill signal to process " + pi.getPid()))
                 .forEach(i -> JProcesses.killProcess(Integer.valueOf(i.getPid())));
     }
 

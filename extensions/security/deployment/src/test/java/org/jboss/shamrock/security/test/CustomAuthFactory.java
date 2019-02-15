@@ -10,7 +10,6 @@ import io.undertow.server.handlers.form.FormParserFactory;
 public class CustomAuthFactory implements AuthenticationMechanismFactory {
     @Override
     public AuthenticationMechanism create(String mechanismName, IdentityManager identityManager, FormParserFactory formParserFactory, Map<String, String> properties) {
-        System.out.printf("CustomAuthFactory: added CustomAuth\n");
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
         return new CustomAuth();
     }

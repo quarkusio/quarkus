@@ -44,6 +44,7 @@ import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexReader;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
+import org.jboss.logging.Logger;
 import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.ApplicationArchive;
 import org.jboss.shamrock.deployment.ApplicationArchiveImpl;
@@ -56,6 +57,8 @@ import org.jboss.shamrock.runtime.annotations.ConfigPhase;
 import org.jboss.shamrock.runtime.annotations.ConfigRoot;
 
 public class ApplicationArchiveBuildStep {
+    
+    private static final Logger LOGGER = Logger.getLogger(ApplicationArchiveBuildStep.class);
 
     private static final String JANDEX_INDEX = "META-INF/jandex.idx";
 
@@ -84,8 +87,6 @@ public class ApplicationArchiveBuildStep {
     }
 
     private List<ApplicationArchive> scanForOtherIndexes(ClassLoader classLoader, Set<String> applicationArchiveFiles, Path appRoot, List<Path> additionalApplicationArchives) throws IOException {
-
-
         Set<Path> dependenciesToIndex = new HashSet<>();
         //get paths that are included via index-dependencies
         dependenciesToIndex.addAll(getIndexDependencyPaths(classLoader));
@@ -126,6 +127,7 @@ public class ApplicationArchiveBuildStep {
         List<ApplicationArchive> ret = new ArrayList<>();
 
         for (final Path dep : dependenciesToIndex) {
+            LOGGER.debugf("Indexing dependency: %s", dep);
             if (Files.isDirectory(dep)) {
                 IndexView indexView = handleFilePath(dep);
                 ret.add(new ApplicationArchiveImpl(indexView, dep, null));

@@ -48,7 +48,6 @@ import org.jboss.shamrock.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import org.jboss.shamrock.deployment.builditem.SystemPropertyBuildItem;
 import org.jboss.shamrock.deployment.recording.BytecodeRecorderImpl;
 import org.jboss.shamrock.runtime.Application;
-import org.jboss.shamrock.runtime.ObjectSubstitution;
 import org.jboss.shamrock.runtime.StartupContext;
 import org.jboss.shamrock.runtime.StartupTask;
 import org.jboss.shamrock.runtime.Timing;

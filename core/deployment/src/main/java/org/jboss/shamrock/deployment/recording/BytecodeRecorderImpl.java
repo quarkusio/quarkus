@@ -235,6 +235,11 @@ public class BytecodeRecorderImpl implements RecorderContext {
                     if (method.getName().equals("__static$$init")) {
                         return staticInit;
                     }
+                    if(method.getName().equals("toString")
+                            && method.getParameterTypes().length == 0
+                            && method.getReturnType().equals(String.class)) {
+                        return "Runtime proxy of " + returnType + " with id " + key;
+                    }
                     throw new RuntimeException("You cannot invoke directly on an object returned from the bytecode recorded, you can only pass is back into the recorder as a parameter");
                 }
             });

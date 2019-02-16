@@ -141,7 +141,7 @@ import org.springframework.stereotype.Service;
 public class MessageProducer {
 
     @Value("${greeting.message}")
-    private String message;
+    String message;
 
     public String getPrefix() {
         return message;
@@ -168,14 +168,14 @@ public class GreeterBean {
 
     @Autowired
     @Qualifier("noopFunction")
-    private StringFunction noopStringFunction;
+    StringFunction noopStringFunction;
 
     @Autowired
     @Qualifier("capitalizeFunction")
-    private StringFunction capitalizerStringFunction;
+    StringFunction capitalizerStringFunction;
 
     @Value("${greeting.suffix:!}")
-    private String suffix;
+    String suffix;
 
     public GreeterBean(MessageProducer messageProducer) {
         this.messageProducer = messageProducer;
@@ -211,7 +211,7 @@ import javax.ws.rs.core.MediaType;
 public class GreeterResource {
 
     @Autowired
-    private GreeterBean greeterBean;
+    GreeterBean greeterBean;
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)

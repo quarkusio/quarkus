@@ -44,7 +44,8 @@ public final class StringUtil {
                                 idx = nextIdx;
                                 nextIdx = str.offsetByCodePoints(idx, 1);
                             }
-                            // consumed the whole remainder
+                            // consumed the whole remainder, update idx to length
+                            idx = str.length();
                             return str.substring(start);
                         } else {
                             // initial caps, trailing lowercase
@@ -117,7 +118,7 @@ public final class StringUtil {
         return b.toString();
     }
 
-    public static Iterator<String> lowerCastFirst(Iterator<String> orig) {
+    public static Iterator<String> lowerCaseFirst(Iterator<String> orig) {
         return new Iterator<String>() {
             boolean first = true;
 

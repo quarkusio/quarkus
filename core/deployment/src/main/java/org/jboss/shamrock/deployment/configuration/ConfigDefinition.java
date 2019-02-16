@@ -9,7 +9,7 @@ import static org.jboss.shamrock.deployment.util.StringUtil.camelHumpsIterator;
 import static org.jboss.shamrock.deployment.util.StringUtil.hyphenate;
 import static org.jboss.shamrock.deployment.util.StringUtil.join;
 import static org.jboss.shamrock.deployment.util.StringUtil.lowerCase;
-import static org.jboss.shamrock.deployment.util.StringUtil.lowerCastFirst;
+import static org.jboss.shamrock.deployment.util.StringUtil.lowerCaseFirst;
 import static org.jboss.shamrock.deployment.util.StringUtil.withoutSuffix;
 
 import java.lang.reflect.AnnotatedElement;
@@ -134,7 +134,7 @@ public class ConfigDefinition extends CompoundConfigType {
         if (configRoot.isAnnotationPresent(ConfigGroup.class)) {
             throw reportError(configRoot, "Roots cannot have a @ConfigGroup annotation");
         }
-        final String containingName = join(withoutSuffix(lowerCastFirst(camelHumpsIterator(configRoot.getSimpleName())), "config", "configuration"));
+        final String containingName = join(withoutSuffix(lowerCaseFirst(camelHumpsIterator(configRoot.getSimpleName())), "Config", "Configuration"));
         final String name = configRootAnnotation.name();
         final String rootName;
         if (name.equals(ConfigItem.PARENT)) {

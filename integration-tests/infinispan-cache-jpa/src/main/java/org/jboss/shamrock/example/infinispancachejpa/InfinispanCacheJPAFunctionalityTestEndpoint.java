@@ -444,7 +444,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint extends HttpServlet {
         EntityManager em = emf.createEntityManager();
         EntityTransaction transaction = em.getTransaction();
         transaction.begin();
-        em.persist(new Person("Protean"));
+        em.persist(new Person("Gizmo"));
         em.persist(new Person("Shamrock"));
         em.persist(new Person("Hibernate ORM"));
         em.persist(new Person("Infinispan"));
@@ -537,7 +537,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint extends HttpServlet {
         if (allpersons.size() != 4) {
             throw new RuntimeException("Incorrect number of results");
         }
-        if (!allpersons.get(0).getName().equals("Hibernate ORM")) {
+        if (!allpersons.get(0).getName().equals("Gizmo")) {
             throw new RuntimeException("Incorrect order of results");
         }
         StringBuilder sb = new StringBuilder("list of stored Person names:\n\t");

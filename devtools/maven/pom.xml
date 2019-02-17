@@ -37,7 +37,7 @@
 
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>devtools-common</artifactId>
+            <artifactId>shamrock-devtools-common</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.maven</groupId>

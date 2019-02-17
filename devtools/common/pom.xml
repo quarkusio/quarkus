@@ -10,8 +10,8 @@
         <version>1.0.0.Alpha1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>devtools-common</artifactId>
-    <name>Shamrock - Devtools Common Code</name>
+    <artifactId>shamrock-devtools-common</artifactId>
+    <name>Shamrock - Dev tools - Common Code</name>
 
     <build>
         <resources>
@@ -51,7 +51,7 @@
     <dependencies>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>devtools-common-core</artifactId>
+            <artifactId>shamrock-devtools-common-core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.maven</groupId>

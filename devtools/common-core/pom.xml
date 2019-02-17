@@ -26,8 +26,8 @@
         <version>1.0.0.Alpha1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>devtools-common-core</artifactId>
-    <name>Shamrock - Devtools Common Core</name>
+    <artifactId>shamrock-devtools-common-core</artifactId>
+    <name>Shamrock - Dev tools - Common Core</name>
 
     <dependencies>
         <dependency>

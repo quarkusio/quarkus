@@ -166,12 +166,12 @@
          </dependency>
          <dependency>
              <groupId>org.jboss.shamrock</groupId>
-             <artifactId>devtools-common</artifactId>
+             <artifactId>shamrock-devtools-common</artifactId>
              <version>${project.version}</version>
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>devtools-common-core</artifactId>
+            <artifactId>shamrock-devtools-common-core</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>

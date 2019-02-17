@@ -331,12 +331,12 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jwt-deployment</artifactId>
+            <artifactId>shamrock-smallrye-jwt-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jwt-runtime</artifactId>
+            <artifactId>shamrock-smallrye-jwt-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>

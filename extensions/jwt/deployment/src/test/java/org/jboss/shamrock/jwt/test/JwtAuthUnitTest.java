@@ -49,7 +49,6 @@ public class JwtAuthUnitTest {
         iatClaim = timeClaims.get(Claims.iat.name());
         authTimeClaim = timeClaims.get(Claims.auth_time.name());
         expClaim = timeClaims.get(Claims.exp.name());
-        System.out.printf("BeforeAll.generateToken, %s\n", token);
     }
 
     // Basic @ServletSecurity tests
@@ -65,7 +64,6 @@ public class JwtAuthUnitTest {
      */
     @Test()
     public void verifyIssuerClaim() throws Exception {
-        System.out.printf("Begin verifyIssuerClaim, token=%s\n", token);
         Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -77,7 +75,6 @@ public class JwtAuthUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        System.out.println(reply.toString());
         Assertions.assertTrue(reply.getBoolean("pass"), reply.getString("msg"));
     }
 }

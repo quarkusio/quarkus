@@ -113,7 +113,6 @@ public class SmallryeTestCase {
          * Get the config
          */
         final Config config = SmallRyeConfigProviderResolver.instance().getConfig();
-        //logConfig(config);
 
         /*
          * Read the config
@@ -153,14 +152,4 @@ public class SmallryeTestCase {
         return System.getProperty(name);
     }
 
-    private static void logConfig(final Config config) {
-        final List<String> names = new ArrayList<>();
-        for(String name : config.getPropertyNames()) {
-            names.add(name);
-        }
-        Collections.sort(names);
-        for(String name : names) {
-            System.out.println("- " + name + "=" + config.getValue(name, String.class));
-        }
-    }
 }

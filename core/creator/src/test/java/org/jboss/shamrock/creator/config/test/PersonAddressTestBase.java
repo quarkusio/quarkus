@@ -93,16 +93,6 @@ public abstract class PersonAddressTestBase {
         }
 
         /*
-         * Log result
-         *
-        System.out.println("Loaded config: " + loaded);
-        System.out.println("Not mapped");
-        for(Map.Entry<String, String> entry : loadedNotMapped.entrySet()) {
-            System.out.println("- " + entry.getKey() + "=" + entry.getValue());
-        }
-        */
-
-        /*
          * Make sure the result is correct
          */
         final Person expected = new Person();

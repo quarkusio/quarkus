@@ -54,7 +54,6 @@ public class PrimitiveInjectionUnitTest {
         iatClaim = timeClaims.get(Claims.iat.name());
         authTimeClaim = timeClaims.get(Claims.auth_time.name());
         expClaim = timeClaims.get(Claims.exp.name());
-        System.out.printf("BeforeAll.generateToken, %s\n", token);
     }
 
     /**
@@ -64,7 +63,6 @@ public class PrimitiveInjectionUnitTest {
      */
     @Test()
     public void verifyIssuerClaim() throws Exception {
-        System.out.printf("Begin verifyIssuerClaim, token=%s\n", token);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -76,7 +74,6 @@ public class PrimitiveInjectionUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        System.out.println(reply.toString());
         Assertions.assertTrue(reply.getBoolean("pass"), reply.getString("msg"));
     }
 
@@ -87,7 +84,6 @@ public class PrimitiveInjectionUnitTest {
      */
     @Test()
     public void verifyInjectedRawToken() throws Exception {
-        System.out.printf("Begin verifyInjectedRawToken, token=%s\n", token);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -99,7 +95,6 @@ public class PrimitiveInjectionUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        System.out.println(reply.toString());
         Assertions.assertTrue(reply.getBoolean("pass"), reply.getString("msg"));
     }
 
@@ -110,7 +105,6 @@ public class PrimitiveInjectionUnitTest {
      */
     @Test()
     public void verifyInjectedJTI() throws Exception {
-        System.out.printf("Begin verifyInjectedJTI, token=%s\n", token);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -122,7 +116,8 @@ public class PrimitiveInjectionUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        System.out.println(reply.toString());
+        // TODO add proper assertion
+        //System.out.println(reply.toString());
 
     }
 
@@ -133,7 +128,6 @@ public class PrimitiveInjectionUnitTest {
      */
     @Test()
     public void verifyInjectedUPN() throws Exception {
-        System.out.printf("Begin verifyUPN, token=%s\n", token);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -145,7 +139,8 @@ public class PrimitiveInjectionUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        System.out.println(reply.toString());
+        // TODO add proper assertion
+        //System.out.println(reply.toString());
     }
 
     /**
@@ -155,7 +150,6 @@ public class PrimitiveInjectionUnitTest {
      */
     @Test()
     public void verifyInjectedAudience() throws Exception {
-        System.out.printf("Begin verifyInjectedAudience, token=%s\n", token);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -167,7 +161,8 @@ public class PrimitiveInjectionUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        System.out.println(reply.toString());
+        // TODO add proper assertion
+        //System.out.println(reply.toString());
     }
 
     /**
@@ -177,7 +172,6 @@ public class PrimitiveInjectionUnitTest {
      */
     @Test()
     public void verifyInjectedGroups() throws Exception {
-        System.out.printf("Begin verifyInjectedGroups, token=%s\n", token);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -190,7 +184,8 @@ public class PrimitiveInjectionUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        System.out.println(reply.toString());
+        // TODO add proper assertion
+        //System.out.println(reply.toString());
     }
 
     /**
@@ -200,7 +195,6 @@ public class PrimitiveInjectionUnitTest {
      */
     @Test()
     public void verifyInjectedIssuedAt() throws Exception {
-        System.out.printf("Begin verifyIssuedAt, token=%s\n", token);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -212,7 +206,8 @@ public class PrimitiveInjectionUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        System.out.println(reply.toString());
+        // TODO add proper assertion
+        //System.out.println(reply.toString());
     }
 
     /**
@@ -222,7 +217,6 @@ public class PrimitiveInjectionUnitTest {
      */
     @Test()
     public void verifyInjectedExpiration() throws Exception {
-        System.out.printf("Begin verifyInjectedExpiration, token=%s\n", token);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -234,7 +228,8 @@ public class PrimitiveInjectionUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        System.out.println(reply.toString());
+        // TODO add proper assertion
+        //System.out.println(reply.toString());
     }
 
     /**
@@ -244,7 +239,6 @@ public class PrimitiveInjectionUnitTest {
      */
     @Test()
     public void verifyInjectedCustomString() throws Exception {
-        System.out.printf("Begin verifyInjectedCustomString, token=%s\n", token);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -256,7 +250,8 @@ public class PrimitiveInjectionUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        System.out.println(reply.toString());
+        // TODO add proper assertion
+        //System.out.println(reply.toString());
     }
 
     /**
@@ -266,7 +261,6 @@ public class PrimitiveInjectionUnitTest {
      */
     @Test()
     public void verifyInjectedCustomDouble() throws Exception {
-        System.out.printf("Begin verifyInjectedCustomDouble, token=%s\n", token);
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -278,6 +272,7 @@ public class PrimitiveInjectionUnitTest {
         String replyString = response.body().asString();
         JsonReader jsonReader = Json.createReader(new StringReader(replyString));
         JsonObject reply = jsonReader.readObject();
-        System.out.println(reply.toString());
+        // TODO add proper assertion
+        //System.out.println(reply.toString());
     }
 }

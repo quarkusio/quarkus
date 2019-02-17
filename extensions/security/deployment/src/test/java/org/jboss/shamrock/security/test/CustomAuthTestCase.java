@@ -32,7 +32,6 @@ public class CustomAuthTestCase {
 
     @Test()
     public void testSecureAccessSuccess() {
-        System.out.printf("Begin testSecureAccessSuccess\n");
         RestAssured.given().auth().preemptive().basic("stuart", "test")
                 .when().get("/secure-test").then()
                 .statusCode(200);

@@ -61,7 +61,8 @@ public class TokenRealmUnitTest {
         assertNotNull(identity);
         assertTrue(identity.exists());
         AuthorizationIdentity authz = identity.getAuthorizationIdentity();
-        System.out.println(authz.getAttributes().keySet());
+        // TODO add proper assertion
+        //System.out.println(authz.getAttributes().keySet());
     }
 
     @Test
@@ -115,7 +116,8 @@ public class TokenRealmUnitTest {
         String jwt = TokenUtils.generateTokenString("/Token1.json", pk1Priv, "testTokenRealm");
         BearerTokenEvidence tokenEvidence = new BearerTokenEvidence(jwt);
         SecurityIdentity securityIdentity = securityDomain.authenticate(tokenEvidence);
-        System.out.println(securityIdentity.getAttributes().keySet());
+        // TODO add proper assertion
+        //System.out.println(securityIdentity.getAttributes().keySet());
     }
 
     private Principal mpJwtLogic(Attributes claims) {

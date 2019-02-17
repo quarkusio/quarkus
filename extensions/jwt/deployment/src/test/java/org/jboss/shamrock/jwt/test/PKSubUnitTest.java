@@ -12,7 +12,6 @@ public class PKSubUnitTest {
     @Test
     public void testSubstitution() throws Exception {
         RSAPublicKey pk = (RSAPublicKey) KeyUtils.readPublicKey("/publicKey.pem");
-        System.out.printf("pk, alg: %s, encoding: %s\n", pk.getAlgorithm(), pk.getFormat());
 
         PublicKeySubstitution sub = new PublicKeySubstitution();
         PublicKeyProxy proxy = sub.serialize(pk);

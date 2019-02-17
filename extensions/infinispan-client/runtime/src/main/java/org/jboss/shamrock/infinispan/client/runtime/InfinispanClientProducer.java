@@ -119,7 +119,7 @@ public class InfinispanClientProducer {
     */
     private static String getContents(String fileName) {
         InputStream stream = InfinispanClientProducer.class.getResourceAsStream(fileName);
-        return new Scanner(stream).useDelimiter("\\A").next();
+        return new Scanner(stream, "UTF-8").useDelimiter("\\A").next();
     }
 
    /**

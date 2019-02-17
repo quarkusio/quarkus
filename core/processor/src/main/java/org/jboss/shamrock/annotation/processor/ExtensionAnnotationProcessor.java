@@ -308,7 +308,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                     );
                     try (OutputStream os = itemResource.openOutputStream()) {
                         try (BufferedOutputStream bos = new BufferedOutputStream(os)) {
-                            try (OutputStreamWriter osw = new OutputStreamWriter(bos)) {
+                            try (OutputStreamWriter osw = new OutputStreamWriter(bos, StandardCharsets.UTF_8)) {
                                 try (BufferedWriter bw = new BufferedWriter(osw)) {
                                     bw.write(binaryName);
                                     bw.newLine();
@@ -444,7 +444,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                     );
                     try (OutputStream os = itemResource.openOutputStream()) {
                         try (BufferedOutputStream bos = new BufferedOutputStream(os)) {
-                            try (OutputStreamWriter osw = new OutputStreamWriter(bos)) {
+                            try (OutputStreamWriter osw = new OutputStreamWriter(bos, StandardCharsets.UTF_8)) {
                                 try (BufferedWriter bw = new BufferedWriter(osw)) {
                                     bw.write(binaryName);
                                     bw.newLine();

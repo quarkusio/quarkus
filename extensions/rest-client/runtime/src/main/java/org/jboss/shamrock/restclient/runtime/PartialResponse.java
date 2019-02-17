@@ -22,6 +22,7 @@ import java.io.InputStreamReader;
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
@@ -85,7 +86,7 @@ public class PartialResponse extends Response implements Serializable {
 
     public static String readStringEntity(InputStream input) {
         try {
-            try (BufferedReader buffer = new BufferedReader(new InputStreamReader(input))) {
+            try (BufferedReader buffer = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8))) {
                 return buffer.lines().collect(Collectors.joining("\n"));
             }
         } catch (IOException e) {

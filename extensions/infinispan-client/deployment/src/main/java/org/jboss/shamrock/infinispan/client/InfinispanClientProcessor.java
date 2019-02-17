@@ -19,6 +19,7 @@ package org.jboss.shamrock.infinispan.client;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -127,7 +128,7 @@ class InfinispanClientProcessor {
                   byte[] bytes = Files.readAllBytes(path);
                   // This uses the default file encoding - should we enforce UTF-8?
                   properties.put(InfinispanClientProducer.PROTOBUF_FILE_PREFIX + path.getFileName().toString(),
-                        new String(bytes));
+                        new String(bytes, StandardCharsets.UTF_8));
                }
 
                InfinispanClientProducer.handleProtoStreamRequirements(properties);

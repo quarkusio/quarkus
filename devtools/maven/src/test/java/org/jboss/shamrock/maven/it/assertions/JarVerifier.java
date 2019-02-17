@@ -1,6 +1,7 @@
 package org.jboss.shamrock.maven.it.assertions;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
@@ -50,7 +51,7 @@ class JarVerifier {
     }
 
     private static String read(InputStream input) throws IOException {
-        try (BufferedReader buffer = new BufferedReader(new InputStreamReader(input))) {
+        try (BufferedReader buffer = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8))) {
             return buffer.lines().collect(Collectors.joining("\n"));
         }
     }

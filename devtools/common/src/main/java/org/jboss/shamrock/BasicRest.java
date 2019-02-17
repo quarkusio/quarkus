@@ -4,11 +4,13 @@ import org.apache.maven.model.Model;
 import org.jboss.shamrock.maven.utilities.MojoUtils;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
@@ -118,8 +120,8 @@ public class BasicRest extends ShamrockTemplate {
         throws IOException {
         if (!outputFile.exists()) {
             String path = templateName.startsWith("/") ? templateName : "/" + templateName;
-            try (Writer out = new FileWriter(outputFile);
-                 final BufferedReader stream = new BufferedReader(new InputStreamReader(getClass().getResourceAsStream(path)))) {
+            try (BufferedWriter out = Files.newBufferedWriter(outputFile.toPath());
+                 final BufferedReader stream = new BufferedReader(new InputStreamReader(getClass().getResourceAsStream(path), StandardCharsets.UTF_8))) {
                 String template = stream.lines().collect(Collectors.joining("\n"));
                 for (Entry<String, Object> e : context.entrySet()) {
                     if (e.getValue() != null) { // Exclude null values (classname and path can be null)

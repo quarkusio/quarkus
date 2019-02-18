@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -44,11 +45,11 @@ public class InjectionPointInfo {
                 qualifiers.add(annotation);
             }
         }
-        return new InjectionPointInfo(field.type(), qualifiers.isEmpty() ? Collections.emptySet() : qualifiers);
+        return new InjectionPointInfo(field.type(), qualifiers.isEmpty() ? Collections.emptySet() : qualifiers, field);
     }
 
     static InjectionPointInfo fromResourceField(FieldInfo field, BeanDeployment beanDeployment) {
-        return new InjectionPointInfo(field.type(), new HashSet<>(field.annotations()), Kind.RESOURCE);
+        return new InjectionPointInfo(field.type(), new HashSet<>(field.annotations()), Kind.RESOURCE, field);
     }
 
     static List<InjectionPointInfo> fromMethod(MethodInfo method, BeanDeployment beanDeployment) {
@@ -76,7 +77,7 @@ public class InjectionPointInfo {
                     paramQualifiers.add(paramAnnotation);
                 }
             }
-            injectionPoints.add(new InjectionPointInfo(paramType, paramQualifiers));
+            injectionPoints.add(new InjectionPointInfo(paramType, paramQualifiers, method));
         }
         return injectionPoints;
     }
@@ -88,18 +89,21 @@ public class InjectionPointInfo {
     private final Kind kind;
     
     private final boolean hasDefaultedQualifier;
+    
+    private final AnnotationTarget target;
 
-    InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers) {
-        this(requiredType, requiredQualifiers, Kind.CDI);
+    InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, AnnotationTarget target) {
+        this(requiredType, requiredQualifiers, Kind.CDI, target);
     }
 
-    InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, Kind kind) {
+    InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, Kind kind, AnnotationTarget target) {
         this.typeAndQualifiers = new TypeAndQualifiers(requiredType,
                 requiredQualifiers.isEmpty() ? Collections.singleton(AnnotationInstance.create(DotNames.DEFAULT, null, Collections.emptyList()))
                         : requiredQualifiers);
         this.resolvedBean = new AtomicReference<BeanInfo>(null);
         this.kind = kind;
         this.hasDefaultedQualifier = requiredQualifiers.isEmpty();
+        this.target = target;
     }
 
     void resolve(BeanInfo bean) {
@@ -128,6 +132,26 @@ public class InjectionPointInfo {
     
     TypeAndQualifiers getTypeAndQualifiers() {
         return typeAndQualifiers;
+    }
+    
+    /**
+     * For injected params, this method returns the corresponding method and not the param itself.
+     * 
+     * @return the annotation target
+     */
+    public AnnotationTarget getTarget() {
+        return target;
+    }
+    
+    public String getTargetInfo() {
+        switch (target.kind()) {
+            case FIELD:
+                return target.asField().declaringClass().name() + "#" + target.asField().name(); 
+            case METHOD:
+                return target.asMethod().declaringClass().name() + "#" + target.asMethod().name() + "()"; 
+            default:
+                return target.toString();
+        }
     }
 
     @Override

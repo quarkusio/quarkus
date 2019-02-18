@@ -69,9 +69,9 @@ public class DisposerInfo {
         return injectionPoints;
     }
 
-    void init() {
+    void init(List<Throwable> errors) {
         for (InjectionPointInfo injectionPoint : injection.injectionPoints) {
-            Beans.resolveInjectionPoint(declaringBean.getDeployment(), null, injectionPoint);
+            Beans.resolveInjectionPoint(declaringBean.getDeployment(), null, injectionPoint, errors);
         }
     }
 

@@ -19,9 +19,9 @@ package org.jboss.shamrock.agroal;
 import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.agroal.runtime.DatasourceConfig;
 import org.jboss.shamrock.agroal.runtime.DataSourceProducer;
 import org.jboss.shamrock.agroal.runtime.DataSourceTemplate;
+import org.jboss.shamrock.agroal.runtime.DatasourceConfig;
 import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
 import org.jboss.shamrock.arc.deployment.BeanContainerListenerBuildItem;
 import org.jboss.shamrock.deployment.annotations.BuildProducer;
@@ -31,6 +31,7 @@ import org.jboss.shamrock.deployment.builditem.ExtensionSslNativeSupportBuildIte
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.SslNativeConfigBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 
 class AgroalProcessor {
 
@@ -51,6 +52,7 @@ class AgroalProcessor {
     BeanContainerListenerBuildItem build(
         BuildProducer<FeatureBuildItem> feature,
         BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+        BuildProducer<SubstrateResourceBuildItem> resource,
         BuildProducer<DataSourceDriverBuildItem> datasourceDriver,
         SslNativeConfigBuildItem sslNativeConfig, BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
         DataSourceTemplate template
@@ -62,15 +64,22 @@ class AgroalProcessor {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.AGROAL));
 
+        // For now, we can't push the security providers to Agroal so we need to include
+        // the service file inside the image. Hopefully, we will get an entry point to
+        // resolve them at build time and push them to Agroal soon.
+        resource.produce(new SubstrateResourceBuildItem("META-INF/services/" + io.agroal.api.security.AgroalSecurityProvider.class.getName()));
+
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
                 io.agroal.pool.ConnectionHandler[].class.getName(),
                 io.agroal.pool.ConnectionHandler.class.getName(),
+                io.agroal.api.security.AgroalDefaultSecurityProvider.class.getName(),
+                io.agroal.api.security.AgroalKerberosSecurityProvider.class.getName(),
                 java.sql.Statement[].class.getName(),
                 java.sql.Statement.class.getName(),
                 java.sql.ResultSet.class.getName(),
                 java.sql.ResultSet[].class.getName()
         ));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, datasource.driver.get()));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, datasource.driver.get()));
 
         datasourceDriver.produce(new DataSourceDriverBuildItem(datasource.driver.get()));
 

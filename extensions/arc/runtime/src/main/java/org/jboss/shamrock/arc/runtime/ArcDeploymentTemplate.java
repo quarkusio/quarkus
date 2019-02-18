@@ -17,6 +17,7 @@
 package org.jboss.shamrock.arc.runtime;
 
 import java.lang.annotation.Annotation;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
@@ -62,9 +63,9 @@ public class ArcDeploymentTemplate {
                                 "Bean matching %s was marked as unused and removed during build.\nExtensions can eliminate false positives using:\n\t- a custom UnremovableBeanBuildItem\n\t- AdditionalBeanBuildItem(false, beanClazz)",
                                 type);
                     } else {
-                        LOGGER.warnf(
+                        LOGGER.debugf(
                                 "No matching bean found for type %s and qualifiers %s. The bean might have been marked as unused and removed during build.",
-                                type, qualifiers);
+                                type, Arrays.toString(qualifiers));
                     }
                     return new DefaultInstanceFactory<>(type);
                 }

@@ -39,8 +39,14 @@ public class HibernateConfig {
     @ConfigItem
     public Optional<String> sqlLoadScriptSource;
 
+    /**
+     * Enable statistics (defaults to false)
+     */
+    @ConfigItem
+    public boolean generateStatistics;
+
     public boolean isAnyPropertySet() {
-        return dialect.isPresent() || schemaGeneration.isPresent() || showSql || sqlLoadScriptSource.isPresent();
+        return dialect.isPresent() || schemaGeneration.isPresent() || showSql || sqlLoadScriptSource.isPresent() || generateStatistics;
     }
 
 }

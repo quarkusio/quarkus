@@ -18,7 +18,7 @@ public class CacheRegionMaxIdleTest {
     @Test
     public void testMaxIdle() {
         final Map configValues = new HashMap();
-        configValues.put("hibernate.cache.com.acme.EntityA.expiration.max_idle", "60");
+        configValues.put("hibernate.cache.com.acme.EntityA.expiration.max-idle", "60");
 
         CacheRegionTesting testing = CacheRegionTesting.cacheRegion("com.acme.EntityA", configValues);
         SharedSessionContractImplementor session = testing.session;

@@ -57,7 +57,7 @@ public class ValidatorTestCase {
         while ((r = in.read(buf)) > 0) {
             out.write(buf, 0, r);
         }
-        Assertions.assertEquals("failed:email", new String(out.toByteArray()));
+        Assertions.assertEquals("failed:email", new String(out.toByteArray(), "UTF-8"));
     }
 
 
@@ -82,7 +82,7 @@ public class ValidatorTestCase {
         while ((r = in.read(buf)) > 0) {
             out.write(buf, 0, r);
         }
-        Assertions.assertEquals("passed", new String(out.toByteArray()));
+        Assertions.assertEquals("passed", new String(out.toByteArray(), "UTF-8"));
     }
 
 }

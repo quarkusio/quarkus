@@ -20,6 +20,7 @@ import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -257,7 +258,7 @@ public final class BuildChainBuilder {
         }
         if (GRAPH_OUTPUT != null && ! GRAPH_OUTPUT.isEmpty()) {
             try (FileOutputStream fos = new FileOutputStream(GRAPH_OUTPUT)) {
-                try (OutputStreamWriter osw = new OutputStreamWriter(fos)) {
+                try (OutputStreamWriter osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8)) {
                     try (BufferedWriter writer = new BufferedWriter(osw)) {
                         writer.write("digraph {");
                         writer.newLine();

@@ -16,6 +16,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -87,8 +88,8 @@ public class CreateProjectMojoIT extends MojoTestBase {
     private Model load(File directory) {
         File pom = new File(directory, "pom.xml");
         assertThat(pom).isFile();
-        try (FileReader fr = new FileReader(pom)) {
-            return new MavenXpp3Reader().read(fr);
+        try (InputStreamReader isr = new InputStreamReader(new FileInputStream(pom), StandardCharsets.UTF_8);) {
+            return new MavenXpp3Reader().read(isr);
         } catch (IOException | XmlPullParserException e) {
             throw new IllegalArgumentException("Cannot read the pom.xml file", e);
         }
@@ -297,7 +298,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
     }
 
     @Test
-    public void generateNewProjectAndRun() throws MavenInvocationException, FileNotFoundException, InterruptedException {
+    public void generateNewProjectAndRun() throws Exception {
         testDir = initEmptyProject("projects/project-generation-and-run");
 
         // Scaffold the new project
@@ -324,7 +325,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(greeting).containsIgnoringCase("hello");
     }
 
-    private InvocationResult setup(Properties params) throws MavenInvocationException, FileNotFoundException {
+    private InvocationResult setup(Properties params) throws MavenInvocationException, FileNotFoundException, UnsupportedEncodingException {
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);
         request.setGoals(Collections.singletonList(
@@ -333,7 +334,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         request.setProperties(params);
         getEnv().forEach(request::addShellEnvironment);
         File log = new File(testDir, "build-create-" + testDir.getName() + ".log");
-        PrintStreamLogger logger = new PrintStreamLogger(new PrintStream(new FileOutputStream(log)),
+        PrintStreamLogger logger = new PrintStreamLogger(new PrintStream(new FileOutputStream(log), false, "UTF-8"),
                 InvokerLogger.DEBUG);
         invoker.setLogger(logger);
         return invoker.execute(request);

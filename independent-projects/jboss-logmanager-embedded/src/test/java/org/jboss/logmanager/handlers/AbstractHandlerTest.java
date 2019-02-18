@@ -127,7 +127,7 @@ public class AbstractHandlerTest {
      * @throws IOException if an error occurs while reading the GZIP file
      */
     static void validateGzipContents(final Path path, final String expectedContains) throws IOException {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(Files.newInputStream(path))))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(Files.newInputStream(path)), StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 if (line.contains(expectedContains)) {

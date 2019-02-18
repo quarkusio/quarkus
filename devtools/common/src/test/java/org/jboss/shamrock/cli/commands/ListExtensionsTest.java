@@ -109,7 +109,7 @@ public class ListExtensionsTest {
 
         final PrintStream out = System.out;
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (final PrintStream printStream = new PrintStream(baos)) {
+        try (final PrintStream printStream = new PrintStream(baos, false, "UTF-8")) {
             System.setOut(printStream);
             new ListExtensions(model)
                 .listExtensions();

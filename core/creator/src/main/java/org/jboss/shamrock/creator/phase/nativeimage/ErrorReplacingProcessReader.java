@@ -20,6 +20,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.concurrent.CountDownLatch;
@@ -50,7 +51,7 @@ public final class ErrorReplacingProcessReader implements Runnable {
         try {
             Deque<String> fullBuffer = new ArrayDeque<>();
             boolean buffering = false;
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
                 for (String line = reader.readLine(); line != null; line = reader.readLine()) {
                     if (line.startsWith(LINE_START)) {
                         buffering = true;

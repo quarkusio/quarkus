@@ -20,6 +20,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 
 import org.jboss.shamrock.test.common.http.TestHTTPResource;
 import org.jboss.shamrock.test.junit.ShamrockTest;
@@ -42,6 +43,6 @@ public class FaultToleranceTestCase {
         while ((r = in.read(buf)) > 0) {
             out.write(buf, 0, r);
         }
-        Assertions.assertEquals("2:Lucie", new String(out.toByteArray()));
+        Assertions.assertEquals("2:Lucie", new String(out.toByteArray(), StandardCharsets.UTF_8));
     }
 }

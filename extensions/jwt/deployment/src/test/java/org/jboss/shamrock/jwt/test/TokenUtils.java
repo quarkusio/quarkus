@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -190,7 +191,7 @@ public class TokenUtils {
     public static String readResource(String resName) throws IOException {
         InputStream is = TokenUtils.class.getResourceAsStream(resName);
         StringWriter sw = new StringWriter();
-        try(BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
+        try(BufferedReader br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
             String line = br.readLine();
             while(line != null) {
                 sw.write(line);
@@ -211,7 +212,7 @@ public class TokenUtils {
         InputStream contentIS = TokenUtils.class.getResourceAsStream(pemResName);
         byte[] tmp = new byte[4096];
         int length = contentIS.read(tmp);
-        return decodePrivateKey(new String(tmp, 0, length));
+        return decodePrivateKey(new String(tmp, 0, length, "UTF-8"));
     }
     /**
      * Read a PEM encoded public key from the classpath
@@ -223,7 +224,7 @@ public class TokenUtils {
         InputStream contentIS = TokenUtils.class.getResourceAsStream(pemResName);
         byte[] tmp = new byte[4096];
         int length = contentIS.read(tmp);
-        return decodePublicKey(new String(tmp, 0, length));
+        return decodePublicKey(new String(tmp, 0, length, "UTF-8"));
     }
 
     /**

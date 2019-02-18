@@ -24,6 +24,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -137,7 +138,7 @@ public class NativeImageLauncher implements Closeable {
             int i;
             try {
                 while ((i = inputStream.read(b)) > 0) {
-                    System.out.print(new String(b, 0, i));
+                    System.out.print(new String(b, 0, i, StandardCharsets.UTF_8));
                 }
             } catch (IOException e) {
                 //ignore

@@ -30,9 +30,10 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.jboss.shamrock.dependencies.Extension;
 import org.jboss.shamrock.maven.AbstractExtensionMojo;
 
+import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Set;
 
 /**
@@ -82,7 +83,7 @@ public class ExtensionListMojo extends AbstractExtensionMojo {
         mapper.configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
 
         File outFile = new File(this.project.getBuild().getOutputDirectory(), FILE_NAME + ".js");
-        try (FileWriter writer = new FileWriter(outFile)) {
+        try (BufferedWriter writer = Files.newBufferedWriter(outFile.toPath())) {
             writer.write("version = '" + version + "';");
             writer.write("extensionList = ");
             mapper.writeValue(writer, extensions);

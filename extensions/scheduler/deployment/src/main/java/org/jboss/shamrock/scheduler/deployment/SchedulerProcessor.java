@@ -17,14 +17,10 @@ package org.jboss.shamrock.scheduler.deployment;
 
 import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -67,6 +63,7 @@ import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import org.jboss.shamrock.deployment.util.HashUtil;
 import org.jboss.shamrock.scheduler.api.Scheduled;
 import org.jboss.shamrock.scheduler.api.ScheduledExecution;
 import org.jboss.shamrock.scheduler.api.Scheduleds;
@@ -136,7 +133,7 @@ public class SchedulerProcessor {
 
     @BuildStep
     BeanDeploymentValidatorBuildItem beanDeploymentValidator(BuildProducer<ScheduledBusinessMethodItem> scheduledBusinessMethods) {
-        
+
         return new BeanDeploymentValidatorBuildItem(new BeanDeploymentValidator() {
 
             @Override
@@ -191,7 +188,7 @@ public class SchedulerProcessor {
             }
         });
     }
-    
+
     @BuildStep
     public List<UnremovableBeanBuildItem> unremovableBeans() {
         return Arrays.asList(new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(SCHEDULED_NAME)),
@@ -247,7 +244,7 @@ public class SchedulerProcessor {
             sigBuilder.append(i.name().toString());
         }
         String targetPackage = DotNames.packageName(bean.getImplClazz().name());
-        String generatedName = targetPackage.replace('.', '/') + "/" + baseName + INVOKER_SUFFIX + "_" + method.name() + "_" + sha1(sigBuilder.toString());
+        String generatedName = targetPackage.replace('.', '/') + "/" + baseName + INVOKER_SUFFIX + "_" + method.name() + "_" + HashUtil.sha1(sigBuilder.toString());
 
         ClassCreator invokerCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName).interfaces(ScheduledInvoker.class)
                 .build();
@@ -276,16 +273,6 @@ public class SchedulerProcessor {
 
         invokerCreator.close();
         return generatedName.replace('/', '.');
-    }
-    
-    static String sha1(String value) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-1");
-            return Base64.getUrlEncoder()
-                    .encodeToString(md.digest(value.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
-        }
     }
 
     private Object getValue(AnnotationValue annotationValue) {

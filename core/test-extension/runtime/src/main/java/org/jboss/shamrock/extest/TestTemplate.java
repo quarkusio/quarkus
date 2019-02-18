@@ -5,15 +5,29 @@ import org.jboss.shamrock.arc.runtime.BeanContainer;
 import org.jboss.shamrock.arc.runtime.BeanContainerListener;
 import org.jboss.shamrock.runtime.annotations.Template;
 
+/**
+ * The runtime template
+ */
 @Template
 public class TestTemplate {
     static final Logger log = Logger.getLogger(TestTemplate.class);
 
-    BeanContainerListener configureBeans(Class<?> beanClass) {
-        return beanContainer -> {
-            log.infof("Begin BeanContainerListener callback\n");
-            Object instance = beanContainer.instance(beanClass);
-            log.infof("configureBeans, instance=%s\n", instance);
+    /**
+     * Create a BeanContainerListener that instantiates the given class and passes the TestRunTimeConfig to it
+     * @see IRTConfig#loadConfig(TestRunTimeConfig)
+     * @param beanClass - IRTConfig
+     * @param runTimeConfig - the extension TestRunTimeConfig
+     * @return BeanContainerListener
+     */
+    public BeanContainerListener configureBeans(Class<IRTConfig> beanClass, TestRunTimeConfig runTimeConfig) {
+        return new BeanContainerListener() {
+            @Override
+            public void created(BeanContainer beanContainer) {
+                log.infof("Begin BeanContainerListener callback\n");
+                IRTConfig instance = beanContainer.instance(beanClass);
+                instance.loadConfig(runTimeConfig);
+                log.infof("configureBeans, instance=%s\n", instance);
+            }
         };
     }
 }

@@ -4,21 +4,24 @@ import org.jboss.shamrock.runtime.annotations.ConfigItem;
 import org.jboss.shamrock.runtime.annotations.ConfigPhase;
 import org.jboss.shamrock.runtime.annotations.ConfigRoot;
 
+/**
+ * A root config object for use during build time
+ */
 @ConfigRoot(name = "bt", phase = ConfigPhase.BUILD_TIME)
 public class TestBuildTimeConfig {
-    /** A build time string */
+    /** A config string */
     @ConfigItem()
     String btStringOpt;
-    /** A build time string with default value */
+    /** A config string with default value */
     @ConfigItem(defaultValue = "btStringOptWithDefaultValue")
     String btStringOptWithDefault;
-    /** A build time object with ctor(String) */
+    /** A config object with ctor(String) */
     @ConfigItem
     StringBasedValue btSBV;
-    /** A build time object with ctor(String) and default value */
+    /** A config object with ctor(String) and default value */
     @ConfigItem(defaultValue = "btSBVWithDefaultValue")
     StringBasedValue btSBVWithDefault;
-    /** A config group with all supported value types */
+    /** A nested config group with all supported value types */
     @ConfigItem
     AllValuesConfig allValues;
 

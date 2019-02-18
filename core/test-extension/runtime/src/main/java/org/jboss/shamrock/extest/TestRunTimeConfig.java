@@ -15,4 +15,13 @@ public class TestRunTimeConfig {
     /** A config group with all supported value types */
     @ConfigItem
     AllValuesConfig allValues;
+
+    @Override
+    public String toString() {
+        return "TestRunTimeConfig{" +
+                "rtStringOpt='" + rtStringOpt + '\'' +
+                ", rtStringOptWithDefault='" + rtStringOptWithDefault + '\'' +
+                ", allValues=" + allValues +
+                '}';
+    }
 }

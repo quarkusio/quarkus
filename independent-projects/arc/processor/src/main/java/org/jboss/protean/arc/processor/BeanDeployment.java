@@ -253,34 +253,25 @@ public class BeanDeployment {
             validator.validate(validationContext);
         }
         errors.addAll(validationContext.getErrors());
-
-        if (!errors.isEmpty()) {
-            if (errors.size() == 1) {
-                Throwable error = errors.get(0);
-                if (error instanceof DeploymentException) {
-                    throw (DeploymentException) error;
-                } else {
-                    throw new DeploymentException(errors.get(0));
-                }
-            } else {
-                DeploymentException deploymentException = new DeploymentException("Multiple deployment problems occured: " + errors.stream()
-                        .map(e -> e.getMessage())
-                        .collect(Collectors.toList())
-                        .toString());
-                for (Throwable error : errors) {
-                    deploymentException.addSuppressed(error);
-                }
-                throw deploymentException;
-            }
-        }
+        processErrors(errors);
         LOGGER.debugf("Bean deployment validated in %s ms", System.currentTimeMillis() - start);
     }
-
+    
     void init() {
         long start = System.currentTimeMillis();
-        beans.forEach(BeanInfo::init);
-        observers.forEach(ObserverInfo::init);
-        interceptors.forEach(InterceptorInfo::init);
+
+        // Collect dependency resolution errors
+        List<Throwable> errors = new ArrayList<>();
+        for (BeanInfo bean : beans) {
+            bean.init(errors);
+        }
+        for (ObserverInfo observer : observers) {
+            observer.init(errors);
+        }
+        for (InterceptorInfo interceptor : interceptors) {
+            interceptor.init(errors);
+        }
+        processErrors(errors);
 
         if (removeUnusedBeans) {
             long removalStart = System.currentTimeMillis();
@@ -621,6 +612,30 @@ public class BeanDeployment {
             injectionPoints.addAll(i.getAllInjectionPoints());
         }
         return interceptors;
+    }
+    
+    private void processErrors(List<Throwable> errors) {
+        if (!errors.isEmpty()) {
+            if (errors.size() == 1) {
+                Throwable error = errors.get(0);
+                if (error instanceof DeploymentException) {
+                    throw (DeploymentException) error;
+                } else {
+                    throw new DeploymentException(errors.get(0));
+                }
+            } else {
+                StringBuilder message = new StringBuilder("Found " + errors.size() + " deployment problems: ");
+                int idx = 1;
+                for (Throwable error : errors) {
+                    message.append("\n").append("[").append(idx++).append("] ").append(error.getMessage());
+                }
+                DeploymentException deploymentException = new DeploymentException(message.toString());
+                for (Throwable error : errors) {
+                    deploymentException.addSuppressed(error);
+                }
+                throw deploymentException;
+            }
+        }
     }
 
     public static Set<DotName> initBeanDefiningAnnotations(Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations, Set<DotName> stereotypes) {

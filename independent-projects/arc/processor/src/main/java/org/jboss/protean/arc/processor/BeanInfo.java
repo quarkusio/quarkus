@@ -343,14 +343,14 @@ public class BeanInfo {
         // TODO we should add way more validations
     }
 
-    void init() {
+    void init(List<Throwable> errors) {
         for (Injection injection : injections) {
             for (InjectionPointInfo injectionPoint : injection.injectionPoints) {
-                Beans.resolveInjectionPoint(beanDeployment, this, injectionPoint);
+                Beans.resolveInjectionPoint(beanDeployment, this, injectionPoint, errors);
             }
         }
         if (disposer != null) {
-            disposer.init();
+            disposer.init(errors);
         }
         interceptedMethods = initInterceptedMethods();
         lifecycleInterceptors = initLifecycleInterceptors();

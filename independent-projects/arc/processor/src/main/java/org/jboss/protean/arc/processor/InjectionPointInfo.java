@@ -135,7 +135,7 @@ public class InjectionPointInfo {
     }
     
     /**
-     * For injectected params, this method returns the corresponding method and not the param itself.
+     * For injected params, this method returns the corresponding method and not the param itself.
      * 
      * @return the annotation target
      */

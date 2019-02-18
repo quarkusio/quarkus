@@ -28,7 +28,7 @@
 
     <artifactId>shamrock-extension-plugin</artifactId>
     <packaging>maven-plugin</packaging>
-    <name>Shamrock - Extension plugin</name>
+    <name>Shamrock - Extension Maven plugin</name>
 
     <dependencies>
         <dependency>
@@ -48,7 +48,7 @@
 
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>devtools-common-core</artifactId>
+            <artifactId>shamrock-devtools-common-core</artifactId>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

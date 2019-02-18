@@ -166,12 +166,12 @@
          </dependency>
          <dependency>
              <groupId>org.jboss.shamrock</groupId>
-             <artifactId>devtools-common</artifactId>
+             <artifactId>shamrock-devtools-common</artifactId>
              <version>${project.version}</version>
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>devtools-common-core</artifactId>
+            <artifactId>shamrock-devtools-common-core</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
@@ -331,12 +331,12 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jwt-deployment</artifactId>
+            <artifactId>shamrock-smallrye-jwt-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jwt-runtime</artifactId>
+            <artifactId>shamrock-smallrye-jwt-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>

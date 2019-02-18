@@ -27,7 +27,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>shamrock-cli</artifactId>
-    <name>Shamrock - CLI Native Tool</name>
+    <name>Shamrock - Dev tools - CLI Native Tool</name>
 
     <properties>
         <test.level>INFO</test.level>
@@ -39,7 +39,7 @@
     <dependencies>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>devtools-common</artifactId>
+            <artifactId>shamrock-devtools-common</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

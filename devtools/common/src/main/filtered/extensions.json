@@ -241,5 +241,24 @@
     ],
     "groupId": "org.jboss.shamrock",
     "artifactId": "shamrock-spring-di-deployment"
+  },
+  {
+    "name": "Security",
+    "labels": [
+      "security"
+    ],
+    "groupId": "org.jboss.shamrock",
+    "artifactId": "shamrock-security-deployment"
+  },
+  {
+    "name": "SmallRye JWT",
+    "labels": [
+      "smallrye-jwt",
+      "jwt",
+      "json-web-token",
+      "rbac"
+    ],
+    "groupId": "org.jboss.shamrock",
+    "artifactId": "shamrock-smallrye-jwt-deployment"
   }
 ]

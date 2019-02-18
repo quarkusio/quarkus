@@ -71,7 +71,7 @@
 
         <!-- Security -->
         <module>security</module>
-        <module>jwt</module>
+        <module>smallrye-jwt</module>
 
         <!-- Infinispan -->
         <module>infinispan-client</module>

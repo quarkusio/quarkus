@@ -586,7 +586,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Unable to find javadoc for config item " + e, e);
             return "";
         }
-        return docComment;
+        return docComment.trim();
     }
 
     private static boolean hasParameterAnnotated(ExecutableElement ex, String annotationName) {

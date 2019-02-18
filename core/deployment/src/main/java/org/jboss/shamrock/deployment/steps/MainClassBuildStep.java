@@ -40,7 +40,7 @@ import org.jboss.shamrock.deployment.builditem.ApplicationClassNameBuildItem;
 import org.jboss.shamrock.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
 import org.jboss.shamrock.deployment.builditem.ClassOutputBuildItem;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
-import org.jboss.shamrock.deployment.builditem.HttpServerBuiltItem;
+import org.jboss.shamrock.deployment.builditem.HttpServerBuildItem;
 import org.jboss.shamrock.deployment.builditem.MainBytecodeRecorderBuildItem;
 import org.jboss.shamrock.deployment.builditem.MainClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.ObjectSubstitutionBuildItem;
@@ -65,7 +65,7 @@ class MainClassBuildStep {
                              List<ObjectSubstitutionBuildItem> substitutions,
                              List<MainBytecodeRecorderBuildItem> mainMethod,
                              List<SystemPropertyBuildItem> properties,
-                             Optional<HttpServerBuiltItem> httpServer,
+                             Optional<HttpServerBuildItem> httpServer,
                              List<FeatureBuildItem> features,
                              BuildProducer<ApplicationClassNameBuildItem> appClassNameProducer,
                              List<BytecodeRecorderObjectLoaderBuildItem> loaders,

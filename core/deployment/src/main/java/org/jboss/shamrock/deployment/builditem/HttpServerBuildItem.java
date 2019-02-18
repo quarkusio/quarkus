@@ -2,13 +2,13 @@ package org.jboss.shamrock.deployment.builditem;
 
 import org.jboss.builder.item.SimpleBuildItem;
 
-public final class HttpServerBuiltItem extends SimpleBuildItem {
+public final class HttpServerBuildItem extends SimpleBuildItem {
     
     private final String host;
 
     private final Integer port;
 
-    public HttpServerBuiltItem(String host, Integer port) {
+    public HttpServerBuildItem(String host, Integer port) {
         this.host = host;
         this.port = port;
     }

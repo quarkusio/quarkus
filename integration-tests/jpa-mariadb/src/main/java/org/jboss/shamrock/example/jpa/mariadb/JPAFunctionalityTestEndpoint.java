@@ -33,7 +33,7 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
         try {
             doStuffWithHibernate(entityManagerFactory);
         } catch (Exception e) {
-            reportException("Oops, shit happened, No boot for you!", e, resp);
+            reportException("An error occurred while performing Hibernate operations", e, resp);
         }
         resp.getWriter().write("OK");
     }

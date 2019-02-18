@@ -97,7 +97,7 @@ import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
 import org.jboss.shamrock.deployment.builditem.ArchiveRootBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
-import org.jboss.shamrock.deployment.builditem.HttpServerBuiltItem;
+import org.jboss.shamrock.deployment.builditem.HttpServerBuildItem;
 import org.jboss.shamrock.deployment.builditem.LaunchModeBuildItem;
 import org.jboss.shamrock.deployment.builditem.ObjectSubstitutionBuildItem;
 import org.jboss.shamrock.deployment.builditem.ServiceStartBuildItem;
@@ -150,11 +150,11 @@ public class UndertowBuildStep {
                                       List<HttpHandlerWrapperBuildItem> wrappers,
                                       ShutdownContextBuildItem shutdown,
                                       Consumer<UndertowBuildItem> undertowProducer,
-                                      Consumer<HttpServerBuiltItem> serverProducer,
+                                      Consumer<HttpServerBuildItem> serverProducer,
                                       LaunchModeBuildItem launchMode) throws Exception {
         RuntimeValue<Undertow> ut = template.startUndertow(shutdown, servletDeploymentManagerBuildItem.getDeploymentManager(), config, wrappers.stream().map(HttpHandlerWrapperBuildItem::getValue).collect(Collectors.toList()), launchMode.getLaunchMode());
         undertowProducer.accept(new UndertowBuildItem(ut));
-        serverProducer.accept(new HttpServerBuiltItem(config.host, config.determinePort(launchMode.getLaunchMode())));
+        serverProducer.accept(new HttpServerBuildItem(config.host, config.determinePort(launchMode.getLaunchMode())));
         return new ServiceStartBuildItem("undertow");
     }
 

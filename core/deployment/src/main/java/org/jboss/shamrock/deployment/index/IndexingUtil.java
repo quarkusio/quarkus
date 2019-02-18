@@ -18,7 +18,7 @@ public class IndexingUtil {
 
     public static final DotName OBJECT = DotName.createSimple(Object.class.getName());
 
-    public static void indexClass(String beanClass, Indexer indexer, IndexView shamrockIndex, 
+    public static void indexClass(String beanClass, Indexer indexer, IndexView shamrockIndex,
                                   Set<DotName> additionalIndex, ClassLoader classLoader) {
         DotName beanClassName = DotName.createSimple(beanClass);
         if (additionalIndex.contains(beanClassName)) {
@@ -31,7 +31,7 @@ public class IndexingUtil {
                 beanInfo = indexer.index(stream);
                 additionalIndex.add(beanInfo.name());
             } catch (IOException e) {
-                throw new IllegalStateException("Failed to index: " + beanClass);
+                throw new IllegalStateException("Failed to index: " + beanClass, e);
             }
         } else {
             // The class could be indexed by shamrock - we still need to distinguish framework classes
@@ -44,7 +44,7 @@ public class IndexingUtil {
                     indexer.index(annotationStream);
                     additionalIndex.add(annotationName);
                 } catch (IOException e) {
-                    throw new IllegalStateException("Failed to index: " + beanClass);
+                    throw new IllegalStateException("Failed to index: " + beanClass, e);
                 }
             }
         }
@@ -53,8 +53,8 @@ public class IndexingUtil {
         }
     }
 
-    public static void indexClass(String beanClass, Indexer indexer, 
-                                  IndexView shamrockIndex, Set<DotName> additionalIndex, 
+    public static void indexClass(String beanClass, Indexer indexer,
+                                  IndexView shamrockIndex, Set<DotName> additionalIndex,
                                   ClassLoader classLoader, byte[] beanData) {
         DotName beanClassName = DotName.createSimple(beanClass);
         if (additionalIndex.contains(beanClassName)) {
@@ -67,7 +67,7 @@ public class IndexingUtil {
                 beanInfo = indexer.index(stream);
                 additionalIndex.add(beanInfo.name());
             } catch (IOException e) {
-                throw new IllegalStateException("Failed to index: " + beanClass);
+                throw new IllegalStateException("Failed to index: " + beanClass, e);
             }
         } else {
             // The class could be indexed by shamrock - we still need to distinguish framework classes
@@ -80,7 +80,7 @@ public class IndexingUtil {
                     indexer.index(annotationStream);
                     additionalIndex.add(annotationName);
                 } catch (IOException e) {
-                    throw new IllegalStateException("Failed to index: " + beanClass);
+                    throw new IllegalStateException("Failed to index: " + beanClass, e);
                 }
             }
         }

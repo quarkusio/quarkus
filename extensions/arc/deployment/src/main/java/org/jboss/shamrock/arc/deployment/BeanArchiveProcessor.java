@@ -54,51 +54,46 @@ public class BeanArchiveProcessor {
 
         Set<ApplicationArchive> archives = applicationArchivesBuildItem.getAllApplicationArchives();
 
+        // We need to collect all stereotype annotations first
         Set<DotName> stereotypes = new HashSet<>();
         for (ApplicationArchive archive : archives) {
-            Collection<AnnotationInstance> annotations = archive.getIndex()
-                    .getAnnotations(DotNames.STEREOTYPE);
+            Collection<AnnotationInstance> annotations = archive.getIndex().getAnnotations(DotNames.STEREOTYPE);
             if (!annotations.isEmpty()) {
                 for (AnnotationInstance annotationInstance : annotations) {
-                    if (annotationInstance.target()
-                            .kind() == Kind.CLASS) {
-                        stereotypes.add(annotationInstance.target()
-                                .asClass()
-                                .name());
+                    if (annotationInstance.target().kind() == Kind.CLASS) {
+                        stereotypes.add(annotationInstance.target().asClass().name());
                     }
                 }
             }
         }
 
         Collection<DotName> beanDefiningAnnotations = BeanDeployment.initBeanDefiningAnnotations(additionalBeanDefiningAnnotations.stream()
-                .map(bda -> new BeanDefiningAnnotation(bda.getName(), bda.getDefaultScope()))
-                .collect(Collectors.toList()), stereotypes);
+                .map(bda -> new BeanDefiningAnnotation(bda.getName(), bda.getDefaultScope())).collect(Collectors.toList()), stereotypes);
+        // Also include archives that are not bean archives but contain qualifiers or interceptor bindings
+        beanDefiningAnnotations.add(DotNames.QUALIFIER);
+        beanDefiningAnnotations.add(DotNames.INTERCEPTOR_BINDING);
 
         List<IndexView> indexes = new ArrayList<>();
 
         for (ApplicationArchive archive : applicationArchivesBuildItem.getApplicationArchives()) {
             IndexView index = archive.getIndex();
-
-            if (archive.getChildPath("META-INF/beans.xml") != null) {
+            // NOTE: Implicit bean archive without beans.xml contains one or more bean classes with a bean defining annotation and no extension
+            if (archive.getChildPath("META-INF/beans.xml") != null || archive.getChildPath("WEB-INF/beans.xml") != null
+                    || (index.getAllKnownImplementors(DotNames.EXTENSION).isEmpty() && containsBeanDefiningAnnotation(index, beanDefiningAnnotations))) {
                 indexes.add(index);
-            } else if (archive.getChildPath("WEB-INF/beans.xml") != null) {
-                indexes.add(index);
-            } else {
-                // Implicit bean archive without beans.xml - contains one or more bean classes with a bean defining annotation and no extension
-                if (index.getAllKnownImplementors(DotNames.EXTENSION)
-                        .isEmpty()) {
-                    for (DotName beanDefiningAnnotation : beanDefiningAnnotations) {
-                        if (!index.getAnnotations(beanDefiningAnnotation)
-                                .isEmpty()) {
-                            indexes.add(index);
-                            break;
-                        }
-                    }
-                }
             }
         }
         indexes.add(applicationArchivesBuildItem.getRootArchive().getIndex());
         beanArchiveIndexBuildProducer.produce(new BeanArchiveIndexBuildItem(CompositeIndex.create(indexes)));
+    }
+
+    boolean containsBeanDefiningAnnotation(IndexView index, Collection<DotName> beanDefiningAnnotations) {
+        for (DotName beanDefiningAnnotation : beanDefiningAnnotations) {
+            if (!index.getAnnotations(beanDefiningAnnotation).isEmpty()) {
+                return true;
+            }
+        }
+        return false;
     }
 
 }

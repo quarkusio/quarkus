@@ -22,6 +22,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.inject.Inject;
+import javax.persistence.NoResultException;
+import javax.persistence.NonUniqueResultException;
 import javax.transaction.Transactional;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -46,6 +48,13 @@ public class TestEndpoint {
         Stream<Person> personStream = Person.findAll().stream();
         Assertions.assertEquals(0, personStream.count());
 
+        try {
+            Person.findAll().getSingleResult();
+            Assertions.fail("getSingleResult should have thrown");
+        }catch(NoResultException x) {}
+        
+        Assertions.assertNull(Person.findAll().getFirstResult());
+
         Person person = makeSavedPerson();
         Assertions.assertNotNull(person.id);
 
@@ -63,6 +72,9 @@ public class TestEndpoint {
         personStream = Person.findAll().stream();
         Assertions.assertEquals(persons, personStream.collect(Collectors.toList()));
 
+        Assertions.assertEquals(person, Person.findAll().getFirstResult());
+        Assertions.assertEquals(person, Person.findAll().getSingleResult());
+
         persons = Person.find("name = ?1", "stef").list();
         Assertions.assertEquals(1, persons.size());
         Assertions.assertEquals(person, persons.get(0));
@@ -76,6 +88,9 @@ public class TestEndpoint {
 
         personStream = Person.find("name", "stef").stream();
         Assertions.assertEquals(persons, personStream.collect(Collectors.toList()));
+
+        Assertions.assertEquals(person, Person.find("name", "stef").getFirstResult());
+        Assertions.assertEquals(person, Person.find("name", "stef").getSingleResult());
 
         Person byId = Person.findById(person.id);
         Assertions.assertEquals(person, byId);
@@ -101,6 +116,14 @@ public class TestEndpoint {
         }
         testPaging(Person.findAll());
         testPaging(Person.find("ORDER BY name"));
+        
+        try {
+            Person.findAll().getSingleResult();
+            Assertions.fail("getSingleResult should have thrown");
+        }catch(NonUniqueResultException x) {}
+        
+        Assertions.assertNotNull(Person.findAll().getFirstResult());
+
         Assertions.assertEquals(7, Person.deleteAll());
 
         return "OK";
@@ -144,6 +167,13 @@ public class TestEndpoint {
 
         Stream<Person> personStream = personDao.findAll().stream();
         Assertions.assertEquals(0, personStream.count());
+        
+        try {
+            personDao.findAll().getSingleResult();
+            Assertions.fail("getSingleResult should have thrown");
+        }catch(NoResultException x) {}
+        
+        Assertions.assertNull(personDao.findAll().getFirstResult());
 
         Person person = makeSavedPersonDao();
         Assertions.assertNotNull(person.id);
@@ -162,6 +192,9 @@ public class TestEndpoint {
         personStream = personDao.findAll().stream();
         Assertions.assertEquals(persons, personStream.collect(Collectors.toList()));
 
+        Assertions.assertEquals(person, personDao.findAll().getFirstResult());
+        Assertions.assertEquals(person, personDao.findAll().getSingleResult());
+
         persons = personDao.find("name = ?1", "stef").list();
         Assertions.assertEquals(1, persons.size());
         Assertions.assertEquals(person, persons.get(0));
@@ -175,6 +208,9 @@ public class TestEndpoint {
 
         personStream = personDao.find("name", "stef").stream();
         Assertions.assertEquals(persons, personStream.collect(Collectors.toList()));
+
+        Assertions.assertEquals(person, personDao.find("name", "stef").getFirstResult());
+        Assertions.assertEquals(person, personDao.find("name", "stef").getSingleResult());
 
         Person byId = personDao.findById(person.id);
         Assertions.assertEquals(person, byId);
@@ -200,6 +236,14 @@ public class TestEndpoint {
         }
         testPaging(personDao.findAll());
         testPaging(personDao.find("ORDER BY name"));
+        
+        try {
+            personDao.findAll().getSingleResult();
+            Assertions.fail("getSingleResult should have thrown");
+        }catch(NonUniqueResultException x) {}
+        
+        Assertions.assertNotNull(personDao.findAll().getFirstResult());
+        
         Assertions.assertEquals(7, personDao.deleteAll());
 
         return "OK";

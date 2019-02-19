@@ -14,18 +14,18 @@ public class TestTemplate {
 
     /**
      * Create a BeanContainerListener that instantiates the given class and passes the TestRunTimeConfig to it
-     * @see IRTConfig#loadConfig(TestRunTimeConfig)
-     * @param beanClass - IRTConfig
+     * @see IConfigConsumer#loadConfig(TestBuildTimeConfig, TestRunTimeConfig)
+     * @param beanClass - IConfigConsumer
      * @param runTimeConfig - the extension TestRunTimeConfig
      * @return BeanContainerListener
      */
-    public BeanContainerListener configureBeans(Class<IRTConfig> beanClass, TestRunTimeConfig runTimeConfig) {
+    public BeanContainerListener configureBeans(Class<IConfigConsumer> beanClass, TestBuildTimeConfig buildTimeConfig, TestRunTimeConfig runTimeConfig) {
         return new BeanContainerListener() {
             @Override
             public void created(BeanContainer beanContainer) {
                 log.infof("Begin BeanContainerListener callback\n");
-                IRTConfig instance = beanContainer.instance(beanClass);
-                instance.loadConfig(runTimeConfig);
+                IConfigConsumer instance = beanContainer.instance(beanClass);
+                instance.loadConfig(buildTimeConfig, runTimeConfig);
                 log.infof("configureBeans, instance=%s\n", instance);
             }
         };

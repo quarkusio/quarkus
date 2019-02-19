@@ -51,6 +51,7 @@ public final class TestProcessor {
 
     /**
      * Validate the expected configuration objects
+     * TODO: move validation to unit test code
      */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
@@ -121,8 +122,8 @@ public final class TestProcessor {
         for(AnnotationInstance ann : testBeans) {
             ClassInfo beanClassInfo = ann.target().asClass();
             try {
-                Class<IRTConfig> beanClass = (Class<IRTConfig>) Class.forName(beanClassInfo.name().toString());
-                BeanContainerListener listener = template.configureBeans(beanClass, runTimeConfig);
+                Class<IConfigConsumer> beanClass = (Class<IConfigConsumer>) Class.forName(beanClassInfo.name().toString());
+                BeanContainerListener listener = template.configureBeans(beanClass, buildTimeConfig, runTimeConfig);
                 listeners.produce(new BeanContainerListenerBuildItem(listener));
                 System.out.printf("Configured bean: %s\n", beanClass);
             } catch (ClassNotFoundException e) {

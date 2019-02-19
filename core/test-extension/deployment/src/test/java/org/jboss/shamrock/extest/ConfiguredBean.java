@@ -8,16 +8,18 @@ import org.jboss.shamrock.runtime.StartupEvent;
  * A sample bean
  */
 @TestAnnotation
-public class ConfiguredBean implements IRTConfig {
+public class ConfiguredBean implements IConfigConsumer {
     TestRunTimeConfig runTimeConfig;
+    TestBuildTimeConfig buildTimeConfig;
 
    /**
      * Called by runtime with the runtime config object
      * @param runTimeConfig
      */
     @Override
-    public void loadConfig(TestRunTimeConfig runTimeConfig) {
-        System.out.printf("loadConfig, runTimeConfig=%s\n", runTimeConfig);
+    public void loadConfig(TestBuildTimeConfig buildTimeConfig, TestRunTimeConfig runTimeConfig) {
+        System.out.printf("loadConfig, buildTimeConfig=%s, runTimeConfig=%s\n", buildTimeConfig, runTimeConfig);
+        this.buildTimeConfig = buildTimeConfig;
         this.runTimeConfig = runTimeConfig;
     }
 

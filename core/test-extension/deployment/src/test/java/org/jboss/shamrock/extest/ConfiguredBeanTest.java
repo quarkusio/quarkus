@@ -5,12 +5,14 @@ import javax.inject.Inject;
 import org.jboss.shamrock.test.ShamrockUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
  * Test driver for the test-extension
  */
+@Disabled
 public class ConfiguredBeanTest {
     @RegisterExtension
     static final ShamrockUnitTest config = new ShamrockUnitTest()

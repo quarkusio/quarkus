@@ -111,6 +111,7 @@ import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.runtime.ShutdownContext;
 import org.jboss.shamrock.runtime.annotations.ConfigItem;
 import org.jboss.shamrock.undertow.runtime.HttpConfig;
+import org.jboss.shamrock.undertow.runtime.ServletProducer;
 import org.jboss.shamrock.undertow.runtime.ServletSecurityInfoProxy;
 import org.jboss.shamrock.undertow.runtime.ServletSecurityInfoSubstitution;
 import org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate;
@@ -158,6 +159,10 @@ public class UndertowBuildStep {
         return new ServiceStartBuildItem("undertow");
     }
 
+    @BuildStep
+    AdditionalBeanBuildItem httpProducers() {
+        return new AdditionalBeanBuildItem(ServletProducer.class);
+    }
 
     @BuildStep
     SubstrateConfigBuildItem config() {

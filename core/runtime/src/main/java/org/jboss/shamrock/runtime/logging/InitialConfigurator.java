@@ -31,7 +31,7 @@ public final class InitialConfigurator implements EmbeddedConfigurator {
                     "%d{HH:mm:ss,SSS} %-5p [%c{1.}] %s%e%n"
                 ));
                 handler.setLevel(Level.INFO);
-                handler.setFilter(new LogCleanupFilter());
+                // we can't set a cleanup filter without the build items ready
                 return new Handler[] {
                     handler
                 };

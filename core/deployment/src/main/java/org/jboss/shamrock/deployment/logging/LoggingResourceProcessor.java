@@ -20,8 +20,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 import org.jboss.logmanager.EmbeddedConfigurator;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.annotations.ExecutionTime;
 import org.jboss.shamrock.deployment.annotations.Record;
@@ -72,14 +74,14 @@ public final class LoggingResourceProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void setupLoggingRuntimeInit(LoggingSetupTemplate setupTemplate, LogConfig log) {
-        setupTemplate.initializeLogging(log);
+    void setupLoggingRuntimeInit(LoggingSetupTemplate setupTemplate, LogConfig log, List<LogCleanupFilterBuildItem> filters) {
+        setupTemplate.initializeLogging(log, filters.stream().map(LogCleanupFilterBuildItem::getFilterElement).collect(Collectors.toList()));
     }
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void setupLoggingStaticInit(LoggingSetupTemplate setupTemplate, LogConfig log) {
-        setupTemplate.initializeLogging(log);
+    void setupLoggingStaticInit(LoggingSetupTemplate setupTemplate, LogConfig log, List<LogCleanupFilterBuildItem> filters) {
+        setupTemplate.initializeLogging(log, filters.stream().map(LogCleanupFilterBuildItem::getFilterElement).collect(Collectors.toList()));
     }
 
     @BuildStep

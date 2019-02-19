@@ -46,6 +46,18 @@
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-narayana-jta-deployment</artifactId>
         </dependency>
+
+        <!-- test dependencies -->
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-junit5-internal</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-test-h2</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

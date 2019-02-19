@@ -31,7 +31,6 @@ final class AgroalDataSourceReplacement {
     @Substitute
     static AgroalDataSource from(AgroalDataSourceConfiguration configuration, AgroalDataSourceListener... listeners) throws SQLException {
         return new DataSource(configuration, listeners);
-
     }
 
 }

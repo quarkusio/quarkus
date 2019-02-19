@@ -18,18 +18,11 @@ package org.jboss.shamrock.agroal.runtime;
 
 import java.util.Optional;
 
+import org.jboss.shamrock.runtime.annotations.ConfigGroup;
 import org.jboss.shamrock.runtime.annotations.ConfigItem;
-import org.jboss.shamrock.runtime.annotations.ConfigPhase;
-import org.jboss.shamrock.runtime.annotations.ConfigRoot;
 
-@ConfigRoot(phase = ConfigPhase.RUN_TIME_STATIC)
-public class DatasourceConfig {
-
-    /**
-     * The datasource driver class name
-     */
-    @ConfigItem
-    public Optional<String> driver;
+@ConfigGroup
+public class DataSourceRuntimeConfig {
 
     /**
      * The datasource URL

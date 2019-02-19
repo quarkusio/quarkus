@@ -3,12 +3,15 @@ package org.jboss.panache.jpa;
 import java.util.List;
 import java.util.stream.Stream;
 
-import javax.persistence.NoResultException;
-
 public class Query<Entity> {
     
     
     private javax.persistence.Query jpaQuery;
+    /*
+     * We store the pageSize and apply it for each request because getFirstResult()
+     * sets the page size to 1
+     */
+    private int pageSize = Integer.MAX_VALUE;
 
     public Query(javax.persistence.Query jpaQuery) {
         this.jpaQuery = jpaQuery;
@@ -23,7 +26,7 @@ public class Query<Entity> {
     @SuppressWarnings("unchecked")
     public <T extends Entity> Query<T> page(int pageIndex, int pageSize){
         jpaQuery.setFirstResult(pageIndex * pageSize);
-        jpaQuery.setMaxResults(pageSize);
+        this.pageSize = pageSize;
         return (Query<T>) this;
     }
     
@@ -31,25 +34,25 @@ public class Query<Entity> {
     
     @SuppressWarnings("unchecked")
     public <T extends Entity> List<T> list(){
+        jpaQuery.setMaxResults(pageSize);
         return jpaQuery.getResultList();
     }
 
     @SuppressWarnings("unchecked")
     public <T extends Entity> Stream<T> stream(){
+        jpaQuery.setMaxResults(pageSize);
         return jpaQuery.getResultStream();
     }
     
     public <T extends Entity> T getFirstResult() {
-        // FIXME: force max results for better perf?
         List<T> list = list();
-        // FIXME: do not throw? Or variant to not throw?
-        if(list.isEmpty())
-            throw new NoResultException("No first result");
-        return list.get(0);
+        jpaQuery.setMaxResults(1);
+        return list.isEmpty() ? null : list.get(0);
     }
     
     @SuppressWarnings("unchecked")
     public <T extends Entity> T getSingleResult() {
+        jpaQuery.setMaxResults(pageSize);
         return (T) jpaQuery.getSingleResult();
     }
 }

@@ -204,6 +204,7 @@ public class TestEndpoint {
 
         // Now check that accessors are called
         AccessorEntity entity = new AccessorEntity();
+        @SuppressWarnings("unused")
         byte b = entity.b;
         Assertions.assertEquals(1, entity.getBCalls);
         entity.i = 2;

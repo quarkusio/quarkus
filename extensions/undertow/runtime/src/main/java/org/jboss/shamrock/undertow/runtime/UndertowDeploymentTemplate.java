@@ -62,6 +62,7 @@ import io.undertow.servlet.api.ListenerInfo;
 import io.undertow.servlet.api.ServletContainer;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.api.ServletSecurityInfo;
+import io.undertow.servlet.api.ServletStackTraces;
 import io.undertow.servlet.api.ThreadSetupHandler;
 import io.undertow.servlet.handlers.DefaultServlet;
 import io.undertow.servlet.handlers.ServletPathMatches;
@@ -111,11 +112,15 @@ public class UndertowDeploymentTemplate {
             //todo: cache configuration
             resourceManager = new CachingResourceManager(1000, 0, null, resourceManager, 2000);
         }
-
         d.setResourceManager(resourceManager);
 
-
+        if(launchMode == LaunchMode.DEVELOPMENT) {
+            d.setServletStackTraces(ServletStackTraces.LOCAL_ONLY);
+        } else {
+            d.setServletStackTraces(ServletStackTraces.NONE);
+        }
         d.addWelcomePages("index.html", "index.htm");
+
 
         d.addServlet(new ServletInfo(ServletPathMatches.DEFAULT_SERVLET_NAME, DefaultServlet.class).setAsyncSupported(true));
 

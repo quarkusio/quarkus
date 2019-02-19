@@ -139,6 +139,7 @@ public class ArcAnnotationProcessor {
             IndexingUtil.indexClass(beanClass.getName(), indexer, beanArchiveIndex.getIndex(), additionalIndex, 
                                     ArcAnnotationProcessor.class.getClassLoader(), beanClass.getData());
             generatedClassNames.add(DotName.createSimple(beanClass.getName().replace('/', '.')));
+            generatedClass.produce(new GeneratedClassBuildItem(true, beanClass.getName(), beanClass.getData()));
         }
 
         CompositeIndex index = CompositeIndex.create(indexer.complete(), beanArchiveIndex.getIndex());

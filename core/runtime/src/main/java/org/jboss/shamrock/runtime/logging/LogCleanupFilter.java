@@ -41,6 +41,7 @@ public class LogCleanupFilter implements Filter {
         downgrade("org.xnio", "XNIO version");
         downgrade("org.xnio.nio", "XNIO NIO Implementation Version");
         downgrade("org.hibernate.hql.internal.QueryTranslatorFactoryInitiator", "HHH000397");
+        downgrade("org.hibernate.jpa.boot.internal.PersistenceXmlParser", "HHH000318");
     }
 
     private static void downgrade(String owner, String start) {

@@ -35,7 +35,7 @@ public class Hibernate {
     }
 
     public static void featureInit() {
-        Logger.getLogger("org.hibernate.protean.feature").info("Hibernate Features Enabled");
+        Logger.getLogger("org.hibernate.protean.feature").debug("Hibernate Features Enabled");
     }
 
 }

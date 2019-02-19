@@ -1,7 +1,5 @@
 package org.jboss.panache.jpa;
 
-import java.util.List;
-
 public class EntityBase {
 
     // Operations
@@ -24,11 +22,11 @@ public class EntityBase {
         throw new RuntimeException("Should never be called");
     }
 
-    public static <T extends EntityBase> List<T> find(String query, Object... params) {
+    public static <T extends EntityBase> Query<T> find(String query, Object... params) {
         throw new RuntimeException("Should never be called");
     }
 
-    public static <T extends EntityBase> List<T> findAll() {
+    public static <T extends EntityBase> Query<T> findAll() {
         throw new RuntimeException("Should never be called");
     }
 

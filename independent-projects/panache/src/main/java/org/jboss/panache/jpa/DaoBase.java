@@ -1,7 +1,5 @@
 package org.jboss.panache.jpa;
 
-import java.util.List;
-
 public interface DaoBase<Entity> {
 
     // Operations
@@ -24,11 +22,11 @@ public interface DaoBase<Entity> {
         throw new RuntimeException("Should never be called");
     }
 
-    public default List<Entity> find(String query, Object... params) {
+    public default Query<Entity> find(String query, Object... params) {
         throw new RuntimeException("Should never be called");
     }
 
-    public default List<Entity> findAll() {
+    public default Query<Entity> findAll() {
         throw new RuntimeException("Should never be called");
     }
 

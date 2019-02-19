@@ -1,6 +1,8 @@
 package org.jboss.shamrock.panache;
 
 import static org.jboss.shamrock.panache.PanacheJpaModelEnhancer.JPA_OPERATIONS_BINARY_NAME;
+import static org.jboss.shamrock.panache.PanacheJpaModelEnhancer.QUERY_BINARY_NAME;
+import static org.jboss.shamrock.panache.PanacheJpaModelEnhancer.QUERY_SIGNATURE;
 
 import java.util.function.BiFunction;
 
@@ -91,8 +93,8 @@ public class PanacheJpaDaoEnhancer implements BiFunction<String, ClassVisitor, C
 
             mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC,
                     "find",
-                    "(Ljava/lang/String;[Ljava/lang/Object;)Ljava/util/List;",
-                    "(Ljava/lang/String;[Ljava/lang/Object;)Ljava/util/List<"+entitySignature+">;",
+                    "(Ljava/lang/String;[Ljava/lang/Object;)"+QUERY_SIGNATURE,
+                    "(Ljava/lang/String;[Ljava/lang/Object;)L"+QUERY_BINARY_NAME+"<"+entitySignature+">;",
                     null);
             mv.visitParameter("query", 0);
             mv.visitParameter("params", 0);
@@ -103,22 +105,22 @@ public class PanacheJpaDaoEnhancer implements BiFunction<String, ClassVisitor, C
             mv.visitMethodInsn(Opcodes.INVOKESTATIC,
                     JPA_OPERATIONS_BINARY_NAME,
                     "find",
-                    "(Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/Object;)Ljava/util/List;", false);
+                    "(Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/Object;)"+QUERY_SIGNATURE, false);
             mv.visitInsn(Opcodes.ARETURN);
             mv.visitMaxs(0, 0);
             mv.visitEnd();
 
             mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC,
                     "findAll",
-                    "()Ljava/util/List;",
-                    "()Ljava/util/List<"+entitySignature+">;",
+                    "()"+QUERY_SIGNATURE,
+                    "()L"+QUERY_BINARY_NAME+"<"+entitySignature+">;",
                     null);
             mv.visitCode();
             mv.visitLdcInsn(entityType);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC,
                     JPA_OPERATIONS_BINARY_NAME,
                     "findAll",
-                    "(Ljava/lang/Class;)Ljava/util/List;", false);
+                    "(Ljava/lang/Class;)"+QUERY_SIGNATURE, false);
             mv.visitInsn(Opcodes.ARETURN);
             mv.visitMaxs(0, 0);
             mv.visitEnd();

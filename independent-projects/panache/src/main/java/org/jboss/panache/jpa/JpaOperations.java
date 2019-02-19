@@ -1,7 +1,5 @@
 package org.jboss.panache.jpa;
 
-import java.util.List;
-
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 
@@ -122,12 +120,14 @@ public class JpaOperations {
         return getEntityManager().find(entityClass, id);
     }
 
-    public static List<?> find(Class<?> entityClass, String query, Object... params) {
-        return bindParameters(getEntityManager().createQuery(createFindQuery(entityClass, query, params)), params).getResultList();
+    @SuppressWarnings("rawtypes")
+    public static org.jboss.panache.jpa.Query<?> find(Class<?> entityClass, String query, Object... params) {
+        return new org.jboss.panache.jpa.Query(bindParameters(getEntityManager().createQuery(createFindQuery(entityClass, query, params)), params));
     }
 
-    public static List<?> findAll(Class<?> entityClass) {
-        return getEntityManager().createQuery("FROM "+getEntityName(entityClass)).getResultList();
+    @SuppressWarnings("rawtypes")
+    public static org.jboss.panache.jpa.Query<?> findAll(Class<?> entityClass) {
+        return new org.jboss.panache.jpa.Query(getEntityManager().createQuery("FROM "+getEntityName(entityClass)));
     }
 
     public static long count(Class<?> entityClass) {

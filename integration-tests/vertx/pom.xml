@@ -28,6 +28,7 @@
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-vertx-deployment</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>

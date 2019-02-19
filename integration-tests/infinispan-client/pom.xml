@@ -33,6 +33,7 @@
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-infinispan-client-deployment</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <!-- This is required to use DSL queries -->

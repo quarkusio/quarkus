@@ -9,7 +9,6 @@ import javax.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -17,8 +16,7 @@ import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
 import io.quarkus.test.QuarkusUnitTest;
 
-@Disabled
-public class DefaultDataSourceConfigTest {
+public class SimplifiedDefaultDataSourceConfigTest {
 
     @Inject
     AgroalDataSource defaultDataSource;

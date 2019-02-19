@@ -205,7 +205,7 @@ public class DevMojo extends AbstractMojo {
                 addToClassPaths(classPathManifest, classPath, artifact.getFile());
             }
             args.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
-            File wiringClassesDirectory = new File(buildDir, "wiring-classes");
+            File wiringClassesDirectory = new File(buildDir, "wiring-devmode");
             wiringClassesDirectory.mkdirs();
 
             addToClassPaths(classPathManifest, classPath, wiringClassesDirectory);

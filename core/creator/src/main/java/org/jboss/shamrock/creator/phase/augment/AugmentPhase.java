@@ -232,37 +232,40 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                     continue;
                 }
                 try (ZipFile zip = openZipFile(resolvedDep)) {
-                    if (!appDep.getScope().equals(PROVIDED) && zip.getEntry("META-INF/services/org.jboss.shamrock.deployment.ShamrockSetup") != null) {
+                    boolean deploymentArtifact = zip.getEntry("META-INF/shamrock-build-steps.list") != null;
+                    if (!appDep.getScope().equals(PROVIDED) && deploymentArtifact) {
                         if(problems == null) {
                             problems = new ArrayList<>();
                         }
                         problems.add("Artifact " + appDep + " is a deployment artifact, however it does not have scope required. This will result in unnecessary jars being included in the final image");
                     }
-                    ZipEntry entry = zip.getEntry(DEPENDENCIES_RUNTIME);
-                    if (entry != null) {
-                        whitelist.add(getDependencyConflictId(appDep.getArtifact()));
-                        try (InputStream in = zip.getInputStream(entry)) {
-                            BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-                            String line;
-                            while ((line = reader.readLine()) != null) {
-                                String[] parts = line.trim().split(":");
-                                if (parts.length < 5) {
-                                    continue;
-                                }
-                                String scope = parts[4];
-                                if(scope.equals("test")) {
-                                    continue;
-                                }
-                                StringBuilder sb = new StringBuilder();
-                                //the last two bits are version and scope
-                                //which we don't want
-                                for (int i = 0; i < parts.length - 2; ++i) {
-                                    if (i > 0) {
-                                        sb.append(':');
+                    if(!deploymentArtifact) {
+                        ZipEntry entry = zip.getEntry(DEPENDENCIES_RUNTIME);
+                        if (entry != null) {
+                            whitelist.add(getDependencyConflictId(appDep.getArtifact()));
+                            try (InputStream in = zip.getInputStream(entry)) {
+                                BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
+                                String line;
+                                while ((line = reader.readLine()) != null) {
+                                    String[] parts = line.trim().split(":");
+                                    if (parts.length < 5) {
+                                        continue;
                                     }
-                                    sb.append(parts[i]);
+                                    String scope = parts[4];
+                                    if (scope.equals("test")) {
+                                        continue;
+                                    }
+                                    StringBuilder sb = new StringBuilder();
+                                    //the last two bits are version and scope
+                                    //which we don't want
+                                    for (int i = 0; i < parts.length - 2; ++i) {
+                                        if (i > 0) {
+                                            sb.append(':');
+                                        }
+                                        sb.append(parts[i]);
+                                    }
+                                    whitelist.add(sb.toString());
                                 }
-                                whitelist.add(sb.toString());
                             }
                         }
                     }

@@ -48,6 +48,7 @@ import javax.enterprise.inject.spi.InterceptionType;
 import javax.enterprise.inject.spi.Interceptor;
 import javax.enterprise.inject.spi.ObserverMethod;
 import javax.enterprise.inject.spi.ProducerFactory;
+import javax.interceptor.InterceptorBinding;
 
 /**
  *
@@ -146,7 +147,7 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public boolean isInterceptorBinding(Class<? extends Annotation> annotationType) {
-        throw new UnsupportedOperationException();
+        return annotationType.isAnnotationPresent(InterceptorBinding.class);
     }
 
     @Override

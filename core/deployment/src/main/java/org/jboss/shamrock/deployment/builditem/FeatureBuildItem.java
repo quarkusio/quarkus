@@ -14,7 +14,6 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String HIBERNATE_ORM = "hibernate-orm";
     public static final String HIBERNATE_VALIDATOR = "hibernate-validator";
     public static final String JAEGER = "jaeger";
-    public static final String MP_REST_CLIENT = "mp-rest-client";
     public static final String MP_JWT = "mp-jwt";
     public static final String NARAYANA_JTA = "narayana-jta";
     public static final String RESTEASY = "resteasy";
@@ -29,6 +28,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String SMALLRYE_REACTIVE_MESSAGING = "smallrye-reactive-messaging";
     public static final String SMALLRYE_REACTIVE_STREAMS_OPERATORS = "smallrye-reactive-streams-operators";
     public static final String SMALLRYE_REACTIVE_TYPE_CONVERTERS = "smallrye-reactive-type-converters";
+    public static final String SMALLRYE_REST_CLIENT = "smallrye-rest-client";
     public static final String SPRING_DI = "spring-di";
     public static final String UNDERTOW_WEBSOCKETS = "undertow-websockets";
     public static final String VERTX = "vertx";

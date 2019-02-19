@@ -59,7 +59,7 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-rest-client-deployment</artifactId>
+            <artifactId>shamrock-smallrye-rest-client-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>

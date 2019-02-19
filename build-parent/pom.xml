@@ -516,6 +516,16 @@
          </dependency>
          <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-web-deployment</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-web-runtime</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+	    <groupId>io.quarkus</groupId>
             <artifactId>quarkus-scheduler-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
@@ -1376,6 +1386,11 @@
          <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-core</artifactId>
+            <version>${vertx.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-web</artifactId>
             <version>${vertx.version}</version>
          </dependency>
 

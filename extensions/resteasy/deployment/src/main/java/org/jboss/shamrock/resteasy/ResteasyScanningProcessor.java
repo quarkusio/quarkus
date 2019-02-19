@@ -74,6 +74,7 @@ import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClass
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import org.jboss.shamrock.deployment.logging.LogCleanupFilterBuildItem;
 import org.jboss.shamrock.deployment.util.ServiceUtil;
 import org.jboss.shamrock.resteasy.runtime.ResteasyFilter;
 import org.jboss.shamrock.resteasy.runtime.ResteasyTemplate;
@@ -207,6 +208,11 @@ public class ResteasyScanningProcessor {
         return new org.jboss.shamrock.resteasy.ResteasyJaxrsConfig(resteasyConfig.path);
     }
 
+    @BuildStep
+    void setupLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
+        filters.produce(new LogCleanupFilterBuildItem("org.jboss.resteasy.resteasy_jaxrs.i18n", "RESTEASY002225"));
+    }
+    
     @BuildStep
     SubstrateConfigBuildItem config() {
         return SubstrateConfigBuildItem.builder()

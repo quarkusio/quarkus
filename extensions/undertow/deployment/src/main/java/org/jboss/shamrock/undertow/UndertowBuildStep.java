@@ -105,6 +105,7 @@ import org.jboss.shamrock.deployment.builditem.ShutdownContextBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import org.jboss.shamrock.deployment.logging.LogCleanupFilterBuildItem;
 import org.jboss.shamrock.deployment.recording.RecorderContext;
 import org.jboss.shamrock.runtime.LaunchMode;
 import org.jboss.shamrock.runtime.RuntimeValue;
@@ -144,6 +145,12 @@ public class UndertowBuildStep {
     @ConfigItem(name = "http")
     HttpConfig config;
 
+    @BuildStep
+    void setupLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
+        filters.produce(new LogCleanupFilterBuildItem("org.xnio", "XNIO version"));
+        filters.produce(new LogCleanupFilterBuildItem("org.xnio.nio", "XNIO NIO Implementation Version"));
+    }
+    
     @BuildStep
     @Record(RUNTIME_INIT)
     public ServiceStartBuildItem boot(UndertowDeploymentTemplate template,

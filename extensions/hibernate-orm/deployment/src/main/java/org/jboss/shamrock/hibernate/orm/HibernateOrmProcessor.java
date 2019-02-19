@@ -71,6 +71,7 @@ import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildIte
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import org.jboss.shamrock.deployment.configuration.ConfigurationError;
 import org.jboss.shamrock.deployment.index.IndexingUtil;
+import org.jboss.shamrock.deployment.logging.LogCleanupFilterBuildItem;
 import org.jboss.shamrock.deployment.recording.RecorderContext;
 import org.jboss.shamrock.deployment.util.IoUtil;
 import org.jboss.shamrock.hibernate.orm.runtime.DefaultEntityManagerFactoryProducer;
@@ -81,6 +82,7 @@ import org.jboss.shamrock.hibernate.orm.runtime.HibernateOrmTemplate;
 import org.jboss.shamrock.hibernate.orm.runtime.RequestScopedEntityManagerHolder;
 import org.jboss.shamrock.hibernate.orm.runtime.TransactionEntityManagers;
 import org.jboss.shamrock.hibernate.orm.runtime.boot.scan.ShamrockScanner;
+import org.jboss.shamrock.runtime.logging.LogCleanupFilter;
 
 /**
  * Simulacrum of JPA bootstrap.
@@ -102,6 +104,26 @@ public final class HibernateOrmProcessor {
      */
     HibernateConfig hibernate;
 
+    @BuildStep
+    void setupLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.Version", "HHH000412"));
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.cfg.Environment", "HHH000206"));
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.bytecode.enhance.spi.Enhancer", "Enhancing [%s] as"));
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.bytecode.enhance.internal.bytebuddy.BiDirectionalAssociationHandler", "Could not find"));
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.jpa.internal.util.LogHelper", "HHH000204"));
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.annotations.common.Version", "HCANN000001"));
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.engine.jdbc.env.internal.LobCreatorBuilderImpl", "HHH000422"));
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.dialect.Dialect", "HHH000400"));
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.type.BasicTypeRegistry", "HHH000270"));
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.orm.beans", "HHH10005002"));
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.tuple.PojoInstantiator", "HHH000182"));
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.tuple.entity.EntityMetamodel", "HHH000157"));
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.engine.transaction.jta.platform.internal.JtaPlatformInitiator", "HHH000490"));
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.tool.schema.internal.SchemaCreatorImpl", "HHH000476"));
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.hql.internal.QueryTranslatorFactoryInitiator", "HHH000397"));
+        filters.produce(new LogCleanupFilterBuildItem("org.hibernate.jpa.boot.internal.PersistenceXmlParser", "HHH000318"));
+    }
+    
     @BuildStep
     HotDeploymentConfigFileBuildItem configFile() {
         return new HotDeploymentConfigFileBuildItem("META-INF/persistence.xml");

@@ -45,6 +45,11 @@ import org.jboss.shamrock.runtime.logging.LoggingSetupTemplate;
 public final class LoggingResourceProcessor {
 
     @BuildStep
+    void setupLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
+        filters.produce(new LogCleanupFilterBuildItem("org.jboss.threads", "JBoss Threads version"));
+    }
+    
+    @BuildStep
     SystemPropertyBuildItem setProperty() {
         return new SystemPropertyBuildItem("java.util.logging.manager", "org.jboss.logmanager.LogManager");
     }

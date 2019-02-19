@@ -570,6 +570,16 @@
             <version>${project.version}</version>
          </dependency>
          <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-lambda-deployment</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-lambda-runtime</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
             <groupId>org.jboss.logging</groupId>
             <artifactId>jboss-logging</artifactId>
             <version>${jboss-logging.version}</version>
@@ -1410,6 +1420,12 @@
             <groupId>org.reactivestreams</groupId>
             <artifactId>reactive-streams</artifactId>
             <version>${reactive-streams.version}</version>
+         </dependency>
+
+         <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-lambda-java-core</artifactId>
+            <version>1.1.0</version>
          </dependency>
 
       </dependencies>

@@ -241,8 +241,9 @@ public class ConfigDefinition extends CompoundConfigType {
             throw reportError(containingElement, "Optionals are not allowed as a map value type");
         } else {
             // treat as a plain object, hope for the best
+            // TODO, REVISIT THIS
             final ObjectConfigType leaf = new ObjectConfigType(NO_CONTAINING_NAME, mct, true, "", valueClass);
-            container.getConfigDefinition().getLeafPatterns().addPattern(subKey, leaf);
+            //container.getConfigDefinition().getLeafPatterns().addPattern(subKey, leaf);
         }
         return mct;
     }

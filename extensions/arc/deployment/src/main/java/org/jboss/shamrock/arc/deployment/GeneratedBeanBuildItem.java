@@ -18,6 +18,10 @@ package org.jboss.shamrock.arc.deployment;
 
 import org.jboss.builder.item.MultiBuildItem;
 
+/**
+ * A generated CDI bean. If this is produced then a {@link org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem}
+ * should not be produced for the same class, as Arc will take care of this.
+ */
 public final class GeneratedBeanBuildItem extends MultiBuildItem {
 
     final String name;

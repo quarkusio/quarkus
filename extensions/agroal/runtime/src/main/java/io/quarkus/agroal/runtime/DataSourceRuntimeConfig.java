@@ -16,6 +16,7 @@
 
 package io.quarkus.agroal.runtime;
 
+import java.time.Duration;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -43,6 +44,12 @@ public class DataSourceRuntimeConfig {
     public Optional<String> password;
 
     /**
+     * The initial size of the pool
+     */
+    @ConfigItem
+    public Optional<Integer> initialSize;
+
+    /**
      * The datasource pool minimum size
      */
     @ConfigItem(defaultValue = "5")
@@ -53,5 +60,29 @@ public class DataSourceRuntimeConfig {
      */
     @ConfigItem(defaultValue = "20")
     public int maxSize;
+
+    /**
+     * The interval at which we validate idle connections in the background
+     */
+    @ConfigItem(defaultValue = "PT2M")
+    public Optional<Duration> backgroundValidationInterval;
+
+    /**
+     * The timeout before cancelling the acquisition of a new connection
+     */
+    @ConfigItem(defaultValue = "PT5S")
+    public Optional<Duration> acquisitionTimeout;
+
+    /**
+     * The interval at which we check for connection leaks.
+     */
+    @ConfigItem
+    public Optional<Duration> leakDetectionInterval;
+
+    /**
+     * The interval at which we try to remove idle connections.
+     */
+    @ConfigItem(defaultValue = "PT5M")
+    public Optional<Duration> idleRemovalInterval;
 
 }

@@ -125,6 +125,23 @@ public abstract class AbstractDataSourceProducer {
         // Pool size configuration:
         poolConfiguration.minSize(dataSourceRuntimeConfig.minSize);
         poolConfiguration.maxSize(dataSourceRuntimeConfig.maxSize);
+        if (dataSourceRuntimeConfig.initialSize.isPresent() && dataSourceRuntimeConfig.initialSize.get() > 0) {
+            poolConfiguration.initialSize(dataSourceRuntimeConfig.initialSize.get());
+        }
+
+        // Connection management
+        if (dataSourceRuntimeConfig.acquisitionTimeout.isPresent()) {
+            poolConfiguration.acquisitionTimeout(dataSourceRuntimeConfig.acquisitionTimeout.get());
+        }
+        if (dataSourceRuntimeConfig.backgroundValidationInterval.isPresent()) {
+            poolConfiguration.validationTimeout(dataSourceRuntimeConfig.backgroundValidationInterval.get());
+        }
+        if (dataSourceRuntimeConfig.idleRemovalInterval.isPresent()) {
+            poolConfiguration.reapTimeout(dataSourceRuntimeConfig.idleRemovalInterval.get());
+        }
+        if (dataSourceRuntimeConfig.leakDetectionInterval.isPresent()) {
+            poolConfiguration.leakTimeout(dataSourceRuntimeConfig.leakDetectionInterval.get());
+        }
 
         // SSL support: we should push the driver specific code to the driver extensions but it will have to do for now
         if (disableSslSupport) {

@@ -115,7 +115,7 @@ class VertxProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
+    @Record(ExecutionTime.RUNTIME_INIT)
     void build(VertxTemplate template, BeanContainerBuildItem beanContainer, BuildProducer<FeatureBuildItem> feature,
             List<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods, BuildProducer<GeneratedClassBuildItem> generatedClass) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.VERTX));

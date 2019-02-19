@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm;
+package io.quarkus.hibernate.orm;
 
-import org.jboss.shamrock.deployment.configuration.ConfigurationError;
-import org.jboss.shamrock.test.ShamrockUnitTest;
+import io.quarkus.deployment.configuration.ConfigurationError;
+import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
@@ -27,10 +27,10 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 /**
  * @author Emmanuel Bernard emmanuel@hibernate.org
  */
-public class PersistenceAndShamrockConfigTest {
+public class PersistenceAndQuarkusConfigTest {
 
     @RegisterExtension
-    static ShamrockUnitTest runner = new ShamrockUnitTest()
+    static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setExpectedException(ConfigurationError.class)
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsManifestResource("META-INF/some-persistence.xml", "persistence.xml")

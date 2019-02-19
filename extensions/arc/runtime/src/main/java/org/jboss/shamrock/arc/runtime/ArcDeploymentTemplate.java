@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.arc.runtime;
+package io.quarkus.arc.runtime;
 
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
@@ -23,12 +23,12 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
-import org.jboss.protean.arc.Arc;
-import org.jboss.protean.arc.ArcContainer;
-import org.jboss.protean.arc.InstanceHandle;
-import org.jboss.protean.arc.ManagedContext;
-import org.jboss.shamrock.runtime.ShutdownContext;
-import org.jboss.shamrock.runtime.annotations.Template;
+import org.jboss.quarkus.arc.Arc;
+import org.jboss.quarkus.arc.ArcContainer;
+import org.jboss.quarkus.arc.InstanceHandle;
+import org.jboss.quarkus.arc.ManagedContext;
+import io.quarkus.runtime.ShutdownContext;
+import io.quarkus.runtime.annotations.Template;
 
 /**
  * @author Martin Kouba

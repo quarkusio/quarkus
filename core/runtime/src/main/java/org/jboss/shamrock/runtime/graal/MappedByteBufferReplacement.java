@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.runtime.graal;
+package io.quarkus.runtime.graal;
 
 import java.io.FileDescriptor;
 import java.nio.MappedByteBuffer;

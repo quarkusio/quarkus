@@ -19,28 +19,28 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>shamrock-rest-client</artifactId>
-        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>quarkus-rest-client</artifactId>
+        <groupId>io.quarkus</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-rest-client-deployment</artifactId>
-    <name>Shamrock - REST client - Deployment</name>
+    <artifactId>quarkus-rest-client-deployment</artifactId>
+    <name>Quarkus - REST client - Deployment</name>
 
     <dependencies>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-arc-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc-deployment</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-resteasy-common-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-common-deployment</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-rest-client-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-client-runtime</artifactId>
         </dependency>
     </dependencies>
 
@@ -51,8 +51,8 @@
                 <configuration>
                     <annotationProcessorPaths>
                         <path>
-                            <groupId>org.jboss.shamrock</groupId>
-                            <artifactId>shamrock-extension-processor</artifactId>
+                            <groupId>io.quarkus</groupId>
+                            <artifactId>quarkus-extension-processor</artifactId>
                             <version>${project.version}</version>
                         </path>
                     </annotationProcessorPaths>

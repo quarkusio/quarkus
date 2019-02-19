@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.smallrye.health;
+package io.quarkus.smallrye.health;
 
 import java.util.Arrays;
 import java.util.List;
 
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
-import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
-import org.jboss.shamrock.runtime.annotations.ConfigRoot;
-import org.jboss.shamrock.smallrye.health.runtime.SmallRyeHealthServlet;
-import org.jboss.shamrock.undertow.ServletBuildItem;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.smallrye.health.runtime.SmallRyeHealthServlet;
+import io.quarkus.undertow.ServletBuildItem;
 
 import io.smallrye.health.SmallRyeHealthReporter;
 

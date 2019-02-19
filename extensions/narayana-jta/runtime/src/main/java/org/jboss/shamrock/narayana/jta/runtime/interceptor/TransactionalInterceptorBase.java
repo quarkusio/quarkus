@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.narayana.jta.runtime.interceptor;
+package io.quarkus.narayana.jta.runtime.interceptor;
 
 
 import java.io.Serializable;
@@ -28,7 +28,7 @@ import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.Transactional;
 
-import org.jboss.shamrock.arc.runtime.InterceptorBindings;
+import io.quarkus.arc.runtime.InterceptorBindings;
 import org.jboss.tm.usertx.client.ServerVMClientUserTransaction;
 
 import com.arjuna.ats.jta.logging.jtaLogger;

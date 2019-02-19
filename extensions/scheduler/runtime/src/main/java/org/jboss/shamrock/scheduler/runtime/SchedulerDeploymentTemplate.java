@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jboss.shamrock.scheduler.runtime;
+package io.quarkus.scheduler.runtime;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.jboss.shamrock.arc.runtime.BeanContainer;
-import org.jboss.shamrock.runtime.annotations.Template;
-import org.jboss.shamrock.scheduler.api.Scheduled;
-import org.jboss.shamrock.scheduler.runtime.ScheduledLiteral.Builder;
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.runtime.annotations.Template;
+import io.quarkus.scheduler.api.Scheduled;
+import io.quarkus.scheduler.runtime.ScheduledLiteral.Builder;
 
 /**
  *

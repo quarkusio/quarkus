@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.demo;
+package io.quarkus.creator.demo;
 
 import java.util.Properties;
 
-import org.jboss.shamrock.creator.AppCreator;
-import org.jboss.shamrock.creator.phase.curate.CuratePhase;
-import org.jboss.shamrock.creator.phase.curate.VersionUpdate;
-import org.jboss.shamrock.creator.phase.curate.VersionUpdateNumber;
-import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarOutcome;
+import io.quarkus.creator.AppCreator;
+import io.quarkus.creator.phase.curate.CuratePhase;
+import io.quarkus.creator.phase.curate.VersionUpdate;
+import io.quarkus.creator.phase.curate.VersionUpdateNumber;
+import io.quarkus.creator.phase.runnerjar.RunnerJarOutcome;
 
 /**
  *
@@ -37,10 +37,10 @@ public class UpdateToNextVersionDemo extends ConfigDemoBase {
 /*
     @Override
     protected Path initAppJar() {
-        final Path shamrockRoot = Paths.get("").toAbsolutePath().getParent().getParent();
-        final Path quickstartsRoot = shamrockRoot.getParent().resolve("protean-quickstarts");
+        final Path quarkusRoot = Paths.get("").toAbsolutePath().getParent().getParent();
+        final Path quickstartsRoot = quarkusRoot.getParent().resolve("quarkus-quickstarts");
         if(!Files.exists(quickstartsRoot)) {
-            throw new IllegalStateException("Failed to locate protean-quickstarts repo at " + quickstartsRoot);
+            throw new IllegalStateException("Failed to locate quarkus-quickstarts repo at " + quickstartsRoot);
         }
         final Path appDir = quickstartsRoot.resolve("input-validation").resolve("target");
         return appDir.resolve("input-validation-1.0-SNAPSHOT.jar");

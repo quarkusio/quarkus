@@ -1,4 +1,4 @@
-package org.jboss.shamrock.hibernate.validator.runtime.jaxrs;
+package io.quarkus.hibernate.validator.runtime.jaxrs;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -13,7 +13,7 @@ import javax.validation.ConstraintViolationException;
 import javax.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.util.MediaTypeHelper;
-import org.jboss.shamrock.hibernate.validator.runtime.interceptor.AbstractMethodValidationInterceptor;
+import io.quarkus.hibernate.validator.runtime.interceptor.AbstractMethodValidationInterceptor;
 
 @JaxrsEndPointValidated
 @Interceptor

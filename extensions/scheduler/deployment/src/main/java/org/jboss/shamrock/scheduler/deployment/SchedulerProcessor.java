@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jboss.shamrock.scheduler.deployment;
+package io.quarkus.scheduler.deployment;
 
-import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.text.ParseException;
 import java.time.Duration;
@@ -35,43 +35,43 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.logging.Logger;
-import org.jboss.protean.arc.Arc;
-import org.jboss.protean.arc.ArcContainer;
-import org.jboss.protean.arc.InjectableBean;
-import org.jboss.protean.arc.InstanceHandle;
-import org.jboss.protean.arc.processor.AnnotationStore;
-import org.jboss.protean.arc.processor.AnnotationsTransformer;
-import org.jboss.protean.arc.processor.BeanDeploymentValidator;
-import org.jboss.protean.arc.processor.BeanDeploymentValidator.ValidationContext;
-import org.jboss.protean.arc.processor.BeanInfo;
-import org.jboss.protean.arc.processor.DotNames;
-import org.jboss.protean.arc.processor.ScopeInfo;
+import org.jboss.quarkus.arc.Arc;
+import org.jboss.quarkus.arc.ArcContainer;
+import org.jboss.quarkus.arc.InjectableBean;
+import org.jboss.quarkus.arc.InstanceHandle;
+import org.jboss.quarkus.arc.processor.AnnotationStore;
+import org.jboss.quarkus.arc.processor.AnnotationsTransformer;
+import org.jboss.quarkus.arc.processor.BeanDeploymentValidator;
+import org.jboss.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext;
+import org.jboss.quarkus.arc.processor.BeanInfo;
+import org.jboss.quarkus.arc.processor.DotNames;
+import org.jboss.quarkus.arc.processor.ScopeInfo;
 import org.jboss.protean.gizmo.ClassCreator;
 import org.jboss.protean.gizmo.ClassOutput;
 import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
-import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
-import org.jboss.shamrock.arc.deployment.AnnotationsTransformerBuildItem;
-import org.jboss.shamrock.arc.deployment.BeanContainerBuildItem;
-import org.jboss.shamrock.arc.deployment.BeanDeploymentValidatorBuildItem;
-import org.jboss.shamrock.arc.deployment.UnremovableBeanBuildItem;
-import org.jboss.shamrock.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
-import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import org.jboss.shamrock.deployment.util.HashUtil;
-import org.jboss.shamrock.scheduler.api.Scheduled;
-import org.jboss.shamrock.scheduler.api.ScheduledExecution;
-import org.jboss.shamrock.scheduler.api.Scheduleds;
-import org.jboss.shamrock.scheduler.runtime.QuartzScheduler;
-import org.jboss.shamrock.scheduler.runtime.ScheduledInvoker;
-import org.jboss.shamrock.scheduler.runtime.ScheduledLiteral;
-import org.jboss.shamrock.scheduler.runtime.SchedulerConfiguration;
-import org.jboss.shamrock.scheduler.runtime.SchedulerDeploymentTemplate;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.BeanDeploymentValidatorBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.util.HashUtil;
+import io.quarkus.scheduler.api.Scheduled;
+import io.quarkus.scheduler.api.ScheduledExecution;
+import io.quarkus.scheduler.api.Scheduleds;
+import io.quarkus.scheduler.runtime.QuartzScheduler;
+import io.quarkus.scheduler.runtime.ScheduledInvoker;
+import io.quarkus.scheduler.runtime.ScheduledLiteral;
+import io.quarkus.scheduler.runtime.SchedulerConfiguration;
+import io.quarkus.scheduler.runtime.SchedulerDeploymentTemplate;
 import org.quartz.CronExpression;
 import org.quartz.simpl.CascadingClassLoadHelper;
 import org.quartz.simpl.RAMJobStore;
@@ -83,7 +83,7 @@ import org.quartz.simpl.SimpleThreadPool;
  */
 public class SchedulerProcessor {
 
-    private static final Logger LOGGER = Logger.getLogger("org.jboss.shamrock.scheduler.deployment.processor");
+    private static final Logger LOGGER = Logger.getLogger("io.quarkus.scheduler.deployment.processor");
 
     static final DotName SCHEDULED_NAME = DotName.createSimple(Scheduled.class.getName());
     static final DotName SCHEDULEDS_NAME = DotName.createSimple(Scheduleds.class.getName());

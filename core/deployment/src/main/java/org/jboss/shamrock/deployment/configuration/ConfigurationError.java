@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.configuration;
+package io.quarkus.deployment.configuration;
 
 public class ConfigurationError extends RuntimeException {
     public ConfigurationError(final String message) {

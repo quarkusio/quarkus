@@ -1,11 +1,11 @@
-package org.jboss.shamrock.maven.it;
+package io.quarkus.maven.it;
 
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.maven.shared.utils.StringUtils;
-import org.jboss.shamrock.maven.utilities.MojoUtils;
+import io.quarkus.maven.utilities.MojoUtils;
 import org.junit.jupiter.api.BeforeAll;
 
 import java.io.File;

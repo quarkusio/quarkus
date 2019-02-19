@@ -1,4 +1,4 @@
-package org.jboss.shamrock.hibernate.orm.runtime.graal.service.jacc;
+package io.quarkus.hibernate.orm.runtime.graal.service.jacc;
 
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.secure.internal.DisabledJaccServiceImpl;

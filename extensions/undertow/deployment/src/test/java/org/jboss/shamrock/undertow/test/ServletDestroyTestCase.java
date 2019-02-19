@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.undertow.test;
+package io.quarkus.undertow.test;
 
 import static org.hamcrest.Matchers.is;
 
 import java.util.concurrent.TimeUnit;
 
-import org.jboss.shamrock.test.ShamrockUnitTest;
+import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterAll;
@@ -34,7 +34,7 @@ import io.restassured.RestAssured;
 public class ServletDestroyTestCase {
 
     @RegisterExtension
-    static ShamrockUnitTest runner = new ShamrockUnitTest()
+    static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() ->
                     ShrinkWrap.create(JavaArchive.class)
                             .addClasses(PreDestroyServlet.class))

@@ -1,7 +1,7 @@
-package org.jboss.shamrock.arc.deployment;
+package io.quarkus.arc.deployment;
 
 import org.jboss.builder.item.MultiBuildItem;
-import org.jboss.protean.arc.processor.AnnotationsTransformer;
+import org.jboss.quarkus.arc.processor.AnnotationsTransformer;
 
 public final class AnnotationsTransformerBuildItem extends MultiBuildItem {
 

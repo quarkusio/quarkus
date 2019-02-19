@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.smallrye.faulttolerance.substitutions.rxjava;
+package io.quarkus.smallrye.faulttolerance.substitutions.rxjava;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;

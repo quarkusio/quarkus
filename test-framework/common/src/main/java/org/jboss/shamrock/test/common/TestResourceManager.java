@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.test.common;
+package io.quarkus.test.common;
 
-import static org.jboss.shamrock.test.common.PathTestHelper.getTestClassesLocation;
+import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,51 +38,51 @@ import org.jboss.jandex.Indexer;
 
 public class TestResourceManager {
 
-    private final Set<ShamrockTestResourceLifecycleManager> testResources;
+    private final Set<QuarkusTestResourceLifecycleManager> testResources;
 
     public TestResourceManager(Class<?> testClass) {
         testResources = getTestResources(testClass);
     }
 
     public void start() {
-        for (ShamrockTestResourceLifecycleManager testResource : testResources) {
+        for (QuarkusTestResourceLifecycleManager testResource : testResources) {
             try {
                 testResource.start();
             } catch (Exception e) {
-                throw new RuntimeException("Unable to start Shamrock test resource " + testResource);
+                throw new RuntimeException("Unable to start Quarkus test resource " + testResource);
             }
         }
     }
 
     public void stop() {
-        for (ShamrockTestResourceLifecycleManager testResource : testResources) {
+        for (QuarkusTestResourceLifecycleManager testResource : testResources) {
             try {
                 testResource.stop();
             } catch (Exception e) {
-                throw new RuntimeException("Unable to start Shamrock test resource " + testResource);
+                throw new RuntimeException("Unable to start Quarkus test resource " + testResource);
             }
         }
     }
 
 
     @SuppressWarnings("unchecked")
-    private Set<ShamrockTestResourceLifecycleManager> getTestResources(Class<?> testClass) {
+    private Set<QuarkusTestResourceLifecycleManager> getTestResources(Class<?> testClass) {
         IndexView index = indexTestClasses(testClass);
 
-        Set<Class<? extends ShamrockTestResourceLifecycleManager>> testResourceRunnerClasses = new LinkedHashSet<>();
+        Set<Class<? extends QuarkusTestResourceLifecycleManager>> testResourceRunnerClasses = new LinkedHashSet<>();
 
-        for (AnnotationInstance annotation : index.getAnnotations(DotName.createSimple(ShamrockTestResource.class.getName()))) {
+        for (AnnotationInstance annotation : index.getAnnotations(DotName.createSimple(QuarkusTestResource.class.getName()))) {
             try {
-                testResourceRunnerClasses.add((Class<? extends ShamrockTestResourceLifecycleManager>) Class
+                testResourceRunnerClasses.add((Class<? extends QuarkusTestResourceLifecycleManager>) Class
                         .forName(annotation.value().asString()));
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException("Unable to find the class for the test resource " + annotation.value().asString());
             }
         }
 
-        Set<ShamrockTestResourceLifecycleManager> testResourceRunners = new LinkedHashSet<>();
+        Set<QuarkusTestResourceLifecycleManager> testResourceRunners = new LinkedHashSet<>();
 
-        for (Class<? extends ShamrockTestResourceLifecycleManager> testResourceRunnerClass : testResourceRunnerClasses) {
+        for (Class<? extends QuarkusTestResourceLifecycleManager> testResourceRunnerClass : testResourceRunnerClasses) {
             try {
                 testResourceRunners.add(testResourceRunnerClass.getConstructor().newInstance());
             } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
@@ -91,7 +91,7 @@ public class TestResourceManager {
             }
         }
 
-        for(ShamrockTestResourceLifecycleManager i : ServiceLoader.load(ShamrockTestResourceLifecycleManager.class)) {
+        for(QuarkusTestResourceLifecycleManager i : ServiceLoader.load(QuarkusTestResourceLifecycleManager.class)) {
             testResourceRunners.add(i);
         }
 

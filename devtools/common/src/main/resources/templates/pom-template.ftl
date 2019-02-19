@@ -11,7 +11,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
 
-        <shamrock.version>${shamrock_version}</shamrock.version>
+        <quarkus.version>${quarkus_version}</quarkus.version>
         <restassured.version>${rest_assured_version}</restassured.version>
         <surefire-plugin.version>${surefire_plugin_version}</surefire-plugin.version>
     </properties>
@@ -21,7 +21,7 @@
             <dependency>
                 <groupId>${plugin_groupId}</groupId>
                 <artifactId>${bom_artifactId}</artifactId>
-                <version>${shamrock.version}</version>
+                <version>${quarkus.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -30,18 +30,18 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-resteasy-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-deployment</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-arc-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc-deployment</artifactId>
         </dependency>
 
         <!-- Test extensions -->
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-junit5</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5</artifactId>
         </dependency>
         <dependency>
             <groupId>io.rest-assured</groupId>
@@ -56,7 +56,7 @@
             <plugin>
                 <groupId>${plugin_groupId}</groupId>
                 <artifactId>${plugin_artifactId}</artifactId>
-                <version>${shamrock.version}</version>
+                <version>${quarkus.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -86,7 +86,7 @@
                     <plugin>
                         <groupId>${plugin_groupId}</groupId>
                         <artifactId>${plugin_artifactId}</artifactId>
-                        <version>${shamrock.version}</version>
+                        <version>${quarkus.version}</version>
                         <executions>
                             <execution>
                                 <goals>

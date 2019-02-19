@@ -1,4 +1,4 @@
-package org.jboss.shamrock.resteasy.runtime;
+package io.quarkus.resteasy.runtime;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;

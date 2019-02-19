@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jboss.shamrock.scheduler.runtime;
+package io.quarkus.scheduler.runtime;
 
 import java.util.concurrent.TimeUnit;
 
 import javax.enterprise.util.AnnotationLiteral;
 
-import org.jboss.shamrock.scheduler.api.Scheduled;
+import io.quarkus.scheduler.api.Scheduled;
 
 /**
  * Inline instantiation of {@link Scheduled}.

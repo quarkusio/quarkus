@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.outcome.test;
+package io.quarkus.creator.outcome.test;
 
 /**
  *

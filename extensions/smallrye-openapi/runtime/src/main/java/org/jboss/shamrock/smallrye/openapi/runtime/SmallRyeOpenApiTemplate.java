@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.smallrye.openapi.runtime;
+package io.quarkus.smallrye.openapi.runtime;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
-import org.jboss.shamrock.arc.runtime.BeanContainer;
-import org.jboss.shamrock.arc.runtime.BeanContainerListener;
-import org.jboss.shamrock.runtime.Shamrock;
-import org.jboss.shamrock.runtime.annotations.Template;
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.arc.runtime.BeanContainerListener;
+import io.quarkus.runtime.Quarkus;
+import io.quarkus.runtime.annotations.Template;
 
 import io.smallrye.openapi.api.OpenApiConfig;
 import io.smallrye.openapi.api.OpenApiConfigImpl;
@@ -43,7 +43,7 @@ public class SmallRyeOpenApiTemplate {
                 Config config = ConfigProvider.getConfig();
                 OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
 
-                OpenAPI readerModel = OpenApiProcessor.modelFromReader(openApiConfig, Shamrock.class.getClassLoader());
+                OpenAPI readerModel = OpenApiProcessor.modelFromReader(openApiConfig, Quarkus.class.getClassLoader());
 
                 OpenApiDocument document = createDocument(openApiConfig);
                 document.modelFromAnnotations(annotationModel);
@@ -64,6 +64,6 @@ public class SmallRyeOpenApiTemplate {
     }
 
     private OASFilter filter(OpenApiConfig openApiConfig) {
-        return OpenApiProcessor.getFilter(openApiConfig, Shamrock.class.getClassLoader());
+        return OpenApiProcessor.getFilter(openApiConfig, Quarkus.class.getClassLoader());
     }
 }

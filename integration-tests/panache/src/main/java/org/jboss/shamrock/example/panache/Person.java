@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.panache;
+package io.quarkus.example.panache;
 
 import java.util.ArrayList;
 import java.util.List;

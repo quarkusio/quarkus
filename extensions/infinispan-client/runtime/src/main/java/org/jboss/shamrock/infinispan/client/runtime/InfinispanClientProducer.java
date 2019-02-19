@@ -1,4 +1,4 @@
-package org.jboss.shamrock.infinispan.client.runtime;
+package io.quarkus.infinispan.client.runtime;
 
 import java.io.IOException;
 import java.io.InputStream;

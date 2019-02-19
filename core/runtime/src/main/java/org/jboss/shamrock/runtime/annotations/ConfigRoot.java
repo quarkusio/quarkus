@@ -1,8 +1,8 @@
-package org.jboss.shamrock.runtime.annotations;
+package io.quarkus.runtime.annotations;
 
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
-import static org.jboss.shamrock.runtime.annotations.ConfigPhase.BUILD_TIME;
+import static io.quarkus.runtime.annotations.ConfigPhase.BUILD_TIME;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;

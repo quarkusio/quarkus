@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.narayana.jta.runtime.graal;
+package io.quarkus.narayana.jta.runtime.graal;
 
 import java.util.Properties;
 
-import org.jboss.shamrock.narayana.jta.runtime.NarayanaJtaTemplate;
+import io.quarkus.narayana.jta.runtime.NarayanaJtaTemplate;
 
 import com.arjuna.common.util.propertyservice.PropertiesFactory;
 import com.oracle.svm.core.annotate.Substitute;

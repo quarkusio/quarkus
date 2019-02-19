@@ -1,4 +1,4 @@
-package org.jboss.shamrock.runtime.configuration;
+package io.quarkus.runtime.configuration;
 
 import org.eclipse.microprofile.config.spi.Converter;
 import org.wildfly.common.net.CidrAddress;

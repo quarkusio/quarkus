@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.processor;
+package org.jboss.quarkus.arc.processor;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -32,18 +32,18 @@ import javax.enterprise.inject.spi.EventContext;
 import javax.enterprise.inject.spi.EventMetadata;
 import javax.interceptor.InvocationContext;
 
-import org.jboss.protean.arc.Arc;
-import org.jboss.protean.arc.ArcContainer;
-import org.jboss.protean.arc.ClientProxy;
-import org.jboss.protean.arc.CreationalContextImpl;
-import org.jboss.protean.arc.InjectableBean;
-import org.jboss.protean.arc.InjectableContext;
-import org.jboss.protean.arc.InjectableInterceptor;
-import org.jboss.protean.arc.InjectableReferenceProvider;
-import org.jboss.protean.arc.InvocationContextImpl;
-import org.jboss.protean.arc.InvocationContextImpl.InterceptorInvocation;
-import org.jboss.protean.arc.LazyValue;
-import org.jboss.protean.arc.Reflections;
+import org.jboss.quarkus.arc.Arc;
+import org.jboss.quarkus.arc.ArcContainer;
+import org.jboss.quarkus.arc.ClientProxy;
+import org.jboss.quarkus.arc.CreationalContextImpl;
+import org.jboss.quarkus.arc.InjectableBean;
+import org.jboss.quarkus.arc.InjectableContext;
+import org.jboss.quarkus.arc.InjectableInterceptor;
+import org.jboss.quarkus.arc.InjectableReferenceProvider;
+import org.jboss.quarkus.arc.InvocationContextImpl;
+import org.jboss.quarkus.arc.InvocationContextImpl.InterceptorInvocation;
+import org.jboss.quarkus.arc.LazyValue;
+import org.jboss.quarkus.arc.Reflections;
 import org.jboss.protean.gizmo.MethodDescriptor;
 
 /**

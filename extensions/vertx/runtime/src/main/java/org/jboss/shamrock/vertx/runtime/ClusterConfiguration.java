@@ -1,7 +1,7 @@
-package org.jboss.shamrock.vertx.runtime;
+package io.quarkus.vertx.runtime;
 
-import org.jboss.shamrock.runtime.annotations.ConfigGroup;
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.annotations.ConfigItem;
 
 import java.time.Duration;
 import java.util.Optional;

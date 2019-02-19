@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.processor;
+package org.jboss.quarkus.arc.processor;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,9 +28,9 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.DotName;
-import org.jboss.protean.arc.processor.AnnotationsTransformer.TransformationContext;
-import org.jboss.protean.arc.processor.BuildExtension.BuildContext;
-import org.jboss.protean.arc.processor.BuildExtension.Key;
+import org.jboss.quarkus.arc.processor.AnnotationsTransformer.TransformationContext;
+import org.jboss.quarkus.arc.processor.BuildExtension.BuildContext;
+import org.jboss.quarkus.arc.processor.BuildExtension.Key;
 
 /**
  * Applies {@link AnnotationsTransformer}s and caches the results of transformations.

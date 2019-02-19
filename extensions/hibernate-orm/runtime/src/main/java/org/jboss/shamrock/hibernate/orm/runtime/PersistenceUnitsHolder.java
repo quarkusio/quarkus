@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm.runtime;
+package io.quarkus.hibernate.orm.runtime;
 
 import java.util.HashMap;
 import java.util.List;
@@ -26,28 +26,28 @@ import javax.persistence.PersistenceException;
 import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
-import org.jboss.shamrock.hibernate.orm.runtime.boot.FastBootMetadataBuilder;
-import org.jboss.shamrock.hibernate.orm.runtime.boot.LightPersistenceXmlDescriptor;
-import org.jboss.shamrock.hibernate.orm.runtime.recording.RecordedState;
+import io.quarkus.hibernate.orm.runtime.boot.FastBootMetadataBuilder;
+import io.quarkus.hibernate.orm.runtime.boot.LightPersistenceXmlDescriptor;
+import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 
 public final class PersistenceUnitsHolder {
 
     private static final String NO_NAME_TOKEN = "__no_name";
 
-    // Populated by Shamrock's runtime phase from Shamrock deployment info
+    // Populated by Quarkus's runtime phase from Quarkus deployment info
     private static volatile PersistenceUnits persistenceUnits;
 
     /**
-     * Initialize JPA for use in Shamrock. In a native image. This must be called
+     * Initialize JPA for use in Quarkus. In a native image. This must be called
      * from within a static init method.
      *
      * In general the <code>parsedPersistenceXmlDescriptors</code> will be provided
-     * by calling {@link #loadOriginalXMLParsedDescriptors()} In Shamrock this is
-     * done in Shamrock's JPA ResourceProcessor.
+     * by calling {@link #loadOriginalXMLParsedDescriptors()} In Quarkus this is
+     * done in Quarkus's JPA ResourceProcessor.
      *
      * The scanner may be null to use the default scanner, or a custom scanner can be
      * used to stop Hibernate scanning. It is expected that the scanner will be
-     * provided by Shamrock via its hold of Jandex info.
+     * provided by Quarkus via its hold of Jandex info.
      *
      * @param parsedPersistenceXmlDescriptors
      * @param scanner
@@ -101,7 +101,7 @@ public final class PersistenceUnitsHolder {
 
     private static void checkJPAInitialization() {
         if (persistenceUnits == null) {
-            throw new RuntimeException("JPA not initialized yet by Shamrock: this is likely a bug.");
+            throw new RuntimeException("JPA not initialized yet by Quarkus: this is likely a bug.");
         }
     }
 

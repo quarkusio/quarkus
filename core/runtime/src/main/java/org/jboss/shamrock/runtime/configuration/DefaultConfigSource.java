@@ -1,4 +1,4 @@
-package org.jboss.shamrock.runtime.configuration;
+package io.quarkus.runtime.configuration;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,7 +16,7 @@ import io.smallrye.config.PropertiesConfigSource;
 public final class DefaultConfigSource extends PropertiesConfigSource {
     private static final long serialVersionUID = - 6482737535291300045L;
 
-    public static final String DEFAULT_CONFIG_PROPERTIES_NAME = "META-INF/shamrock-default-config.properties";
+    public static final String DEFAULT_CONFIG_PROPERTIES_NAME = "META-INF/quarkus-default-config.properties";
 
     /**
      * Construct a new instance.

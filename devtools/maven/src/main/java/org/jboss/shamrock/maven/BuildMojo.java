@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.maven;
+package io.quarkus.maven;
 
 import java.io.File;
 import java.util.List;
@@ -31,15 +31,15 @@ import org.apache.maven.project.MavenProject;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.jboss.shamrock.creator.AppArtifact;
-import org.jboss.shamrock.creator.AppCreator;
-import org.jboss.shamrock.creator.AppCreatorException;
-import org.jboss.shamrock.creator.AppDependency;
-import org.jboss.shamrock.creator.phase.augment.AugmentPhase;
-import org.jboss.shamrock.creator.phase.curate.CurateOutcome;
-import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarOutcome;
-import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarPhase;
-import org.jboss.shamrock.creator.resolver.maven.ResolvedMavenArtifactDeps;
+import io.quarkus.creator.AppArtifact;
+import io.quarkus.creator.AppCreator;
+import io.quarkus.creator.AppCreatorException;
+import io.quarkus.creator.AppDependency;
+import io.quarkus.creator.phase.augment.AugmentPhase;
+import io.quarkus.creator.phase.curate.CurateOutcome;
+import io.quarkus.creator.phase.runnerjar.RunnerJarOutcome;
+import io.quarkus.creator.phase.runnerjar.RunnerJarPhase;
+import io.quarkus.creator.resolver.maven.ResolvedMavenArtifactDeps;
 
 /**
  *
@@ -115,7 +115,7 @@ public class BuildMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project.build.finalName}")
     private String finalName;
 
-    @Parameter(defaultValue = "org.jboss.shamrock.runner.GeneratedMain")
+    @Parameter(defaultValue = "io.quarkus.runner.GeneratedMain")
     private String mainClass;
 
     @Parameter(defaultValue = "true")

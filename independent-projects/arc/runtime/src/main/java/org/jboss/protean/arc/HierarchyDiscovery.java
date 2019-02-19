@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc;
+package org.jboss.quarkus.arc;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.GenericArrayType;

@@ -1,4 +1,4 @@
-package org.jboss.shamrock.jpa.tests.configurationless;
+package io.quarkus.jpa.tests.configurationless;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;

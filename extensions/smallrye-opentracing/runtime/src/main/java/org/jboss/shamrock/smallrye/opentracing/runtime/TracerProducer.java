@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.smallrye.opentracing.runtime;
+package io.quarkus.smallrye.opentracing.runtime;
 
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Produces;

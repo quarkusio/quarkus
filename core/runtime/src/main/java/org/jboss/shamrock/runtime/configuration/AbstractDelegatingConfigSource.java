@@ -1,4 +1,4 @@
-package org.jboss.shamrock.runtime.configuration;
+package io.quarkus.runtime.configuration;
 
 import java.util.Map;
 import java.util.Set;

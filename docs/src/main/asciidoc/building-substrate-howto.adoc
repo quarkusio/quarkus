@@ -58,7 +58,7 @@ mx native-image HelloWorld
 === Building a custom GraalVM distribution
 
 In order to create a custom GraalVM distribution (necessary for usage
-in shamrock) you must switch to the vm subdirectory, and use special
+in quarkus) you must switch to the vm subdirectory, and use special
 build options to pick the modules in your distribution.
 
 For a simple subset VM with just substrate and its native tools execute

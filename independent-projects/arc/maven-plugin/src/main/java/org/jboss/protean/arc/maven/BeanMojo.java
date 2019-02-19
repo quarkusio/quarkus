@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.maven;
+package org.jboss.quarkus.arc.maven;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,9 +46,9 @@ import org.apache.maven.project.MavenProject;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
-import org.jboss.protean.arc.processor.BeanDefiningAnnotation;
-import org.jboss.protean.arc.processor.BeanProcessor;
-import org.jboss.protean.arc.processor.ResourceOutput;
+import org.jboss.quarkus.arc.processor.BeanDefiningAnnotation;
+import org.jboss.quarkus.arc.processor.BeanProcessor;
+import org.jboss.quarkus.arc.processor.ResourceOutput;
 
 /**
  *

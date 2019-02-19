@@ -1,4 +1,4 @@
-package org.jboss.shamrock.example.test;
+package io.quarkus.example.test;
 
 import org.hibernate.*;
 import org.hibernate.cache.spi.Region;
@@ -7,10 +7,10 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.exception.LockAcquisitionException;
 import org.hibernate.resource.transaction.spi.TransactionStatus;
-import org.infinispan.protean.hibernate.cache.PutFromLoadValidator;
+import org.infinispan.quarkus.hibernate.cache.PutFromLoadValidator;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.example.infinispancachejpa.correctness.Family;
-import org.jboss.shamrock.example.infinispancachejpa.correctness.Member;
+import io.quarkus.example.infinispancachejpa.correctness.Family;
+import io.quarkus.example.infinispancachejpa.correctness.Member;
 
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.PersistenceException;

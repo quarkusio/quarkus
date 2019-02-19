@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jboss.shamrock.scheduler.test;
+package io.quarkus.scheduler.test;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
-import org.jboss.shamrock.scheduler.api.Scheduled;
+import io.quarkus.scheduler.api.Scheduled;
 
 public class SimpleJobs {
 

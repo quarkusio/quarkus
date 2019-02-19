@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc;
+package org.jboss.quarkus.arc;
 
-import org.jboss.protean.arc.Arc;
+import org.jboss.quarkus.arc.Arc;
 
 public class ArcMain {
 

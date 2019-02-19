@@ -1,4 +1,4 @@
-package org.jboss.shamrock.maven.it.assertions;
+package io.quarkus.maven.it.assertions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -16,8 +16,8 @@ import org.apache.maven.model.Profile;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
-import org.jboss.shamrock.maven.CreateProjectMojo;
-import org.jboss.shamrock.maven.utilities.MojoUtils;
+import io.quarkus.maven.CreateProjectMojo;
+import io.quarkus.maven.utilities.MojoUtils;
 
 public class SetupVerifier {
 
@@ -54,7 +54,7 @@ public class SetupVerifier {
 
         //Check if the properties have been set correctly
         Properties properties = model.getProperties();
-        assertThat(properties.containsKey("shamrock.version")).isTrue();
+        assertThat(properties.containsKey("quarkus.version")).isTrue();
 
         // Check plugin is set
         Plugin plugin = maybe.orElseThrow(() -> new AssertionError("Plugin expected"));
@@ -92,7 +92,7 @@ public class SetupVerifier {
         Properties projectProps = project.getProperties();
         assertNotNull(projectProps);
         assertFalse(projectProps.isEmpty());
-        assertEquals(MojoUtils.getPluginVersion(), projectProps.getProperty("shamrock.version"));
+        assertEquals(MojoUtils.getPluginVersion(), projectProps.getProperty("quarkus.version"));
     }
 
 }

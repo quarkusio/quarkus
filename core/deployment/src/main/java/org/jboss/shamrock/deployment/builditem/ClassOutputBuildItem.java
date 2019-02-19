@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.builditem;
+package io.quarkus.deployment.builditem;
 
 import org.jboss.builder.item.SimpleBuildItem;
-import org.jboss.shamrock.deployment.ClassOutput;
+import io.quarkus.deployment.ClassOutput;
 
 public final class ClassOutputBuildItem extends SimpleBuildItem {
 

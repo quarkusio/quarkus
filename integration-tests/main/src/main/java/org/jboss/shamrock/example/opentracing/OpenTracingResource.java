@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.opentracing;
+package io.quarkus.example.opentracing;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;

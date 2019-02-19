@@ -1,6 +1,6 @@
 = {project-name}
 
-include::protean-intro.adoc[tag=intro]
+include::quarkus-intro.adoc[tag=intro]
 
 == Getting Started
 
@@ -44,14 +44,14 @@ _Recommended:_
 
 You can contact the project team using:
 
-* email using the http://post-office.corp.redhat.com/mailman/listinfo/protean-dev[protean-dev@redhat.com] mailing list
-* chat using https://protean.zulipchat.com[Zulip]
+* email using the http://post-office.corp.redhat.com/mailman/listinfo/quarkus-dev[quarkus-dev@redhat.com] mailing list
+* chat using https://quarkus.zulipchat.com[Zulip]
 
 Your help is more than welcome! Don't hesitate to join the crowd.
 
 == Contributing
 
-Check the https://github.com/protean-project/shamrock/blob/master/CONTRIBUTING.md[Contribution Guide] for details on reporting issues and the process for submitting pull requests.
+Check the https://github.com/quarkus-project/quarkus/blob/master/CONTRIBUTING.md[Contribution Guide] for details on reporting issues and the process for submitting pull requests.
 
 Every contribution is valuable.
 It can be a bug report, an example application, a feature request, a fix in the documentation or just feedback.
@@ -62,6 +62,6 @@ We are in an incubation phase, so we don't have a 1.0.0 release yet.
 
 == License
 
-This project is licensed under the Apache Software License 2.0 - see the https://github.com/protean-project/shamrock/blob/master/LICENSE.txt[License file] for details.
+This project is licensed under the Apache Software License 2.0 - see the https://github.com/quarkus-project/quarkus/blob/master/LICENSE.txt[License file] for details.
 
 

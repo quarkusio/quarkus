@@ -1,4 +1,4 @@
-package org.jboss.shamrock.smallrye.health.test;
+package io.quarkus.smallrye.health.test;
 
 import java.util.Collections;
 import java.util.Map;

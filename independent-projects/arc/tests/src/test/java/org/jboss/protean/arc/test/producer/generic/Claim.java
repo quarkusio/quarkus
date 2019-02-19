@@ -1,4 +1,4 @@
-package org.jboss.protean.arc.test.producer.generic;
+package org.jboss.quarkus.arc.test.producer.generic;
 
 import javax.enterprise.util.Nonbinding;
 import javax.inject.Qualifier;

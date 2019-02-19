@@ -1,7 +1,7 @@
-package org.jboss.shamrock.cli.commands;
+package io.quarkus.cli.commands;
 
-import static org.jboss.shamrock.maven.utilities.MojoUtils.getBomArtifactId;
-import static org.jboss.shamrock.maven.utilities.MojoUtils.readPom;
+import static io.quarkus.maven.utilities.MojoUtils.getBomArtifactId;
+import static io.quarkus.maven.utilities.MojoUtils.readPom;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,8 +11,8 @@ import java.util.Set;
 
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
-import org.jboss.shamrock.dependencies.Extension;
-import org.jboss.shamrock.maven.utilities.MojoUtils;
+import io.quarkus.dependencies.Extension;
+import io.quarkus.maven.utilities.MojoUtils;
 
 public class AddExtensions {
     private Model model;
@@ -73,7 +73,7 @@ public class AddExtensions {
 
     private List<Dependency> getDependenciesFromBom() {
         try {
-            return readPom(getClass().getResourceAsStream("/shamrock-bom/pom.xml"))
+            return readPom(getClass().getResourceAsStream("/quarkus-bom/pom.xml"))
                        .getDependencyManagement()
                        .getDependencies();
         } catch (IOException e) {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.jpa;
+package io.quarkus.example.jpa;
 
 import javax.persistence.Embeddable;
 

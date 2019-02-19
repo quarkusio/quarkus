@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.restclient.runtime.graal;
+package io.quarkus.restclient.runtime.graal;
 
 import org.eclipse.microprofile.rest.client.spi.RestClientBuilderResolver;
-import org.jboss.shamrock.restclient.runtime.BuilderResolver;
+import io.quarkus.restclient.runtime.BuilderResolver;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;

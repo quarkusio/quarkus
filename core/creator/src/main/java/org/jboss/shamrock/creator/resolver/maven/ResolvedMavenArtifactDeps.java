@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.resolver.maven;
+package io.quarkus.creator.resolver.maven;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -24,10 +24,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import org.apache.maven.artifact.Artifact;
-import org.jboss.shamrock.creator.AppArtifact;
-import org.jboss.shamrock.creator.AppArtifactResolverBase;
-import org.jboss.shamrock.creator.AppCreatorException;
-import org.jboss.shamrock.creator.AppDependency;
+import io.quarkus.creator.AppArtifact;
+import io.quarkus.creator.AppArtifactResolverBase;
+import io.quarkus.creator.AppCreatorException;
+import io.quarkus.creator.AppDependency;
 
 /**
  *

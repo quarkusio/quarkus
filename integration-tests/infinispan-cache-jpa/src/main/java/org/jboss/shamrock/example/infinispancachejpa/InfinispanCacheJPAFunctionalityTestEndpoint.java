@@ -1,4 +1,4 @@
-package org.jboss.shamrock.example.infinispancachejpa;
+package io.quarkus.example.infinispancachejpa;
 
 import org.hibernate.NaturalIdLoadAccess;
 import org.hibernate.Session;
@@ -445,7 +445,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint extends HttpServlet {
         EntityTransaction transaction = em.getTransaction();
         transaction.begin();
         em.persist(new Person("Gizmo"));
-        em.persist(new Person("Shamrock"));
+        em.persist(new Person("Quarkus"));
         em.persist(new Person("Hibernate ORM"));
         em.persist(new Person("Infinispan"));
         transaction.commit();

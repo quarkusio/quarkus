@@ -1,4 +1,4 @@
-package org.jboss.shamrock.runtime.annotations;
+package io.quarkus.runtime.annotations;
 
 public enum ConfigPhase {
     /**

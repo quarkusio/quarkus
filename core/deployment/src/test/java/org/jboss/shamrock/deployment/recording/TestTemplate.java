@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.recording;
+package io.quarkus.deployment.recording;
 
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.jboss.shamrock.runtime.RuntimeValue;
+import io.quarkus.runtime.RuntimeValue;
 
 public class TestTemplate {
 

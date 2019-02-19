@@ -1,4 +1,4 @@
-package org.jboss.shamrock.security;
+package io.quarkus.security;
 
 import static org.wildfly.common.Assert.checkNotNullParam;
 

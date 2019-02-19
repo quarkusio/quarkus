@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.demo;
+package io.quarkus.creator.demo;
 
-import org.jboss.shamrock.creator.AppCreator;
-import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarOutcome;
+import io.quarkus.creator.AppCreator;
+import io.quarkus.creator.phase.runnerjar.RunnerJarOutcome;
 
 /**
  *

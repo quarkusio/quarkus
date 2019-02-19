@@ -1,4 +1,4 @@
-package org.jboss.shamrock.panache;
+package io.quarkus.panache;
 
 
 public class JavaBeanUtil {

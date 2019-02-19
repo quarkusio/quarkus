@@ -1,4 +1,4 @@
-package org.infinispan.protean.hibernate.cache;
+package org.infinispan.quarkus.hibernate.cache;
 
 import org.hibernate.cache.spi.DomainDataRegion;
 import org.hibernate.cache.spi.access.AccessType;

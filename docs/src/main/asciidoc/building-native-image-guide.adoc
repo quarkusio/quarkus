@@ -40,7 +40,7 @@ Remember, you need to configure Maven as indicated in the link:maven-config.html
 We recommend you to follow the instructions in the next sections and package the application step by step.
 However, you can go right to the completed example.
 
-Clone the Git repository: `git clone https://github.com/jbossas/protean-quickstarts.git`, or download an https://github.com/jbossas/protean-quickstarts/archive/master.zip[archive].
+Clone the Git repository: `git clone https://github.com/jbossas/quarkus-quickstarts.git`, or download an https://github.com/jbossas/quarkus-quickstarts/archive/master.zip[archive].
 
 The solution is located in the `getting-started-native` directory.
 
@@ -64,9 +64,9 @@ If you have generated the application from the previous tutorial, you can find i
         <build>
             <plugins>
                 <plugin>
-                    <groupId>org.jboss.shamrock</groupId>
-                    <artifactId>shamrock-maven-plugin</artifactId>
-                    <version>${shamrock.version}</version>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-maven-plugin</artifactId>
+                    <version>${quarkus.version}</version>
                     <executions>
                         <execution>
                             <goals>
@@ -88,8 +88,8 @@ We use a profile because, you will see very soon, packaging the native image tak
 
 Create a native executable using: `mvn package -Pnative`.
 
-In addition to the regular files, the build also produces `target/shamrock-quickstart-1.0-SNAPSHOT-runner`.
-You can run it using: `target/shamrock-quickstart-native-1.0-SNAPSHOT-runner`.
+In addition to the regular files, the build also produces `target/quarkus-quickstart-1.0-SNAPSHOT-runner`.
+You can run it using: `target/quarkus-quickstart-native-1.0-SNAPSHOT-runner`.
 
 == Testing the native executable
 
@@ -126,7 +126,7 @@ Then, create the `src/test/java/org/acme/quickstart/GreetingResourceIT.java` wit
 package org.acme.quickstart;
 
 
-import org.jboss.shamrock.test.junit.SubstrateTest;
+import io.quarkus.test.junit.SubstrateTest;
 
 @SubstrateTest // <1>
 public class GreetingResourceIT extends GreetingResourceTest { // <2>
@@ -144,28 +144,28 @@ To see the `GreetingResourceIT` run against the native image, add a verify goal:
 ----
 mvn package verify -Pnative
 ...
-[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]   (typeflow):  35,160.93 ms
-[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]    (objects):  24,027.13 ms
-[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]   (features):   1,313.94 ms
-[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]     analysis:  61,512.95 ms
-[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]     universe:   1,924.69 ms
-[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]      (parse):  11,479.41 ms
-[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]     (inline):  13,568.71 ms
-[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]    (compile):  82,885.41 ms
-[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]      compile: 114,095.02 ms
-[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]        image:   5,680.17 ms
-[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]        write:   1,876.14 ms
-[shamrock-quickstart-1.0-SNAPSHOT-runner:5185]      [total]: 197,587.37 ms
+[quarkus-quickstart-1.0-SNAPSHOT-runner:5185]   (typeflow):  35,160.93 ms
+[quarkus-quickstart-1.0-SNAPSHOT-runner:5185]    (objects):  24,027.13 ms
+[quarkus-quickstart-1.0-SNAPSHOT-runner:5185]   (features):   1,313.94 ms
+[quarkus-quickstart-1.0-SNAPSHOT-runner:5185]     analysis:  61,512.95 ms
+[quarkus-quickstart-1.0-SNAPSHOT-runner:5185]     universe:   1,924.69 ms
+[quarkus-quickstart-1.0-SNAPSHOT-runner:5185]      (parse):  11,479.41 ms
+[quarkus-quickstart-1.0-SNAPSHOT-runner:5185]     (inline):  13,568.71 ms
+[quarkus-quickstart-1.0-SNAPSHOT-runner:5185]    (compile):  82,885.41 ms
+[quarkus-quickstart-1.0-SNAPSHOT-runner:5185]      compile: 114,095.02 ms
+[quarkus-quickstart-1.0-SNAPSHOT-runner:5185]        image:   5,680.17 ms
+[quarkus-quickstart-1.0-SNAPSHOT-runner:5185]        write:   1,876.14 ms
+[quarkus-quickstart-1.0-SNAPSHOT-runner:5185]      [total]: 197,587.37 ms
 [INFO]
-[INFO] --- maven-failsafe-plugin:2.21.0:integration-test (default) @ shamrock-quickstart ---
+[INFO] --- maven-failsafe-plugin:2.21.0:integration-test (default) @ quarkus-quickstart ---
 [INFO]
 [INFO] -------------------------------------------------------
 [INFO]  T E S T S
 [INFO] -------------------------------------------------------
 [INFO] Running org.acme.quickstart.GreetingResourceIT
-Executing /Users/starksm/Dev/JBoss/Protean/get-started/target/shamrock-quickstart-1.0-SNAPSHOT-runner
-2018-11-26 08:20:43,169 ironmaiden shamrock-quickstart-1.0-SNAPSHOT-runner[5220] INFO  [o.j.s.u.r.UndertowDeploymentTemplate] (main) Starting Undertow on port 8080
-2018-11-26 08:20:43,190 ironmaiden shamrock-quickstart-1.0-SNAPSHOT-runner[5220] INFO  [o.j.shamrock] (main) Shamrock started in 21.930ms
+Executing /Users/starksm/Dev/JBoss/Quarkus/get-started/target/quarkus-quickstart-1.0-SNAPSHOT-runner
+2018-11-26 08:20:43,169 ironmaiden quarkus-quickstart-1.0-SNAPSHOT-runner[5220] INFO  [o.j.s.u.r.UndertowDeploymentTemplate] (main) Starting Undertow on port 8080
+2018-11-26 08:20:43,190 ironmaiden quarkus-quickstart-1.0-SNAPSHOT-runner[5220] INFO  [o.j.quarkus] (main) Quarkus started in 21.930ms
 [INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.097 s - in org.acme.quickstart.GreetingResourceIT
 [INFO]
 [INFO] Results:
@@ -178,7 +178,7 @@ Executing /Users/starksm/Dev/JBoss/Protean/get-started/target/shamrock-quickstar
 
 IMPORTANT: Before going further, be sure to have a working Docker environment.
 
-You can run the application in a Docker container using the JAR produced by the Shamrock Maven Plugin.
+You can run the application in a Docker container using the JAR produced by the Quarkus Maven Plugin.
 However, in this guide we focus on creating a Docker image using the produced native executable.
 Because the Docker container may not use the same _executable_ format as the one produced by default, we must instruct the Maven build to produce an
  executable from inside a Docker container:
@@ -199,24 +199,24 @@ WORKDIR /work/
 COPY target/*-runner /work/application
 RUN chmod 775 /work
 EXPOSE 8080
-CMD ["./application", "-Dshamrock.http.host=0.0.0.0"]
+CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
 ----
 
 Then, if you didn't delete the generated native executable, you can build the docker image with:
 
 [source]
 ----
-docker build -f src/main/docker/Dockerfile -t shamrock-quickstart/quickstart .
+docker build -f src/main/docker/Dockerfile -t quarkus-quickstart/quickstart .
 ----
 
 And finally, run it with:
 
 [source]
 ----
-docker run -i --rm -p 8080:8080 shamrock-quickstart/quickstart
+docker run -i --rm -p 8080:8080 quarkus-quickstart/quickstart
 ----
 
-NOTE: Interested by tiny Docker images, check the https://github.com/jbossas/protean-shamrock/tree/master/docker/distroless[distroless] version.
+NOTE: Interested by tiny Docker images, check the https://github.com/jbossas/quarkus/tree/master/docker/distroless[distroless] version.
 
 == What's next?
 

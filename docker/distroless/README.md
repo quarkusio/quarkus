@@ -1,6 +1,6 @@
 # Distroless base image
 
-This project creates a [distroless image](https://github.com/GoogleContainerTools/distroless) suitable to run Shamrock applications.
+This project creates a [distroless image](https://github.com/GoogleContainerTools/distroless) suitable to run Quarkus applications.
 
 This image contains a minimal Linux, glibc-based system. 
 It contains:
@@ -30,19 +30,19 @@ Then, create the following `Dockerfile`:
 FROM cescoffier/native-base:latest
 COPY target/*-runner /application
 EXPOSE 8080
-CMD ["./application", "-Dshamrock.http.host=0.0.0.0"]
+CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
 ```
 
 Build the docker image using (change the namespace/name):
 
 ```bash
-docker build -t protean-demo/demo . 
+docker build -t quarkus-demo/demo . 
 ```
 
 You can then run your application using:
 
 ```bash
-docker run -i --rm -p 8080:8080 protean-demo/demo
+docker run -i --rm -p 8080:8080 quarkus-demo/demo
 ```
 
 ## Build

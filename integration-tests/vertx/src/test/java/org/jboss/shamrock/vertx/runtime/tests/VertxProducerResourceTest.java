@@ -1,13 +1,13 @@
-package org.jboss.shamrock.vertx.runtime.tests;
+package io.quarkus.vertx.runtime.tests;
 
 import static org.hamcrest.Matchers.containsString;
 
-import org.jboss.shamrock.test.junit.ShamrockTest;
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
 import io.restassured.RestAssured;
 
-@ShamrockTest
+@QuarkusTest
 public class VertxProducerResourceTest {
 
     @Test
@@ -19,7 +19,7 @@ public class VertxProducerResourceTest {
     @Test
     public void testEventBus() {
         RestAssured.when().get("/vertx-test/eventBus").then()
-                .body(containsString("hello shamrock"));
+                .body(containsString("hello quarkus"));
     }
 
 }

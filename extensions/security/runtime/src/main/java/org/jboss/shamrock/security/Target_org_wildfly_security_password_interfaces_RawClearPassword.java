@@ -1,4 +1,4 @@
-package org.jboss.shamrock.security;
+package io.quarkus.security;
 
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.TargetClass;

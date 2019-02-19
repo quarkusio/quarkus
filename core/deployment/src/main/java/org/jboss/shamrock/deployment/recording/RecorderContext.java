@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.recording;
+package io.quarkus.deployment.recording;
 
 import java.lang.reflect.Constructor;
 import java.util.List;
 import java.util.function.Function;
 
-import org.jboss.shamrock.runtime.ObjectSubstitution;
-import org.jboss.shamrock.runtime.RuntimeValue;
+import io.quarkus.runtime.ObjectSubstitution;
+import io.quarkus.runtime.RuntimeValue;
 
 /**
  * An injectable utility class that contains methods that can be needed for dealing with templates

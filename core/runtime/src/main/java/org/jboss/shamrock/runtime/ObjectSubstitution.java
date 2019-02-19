@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.runtime;
+package io.quarkus.runtime;
 
 /**
  * An interface that can be used to substitute a non-bytecode serializable class

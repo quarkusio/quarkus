@@ -19,15 +19,15 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>shamrock-smallrye-opentracing</artifactId>
-        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>quarkus-smallrye-opentracing</artifactId>
+        <groupId>io.quarkus</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-smallrye-opentracing-runtime</artifactId>
-    <name>Shamrock - SmallRye OpenTracing - Runtime</name>
+    <artifactId>quarkus-smallrye-opentracing-runtime</artifactId>
+    <name>Quarkus - SmallRye OpenTracing - Runtime</name>
 
     <dependencies>
 
@@ -36,12 +36,12 @@
             <artifactId>smallrye-opentracing</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-core-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core-runtime</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-undertow-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-undertow-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.glassfish</groupId>
@@ -81,8 +81,8 @@
                 <configuration>
                     <annotationProcessorPaths>
                         <path>
-                            <groupId>org.jboss.shamrock</groupId>
-                            <artifactId>shamrock-extension-processor</artifactId>
+                            <groupId>io.quarkus</groupId>
+                            <artifactId>quarkus-extension-processor</artifactId>
                             <version>${project.version}</version>
                         </path>
                     </annotationProcessorPaths>

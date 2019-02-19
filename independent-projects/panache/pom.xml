@@ -51,7 +51,7 @@
     <dependencies>
 
         <dependency>
-            <groupId>org.jboss.protean.arc</groupId>
+            <groupId>org.jboss.quarkus.arc</groupId>
             <artifactId>arc-runtime</artifactId>
             <version>${version.arc}</version>
         </dependency>
@@ -80,13 +80,13 @@
 
     <distributionManagement>
         <repository>
-            <id>protean-nexus-release</id>
-            <name>Protean AWS Nexus - Releases</name>
+            <id>quarkus-nexus-release</id>
+            <name>Quarkus AWS Nexus - Releases</name>
             <url>http://ec2-18-234-117-118.compute-1.amazonaws.com:8081/nexus/content/repositories/releases/</url>
         </repository>
         <snapshotRepository>
-            <id>protean-nexus-snapshot</id>
-            <name>Protean AWS Nexus - Snapshots</name>
+            <id>quarkus-nexus-snapshot</id>
+            <name>Quarkus AWS Nexus - Snapshots</name>
             <url>http://ec2-18-234-117-118.compute-1.amazonaws.com:8081/nexus/content/repositories/snapshots/</url>
         </snapshotRepository>
     </distributionManagement>

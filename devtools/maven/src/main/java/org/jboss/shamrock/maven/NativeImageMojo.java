@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.maven;
+package io.quarkus.maven;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -27,13 +27,13 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
-import org.jboss.shamrock.creator.AppCreator;
-import org.jboss.shamrock.creator.AppCreatorException;
-import org.jboss.shamrock.creator.AppDependency;
-import org.jboss.shamrock.creator.phase.augment.AugmentOutcome;
-import org.jboss.shamrock.creator.phase.nativeimage.NativeImageOutcome;
-import org.jboss.shamrock.creator.phase.nativeimage.NativeImagePhase;
-import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarOutcome;
+import io.quarkus.creator.AppCreator;
+import io.quarkus.creator.AppCreatorException;
+import io.quarkus.creator.AppDependency;
+import io.quarkus.creator.phase.augment.AugmentOutcome;
+import io.quarkus.creator.phase.nativeimage.NativeImageOutcome;
+import io.quarkus.creator.phase.nativeimage.NativeImagePhase;
+import io.quarkus.creator.phase.runnerjar.RunnerJarOutcome;
 
 @Mojo(name = "native-image", defaultPhase = LifecyclePhase.PACKAGE, requiresDependencyResolution = ResolutionScope.RUNTIME)
 public class NativeImageMojo extends AbstractMojo {

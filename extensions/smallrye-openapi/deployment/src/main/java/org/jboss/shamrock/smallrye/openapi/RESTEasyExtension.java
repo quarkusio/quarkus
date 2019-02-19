@@ -1,4 +1,4 @@
-package org.jboss.shamrock.smallrye.openapi;
+package io.quarkus.smallrye.openapi;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -14,8 +14,8 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
-import org.jboss.shamrock.deployment.util.ServiceUtil;
-import org.jboss.shamrock.resteasy.ResteasyJaxrsConfig;
+import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.resteasy.ResteasyJaxrsConfig;
 
 import io.smallrye.openapi.api.OpenApiConstants;
 import io.smallrye.openapi.runtime.scanner.DefaultAnnotationScannerExtension;

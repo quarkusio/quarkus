@@ -1,11 +1,11 @@
-package org.jboss.shamrock.example.test;
+package io.quarkus.example.test;
 
 import org.hibernate.SessionFactory;
-import org.jboss.shamrock.example.infinispancachejpa.correctness.Family;
-import org.jboss.shamrock.example.infinispancachejpa.correctness.Member;
-import org.jboss.shamrock.example.infinispancachejpa.correctness.readwrite.FamilyRW;
-import org.jboss.shamrock.example.infinispancachejpa.correctness.readwrite.MemberRW;
-import org.jboss.shamrock.test.ShamrockUnitTest;
+import io.quarkus.example.infinispancachejpa.correctness.Family;
+import io.quarkus.example.infinispancachejpa.correctness.Member;
+import io.quarkus.example.infinispancachejpa.correctness.readwrite.FamilyRW;
+import io.quarkus.example.infinispancachejpa.correctness.readwrite.MemberRW;
+import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Disabled;
@@ -54,7 +54,7 @@ public class InfinispanCacheJPANonStrictCorrectnessTest {
     }
 
     @RegisterExtension
-    static ShamrockUnitTest runner = new ShamrockUnitTest()
+    static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() ->
                     ShrinkWrap.create(JavaArchive.class)
                         .addAsManifestResource("META-INF/nonstrict-persistence.xml", "persistence.xml")

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.smallrye.metrics.runtime;
+package io.quarkus.smallrye.metrics.runtime;
 
 import java.util.concurrent.Callable;
 

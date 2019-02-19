@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.steps;
+package io.quarkus.deployment.steps;
 
 import java.util.HashSet;
 import java.util.List;
@@ -22,10 +22,10 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.Capabilities;
-import org.jboss.shamrock.deployment.builditem.CapabilityBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
 
 public class CapabilityAggregationStep {
 

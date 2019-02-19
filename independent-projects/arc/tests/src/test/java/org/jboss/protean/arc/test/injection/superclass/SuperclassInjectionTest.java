@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.test.injection.superclass;
+package org.jboss.quarkus.arc.test.injection.superclass;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -30,9 +30,9 @@ import javax.enterprise.context.Dependent;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import org.jboss.protean.arc.Arc;
-import org.jboss.protean.arc.test.ArcTestContainer;
-import org.jboss.protean.arc.test.injection.superclass.foo.FooHarvester;
+import org.jboss.quarkus.arc.Arc;
+import org.jboss.quarkus.arc.test.ArcTestContainer;
+import org.jboss.quarkus.arc.test.injection.superclass.foo.FooHarvester;
 import org.junit.Rule;
 import org.junit.Test;
 

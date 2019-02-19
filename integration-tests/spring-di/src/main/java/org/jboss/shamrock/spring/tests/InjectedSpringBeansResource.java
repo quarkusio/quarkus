@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.spring.tests;
+package io.quarkus.spring.tests;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;

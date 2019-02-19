@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.test.junit4;
+package io.quarkus.test.junit4;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.jboss.shamrock.test.common.RestAssuredURLManager;
-import org.jboss.shamrock.test.common.TestResourceManager;
+import io.quarkus.test.common.RestAssuredURLManager;
+import io.quarkus.test.common.TestResourceManager;
 import org.junit.runner.Description;
 import org.junit.runner.Result;
 import org.junit.runner.notification.RunListener;
 import org.junit.runner.notification.RunNotifier;
 
-abstract class AbstractShamrockRunListener extends RunListener {
+abstract class AbstractQuarkusRunListener extends RunListener {
 
     private final Class<?> testClass;
 
@@ -38,7 +38,7 @@ abstract class AbstractShamrockRunListener extends RunListener {
 
     private boolean failed = false;
 
-    protected AbstractShamrockRunListener(Class<?> testClass, RunNotifier runNotifier) {
+    protected AbstractQuarkusRunListener(Class<?> testClass, RunNotifier runNotifier) {
         this.testClass = testClass;
         this.runNotifier = runNotifier;
         this.testResourceManager = new TestResourceManager(testClass);
@@ -65,21 +65,21 @@ abstract class AbstractShamrockRunListener extends RunListener {
                 });
 
                 try {
-                    startShamrock();
+                    startQuarkus();
                     started = true;
                     stopListeners.add(0, new RunListener() {
                         @Override
                         public void testRunFinished(Result result) throws Exception {
                             try {
-                                stopShamrock();
+                                stopQuarkus();
                             } catch (Exception e) {
-                                System.err.println("Unable to stop Shamrock");
+                                System.err.println("Unable to stop Quarkus");
                             }
                         }
                     });
                 } catch (Exception e) {
                     failed = true;
-                    throw new RuntimeException("Unable to boot Shamrock", e);
+                    throw new RuntimeException("Unable to boot Quarkus", e);
                 }
             } finally {
                 for (RunListener stopListener : stopListeners) {
@@ -97,9 +97,9 @@ abstract class AbstractShamrockRunListener extends RunListener {
 
 
 
-    protected abstract void startShamrock() throws Exception;
+    protected abstract void startQuarkus() throws Exception;
 
-    protected abstract void stopShamrock() throws Exception;
+    protected abstract void stopQuarkus() throws Exception;
 
     protected Class<?> getTestClass() {
         return testClass;

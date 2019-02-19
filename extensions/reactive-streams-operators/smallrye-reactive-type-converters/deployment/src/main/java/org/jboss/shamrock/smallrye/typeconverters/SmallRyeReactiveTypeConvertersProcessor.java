@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.smallrye.typeconverters;
+package io.quarkus.smallrye.typeconverters;
 
 
 import io.smallrye.reactive.converters.ReactiveTypeConverter;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
-import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ServiceProviderBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
 
 import java.util.Collection;
 

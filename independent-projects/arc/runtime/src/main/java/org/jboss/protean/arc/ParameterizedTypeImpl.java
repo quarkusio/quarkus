@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc;
+package org.jboss.quarkus.arc;
 
 import java.io.Serializable;
 import java.lang.reflect.ParameterizedType;

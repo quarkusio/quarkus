@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.runtime.graal;
+package io.quarkus.runtime.graal;
 
 import javax.management.JMX;
 import javax.management.MBeanServerConnection;

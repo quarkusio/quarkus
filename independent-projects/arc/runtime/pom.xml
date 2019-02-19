@@ -20,7 +20,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.jboss.protean.arc</groupId>
+    <groupId>org.jboss.quarkus.arc</groupId>
     <artifactId>arc-parent</artifactId>
     <version>1.0.0.Alpha1-SNAPSHOT</version>
     <relativePath>../</relativePath>

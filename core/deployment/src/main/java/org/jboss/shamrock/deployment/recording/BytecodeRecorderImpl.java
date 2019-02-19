@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.recording;
+package io.quarkus.deployment.recording;
 
 import static org.jboss.protean.gizmo.MethodDescriptor.ofConstructor;
 import static org.jboss.protean.gizmo.MethodDescriptor.ofMethod;
@@ -52,11 +52,11 @@ import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
 import org.jboss.protean.gizmo.TryBlock;
-import org.jboss.shamrock.deployment.ClassOutput;
-import org.jboss.shamrock.runtime.ObjectSubstitution;
-import org.jboss.shamrock.runtime.RuntimeValue;
-import org.jboss.shamrock.runtime.StartupContext;
-import org.jboss.shamrock.runtime.StartupTask;
+import io.quarkus.deployment.ClassOutput;
+import io.quarkus.runtime.ObjectSubstitution;
+import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.StartupContext;
+import io.quarkus.runtime.StartupTask;
 import org.wildfly.common.Assert;
 
 /**
@@ -83,7 +83,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
 
     private static final AtomicInteger COUNT = new AtomicInteger();
     private static final AtomicInteger OUTPUT_COUNT = new AtomicInteger();
-    private static final String BASE_PACKAGE = "org.jboss.shamrock.deployment.steps.";
+    private static final String BASE_PACKAGE = "io.quarkus.deployment.steps.";
 
     private static final String PROXY_KEY = "proxykey";
 

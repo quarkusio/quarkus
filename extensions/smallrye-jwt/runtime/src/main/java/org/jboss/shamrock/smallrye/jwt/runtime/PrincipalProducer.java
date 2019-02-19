@@ -1,4 +1,4 @@
-package org.jboss.shamrock.smallrye.jwt.runtime;
+package io.quarkus.smallrye.jwt.runtime;
 
 import javax.annotation.Priority;
 import javax.enterprise.context.RequestScoped;
@@ -6,7 +6,7 @@ import javax.enterprise.inject.Alternative;
 import javax.enterprise.inject.Produces;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
-import org.jboss.shamrock.smallrye.jwt.runtime.auth.JWTAccount;
+import io.quarkus.smallrye.jwt.runtime.auth.JWTAccount;
 
 /**
  * Override the default CDI Principal bean to allow the injection of a Principal to be both a

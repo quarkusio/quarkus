@@ -1,13 +1,13 @@
-package org.jboss.shamrock.hibernate.validator;
+package io.quarkus.hibernate.validator;
 
 import java.util.Set;
 
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.protean.arc.processor.AnnotationsTransformer;
-import org.jboss.shamrock.hibernate.validator.runtime.interceptor.MethodValidated;
-import org.jboss.shamrock.hibernate.validator.runtime.jaxrs.JaxrsEndPointValidated;
+import org.jboss.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.hibernate.validator.runtime.interceptor.MethodValidated;
+import io.quarkus.hibernate.validator.runtime.jaxrs.JaxrsEndPointValidated;
 
 /**
  * Add {@link MethodValidated} annotations to the methods requiring validation.

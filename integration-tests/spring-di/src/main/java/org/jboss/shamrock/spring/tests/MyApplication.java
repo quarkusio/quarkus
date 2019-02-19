@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.spring.tests;
+package io.quarkus.spring.tests;
 
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.core.Application;

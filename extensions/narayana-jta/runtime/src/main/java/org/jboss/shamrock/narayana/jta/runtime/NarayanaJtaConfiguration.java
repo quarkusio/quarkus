@@ -1,10 +1,10 @@
-package org.jboss.shamrock.narayana.jta.runtime;
+package io.quarkus.narayana.jta.runtime;
 
 import java.util.Optional;
 
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
-import org.jboss.shamrock.runtime.annotations.ConfigPhase;
-import org.jboss.shamrock.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
  *
@@ -14,7 +14,7 @@ public final class NarayanaJtaConfiguration {
     /**
      * The node name used by the transaction manager
      */
-    @ConfigItem(defaultValue = "shamrock")
+    @ConfigItem(defaultValue = "quarkus")
     public String nodeName;
 
     /**

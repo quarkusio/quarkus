@@ -1,4 +1,4 @@
-package org.jboss.shamrock.runtime.configuration;
+package io.quarkus.runtime.configuration;
 
 import static org.junit.Assert.assertEquals;
 
@@ -6,9 +6,9 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 
-import org.jboss.shamrock.runtime.configuration.CidrAddressConverter;
-import org.jboss.shamrock.runtime.configuration.InetAddressConverter;
-import org.jboss.shamrock.runtime.configuration.InetSocketAddressConverter;
+import io.quarkus.runtime.configuration.CidrAddressConverter;
+import io.quarkus.runtime.configuration.InetAddressConverter;
+import io.quarkus.runtime.configuration.InetSocketAddressConverter;
 import org.junit.AssumptionViolatedException;
 import org.junit.Test;
 import org.wildfly.common.net.CidrAddress;

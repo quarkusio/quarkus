@@ -15,7 +15,7 @@
  */
 
 
-package org.jboss.shamrock.hibernate.validator.runtime;
+package io.quarkus.hibernate.validator.runtime;
 
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jboss.shamrock.restclient.runtime;
+package io.quarkus.restclient.runtime;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
@@ -77,7 +77,7 @@ class RestClientBuilderImpl implements RestClientBuilder {
     private static final String RESTEASY_PROPERTY_PREFIX = "resteasy.";
 
     private static final String DEFAULT_MAPPER_PROP = "microprofile.rest.client.disable.default.mapper";
-    private static final Logger log = Logger.getLogger("org.jboss.shamrock.restclient");
+    private static final Logger log = Logger.getLogger("io.quarkus.restclient");
 
     RestClientBuilderImpl() {
         ClientBuilder availableBuilder = ClientBuilder.newBuilder();
@@ -139,7 +139,7 @@ class RestClientBuilderImpl implements RestClientBuilder {
         ResteasyClient client;
 
         // Disable SSL if explicitly disabled
-        if (!this.config.getOptionalValue("shamrock.ssl.native", Boolean.class).orElse(true)) {
+        if (!this.config.getOptionalValue("quarkus.ssl.native", Boolean.class).orElse(true)) {
             this.builderDelegate.sslContext(new DisabledSSLContext());
         }
 
@@ -511,7 +511,7 @@ class RestClientBuilderImpl implements RestClientBuilder {
         }
 
         private RuntimeException sslSupportDisabledException() {
-            return new IllegalStateException("SSL support is disabled. You probably have set shamrock.ssl.native to false in your configuration.");
+            return new IllegalStateException("SSL support is disabled. You probably have set quarkus.ssl.native to false in your configuration.");
         }
     }
 }

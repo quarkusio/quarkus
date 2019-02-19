@@ -21,21 +21,21 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-build-parent</artifactId>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-build-parent</artifactId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
         <relativePath>../build-parent/pom.xml</relativePath>
     </parent>
 
-    <artifactId>shamrock-documentation</artifactId>
+    <artifactId>quarkus-documentation</artifactId>
 
     <packaging>pom</packaging>
     <properties>
         <version.asciidoctor>1.5.7</version.asciidoctor>
     </properties>
 
-    <name>Shamrock - Documentation</name>
-    <description>The shamrock documentation</description>
+    <name>Quarkus - Documentation</name>
+    <description>The quarkus documentation</description>
 
     <dependencies>
     </dependencies>
@@ -48,11 +48,11 @@
                 <version>${version.asciidoctor}</version>
                 <configuration>
                     <attributes>
-                        <shamrock-version>${project.version}</shamrock-version>
+                        <quarkus-version>${project.version}</quarkus-version>
                         <surefire-version>${version.surefire.plugin}</surefire-version>
                         <graal-version>${graal-sdk.version-for-documentation}</graal-version>
                         <restassured-version>${rest-assured.version}</restassured-version>
-                        <project-name>Protean</project-name>
+                        <project-name>Quarkus</project-name>
                     </attributes>
                 </configuration>
                 <executions>
@@ -96,7 +96,7 @@
                                 <descriptor>assembly.xml</descriptor>
                             </descriptors>
                             <recompressZippedFiles>true</recompressZippedFiles>
-                            <finalName>shamrock-docs-${project.version}</finalName>
+                            <finalName>quarkus-docs-${project.version}</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
                             <outputDirectory>target/</outputDirectory>
                             <workDirectory>target/assembly/work</workDirectory>

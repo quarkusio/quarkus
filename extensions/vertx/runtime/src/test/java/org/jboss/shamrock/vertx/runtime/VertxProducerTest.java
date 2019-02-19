@@ -1,4 +1,4 @@
-package org.jboss.shamrock.vertx.runtime;
+package io.quarkus.vertx.runtime;
 
 import org.junit.Test;
 

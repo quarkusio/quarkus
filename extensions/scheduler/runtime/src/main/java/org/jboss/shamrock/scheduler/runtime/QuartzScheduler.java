@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jboss.shamrock.scheduler.runtime;
+package io.quarkus.scheduler.runtime;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -35,11 +35,11 @@ import javax.inject.Inject;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.runtime.StartupEvent;
-import org.jboss.shamrock.scheduler.api.Scheduled;
-import org.jboss.shamrock.scheduler.api.ScheduledExecution;
-import org.jboss.shamrock.scheduler.api.Scheduler;
-import org.jboss.shamrock.scheduler.api.Trigger;
+import io.quarkus.runtime.StartupEvent;
+import io.quarkus.scheduler.api.Scheduled;
+import io.quarkus.scheduler.api.ScheduledExecution;
+import io.quarkus.scheduler.api.Scheduler;
+import io.quarkus.scheduler.api.Trigger;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.Job;
 import org.quartz.JobBuilder;
@@ -126,7 +126,7 @@ public class QuartzScheduler implements Scheduler {
         if (running.compareAndSet(false, true)) {
 
             try {
-                // TODO: leverage shamrock config - these values are just copied from the default quartz.properties
+                // TODO: leverage quarkus config - these values are just copied from the default quartz.properties
                 Properties props = new Properties();
                 props.put("org.quartz.scheduler.instanceName", "DefaultQuartzScheduler");
                 props.put("org.quartz.scheduler.rmi.export", false);

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.processor;
+package org.jboss.quarkus.arc.processor;
 
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
@@ -39,14 +39,14 @@ import javax.enterprise.inject.spi.ObserverMethod;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.jboss.protean.arc.CreationalContextImpl;
-import org.jboss.protean.arc.CurrentInjectionPointProvider;
-import org.jboss.protean.arc.InjectableBean;
-import org.jboss.protean.arc.InjectableObserverMethod;
-import org.jboss.protean.arc.InjectableReferenceProvider;
-import org.jboss.protean.arc.processor.BeanProcessor.PrivateMembersCollector;
-import org.jboss.protean.arc.processor.ResourceOutput.Resource;
-import org.jboss.protean.arc.processor.ResourceOutput.Resource.SpecialType;
+import org.jboss.quarkus.arc.CreationalContextImpl;
+import org.jboss.quarkus.arc.CurrentInjectionPointProvider;
+import org.jboss.quarkus.arc.InjectableBean;
+import org.jboss.quarkus.arc.InjectableObserverMethod;
+import org.jboss.quarkus.arc.InjectableReferenceProvider;
+import org.jboss.quarkus.arc.processor.BeanProcessor.PrivateMembersCollector;
+import org.jboss.quarkus.arc.processor.ResourceOutput.Resource;
+import org.jboss.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 import org.jboss.protean.gizmo.ClassCreator;
 import org.jboss.protean.gizmo.ClassOutput;
 import org.jboss.protean.gizmo.FieldCreator;

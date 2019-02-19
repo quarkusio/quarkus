@@ -1,14 +1,14 @@
-package org.jboss.shamrock;
+package io.quarkus;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
-public abstract class ShamrockTemplate {
+public abstract class QuarkusTemplate {
     public static final String PROJECT_GROUP_ID = "project_groupId";
     public static final String PROJECT_ARTIFACT_ID = "project_artifactId";
     public static final String PROJECT_VERSION = "project_version";
-    public static final String SHAMROCK_VERSION = "shamrock_version";
+    public static final String SHAMROCK_VERSION = "quarkus_version";
     public static final String PACKAGE_NAME = "package_name";
     public static final String CLASS_NAME = "class_name";
     public static final String RESOURCE_PATH = "path";

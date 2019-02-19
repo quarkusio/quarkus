@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.test.junit;
+package io.quarkus.test.junit;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -23,8 +23,8 @@ import java.lang.annotation.Target;
 
 import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith(ShamrockTestExtension.class)
+@ExtendWith(QuarkusTestExtension.class)
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-public @interface ShamrockTest {
+public @interface QuarkusTest {
 }

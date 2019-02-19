@@ -1,4 +1,4 @@
-package org.infinispan.protean.hibernate.cache;
+package org.infinispan.quarkus.hibernate.cache;
 
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cache.spi.access.EntityDataAccess;
@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static org.infinispan.protean.hibernate.cache.Eventually.eventually;
+import static org.infinispan.quarkus.hibernate.cache.Eventually.eventually;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 

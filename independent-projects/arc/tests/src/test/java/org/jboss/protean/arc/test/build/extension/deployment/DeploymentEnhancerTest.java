@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.test.build.extension.deployment;
+package org.jboss.quarkus.arc.test.build.extension.deployment;
 
 import static org.junit.Assert.assertTrue;
 
 import javax.enterprise.context.Dependent;
 
-import org.jboss.protean.arc.Arc;
-import org.jboss.protean.arc.test.ArcTestContainer;
+import org.jboss.quarkus.arc.Arc;
+import org.jboss.quarkus.arc.test.ArcTestContainer;
 import org.junit.Rule;
 import org.junit.Test;
 

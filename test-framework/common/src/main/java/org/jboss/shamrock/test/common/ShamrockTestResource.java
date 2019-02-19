@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.test.common;
+package io.quarkus.test.common;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -23,7 +23,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.jboss.shamrock.test.common.ShamrockTestResource.List;
+import io.quarkus.test.common.QuarkusTestResource.List;
 
 /**
  * Used to define a test resource.
@@ -32,17 +32,17 @@ import org.jboss.shamrock.test.common.ShamrockTestResource.List;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Repeatable(List.class)
-public @interface ShamrockTestResource {
+public @interface QuarkusTestResource {
 
     /**
      * @return The class managing the lifecycle of the test resource.
      */
-    Class<? extends ShamrockTestResourceLifecycleManager> value();
+    Class<? extends QuarkusTestResourceLifecycleManager> value();
 
     @Target(ElementType.TYPE)
     @Retention(RetentionPolicy.RUNTIME)
     @Documented
     @interface List {
-        ShamrockTestResource[] value();
+        QuarkusTestResource[] value();
     }
 }

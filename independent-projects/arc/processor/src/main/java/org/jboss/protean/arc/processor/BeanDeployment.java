@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.processor;
+package org.jboss.quarkus.arc.processor;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -45,11 +45,11 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.logging.Logger.Level;
-import org.jboss.protean.arc.processor.BeanDeploymentValidator.ValidationContext;
-import org.jboss.protean.arc.processor.BeanProcessor.BuildContextImpl;
-import org.jboss.protean.arc.processor.BeanRegistrar.RegistrationContext;
-import org.jboss.protean.arc.processor.BuildExtension.BuildContext;
-import org.jboss.protean.arc.processor.BuildExtension.Key;
+import org.jboss.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext;
+import org.jboss.quarkus.arc.processor.BeanProcessor.BuildContextImpl;
+import org.jboss.quarkus.arc.processor.BeanRegistrar.RegistrationContext;
+import org.jboss.quarkus.arc.processor.BuildExtension.BuildContext;
+import org.jboss.quarkus.arc.processor.BuildExtension.Key;
 
 /**
  *

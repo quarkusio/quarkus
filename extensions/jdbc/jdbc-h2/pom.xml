@@ -19,14 +19,14 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>shamrock-jdbc</artifactId>
-        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>quarkus-jdbc</artifactId>
+        <groupId>io.quarkus</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-jdbc-h2</artifactId>
-    <name>Shamrock - JDBC - H2</name>
+    <artifactId>quarkus-jdbc-h2</artifactId>
+    <name>Quarkus - JDBC - H2</name>
     <packaging>pom</packaging>
     <modules>
         <module>jdbc-h2-deployment</module>

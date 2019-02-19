@@ -1,4 +1,4 @@
-package org.jboss.shamrock.jwt.test;
+package io.quarkus.jwt.test;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;

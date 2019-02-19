@@ -46,7 +46,7 @@ It unifies imperative and reactive.
 It is a Microservice first toolkit.
 
 Standards based
-Protean brings all the standards and frameworks you love and use: RESTEasy, Hibernate, Netty, vert.x, Camel...)
+Quarkus brings all the standards and frameworks you love and use: RESTEasy, Hibernate, Netty, vert.x, Camel...)
 
 Imperative and Reactive
 

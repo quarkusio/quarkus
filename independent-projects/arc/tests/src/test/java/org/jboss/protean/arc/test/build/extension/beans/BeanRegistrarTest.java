@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.test.build.extension.beans;
+package org.jboss.quarkus.arc.test.build.extension.beans;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -24,11 +24,11 @@ import java.util.Map;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.spi.CreationalContext;
 
-import org.jboss.protean.arc.Arc;
-import org.jboss.protean.arc.BeanCreator;
-import org.jboss.protean.arc.processor.BeanConfigurator;
-import org.jboss.protean.arc.processor.BeanRegistrar;
-import org.jboss.protean.arc.test.ArcTestContainer;
+import org.jboss.quarkus.arc.Arc;
+import org.jboss.quarkus.arc.BeanCreator;
+import org.jboss.quarkus.arc.processor.BeanConfigurator;
+import org.jboss.quarkus.arc.processor.BeanRegistrar;
+import org.jboss.quarkus.arc.test.ArcTestContainer;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
 import org.junit.Rule;

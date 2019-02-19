@@ -1,4 +1,4 @@
-package org.infinispan.protean.hibernate.cache;
+package org.infinispan.quarkus.hibernate.cache;
 
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.selector.spi.StrategySelector;
@@ -60,7 +60,7 @@ final class CacheRegionTesting {
     }
 
     static CacheRegionTesting cacheRegion(String regionName, Map configValues) {
-        ProteanInfinispanRegionFactory regionFactory = new ProteanInfinispanRegionFactory();
+        QuarkusInfinispanRegionFactory regionFactory = new QuarkusInfinispanRegionFactory();
         ManualMillisService regionTimeService = new ManualMillisService();
         regionFactory.setRegionTimeService(regionTimeService);
         ManualNanosService cacheTimeService = new ManualNanosService();

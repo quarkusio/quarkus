@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.runtime.graal;
+package io.quarkus.runtime.graal;
 
-import org.jboss.shamrock.runtime.Timing;
+import io.quarkus.runtime.Timing;
 
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Substitute;

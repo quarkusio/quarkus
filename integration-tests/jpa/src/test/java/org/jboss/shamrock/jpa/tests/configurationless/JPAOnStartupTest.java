@@ -1,8 +1,8 @@
-package org.jboss.shamrock.jpa.tests.configurationless;
+package io.quarkus.jpa.tests.configurationless;
 
 import static org.hamcrest.core.StringContains.containsString;
 
-import org.jboss.shamrock.test.junit.ShamrockTest;
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
 import io.restassured.RestAssured;
@@ -10,7 +10,7 @@ import io.restassured.RestAssured;
 /**
  * @author Emmanuel Bernard emmanuel@hibernate.org
  */
-@ShamrockTest
+@QuarkusTest
 public class JPAOnStartupTest {
 
     @Test

@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm;
+package io.quarkus.hibernate.orm;
 
-import static org.jboss.shamrock.deployment.annotations.ExecutionTime.RUNTIME_INIT;
-import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.io.IOException;
 import java.net.URL;
@@ -49,38 +49,38 @@ import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
-import org.jboss.shamrock.agroal.DataSourceDriverBuildItem;
-import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
-import org.jboss.shamrock.arc.deployment.BeanContainerBuildItem;
-import org.jboss.shamrock.arc.deployment.BeanContainerListenerBuildItem;
-import org.jboss.shamrock.arc.deployment.ResourceAnnotationBuildItem;
-import org.jboss.shamrock.deployment.Capabilities;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
-import org.jboss.shamrock.deployment.builditem.ApplicationIndexBuildItem;
-import org.jboss.shamrock.deployment.builditem.ArchiveRootBuildItem;
-import org.jboss.shamrock.deployment.builditem.BytecodeTransformerBuildItem;
-import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
-import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
-import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.GeneratedResourceBuildItem;
-import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
-import org.jboss.shamrock.deployment.configuration.ConfigurationError;
-import org.jboss.shamrock.deployment.index.IndexingUtil;
-import org.jboss.shamrock.deployment.recording.RecorderContext;
-import org.jboss.shamrock.deployment.util.IoUtil;
-import org.jboss.shamrock.hibernate.orm.runtime.DefaultEntityManagerFactoryProducer;
-import org.jboss.shamrock.hibernate.orm.runtime.DefaultEntityManagerProducer;
-import org.jboss.shamrock.hibernate.orm.runtime.JPAConfig;
-import org.jboss.shamrock.hibernate.orm.runtime.JPAResourceReferenceProvider;
-import org.jboss.shamrock.hibernate.orm.runtime.HibernateOrmTemplate;
-import org.jboss.shamrock.hibernate.orm.runtime.RequestScopedEntityManagerHolder;
-import org.jboss.shamrock.hibernate.orm.runtime.TransactionEntityManagers;
-import org.jboss.shamrock.hibernate.orm.runtime.boot.scan.ShamrockScanner;
+import io.quarkus.agroal.DataSourceDriverBuildItem;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
+import io.quarkus.arc.deployment.ResourceAnnotationBuildItem;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
+import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.HotDeploymentConfigFileBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import io.quarkus.deployment.configuration.ConfigurationError;
+import io.quarkus.deployment.index.IndexingUtil;
+import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.deployment.util.IoUtil;
+import io.quarkus.hibernate.orm.runtime.DefaultEntityManagerFactoryProducer;
+import io.quarkus.hibernate.orm.runtime.DefaultEntityManagerProducer;
+import io.quarkus.hibernate.orm.runtime.JPAConfig;
+import io.quarkus.hibernate.orm.runtime.JPAResourceReferenceProvider;
+import io.quarkus.hibernate.orm.runtime.HibernateOrmTemplate;
+import io.quarkus.hibernate.orm.runtime.RequestScopedEntityManagerHolder;
+import io.quarkus.hibernate.orm.runtime.TransactionEntityManagers;
+import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
 
 /**
  * Simulacrum of JPA bootstrap.
@@ -153,7 +153,7 @@ public final class HibernateOrmProcessor {
     @BuildStep
     void setupResourceInjection(BuildProducer<ResourceAnnotationBuildItem> resourceAnnotations, Capabilities capabilities,
                                 BuildProducer<GeneratedResourceBuildItem> resources) {
-        resources.produce(new GeneratedResourceBuildItem("META-INF/services/org.jboss.protean.arc.ResourceReferenceProvider",
+        resources.produce(new GeneratedResourceBuildItem("META-INF/services/org.jboss.quarkus.arc.ResourceReferenceProvider",
                 JPAResourceReferenceProvider.class.getName().getBytes()));
         resourceAnnotations.produce(new ResourceAnnotationBuildItem(PERSISTENCE_CONTEXT));
         resourceAnnotations.produce(new ResourceAnnotationBuildItem(PERSISTENCE_UNIT));
@@ -201,10 +201,10 @@ public final class HibernateOrmProcessor {
 
         //set up the scanner, as this scanning has already been done we need to just tell it about the classes we
         //have discovered. This scanner is bytecode serializable and is passed directly into the template
-        ShamrockScanner scanner = new ShamrockScanner();
+        QuarkusScanner scanner = new QuarkusScanner();
         Set<ClassDescriptor> classDescriptors = new HashSet<>();
         for (String i : domainObjects.getClassNames()) {
-            ShamrockScanner.ClassDescriptorImpl desc = new ShamrockScanner.ClassDescriptorImpl(i, ClassDescriptor.Categorization.MODEL);
+            QuarkusScanner.ClassDescriptorImpl desc = new QuarkusScanner.ClassDescriptorImpl(i, ClassDescriptor.Categorization.MODEL);
             classDescriptors.add(desc);
         }
         scanner.setClassDescriptors(classDescriptors);
@@ -309,7 +309,7 @@ public final class HibernateOrmProcessor {
                         .filter(o -> !loadScriptPath.filter( path -> !Files.isDirectory(path)).isPresent())
                         .ifPresent(
                             c -> { throw new ConfigurationError(
-                                "Unable to find file referenced in 'shamrock.hibernate.sql-load-script-source="
+                                "Unable to find file referenced in 'quarkus.hibernate.sql-load-script-source="
                                 + c + "'. Remove property or add file to your path."
                             );
                         });
@@ -319,8 +319,8 @@ public final class HibernateOrmProcessor {
         }
         else {
             if (hibernate.isAnyPropertySet()) {
-                throw new ConfigurationError("Hibernate ORM configuration present in persistence.xml and Shamrock config file at the same time\n"
-                    + "If you use persistence.xml remove all shamrock.hibernate.* properties from the Shamrock config file.");
+                throw new ConfigurationError("Hibernate ORM configuration present in persistence.xml and Quarkus config file at the same time\n"
+                    + "If you use persistence.xml remove all quarkus.hibernate.* properties from the Quarkus config file.");
             }
         }
     }
@@ -340,8 +340,8 @@ public final class HibernateOrmProcessor {
             return Optional.of(MariaDB103Dialect.class.getName());
         }
         String error = driver.isPresent() ?
-                "Hibernate extension could not guess the dialect from the driver '" + resolvedDriver + "'. Add an explicit 'shamrock.hibernate.dialect' property." :
-                "Hibernate extension cannot guess the dialect as no JDBC driver is specified by 'shamrock.datasource.driver'";
+                "Hibernate extension could not guess the dialect from the driver '" + resolvedDriver + "'. Add an explicit 'quarkus.hibernate.dialect' property." :
+                "Hibernate extension cannot guess the dialect as no JDBC driver is specified by 'quarkus.datasource.driver'";
         throw new ConfigurationError(error);
     }
 

@@ -5,7 +5,7 @@ import java.util.List;
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 
-import org.jboss.protean.arc.Arc;
+import org.jboss.quarkus.arc.Arc;
 
 public class JpaOperations {
 

@@ -1,9 +1,9 @@
-package org.jboss.shamrock.security;
+package io.quarkus.security;
 
 import java.util.Map;
 
-import org.jboss.shamrock.runtime.annotations.ConfigGroup;
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.annotations.ConfigItem;
 
 /**
  * Configuration information used to populate a {@linkplain org.wildfly.security.auth.realm.SimpleMapBackedSecurityRealm}
@@ -21,7 +21,7 @@ public class MPRealmConfig {
     /**
      * The authentication mechanism
      */
-    @ConfigItem(defaultValue = "Shamrock")
+    @ConfigItem(defaultValue = "Quarkus")
     public String realmName;
 
     /**

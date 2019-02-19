@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.phase.augment;
+package io.quarkus.creator.phase.augment;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -47,24 +47,24 @@ import java.util.zip.ZipFile;
 import org.eclipse.microprofile.config.Config;
 import org.jboss.builder.BuildResult;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.creator.AppArtifact;
-import org.jboss.shamrock.creator.AppArtifactResolver;
-import org.jboss.shamrock.creator.AppCreationPhase;
-import org.jboss.shamrock.creator.AppCreator;
-import org.jboss.shamrock.creator.AppCreatorException;
-import org.jboss.shamrock.creator.AppDependency;
-import org.jboss.shamrock.creator.config.reader.MappedPropertiesHandler;
-import org.jboss.shamrock.creator.config.reader.PropertiesHandler;
-import org.jboss.shamrock.creator.outcome.OutcomeProviderRegistration;
-import org.jboss.shamrock.creator.phase.curate.CurateOutcome;
-import org.jboss.shamrock.creator.util.IoUtils;
-import org.jboss.shamrock.creator.util.ZipUtils;
-import org.jboss.shamrock.deployment.ClassOutput;
-import org.jboss.shamrock.deployment.ShamrockAugmentor;
-import org.jboss.shamrock.deployment.ShamrockClassWriter;
-import org.jboss.shamrock.deployment.builditem.BytecodeTransformerBuildItem;
-import org.jboss.shamrock.deployment.builditem.MainClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateOutputBuildItem;
+import io.quarkus.creator.AppArtifact;
+import io.quarkus.creator.AppArtifactResolver;
+import io.quarkus.creator.AppCreationPhase;
+import io.quarkus.creator.AppCreator;
+import io.quarkus.creator.AppCreatorException;
+import io.quarkus.creator.AppDependency;
+import io.quarkus.creator.config.reader.MappedPropertiesHandler;
+import io.quarkus.creator.config.reader.PropertiesHandler;
+import io.quarkus.creator.outcome.OutcomeProviderRegistration;
+import io.quarkus.creator.phase.curate.CurateOutcome;
+import io.quarkus.creator.util.IoUtils;
+import io.quarkus.creator.util.ZipUtils;
+import io.quarkus.deployment.ClassOutput;
+import io.quarkus.deployment.QuarkusAugmentor;
+import io.quarkus.deployment.QuarkusClassWriter;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
+import io.quarkus.deployment.builditem.MainClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateOutputBuildItem;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -73,7 +73,7 @@ import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 /**
- * This phase consumes {@link org.jboss.shamrock.creator.phase.curate.CurateOutcome} and processes
+ * This phase consumes {@link io.quarkus.creator.phase.curate.CurateOutcome} and processes
  * user application and and its dependency classes for phases that generate a runnable application.
  *
  * @author Alexey Loubyansky
@@ -81,7 +81,7 @@ import io.smallrye.config.SmallRyeConfigProviderResolver;
 public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutcome {
 
     private static final String DEPENDENCIES_RUNTIME = "dependencies.runtime";
-    private static final String FILENAME_STEP_CLASSES = "META-INF/shamrock-build-steps.list";
+    private static final String FILENAME_STEP_CLASSES = "META-INF/quarkus-build-steps.list";
     private static final String PROVIDED = "provided";
 
     private static final Logger log = Logger.getLogger(AugmentPhase.class);
@@ -232,7 +232,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                     continue;
                 }
                 try (ZipFile zip = openZipFile(resolvedDep)) {
-                    if (!appDep.getScope().equals(PROVIDED) && zip.getEntry("META-INF/services/org.jboss.shamrock.deployment.ShamrockSetup") != null) {
+                    if (!appDep.getScope().equals(PROVIDED) && zip.getEntry("META-INF/services/io.quarkus.deployment.QuarkusSetup") != null) {
                         if(problems == null) {
                             problems = new ArrayList<>();
                         }
@@ -301,7 +301,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
             try {
                 Thread.currentThread().setContextClassLoader(runnerClassLoader);
 
-                ShamrockAugmentor.Builder builder = ShamrockAugmentor.builder();
+                QuarkusAugmentor.Builder builder = QuarkusAugmentor.builder();
                 builder.setRoot(appClassesDir);
                 builder.setClassLoader(runnerClassLoader);
                 builder.setOutput(classOutput);
@@ -350,7 +350,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                                         throw new RuntimeException("Can't process class files larger than Integer.MAX_VALUE bytes");
                                     }
                                     ClassReader cr = new ClassReader(Files.readAllBytes(path));
-                                    ClassWriter writer = new ShamrockClassWriter(cr, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+                                    ClassWriter writer = new QuarkusClassWriter(cr, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
                                     ClassVisitor visitor = writer;
                                     for (BiFunction<String, ClassVisitor, ClassVisitor> i : visitors) {
                                         visitor = i.apply(className, visitor);

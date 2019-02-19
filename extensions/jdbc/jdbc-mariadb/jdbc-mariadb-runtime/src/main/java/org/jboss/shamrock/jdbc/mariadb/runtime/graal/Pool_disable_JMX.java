@@ -1,4 +1,4 @@
-package org.jboss.shamrock.jdbc.mariadb.runtime.graal;
+package io.quarkus.jdbc.mariadb.runtime.graal;
 
 import org.mariadb.jdbc.internal.logging.Logger;
 

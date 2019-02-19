@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.panache;
+package io.quarkus.panache;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,17 +31,17 @@ import org.jboss.jandex.Type;
 import org.jboss.panache.jpa.DaoBase;
 import org.jboss.panache.jpa.EntityBase;
 import org.jboss.panache.jpa.Model;
-import org.jboss.protean.arc.processor.BeanInfo;
+import org.jboss.quarkus.arc.processor.BeanInfo;
 import org.jboss.protean.gizmo.ClassOutput;
-import org.jboss.shamrock.arc.deployment.UnremovableBeanBuildItem;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.ApplicationIndexBuildItem;
-import org.jboss.shamrock.deployment.builditem.BytecodeTransformerBuildItem;
-import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
-import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
-import org.jboss.shamrock.hibernate.orm.AdditionalJpaModelBuildItem;
-import org.jboss.shamrock.hibernate.orm.HibernateEnhancersRegisteredBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.hibernate.orm.AdditionalJpaModelBuildItem;
+import io.quarkus.hibernate.orm.HibernateEnhancersRegisteredBuildItem;
 
 /**
  */

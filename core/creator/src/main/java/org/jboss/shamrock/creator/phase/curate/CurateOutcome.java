@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.phase.curate;
+package io.quarkus.creator.phase.curate;
 
 import java.nio.file.Path;
 import java.util.Collections;
@@ -26,13 +26,13 @@ import org.apache.maven.model.Exclusion;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Repository;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.creator.AppArtifact;
-import org.jboss.shamrock.creator.AppArtifactResolver;
-import org.jboss.shamrock.creator.AppCreator;
-import org.jboss.shamrock.creator.AppCreatorException;
-import org.jboss.shamrock.creator.AppDependency;
-import org.jboss.shamrock.creator.NoOpArtifactResolver;
-import org.jboss.shamrock.creator.resolver.aether.AetherArtifactResolver;
+import io.quarkus.creator.AppArtifact;
+import io.quarkus.creator.AppArtifactResolver;
+import io.quarkus.creator.AppCreator;
+import io.quarkus.creator.AppCreatorException;
+import io.quarkus.creator.AppDependency;
+import io.quarkus.creator.NoOpArtifactResolver;
+import io.quarkus.creator.resolver.aether.AetherArtifactResolver;
 
 /**
  *

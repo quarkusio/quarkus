@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment;
+package io.quarkus.deployment;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -25,10 +25,10 @@ import org.objectweb.asm.ClassWriter;
  *
  * @author Stéphane Épardaud
  */
-public class ShamrockClassWriter extends ClassWriter {
+public class QuarkusClassWriter extends ClassWriter {
 
 
-    public ShamrockClassWriter(final ClassReader classReader, final int flags) {
+    public QuarkusClassWriter(final ClassReader classReader, final int flags) {
         super(classReader, flags);
     }
 

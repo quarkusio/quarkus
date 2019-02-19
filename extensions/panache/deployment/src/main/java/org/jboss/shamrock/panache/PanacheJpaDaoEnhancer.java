@@ -1,6 +1,6 @@
-package org.jboss.shamrock.panache;
+package io.quarkus.panache;
 
-import static org.jboss.shamrock.panache.PanacheJpaModelEnhancer.JPA_OPERATIONS_BINARY_NAME;
+import static io.quarkus.panache.PanacheJpaModelEnhancer.JPA_OPERATIONS_BINARY_NAME;
 
 import java.util.function.BiFunction;
 

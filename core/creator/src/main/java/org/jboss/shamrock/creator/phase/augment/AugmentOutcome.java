@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.phase.augment;
+package io.quarkus.creator.phase.augment;
 
 import java.nio.file.Path;
-import org.jboss.shamrock.creator.AppDependency;
+import io.quarkus.creator.AppDependency;
 
 /**
  * Represents an outcome of {@link AugmentPhase}

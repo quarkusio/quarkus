@@ -1,4 +1,4 @@
-package org.jboss.shamrock.maven.it.verifier;
+package io.quarkus.maven.it.verifier;
 
 
 import org.apache.commons.io.FileUtils;
@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.jboss.shamrock.maven.it.MojoTestBase.installPluginToLocalRepository;
+import static io.quarkus.maven.it.MojoTestBase.installPluginToLocalRepository;
 
 /**
  * Implementation of verifier using a forked process that is still running while verifying. The process is stop when
@@ -53,7 +53,7 @@ public class RunningInvoker extends MavenProcessInvoker {
         List<ProcessInfo> list = JProcesses.getProcessList().stream().filter(pi ->
                 // Kill all process using the live reload and the live reload process.
                 // This might be too much
-                pi.getCommand().contains("shamrock:dev") || pi.getCommand().contains(getWorkingDirectory().getAbsolutePath()))
+                pi.getCommand().contains("quarkus:dev") || pi.getCommand().contains(getWorkingDirectory().getAbsolutePath()))
                 .collect(Collectors.toList());
 
         list.stream()

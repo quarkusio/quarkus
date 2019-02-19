@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.recording;
+package io.quarkus.deployment.recording;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,16 +25,16 @@ import java.util.HashSet;
 import java.util.function.Consumer;
 
 import org.jboss.protean.gizmo.TestClassLoader;
-import org.jboss.shamrock.deployment.ClassOutput;
-import org.jboss.shamrock.runtime.RuntimeValue;
-import org.jboss.shamrock.runtime.StartupContext;
-import org.jboss.shamrock.runtime.StartupTask;
+import io.quarkus.deployment.ClassOutput;
+import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.StartupContext;
+import io.quarkus.runtime.StartupTask;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class BytecodeRecorderTestCase {
 
-    private static final String TEST_CLASS = "com.shamrock.test.GenClass";
+    private static final String TEST_CLASS = "com.quarkus.test.GenClass";
 
     @Test
     public void testPrimitiveParams() throws Exception {

@@ -1,4 +1,4 @@
-package org.jboss.shamrock.test.common.http;
+package io.quarkus.test.common.http;
 
 import java.lang.reflect.Field;
 import java.net.URI;

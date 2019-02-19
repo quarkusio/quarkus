@@ -1,4 +1,4 @@
-package org.jboss.shamrock.hibernate.orm.runtime.service;
+package io.quarkus.hibernate.orm.runtime.service;
 
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.cache.internal.NoCachingRegionFactory;
@@ -6,17 +6,17 @@ import org.hibernate.cache.spi.RegionFactory;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
-import org.infinispan.protean.hibernate.cache.ProteanInfinispanRegionFactory;
+import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
 
 import java.util.Map;
 
 import static java.lang.Boolean.FALSE;
 
-public final class ProteanRegionFactoryInitiator implements StandardServiceInitiator<RegionFactory> {
+public final class QuarkusRegionFactoryInitiator implements StandardServiceInitiator<RegionFactory> {
 
-   public static final ProteanRegionFactoryInitiator INSTANCE = new ProteanRegionFactoryInitiator();
+   public static final QuarkusRegionFactoryInitiator INSTANCE = new QuarkusRegionFactoryInitiator();
 
-   private ProteanRegionFactoryInitiator() {
+   private QuarkusRegionFactoryInitiator() {
    }
 
    @Override
@@ -46,7 +46,7 @@ public final class ProteanRegionFactoryInitiator implements StandardServiceIniti
          }
       }
 
-      return new ProteanInfinispanRegionFactory();
+      return new QuarkusInfinispanRegionFactory();
    }
 
 }

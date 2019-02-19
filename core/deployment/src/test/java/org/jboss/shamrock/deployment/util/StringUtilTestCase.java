@@ -1,13 +1,13 @@
-package org.jboss.shamrock.deployment.util;
+package io.quarkus.deployment.util;
 
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.jboss.shamrock.deployment.util.StringUtil.camelHumpsIterator;
-import static org.jboss.shamrock.deployment.util.StringUtil.join;
-import static org.jboss.shamrock.deployment.util.StringUtil.lowerCase;
-import static org.jboss.shamrock.deployment.util.StringUtil.lowerCaseFirst;
-import static org.jboss.shamrock.deployment.util.StringUtil.withoutSuffix;
+import static io.quarkus.deployment.util.StringUtil.camelHumpsIterator;
+import static io.quarkus.deployment.util.StringUtil.join;
+import static io.quarkus.deployment.util.StringUtil.lowerCase;
+import static io.quarkus.deployment.util.StringUtil.lowerCaseFirst;
+import static io.quarkus.deployment.util.StringUtil.withoutSuffix;
 
 /**
  * Tests of the {@linkplain StringUtil} methods

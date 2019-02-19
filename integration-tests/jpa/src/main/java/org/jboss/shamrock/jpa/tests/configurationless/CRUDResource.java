@@ -1,4 +1,4 @@
-package org.jboss.shamrock.jpa.tests.configurationless;
+package io.quarkus.jpa.tests.configurationless;
 
 import java.util.HashMap;
 import java.util.Map;

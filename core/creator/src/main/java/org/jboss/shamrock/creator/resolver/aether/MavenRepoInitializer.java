@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jboss.shamrock.creator.resolver.aether;
+package io.quarkus.creator.resolver.aether;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -48,8 +48,8 @@ import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.util.repository.AuthenticationBuilder;
 import org.eclipse.aether.util.repository.DefaultProxySelector;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.creator.AppCreatorException;
-import org.jboss.shamrock.creator.util.PropertyUtils;
+import io.quarkus.creator.AppCreatorException;
+import io.quarkus.creator.util.PropertyUtils;
 
 /**
  *

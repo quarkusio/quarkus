@@ -1,4 +1,4 @@
-package org.jboss.shamrock.jwt.test;
+package io.quarkus.jwt.test;
 
 import java.io.StringReader;
 import java.net.HttpURLConnection;
@@ -10,7 +10,7 @@ import javax.json.JsonReader;
 
 import io.restassured.RestAssured;
 import org.eclipse.microprofile.jwt.Claims;
-import org.jboss.shamrock.test.ShamrockUnitTest;
+import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
@@ -32,7 +32,7 @@ public class PrincipalInjectionUnitTest {
     private Long expClaim;
 
     @RegisterExtension
-    static final ShamrockUnitTest config = new ShamrockUnitTest()
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() ->
                                         ShrinkWrap.create(JavaArchive.class)
                                                 .addClasses(testClasses)

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm.enhancer;
+package io.quarkus.hibernate.orm.enhancer;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;

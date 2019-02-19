@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.examples.common;
+package io.quarkus.examples.common;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;

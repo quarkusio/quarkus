@@ -53,11 +53,11 @@ Linux::
 
  pmap -x <pid>
 
- 13150:   /data/shamrock-application -Xmx100m -Xmn70m
+ 13150:   /data/quarkus-application -Xmx100m -Xmn70m
  Address           Kbytes     RSS   Dirty Mode  Mapping
- 0000000000400000   55652   30592       0 r-x-- shamrock-application
- 0000000003c58000       4       4       4 r-x-- shamrock-application
- 0000000003c59000    5192    4628     748 rwx-- shamrock-application
+ 0000000000400000   55652   30592       0 r-x-- quarkus-application
+ 0000000003c58000       4       4       4 r-x-- quarkus-application
+ 0000000003c59000    5192    4628     748 rwx-- quarkus-application
  00000000054c0000     912     156     156 rwx--   [ anon ]
  ...
  00007fcd13400000    1024    1024    1024 rwx--   [ anon ]

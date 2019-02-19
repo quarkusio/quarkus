@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.rest;
+package io.quarkus.example.rest;
 
 import java.util.ArrayList;
 import java.util.List;

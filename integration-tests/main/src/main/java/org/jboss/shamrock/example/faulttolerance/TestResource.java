@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.faulttolerance;
+package io.quarkus.example.faulttolerance;
 
 import java.util.concurrent.atomic.AtomicInteger;
 

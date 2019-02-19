@@ -1,4 +1,4 @@
-package org.jboss.protean.arc.processor;
+package org.jboss.quarkus.arc.processor;
 
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;

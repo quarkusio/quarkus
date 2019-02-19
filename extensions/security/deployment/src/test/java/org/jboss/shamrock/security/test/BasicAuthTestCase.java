@@ -1,8 +1,8 @@
-package org.jboss.shamrock.security.test;
+package io.quarkus.security.test;
 
 import static org.hamcrest.Matchers.equalTo;
 import io.restassured.RestAssured;
-import org.jboss.shamrock.test.ShamrockUnitTest;
+import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -17,7 +17,7 @@ public class BasicAuthTestCase {
             ParametrizedPathsResource.class, SubjectExposingResource.class
     };
     @RegisterExtension
-    static final ShamrockUnitTest config = new ShamrockUnitTest()
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() ->
                                         ShrinkWrap.create(JavaArchive.class)
                                                 .addClasses(testClasses)

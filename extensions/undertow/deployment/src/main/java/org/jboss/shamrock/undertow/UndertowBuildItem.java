@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.undertow;
+package io.quarkus.undertow;
 
 import org.jboss.builder.item.SimpleBuildItem;
-import org.jboss.shamrock.runtime.RuntimeValue;
+import io.quarkus.runtime.RuntimeValue;
 
 import io.undertow.Undertow;
 

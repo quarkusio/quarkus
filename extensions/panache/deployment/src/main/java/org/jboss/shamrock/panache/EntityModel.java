@@ -1,4 +1,4 @@
-package org.jboss.shamrock.panache;
+package io.quarkus.panache;
 
 import java.util.Map;
 

@@ -1,9 +1,9 @@
-package org.jboss.shamrock.smallrye.health.test;
+package io.quarkus.smallrye.health.test;
 
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 
-import org.jboss.shamrock.test.ShamrockUnitTest;
+import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -17,7 +17,7 @@ import io.restassured.parsing.Parser;
 public class HealthUnitTest {
 
     @RegisterExtension
-    static final ShamrockUnitTest config = new ShamrockUnitTest()
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() ->
                     ShrinkWrap.create(JavaArchive.class)
                             .addClasses(BasicHealthCheck.class)

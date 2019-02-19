@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.test.interceptors.exceptionhandling;
+package org.jboss.quarkus.arc.test.interceptors.exceptionhandling;
 
 import javax.enterprise.context.Dependent;
 

@@ -15,7 +15,7 @@
  *   permissions and limitations under the License.
  */
 
-package org.jboss.shamrock.maven;
+package io.quarkus.maven;
 
 import static org.fusesource.jansi.Ansi.ansi;
 
@@ -35,20 +35,20 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.fusesource.jansi.Ansi;
-import org.jboss.shamrock.cli.commands.AddExtensions;
-import org.jboss.shamrock.cli.commands.CreateProject;
-import org.jboss.shamrock.maven.components.Prompter;
-import org.jboss.shamrock.maven.utilities.MojoUtils;
+import io.quarkus.cli.commands.AddExtensions;
+import io.quarkus.cli.commands.CreateProject;
+import io.quarkus.maven.components.Prompter;
+import io.quarkus.maven.utilities.MojoUtils;
 
 /**
- * This goal helps in setting up Shamrock Maven project with shamrock-maven-plugin, with sensible defaults
+ * This goal helps in setting up Quarkus Maven project with quarkus-maven-plugin, with sensible defaults
  */
 @Mojo(name = "create", requiresProject = false)
 public class CreateProjectMojo extends AbstractMojo {
 
     public static final String PLUGIN_KEY = MojoUtils.getPluginGroupId() + ":" + MojoUtils.getPluginArtifactId();
 
-    private static final String DEFAULT_GROUP_ID = "org.acme.shamrock.sample";
+    private static final String DEFAULT_GROUP_ID = "org.acme.quarkus.sample";
 
     @Parameter(defaultValue = "${project}")
     protected MavenProject project;
@@ -144,7 +144,7 @@ public class CreateProjectMojo extends AbstractMojo {
                 projectGroupId = DEFAULT_GROUP_ID;
             }
             if (StringUtils.isBlank(projectArtifactId)) {
-                projectArtifactId = "my-shamrock-project";
+                projectArtifactId = "my-quarkus-project";
             }
             if (StringUtils.isBlank(projectVersion)) {
                 projectVersion = "1.0-SNAPSHOT";
@@ -160,11 +160,11 @@ public class CreateProjectMojo extends AbstractMojo {
 
             if (StringUtils.isBlank(projectArtifactId)) {
                 projectArtifactId = prompter.promptWithDefaultValue("Set the project artifactId",
-                        "my-shamrock-project");
+                        "my-quarkus-project");
             }
 
             if (StringUtils.isBlank(projectVersion)) {
-                projectVersion = prompter.promptWithDefaultValue("Set the Shamrock version",
+                projectVersion = prompter.promptWithDefaultValue("Set the Quarkus version",
                         "1.0-SNAPSHOT");
             }
 
@@ -235,7 +235,7 @@ public class CreateProjectMojo extends AbstractMojo {
         getLog().info(ansi().a("Navigate into this directory and launch your application with ")
                 .bold()
                 .fg(Ansi.Color.CYAN)
-                .a("mvn compile shamrock:dev")
+                .a("mvn compile quarkus:dev")
                 .reset()
                 .toString());
         getLog().info(

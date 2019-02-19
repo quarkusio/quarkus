@@ -1,4 +1,4 @@
-package org.jboss.shamrock.deployment.util;
+package io.quarkus.deployment.util;
 
 import java.util.Iterator;
 import java.util.Locale;

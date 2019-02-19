@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.arc.deployment;
+package io.quarkus.arc.deployment;
 
 import org.jboss.builder.item.SimpleBuildItem;
-import org.jboss.shamrock.arc.runtime.BeanContainer;
+import io.quarkus.arc.runtime.BeanContainer;
 
 public final class BeanContainerBuildItem extends SimpleBuildItem {
 

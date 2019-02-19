@@ -1,4 +1,4 @@
-package org.jboss.shamrock.jwt.test;
+package io.quarkus.jwt.test;
 
 
 import com.nimbusds.jose.JOSEObjectType;

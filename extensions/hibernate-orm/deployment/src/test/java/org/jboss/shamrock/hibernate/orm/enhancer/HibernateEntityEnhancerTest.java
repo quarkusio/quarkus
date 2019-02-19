@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm.enhancer;
+package io.quarkus.hibernate.orm.enhancer;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -31,7 +31,7 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 
 import org.jboss.protean.gizmo.TestClassLoader;
-import org.jboss.shamrock.hibernate.orm.HibernateEntityEnhancer;
+import io.quarkus.hibernate.orm.HibernateEntityEnhancer;
 
 /**
  * Verifies the HibernateEntityEnhancer actually does enhance the entity class

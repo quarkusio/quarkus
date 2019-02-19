@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.restclient.runtime.graal;
+package io.quarkus.restclient.runtime.graal;
 
 import javax.ws.rs.client.ClientBuilder;
 

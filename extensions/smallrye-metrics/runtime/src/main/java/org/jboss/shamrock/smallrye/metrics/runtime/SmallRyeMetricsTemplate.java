@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.smallrye.metrics.runtime;
+package io.quarkus.smallrye.metrics.runtime;
 
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
@@ -27,9 +27,9 @@ import org.eclipse.microprofile.metrics.Metadata;
 import org.eclipse.microprofile.metrics.MetricRegistry;
 import org.eclipse.microprofile.metrics.MetricType;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.arc.runtime.BeanContainer;
-import org.jboss.shamrock.runtime.ShutdownContext;
-import org.jboss.shamrock.runtime.annotations.Template;
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.runtime.ShutdownContext;
+import io.quarkus.runtime.annotations.Template;
 
 import io.smallrye.metrics.MetricRegistries;
 import io.smallrye.metrics.app.CounterImpl;
@@ -37,7 +37,7 @@ import io.smallrye.metrics.app.CounterImpl;
 @Template
 public class SmallRyeMetricsTemplate {
 
-    private static final Logger log = Logger.getLogger("org.jboss.shamrock.metrics");
+    private static final Logger log = Logger.getLogger("io.quarkus.metrics");
     private static final String MEMORY_HEAP_USAGE = "memory.heap.usage";
     private static final String MEMORY_NON_HEAP_USAGE = "memory.nonHeap.usage";
     private static final String THREAD_COUNT = "thread.count";

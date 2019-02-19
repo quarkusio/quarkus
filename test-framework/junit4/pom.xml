@@ -21,14 +21,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-test-framework</artifactId>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-test-framework</artifactId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
-    <artifactId>shamrock-junit4</artifactId>
-    <name>Shamrock - Test framework - JUnit 4</name>
+    <artifactId>quarkus-junit4</artifactId>
+    <name>Quarkus - Test framework - JUnit 4</name>
 
     <dependencies>
         <dependency>
@@ -37,12 +37,12 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-core-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-test-common</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-common</artifactId>
         </dependency>
     </dependencies>
 

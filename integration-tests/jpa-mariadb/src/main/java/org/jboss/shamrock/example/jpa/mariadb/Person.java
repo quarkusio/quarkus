@@ -1,4 +1,4 @@
-package org.jboss.shamrock.example.jpa.mariadb;
+package io.quarkus.example.jpa.mariadb;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;

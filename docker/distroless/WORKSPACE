@@ -1,4 +1,4 @@
-workspace(name = "org_jboss_shamrock_distroless")
+workspace(name = "io_quarkus_distroless")
 
 
 load("//:dependencies.bzl", "distroless_bazel_repositories")

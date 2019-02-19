@@ -1,7 +1,7 @@
-package org.jboss.shamrock;
+package io.quarkus;
 
 import org.apache.maven.model.Model;
-import org.jboss.shamrock.maven.utilities.MojoUtils;
+import io.quarkus.maven.utilities.MojoUtils;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 
-public class BasicRest extends ShamrockTemplate {
+public class BasicRest extends QuarkusTemplate {
     private Map<String, Object> context;
     private String className;
     private String path = "/hello";

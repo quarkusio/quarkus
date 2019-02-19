@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.test.interceptors.bindings;
+package org.jboss.quarkus.arc.test.interceptors.bindings;
 
 import static org.junit.Assert.assertTrue;
 
@@ -24,11 +24,11 @@ import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
 
-import org.jboss.protean.arc.Arc;
-import org.jboss.protean.arc.ArcContainer;
-import org.jboss.protean.arc.InvocationContextImpl;
-import org.jboss.protean.arc.test.ArcTestContainer;
-import org.jboss.protean.arc.test.interceptors.Simple;
+import org.jboss.quarkus.arc.Arc;
+import org.jboss.quarkus.arc.ArcContainer;
+import org.jboss.quarkus.arc.InvocationContextImpl;
+import org.jboss.quarkus.arc.test.ArcTestContainer;
+import org.jboss.quarkus.arc.test.interceptors.Simple;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -41,8 +41,8 @@ public class InvocationContextBindingsTest {
     public void testInterception() {
         ArcContainer arc = Arc.container();
         SimpleBean simpleBean = arc.instance(SimpleBean.class).get();
-        // [@org.jboss.protean.arc.test.interceptors.Simple(),
-        // @org.jboss.protean.arc.test.interceptors.bindings.MyTransactional(value={java.lang.String.class})]::foo
+        // [@org.jboss.quarkus.arc.test.interceptors.Simple(),
+        // @org.jboss.quarkus.arc.test.interceptors.bindings.MyTransactional(value={java.lang.String.class})]::foo
         String ret = simpleBean.foo();
         assertTrue(ret.contains(Simple.class.getName()));
         assertTrue(ret.contains(MyTransactional.class.getName()));

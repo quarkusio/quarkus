@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.logging;
+package io.quarkus.deployment.logging;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -22,21 +22,21 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 
 import org.jboss.logmanager.EmbeddedConfigurator;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.annotations.ExecutionTime;
-import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.deployment.builditem.ConfigurationCustomConverterBuildItem;
-import org.jboss.shamrock.deployment.builditem.GeneratedResourceBuildItem;
-import org.jboss.shamrock.deployment.builditem.LogCategoryBuildItem;
-import org.jboss.shamrock.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
-import org.jboss.shamrock.deployment.builditem.SystemPropertyBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ServiceProviderBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
-import org.jboss.shamrock.runtime.logging.LogConfig;
-import org.jboss.shamrock.runtime.logging.InitialConfigurator;
-import org.jboss.shamrock.runtime.logging.LevelConverter;
-import org.jboss.shamrock.runtime.logging.LoggingSetupTemplate;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ConfigurationCustomConverterBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.LogCategoryBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
+import io.quarkus.runtime.logging.LogConfig;
+import io.quarkus.runtime.logging.InitialConfigurator;
+import io.quarkus.runtime.logging.LevelConverter;
+import io.quarkus.runtime.logging.LoggingSetupTemplate;
 
 /**
  */
@@ -52,7 +52,7 @@ public final class LoggingResourceProcessor {
         for (LogCategoryBuildItem category : categories) {
             configOutput.accept(
                 new RunTimeConfigurationDefaultBuildItem(
-                    "shamrock.log.categories.\"" + category.getCategory() + "\".level",
+                    "quarkus.log.categories.\"" + category.getCategory() + "\".level",
                     category.getLevel().toString()
                 )
             );

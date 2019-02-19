@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm;
+package io.quarkus.hibernate.orm;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -38,8 +38,8 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 
 /**
  * Scan the Jandex index to find JPA entities (and embeddables supporting entity models).
@@ -60,7 +60,7 @@ final class JpaJandexScavenger {
     private static final DotName MAPPED_SUPERCLASS = DotName.createSimple(MappedSuperclass.class.getName());
 
     private static final DotName ENUM = DotName.createSimple(Enum.class.getName());
-    private static final Logger log = Logger.getLogger("org.jboss.shamrock.hibernate.orm");
+    private static final Logger log = Logger.getLogger("io.quarkus.hibernate.orm");
 
     private final List<ParsedPersistenceXmlDescriptor> descriptors;
     private final BuildProducer<ReflectiveClassBuildItem> reflectiveClass;
@@ -113,7 +113,7 @@ final class JpaJandexScavenger {
             } else {
                 // We do lipstick service by manually adding explicitly the <class> reference but not navigating the hierarchy
                 // so a class with a complex hierarchy will fail.
-                log.warnf("Did not find `%s` in the indexed jars. You likely forgot to tell Shamrock to index your dependency jar. See https://github.com/protean-project/shamrock/#indexing-and-application-classes for more info.", className);
+                log.warnf("Did not find `%s` in the indexed jars. You likely forgot to tell Quarkus to index your dependency jar. See https://github.com/quarkus-project/quarkus/#indexing-and-application-classes for more info.", className);
                 domainObjectCollector.addEntity(className);
             }
         }

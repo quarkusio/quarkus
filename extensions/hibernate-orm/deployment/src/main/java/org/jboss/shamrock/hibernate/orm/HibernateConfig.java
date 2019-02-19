@@ -1,7 +1,7 @@
-package org.jboss.shamrock.hibernate.orm;
+package io.quarkus.hibernate.orm;
 
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
-import org.jboss.shamrock.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigRoot;
 
 import java.util.Optional;
 

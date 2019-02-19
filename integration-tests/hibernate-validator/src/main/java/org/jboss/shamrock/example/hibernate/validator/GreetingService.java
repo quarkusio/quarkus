@@ -1,4 +1,4 @@
-package org.jboss.shamrock.example.hibernate.validator;
+package io.quarkus.example.hibernate.validator;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.validation.constraints.NotNull;

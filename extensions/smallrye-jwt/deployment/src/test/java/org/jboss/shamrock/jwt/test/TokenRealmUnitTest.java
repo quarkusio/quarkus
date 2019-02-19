@@ -1,4 +1,4 @@
-package org.jboss.shamrock.jwt.test;
+package io.quarkus.jwt.test;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 
-import org.jboss.shamrock.smallrye.jwt.runtime.auth.MpJwtValidator;
+import io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator;
 import org.junit.jupiter.api.Test;
 
 import org.wildfly.security.auth.principal.NamePrincipal;

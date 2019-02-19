@@ -1,4 +1,4 @@
-package org.jboss.shamrock.deployment.index;
+package io.quarkus.deployment.index;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -10,21 +10,21 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.deployment.util.IoUtil;
+import io.quarkus.deployment.util.IoUtil;
 
 public class IndexingUtil {
 
-    private static final Logger log = Logger.getLogger("org.jboss.shamrock.deployment.index");
+    private static final Logger log = Logger.getLogger("io.quarkus.deployment.index");
 
     public static final DotName OBJECT = DotName.createSimple(Object.class.getName());
 
-    public static void indexClass(String beanClass, Indexer indexer, IndexView shamrockIndex,
+    public static void indexClass(String beanClass, Indexer indexer, IndexView quarkusIndex,
                                   Set<DotName> additionalIndex, ClassLoader classLoader) {
         DotName beanClassName = DotName.createSimple(beanClass);
         if (additionalIndex.contains(beanClassName)) {
             return;
         }
-        ClassInfo beanInfo = shamrockIndex.getClassByName(beanClassName);
+        ClassInfo beanInfo = quarkusIndex.getClassByName(beanClassName);
         if (beanInfo == null) {
             log.debugf("Index bean class: %s", beanClass);
             try (InputStream stream = IoUtil.readClass(classLoader, beanClass)) {
@@ -34,11 +34,11 @@ public class IndexingUtil {
                 throw new IllegalStateException("Failed to index: " + beanClass, e);
             }
         } else {
-            // The class could be indexed by shamrock - we still need to distinguish framework classes
+            // The class could be indexed by quarkus - we still need to distinguish framework classes
             additionalIndex.add(beanClassName);
         }
         for (DotName annotationName : beanInfo.annotations().keySet()) {
-            if (!additionalIndex.contains(annotationName) && shamrockIndex.getClassByName(annotationName) == null) {
+            if (!additionalIndex.contains(annotationName) && quarkusIndex.getClassByName(annotationName) == null) {
                 try (InputStream annotationStream = IoUtil.readClass(classLoader, annotationName.toString())) {
                     log.debugf("Index annotation: %s", annotationName);
                     indexer.index(annotationStream);
@@ -49,18 +49,18 @@ public class IndexingUtil {
             }
         }
         if (!beanInfo.superName().equals(OBJECT)) {
-            indexClass(beanInfo.superName().toString(), indexer, shamrockIndex, additionalIndex, classLoader);
+            indexClass(beanInfo.superName().toString(), indexer, quarkusIndex, additionalIndex, classLoader);
         }
     }
 
     public static void indexClass(String beanClass, Indexer indexer,
-                                  IndexView shamrockIndex, Set<DotName> additionalIndex,
+                                  IndexView quarkusIndex, Set<DotName> additionalIndex,
                                   ClassLoader classLoader, byte[] beanData) {
         DotName beanClassName = DotName.createSimple(beanClass);
         if (additionalIndex.contains(beanClassName)) {
             return;
         }
-        ClassInfo beanInfo = shamrockIndex.getClassByName(beanClassName);
+        ClassInfo beanInfo = quarkusIndex.getClassByName(beanClassName);
         if (beanInfo == null) {
             log.debugf("Index bean class: %s", beanClass);
             try (InputStream stream = new ByteArrayInputStream(beanData)) {
@@ -70,11 +70,11 @@ public class IndexingUtil {
                 throw new IllegalStateException("Failed to index: " + beanClass, e);
             }
         } else {
-            // The class could be indexed by shamrock - we still need to distinguish framework classes
+            // The class could be indexed by quarkus - we still need to distinguish framework classes
             additionalIndex.add(beanClassName);
         }
         for (DotName annotationName : beanInfo.annotations().keySet()) {
-            if (!additionalIndex.contains(annotationName) && shamrockIndex.getClassByName(annotationName) == null) {
+            if (!additionalIndex.contains(annotationName) && quarkusIndex.getClassByName(annotationName) == null) {
                 try (InputStream annotationStream = IoUtil.readClass(classLoader, annotationName.toString())) {
                     log.debugf("Index annotation: %s", annotationName);
                     indexer.index(annotationStream);

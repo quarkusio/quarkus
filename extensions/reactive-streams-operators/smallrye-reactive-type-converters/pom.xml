@@ -5,14 +5,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <artifactId>shamrock-build-parent</artifactId>
-        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>quarkus-build-parent</artifactId>
+        <groupId>io.quarkus</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
         <relativePath>../../../build-parent/pom.xml</relativePath>
     </parent>
 
-    <artifactId>shamrock-smallrye-reactive-type-converters</artifactId>
-    <name>Shamrock - SmallRye Reactive Type Converters</name>
+    <artifactId>quarkus-smallrye-reactive-type-converters</artifactId>
+    <name>Quarkus - SmallRye Reactive Type Converters</name>
     <packaging>pom</packaging>
 
     <modules>

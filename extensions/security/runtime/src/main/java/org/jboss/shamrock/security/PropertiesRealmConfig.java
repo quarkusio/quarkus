@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.security;
+package io.quarkus.security;
 
-import org.jboss.shamrock.runtime.annotations.ConfigGroup;
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.annotations.ConfigItem;
 
 /**
  * A configuration object for a properties resource based realm configuration, {@linkplain org.wildfly.security.auth.realm.LegacyPropertiesSecurityRealm}
@@ -41,7 +41,7 @@ public class PropertiesRealmConfig {
     /**
      * The authentication mechanism
      */
-    @ConfigItem(defaultValue = "Shamrock")
+    @ConfigItem(defaultValue = "Quarkus")
     public String realmName;
 
     /**

@@ -21,13 +21,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-devtools-all</artifactId>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-devtools-all</artifactId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>shamrock-devtools-common-core</artifactId>
-    <name>Shamrock - Dev tools - Common Core</name>
+    <artifactId>quarkus-devtools-common-core</artifactId>
+    <name>Quarkus - Dev tools - Common Core</name>
 
     <dependencies>
         <dependency>

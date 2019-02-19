@@ -1,4 +1,4 @@
-package org.jboss.shamrock.security.test;
+package io.quarkus.security.test;
 
 import java.util.Arrays;
 import java.util.HashSet;

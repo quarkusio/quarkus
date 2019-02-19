@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.spring.tests;
+package io.quarkus.spring.tests;
 
-import org.jboss.shamrock.test.junit.ShamrockTest;
+import io.quarkus.test.junit.QuarkusTest;
 
-@ShamrockTest
+@QuarkusTest
 public class InjectedSpringBeansResourceIT extends InjectedSpringBeansResourceTest {
 }

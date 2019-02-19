@@ -1,4 +1,4 @@
-package org.jboss.shamrock.panache;
+package io.quarkus.panache;
 
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.signature.SignatureVisitor;

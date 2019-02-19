@@ -30,4 +30,4 @@
 # limitations under the License.
 #
 
-org.jboss.shamrock.restclient.runtime.BuilderResolver
+io.quarkus.restclient.runtime.BuilderResolver

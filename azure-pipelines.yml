@@ -16,7 +16,7 @@ jobs:
     vmImage: 'Ubuntu 16.04'
 
   variables:
-    imageName: 'shamrock:$(build.buildId)'
+    imageName: 'quarkus:$(build.buildId)'
 
   steps:
 
@@ -30,9 +30,9 @@ jobs:
       options: '-B --settings azure-mvn-settings.xml -Dnative-image.docker-build -Dtest-postgresql -Dnative-image.xmx=4g -Dnative'
 
   - script: |
-      docker build -f docker/integration-test-main/Dockerfile -t jtgdocker1/shamrock-integration-test-main integration-tests/main
+      docker build -f docker/integration-test-main/Dockerfile -t jtgdocker1/quarkus-integration-test-main integration-tests/main
       docker login -u jtgdocker1 -p uEo-NTv-5YT-kk6
-      docker push jtgdocker1/shamrock-integration-test-main
+      docker push jtgdocker1/quarkus-integration-test-main
       docker logout
     displayName: Publishing Integration Test Main Container Image
 
@@ -68,17 +68,17 @@ jobs:
       }
       cd openshift-origin-client*
       docker login -u jtgdocker1 -p uEo-NTv-5YT-kk6
-      docker pull jtgdocker1/shamrock-integration-test-main
+      docker pull jtgdocker1/quarkus-integration-test-main
       docker pull centos/postgresql-10-centos7
       docker logout
       ./oc create secret docker-registry jtgdocker1 --docker-username=jtgdocker1 --docker-password=uEo-NTv-5YT-kk6 --docker-email='bogus@bogus.com'
       ./oc secrets link default jtgdocker1  --for=pull
       ./oc new-app -e "POSTGRESQL_USER=hibernate_orm_test" -e "POSTGRESQL_PASSWORD=hibernate_orm_test" -e "POSTGRESQL_DATABASE=hibernate_orm_test" centos/postgresql-10-centos7
       wait_for_pod postgres
-      ./oc new-app -e "DATASOURCE_URL=jdbc:postgresql://postgresql-10-centos7/hibernate_orm_test" jtgdocker1/shamrock-integration-test-main
-      wait_for_pod shamrock
+      ./oc new-app -e "DATASOURCE_URL=jdbc:postgresql://postgresql-10-centos7/hibernate_orm_test" jtgdocker1/quarkus-integration-test-main
+      wait_for_pod quarkus
       ./oc status
-      VAL=`./oc get service shamrock-integration-test-main -o "custom-columns=IP:.spec.clusterIP" --no-headers=true`
+      VAL=`./oc get service quarkus-integration-test-main -o "custom-columns=IP:.spec.clusterIP" --no-headers=true`
       VAL2=`curl -v http://$VAL:8080/jpa/testjpaeminjection`
       test "$VAL2" = "OK"
     displayName: 'Deploy and Test On Openshift'
@@ -90,7 +90,7 @@ jobs:
     vmImage: 'vs2017-win2016'
 
   variables:
-    imageName: 'shamrock-windows:$(build.buildId)'
+    imageName: 'quarkus-windows:$(build.buildId)'
 
   steps:
 
@@ -106,7 +106,7 @@ jobs:
     vmImage: 'Ubuntu 16.04'
 
   variables:
-    imageName: 'shamrock-jdk11:$(build.buildId)'
+    imageName: 'quarkus-jdk11:$(build.buildId)'
 
   steps:
   - task: Maven@3

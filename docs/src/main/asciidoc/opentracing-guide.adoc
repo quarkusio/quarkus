@@ -1,6 +1,6 @@
 = {project-name} - Using OpenTracing
 
-This guide explains how your Shamrock application can utilize opentracing to provide distributed tracing for
+This guide explains how your Quarkus application can utilize opentracing to provide distributed tracing for
 interactive web applications.
 
 == Prerequisites
@@ -24,9 +24,9 @@ In this guide, we create a straightforward REST application to demonstrate distr
 We recommend you to follow the instructions in the next sections and create the application step by step.
 However, you can skip right to the completed example.
 
-Clone the Git repository: `git clone https://github.com/jbossas/protean-quickstarts.git`, or download an https://github.com/jbossas/protean-quickstarts/archive/master.zip[archive].
+Clone the Git repository: `git clone https://github.com/jbossas/quarkus-quickstarts.git`, or download an https://github.com/jbossas/quarkus-quickstarts/archive/master.zip[archive].
 
-The solution is located in the `using-opentracing` https://github.com/jbossas/protean-quickstarts/tree/master/using-opentracing[directory].
+The solution is located in the `using-opentracing` https://github.com/jbossas/quarkus-quickstarts/tree/master/using-opentracing[directory].
 
 == Creating the Maven project
 
@@ -34,7 +34,7 @@ First, we need a new project. Create a new project with the following command:
 
 [source, subs=attributes+]
 ----
-mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=using-opentracing \
     -DclassName="org.acme.opentracing.TracedResource" \
@@ -85,7 +85,7 @@ Now we are ready to run our application. Use:
 
 [source, text]
 ----
-mvn compile shamrock:dev -Djvm.args="-DJAEGER_SERVICE_NAME=myservice -DJAEGER_SAMPLER_TYPE=const -DJAEGER_SAMPLER_PARAM=1 -DJAEGER_ENDPOINT=http://localhost:14268/api/traces"
+mvn compile quarkus:dev -Djvm.args="-DJAEGER_SERVICE_NAME=myservice -DJAEGER_SAMPLER_TYPE=const -DJAEGER_SAMPLER_PARAM=1 -DJAEGER_ENDPOINT=http://localhost:14268/api/traces"
 ----
 
 The supplied `jvm.args` are used to configure the default OpenTracing tracer (Jaeger). If the `JAEGER_SERVICE_NAME` property is not provided then a "no-op" tracer will be configured, resulting in no tracing data being reported to the backend. The other properties are explained in the https://www.jaegertracing.io/docs/latest/client-features/[Tracer configuration via environment variables] section of the Jaeger documentation.

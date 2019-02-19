@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jboss.shamrock.reactivemessaging.smallrye.deployment;
+package io.quarkus.reactivemessaging.smallrye.deployment;
 
 import org.jboss.builder.item.MultiBuildItem;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.protean.arc.processor.BeanInfo;
+import org.jboss.quarkus.arc.processor.BeanInfo;
 
 public final class MediatorBuildItem extends MultiBuildItem {
 

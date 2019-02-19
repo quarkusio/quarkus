@@ -1,4 +1,4 @@
-package org.jboss.shamrock.example.panache;
+package io.quarkus.example.panache;
 
 import javax.persistence.Entity;
 import javax.persistence.ManyToOne;

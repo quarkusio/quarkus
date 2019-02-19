@@ -14,34 +14,34 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.test.junit4;
+package io.quarkus.test.junit4;
 
-import static org.jboss.shamrock.test.common.PathTestHelper.getTestClassesLocation;
-import static org.jboss.shamrock.test.common.PathTestHelper.getAppClassLocation;
+import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
+import static io.quarkus.test.common.PathTestHelper.getAppClassLocation;
 
 import java.io.IOException;
 
-import org.jboss.shamrock.runner.RuntimeRunner;
-import org.jboss.shamrock.runtime.LaunchMode;
+import io.quarkus.runner.RuntimeRunner;
+import io.quarkus.runtime.LaunchMode;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.model.InitializationError;
 
-public class ShamrockTest extends AbstractShamrockTestRunner {
+public class QuarkusTest extends AbstractQuarkusTestRunner {
 
-    public ShamrockTest(Class<?> klass) throws InitializationError {
-        super(klass, (c, n) -> new ShamrockRunListener(c, n));
+    public QuarkusTest(Class<?> klass) throws InitializationError {
+        super(klass, (c, n) -> new QuarkusRunListener(c, n));
     }
 
-    private static class ShamrockRunListener extends AbstractShamrockRunListener {
+    private static class QuarkusRunListener extends AbstractQuarkusRunListener {
 
         private RuntimeRunner runtimeRunner;
 
-        ShamrockRunListener(Class<?> testClass, RunNotifier runNotifier) {
+        QuarkusRunListener(Class<?> testClass, RunNotifier runNotifier) {
             super(testClass, runNotifier);
         }
 
         @Override
-        protected void startShamrock() {
+        protected void startQuarkus() {
             runtimeRunner = RuntimeRunner.builder()
                     .setLaunchMode(LaunchMode.TEST)
                     .setClassLoader(getClass().getClassLoader())
@@ -52,7 +52,7 @@ public class ShamrockTest extends AbstractShamrockTestRunner {
         }
 
         @Override
-        protected void stopShamrock() throws IOException {
+        protected void stopQuarkus() throws IOException {
             runtimeRunner.close();
         }
     }

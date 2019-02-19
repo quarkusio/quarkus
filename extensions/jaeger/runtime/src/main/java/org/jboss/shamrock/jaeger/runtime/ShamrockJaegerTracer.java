@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.jaeger.runtime;
+package io.quarkus.jaeger.runtime;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -25,11 +25,11 @@ import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
 
-public class ShamrockJaegerTracer implements Tracer {
+public class QuarkusJaegerTracer implements Tracer {
 
     static AtomicReference<Tracer> REF = new AtomicReference<>();
 
-    public ShamrockJaegerTracer() {
+    public QuarkusJaegerTracer() {
     }
 
     @Override
@@ -42,7 +42,7 @@ public class ShamrockJaegerTracer implements Tracer {
             if (orig != null) {
                 return orig;
             }
-            return Configuration.fromEnv().withMetricsFactory(new ShamrockJaegerMetricsFactory()).getTracer();
+            return Configuration.fromEnv().withMetricsFactory(new QuarkusJaegerMetricsFactory()).getTracer();
         });
     }
 

@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.outcome;
+package io.quarkus.creator.outcome;
 
-import org.jboss.shamrock.creator.AppCreatorException;
+import io.quarkus.creator.AppCreatorException;
 
 /**
  * Phase registration callback.

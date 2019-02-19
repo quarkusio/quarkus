@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm.runtime.service;
+package io.quarkus.hibernate.orm.runtime.service;
 
 import java.util.Map;
 
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
-import org.jboss.shamrock.hibernate.orm.runtime.recording.RecordingDialectFactory;
+import io.quarkus.hibernate.orm.runtime.recording.RecordingDialectFactory;
 
 /**
  * Copied from

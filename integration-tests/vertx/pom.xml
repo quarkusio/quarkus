@@ -5,34 +5,34 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <artifactId>shamrock-integration-tests-parent</artifactId>
-        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>quarkus-integration-tests-parent</artifactId>
+        <groupId>io.quarkus</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
-    <artifactId>shamrock-integration-test-vertx</artifactId>
-    <name>Shamrock - Integration Tests - Vert.x</name>
+    <artifactId>quarkus-integration-test-vertx</artifactId>
+    <name>Quarkus - Integration Tests - Vert.x</name>
 
     <dependencies>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-resteasy-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-arc-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-vertx-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-deployment</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-junit5</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -46,7 +46,7 @@
         <plugins>
             <plugin>
                 <groupId>${project.groupId}</groupId>
-                <artifactId>shamrock-maven-plugin</artifactId>
+                <artifactId>quarkus-maven-plugin</artifactId>
                 <version>${project.version}</version>
                 <executions>
                     <execution>
@@ -88,7 +88,7 @@
                     </plugin>
                     <plugin>
                         <groupId>${project.groupId}</groupId>
-                        <artifactId>shamrock-maven-plugin</artifactId>
+                        <artifactId>quarkus-maven-plugin</artifactId>
                         <version>${project.version}</version>
                         <executions>
                             <execution>

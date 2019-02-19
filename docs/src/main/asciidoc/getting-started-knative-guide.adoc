@@ -1,0 +1,143 @@
+:experimental:
+
+= {project-name} - Deploying Knative Application to Kubernetes or OpenShift
+
+This guide covers:
+
+* The deployment of the application to Kubernetes
+
+This guide takes as input the application developed in the link:building-native-image-guide.html[native application guide].
+So, you should have been able to package your application as a binary executable, copied it in a Docker image and run this image.
+
+Depending on whether you are a _bare_ Kubernetes user or an OpenShift user, pick the section you need.
+The OpenShift section leverages OpenShift build and route features which are not available in _bare_ Kubernetes.
+
+== Prerequisites
+
+For this guide you need:
+
+* roughly 10 minutes
+* having access to a Kubernetes and/or OpenShift cluster. Minikube and Minishift are valid options.
+* having deployed Knative components on https://github.com/knative/docs/blob/master/install/Knative-with-Minikube.md[Minikube]
+or https://github.com/openshift-cloud-functions/Documentation/blob/master/knative-minishift.md[Minishift]
+
+Remember, you need to configure Maven as indicated in the link:maven-config.html[Maven configuration page].
+
+== Solution
+
+We recommend to follow the instructions in the next sections and build the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone https://github.com/jbossas/protean-quickstarts.git`, or download an https://github.com/jbossas/protean-quickstarts/archive/master.zip[archive].
+
+The solution is located in the `getting-started-knative` directory.
+
+== Deploying the application in Knative
+
+Before we deploy the application to Knative in Minikube or Minishift we need to create the following Kubernetes objects:
+
+- https://github.com/knative/docs/tree/master/serving/samples/build-private-repo-go#creating-a-dockerhub-push-credential[Container registry secrets] :-
+This is required to for the built container image to be pushed to the container registry of your choice
+- https://developer.github.com/v3/guides/managing-deploy-keys/#deploy-keys[Deploy Key] :-
+This is required only if you are going to pull the sources from private repository.
+- https://github.com/knative/docs/tree/master/serving/samples/build-private-repo-go#setting-up-our-build-service-account[Build Service Account] :-
+The Kubernetes Service Account that will have access to Container Registry secret and Deploy Key secret
+
+[NOTE]
+====
+If you are not using private GitHub repo then you dont need the `Deploy Key` created and added to the Build Service Account
+====
+
+Run the following commands to kick start https://github.com/knative/build[Knative Build] which will build the shamrock application container image
+using Dockerfile and https://github.com/GoogleContainerTools/kaniko[Kaniko].  After a successful build you will have the
+Knative serving application deployed with the built container image.  You can watch the application build pods using the
+command `kubectl get pods -w`. You can terminate the watch using the command kbd:[CTRL + c]
+
+Since there are some parameters that you need to pass to the builds, which are right now configurable via maven properties,
+you need to run the following maven command to make them passed to the Knative resource yamls.
+
+.Maven Parameters
+|===
+|Name |Use |Example
+
+| github.deploy.key
+| the base64 encoded private key that is configured to be used as the GitHub private repo Deploy key
+| `cat ~/.ssh/protean-quickstarts \| base64 -w 0`
+
+| github.keyscan
+| the base64 encoded value of `ssh-keyscan github.com`
+| `ssh-keyscan github.com \| base64 -w 0`
+
+| container.registry.url
+| the container registry url, NOTE: this should be a v2 container registry
+| https://index.docker.io/v1/
+
+| container.registry.user
+| The user name to authenticate with the container registry
+|
+
+| container.registry.password
+| The user password to authenticate with the container registry
+|
+
+| git.source.revision
+| The revision of the source to checkout from GitHub
+| master
+
+| git.source.repo.url
+| The GitHub repo url
+| https://github.com/jbossas/protean-quickstarts.git
+
+| app.container.image
+| The fully qualified name of the container image that will be pushed to the container registry after build
+| docker.io/demo/shamrock-knative-quickstart
+|===
+
+
+The following is the example command to generate the need knative resource files
+
+[source, bash]
+----
+mvn -Dgithub.deploy.key=$(cat ~/.ssh/protean-quickstarts | base64 -w 0) \
+    -Dgithub.keyscan=$(ssh-keyscan github.com | base64 -w 0) \
+    -Dcontainer.registry.url='https://quay.io/v2' \
+    -Dcontainer.registry.user='demo' \
+    -Dcontainer.registry.password='password' \
+    -Dgit.source.revision='master' \
+    -Dgit.source.repo.url='git@github.com:jbossas/protean-quickstarts.git' \ #<1>
+    -Dapp.container.image='docker.io/demo/getting-started-knative' \
+    clean process-resources
+----
+
+<1> If your are using a private repo then you might need to use git ssh url
+
+The above command will apply the property values to the Knative resources found in `${project.basedir}/src/main/knative`
+and copy them to `${project.build.directory}/knative`
+
+Run the following command to create the Knative resources:
+
+[source, bash]
+----
+kubectl apply --recursive --filename target/knative
+----
+
+== Accessing your application
+
+The application is now exposed as an internal service. If you are using `minikube` or `minishift`, you can access it using:
+
+[source, bash]
+----
+INGRESSGATEWAY=istio-ingressgateway
+IP_ADDRESS="$(minikube ip):$(kubectl get svc $INGRESSGATEWAY --namespace istio-system --output 'jsonpath={.spec.ports[?(@.port==80)].nodePort}')" #<1>
+
+curl -v -H 'Host: getting-started-knative.example.com' $IP_ADDRESS/hello/greeting/redhat
+----
+
+<1> you can replace `minikube ip` with `minishift ip` if you are using OpenShift
+
+== Going further
+
+This guide covered the deployment of a Shamrock application as Knative application on Kubernetes
+However, there is much more, and the integration with these environments has been tailored to make Shamrock applications execution very smooth.
+For instance, the health extension can be used for health check; the configuration support allows mounting the application configuration using config map, the metric extension produces data _scrappable_ by Prometheus and so on.
+

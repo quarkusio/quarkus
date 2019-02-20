@@ -59,6 +59,8 @@ public abstract class AbstractDataSourceProducer {
     }
 
     protected Optional<DataSourceRuntimeConfig> getDefaultRuntimeConfig() {
+        checkRuntimeConfig();
+
         return Optional.of(runtimeConfig.defaultDataSource);
     }
 
@@ -67,6 +69,8 @@ public abstract class AbstractDataSourceProducer {
     }
 
     protected Optional<DataSourceRuntimeConfig> getRuntimeConfig(String dataSourceName) {
+        checkRuntimeConfig();
+
         return Optional.ofNullable(runtimeConfig.namedDataSources.get(dataSourceName));
     }
 
@@ -177,6 +181,12 @@ public abstract class AbstractDataSourceProducer {
 
     public void disableSslSupport() {
         this.disableSslSupport = true;
+    }
+
+    private void checkRuntimeConfig() {
+        if (runtimeConfig == null) {
+            throw new IllegalStateException("The datasources are not ready to be consumed: the runtime configuration has not been injected yet");
+        }
     }
 
     @PreDestroy

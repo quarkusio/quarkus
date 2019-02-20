@@ -19,8 +19,6 @@ import org.jboss.logmanager.formatters.PatternFormatter;
 import org.jboss.logmanager.handlers.ConsoleHandler;
 import org.jboss.logmanager.handlers.FileHandler;
 
-import com.oracle.svm.core.annotate.RecomputeFieldValue;
-
 import io.quarkus.runtime.annotations.Template;
 
 /**
@@ -31,15 +29,7 @@ public class LoggingSetupTemplate {
     public LoggingSetupTemplate() {
     }
 
-    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
-    private static volatile boolean initialized;
-
     public void initializeLogging(LogConfig config) {
-        if (initialized || ImageInfo.inImageBuildtimeCode()) {
-            // JVM mode, already initialized in static init
-            return;
-        }
-        initialized = true;
         final Map<String, CategoryConfig> categories = config.categories;
         final LogContext logContext = LogContext.getLogContext();
         final Logger rootLogger = logContext.getLogger("");
@@ -88,5 +78,14 @@ public class LoggingSetupTemplate {
             handlers.add(handler);
         }
         InitialConfigurator.DELAYED_HANDLER.setHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));
+    }
+
+    public void initializeLoggingForImageBuild() {
+        if (ImageInfo.inImageBuildtimeCode()) {
+            final ConsoleHandler handler = new ConsoleHandler(new PatternFormatter(
+                    "%d{HH:mm:ss,SSS} %-5p [%c{1.}] %s%e%n"));
+            handler.setLevel(Level.INFO);
+            InitialConfigurator.DELAYED_HANDLER.setHandlers(new Handler[] { handler });
+        }
     }
 }

@@ -50,8 +50,8 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
-import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.deployment.recording.RecorderContext;
@@ -161,7 +161,7 @@ public final class ExtensionLoader {
                     ctorParamFns.add(BuildContext::getExecutor);
                 } else if (parameterClass.isAnnotationPresent(ConfigRoot.class)) {
                     consumingConfig = true;
-                    ctorParamFns.add(bc -> bc.consume(ConfigurationBuildItem.class).getConfigDefinition()
+                    ctorParamFns.add(bc -> bc.consume(RunTimeConfigurationBuildItem.class).getConfigDefinition()
                             .getRealizedInstance(parameterClass));
                 } else if (isTemplate(parameterClass)) {
                     throw reportError(parameter, "Bytecode recording templates disallowed on constructor parameters");
@@ -233,7 +233,8 @@ public final class ExtensionLoader {
             } else if (fieldClass.isAnnotationPresent(ConfigRoot.class)) {
                 consumingConfig = true;
                 stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> {
-                    final ConfigurationBuildItem configurationBuildItem = bc.consume(ConfigurationBuildItem.class);
+                    final RunTimeConfigurationBuildItem configurationBuildItem = bc
+                            .consume(RunTimeConfigurationBuildItem.class);
                     ReflectUtil.setFieldVal(field, o,
                             configurationBuildItem.getConfigDefinition().getRealizedInstance(fieldClass));
                 });
@@ -339,7 +340,8 @@ public final class ExtensionLoader {
                     } else if (parameterClass.isAnnotationPresent(ConfigRoot.class)) {
                         methodConsumingConfig = true;
                         methodParamFns.add((bc, bri) -> {
-                            final ConfigurationBuildItem configurationBuildItem = bc.consume(ConfigurationBuildItem.class);
+                            final RunTimeConfigurationBuildItem configurationBuildItem = bc
+                                    .consume(RunTimeConfigurationBuildItem.class);
                             return configurationBuildItem.getConfigDefinition().getRealizedInstance(parameterClass);
                         });
                     } else if (isTemplate(parameter.getType())) {
@@ -392,7 +394,7 @@ public final class ExtensionLoader {
 
             if (methodConsumingConfig) {
                 methodStepConfig = methodStepConfig
-                        .andThen(bsb -> bsb.consumes(ConfigurationBuildItem.class));
+                        .andThen(bsb -> bsb.consumes(RunTimeConfigurationBuildItem.class));
             }
 
             final Consumer<BuildStepBuilder> finalStepConfig = stepConfig.andThen(methodStepConfig)

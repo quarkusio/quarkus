@@ -38,11 +38,11 @@ import io.quarkus.deployment.AccessorFinder;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
-import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationCustomConverterBuildItem;
 import io.quarkus.deployment.builditem.ExtensionClassLoaderBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationSourceBuildItem;
 import io.quarkus.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem;
@@ -165,7 +165,7 @@ public class ConfigurationSetup {
      * @return the configuration build item
      */
     @BuildStep
-    public ConfigurationBuildItem initializeConfiguration(
+    public RunTimeConfigurationBuildItem initializeConfiguration(
             List<ConfigurationCustomConverterBuildItem> converters,
             ExtensionClassLoaderBuildItem extensionClassLoaderBuildItem) throws IOException, ClassNotFoundException {
         SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
@@ -185,7 +185,7 @@ public class ConfigurationSetup {
         }
         SmallRyeConfigProviderResolver.instance().registerConfig(src, Thread.currentThread().getContextClassLoader());
         configDefinition.loadConfiguration(src);
-        return new ConfigurationBuildItem(configDefinition);
+        return new RunTimeConfigurationBuildItem(configDefinition);
     }
 
     @SuppressWarnings("unchecked")
@@ -253,7 +253,7 @@ public class ConfigurationSetup {
      */
     @BuildStep
     void finalizeConfigLoader(
-            ConfigurationBuildItem configurationBuildItem,
+            RunTimeConfigurationBuildItem configurationBuildItem,
             Consumer<GeneratedClassBuildItem> classConsumer,
             Consumer<RuntimeReinitializedClassBuildItem> runTimeInitConsumer,
             Consumer<BytecodeRecorderObjectLoaderBuildItem> objectLoaderConsumer,

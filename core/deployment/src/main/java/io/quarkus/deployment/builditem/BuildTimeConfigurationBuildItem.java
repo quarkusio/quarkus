@@ -7,10 +7,10 @@ import io.quarkus.deployment.configuration.ConfigDefinition;
 /**
  * The build item which carries the build time configuration.
  */
-public final class ConfigurationBuildItem extends SimpleBuildItem {
+public final class BuildTimeConfigurationBuildItem extends SimpleBuildItem {
     private final ConfigDefinition configDefinition;
 
-    public ConfigurationBuildItem(final ConfigDefinition configDefinition) {
+    public BuildTimeConfigurationBuildItem(final ConfigDefinition configDefinition) {
         this.configDefinition = configDefinition;
     }
 

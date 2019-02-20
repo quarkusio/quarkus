@@ -28,46 +28,46 @@ import org.eclipse.microprofile.jwt.Claims;
 public class JsonValuejectionEndpoint {
     @Inject
     @Claim("raw_token")
-    private JsonString rawToken;
+    JsonString rawToken;
     @Inject
     @Claim("iss")
-    private JsonString issuer;
+    JsonString issuer;
     @Inject
     @Claim("jti")
-    private JsonString jti;
+    JsonString jti;
     @Inject
     @Claim("aud")
-    private JsonArray aud;
+    JsonArray aud;
     @Inject
     @Claim("roles")
-    private JsonArray roles;
+    JsonArray roles;
     @Inject
     @Claim("iat")
-    private JsonNumber issuedAt;
+    JsonNumber issuedAt;
     @Inject
     @Claim("auth_time")
-    private JsonNumber authTime;
+    JsonNumber authTime;
     @Inject
     @Claim("customString")
-    private JsonString customString;
+    JsonString customString;
     @Inject
     @Claim("customInteger")
-    private JsonNumber customInteger;
+    JsonNumber customInteger;
     @Inject
     @Claim("customDouble")
-    private JsonNumber customDouble;
+    JsonNumber customDouble;
     @Inject
     @Claim("customObject")
-    private JsonObject customObject;
+    JsonObject customObject;
     @Inject
     @Claim("customStringArray")
-    private JsonArray customStringArray;
+    JsonArray customStringArray;
     @Inject
     @Claim("customIntegerArray")
-    private JsonArray customIntegerArray;
+    JsonArray customIntegerArray;
     @Inject
     @Claim("customDoubleArray")
-    private JsonArray customDoubleArray;
+    JsonArray customDoubleArray;
 
     @GET
     @Path("/verifyInjectedIssuer")

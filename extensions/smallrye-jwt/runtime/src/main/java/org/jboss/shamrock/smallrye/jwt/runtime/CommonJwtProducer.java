@@ -28,7 +28,7 @@ public class CommonJwtProducer {
     private static final String TMP = "tmp";
 
     @Inject
-    private JsonWebToken currentToken;
+    JsonWebToken currentToken;
 
     /**
      * A utility method for accessing a claim from the current JsonWebToken as a ClaimValue<Optional<T>> object.
@@ -85,6 +85,7 @@ public class CommonJwtProducer {
     }
 
 
+    @SuppressWarnings("unchecked")
     private static JsonObject replaceMap(Map<String, Object> map) {
         JsonObjectBuilder builder = Json.createObjectBuilder();
         for (Map.Entry<String, Object> entry : map.entrySet()) {
@@ -111,6 +112,7 @@ public class CommonJwtProducer {
         return builder.build();
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     private static JsonValue wrapValue(Object value) {
         JsonValue jsonValue = null;
         if (value instanceof JsonValue) {

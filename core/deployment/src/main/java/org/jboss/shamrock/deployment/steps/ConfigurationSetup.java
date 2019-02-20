@@ -380,6 +380,12 @@ public class ConfigurationSetup {
             public ResultHandle load(final BytecodeCreator body, final Object obj) {
                 final ConfigDefinition.RootInfo rootInfo = configDefinition.getInstanceInfo(obj);
                 if (rootInfo == null) return null;
+
+                if (!rootInfo.getConfigPhase().isAvailableAtRun()) {
+                    String msg = String.format("You are trying to use a ConfigRoot[%s] at runtime whose phase[%s] does not allow this",
+                                               rootInfo.getRootClass().getName(), rootInfo.getConfigPhase());
+                    throw new IllegalStateException(msg);
+                }
                 final FieldDescriptor fieldDescriptor = rootInfo.getFieldDescriptor();
                 final ResultHandle configRoot = body.invokeStaticMethod(GET_ROOT_METHOD);
                 return body.readInstanceField(fieldDescriptor, configRoot);

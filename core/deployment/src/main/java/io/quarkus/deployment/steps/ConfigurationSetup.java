@@ -351,7 +351,7 @@ public class ConfigurationSetup {
             cc.getFieldCreator(CONVERTERS_FIELD).setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
             // holder for the build-time configuration
             cc.getFieldCreator(BUILD_TIME_CONFIG_FIELD)
-                    .setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
+                    .setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_VOLATILE);
 
             // static init block
             try (MethodCreator clinit = cc.getMethodCreator("<clinit>", void.class)) {
@@ -477,19 +477,27 @@ public class ConfigurationSetup {
         }
 
         objectLoaderConsumer.accept(new BytecodeRecorderObjectLoaderBuildItem(new ObjectLoader() {
-            public ResultHandle load(final BytecodeCreator body, final Object obj) {
-                final ConfigDefinition.RootInfo rootInfo = runTimeConfigDef.getInstanceInfo(obj);
-                if (rootInfo == null)
-                    return null;
-
-                if (!rootInfo.getConfigPhase().isAvailableAtRun()) {
-                    String msg = String.format(
-                            "You are trying to use a ConfigRoot[%s] at runtime whose phase[%s] does not allow this",
-                            rootInfo.getRootClass().getName(), rootInfo.getConfigPhase());
-                    throw new IllegalStateException(msg);
+            public ResultHandle load(final BytecodeCreator body, final Object obj, final boolean staticInit) {
+                boolean buildTime = false;
+                ConfigDefinition.RootInfo rootInfo = runTimeConfigDef.getInstanceInfo(obj);
+                if (rootInfo == null) {
+                    rootInfo = buildTimeConfigDef.getInstanceInfo(obj);
+                    buildTime = true;
                 }
+                if (rootInfo == null || staticInit && !buildTime) {
+                    final Class<?> objClass = obj.getClass();
+                    if (objClass.isAnnotationPresent(ConfigRoot.class)) {
+                        String msg = String.format(
+                                "You are trying to use a ConfigRoot[%s] at static initialization time",
+                                objClass.getName());
+                        throw new IllegalStateException(msg);
+                    }
+                    return null;
+                }
+
                 final FieldDescriptor fieldDescriptor = rootInfo.getFieldDescriptor();
-                final ResultHandle configRoot = body.readStaticField(RUN_TIME_CONFIG_FIELD);
+                final ResultHandle configRoot = body
+                        .readStaticField(buildTime ? BUILD_TIME_CONFIG_FIELD : RUN_TIME_CONFIG_FIELD);
                 return body.readInstanceField(fieldDescriptor, configRoot);
             }
         }));

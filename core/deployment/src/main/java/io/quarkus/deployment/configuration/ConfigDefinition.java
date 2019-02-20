@@ -326,8 +326,6 @@ public class ConfigDefinition extends CompoundConfigType {
                 final ResultHandle self = ctor.getThis();
                 final ResultHandle config = ctor.getMethodParam(0);
                 ctor.invokeSpecialMethod(MethodDescriptor.ofConstructor(Object.class), self);
-                // early publish of self
-                ctor.writeStaticField(rootField, self);
                 // initialize all fields to defaults
                 for (RootInfo value : rootTypesByContainingName.values()) {
                     if (value.getConfigPhase().isAvailableAtRun()) {

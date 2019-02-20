@@ -643,7 +643,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
             return true;
         }
         for (ObjectLoader loader : loaders) {
-            ResultHandle handle = loader.load(body, param);
+            ResultHandle handle = loader.load(body, param, staticInit);
             if (handle != null) {
                 loadedObjects.put(param, handle);
                 return true;

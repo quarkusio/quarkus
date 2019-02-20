@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.logging.ErrorManager;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -30,7 +31,7 @@ public class LoggingSetupTemplate {
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
     private static volatile boolean initialized;
 
-    public void initializeLogging(LogConfig config, List<LogCleanupFilterElement> filters) {
+    public void initializeLogging(LogConfig config) {
         if (initialized || ImageInfo.inImageBuildtimeCode()) {
             // JVM mode, already initialized in static init
             return;
@@ -49,6 +50,11 @@ public class LoggingSetupTemplate {
                 logger.setLevelName(categoryConfig.level);
             }
         }
+        final Map<String, CleanupFilterConfig> filters = config.filters;
+        List<LogCleanupFilterElement> filterElements = new ArrayList<>(filters.size());
+        for (Entry<String, CleanupFilterConfig> entry : filters.entrySet()) {
+            filterElements.add(new LogCleanupFilterElement(entry.getKey(), entry.getValue().ifStartsWith));
+        }
         ArrayList<Handler> handlers = new ArrayList<>(2);
         if (config.console.enable) {
             final PatternFormatter formatter;
@@ -60,7 +66,7 @@ public class LoggingSetupTemplate {
             final ConsoleHandler handler = new ConsoleHandler(formatter);
             handler.setLevel(config.console.level);
             handler.setErrorManager(errorManager);
-            handler.setFilter(new LogCleanupFilter(filters));
+            handler.setFilter(new LogCleanupFilter(filterElements));
             handlers.add(handler);
             errorManager = handler.getLocalErrorManager();
         }
@@ -75,7 +81,7 @@ public class LoggingSetupTemplate {
             }
             handler.setErrorManager(errorManager);
             handler.setLevel(config.file.level);
-            handler.setFilter(new LogCleanupFilter(filters));
+            handler.setFilter(new LogCleanupFilter(filterElements));
             handlers.add(handler);
         }
         InitialConfigurator.DELAYED_HANDLER.setHandlers(handlers.toArray(EmbeddedConfigurator.NO_HANDLERS));

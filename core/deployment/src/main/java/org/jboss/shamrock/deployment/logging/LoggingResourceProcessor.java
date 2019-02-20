@@ -65,6 +65,19 @@ public final class LoggingResourceProcessor {
             );
         }
     }
+    
+    @BuildStep
+    void setUpDefaultLogCleanupFilters(List<LogCleanupFilterBuildItem> logCleanupFilters, Consumer<RunTimeConfigurationDefaultBuildItem> configOutput) {
+        for (LogCleanupFilterBuildItem logCleanupFilter : logCleanupFilters) {
+            configOutput.accept(
+                new RunTimeConfigurationDefaultBuildItem(
+                    "shamrock.log.filters.\"" + logCleanupFilter.getFilterElement().getLoggerName() + "\".if-starts-with",
+                    logCleanupFilter.getFilterElement().getMessageStart()
+                    )
+            );
+        }
+    }
+    
 
     @BuildStep
     void miscSetup(
@@ -79,14 +92,14 @@ public final class LoggingResourceProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void setupLoggingRuntimeInit(LoggingSetupTemplate setupTemplate, LogConfig log, List<LogCleanupFilterBuildItem> filters) {
-        setupTemplate.initializeLogging(log, filters.stream().map(LogCleanupFilterBuildItem::getFilterElement).collect(Collectors.toList()));
+    void setupLoggingRuntimeInit(LoggingSetupTemplate setupTemplate, LogConfig log) {
+        setupTemplate.initializeLogging(log);
     }
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void setupLoggingStaticInit(LoggingSetupTemplate setupTemplate, LogConfig log, List<LogCleanupFilterBuildItem> filters) {
-        setupTemplate.initializeLogging(log, filters.stream().map(LogCleanupFilterBuildItem::getFilterElement).collect(Collectors.toList()));
+    void setupLoggingStaticInit(LoggingSetupTemplate setupTemplate, LogConfig log) {
+        setupTemplate.initializeLogging(log);
     }
 
     @BuildStep

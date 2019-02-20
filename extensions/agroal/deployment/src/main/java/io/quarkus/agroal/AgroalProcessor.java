@@ -174,16 +174,16 @@ class AgroalProcessor {
             defaultDataSourceMethodCreator.addAnnotation(Default.class);
 
             ResultHandle dataSourceName = defaultDataSourceMethodCreator.load(AgroalTemplate.DEFAULT_DATASOURCE_NAME);
-            ResultHandle dataSourceBuildTimeConfig = defaultDataSourceMethodCreator.invokeSpecialMethod(
+            ResultHandle dataSourceBuildTimeConfig = defaultDataSourceMethodCreator.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(AbstractDataSourceProducer.class, "getDefaultBuildTimeConfig",
                             DataSourceBuildTimeConfig.class),
                     defaultDataSourceMethodCreator.getThis());
-            ResultHandle dataSourceRuntimeConfig = defaultDataSourceMethodCreator.invokeSpecialMethod(
+            ResultHandle dataSourceRuntimeConfig = defaultDataSourceMethodCreator.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(AbstractDataSourceProducer.class, "getDefaultRuntimeConfig", Optional.class),
                     defaultDataSourceMethodCreator.getThis());
 
             defaultDataSourceMethodCreator.returnValue(
-                    defaultDataSourceMethodCreator.invokeSpecialMethod(
+                    defaultDataSourceMethodCreator.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(AbstractDataSourceProducer.class, "createDataSource",
                                     AgroalDataSource.class, String.class,
                                     DataSourceBuildTimeConfig.class, Optional.class),
@@ -213,17 +213,17 @@ class AgroalProcessor {
                             new AnnotationValue[] { AnnotationValue.createStringValue("value", namedDataSourceName) }));
 
             ResultHandle namedDataSourceNameRH = namedDataSourceMethodCreator.load(namedDataSourceName);
-            ResultHandle namedDataSourceBuildTimeConfig = namedDataSourceMethodCreator.invokeSpecialMethod(
+            ResultHandle namedDataSourceBuildTimeConfig = namedDataSourceMethodCreator.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(AbstractDataSourceProducer.class, "getBuildTimeConfig",
                             DataSourceBuildTimeConfig.class, String.class),
                     namedDataSourceMethodCreator.getThis(), namedDataSourceNameRH);
-            ResultHandle namedDataSourceRuntimeConfig = namedDataSourceMethodCreator.invokeSpecialMethod(
+            ResultHandle namedDataSourceRuntimeConfig = namedDataSourceMethodCreator.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(AbstractDataSourceProducer.class, "getRuntimeConfig", Optional.class,
                             String.class),
                     namedDataSourceMethodCreator.getThis(), namedDataSourceNameRH);
 
             namedDataSourceMethodCreator.returnValue(
-                    namedDataSourceMethodCreator.invokeSpecialMethod(
+                    namedDataSourceMethodCreator.invokeVirtualMethod(
                             MethodDescriptor.ofMethod(AbstractDataSourceProducer.class, "createDataSource",
                                     AgroalDataSource.class, String.class,
                                     DataSourceBuildTimeConfig.class, Optional.class),

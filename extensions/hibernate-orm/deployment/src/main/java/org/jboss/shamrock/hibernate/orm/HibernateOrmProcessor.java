@@ -36,6 +36,7 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.PersistenceUnit;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.H2Dialect;
@@ -55,6 +56,7 @@ import org.jboss.shamrock.arc.deployment.BeanContainerBuildItem;
 import org.jboss.shamrock.arc.deployment.BeanContainerListenerBuildItem;
 import org.jboss.shamrock.arc.deployment.ResourceAnnotationBuildItem;
 import org.jboss.shamrock.deployment.Capabilities;
+import org.jboss.shamrock.deployment.ShamrockConfig;
 import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.annotations.Record;
@@ -288,6 +290,9 @@ public final class HibernateOrmProcessor {
                     desc.getProperties().setProperty(AvailableSettings.SHOW_SQL, "true");
                     desc.getProperties().setProperty(AvailableSettings.FORMAT_SQL, "true");
                 }
+                if (hibernate.generateStatistics) {
+                    desc.getProperties().setProperty(AvailableSettings.GENERATE_STATISTICS, "true");
+                }
 
                 // sql-load-script-source
                 // explicit file or default one
@@ -313,6 +318,15 @@ public final class HibernateOrmProcessor {
                                 + c + "'. Remove property or add file to your path."
                             );
                         });
+
+                String prefix = "shamrock.hibernate.cache.";
+                for (String propName : ConfigProvider.getConfig().getPropertyNames()) {
+                    if (propName.startsWith(prefix)) {
+                        String value = ShamrockConfig.getString(propName, null, false);
+                        String hibernateKey = propName.replace("shamrock.", "");
+                        desc.getProperties().setProperty(hibernateKey, value);
+                    }
+                }
 
                 descriptors.add(desc);
             });

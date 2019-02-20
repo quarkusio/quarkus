@@ -3,14 +3,18 @@ package org.jboss.shamrock.example.infinispancachejpa;
 import org.hibernate.NaturalIdLoadAccess;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.cache.spi.CacheImplementor;
 import org.hibernate.cache.spi.RegionFactory;
 import org.hibernate.stat.CacheRegionStatistics;
 import org.hibernate.stat.Statistics;
+import org.infinispan.protean.hibernate.cache.ProteanInfinispanRegionFactory;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.Duration;
 import java.util.*;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
@@ -19,29 +23,62 @@ import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 
 /**
  * Basic test running JPA with the H2 database and Infinispan as second level cache provider.
  * The application can work in either standard JVM or SubstrateVM, while we run H2 as a separate JVM process.
  */
-@WebServlet(name = "InfinispanCacheJPAFunctionalityTestEndpoint", urlPatterns = "/infinispan-cache-jpa/testfunctionality")
-public class InfinispanCacheJPAFunctionalityTestEndpoint extends HttpServlet {
+@Path("/infinispan-cache-jpa")
+@ApplicationScoped
+public class InfinispanCacheJPAFunctionalityTestEndpoint {
 
-    @PersistenceUnit(unitName = "templatePU")
+    @PersistenceUnit
     EntityManagerFactory entityManagerFactory;
 
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        try {
-            doStuffWithHibernate(entityManagerFactory);
-        } catch (Exception e) {
-            reportException("An error occurred while performing Hibernate operations", e, resp);
-        }
-        resp.getWriter().write("OK");
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("/testfunctionality")
+    public String doGet() {
+        doStuffWithHibernate(entityManagerFactory);
+        return "OK";
+    }
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("/memory-object-count/{region}")
+    public String memoryObjectCount(@PathParam("region") String region) {
+        ProteanInfinispanRegionFactory regionFactory = getRegionFactory();
+        Optional<Long> result = regionFactory.getMemoryObjectCount(region);
+        return result
+                .map(Object::toString)
+                .orElseGet(
+                        () -> String.format("Region %s not found", region)
+                );
+    }
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Path("/expiration-max-idle/{region}")
+    public String expirationMaxIdle(@PathParam("region") String region) {
+        ProteanInfinispanRegionFactory regionFactory = getRegionFactory();
+        Optional<Duration> result = regionFactory.getExpirationMaxIdle(region);
+        return result
+                .map(duration -> Long.toString(duration.getSeconds()))
+                .orElseGet(
+                        () -> String.format("Region %s not found", region)
+                );
+    }
+
+    private ProteanInfinispanRegionFactory getRegionFactory() {
+        SessionFactory sessionFactory = entityManagerFactory.unwrap(SessionFactory.class);
+        CacheImplementor cache = (CacheImplementor) sessionFactory.getCache();
+        return (ProteanInfinispanRegionFactory) cache.getRegionFactory();
     }
 
     /**

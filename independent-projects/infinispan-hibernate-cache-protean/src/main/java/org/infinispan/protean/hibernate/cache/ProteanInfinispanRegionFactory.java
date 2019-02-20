@@ -22,8 +22,8 @@ public final class ProteanInfinispanRegionFactory implements RegionFactory {
     private static final Logger log = Logger.getLogger(ProteanInfinispanRegionFactory.class);
 
     private static final String PREFIX = "hibernate.cache.";
-    private static final String OBJECT_COUNT = ".memory.object.count";
-    private static final String MAX_IDLE_SUFFIX = ".expiration.max_idle";
+    private static final String OBJECT_COUNT_SUFFIX = ".memory.object-count";
+    private static final String MAX_IDLE_SUFFIX = ".expiration.max-idle";
 
     private final Map<String, InternalCache> caches = new HashMap<>();
 
@@ -64,7 +64,7 @@ public final class ProteanInfinispanRegionFactory implements RegionFactory {
     }
 
     private String extractRegionName(int prefixIndexEnd, String key) {
-        final int suffixIndex = Math.max(key.indexOf(OBJECT_COUNT), key.indexOf(MAX_IDLE_SUFFIX));
+        final int suffixIndex = Math.max(key.indexOf(OBJECT_COUNT_SUFFIX), key.indexOf(MAX_IDLE_SUFFIX));
         if (suffixIndex != -1) {
             return key.substring(prefixIndexEnd, suffixIndex);
         }
@@ -214,7 +214,7 @@ public final class ProteanInfinispanRegionFactory implements RegionFactory {
                             cacheConfig = defaultDomainCacheConfig();
                         }
 
-                        if (key.contains(OBJECT_COUNT)) {
+                        if (key.contains(OBJECT_COUNT_SUFFIX)) {
                             cacheConfig.objectCount = Long.parseLong(value);
                         } else if (key.contains(MAX_IDLE_SUFFIX)) {
                             cacheConfig.maxIdle = Duration.ofSeconds(Long.parseLong(value));
@@ -252,6 +252,16 @@ public final class ProteanInfinispanRegionFactory implements RegionFactory {
         cacheConfig.maxIdle = Duration.ofSeconds(100);
         cacheConfig.objectCount = 10_000;
         return cacheConfig;
+    }
+
+    public Optional<Long> getMemoryObjectCount(String region) {
+        InternalCacheConfig config = cacheConfigs.get(region);
+        return config == null ? Optional.empty() : Optional.of(config.objectCount);
+    }
+
+    public Optional<Duration> getExpirationMaxIdle(String region) {
+        InternalCacheConfig config = cacheConfigs.get(region);
+        return config == null ? Optional.empty() : Optional.of(config.maxIdle);
     }
 
 }

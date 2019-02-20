@@ -16,15 +16,23 @@
 
 package org.jboss.shamrock.smallrye.health;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
+import org.eclipse.microprofile.health.spi.HealthCheckResponseProvider;
 import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.ExecutionTime;
+import org.jboss.shamrock.deployment.annotations.Record;
+import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
+import org.jboss.shamrock.deployment.recording.RecorderContext;
+import org.jboss.shamrock.deployment.util.ServiceUtil;
 import org.jboss.shamrock.runtime.annotations.ConfigItem;
 import org.jboss.shamrock.runtime.annotations.ConfigRoot;
 import org.jboss.shamrock.smallrye.health.runtime.SmallRyeHealthServlet;
+import org.jboss.shamrock.smallrye.health.runtime.SmallRyeHealthTemplate;
 import org.jboss.shamrock.undertow.ServletBuildItem;
 
 import io.smallrye.health.SmallRyeHealthReporter;
@@ -58,6 +66,21 @@ class SmallRyeHealthProcessor {
         return Arrays.asList(
                 new AdditionalBeanBuildItem(SmallRyeHealthReporter.class),
                 new AdditionalBeanBuildItem(SmallRyeHealthServlet.class));
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    @SuppressWarnings("unchecked")
+    void registerHealthCheckResponseProvider(SmallRyeHealthTemplate template, RecorderContext recorder) throws IOException {
+        Set<String> providers = ServiceUtil.classNamesNamedIn(getClass().getClassLoader(), "META-INF/services/" + HealthCheckResponseProvider.class.getName());
+
+        if (providers.isEmpty()) {
+            throw new IllegalStateException("No HealthCheckResponseProvider implementation found.");
+        } else if (providers.size() > 1) {
+            throw new IllegalStateException(String.format("Multiple HealthCheckResponseProvider implementations found: %s", providers));
+        }
+
+        template.registerHealthCheckResponseProvider((Class<? extends HealthCheckResponseProvider>) recorder.classProxy(providers.iterator().next()));
     }
 
     @BuildStep

@@ -76,6 +76,13 @@
 
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-smallrye-jwt-deployment</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+         </dependency>
+
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-smallrye-reactive-streams-operators-deployment</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>

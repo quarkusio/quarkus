@@ -22,6 +22,7 @@ public class ClaimValueProducer<T> {
 
     @Produces
     @Claim("")
+    @SuppressWarnings("unchecked")
     ClaimValue<T> produce(InjectionPoint ip) {
         ClaimValue<Optional<T>> cv = util.generalClaimValueProducer(ip);
         ClaimValue<T> returnValue = (ClaimValue<T>) cv;

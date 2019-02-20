@@ -42,37 +42,37 @@ import org.eclipse.microprofile.jwt.Claims;
 public class PrimitiveInjectionEndpoint {
     @Inject
     @Claim("raw_token")
-    private String rawToken;
+    String rawToken;
     @Inject
     @Claim("iss")
-    private String issuer;
+    String issuer;
     @Inject
     @Claim("upn")
-    private String upn;
+    String upn;
     @Inject
     @Claim("jti")
-    private String jti;
+    String jti;
     @Inject
     @Claim("aud")
-    private Set<String> aud;
+    Set<String> aud;
     @Inject
     @Claim("groups")
-    private Set<String> groups;
+    Set<String> groups;
     @Inject
     @Claim("iat")
-    private long issuedAt;
+    long issuedAt;
     @Inject
     @Claim("exp")
-    private long expiration;
+    long expiration;
     @Inject
     @Claim("sub")
-    private String subject;
+    String subject;
     @Inject
     @Claim("customString")
-    private String customString;
+    String customString;
     @Inject
     @Claim("customDouble")
-    private double customDouble;
+    double customDouble;
 
     @GET
     @Path("/verifyInjectedIssuer")

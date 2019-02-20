@@ -22,7 +22,7 @@ import java.util.Set;
 public class RequiredClaimsEndpoint {
 
     @Inject
-    private JsonWebToken rawTokenJson;
+    JsonWebToken rawTokenJson;
 
     @GET
     @Path("/verifyIssuer")

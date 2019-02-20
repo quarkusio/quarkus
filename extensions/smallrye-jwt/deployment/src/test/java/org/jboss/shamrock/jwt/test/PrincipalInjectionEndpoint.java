@@ -29,7 +29,7 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 @RolesAllowed("Tester")
 public class PrincipalInjectionEndpoint {
     @Inject
-    private Principal principal;
+    Principal principal;
     @Context
     private SecurityContext context;
 

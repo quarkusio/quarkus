@@ -22,7 +22,7 @@ public class RawClaimTypeProducer {
     private static Logger log = Logger.getLogger(RawClaimTypeProducer.class);
 
     @Inject
-    private JsonWebToken currentToken;
+    JsonWebToken currentToken;
 
     @Produces
     @Claim("")

@@ -39,6 +39,7 @@ import org.jboss.shamrock.security.SecurityDomainBuildItem;
 import org.jboss.shamrock.security.SecurityRealmBuildItem;
 import org.jboss.shamrock.smallrye.jwt.runtime.ClaimValueProducer;
 import org.jboss.shamrock.smallrye.jwt.runtime.CommonJwtProducer;
+import org.jboss.shamrock.smallrye.jwt.runtime.JWTAuthContextInfoGroup;
 import org.jboss.shamrock.smallrye.jwt.runtime.JsonValueProducer;
 import org.jboss.shamrock.smallrye.jwt.runtime.SmallRyeJwtTemplate;
 import org.jboss.shamrock.smallrye.jwt.runtime.PrincipalProducer;
@@ -96,6 +97,7 @@ class SmallRyeJwtProcessor {
      */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     AuthConfigBuildItem configureFileRealmAuthConfig(SmallRyeJwtTemplate template,
                                                      BuildProducer<ObjectSubstitutionBuildItem> objectSubstitution,
                                                      BuildProducer<SecurityRealmBuildItem> securityRealm,

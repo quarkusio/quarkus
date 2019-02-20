@@ -70,16 +70,18 @@ public class JsonValueProducer {
         return getOptionalValue(ip);
     }
 
+    @SuppressWarnings("unchecked")
     public <T extends JsonValue> T getValue(InjectionPoint ip) {
         log.debugf("JsonValueProducer(%s).produce", ip);
         T jsonValue = (T) util.generalJsonValueProducer(ip);
         return jsonValue;
     }
+
+    @SuppressWarnings("unchecked")
     public <T extends JsonValue> Optional<T> getOptionalValue(InjectionPoint ip) {
         log.debugf("JsonValueProducer(%s).produce", ip);
         T jsonValue = (T) util.generalJsonValueProducer(ip);
         return Optional.ofNullable(jsonValue);
     }
-
 
 }

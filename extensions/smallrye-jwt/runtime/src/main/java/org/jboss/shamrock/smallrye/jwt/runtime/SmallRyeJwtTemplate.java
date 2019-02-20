@@ -2,9 +2,6 @@ package org.jboss.shamrock.smallrye.jwt.runtime;
 
 import java.security.Principal;
 
-import io.undertow.security.idm.IdentityManager;
-import io.undertow.servlet.ServletExtension;
-import org.jboss.logging.Logger;
 import org.jboss.shamrock.arc.runtime.BeanContainer;
 import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.runtime.annotations.Template;
@@ -17,13 +14,14 @@ import org.wildfly.security.auth.server.SecurityDomain;
 import org.wildfly.security.auth.server.SecurityRealm;
 import org.wildfly.security.authz.Attributes;
 
+import io.undertow.security.idm.IdentityManager;
+import io.undertow.servlet.ServletExtension;
+
 /**
  * The runtime value service used to create values related to the MP-JWT services
  */
 @Template
 public class SmallRyeJwtTemplate {
-
-    static final Logger log = Logger.getLogger(SmallRyeJwtTemplate.class);
 
     /**
      * Create the JwtIdentityManager

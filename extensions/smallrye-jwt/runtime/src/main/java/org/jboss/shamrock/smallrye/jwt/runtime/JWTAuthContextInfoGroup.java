@@ -1,4 +1,4 @@
-package org.jboss.shamrock.smallrye.jwt.deployment;
+package org.jboss.shamrock.smallrye.jwt.runtime;
 
 import org.jboss.shamrock.runtime.annotations.ConfigItem;
 import org.jboss.shamrock.runtime.annotations.ConfigPhase;

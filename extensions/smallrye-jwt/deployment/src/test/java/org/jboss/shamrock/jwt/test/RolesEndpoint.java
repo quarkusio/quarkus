@@ -45,10 +45,11 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 public class RolesEndpoint {
 
     @Inject
-    private JsonWebToken jwtPrincipal;
+    JsonWebToken jwtPrincipal;
+
     @Inject
     @Claim("raw_token")
-    private ClaimValue<String> rawToken;
+    ClaimValue<String> rawToken;
 
     @GET
     @Path("/echo")

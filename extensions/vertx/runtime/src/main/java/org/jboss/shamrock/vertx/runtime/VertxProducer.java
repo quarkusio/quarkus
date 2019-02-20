@@ -21,6 +21,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
@@ -248,15 +249,15 @@ public class VertxProducer {
         this.conf = config;
     }
 
-    void registerMessageConsumers(List<Map<String, String>> messageConsumers) {
-        if (!messageConsumers.isEmpty()) {
+    void registerMessageConsumers(Map<String, ConsumeEvent> messageConsumerConfigurations) {
+        if (!messageConsumerConfigurations.isEmpty()) {
             EventBus eventBus = eventbus();
-            CountDownLatch latch = new CountDownLatch(messageConsumers.size());
-            for (Map<String, String> messageConsumer : messageConsumers) {
-                EventConsumerInvoker invoker = createInvoker(messageConsumer.get("invokerClazz"));
-                String address = messageConsumer.get("address");
+            CountDownLatch latch = new CountDownLatch(messageConsumerConfigurations.size());
+            for (Entry<String, ConsumeEvent> entry : messageConsumerConfigurations.entrySet()) {
+                EventConsumerInvoker invoker = createInvoker(entry.getKey());
+                String address = entry.getValue().value();
                 MessageConsumer<Object> consumer;
-                if (Boolean.valueOf(messageConsumer.get("local"))) {
+                if (entry.getValue().local()) {
                     consumer = eventBus.localConsumer(address);
                 } else {
                     consumer = eventBus.consumer(address);

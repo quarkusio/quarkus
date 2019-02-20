@@ -15,14 +15,12 @@
  */
 package org.jboss.shamrock.scheduler.runtime;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import org.jboss.shamrock.arc.runtime.BeanContainer;
 import org.jboss.shamrock.runtime.annotations.Template;
 import org.jboss.shamrock.scheduler.api.Scheduled;
-import org.jboss.shamrock.scheduler.runtime.ScheduledLiteral.Builder;
 
 /**
  *
@@ -39,14 +37,7 @@ public class SchedulerDeploymentTemplate {
     public void registerSchedules(List<Map<String, Object>> configurations, BeanContainer container) {
         SchedulerConfiguration schedulerConfig = container.instance(SchedulerConfiguration.class);
         for (Map<String, Object> config : configurations) {
-            List<Scheduled> schedules = new ArrayList<>();
-            List<Map<String, Object>> schedulesConfig = (List<Map<String, Object>>) config.get(SCHEDULES_KEY);
-            for (Map<String, Object> scheduleConfig : schedulesConfig) {
-                Builder builder = ScheduledLiteral.builder();
-                scheduleConfig.forEach((name, value) -> builder.with(name, value));
-                schedules.add(builder.build());
-            }
-            schedulerConfig.register(config.get(INVOKER_KEY).toString(), config.get(DESC_KEY).toString(), schedules);
+            schedulerConfig.register(config.get(INVOKER_KEY).toString(), config.get(DESC_KEY).toString(), (List<Scheduled>) config.get(SCHEDULES_KEY));
         }
     }
 

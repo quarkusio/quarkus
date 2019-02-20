@@ -14,6 +14,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.panache.jpa.EntityBase;
 import org.jboss.panache.jpa.JpaOperations;
+import org.jboss.panache.jpa.Query;
 import org.jboss.protean.gizmo.DescriptorUtils;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
@@ -25,6 +26,10 @@ public class PanacheJpaModelEnhancer implements BiFunction<String, ClassVisitor,
     public final static String ENTITY_BASE_NAME = EntityBase.class.getName();
     public final static String ENTITY_BASE_BINARY_NAME = ENTITY_BASE_NAME.replace('.', '/');
     public final static String ENTITY_BASE_SIGNATURE = "L"+ENTITY_BASE_BINARY_NAME+";";
+
+    public final static String QUERY_NAME = Query.class.getName();
+    public final static String QUERY_BINARY_NAME = QUERY_NAME.replace('.', '/');
+    public final static String QUERY_SIGNATURE = "L"+QUERY_BINARY_NAME+";";
 
     public final static String JPA_OPERATIONS_NAME = JpaOperations.class.getName();
     public final static String JPA_OPERATIONS_BINARY_NAME = JPA_OPERATIONS_NAME.replace('.', '/');
@@ -88,8 +93,8 @@ public class PanacheJpaModelEnhancer implements BiFunction<String, ClassVisitor,
 
             mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC,
                     "find",
-                    "(Ljava/lang/String;[Ljava/lang/Object;)Ljava/util/List;",
-                    "<T:"+ENTITY_BASE_SIGNATURE+">(Ljava/lang/String;[Ljava/lang/Object;)Ljava/util/List<TT;>;",
+                    "(Ljava/lang/String;[Ljava/lang/Object;)"+QUERY_SIGNATURE,
+                    "<T:"+ENTITY_BASE_SIGNATURE+">(Ljava/lang/String;[Ljava/lang/Object;)L"+QUERY_BINARY_NAME+"<TT;>;",
                     null);
             mv.visitParameter("query", 0);
             mv.visitParameter("params", 0);
@@ -100,22 +105,22 @@ public class PanacheJpaModelEnhancer implements BiFunction<String, ClassVisitor,
             mv.visitMethodInsn(Opcodes.INVOKESTATIC,
                     JPA_OPERATIONS_BINARY_NAME,
                     "find",
-                    "(Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/Object;)Ljava/util/List;", false);
+                    "(Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/Object;)"+QUERY_SIGNATURE, false);
             mv.visitInsn(Opcodes.ARETURN);
             mv.visitMaxs(0, 0);
             mv.visitEnd();
 
             mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC,
                     "findAll",
-                    "()Ljava/util/List;",
-                    "<T:"+ENTITY_BASE_SIGNATURE+">()Ljava/util/List<TT;>;",
+                    "()"+QUERY_SIGNATURE,
+                    "<T:"+ENTITY_BASE_SIGNATURE+">()L"+QUERY_BINARY_NAME+"<TT;>;",
                     null);
             mv.visitCode();
             mv.visitLdcInsn(thisClass);
             mv.visitMethodInsn(Opcodes.INVOKESTATIC,
                     JPA_OPERATIONS_BINARY_NAME,
                     "findAll",
-                    "(Ljava/lang/Class;)Ljava/util/List;", false);
+                    "(Ljava/lang/Class;)"+QUERY_SIGNATURE, false);
             mv.visitInsn(Opcodes.ARETURN);
             mv.visitMaxs(0, 0);
             mv.visitEnd();

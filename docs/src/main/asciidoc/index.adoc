@@ -16,6 +16,7 @@ include::protean-intro.adoc[tag=intro]
 * link:json-and-validation-guide.html[Using JSON and Validation]
 * link:scheduled-guide.html[Schedule Periodic Tasks]
 * link:websocket-guide.html[Using Websockets]
+* link:transaction-guide.html[Using Transactions]_
 * link:hibernate-orm-guide.html[Using Hibernate ORM]
 * link:rest-client-guide.html[Using REST Client]
 * link:opentracing-guide.html[Using OpenTracing]

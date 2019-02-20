@@ -37,6 +37,9 @@ import org.wildfly.security.ssl.Protocol;
 import io.quarkus.deployment.AccessorFinder;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
+import io.quarkus.deployment.builditem.BuildTimeConfigurationBuildItem;
+import io.quarkus.deployment.builditem.BuildTimeRunTimeFixedConfigurationBuildItem;
 import io.quarkus.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationCustomConverterBuildItem;
 import io.quarkus.deployment.builditem.ExtensionClassLoaderBuildItem;
@@ -45,7 +48,7 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationSourceBuildItem;
-import io.quarkus.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.configuration.ConfigDefinition;
 import io.quarkus.deployment.configuration.ConfigPatternMap;
 import io.quarkus.deployment.configuration.LeafConfigType;
@@ -60,7 +63,9 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.ApplicationPropertiesConfigSource;
+import io.quarkus.runtime.configuration.BuildTimeConfigFactory;
 import io.quarkus.runtime.configuration.CidrAddressConverter;
 import io.quarkus.runtime.configuration.ConverterFactory;
 import io.quarkus.runtime.configuration.DefaultConfigSource;
@@ -84,11 +89,20 @@ public class ConfigurationSetup {
 
     private static final Logger log = Logger.getLogger("io.quarkus.configuration");
 
-    public static final String CONFIG_HELPER = "io.quarkus.runtime.generated.ConfigHelper";
-    public static final String CONFIG_HELPER_DATA = "io.quarkus.runtime.generated.ConfigHelperData";
-    public static final String CONFIG_ROOT = "io.quarkus.runtime.generated.ConfigRoot";
+    public static final String BUILD_TIME_CONFIG = "io.quarkus.runtime.generated.BuildTimeConfig";
+    public static final String BUILD_TIME_CONFIG_ROOT = "io.quarkus.runtime.generated.BuildTimeConfigRoot";
+    public static final String RUN_TIME_CONFIG = "io.quarkus.runtime.generated.RunTimeConfig";
+    public static final String RUN_TIME_CONFIG_ROOT = "io.quarkus.runtime.generated.RunTimeConfigRoot";
 
-    public static final FieldDescriptor CONFIG_ROOT_FIELD = FieldDescriptor.of(CONFIG_HELPER_DATA, "configRoot", CONFIG_ROOT);
+    public static final MethodDescriptor CREATE_RUN_TIME_CONFIG = MethodDescriptor.ofMethod(RUN_TIME_CONFIG,
+            "getRunTimeConfiguration", void.class);
+
+    private static final FieldDescriptor RUN_TIME_CONFIG_FIELD = FieldDescriptor.of(RUN_TIME_CONFIG, "runConfig",
+            RUN_TIME_CONFIG_ROOT);
+    private static final FieldDescriptor BUILD_TIME_CONFIG_FIELD = FieldDescriptor.of(BUILD_TIME_CONFIG, "buildConfig",
+            BUILD_TIME_CONFIG_ROOT);
+    private static final FieldDescriptor CONVERTERS_FIELD = FieldDescriptor.of(BUILD_TIME_CONFIG, "converters",
+            Converter[].class);
 
     private static final MethodDescriptor NI_HAS_NEXT = MethodDescriptor.ofMethod(NameIterator.class, "hasNext", boolean.class);
     private static final MethodDescriptor NI_NEXT_EQUALS = MethodDescriptor.ofMethod(NameIterator.class, "nextSegmentEquals",
@@ -96,8 +110,8 @@ public class ConfigurationSetup {
     private static final MethodDescriptor NI_NEXT = MethodDescriptor.ofMethod(NameIterator.class, "next", void.class);
     private static final MethodDescriptor ITR_HAS_NEXT = MethodDescriptor.ofMethod(Iterator.class, "hasNext", boolean.class);
     private static final MethodDescriptor ITR_NEXT = MethodDescriptor.ofMethod(Iterator.class, "next", Object.class);
-    private static final MethodDescriptor CF_GET_CONVERTER = MethodDescriptor.ofMethod(ConverterFactory.class, "getConverter",
-            Converter.class, SmallRyeConfig.class, Class.class);
+    private static final MethodDescriptor CF_GET_IMPLICIT_CONVERTER = MethodDescriptor.ofMethod(ConverterFactory.class,
+            "getImplicitConverter", Converter.class, Class.class);
     private static final MethodDescriptor CPR_SET_INSTANCE = MethodDescriptor.ofMethod(ConfigProviderResolver.class,
             "setInstance", void.class, ConfigProviderResolver.class);
     private static final MethodDescriptor SCPR_CONSTRUCT = MethodDescriptor
@@ -111,17 +125,17 @@ public class ConfigurationSetup {
     private static final MethodDescriptor SRCB_ADD_DEFAULT_SOURCES = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class,
             "addDefaultSources", ConfigBuilder.class);
     private static final MethodDescriptor SRCB_CONSTRUCT = MethodDescriptor.ofConstructor(SmallRyeConfigBuilder.class);
-    private static final MethodDescriptor II_IN_IMAGE_BUILD = MethodDescriptor.ofMethod(ImageInfo.class, "inImageBuildtimeCode",
-            boolean.class);
     private static final MethodDescriptor II_IN_IMAGE_RUN = MethodDescriptor.ofMethod(ImageInfo.class, "inImageRuntimeCode",
             boolean.class);
     private static final MethodDescriptor SRCB_WITH_WRAPPER = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class,
             "withWrapper", SmallRyeConfigBuilder.class, UnaryOperator.class);
 
-    public static final MethodDescriptor GET_ROOT_METHOD = MethodDescriptor.ofMethod(CONFIG_HELPER, "getRoot", CONFIG_ROOT);
+    private static final MethodDescriptor BTCF_GET_CONFIG_SOURCE = MethodDescriptor.ofMethod(BuildTimeConfigFactory.class,
+            "getBuildTimeConfigSource", ConfigSource.class);
 
     private static final FieldDescriptor ECS_WRAPPER = FieldDescriptor.of(ExpandingConfigSource.class, "WRAPPER",
             UnaryOperator.class);
+    private static final String CONFIG_ROOTS_LIST = "META-INF/quarkus-config-roots.list";
 
     public ConfigurationSetup() {
     }
@@ -162,12 +176,45 @@ public class ConfigurationSetup {
      * Run before anything that consumes configuration; sets up the main configuration definition instance.
      *
      * @param converters the converters to set up
-     * @return the configuration build item
+     * @param runTimeConfigConsumer the run time config consumer
+     * @param buildTimeConfigConsumer the build time config consumer
+     * @param buildTimeRunTimeConfigConsumer the build time/run time fixed config consumer
+     * @param extensionClassLoaderBuildItem the extension class loader build item
+     * @param archiveRootBuildItem the application archive root
      */
     @BuildStep
-    public RunTimeConfigurationBuildItem initializeConfiguration(
+    public void initializeConfiguration(
             List<ConfigurationCustomConverterBuildItem> converters,
-            ExtensionClassLoaderBuildItem extensionClassLoaderBuildItem) throws IOException, ClassNotFoundException {
+            Consumer<RunTimeConfigurationBuildItem> runTimeConfigConsumer,
+            Consumer<BuildTimeConfigurationBuildItem> buildTimeConfigConsumer,
+            Consumer<BuildTimeRunTimeFixedConfigurationBuildItem> buildTimeRunTimeConfigConsumer,
+            ExtensionClassLoaderBuildItem extensionClassLoaderBuildItem,
+            ArchiveRootBuildItem archiveRootBuildItem) throws IOException, ClassNotFoundException {
+        // set up the configuration definitions
+        final ConfigDefinition buildTimeConfig = new ConfigDefinition(FieldDescriptor.of("Bogus", "No field", "Nothing"));
+        final ConfigDefinition buildTimeRunTimeConfig = new ConfigDefinition(BUILD_TIME_CONFIG_FIELD);
+        final ConfigDefinition runTimeConfig = new ConfigDefinition(RUN_TIME_CONFIG_FIELD);
+        // populate it with all known types
+        for (Class<?> clazz : ServiceUtil.classesNamedIn(extensionClassLoaderBuildItem.getExtensionClassLoader(),
+                CONFIG_ROOTS_LIST)) {
+            final ConfigRoot annotation = clazz.getAnnotation(ConfigRoot.class);
+            if (annotation == null) {
+                log.warnf("Ignoring configuration root %s because it has no annotation", clazz);
+            } else {
+                final ConfigPhase phase = annotation.phase();
+                if (phase == ConfigPhase.RUN_TIME) {
+                    runTimeConfig.registerConfigRoot(clazz);
+                } else if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
+                    buildTimeRunTimeConfig.registerConfigRoot(clazz);
+                } else if (phase == ConfigPhase.BUILD_TIME) {
+                    buildTimeConfig.registerConfigRoot(clazz);
+                } else {
+                    log.warnf("Unrecognized configuration phase \"%s\" on %s", phase, clazz);
+                }
+            }
+        }
+
+        // now prepare & load the build configuration
         SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
         // expand properties
         builder.withWrapper(ExpandingConfigSource::new);
@@ -177,15 +224,17 @@ public class ConfigurationSetup {
             withConverterHelper(builder, converter.getType(), converter.getPriority(), converter.getConverter());
         }
         final SmallRyeConfig src = (SmallRyeConfig) builder.build();
-        final ConfigDefinition configDefinition = new ConfigDefinition();
-        // populate it with all known types
-        for (Class<?> clazz : ServiceUtil.classesNamedIn(extensionClassLoaderBuildItem.getExtensionClassLoader(),
-                "META-INF/quarkus-config-roots.list")) {
-            configDefinition.registerConfigRoot(clazz);
-        }
         SmallRyeConfigProviderResolver.instance().registerConfig(src, Thread.currentThread().getContextClassLoader());
-        configDefinition.loadConfiguration(src);
-        return new RunTimeConfigurationBuildItem(configDefinition);
+        ConfigDefinition.loadConfiguration(src,
+                buildTimeConfig,
+                buildTimeRunTimeConfig,
+                runTimeConfig // this one is only for generating a default-values config source
+        );
+
+        // produce the config objects
+        runTimeConfigConsumer.accept(new RunTimeConfigurationBuildItem(runTimeConfig));
+        buildTimeRunTimeConfigConsumer.accept(new BuildTimeRunTimeFixedConfigurationBuildItem(buildTimeRunTimeConfig));
+        buildTimeConfigConsumer.accept(new BuildTimeConfigurationBuildItem(buildTimeConfig));
     }
 
     @SuppressWarnings("unchecked")
@@ -247,15 +296,16 @@ public class ConfigurationSetup {
     /**
      * Generate the bytecode to load configuration objects at static init and run time.
      *
-     * @param configurationBuildItem the config build item
+     * @param runTimeConfigItem the config build item
      * @param classConsumer the consumer of generated classes
      * @param runTimeInitConsumer the consumer of runtime init classes
      */
     @BuildStep
     void finalizeConfigLoader(
-            RunTimeConfigurationBuildItem configurationBuildItem,
+            RunTimeConfigurationBuildItem runTimeConfigItem,
+            BuildTimeRunTimeFixedConfigurationBuildItem buildTimeRunTimeConfigItem,
             Consumer<GeneratedClassBuildItem> classConsumer,
-            Consumer<RuntimeReinitializedClassBuildItem> runTimeInitConsumer,
+            Consumer<RuntimeInitializedClassBuildItem> runTimeInitConsumer,
             Consumer<BytecodeRecorderObjectLoaderBuildItem> objectLoaderConsumer,
             List<ConfigurationCustomConverterBuildItem> converters,
             List<RunTimeConfigurationSourceBuildItem> runTimeSources) {
@@ -264,43 +314,102 @@ public class ConfigurationSetup {
                 classConsumer.accept(new GeneratedClassBuildItem(false, name, data));
             }
         };
-        // Get the set of run time and static init leaf keys
-        final ConfigDefinition configDefinition = configurationBuildItem.getConfigDefinition();
 
-        final ConfigPatternMap<LeafConfigType> allLeafPatterns = configDefinition.getLeafPatterns();
-        final ConfigPatternMap<LeafConfigType> runTimePatterns = new ConfigPatternMap<>();
-        final ConfigPatternMap<LeafConfigType> staticInitPatterns = new ConfigPatternMap<>();
-        for (String childName : allLeafPatterns.childNames()) {
-            ConfigPhase phase = configDefinition.getPhaseByKey(childName);
-            if (phase.isReadAtMain()) {
-                runTimePatterns.addChild(childName, allLeafPatterns.getChild(childName));
+        // General run time setup
+
+        AccessorFinder accessorFinder = new AccessorFinder();
+
+        final ConfigDefinition runTimeConfigDef = runTimeConfigItem.getConfigDefinition();
+        final ConfigPatternMap<LeafConfigType> runTimePatterns = runTimeConfigDef.getLeafPatterns();
+
+        runTimeConfigDef.generateConfigRootClass(classOutput, accessorFinder);
+
+        final ConfigDefinition buildTimeConfigDef = buildTimeRunTimeConfigItem.getConfigDefinition();
+        final ConfigPatternMap<LeafConfigType> buildTimePatterns = buildTimeConfigDef.getLeafPatterns();
+
+        buildTimeConfigDef.generateConfigRootClass(classOutput, accessorFinder);
+
+        // Traverse all known run-time config types and ensure we have converters for them when image building runs
+        // This code is specific to native image and run time config, because the build time config is read during static init
+
+        final HashSet<Class<?>> encountered = new HashSet<>();
+        final ArrayList<Class<?>> configTypes = new ArrayList<>();
+        for (LeafConfigType item : runTimePatterns) {
+            final Class<?> typeClass = item.getItemClass();
+            if (!typeClass.isPrimitive() && encountered.add(typeClass)
+                    && ConverterFactory.getImplicitConverter(typeClass) != null) {
+                configTypes.add(typeClass);
             }
-            if (phase.isReadAtStaticInit()) {
-                staticInitPatterns.addChild(childName, allLeafPatterns.getChild(childName));
+        }
+        // stability
+        configTypes.sort(Comparator.comparing(Class::getName));
+        int converterCnt = configTypes.size();
+
+        // Build time configuration class, also holds converters
+        try (final ClassCreator cc = new ClassCreator(classOutput, BUILD_TIME_CONFIG, null, Object.class.getName())) {
+            // field to stash converters into
+            cc.getFieldCreator(CONVERTERS_FIELD).setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
+            // holder for the build-time configuration
+            cc.getFieldCreator(BUILD_TIME_CONFIG_FIELD)
+                    .setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
+
+            // static init block
+            try (MethodCreator clinit = cc.getMethodCreator("<clinit>", void.class)) {
+                clinit.setModifiers(Opcodes.ACC_STATIC);
+
+                // make implicit converters available to native image run time
+
+                final BranchResult inImageBuild = clinit.ifNonZero(clinit
+                        .invokeStaticMethod(MethodDescriptor.ofMethod(ImageInfo.class, "inImageBuildtimeCode", boolean.class)));
+                try (BytecodeCreator yes = inImageBuild.trueBranch()) {
+                    final ResultHandle array = yes.newArray(Converter.class, yes.load(converterCnt));
+                    for (int i = 0; i < converterCnt; i++) {
+                        yes.writeArrayValue(array, i,
+                                yes.invokeStaticMethod(CF_GET_IMPLICIT_CONVERTER, yes.loadClass(configTypes.get(i))));
+                    }
+                    yes.writeStaticField(CONVERTERS_FIELD, array);
+                }
+                try (BytecodeCreator no = inImageBuild.falseBranch()) {
+                    no.writeStaticField(CONVERTERS_FIELD, no.loadNull());
+                }
+
+                // create build time configuration object
+
+                final ResultHandle builder = clinit.newInstance(SRCB_CONSTRUCT);
+                // todo: custom build time converters
+                final ResultHandle array = clinit.newArray(ConfigSource[].class, clinit.load(1));
+                clinit.writeArrayValue(array, 0, clinit.invokeStaticMethod(BTCF_GET_CONFIG_SOURCE));
+
+                // create the actual config object
+                final ResultHandle config = clinit.checkCast(clinit.invokeVirtualMethod(SRCB_BUILD, builder),
+                        SmallRyeConfig.class);
+
+                // create the config root
+                clinit.writeStaticField(BUILD_TIME_CONFIG_FIELD, clinit
+                        .newInstance(MethodDescriptor.ofConstructor(BUILD_TIME_CONFIG_ROOT, SmallRyeConfig.class), config));
+
+                // write out the parsing for the stored build time config
+                writeParsing(cc, clinit, config, buildTimePatterns);
+
+                clinit.returnValue(null);
             }
         }
 
-        AccessorFinder accessorMaker = new AccessorFinder();
+        // Run time configuration class
+        try (final ClassCreator cc = new ClassCreator(classOutput, RUN_TIME_CONFIG, null, Object.class.getName())) {
+            // holder for the run-time configuration
+            cc.getFieldCreator(RUN_TIME_CONFIG_FIELD)
+                    .setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_VOLATILE);
 
-        configDefinition.generateConfigRootClass(classOutput, accessorMaker);
-
-        final FieldDescriptor convertersField;
-        // This must be a separate class, because CONFIG_HELPER is re-initialized at run time (native image).
-        try (final ClassCreator cc = new ClassCreator(classOutput, CONFIG_HELPER_DATA, null, Object.class.getName())) {
-            convertersField = cc.getFieldCreator("$CONVERTERS", Converter[].class)
-                    .setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_VOLATILE).getFieldDescriptor();
-            cc.getFieldCreator(CONFIG_ROOT_FIELD).setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_VOLATILE)
-                    .getFieldDescriptor();
-        }
-
-        try (final ClassCreator cc = new ClassCreator(classOutput, CONFIG_HELPER, null, Object.class.getName())) {
-            final MethodDescriptor createAndRegisterConfig;
             // config object initialization
-            // this has to be on the static init class, which is visible at both static init and execution time
-            try (MethodCreator carc = cc.getMethodCreator("createAndRegisterConfig", SmallRyeConfig.class)) {
-                carc.setModifiers(Opcodes.ACC_STATIC);
+            try (MethodCreator carc = cc.getMethodCreator(ConfigurationSetup.CREATE_RUN_TIME_CONFIG)) {
+                carc.setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC);
+
+                // create run time configuration object
                 final ResultHandle builder = carc.newInstance(SRCB_CONSTRUCT);
                 carc.invokeVirtualMethod(SRCB_ADD_DEFAULT_SOURCES, builder);
+
+                // custom run time sources
                 final int size = runTimeSources.size();
                 if (size > 0) {
                     final ResultHandle arrayHandle = carc.newArray(ConfigSource[].class, carc.load(size));
@@ -321,6 +430,8 @@ public class ConfigurationSetup {
                             builder,
                             arrayHandle);
                 }
+
+                // custom run time converters
                 for (ConfigurationCustomConverterBuildItem converter : converters) {
                     carc.invokeVirtualMethod(
                             SRCB_WITH_CONVERTER,
@@ -329,32 +440,16 @@ public class ConfigurationSetup {
                             carc.load(converter.getPriority()),
                             carc.newInstance(MethodDescriptor.ofConstructor(converter.getConverter())));
                 }
-                // todo: add custom sources
+
+                // property expansion
                 final ResultHandle wrapper = carc.readStaticField(ECS_WRAPPER);
                 carc.invokeVirtualMethod(SRCB_WITH_WRAPPER, builder, wrapper);
 
-                // Traverse all known config types and ensure we have converters for them when image building runs
-                // This code is specific to native image
-
-                HashSet<Class<?>> encountered = new HashSet<>();
-                ArrayList<Class<?>> configTypes = new ArrayList<>();
-                for (LeafConfigType item : allLeafPatterns) {
-                    final Class<?> typeClass = item.getItemClass();
-                    if (!typeClass.isPrimitive() && encountered.add(typeClass)) {
-                        configTypes.add(typeClass);
-                    }
-                }
-                // stability
-                configTypes.sort(Comparator.comparing(Class::getName));
-                int cnt = configTypes.size();
-
-                // At image runtime, load the converters array and register it with the config builder
-                // This code is specific to native image
-
+                // write out loader for converter types
                 final BranchResult imgRun = carc.ifNonZero(carc.invokeStaticMethod(II_IN_IMAGE_RUN));
                 try (BytecodeCreator inImageRun = imgRun.trueBranch()) {
-                    final ResultHandle array = inImageRun.readStaticField(convertersField);
-                    for (int i = 0; i < cnt; i++) {
+                    final ResultHandle array = inImageRun.readStaticField(CONVERTERS_FIELD);
+                    for (int i = 0; i < converterCnt; i++) {
                         // implicit converters will have a priority of 100.
                         inImageRun.invokeVirtualMethod(
                                 SRCB_WITH_CONVERTER,
@@ -371,56 +466,19 @@ public class ConfigurationSetup {
                 final ResultHandle providerResolver = carc.newInstance(SCPR_CONSTRUCT, config);
                 carc.invokeStaticMethod(CPR_SET_INSTANCE, providerResolver);
 
-                // At image build time, record all the implicit converts and store them in the converters array
-                // This actually happens before the above `if` block, despite necessarily coming later in the method sequence
-                // This code is specific to native image
+                // create the config root
+                carc.writeStaticField(RUN_TIME_CONFIG_FIELD,
+                        carc.newInstance(MethodDescriptor.ofConstructor(RUN_TIME_CONFIG_ROOT, SmallRyeConfig.class), config));
 
-                final BranchResult imgBuild = carc.ifNonZero(carc.invokeStaticMethod(II_IN_IMAGE_BUILD));
-                try (BytecodeCreator inImageBuild = imgBuild.trueBranch()) {
-                    final ResultHandle array = inImageBuild.newArray(Converter.class, inImageBuild.load(cnt));
-                    for (int i = 0; i < cnt; i++) {
-                        inImageBuild.writeArrayValue(array, i, inImageBuild.invokeStaticMethod(CF_GET_CONVERTER, config,
-                                inImageBuild.loadClass(configTypes.get(i))));
-                    }
-                    inImageBuild.writeStaticField(convertersField, array);
-                }
+                writeParsing(cc, carc, config, runTimePatterns);
 
-                carc.returnValue(carc.checkCast(config, SmallRyeConfig.class));
-                createAndRegisterConfig = carc.getMethodDescriptor();
-            }
-
-            // helper to ensure the config is instantiated before it is read
-            try (MethodCreator getRoot = cc.getMethodCreator("getRoot", CONFIG_ROOT)) {
-                getRoot.setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_PUBLIC);
-
-                getRoot.returnValue(getRoot.readStaticField(CONFIG_ROOT_FIELD));
-            }
-
-            // static init block
-            try (MethodCreator ccInit = cc.getMethodCreator("<clinit>", void.class)) {
-                ccInit.setModifiers(Opcodes.ACC_STATIC);
-
-                // write out the parsing
-                final BranchResult ccIfImage = ccInit.ifNonZero(ccInit
-                        .invokeStaticMethod(MethodDescriptor.ofMethod(ImageInfo.class, "inImageRuntimeCode", boolean.class)));
-                try (BytecodeCreator ccIsNotImage = ccIfImage.falseBranch()) {
-                    // common case: JVM mode, or image-building initialization
-                    final ResultHandle mccConfig = ccIsNotImage.invokeStaticMethod(createAndRegisterConfig);
-                    ccIsNotImage.newInstance(MethodDescriptor.ofConstructor(CONFIG_ROOT, SmallRyeConfig.class), mccConfig);
-                    writeParsing(cc, ccIsNotImage, mccConfig, staticInitPatterns);
-                }
-                try (BytecodeCreator ccIsImage = ccIfImage.trueBranch()) {
-                    // native image run time only (class reinitialization)
-                    final ResultHandle mccConfig = ccIsImage.invokeStaticMethod(createAndRegisterConfig);
-                    writeParsing(cc, ccIsImage, mccConfig, runTimePatterns);
-                }
-                ccInit.returnValue(null);
+                carc.returnValue(null);
             }
         }
 
         objectLoaderConsumer.accept(new BytecodeRecorderObjectLoaderBuildItem(new ObjectLoader() {
             public ResultHandle load(final BytecodeCreator body, final Object obj) {
-                final ConfigDefinition.RootInfo rootInfo = configDefinition.getInstanceInfo(obj);
+                final ConfigDefinition.RootInfo rootInfo = runTimeConfigDef.getInstanceInfo(obj);
                 if (rootInfo == null)
                     return null;
 
@@ -431,12 +489,12 @@ public class ConfigurationSetup {
                     throw new IllegalStateException(msg);
                 }
                 final FieldDescriptor fieldDescriptor = rootInfo.getFieldDescriptor();
-                final ResultHandle configRoot = body.invokeStaticMethod(GET_ROOT_METHOD);
+                final ResultHandle configRoot = body.readStaticField(RUN_TIME_CONFIG_FIELD);
                 return body.readInstanceField(fieldDescriptor, configRoot);
             }
         }));
 
-        runTimeInitConsumer.accept(new RuntimeReinitializedClassBuildItem(CONFIG_HELPER));
+        runTimeInitConsumer.accept(new RuntimeInitializedClassBuildItem(RUN_TIME_CONFIG));
     }
 
     private void writeParsing(final ClassCreator cc, final BytecodeCreator body, final ResultHandle config,

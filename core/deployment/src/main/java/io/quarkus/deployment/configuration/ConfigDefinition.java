@@ -1,7 +1,5 @@
 package io.quarkus.deployment.configuration;
 
-import static io.quarkus.deployment.steps.ConfigurationSetup.CONFIG_ROOT;
-import static io.quarkus.deployment.steps.ConfigurationSetup.CONFIG_ROOT_FIELD;
 import static io.quarkus.deployment.util.ReflectUtil.rawTypeOf;
 import static io.quarkus.deployment.util.ReflectUtil.rawTypeOfParameter;
 import static io.quarkus.deployment.util.ReflectUtil.typeOfParameter;
@@ -29,6 +27,7 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.TreeMap;
 
+import org.jboss.logging.Logger;
 import org.objectweb.asm.Opcodes;
 import org.wildfly.common.Assert;
 
@@ -36,6 +35,7 @@ import io.quarkus.deployment.AccessorFinder;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo.DescriptorUtils;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
@@ -52,6 +52,8 @@ import io.smallrye.config.SmallRyeConfig;
  * has a root which recursively contains all of the elements within the configuration.
  */
 public class ConfigDefinition extends CompoundConfigType {
+    private static final Logger log = Logger.getLogger("io.quarkus.config");
+
     public static final String NO_CONTAINING_NAME = "<<ignored>>";
 
     private final TreeMap<String, Object> rootObjectsByContainingName = new TreeMap<>();
@@ -59,10 +61,12 @@ public class ConfigDefinition extends CompoundConfigType {
     private final ConfigPatternMap<LeafConfigType> leafPatterns = new ConfigPatternMap<>();
     private final IdentityHashMap<Object, ValueInfo> realizedInstances = new IdentityHashMap<>();
     private final TreeMap<String, RootInfo> rootTypesByContainingName = new TreeMap<>();
-    private final TreeMap<String, RootInfo> rootTypesByKey = new TreeMap<>();
+    private final FieldDescriptor rootField;
 
-    public ConfigDefinition() {
+    public ConfigDefinition(final FieldDescriptor rootField) {
         super(null, null, false);
+        Assert.checkNotNullParam("rootField", rootField);
+        this.rootField = rootField;
     }
 
     void acceptConfigurationValueIntoLeaf(final LeafConfigType leafType, final NameIterator name, final SmallRyeConfig config) {
@@ -90,7 +94,7 @@ public class ConfigDefinition extends CompoundConfigType {
     }
 
     ResultHandle generateGetOrCreate(final BytecodeCreator body, final ResultHandle name, final ResultHandle config) {
-        return body.readStaticField(CONFIG_ROOT_FIELD);
+        return body.readStaticField(rootField);
     }
 
     void setChildObject(final NameIterator name, final Object self, final String childName, final Object value) {
@@ -128,11 +132,12 @@ public class ConfigDefinition extends CompoundConfigType {
         loadFrom(leafPatterns);
     }
 
-    public void initialize(SmallRyeConfig config) {
-        for (Map.Entry<String, RootInfo> entry : rootTypesByKey.entrySet()) {
-            final String key = entry.getKey();
+    public void initialize(final SmallRyeConfig config) {
+        for (Map.Entry<String, RootInfo> entry : rootTypesByContainingName.entrySet()) {
             final RootInfo rootInfo = entry.getValue();
-            rootInfo.getRootType().getOrCreate(new NameIterator(key, true), config);
+            // name iterator and config are always ignored because no root types are ever stored in a map node and no conversion is ever done
+            // TODO: make a separate create method for root types just to avoid this kind of thing
+            rootInfo.getRootType().getOrCreate(new NameIterator("ignored", true), config);
         }
     }
 
@@ -161,10 +166,10 @@ public class ConfigDefinition extends CompoundConfigType {
             throw reportError(configRoot, "Duplicate configuration root name \"" + containingName + "\"");
         final GroupConfigType configGroup = processConfigGroup(containingName, this, true, rootName, configRoot,
                 accessorFinder);
-        final RootInfo rootInfo = new RootInfo(configRoot, configGroup,
-                FieldDescriptor.of(CONFIG_ROOT, containingName, Object.class), configPhase);
+        final RootInfo rootInfo = new RootInfo(configRoot, configGroup, FieldDescriptor
+                .of(DescriptorUtils.getTypeStringFromDescriptorFormat(rootField.getType()), containingName, Object.class),
+                configPhase);
         rootTypesByContainingName.put(containingName, rootInfo);
-        rootTypesByKey.put(rootName, rootInfo);
     }
 
     private GroupConfigType processConfigGroup(final String containingName, final CompoundConfigType container,
@@ -313,7 +318,8 @@ public class ConfigDefinition extends CompoundConfigType {
     }
 
     public void generateConfigRootClass(ClassOutput classOutput, AccessorFinder accessorFinder) {
-        try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput).className(CONFIG_ROOT).superClass(Object.class)
+        try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput)
+                .className(DescriptorUtils.getTypeStringFromDescriptorFormat(rootField.getType())).superClass(Object.class)
                 .build()) {
             try (MethodCreator ctor = cc.getMethodCreator("<init>", void.class, SmallRyeConfig.class)) {
                 ctor.setModifiers(Opcodes.ACC_PUBLIC);
@@ -321,7 +327,7 @@ public class ConfigDefinition extends CompoundConfigType {
                 final ResultHandle config = ctor.getMethodParam(0);
                 ctor.invokeSpecialMethod(MethodDescriptor.ofConstructor(Object.class), self);
                 // early publish of self
-                ctor.writeStaticField(CONFIG_ROOT_FIELD, self);
+                ctor.writeStaticField(rootField, self);
                 // initialize all fields to defaults
                 for (RootInfo value : rootTypesByContainingName.values()) {
                     if (value.getConfigPhase().isAvailableAtRun()) {
@@ -338,25 +344,23 @@ public class ConfigDefinition extends CompoundConfigType {
         }
     }
 
-    public void loadConfiguration(SmallRyeConfig config) {
-        initialize(config);
-        for (String propertyName : config.getPropertyNames()) {
+    public static void loadConfiguration(SmallRyeConfig config, ConfigDefinition... definitions) {
+        for (ConfigDefinition definition : definitions) {
+            definition.initialize(config);
+        }
+        outer: for (String propertyName : config.getPropertyNames()) {
             final NameIterator name = new NameIterator(propertyName);
             if (name.hasNext() && name.nextSegmentEquals("quarkus")) {
                 name.next();
-                final LeafConfigType leafType = leafPatterns.match(name);
-                if (leafType != null) {
-                    name.goToEnd();
-                    leafType.acceptConfigurationValue(name, config);
-                } else {
-                    // TODO: log.warnf("Unknown configuration key \"%s\" provided", propertyName);
+                for (ConfigDefinition definition : definitions) {
+                    final LeafConfigType leafType = definition.leafPatterns.match(name);
+                    if (leafType != null) {
+                        name.goToEnd();
+                        leafType.acceptConfigurationValue(name, config);
+                        continue outer;
+                    }
                 }
-            }
-        }
-        // now, ensure all roots are instantiated
-        for (Map.Entry<String, RootInfo> entry : rootTypesByContainingName.entrySet()) {
-            if (entry.getValue().getConfigPhase().isAvailableAtRun()) {
-                entry.getValue().getRootType().getOrCreate(new NameIterator(entry.getKey(), true), config);
+                log.warnf("Unrecognized configuration key \"%s\" provided", propertyName);
             }
         }
     }
@@ -377,13 +381,6 @@ public class ConfigDefinition extends CompoundConfigType {
         for (String name : map.childNames()) {
             loadFrom(map.getChild(name));
         }
-    }
-
-    public ConfigPhase getPhaseByKey(final String key) {
-        final RootInfo rootInfo = rootTypesByKey.get(key);
-        if (rootInfo == null)
-            throw new IllegalArgumentException("Unknown root key: " + key);
-        return rootInfo.getConfigPhase();
     }
 
     public Object getRealizedInstance(final Class<?> rootClass) {

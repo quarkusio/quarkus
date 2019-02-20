@@ -5,8 +5,6 @@ import java.lang.reflect.Method;
 
 import org.eclipse.microprofile.config.spi.Converter;
 
-import io.smallrye.config.SmallRyeConfig;
-
 /**
  * A factory to acquire a converter for a given type.
  *
@@ -14,21 +12,22 @@ import io.smallrye.config.SmallRyeConfig;
  */
 @Deprecated
 public final class ConverterFactory {
-    static final Method getConverter;
+    static final Method getImplicitConverter;
 
     static {
         try {
-            getConverter = SmallRyeConfig.class.getDeclaredMethod("getConverter", Class.class);
-            getConverter.setAccessible(true);
-        } catch (NoSuchMethodException e) {
+            getImplicitConverter = Class.forName("io.smallrye.config.ImplicitConverters").getDeclaredMethod("getConverter",
+                    Class.class);
+            getImplicitConverter.setAccessible(true);
+        } catch (NoSuchMethodException | ClassNotFoundException e) {
             throw reflectionFailure(e);
         }
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> Converter<T> getConverter(final SmallRyeConfig smallRyeConfig, final Class<T> itemClass) {
+    public static <T> Converter<T> getImplicitConverter(final Class<T> itemClass) {
         try {
-            return (Converter<T>) getConverter.invoke(smallRyeConfig, itemClass);
+            return (Converter<T>) getImplicitConverter.invoke(null, itemClass);
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw reflectionFailure(e);
         }

@@ -188,6 +188,10 @@ class MainClassBuildStep {
         startupContext = mv.readStaticField(scField.getFieldDescriptor());
 
         tryBlock = mv.tryBlock();
+
+        // Load the run time configuration
+        tryBlock.invokeStaticMethod(ConfigurationSetup.CREATE_RUN_TIME_CONFIG);
+
         for (MainBytecodeRecorderBuildItem holder : mainMethod) {
             final BytecodeRecorderImpl recorder = holder.getBytecodeRecorder();
             if (!recorder.isEmpty()) {

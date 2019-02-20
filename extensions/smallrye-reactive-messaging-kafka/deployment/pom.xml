@@ -6,11 +6,11 @@
 
     <parent>
         <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-reactive-messaging</artifactId>
+        <artifactId>shamrock-smallrye-reactive-messaging-kafka</artifactId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>shamrock-reactive-messaging-kafka-connector-deployment</artifactId>
+    <artifactId>shamrock-smallrye-reactive-messaging-kafka-deployment</artifactId>
 
     <dependencies>
         <dependency>
@@ -23,9 +23,15 @@
         </dependency>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-reactive-messaging-kafka-connector-runtime</artifactId>
-            <!-- TODO Write in BOM -->
-            <version>${project.version}</version>
+            <artifactId>shamrock-kafka-client-deployment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-smallrye-reactive-messaging-kafka-runtime</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-vertx-deployment</artifactId>
         </dependency>
 
         <dependency>

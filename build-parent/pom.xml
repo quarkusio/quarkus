@@ -125,6 +125,11 @@
       <test-containers.version>1.10.6</test-containers.version>
       <jboss-logging.version>3.3.2.Final</jboss-logging.version>
       <vertx-axle-client.version>0.0.1</vertx-axle-client.version>
+      <kafka-clients.version>1.1.0</kafka-clients.version>
+      <kafka2.version>1.1.0</kafka2.version>
+      <debezium.version>0.8.3.Final</debezium.version>
+      <zookeeper.version>3.4.10</zookeeper.version>
+      <scala.version>2.12.2</scala.version>
    </properties>
 
    <dependencyManagement>
@@ -227,6 +232,16 @@
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-jdbc-mariadb-runtime</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-kafka-client-deployment</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-kafka-client-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
@@ -515,6 +530,16 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-smallrye-reactive-messaging-kafka-deployment</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-smallrye-reactive-messaging-kafka-runtime</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-spring-di-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
@@ -618,6 +643,11 @@
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}</version>
          </dependency>
+          <dependency>
+              <groupId>com.fasterxml.jackson.core</groupId>
+              <artifactId>jackson-core</artifactId>
+              <version>${jackson.version}</version>
+          </dependency>
          <dependency>
             <groupId>com.sun.activation</groupId>
             <artifactId>jakarta.activation</artifactId>
@@ -707,6 +737,30 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
+         <dependency>
+            <groupId>io.debezium</groupId>
+            <artifactId>debezium-core</artifactId>
+            <version>${debezium.version}</version>
+            <scope>test</scope>
+         </dependency>
+         <dependency>
+            <groupId>io.debezium</groupId>
+            <artifactId>debezium-core</artifactId>
+            <version>${debezium.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+         </dependency>
+         <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-reflect</artifactId>
+            <version>${scala.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>${scala.version}</version>
+         </dependency>
          <dependency>
             <groupId>io.undertow</groupId>
             <artifactId>undertow-servlet</artifactId>
@@ -858,6 +912,22 @@
             <artifactId>httpcore</artifactId>
             <version>${httpcore.version}</version>
          </dependency>
+         <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>${kafka-clients.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka_2.12</artifactId>
+            <version>${kafka2.version}</version>
+            <scope>test</scope>
+         </dependency>
+          <dependency>
+              <groupId>org.apache.zookeeper</groupId>
+              <artifactId>zookeeper</artifactId>
+              <version>${zookeeper.version}</version>
+          </dependency>
          <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>

@@ -69,6 +69,13 @@
 
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-kafka-client-deployment</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+         </dependency>
+
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-smallrye-health-deployment</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
@@ -98,6 +105,12 @@
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-smallrye-reactive-messaging-deployment</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-smallrye-reactive-messaging-kafka-deployment</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
          </dependency>

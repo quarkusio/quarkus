@@ -10,8 +10,8 @@
    </parent>
 
    <modelVersion>4.0.0</modelVersion>
-   <artifactId>shamrock-smallrye-reactive-messaging</artifactId>
-   <name>Shamrock - SmallRye Reactive Messaging</name>
+   <artifactId>shamrock-kafka-client</artifactId>
+   <name>Shamrock - Kafka - Client</name>
    <packaging>pom</packaging>
 
    <modules>

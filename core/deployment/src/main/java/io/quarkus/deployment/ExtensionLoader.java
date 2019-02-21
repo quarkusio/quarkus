@@ -450,6 +450,10 @@ public final class ExtensionLoader {
             }
 
             if (methodConsumingConfigPhases.contains(ConfigPhase.RUN_TIME)) {
+                if (isRecorder && recordAnnotation.value() == ExecutionTime.STATIC_INIT) {
+                    throw reportError(method,
+                            "Bytecode recorder is static but an injected config object is declared as run time");
+                }
                 methodStepConfig = methodStepConfig
                         .andThen(bsb -> bsb.consumes(RunTimeConfigurationBuildItem.class));
             }

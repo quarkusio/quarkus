@@ -84,6 +84,14 @@ public final class TestProcessor {
         if(buildTimeConfig.allValues.longPrimitive != 1234567891L) {
             throw new IllegalStateException("buildTimeConfig.allValues.longPrimitive != 1234567891L; "+buildTimeConfig.allValues.longPrimitive);
         }
+        // shamrock.bt.all-values.double-primitive=3.1415926535897932384
+        if(Math.IEEEremainder(buildTimeConfig.allValues.doublePrimitive, 3.1415926535897932384) != 0) {
+            throw new IllegalStateException("buildTimeConfig.allValues.doublePrimitive != 3.1415926535897932384; "+buildTimeConfig.allValues.doublePrimitive);
+        }
+        // shamrock.bt.all-values.opt-double-value=3.1415926535897932384
+        if(Math.IEEEremainder(buildTimeConfig.allValues.optDoubleValue.getAsDouble(), 3.1415926535897932384) != 0) {
+            throw new IllegalStateException("buildTimeConfig.allValues.optDoubleValue != 3.1415926535897932384; "+buildTimeConfig.allValues.optDoubleValue);
+        }
         if(buildTimeConfig.allValues.longValue != 1234567892L) {
             throw new IllegalStateException("buildTimeConfig.allValues.longValue != 1234567892L; "+buildTimeConfig.allValues.longValue);
         }
@@ -95,6 +103,26 @@ public final class TestProcessor {
         }
         if(buildTimeConfig.allValues.nestedConfigMap.size() != 2) {
             throw new IllegalStateException("buildTimeConfig.allValues.simpleMap.size != 2; "+buildTimeConfig.allValues.nestedConfigMap.size());
+        }
+        //shamrock.bt.all-values.string-list=value1,value2
+        if(buildTimeConfig.allValues.stringList.size() != 2) {
+            throw new IllegalStateException("buildTimeConfig.allValues.stringList.size != 2; "+buildTimeConfig.allValues.stringList.size());
+        }
+        if(!buildTimeConfig.allValues.stringList.get(0).equals("value1")) {
+            throw new IllegalStateException("buildTimeConfig.allValues.stringList[0] != value1; "+buildTimeConfig.allValues.stringList.get(0));
+        }
+        if(!buildTimeConfig.allValues.stringList.get(1).equals("value2")) {
+            throw new IllegalStateException("buildTimeConfig.allValues.stringList[1] != value2; "+buildTimeConfig.allValues.stringList.get(1));
+        }
+        // shamrock.rt.all-values.long-list=1,2,3
+        if(buildTimeConfig.allValues.longList.size() != 3) {
+            throw new IllegalStateException("buildTimeConfig.allValues.longList.size != 3; "+buildTimeConfig.allValues.longList.size());
+        }
+        if(buildTimeConfig.allValues.longList.get(0) != 1) {
+            throw new IllegalStateException("buildTimeConfig.allValues.longList[0] != 1; "+buildTimeConfig.allValues.longList.get(0));
+        }
+        if(buildTimeConfig.allValues.longList.get(2) != 3) {
+            throw new IllegalStateException("buildTimeConfig.allValues.longList[2] != 3; "+buildTimeConfig.allValues.longList.get(2));
         }
     }
 

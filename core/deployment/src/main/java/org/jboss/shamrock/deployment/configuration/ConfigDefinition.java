@@ -208,7 +208,7 @@ public class ConfigDefinition extends CompoundConfigType {
                 // list leaf class
                 final LeafConfigType leaf;
                 final Class<?> listType = rawTypeOfParameter(fieldType, 0);
-                gct.addField(leaf = new ObjectListConfigType(field.getName(), gct, consume, defaultValue.equals(ConfigItem.NO_DEFAULT) ? "" : defaultValue, listType));
+                gct.addField(leaf = new ObjectListConfigType(field.getName(), gct, consume, mapDefaultValue(defaultValue, listType), listType));
                 container.getConfigDefinition().getLeafPatterns().addPattern(subKey, leaf);
             } else if (fieldClass == Optional.class) {
                 final LeafConfigType leaf;

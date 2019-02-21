@@ -50,6 +50,12 @@ public class ConfiguredBeanTest {
         Assertions.assertEquals("btStringOptValue", buildTimeConfig.btStringOpt,
                                 "buildTimeConfig.btStringOpt != btStringOptValue; "+buildTimeConfig.btStringOpt);
 
+        // shamrock.btrt.all-values.double-primitive=3.1415926535897932384
+        Assertions.assertEquals(3.1415926535897932384, buildTimeConfig.allValues.doublePrimitive, 0.00000001);
+        // shamrock.btrt.all-values.opt-double-value=3.1415926535897932384
+        Assertions.assertTrue(buildTimeConfig.allValues.optDoubleValue.isPresent(), "runTimeConfig.allValues.optDoubleValue.isPresent");
+        Assertions.assertEquals(3.1415926535897932384, buildTimeConfig.allValues.optDoubleValue.getAsDouble(), 0.00000001);
+
         if(!buildTimeConfig.btStringOptWithDefault.equals("btStringOptWithDefaultValue")) {
             throw new IllegalStateException("buildTimeConfig.btStringOptWithDefault != btStringOptWithDefaultValue; "+buildTimeConfig.btStringOptWithDefault);
         }
@@ -107,6 +113,20 @@ public class ConfiguredBeanTest {
         // shamrock.rt.all-values.optional-long-value=12345678941
         Assertions.assertTrue(runTimeConfig.allValues.optionalLongValue.isPresent(), "runTimeConfig.allValues.optionalLongValue.isPresent");
         Assertions.assertEquals(12345678941l, runTimeConfig.allValues.optionalLongValue.get().longValue());
+        // shamrock.btrt.all-values.double-primitive=3.1415926535897932384
+        Assertions.assertEquals(3.1415926535897932384, runTimeConfig.allValues.doublePrimitive, 0.00000001);
+        // shamrock.btrt.all-values.opt-double-value=3.1415926535897932384
+        Assertions.assertTrue(runTimeConfig.allValues.optDoubleValue.isPresent(), "runTimeConfig.allValues.optDoubleValue.isPresent");
+        Assertions.assertEquals(3.1415926535897932384, runTimeConfig.allValues.optDoubleValue.getAsDouble(), 0.00000001);
+        // shamrock.rt.all-values.string-list=value1,value2
+        Assertions.assertEquals(2, runTimeConfig.allValues.stringList.size());
+        Assertions.assertEquals("value1", runTimeConfig.allValues.stringList.get(0));
+        Assertions.assertEquals("value2", runTimeConfig.allValues.stringList.get(1));
+        // shamrock.rt.all-values.long-list=1,2,3
+        Assertions.assertEquals(3, runTimeConfig.allValues.longList.size());
+        Assertions.assertEquals(1, runTimeConfig.allValues.longList.get(0).longValue());
+        Assertions.assertEquals(2, runTimeConfig.allValues.longList.get(1).longValue());
+        Assertions.assertEquals(3, runTimeConfig.allValues.longList.get(2).longValue());
     }
 
     /**

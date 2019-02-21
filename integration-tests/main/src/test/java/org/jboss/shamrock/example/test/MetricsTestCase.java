@@ -35,6 +35,22 @@ public class MetricsTestCase {
         testCounted("1.0");
     }
 
+    @Test
+    public void testScopes() {
+        RestAssured.when().get("/metrics/base").then().statusCode(200);
+        RestAssured.when().get("/metrics/vendor").then().statusCode(200);
+        RestAssured.when().get("/metrics/application").then().statusCode(200);
+        RestAssured.when().get("/metrics/vendor/memory.heap.usage").then().statusCode(200);
+    }
+
+    @Test
+    public void testInvalidScopes() {
+        RestAssured.when().get("/metrics/foo").then().statusCode(404)
+                .body(containsString("Bad scope requested"));
+        RestAssured.when().get("/metrics/vendor/foo").then().statusCode(404)
+                .body(containsString("Metric vendor/foo not found"));
+    }
+
     private void testCounted(String val) {
         RestAssured.when().get("/metrics").then()
                 .body(containsString("application:org_jboss_shamrock_example_metrics_metrics_resource_a_counted_resource " + val));

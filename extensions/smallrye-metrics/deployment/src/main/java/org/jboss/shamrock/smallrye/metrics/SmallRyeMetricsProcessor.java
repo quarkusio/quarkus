@@ -73,7 +73,7 @@ public class SmallRyeMetricsProcessor {
     @BuildStep
     ServletBuildItem createServlet() {
         ServletBuildItem servletBuildItem = new ServletBuildItem("metrics", SmallRyeMetricsServlet.class.getName());
-        servletBuildItem.getMappings().add(metrics.path);
+        servletBuildItem.getMappings().add(metrics.path + (metrics.path.endsWith("/") ? "*" : "/*"));
         return servletBuildItem;
     }
 

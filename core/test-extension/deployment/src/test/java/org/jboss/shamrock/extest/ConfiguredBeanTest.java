@@ -108,6 +108,10 @@ public class ConfiguredBeanTest {
         Assertions.assertTrue(runTimeConfig.allValues.optionalLongValue.isPresent(), "runTimeConfig.allValues.optionalLongValue.isPresent");
         Assertions.assertEquals(12345678941l, runTimeConfig.allValues.optionalLongValue.get().longValue());
     }
+
+    /**
+     * Break out the validation of the RUN_TIME config nested map as that currently is not working.
+     */
     @Test
     @Disabled("https://github.com/jbossas/protean-shamrock/issues/956")
     public void validateRuntimeConfigMap() {

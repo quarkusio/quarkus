@@ -379,6 +379,8 @@ public class ConfigurationSetup {
                 // todo: custom build time converters
                 final ResultHandle array = clinit.newArray(ConfigSource[].class, clinit.load(1));
                 clinit.writeArrayValue(array, 0, clinit.invokeStaticMethod(BTCF_GET_CONFIG_SOURCE));
+                // add default sources, which are only visible during static init
+                clinit.invokeVirtualMethod(SRCB_ADD_DEFAULT_SOURCES, builder);
 
                 // create the actual config object
                 final ResultHandle config = clinit.checkCast(clinit.invokeVirtualMethod(SRCB_BUILD, builder),

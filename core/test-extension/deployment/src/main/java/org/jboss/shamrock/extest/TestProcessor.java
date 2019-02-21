@@ -17,6 +17,7 @@ import org.jboss.shamrock.deployment.annotations.ExecutionTime;
 import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.LaunchModeBuildItem;
+import org.jboss.shamrock.deployment.builditem.ObjectSubstitutionBuildItem;
 import org.jboss.shamrock.deployment.builditem.ServiceStartBuildItem;
 
 import static org.jboss.shamrock.deployment.annotations.ExecutionTime.RUNTIME_INIT;
@@ -29,6 +30,7 @@ public final class TestProcessor {
     static DotName TEST_ANNOTATION = DotName.createSimple(TestAnnotation.class.getName());
 
     TestBuildTimeConfig buildTimeConfig;
+    TestBuildAndRunTimeConfig buildAndRunTimeConfig;
     TestRunTimeConfig runTimeConfig;
 
     /**
@@ -49,9 +51,15 @@ public final class TestProcessor {
         return new BeanDefiningAnnotationBuildItem(TEST_ANNOTATION);
     }
 
+    @BuildStep
+    ObjectSubstitutionBuildItem registerObjSubs() {
+        ObjectSubstitutionBuildItem.Holder holder = new ObjectSubstitutionBuildItem.Holder(TestBuildAndRunTimeConfig.class, TestBuildAndRunTimeConfig.class, TestBTRTObjSub.class);
+
+        return new ObjectSubstitutionBuildItem(holder);
+    }
+
     /**
-     * Validate the expected configuration objects
-     * TODO: move validation to unit test code
+     * Validate the expected BUILD_TIME configuration
      */
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
@@ -96,16 +104,6 @@ public final class TestProcessor {
         if(buildTimeConfig.allValues.nestedConfigMap.size() != 2) {
             throw new IllegalStateException("buildTimeConfig.allValues.simpleMap.size != 2; "+buildTimeConfig.allValues.nestedConfigMap.size());
         }
-
-        // Runtime configuration
-        /* These fail as the config values are set. Was not expecting that.
-        if(runTimeConfig.rtStringOpt != null) {
-            throw new IllegalStateException("runTimeConfig.rtStringOpt != null; "+runTimeConfig.rtStringOpt);
-        }
-        if(!runTimeConfig.allValues.optionalLongValue.isPresent()) {
-            throw new IllegalStateException("runTimeConfig.allValues.optionalLongValue.isPresent; "+runTimeConfig.allValues.optionalLongValue.get());
-        }
-        */
     }
 
     /**
@@ -123,7 +121,7 @@ public final class TestProcessor {
             ClassInfo beanClassInfo = ann.target().asClass();
             try {
                 Class<IConfigConsumer> beanClass = (Class<IConfigConsumer>) Class.forName(beanClassInfo.name().toString());
-                BeanContainerListener listener = template.configureBeans(beanClass, buildTimeConfig, runTimeConfig);
+                BeanContainerListener listener = template.configureBeans(beanClass, buildAndRunTimeConfig, runTimeConfig);
                 listeners.produce(new BeanContainerListenerBuildItem(listener));
                 System.out.printf("Configured bean: %s\n", beanClass);
             } catch (ClassNotFoundException e) {

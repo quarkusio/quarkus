@@ -21,6 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -271,7 +272,21 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
     @Override
     public void writeClass(boolean applicationClass, String className, byte[] data) {
         if (applicationClass) {
-            appClasses.put(className.replace('/', '.'), data);
+            String dotName = className.replace('/', '.');
+            appClasses.put(dotName, data);
+            try {
+                File debugPath = new File("/tmp/shamrock-classes");
+                if (!debugPath.exists()) {
+                    debugPath.mkdir();
+                }
+                File classFile = new File(debugPath, dotName+".class");
+                FileOutputStream classWriter = new FileOutputStream(classFile);
+                classWriter.write(data);
+                classWriter.close();
+                log.infof("Wrote %s", classFile.getAbsolutePath());
+            } catch (Throwable t) {
+                t.printStackTrace();
+            }
         } else {
             //this is pretty horrible
             //basically we add the framework level classes to the file system

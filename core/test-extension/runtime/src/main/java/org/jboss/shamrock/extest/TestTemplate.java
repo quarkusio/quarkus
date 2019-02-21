@@ -14,12 +14,12 @@ public class TestTemplate {
 
     /**
      * Create a BeanContainerListener that instantiates the given class and passes the TestRunTimeConfig to it
-     * @see IConfigConsumer#loadConfig(TestBuildTimeConfig, TestRunTimeConfig)
+     * @see IConfigConsumer#loadConfig(TestBuildAndRunTimeConfig, TestRunTimeConfig)
      * @param beanClass - IConfigConsumer
      * @param runTimeConfig - the extension TestRunTimeConfig
      * @return BeanContainerListener
      */
-    public BeanContainerListener configureBeans(Class<IConfigConsumer> beanClass, TestBuildTimeConfig buildTimeConfig, TestRunTimeConfig runTimeConfig) {
+    public BeanContainerListener configureBeans(Class<IConfigConsumer> beanClass, TestBuildAndRunTimeConfig buildTimeConfig, TestRunTimeConfig runTimeConfig) {
         return new BeanContainerListener() {
             @Override
             public void created(BeanContainer beanContainer) {

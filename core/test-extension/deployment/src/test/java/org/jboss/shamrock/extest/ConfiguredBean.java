@@ -1,6 +1,8 @@
 package org.jboss.shamrock.extest;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
+import javax.inject.Inject;
 
 import org.jboss.shamrock.runtime.StartupEvent;
 
@@ -8,16 +10,21 @@ import org.jboss.shamrock.runtime.StartupEvent;
  * A sample bean
  */
 @TestAnnotation
+@ApplicationScoped
 public class ConfiguredBean implements IConfigConsumer {
     TestRunTimeConfig runTimeConfig;
-    TestBuildTimeConfig buildTimeConfig;
+    TestBuildAndRunTimeConfig buildTimeConfig;
+
+    public ConfiguredBean() {
+        System.out.printf("ConfiguredBean.ctor, %s\n", super.toString());
+    }
 
    /**
      * Called by runtime with the runtime config object
      * @param runTimeConfig
      */
     @Override
-    public void loadConfig(TestBuildTimeConfig buildTimeConfig, TestRunTimeConfig runTimeConfig) {
+    public void loadConfig(TestBuildAndRunTimeConfig buildTimeConfig, TestRunTimeConfig runTimeConfig) {
         System.out.printf("loadConfig, buildTimeConfig=%s, runTimeConfig=%s\n", buildTimeConfig, runTimeConfig);
         this.buildTimeConfig = buildTimeConfig;
         this.runTimeConfig = runTimeConfig;
@@ -29,6 +36,14 @@ public class ConfiguredBean implements IConfigConsumer {
      */
     void onStart(@Observes StartupEvent event) {
         System.out.printf("onStart, event=%s\n", event);
+    }
+
+    public TestRunTimeConfig getRunTimeConfig() {
+        return runTimeConfig;
+    }
+
+    public TestBuildAndRunTimeConfig getBuildTimeConfig() {
+        return buildTimeConfig;
     }
 
     @Override

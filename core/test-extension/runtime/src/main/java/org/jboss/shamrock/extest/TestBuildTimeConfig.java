@@ -11,18 +11,21 @@ import org.jboss.shamrock.runtime.annotations.ConfigRoot;
 public class TestBuildTimeConfig {
     /** A config string */
     @ConfigItem()
-    String btStringOpt;
+    public String btStringOpt;
     /** A config string with default value */
     @ConfigItem(defaultValue = "btStringOptWithDefaultValue")
-    String btStringOptWithDefault;
+    public String btStringOptWithDefault;
     /** A config object with ctor(String) */
     @ConfigItem
-    StringBasedValue btSBV;
+    public StringBasedValue btSBV;
     /** A config object with ctor(String) and default value */
     @ConfigItem(defaultValue = "btSBVWithDefaultValue")
-    StringBasedValue btSBVWithDefault;
+    public StringBasedValue btSBVWithDefault;
     /** A nested config group with all supported value types */
     @ConfigItem
-    AllValuesConfig allValues;
+    public AllValuesConfig allValues;
 
+    public TestBuildTimeConfig() {
+
+    }
 }

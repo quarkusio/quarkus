@@ -8,13 +8,13 @@ import org.jboss.shamrock.runtime.annotations.ConfigRoot;
 public class TestRunTimeConfig {
     /** A run time object */
     @ConfigItem
-    String rtStringOpt;
+    public String rtStringOpt;
     /** A run time object with default value */
     @ConfigItem(defaultValue = "rtStringOptWithDefaultValue")
-    String rtStringOptWithDefault;
+    public String rtStringOptWithDefault;
     /** A config group with all supported value types */
     @ConfigItem
-    AllValuesConfig allValues;
+    public AllValuesConfig allValues;
 
     @Override
     public String toString() {

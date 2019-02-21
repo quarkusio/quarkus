@@ -11,31 +11,31 @@ import org.jboss.shamrock.runtime.annotations.ConfigItem;
 public class AllValuesConfig {
     /** a long primitive */
     @ConfigItem
-    long longPrimitive;
+    public long longPrimitive;
     /** a long value */
     @ConfigItem
-    Long longValue;
+    public Long longValue;
     /** an optional long value */
     @ConfigItem
-    OptionalLong optLongValue;
+    public OptionalLong optLongValue;
     /** an optional long value */
     @ConfigItem
-    Optional<Long> optionalLongValue;
+    public Optional<Long> optionalLongValue;
     /** A config object with a static of(String) method */
     @ConfigItem
-    ObjectOfValue oov;
+    public ObjectOfValue oov;
     /** A config object with a static of(String) method and default value */
     @ConfigItem(defaultValue = "defaultPart1+defaultPart2")
-    ObjectOfValue oovWithDefault;
+    public ObjectOfValue oovWithDefault;
     /** A config object with a static valueOf(String) method */
     @ConfigItem
-    ObjectValueOf ovo;
+    public ObjectValueOf ovo;
     /** A config object with a static of(String) method and default value */
     @ConfigItem(defaultValue = "defaultPart1+defaultPart2")
-    ObjectValueOf ovoWithDefault;
+    public ObjectValueOf ovoWithDefault;
     /** */
     //@ConfigItem
-    Map<String, NestedConfig> nestedConfigMap;
+    public Map<String, NestedConfig> nestedConfigMap;
 
     @Override
     public String toString() {

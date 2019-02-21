@@ -57,6 +57,7 @@
         <module>netty</module>
         <module>reactive-streams-operators</module>
         <module>smallrye-reactive-messaging</module>
+        <module>smallrye-reactive-messaging-kafka</module>
 
         <!-- Data access and validation -->
         <module>narayana-jta</module>
@@ -65,6 +66,7 @@
         <module>hibernate-orm</module>
         <module>hibernate-validator</module>
         <module>panache</module>
+        <module>kafka-client</module>
 
         <!-- Spring -->
         <module>spring-di</module>

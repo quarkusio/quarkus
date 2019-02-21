@@ -256,14 +256,6 @@ final class Types {
         return resolvedMap;
     }
 
-    static String convertNested(DotName name) {
-        return convertNested(name.toString());
-    }
-
-    static String convertNested(String name) {
-        return name.replace('$', '.');
-    }
-
     static String getPackageName(String className) {
         className = className.replace('/', '.');
         return className.contains(".") ? className.substring(0, className.lastIndexOf(".")) : "";

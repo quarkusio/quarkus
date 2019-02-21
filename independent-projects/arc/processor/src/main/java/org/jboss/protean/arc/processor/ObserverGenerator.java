@@ -86,9 +86,9 @@ public class ObserverGenerator extends AbstractGenerator {
         ClassInfo declaringClass = observer.getObserverMethod().declaringClass();
         String declaringClassBase;
         if (declaringClass.enclosingClass() != null) {
-            declaringClassBase = DotNames.simpleName(declaringClass.enclosingClass()) + "_" + DotNames.simpleName(declaringClass.name());
+            declaringClassBase = DotNames.simpleName(declaringClass.enclosingClass()) + "_" + DotNames.simpleName(declaringClass);
         } else {
-            declaringClassBase = DotNames.simpleName(declaringClass.name());
+            declaringClassBase = DotNames.simpleName(declaringClass);
         }
 
         StringBuilder sigBuilder = new StringBuilder();
@@ -141,8 +141,7 @@ public class ObserverGenerator extends AbstractGenerator {
     protected void initMaps(ObserverInfo observer, Map<InjectionPointInfo, String> injectionPointToProvider) {
         int providerIdx = 1;
         for (InjectionPointInfo injectionPoint : observer.getInjection().injectionPoints) {
-            String name = providerName(DotNames.simpleName(injectionPoint.getRequiredType().name())) + "Provider" + providerIdx++;
-            injectionPointToProvider.put(injectionPoint, name);
+            injectionPointToProvider.put(injectionPoint, "observerProvider" + providerIdx++);
         }
     }
 

@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -296,7 +295,7 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
 
     static String generatedSharedName(DotName annotationName) {
         // com.foo.MyQualifier -> com.foo.MyQualifier1_Shared_AnnotationLiteral
-        return DotNames.packageName(annotationName) + "." + DotNames.simpleName(annotationName) + SHARED_SUFFIX + ANNOTATION_LITERAL_SUFFIX;
+        return annotationName + SHARED_SUFFIX + ANNOTATION_LITERAL_SUFFIX;
     }
 
     static String generatedLocalName(String targetPackage, String simpleName, String hash) {

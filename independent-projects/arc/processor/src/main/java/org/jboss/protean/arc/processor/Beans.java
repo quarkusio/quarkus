@@ -496,11 +496,7 @@ final class Beans {
     
     private static String getDefaultName(ClassInfo beanClass) {
         StringBuilder defaultName = new StringBuilder();
-        if (beanClass.simpleName() == null) {
-            defaultName.append(DotNames.simpleName(beanClass.name()));
-        } else {
-            defaultName.append(beanClass.simpleName());
-        }
+        defaultName.append(DotNames.simpleName(beanClass));
         // URLMatcher becomes uRLMatcher
         defaultName.setCharAt(0, Character.toLowerCase(defaultName.charAt(0)));
         return defaultName.toString();

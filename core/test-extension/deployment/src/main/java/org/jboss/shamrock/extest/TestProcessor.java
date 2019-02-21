@@ -17,7 +17,6 @@ import org.jboss.shamrock.deployment.annotations.ExecutionTime;
 import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.LaunchModeBuildItem;
-import org.jboss.shamrock.deployment.builditem.ObjectSubstitutionBuildItem;
 import org.jboss.shamrock.deployment.builditem.ServiceStartBuildItem;
 
 import static org.jboss.shamrock.deployment.annotations.ExecutionTime.RUNTIME_INIT;
@@ -49,13 +48,6 @@ public final class TestProcessor {
     @BuildStep
     BeanDefiningAnnotationBuildItem registerX() {
         return new BeanDefiningAnnotationBuildItem(TEST_ANNOTATION);
-    }
-
-    @BuildStep
-    ObjectSubstitutionBuildItem registerObjSubs() {
-        ObjectSubstitutionBuildItem.Holder holder = new ObjectSubstitutionBuildItem.Holder(TestBuildAndRunTimeConfig.class, TestBuildAndRunTimeConfig.class, TestBTRTObjSub.class);
-
-        return new ObjectSubstitutionBuildItem(holder);
     }
 
     /**

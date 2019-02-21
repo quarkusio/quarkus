@@ -17,8 +17,6 @@
 package org.jboss.shamrock.smallrye.health;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
 
 import org.eclipse.microprofile.health.Health;
@@ -59,27 +57,29 @@ class SmallRyeHealthProcessor {
         String path;
     }
 
-
-    @BuildStep
-    ServletBuildItem produceServlet() {
-        ServletBuildItem servletBuildItem = new ServletBuildItem("health", SmallRyeHealthServlet.class.getName());
-        servletBuildItem.getMappings().add(health.path);
-        return servletBuildItem;
-    }
-
-    @BuildStep
-    List<AdditionalBeanBuildItem> additionalBeans(BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotation) {
-        beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(HEALTH));
-
-        return Arrays.asList(
-                new AdditionalBeanBuildItem(SmallRyeHealthReporter.class),
-                new AdditionalBeanBuildItem(SmallRyeHealthServlet.class));
-    }
-
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     @SuppressWarnings("unchecked")
-    void registerHealthCheckResponseProvider(SmallRyeHealthTemplate template, RecorderContext recorder) throws IOException {
+    void build(SmallRyeHealthTemplate template, RecorderContext recorder,
+                BuildProducer<FeatureBuildItem> feature,
+                BuildProducer<ServletBuildItem> servlet,
+                BuildProducer<AdditionalBeanBuildItem> additionalBean,
+                BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotation) throws IOException {
+
+        feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_HEALTH));
+
+        // Register the servlet
+        ServletBuildItem servletBuildItem = new ServletBuildItem("health", SmallRyeHealthServlet.class.getName());
+        servletBuildItem.getMappings().add(health.path);
+        servlet.produce(servletBuildItem);
+
+        // Make ArC discover the beans marked with the @Health qualifier
+        beanDefiningAnnotation.produce(new BeanDefiningAnnotationBuildItem(HEALTH));
+
+        // Add additional beans
+        additionalBean.produce(new AdditionalBeanBuildItem(SmallRyeHealthReporter.class, SmallRyeHealthServlet.class));
+
+        // Discover and register the HealthCheckResponseProvider
         Set<String> providers = ServiceUtil.classNamesNamedIn(getClass().getClassLoader(), "META-INF/services/" + HealthCheckResponseProvider.class.getName());
 
         if (providers.isEmpty()) {
@@ -90,10 +90,4 @@ class SmallRyeHealthProcessor {
 
         template.registerHealthCheckResponseProvider((Class<? extends HealthCheckResponseProvider>) recorder.classProxy(providers.iterator().next()));
     }
-
-    @BuildStep
-    FeatureBuildItem feature() {
-        return new FeatureBuildItem(FeatureBuildItem.SMALLRYE_HEALTH);
-    }
-
 }

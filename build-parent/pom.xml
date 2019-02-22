@@ -460,12 +460,17 @@
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-panache-deployment</artifactId>
+            <artifactId>shamrock-panache-jpa-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-panache-runtime</artifactId>
+            <artifactId>shamrock-panache-jpa-runtime</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-panache-common-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>

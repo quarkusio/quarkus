@@ -1,13 +1,20 @@
 package org.jboss.shamrock.example.panache;
 
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 
-import org.jboss.panache.jpa.Model;
+import org.jboss.shamrock.panache.jpa.PanacheEntityBase;
 
+// custom id type
 @Entity
-public class Dog extends Model {
+public class Dog extends PanacheEntityBase {
 
+    @Id
+    @GeneratedValue
+    public Integer id;
+    
     public String name;
     
     public String race;

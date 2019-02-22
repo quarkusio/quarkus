@@ -25,10 +25,10 @@ import javax.persistence.FetchType;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 
-import org.jboss.panache.jpa.Model;
+import org.jboss.shamrock.panache.jpa.PanacheEntity;
 
-@Entity
-public class Person extends Model {
+@Entity(name = "Person2")
+public class Person extends PanacheEntity {
 
     public String name;
 
@@ -39,4 +39,8 @@ public class Person extends Model {
     
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     public List<Dog> dogs = new ArrayList<>();
+    
+    public static List<Dog> findOrdered(){
+        return find("ORDER BY name").list();
+    }
 }

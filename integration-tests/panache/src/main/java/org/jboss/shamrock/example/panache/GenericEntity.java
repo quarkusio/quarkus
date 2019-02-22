@@ -18,10 +18,11 @@ package org.jboss.shamrock.example.panache;
 
 import javax.persistence.MappedSuperclass;
 
-import org.jboss.panache.jpa.Model;
+import org.jboss.shamrock.panache.jpa.PanacheEntity;
+
 
 @MappedSuperclass
-public abstract class GenericEntity<T> extends Model {
+public abstract class GenericEntity<T> extends PanacheEntity {
     public T t;
     public T t2;
     

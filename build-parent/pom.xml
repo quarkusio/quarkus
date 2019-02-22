@@ -28,7 +28,7 @@
       <m2e.apt.activation>jdt_apt</m2e.apt.activation>
       
       <aesh.version>1.11</aesh.version>
-      <jandex.version>2.1.0.Final</jandex.version>
+      <jandex.version>2.1.1.Final</jandex.version>
       <resteasy.version>4.0.0.Beta8</resteasy.version>
       <opentracing.version>0.31.0</opentracing.version>
       <opentracing-jaxrs.version>0.3.1</opentracing-jaxrs.version>

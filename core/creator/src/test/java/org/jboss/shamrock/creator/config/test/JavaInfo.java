@@ -1,7 +1,7 @@
 /**
  *
  */
-package org.jboss.shamrock.creator.config.test;
+package io.quarkus.creator.config.test;
 
 /**
  *

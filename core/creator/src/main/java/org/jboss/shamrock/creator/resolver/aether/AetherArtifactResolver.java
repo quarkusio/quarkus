@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.resolver.aether;
+package io.quarkus.creator.resolver.aether;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -50,10 +50,10 @@ import org.eclipse.aether.resolution.VersionRangeRequest;
 import org.eclipse.aether.resolution.VersionRangeResolutionException;
 import org.eclipse.aether.resolution.VersionRangeResult;
 import org.eclipse.aether.version.Version;
-import org.jboss.shamrock.creator.AppArtifact;
-import org.jboss.shamrock.creator.AppArtifactResolverBase;
-import org.jboss.shamrock.creator.AppCreatorException;
-import org.jboss.shamrock.creator.AppDependency;
+import io.quarkus.creator.AppArtifact;
+import io.quarkus.creator.AppArtifactResolverBase;
+import io.quarkus.creator.AppCreatorException;
+import io.quarkus.creator.AppDependency;
 
 /**
  *

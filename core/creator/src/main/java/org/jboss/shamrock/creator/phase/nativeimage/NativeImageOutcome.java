@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.phase.nativeimage;
+package io.quarkus.creator.phase.nativeimage;
 
 /**
  *

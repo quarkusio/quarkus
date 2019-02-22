@@ -1,4 +1,4 @@
-package org.jboss.shamrock.hibernate.validator.runtime.jaxrs;
+package io.quarkus.hibernate.validator.runtime.jaxrs;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;

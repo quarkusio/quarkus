@@ -1,4 +1,4 @@
-package org.jboss.shamrock.deployment.recording;
+package io.quarkus.deployment.recording;
 
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
@@ -30,7 +30,7 @@ import org.jboss.protean.gizmo.ClassOutput;
 import org.jboss.protean.gizmo.FieldDescriptor;
 import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
-import org.jboss.shamrock.deployment.util.IoUtil;
+import io.quarkus.deployment.util.IoUtil;
 
 public class AnnotationProxyProvider {
 

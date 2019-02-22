@@ -14,7 +14,7 @@
  *  permissions and limitations under the License.
  */
 
-package org.jboss.shamrock.smallrye.restclient.runtime.graal;
+package io.quarkus.smallrye.restclient.runtime.graal;
 
 import javax.ws.rs.client.ClientBuilder;
 

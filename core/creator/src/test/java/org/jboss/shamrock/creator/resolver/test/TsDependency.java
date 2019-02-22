@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.resolver.test;
+package io.quarkus.creator.resolver.test;
 
 import java.util.ArrayList;
 import java.util.Collections;

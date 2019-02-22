@@ -1,4 +1,4 @@
-package org.infinispan.protean.hibernate.cache;
+package org.infinispan.quarkus.hibernate.cache;
 
 import org.hibernate.HibernateException;
 import org.hibernate.cache.spi.RegionFactory;
@@ -7,7 +7,7 @@ import org.hibernate.cache.spi.entry.CacheEntry;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.jdbc.WorkExecutorVisitable;
 import org.hibernate.resource.transaction.spi.TransactionCoordinator;
-import org.infinispan.protean.hibernate.cache.VersionedEntry.ComputeFn;
+import org.infinispan.quarkus.hibernate.cache.VersionedEntry.ComputeFn;
 import org.jboss.logging.Logger;
 
 import javax.transaction.Status;

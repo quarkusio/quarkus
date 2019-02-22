@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.panache;
+package io.quarkus.example.panache;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +25,7 @@ import javax.persistence.FetchType;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 
-import org.jboss.shamrock.panache.jpa.PanacheEntity;
+import io.quarkus.panache.jpa.PanacheEntity;
 
 @Entity(name = "Person2")
 public class Person extends PanacheEntity {

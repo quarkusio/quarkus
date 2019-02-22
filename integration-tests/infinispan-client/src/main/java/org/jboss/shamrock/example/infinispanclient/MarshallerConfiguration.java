@@ -1,4 +1,4 @@
-package org.jboss.shamrock.example.infinispanclient;
+package io.quarkus.example.infinispanclient;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;

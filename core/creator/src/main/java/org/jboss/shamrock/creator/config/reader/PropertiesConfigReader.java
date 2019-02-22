@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.config.reader;
+package io.quarkus.creator.config.reader;
 
 import java.io.BufferedReader;
 import java.io.IOException;

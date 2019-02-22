@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.config.test;
+package io.quarkus.creator.config.test;
 
 import static org.junit.Assert.assertEquals;
 
@@ -26,10 +26,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
-import org.jboss.shamrock.creator.config.reader.PropertiesConfigReader;
-import org.jboss.shamrock.creator.config.reader.PropertiesHandler;
-import org.jboss.shamrock.creator.config.reader.PropertyLine;
-import org.jboss.shamrock.creator.util.IoUtils;
+import io.quarkus.creator.config.reader.PropertiesConfigReader;
+import io.quarkus.creator.config.reader.PropertiesHandler;
+import io.quarkus.creator.config.reader.PropertyLine;
+import io.quarkus.creator.util.IoUtils;
 import org.junit.Test;
 
 /**

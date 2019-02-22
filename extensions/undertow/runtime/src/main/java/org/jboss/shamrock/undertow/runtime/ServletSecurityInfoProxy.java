@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.undertow.runtime;
+package io.quarkus.undertow.runtime;
 
 import java.util.ArrayList;
 import java.util.HashSet;

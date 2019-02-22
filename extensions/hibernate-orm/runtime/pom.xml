@@ -19,23 +19,23 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>shamrock-hibernate-orm</artifactId>
-        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>quarkus-hibernate-orm</artifactId>
+        <groupId>io.quarkus</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-hibernate-orm-runtime</artifactId>
-    <name>Shamrock - Hibernate ORM - Runtime</name>
+    <artifactId>quarkus-hibernate-orm-runtime</artifactId>
+    <name>Quarkus - Hibernate ORM - Runtime</name>
 
     <dependencies>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-core-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core-runtime</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-arc-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc-runtime</artifactId>
             <scope>compile</scope>
             <optional>true</optional>
         </dependency>
@@ -50,7 +50,7 @@
                     <artifactId>byte-buddy</artifactId>
                 </exclusion>
 
-                <!-- Javassist is never used in Protean -->
+                <!-- Javassist is never used in Quarkus -->
                 <exclusion>
                     <groupId>org.javassist</groupId>
                     <artifactId>javassist</artifactId>
@@ -79,16 +79,16 @@
             <artifactId>svm</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.infinispan.protean</groupId>
-            <artifactId>infinispan-hibernate-cache-protean</artifactId>
+            <groupId>org.infinispan.quarkus</groupId>
+            <artifactId>infinispan-hibernate-cache-quarkus</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <!-- Technically the shamrock-caffeine-runtime belongs as a dependency to the Protean Caching layer,
-          but since this is currently shaped as a non-shamrock external project I'd rather not have it depend on
-          other Shamrock components (yet) -->
+        <!-- Technically the quarkus-caffeine-runtime belongs as a dependency to the Quarkus Caching layer,
+          but since this is currently shaped as a non-quarkus external project I'd rather not have it depend on
+          other Quarkus components (yet) -->
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-caffeine-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-caffeine-runtime</artifactId>
         </dependency>
     </dependencies>
 
@@ -102,8 +102,8 @@
                 <configuration>
                     <annotationProcessorPaths>
                         <path>
-                            <groupId>org.jboss.shamrock</groupId>
-                            <artifactId>shamrock-extension-processor</artifactId>
+                            <groupId>io.quarkus</groupId>
+                            <artifactId>quarkus-extension-processor</artifactId>
                             <version>${project.version}</version>
                         </path>
                     </annotationProcessorPaths>

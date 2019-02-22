@@ -1,8 +1,8 @@
-package org.jboss.shamrock.security;
+package io.quarkus.security;
 
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
-import org.jboss.shamrock.runtime.annotations.ConfigPhase;
-import org.jboss.shamrock.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
  *

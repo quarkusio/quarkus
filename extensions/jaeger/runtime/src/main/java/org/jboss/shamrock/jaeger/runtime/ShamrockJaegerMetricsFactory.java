@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.jaeger.runtime;
+package io.quarkus.jaeger.runtime;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,7 +31,7 @@ import io.jaegertracing.internal.metrics.Timer;
 import io.jaegertracing.spi.MetricsFactory;
 import io.smallrye.metrics.MetricRegistries;
 
-public class ShamrockJaegerMetricsFactory implements MetricsFactory {
+public class QuarkusJaegerMetricsFactory implements MetricsFactory {
 
     MetricRegistry registry = MetricRegistries.get(MetricRegistry.Type.BASE);
     

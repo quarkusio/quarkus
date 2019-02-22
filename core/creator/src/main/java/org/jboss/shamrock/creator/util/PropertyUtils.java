@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.util;
+package io.quarkus.creator.util;
 
 import java.security.AccessController;
 import java.security.PrivilegedAction;

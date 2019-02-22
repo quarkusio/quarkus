@@ -1,7 +1,7 @@
-package org.jboss.shamrock.example.test;
+package io.quarkus.example.test;
 
 import io.restassured.RestAssured;
-import org.jboss.shamrock.test.junit.ShamrockTest;
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.Matchers.is;
@@ -11,7 +11,7 @@ import static org.hamcrest.Matchers.is;
  * The H2 database server is run in JVM mode, the Hibernate based application
  * is run in both JVM mode and native mode (see also test in subclass).
  */
-@ShamrockTest
+@QuarkusTest
 public class InfinispanCacheJPAFunctionalityTest {
 
     @Test

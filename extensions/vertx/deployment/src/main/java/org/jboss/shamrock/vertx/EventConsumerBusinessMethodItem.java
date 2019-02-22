@@ -1,9 +1,9 @@
-package org.jboss.shamrock.vertx;
+package io.quarkus.vertx;
 
 import org.jboss.builder.item.MultiBuildItem;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.protean.arc.processor.BeanInfo;
+import org.jboss.quarkus.arc.processor.BeanInfo;
 
 public final class EventConsumerBusinessMethodItem extends MultiBuildItem {
 

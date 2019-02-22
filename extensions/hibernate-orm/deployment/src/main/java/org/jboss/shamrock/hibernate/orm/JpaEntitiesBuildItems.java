@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm;
+package io.quarkus.hibernate.orm;
 
 import java.util.HashSet;
 import java.util.Set;
 
 import org.jboss.builder.item.SimpleBuildItem;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 
 /**
  * Internal model to represent which objects are likely needing enhancement

@@ -1,4 +1,4 @@
-package org.jboss.shamrock.panache.jpa;
+package io.quarkus.panache.jpa;
 
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;

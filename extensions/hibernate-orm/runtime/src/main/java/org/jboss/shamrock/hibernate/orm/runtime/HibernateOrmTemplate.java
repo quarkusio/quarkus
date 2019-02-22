@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm.runtime;
+package io.quarkus.hibernate.orm.runtime;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,9 +24,9 @@ import javax.sql.DataSource;
 import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.arc.runtime.BeanContainer;
-import org.jboss.shamrock.arc.runtime.BeanContainerListener;
-import org.jboss.shamrock.runtime.annotations.Template;
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.arc.runtime.BeanContainerListener;
+import io.quarkus.runtime.annotations.Template;
 
 /**
  * @author Emmanuel Bernard emmanuel@hibernate.org
@@ -43,7 +43,7 @@ public class HibernateOrmTemplate {
     }
 
     public void enlistPersistenceUnit() {
-        Logger.getLogger("org.jboss.shamrock.hibernate.orm").debugf("List of entities found by Shamrock deployment:%n%s", entities);
+        Logger.getLogger("io.quarkus.hibernate.orm").debugf("List of entities found by Quarkus deployment:%n%s", entities);
     }
 
     public void callHibernateFeatureInit() {

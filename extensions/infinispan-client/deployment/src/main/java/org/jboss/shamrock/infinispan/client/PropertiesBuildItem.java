@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.infinispan.client;
+package io.quarkus.infinispan.client;
 
 import java.util.Properties;
 

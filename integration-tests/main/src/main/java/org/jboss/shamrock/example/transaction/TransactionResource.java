@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.transaction;
+package io.quarkus.example.transaction;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

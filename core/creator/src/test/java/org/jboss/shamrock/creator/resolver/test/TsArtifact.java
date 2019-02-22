@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.resolver.test;
+package io.quarkus.creator.resolver.test;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import org.apache.maven.model.Model;
-import org.jboss.shamrock.creator.AppArtifact;
+import io.quarkus.creator.AppArtifact;
 
 /**
  *
@@ -29,7 +29,7 @@ import org.jboss.shamrock.creator.AppArtifact;
  */
 public class TsArtifact {
 
-    static final String DEFAULT_GROUP_ID = "org.shamrock.creator.test";
+    static final String DEFAULT_GROUP_ID = "org.quarkus.creator.test";
 
     public static TsArtifact getGa(String groupId, String artifactId) {
         return new TsArtifact(groupId, artifactId, null);

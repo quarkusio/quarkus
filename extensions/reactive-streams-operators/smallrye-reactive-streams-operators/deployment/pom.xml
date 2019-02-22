@@ -19,23 +19,23 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>shamrock-smallrye-reactive-streams-operators</artifactId>
-        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>quarkus-smallrye-reactive-streams-operators</artifactId>
+        <groupId>io.quarkus</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-smallrye-reactive-streams-operators-deployment</artifactId>
-    <name>Shamrock - SmallRye Reactive Streams Operators - Deployment</name>
+    <artifactId>quarkus-smallrye-reactive-streams-operators-deployment</artifactId>
+    <name>Quarkus - SmallRye Reactive Streams Operators - Deployment</name>
 
     <dependencies>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-core-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-reactive-streams-operators-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-reactive-streams-operators-runtime</artifactId>
         </dependency>
     </dependencies>
 
@@ -46,8 +46,8 @@
                 <configuration>
                     <annotationProcessorPaths>
                         <path>
-                            <groupId>org.jboss.shamrock</groupId>
-                            <artifactId>shamrock-extension-processor</artifactId>
+                            <groupId>io.quarkus</groupId>
+                            <artifactId>quarkus-extension-processor</artifactId>
                             <version>${project.version}</version>
                         </path>
                     </annotationProcessorPaths>

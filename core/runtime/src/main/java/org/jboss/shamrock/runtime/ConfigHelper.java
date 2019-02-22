@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.runtime;
+package io.quarkus.runtime;
 
 import java.util.Optional;
 

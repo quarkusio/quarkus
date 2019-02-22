@@ -1,4 +1,4 @@
-package org.jboss.shamrock.extest;
+package io.quarkus.extest;
 
 /**
  * A configuration type that has a static {@linkplain ObjectOfValue#of(String)} conversion method

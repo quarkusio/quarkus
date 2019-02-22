@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.undertow.runtime;
+package io.quarkus.undertow.runtime;
 
-import org.jboss.shamrock.arc.runtime.BeanContainer;
+import io.quarkus.arc.runtime.BeanContainer;
 
 import io.undertow.servlet.api.InstanceFactory;
 import io.undertow.servlet.api.InstanceHandle;
 
-public class ShamrockInstanceFactory<T> implements InstanceFactory<T> {
+public class QuarkusInstanceFactory<T> implements InstanceFactory<T> {
 
     private final BeanContainer.Factory<T> factory;
 
-    public ShamrockInstanceFactory(BeanContainer.Factory<T> factory) {
+    public QuarkusInstanceFactory(BeanContainer.Factory<T> factory) {
         this.factory = factory;
     }
 

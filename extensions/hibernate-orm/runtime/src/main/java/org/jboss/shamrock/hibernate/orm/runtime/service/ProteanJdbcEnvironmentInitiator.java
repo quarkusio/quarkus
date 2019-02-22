@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm.runtime.service;
+package io.quarkus.hibernate.orm.runtime.service;
 
 import java.util.Map;
 
@@ -24,11 +24,11 @@ import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentImpl;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
-public final class ProteanJdbcEnvironmentInitiator implements StandardServiceInitiator<JdbcEnvironment> {
+public final class QuarkusJdbcEnvironmentInitiator implements StandardServiceInitiator<JdbcEnvironment> {
 
     private final Dialect dialect;
 
-    public ProteanJdbcEnvironmentInitiator(Dialect dialect) {
+    public QuarkusJdbcEnvironmentInitiator(Dialect dialect) {
         this.dialect = dialect;
     }
 

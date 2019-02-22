@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.agroal.runtime;
+package io.quarkus.agroal.runtime;
 
-import org.jboss.shamrock.arc.runtime.BeanContainer;
-import org.jboss.shamrock.arc.runtime.BeanContainerListener;
-import org.jboss.shamrock.runtime.annotations.Template;
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.arc.runtime.BeanContainerListener;
+import io.quarkus.runtime.annotations.Template;
 
 @Template
 public class DataSourceTemplate {

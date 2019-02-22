@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.arc.deployment;
+package io.quarkus.arc.deployment;
 
 import org.jboss.builder.item.MultiBuildItem;
 
 /**
- * A generated CDI bean. If this is produced then a {@link org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem}
+ * A generated CDI bean. If this is produced then a {@link io.quarkus.deployment.builditem.GeneratedClassBuildItem}
  * should not be produced for the same class, as Arc will take care of this.
  */
 public final class GeneratedBeanBuildItem extends MultiBuildItem {

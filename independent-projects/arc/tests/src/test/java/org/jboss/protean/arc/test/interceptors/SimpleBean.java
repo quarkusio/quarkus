@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.test.interceptors;
+package org.jboss.quarkus.arc.test.interceptors;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.Dependent;

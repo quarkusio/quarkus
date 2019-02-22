@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm.runtime.entitymanager;
+package io.quarkus.hibernate.orm.runtime.entitymanager;
 
 import java.util.List;
 import java.util.Map;
@@ -39,7 +39,7 @@ import javax.transaction.Synchronization;
 import javax.transaction.TransactionManager;
 import javax.transaction.TransactionSynchronizationRegistry;
 
-import org.jboss.shamrock.hibernate.orm.runtime.RequestScopedEntityManagerHolder;
+import io.quarkus.hibernate.orm.runtime.RequestScopedEntityManagerHolder;
 
 public class TransactionScopedEntityManager implements EntityManager {
 

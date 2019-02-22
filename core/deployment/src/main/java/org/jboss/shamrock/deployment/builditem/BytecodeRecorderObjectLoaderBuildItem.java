@@ -1,7 +1,7 @@
-package org.jboss.shamrock.deployment.builditem;
+package io.quarkus.deployment.builditem;
 
 import org.jboss.builder.item.MultiBuildItem;
-import org.jboss.shamrock.deployment.recording.ObjectLoader;
+import io.quarkus.deployment.recording.ObjectLoader;
 
 /**
  */

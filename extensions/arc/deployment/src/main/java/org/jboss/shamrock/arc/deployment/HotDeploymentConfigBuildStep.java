@@ -1,7 +1,7 @@
-package org.jboss.shamrock.arc.deployment;
+package io.quarkus.arc.deployment;
 
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.HotDeploymentConfigFileBuildItem;
 
 public class HotDeploymentConfigBuildStep {
 

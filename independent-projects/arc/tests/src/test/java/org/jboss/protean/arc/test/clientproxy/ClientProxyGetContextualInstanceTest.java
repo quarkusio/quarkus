@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.test.clientproxy;
+package org.jboss.quarkus.arc.test.clientproxy;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -24,9 +24,9 @@ import java.io.IOException;
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 
-import org.jboss.protean.arc.Arc;
-import org.jboss.protean.arc.ClientProxy;
-import org.jboss.protean.arc.test.ArcTestContainer;
+import org.jboss.quarkus.arc.Arc;
+import org.jboss.quarkus.arc.ClientProxy;
+import org.jboss.quarkus.arc.test.ArcTestContainer;
 import org.junit.Rule;
 import org.junit.Test;
 

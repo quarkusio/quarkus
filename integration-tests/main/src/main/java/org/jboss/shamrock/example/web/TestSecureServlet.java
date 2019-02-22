@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.web;
+package io.quarkus.example.web;
 
 import java.io.IOException;
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.processor;
+package org.jboss.quarkus.arc.processor;
 
 import java.util.Collections;
 import java.util.HashSet;

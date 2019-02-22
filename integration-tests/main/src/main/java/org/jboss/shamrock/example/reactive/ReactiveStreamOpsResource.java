@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.reactive;
+package io.quarkus.example.reactive;
 
 import io.reactivex.Flowable;
 import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;

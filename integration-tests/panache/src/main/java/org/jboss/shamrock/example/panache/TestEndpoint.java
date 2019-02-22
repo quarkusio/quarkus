@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.panache;
+package io.quarkus.example.panache;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -29,10 +29,10 @@ import javax.transaction.Transactional;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
-import org.jboss.shamrock.panache.common.Page;
-import org.jboss.shamrock.panache.common.Parameters;
-import org.jboss.shamrock.panache.common.Sort;
-import org.jboss.shamrock.panache.jpa.PanacheQuery;
+import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Parameters;
+import io.quarkus.panache.common.Sort;
+import io.quarkus.panache.jpa.PanacheQuery;
 import org.junit.jupiter.api.Assertions;
 
 /**

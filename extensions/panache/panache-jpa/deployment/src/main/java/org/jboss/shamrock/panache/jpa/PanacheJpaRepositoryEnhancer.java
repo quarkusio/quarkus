@@ -1,15 +1,15 @@
-package org.jboss.shamrock.panache.jpa;
+package io.quarkus.panache.jpa;
 
-import static org.jboss.shamrock.panache.jpa.PanacheJpaEntityEnhancer.JPA_OPERATIONS_BINARY_NAME;
-import static org.jboss.shamrock.panache.jpa.PanacheJpaEntityEnhancer.PARAMETERS_SIGNATURE;
-import static org.jboss.shamrock.panache.jpa.PanacheJpaEntityEnhancer.QUERY_BINARY_NAME;
-import static org.jboss.shamrock.panache.jpa.PanacheJpaEntityEnhancer.QUERY_SIGNATURE;
-import static org.jboss.shamrock.panache.jpa.PanacheJpaEntityEnhancer.SORT_SIGNATURE;
+import static io.quarkus.panache.jpa.PanacheJpaEntityEnhancer.JPA_OPERATIONS_BINARY_NAME;
+import static io.quarkus.panache.jpa.PanacheJpaEntityEnhancer.PARAMETERS_SIGNATURE;
+import static io.quarkus.panache.jpa.PanacheJpaEntityEnhancer.QUERY_BINARY_NAME;
+import static io.quarkus.panache.jpa.PanacheJpaEntityEnhancer.QUERY_SIGNATURE;
+import static io.quarkus.panache.jpa.PanacheJpaEntityEnhancer.SORT_SIGNATURE;
 
 import java.util.function.BiFunction;
 
-import org.jboss.shamrock.panache.jpa.PanacheRepository;
-import org.jboss.shamrock.panache.jpa.PanacheRepositoryBase;
+import io.quarkus.panache.jpa.PanacheRepository;
+import io.quarkus.panache.jpa.PanacheRepositoryBase;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;

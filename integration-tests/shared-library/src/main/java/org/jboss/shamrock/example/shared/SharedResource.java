@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.shared;
+package io.quarkus.example.shared;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;

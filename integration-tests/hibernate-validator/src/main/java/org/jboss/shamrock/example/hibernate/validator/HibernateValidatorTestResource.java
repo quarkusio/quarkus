@@ -1,4 +1,4 @@
-package org.jboss.shamrock.example.hibernate.validator;
+package io.quarkus.example.hibernate.validator;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -22,7 +22,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import org.hibernate.validator.constraints.Length;
-import org.jboss.shamrock.example.hibernate.validator.custom.MyOtherBean;
+import io.quarkus.example.hibernate.validator.custom.MyOtherBean;
 
 @Path("/hibernate-validator/test")
 public class HibernateValidatorTestResource {

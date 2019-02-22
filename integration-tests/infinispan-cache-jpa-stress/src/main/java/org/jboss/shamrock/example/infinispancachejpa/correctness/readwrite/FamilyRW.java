@@ -5,12 +5,12 @@
  * See the lgpl.txt file in the root directory or <http://www.gnu.org/licenses/lgpl-2.1.html>.
  */
 
-package org.jboss.shamrock.example.infinispancachejpa.correctness.readwrite;
+package io.quarkus.example.infinispancachejpa.correctness.readwrite;
 
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.jboss.shamrock.example.infinispancachejpa.correctness.Family;
-import org.jboss.shamrock.example.infinispancachejpa.correctness.Member;
+import io.quarkus.example.infinispancachejpa.correctness.Family;
+import io.quarkus.example.infinispancachejpa.correctness.Member;
 
 import javax.persistence.*;
 import java.util.HashSet;

@@ -1,4 +1,4 @@
-package org.jboss.shamrock.runtime.logging;
+package io.quarkus.runtime.logging;
 
 import java.util.logging.Handler;
 import java.util.logging.Level;

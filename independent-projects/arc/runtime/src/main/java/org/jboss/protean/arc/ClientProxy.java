@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc;
+package org.jboss.quarkus.arc;
 
 /**
  * Represents a client proxy - a contextual reference to a bean with a normal scope.

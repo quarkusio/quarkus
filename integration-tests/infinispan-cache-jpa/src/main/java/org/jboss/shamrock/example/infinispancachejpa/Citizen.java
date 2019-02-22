@@ -6,7 +6,7 @@
  */
 
 //$Id$
-package org.jboss.shamrock.example.infinispancachejpa;
+package io.quarkus.example.infinispancachejpa;
 
 import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.NaturalIdCache;

@@ -1,13 +1,13 @@
-package org.jboss.shamrock.example.scheduler;
+package io.quarkus.example.scheduler;
 
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 
-import org.jboss.shamrock.scheduler.api.Scheduled;
-import org.jboss.shamrock.scheduler.api.ScheduledExecution;
-import org.jboss.shamrock.scheduler.api.Scheduler;
+import io.quarkus.scheduler.api.Scheduled;
+import io.quarkus.scheduler.api.ScheduledExecution;
+import io.quarkus.scheduler.api.Scheduler;
 
 public class ExampleJobs {
 

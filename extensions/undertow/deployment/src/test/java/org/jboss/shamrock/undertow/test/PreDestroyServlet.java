@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.undertow.test;
+package io.quarkus.undertow.test;
 
 import java.io.IOException;
 import java.security.MessageDigest;

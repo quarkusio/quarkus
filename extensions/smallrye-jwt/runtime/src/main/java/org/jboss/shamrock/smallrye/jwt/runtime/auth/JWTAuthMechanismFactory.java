@@ -1,4 +1,4 @@
-package org.jboss.shamrock.smallrye.jwt.runtime.auth;
+package io.quarkus.smallrye.jwt.runtime.auth;
 
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.undertow.security.api.AuthenticationMechanism;

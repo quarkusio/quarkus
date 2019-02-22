@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.test.injection.privateinitializer;
+package org.jboss.quarkus.arc.test.injection.privateinitializer;
 
 import static org.junit.Assert.assertNotNull;
 
@@ -22,8 +22,8 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
 import javax.inject.Inject;
 
-import org.jboss.protean.arc.Arc;
-import org.jboss.protean.arc.test.ArcTestContainer;
+import org.jboss.quarkus.arc.Arc;
+import org.jboss.quarkus.arc.test.ArcTestContainer;
 import org.junit.Rule;
 import org.junit.Test;
 

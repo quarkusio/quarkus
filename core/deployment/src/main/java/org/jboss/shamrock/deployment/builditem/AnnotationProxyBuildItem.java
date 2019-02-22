@@ -1,12 +1,12 @@
-package org.jboss.shamrock.deployment.builditem;
+package io.quarkus.deployment.builditem;
 
 import java.lang.annotation.Annotation;
 
 import org.jboss.builder.item.SimpleBuildItem;
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.shamrock.deployment.recording.AnnotationProxyProvider;
-import org.jboss.shamrock.deployment.recording.AnnotationProxyProvider.AnnotationProxyBuilder;
-import org.jboss.shamrock.runtime.annotations.Template;
+import io.quarkus.deployment.recording.AnnotationProxyProvider;
+import io.quarkus.deployment.recording.AnnotationProxyProvider.AnnotationProxyBuilder;
+import io.quarkus.runtime.annotations.Template;
 
 /**
  * Create annotation proxies that can be used as {@link Template} parameters.

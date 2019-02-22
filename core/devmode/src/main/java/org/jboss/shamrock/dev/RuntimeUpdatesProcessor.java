@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.dev;
+package io.quarkus.dev;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.deployment.devmode.HotReplacementContext;
+import io.quarkus.deployment.devmode.HotReplacementContext;
 
 public class RuntimeUpdatesProcessor implements HotReplacementContext {
 

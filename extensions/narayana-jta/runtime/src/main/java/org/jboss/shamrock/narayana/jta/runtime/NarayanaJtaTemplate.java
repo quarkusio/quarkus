@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.narayana.jta.runtime;
+package io.quarkus.narayana.jta.runtime;
 
 import java.lang.reflect.Field;
 import java.util.Properties;
 
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.runtime.annotations.Template;
+import io.quarkus.runtime.annotations.Template;
 
 import com.arjuna.ats.arjuna.common.CoreEnvironmentBeanException;
 import com.arjuna.ats.arjuna.common.arjPropertyManager;
@@ -50,7 +50,7 @@ public class NarayanaJtaTemplate {
         try {
             Field field = PropertiesFactory.class.getDeclaredField("delegatePropertiesFactory");
             field.setAccessible(true);
-            field.set(null, new ShamrockPropertiesFactory(properties));
+            field.set(null, new QuarkusPropertiesFactory(properties));
 
         } catch (Exception e) {
             log.error("Could not override transaction properties factory", e);

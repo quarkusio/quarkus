@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.arc.somepackage;
+package io.quarkus.example.arc.somepackage;
 
 public class Superclass {
 

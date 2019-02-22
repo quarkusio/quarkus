@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.maven;
+package io.quarkus.maven;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -46,18 +46,18 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
-import org.jboss.shamrock.dev.ClassLoaderCompiler;
-import org.jboss.shamrock.dev.DevModeMain;
-import org.jboss.shamrock.maven.utilities.MojoUtils;
+import io.quarkus.dev.ClassLoaderCompiler;
+import io.quarkus.dev.DevModeMain;
+import io.quarkus.maven.utilities.MojoUtils;
 
 /**
- * The dev mojo, that runs a shamrock app in a forked process
+ * The dev mojo, that runs a quarkus app in a forked process
  * <p>
  */
 @Mojo(name = "dev", defaultPhase = LifecyclePhase.PREPARE_PACKAGE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class DevMojo extends AbstractMojo {
 
-    private static final String RESOURCES_PROP = "shamrock.undertow.resources";
+    private static final String RESOURCES_PROP = "quarkus.undertow.resources";
 
     /**
      * The directory for compiled classes.
@@ -125,9 +125,9 @@ public class DevMojo extends AbstractMojo {
             }
         }
         if(!found) {
-            getLog().warn("The shamrock-maven-plugin build goal was not configured for this project, " +
-                    "skipping shamrock:dev as this is assumed to be a support library. If you want to run shamrock dev" +
-                    " on this project make sure the shamrock-maven-plugin is configured with a build goal.");
+            getLog().warn("The quarkus-maven-plugin build goal was not configured for this project, " +
+                    "skipping quarkus:dev as this is assumed to be a support library. If you want to run quarkus dev" +
+                    " on this project make sure the quarkus-maven-plugin is configured with a build goal.");
             return;
         }
 
@@ -136,7 +136,7 @@ public class DevMojo extends AbstractMojo {
         }
 
         if (! buildDir.isDirectory()  || ! new File(buildDir, "classes").isDirectory()) {
-            throw new MojoFailureException("The project has no output yet, run `mvn compile shamrock:dev`.");
+            throw new MojoFailureException("The project has no output yet, run `mvn compile quarkus:dev`.");
         }
 
         try {
@@ -175,7 +175,7 @@ public class DevMojo extends AbstractMojo {
             }
             //we don't want to just copy every system property, as a lot of them are set by the JVM
             for(Map.Entry<Object, Object> i: System.getProperties().entrySet()) {
-                if(i.getKey().toString().startsWith("shamrock.")) {
+                if(i.getKey().toString().startsWith("quarkus.")) {
                     args.add("-D" + i.getKey() + "=" + i.getValue());
                 }
             }
@@ -255,10 +255,10 @@ public class DevMojo extends AbstractMojo {
 
             outputDirectory.mkdirs();
 
-            args.add("-Dshamrock.runner.classes=" + outputDirectory.getAbsolutePath());
-            args.add("-Dshamrock.runner.sources=" + sourceDir.getAbsolutePath());
+            args.add("-Dquarkus.runner.classes=" + outputDirectory.getAbsolutePath());
+            args.add("-Dquarkus.runner.sources=" + sourceDir.getAbsolutePath());
             if(resources != null) {
-                args.add("-Dshamrock.runner.resources=" + new File(resources).getAbsolutePath());
+                args.add("-Dquarkus.runner.resources=" + new File(resources).getAbsolutePath());
             }
             args.add("-jar");
             args.add(tempFile.getAbsolutePath());
@@ -272,7 +272,7 @@ public class DevMojo extends AbstractMojo {
             pb.directory(outputDirectory);
             Process p = pb.start();
 
-            //https://github.com/jbossas/protean-shamrock/issues/232
+            //https://github.com/jbossas/quarkus/issues/232
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
                 @Override
                 public void run() {

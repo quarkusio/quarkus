@@ -1,4 +1,4 @@
-package org.jboss.shamrock.panache.common;
+package io.quarkus.panache.common;
 
 import java.util.ArrayList;
 import java.util.List;

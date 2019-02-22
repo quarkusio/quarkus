@@ -1,6 +1,6 @@
-package org.jboss.shamrock.example.test;
+package io.quarkus.example.test;
 
-import org.jboss.shamrock.test.junit.SubstrateTest;
+import io.quarkus.test.junit.SubstrateTest;
 
 @SubstrateTest
 public class KafkaProducerITCase extends KafkaProducerTest {

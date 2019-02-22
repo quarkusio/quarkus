@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.smallrye.opentracing.runtime;
+package io.quarkus.smallrye.opentracing.runtime;
 
 
 import java.util.Optional;
@@ -33,13 +33,13 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 @Provider
-public class ShamrockSmallRyeTracingDynamicFeature implements DynamicFeature {
+public class QuarkusSmallRyeTracingDynamicFeature implements DynamicFeature {
 
     private static final Logger logger = Logger.getLogger(io.smallrye.opentracing.SmallRyeTracingDynamicFeature.class.getName());
 
     private final ServerTracingDynamicFeature delegate;
 
-    public ShamrockSmallRyeTracingDynamicFeature() {
+    public QuarkusSmallRyeTracingDynamicFeature() {
         Config config = ConfigProvider.getConfig();
         Optional<String> skipPattern = config.getOptionalValue("mp.opentracing.server.skip-pattern", String.class);
         Optional<String> operationNameProvider = config.getOptionalValue("mp.opentracing.server.operation-name-provider", String.class);

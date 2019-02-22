@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.test;
+package io.quarkus.example.test;
 
 import static org.hamcrest.Matchers.is;
 
-import org.jboss.shamrock.test.junit.SubstrateTest;
+import io.quarkus.test.junit.SubstrateTest;
 import org.junit.jupiter.api.Test;
 
 import io.restassured.RestAssured;

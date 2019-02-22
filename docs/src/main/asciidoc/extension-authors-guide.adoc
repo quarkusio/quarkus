@@ -4,19 +4,19 @@
 :sectnums:
 :sectnumlevels: 4
 
-Shamrock extensions add a new developer focused behavior to the core offering, and consist of two distinct parts, buildtime augmentation and runtime container. The augmentation part is responsible for all metadata processing, such as reading annotations, XML descriptors etc. The output of this augmentation phase is recorded bytecode which is responsible for directly instantiating the relevant runtime services.
+Quarkus extensions add a new developer focused behavior to the core offering, and consist of two distinct parts, buildtime augmentation and runtime container. The augmentation part is responsible for all metadata processing, such as reading annotations, XML descriptors etc. The output of this augmentation phase is recorded bytecode which is responsible for directly instantiating the relevant runtime services.
 
 This means that metadata is only processed once at build time, which both saves on startup time, and also on memory
 usage as the classes etc that are used for processing are not loaded (or even present) in the runtime JVM.
 
-== Three Phases of Bootstrap and Shamrock Philosophy
+== Three Phases of Bootstrap and Quarkus Philosophy
 
-There are three distinct bootstrap phases of a Shamrock app:
+There are three distinct bootstrap phases of a Quarkus app:
 
 Augmentation::
     This is the first phase, and is done by the <<Build Step Processors>>. These processors have access to Jandex annotation
     information and can parse any descriptors and read annotations, but should not attempt to load any application classes. The output of these
-    build steps is some recorded bytecode, using an extension of the ObjectWeb ASM project called Gizmo(ext/gizmo), that is used to actually bootstrap the application at runtime. Depending on the `org.jboss.shamrock.deployment.annotations.ExecutionTime` value of the `@org.jboss.shamrock.deployment.annotations.Record` annotation associated with the build step,
+    build steps is some recorded bytecode, using an extension of the ObjectWeb ASM project called Gizmo(ext/gizmo), that is used to actually bootstrap the application at runtime. Depending on the `io.quarkus.deployment.annotations.ExecutionTime` value of the `@io.quarkus.deployment.annotations.Record` annotation associated with the build step,
     the step may be run in a different JVM based on the following two modes.
 
 Static Init::
@@ -31,9 +31,9 @@ There are some restrictions on what can be done in this stage as the Substrate V
 In non-native pure JVM mode, there is no real difference between Static and Runtime Init, except that Static Init is always executed first. This mode benefits from the same build phase augmentation as native mode as the descriptor parsing and annotation scanning are done
 at build time and any associated class/framework dependencies can be removed from the build output jar. In servers like
 WildFly, deployment related classes such as XML parsers hang around for the life of the application, using up valuable
-memory. Shamrock aims to eliminate this, so that the only classes loaded at runtime are actually used at runtime.
+memory. Quarkus aims to eliminate this, so that the only classes loaded at runtime are actually used at runtime.
 +
-As an example, the only reason that a Shamrock application should load an XML parser is if the user is using XML in their
+As an example, the only reason that a Quarkus application should load an XML parser is if the user is using XML in their
 application. Any XML parsing of configuration should be done in the Augmentation phase.
 
 Runtime Init::
@@ -57,9 +57,9 @@ Your extension project should be setup as a multi-module project with two submod
 
 2. A runtime submodule that contains the runtime behavior that will provide the extension behavior in the native image or runtime JVM.
 
-Your runtime artifact should depend on shamrock-core-runtime, and possibly the runtime artifacts of other Shamrock
+Your runtime artifact should depend on quarkus-core-runtime, and possibly the runtime artifacts of other Quarkus
 modules if you want to use functionality provided by them. You will also need to include the `maven-dependency-plugin`
-to write out the needed runtime dependencies, if you are using the Shamrock parent pom it will automatically
+to write out the needed runtime dependencies, if you are using the Quarkus parent pom it will automatically
 inherit the correct configuration.
 
 [source%nowrap,xml]
@@ -67,8 +67,8 @@ inherit the correct configuration.
 
 <dependencies>
     <dependency>
-      <groupId>org.jboss.shamrock</groupId>
-      <artifactId>shamrock-core-runtime</artifactId>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-core-runtime</artifactId>
     </dependency>
 </dependencies>
 
@@ -87,15 +87,15 @@ Under no circumstances can the runtime module depend on a deployment artifact. T
 in pulling all the deployment time code into runtime scope, which defeats the purpose of having the split.
 ====
 
-Your deployment time module should depend on `shamrock-core-deployment`, your runtime artifact,
-and possibly the deployment artifacts of other Shamrock modules if you want to use functionality provided by them.
+Your deployment time module should depend on `quarkus-core-deployment`, your runtime artifact,
+and possibly the deployment artifacts of other Quarkus modules if you want to use functionality provided by them.
 
 
 [source%nowrap,xml]
 ----
 <dependency>
-  <groupId>org.jboss.shamrock</groupId>
-  <artifactId>shamrock-core-deployment</artifactId>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-core-deployment</artifactId>
 </dependency>
 ----
 
@@ -104,9 +104,9 @@ NOTE: For historical reasons the `augment` step is still called `deployment`, th
 == Build Step Processors
 
 Work is done at deployment time by producing and consuming instances of `org.jboss.builder.item.BuildItem`. This is done
-by creating a class that has method(s) annotated with `org.jboss.shamrock.deployment.annotations.BuildStep`. These classes can
+by creating a class that has method(s) annotated with `io.quarkus.deployment.annotations.BuildStep`. These classes can
 consume items by injection, and produce items by either returning them from the method or by injecting an
-instance of `org.jboss.shamrock.deployment.annotations.BuildProducer` for the produced type. These processors can also record
+instance of `io.quarkus.deployment.annotations.BuildProducer` for the produced type. These processors can also record
 bytecode invocations, which is mapped to a `BuildItem` transparently.
 
 There are two distinct types of `BuildItem`, `SimpleBuildItem` and `MultiBuildItem`. `SimpleBuildItem` will only ever
@@ -143,9 +143,9 @@ ordered. This is not enforced but failure to adhere to this can result in race c
 The `@BuildStep` annotation has a `providesCapabilities` property that can be used to provide capability information
 to other extensions about what is present in the current application. Capabilities are simply strings that are used to
 describe an extension. Capabilities should generally be named after an extensions root package, for example the transactions
-extension will provide `org.jboss.shamrock.transactions`.
+extension will provide `io.quarkus.transactions`.
 
-To check if a capability is present you can inject the `org.jboss.shamrock.deployment.Capabilities` object and call
+To check if a capability is present you can inject the `io.quarkus.deployment.Capabilities` object and call
 `isCapabilityPresent`.
 
 Capabilities should be used when checking for the presence of an extension rather than class path based checks.
@@ -159,17 +159,17 @@ file will be indexed.
 
 == Configuration
 
-Configuration in Shamrock is based on SmallRye Config, an implementation of the MicroProfile Config specification.
+Configuration in Quarkus is based on SmallRye Config, an implementation of the MicroProfile Config specification.
 All of the standard features of MP-Config are supported; in addition, there are several extensions which are made available
-by the SmallRye Config project as well as by Shamrock itself.
+by the SmallRye Config project as well as by Quarkus itself.
 
 The value of these properties is configured in a `META-INF/microprofile-config.properties` file that conforms to the MicroProfile config format.
 
-Configuration of Shamrock extensions is injection-based, using annotations.
+Configuration of Quarkus extensions is injection-based, using annotations.
 
 === Configuration Keys
 
-Leaf configuration keys are mapped to non-`private` fields via the `@org.jboss.shamrock.runtime.annotations.ConfigItem` annotation.
+Leaf configuration keys are mapped to non-`private` fields via the `@io.quarkus.runtime.annotations.ConfigItem` annotation.
 
 NOTE: Though the SmallRye Config project is used for implementation, the standard `@ConfigProperty` annotation does not have the
 same semantics that are needed to support configuration within extensions.
@@ -188,7 +188,7 @@ normally this should only be done in cases where (for example) the configuration
 
 === Configuration Value types
 
-The type of the field with the `@ConfigItem` annotation determines the conversion that is applied to it.  Shamrock
+The type of the field with the `@ConfigItem` annotation determines the conversion that is applied to it.  Quarkus
 extensions may use the full range of configuration types made available by SmallRye Config, which includes:
 
 * All primitive types and primitive wrapper types
@@ -199,14 +199,14 @@ extensions may use the full range of configuration types made available by Small
 * A `List` or `Optional` of any of the above types
 * `OptionalInt`, `OptionalLong`, `OptionalDouble`
 
-In addition, custom converters may be registered by build extensions using the `org.jboss.shamrock.deployment.builditem.ConfigurationCustomConverterBuildItem`
+In addition, custom converters may be registered by build extensions using the `io.quarkus.deployment.builditem.ConfigurationCustomConverterBuildItem`
 class.
 
-Though these implicit converters use reflection, Shamrock will automatically ensure that they are loaded at the appropriate time.
+Though these implicit converters use reflection, Quarkus will automatically ensure that they are loaded at the appropriate time.
 
 === Configuration Groups
 
-Configuration values are always collected into grouping classes which are marked with the `@org.jboss.shamrock.runtime.annotations.ConfigGroup`
+Configuration values are always collected into grouping classes which are marked with the `@io.quarkus.runtime.annotations.ConfigGroup`
 annotation.  These classes contain a field for each key within its group.  In addition, configuration groups can be nested.
 
 === Configuration Maps
@@ -218,9 +218,9 @@ key segment following the map's key segment will be used as the key for map valu
 === Configuration Roots
 
 Configuration roots are configuration groups that appear in the root of the configuration tree.  A configuration property's full
-name is determined by joining the string `shamrock.` with the hyphenated name of the fields that form the path from the root to the
+name is determined by joining the string `quarkus.` with the hyphenated name of the fields that form the path from the root to the
 leaf field.  For example, if I define a configuration root group called `ThreadPool`, with a nested group in a field named `sizing`
-that in turn contains a field called `minSize`, the final configuration property will be called `shamrock.thread-pool.sizing.min-size`.
+that in turn contains a field called `minSize`, the final configuration property will be called `quarkus.thread-pool.sizing.min-size`.
 
 A configuration root's name can be given with the `name` property, or it can be inferred from the class name.  If the latter,
 then the configuration key will be the class name, minus any `Config` or `Configuration` suffix, broken up by camel-case,
@@ -232,7 +232,7 @@ this change is complete.
 
 ==== Configuration Root Phases
 
-A configuration root dictates when its contained keys are read from configuration, and when they are available to applications.  The phases defined by `org.jboss.shamrock.runtime.annotations.ConfigPhase` are as follows:
+A configuration root dictates when its contained keys are read from configuration, and when they are available to applications.  The phases defined by `io.quarkus.runtime.annotations.ConfigPhase` are as follows:
 
 [cols="<3m,^1,^1,^1,^1,<8",options="header"]
 |===
@@ -279,8 +279,8 @@ For all cases other than the `BUILD_TIME` case, the configuration root class and
 
 [source%nowrap,java]
 ----
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
-import org.jboss.shamrock.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigGroup;
 
 import java.io.File;
 import java.util.logging.Level;
@@ -309,7 +309,7 @@ public class FileConfig {
     /**
      * The file logging log level.
      */
-    @ConfigItem(defaultValue = "shamrock.log")
+    @ConfigItem(defaultValue = "quarkus.log")
     File path;
 
 }
@@ -341,15 +341,15 @@ public class LoggingProcessor {
 <1> The `FileConfig` class is annotated with `@ConfigGroup` to indicate that this is an aggregate
 configuration object containing a collection of configurable properties, rather than being a simple configuration
 key type.
-<2> The `@ConfigRoot` annotation indicates that this object is a configuration root group, whose property names will have a parent only of `shamrock.`.  In this case the properties within the group will begin with `shamrock.log.*`.
+<2> The `@ConfigRoot` annotation indicates that this object is a configuration root group, whose property names will have a parent only of `quarkus.`.  In this case the properties within the group will begin with `quarkus.log.*`.
 <3> Here the `LoggingProcessor` injects a `LogConfiguration` instance automatically by detecting the `@ConfigRoot` annotation.
 
 A corresponding `META-INF/microprofile-config.properties` file for the `File` values could be:
 [source%nowrap,properties]
 ----
-shamrock.log.file.enable=true
-shamrock.log.file.level=DEBUG
-shamrock.log.file.path=/tmp/debug.log
+quarkus.log.file.enable=true
+quarkus.log.file.level=DEBUG
+quarkus.log.file.path=/tmp/debug.log
 ----
 
 == Bytecode Recording
@@ -369,7 +369,7 @@ provides a template of methods to configure a runtime service. The value of temp
 injected into the deployment class is a proxy of the template, and any method invocations that are made will be recorded, and output as bytecode that will be run at application startup.
 
 Methods on a template can return a value, which must be proxiable (if you want to return a non-proxiable item wrap it
-in `org.jboss.shamrock.runtime.RuntimeValue`). These proxies may not be invoked directly, however they can be passed
+in `io.quarkus.runtime.RuntimeValue`). These proxies may not be invoked directly, however they can be passed
 into other template methods. This can be any template method, including from other `@Record` methods, so a common pattern
 is to produce `BuildItem` instances that wrap the results of these template invocations.
 
@@ -384,7 +384,7 @@ control the order that generated bytecode is run. In the example above we know t
 
 === RecorderContext
 
-`org.jboss.shamrock.deployment.recording.RecorderContext` provides some convenience methods to enhance bytecode recording,
+`io.quarkus.deployment.recording.RecorderContext` provides some convenience methods to enhance bytecode recording,
 this includes the ability to register creation functions for classes without no-arg constructors, to register an object
 substitution (basically a transformer from a non-serializable object to a serializable one and vice versa), and to create
 a class proxy. This interface can be directly injected as a method parameter into any `@Record` method.
@@ -399,22 +399,22 @@ TODO: config integration
 
 == Testing Extensions
 
-Testing of extensions should be done with the `org.jboss.shamrock.test.ShamrockUnitTest` runner. This runner allows
+Testing of extensions should be done with the `io.quarkus.test.QuarkusUnitTest` runner. This runner allows
 for Arquillian-style tests that test specific functionalities. It is not intended for testing user applications, as this
-should be done via `org.jboss.shamrock.test.junit.ShamrockTest`. The main difference between these test runners is that
-`ShamrockTest` simply boots the application once at the start of the run, while `ShamrockUnitTest` deploys a custom
-Shamrock application for each test class.
+should be done via `io.quarkus.test.junit.QuarkusTest`. The main difference between these test runners is that
+`QuarkusTest` simply boots the application once at the start of the run, while `QuarkusUnitTest` deploys a custom
+Quarkus application for each test class.
 
-These tests should be placed in the deployment module, if additional Shamrock modules are required for testing
+These tests should be placed in the deployment module, if additional Quarkus modules are required for testing
 their deployment modules should also be added as test scoped dependencies.
 
-Note that `ShamrockUnitTest` is in the `shamrock-junit5-internal` module.
+Note that `QuarkusUnitTest` is in the `quarkus-junit5-internal` module.
 
 An example test class may look like:
 
 [source,java]
 ----
-package org.jboss.shamrock.health.test;
+package io.quarkus.health.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -427,7 +427,7 @@ import javax.inject.Inject;
 import org.eclipse.microprofile.health.Health;
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
-import org.jboss.shamrock.test.ShamrockUnitTest;
+import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -440,7 +440,7 @@ public class FailingUnitTest {
 
 
     @RegisterExtension                                                                  // <1>
-    static final ShamrockUnitTest config = new ShamrockUnitTest()
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() ->
                     ShrinkWrap.create(JavaArchive.class)                                // <2>
                             .addClasses(FailingHealthCheck.class)
@@ -468,7 +468,7 @@ public class FailingUnitTest {
 ----
 
 
-<1> This tells JUnit to use the Shamrock unit test runner
+<1> This tells JUnit to use the Quarkus unit test runner
 <2> This producer is used to build the application to be tested. It uses Shrinkwrap to create a JavaArchive to test
 <3> It is possible to inject beans from our test deployment directly into the test case
 <4> This method directly invokes the health check Servlet and verifies the response
@@ -479,20 +479,20 @@ If you want to test that an extension properly fails at build time, use the `set
 [source,java]
 ----
 
-package org.jboss.shamrock.hibernate.orm;
+package io.quarkus.hibernate.orm;
 
-import org.jboss.shamrock.deployment.configuration.ConfigurationError;
-import org.jboss.shamrock.test.ShamrockUnitTest;
+import io.quarkus.deployment.configuration.ConfigurationError;
+import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-public class PersistenceAndShamrockConfigTest {
+public class PersistenceAndQuarkusConfigTest {
 
     @RegisterExtension
-    static ShamrockUnitTest runner = new ShamrockUnitTest()
+    static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setExpectedException(ConfigurationError.class)                     <1>
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsManifestResource("META-INF/some-persistence.xml", "persistence.xml")
@@ -514,27 +514,27 @@ public class PersistenceAndShamrockConfigTest {
 
 == Native Image Support
 
-There Shamrock provides a lot of build items that control aspects of the native image build. This allows for extensions
+There Quarkus provides a lot of build items that control aspects of the native image build. This allows for extensions
 to programmatically perform tests such as registering classes for reflection or adding static resources to the native
 image. Some of these build items are listed below:
 
-`org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem`::
+`io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem`::
  Includes static resources into the native image.
 
-`org.jboss.shamrock.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem`::
+`io.quarkus.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem`::
 A class that will be reinitialized at runtime by Substrate. This will result in the static initializer running twice.
 
-`org.jboss.shamrock.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem`::
+`io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem`::
 A system property that will be set at native image build time.
 
-`org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBundleBuildItem`::
+`io.quarkus.deployment.builditem.substrate.SubstrateResourceBundleBuildItem`::
 Includes a resource bundle in the native image.
 
-`org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem`::
+`io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem`::
 Registers a class for reflection in Substrate. Constructors are always registered, while methods and fields are optional.
 
-`org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem`::
+`io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem`::
 A class that will be initialized at runtime rather than build time. This will cause the build to fail if the class is initialized as part of the native image build process, so care must be taken.
 
-`org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildItem`::
+`io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem`::
 A convenience feature that allows you to control most of the above features from a single build item.

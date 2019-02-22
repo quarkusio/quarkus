@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment;
+package io.quarkus.deployment;
 
 import org.jboss.builder.BuildContext;
 import org.jboss.builder.item.BuildItem;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildProducer;
 
 /**
  * Producer class used by the source generated from the annotation processor

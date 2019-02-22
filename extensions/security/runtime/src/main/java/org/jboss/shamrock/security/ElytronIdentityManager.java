@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.security;
+package io.quarkus.security;
 
 import org.jboss.logging.Logger;
 import org.wildfly.security.auth.server.RealmUnavailableException;

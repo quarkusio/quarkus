@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.security;
+package io.quarkus.security;
 
 import java.net.URL;
 import java.security.Permission;
@@ -32,8 +32,8 @@ import javax.servlet.ServletContext;
 
 import io.undertow.security.idm.IdentityManager;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.runtime.RuntimeValue;
-import org.jboss.shamrock.runtime.annotations.Template;
+import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.annotations.Template;
 import org.wildfly.security.WildFlyElytronProvider;
 import org.wildfly.security.auth.realm.LegacyPropertiesSecurityRealm;
 import org.wildfly.security.auth.realm.SimpleMapBackedSecurityRealm;
@@ -85,7 +85,7 @@ public class SecurityTemplate {
         URL roles = Thread.currentThread().getContextClassLoader().getResource( config.roles);
         log.debugf("roles: %s", roles);
         if(users == null && roles == null) {
-            String msg = String.format("No PropertiesRealmConfig users/roles settings found. Configure the shamrock.security.file.%s properties", config.help());
+            String msg = String.format("No PropertiesRealmConfig users/roles settings found. Configure the quarkus.security.file.%s properties", config.help());
             throw new IllegalStateException(msg);
         }
         LegacyPropertiesSecurityRealm propsRealm = (LegacyPropertiesSecurityRealm) secRealm;

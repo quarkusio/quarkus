@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.undertow.runtime;
+package io.quarkus.undertow.runtime;
 
 import io.undertow.servlet.api.HttpMethodSecurityInfo;
 import io.undertow.servlet.api.ServletSecurityInfo;
-import org.jboss.shamrock.runtime.ObjectSubstitution;
+import io.quarkus.runtime.ObjectSubstitution;
 
 public class ServletSecurityInfoSubstitution implements ObjectSubstitution<ServletSecurityInfo, ServletSecurityInfoProxy> {
     @Override

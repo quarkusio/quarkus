@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.validator;
+package io.quarkus.example.validator;
 
 import java.util.Set;
 

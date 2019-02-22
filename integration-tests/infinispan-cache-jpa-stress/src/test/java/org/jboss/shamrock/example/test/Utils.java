@@ -1,4 +1,4 @@
-package org.jboss.shamrock.example.test;
+package io.quarkus.example.test;
 
 import java.util.concurrent.ThreadLocalRandom;
 

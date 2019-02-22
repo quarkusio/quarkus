@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.recording;
+package io.quarkus.deployment.recording;
 
 import java.util.Objects;
 
-import org.jboss.shamrock.runtime.ObjectSubstitution;
+import io.quarkus.runtime.ObjectSubstitution;
 
 public class NonSerializable {
 

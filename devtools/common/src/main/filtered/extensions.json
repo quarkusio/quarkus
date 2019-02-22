@@ -5,8 +5,8 @@
       "agroal",
       "database-connection-pool"
     ],
-    "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-agroal-deployment"
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-agroal-deployment"
   },
   {
     "name": "Arc",
@@ -16,8 +16,8 @@
       "dependency-injection",
       "di"
     ],
-    "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-arc-deployment"
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-arc-deployment"
   },
   {
     "name": "Hibernate Validator",
@@ -26,8 +26,8 @@
       "bean-validation",
       "validation"
     ],
-    "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-hibernate-validator-deployment"
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-hibernate-validator-deployment"
   },
   {
     "name": "SmallRye Fault Tolerance",
@@ -38,8 +38,8 @@
       "circuit-breaker",
       "bulkhead"
     ],
-    "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-smallrye-fault-tolerance-deployment"
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-fault-tolerance-deployment"
   },
   {
     "name": "SmallRye Health",
@@ -50,8 +50,8 @@
       "microprofile-health",
       "microprofile-health-check"
     ],
-    "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-smallrye-health-deployment"
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-health-deployment"
   },
   {
     "name": "Infinispan Client",
@@ -59,8 +59,8 @@
       "infinispan-client",
       "data-grid-client"
     ],
-    "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-infinispan-client-deployment"
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-infinispan-client-deployment"
   },
   {
     "name": "RESTEasy",
@@ -70,8 +70,8 @@
       "web",
       "rest"
     ],
-    "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-resteasy-deployment"
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-resteasy-deployment"
   },
   {
     "name": "RESTEasy - JSON-B",
@@ -84,8 +84,8 @@
       "json",
       "jsonb"
     ],
-    "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-resteasy-jsonb-deployment"
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-resteasy-jsonb-deployment"
   },
   {
     "name": "Hibernate ORM",
@@ -94,8 +94,8 @@
       "jpa",
       "hibernate"
     ],
-    "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-hibernate-orm-deployment"
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-hibernate-orm-deployment"
   },
   {
     "name": "SmallRye Metrics",
@@ -106,8 +106,8 @@
       "prometheus",
       "monitoring"
     ],
-    "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-smallrye-metrics-deployment"
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-metrics-deployment"
   },
   {
     "name": "SmallRye OpenAPI",
@@ -116,8 +116,8 @@
       "openapi",
       "open-api"
     ],
-    "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-smallrye-openapi-deployment"
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-openapi-deployment"
   },
   {
     "name": "SmallRye OpenTracing",
@@ -128,8 +128,8 @@
       "distributed-tracing",
       "jaeger"
     ],
-    "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-smallrye-opentracing-deployment"
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-opentracing-deployment"
   },
   {
     "name": "SmallRye Reactive Streams Operators",
@@ -141,8 +141,8 @@
       "microprofile-reactive-streams",
       "reactive"
     ],
-    "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-smallrye-reactive-streams-operators-deployment"
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-reactive-streams-operators-deployment"
   },
   {
     "name": "SmallRye Reactive Type Converters",
@@ -154,8 +154,8 @@
       "microprofile-reactive-streams",
       "reactive"
     ],
-    "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-smallrye-reactive-type-converters-deployment"
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-reactive-type-converters-deployment"
   },
   {
     "name": "SmallRye Reactive Messaging",
@@ -164,8 +164,8 @@
       "reactive-messaging",
       "reactive"
     ],
-    "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-smallrye-reactive-messaging-deployment"
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-reactive-messaging-deployment"
   },
   {
     "name": "Rest Client",
@@ -174,8 +174,8 @@
       "web-client",
       "microprofile-rest-client"
     ],
-    "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-rest-client-deployment"
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-rest-client-deployment"
   },
   {
     "name": "Scheduler",
@@ -184,8 +184,8 @@
       "tasks",
       "periodic-tasks"
     ],
-    "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-scheduler-deployment"
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-scheduler-deployment"
   },
   {
     "name": "Narayana JTA",
@@ -198,8 +198,8 @@
       "tx",
       "txs"
     ],
-    "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-narayana-jta-deployment"
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-narayana-jta-deployment"
   },
   {
     "name": "Undertow",
@@ -207,8 +207,8 @@
       "undertow",
       "servlet"
     ],
-    "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-undertow-deployment"
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-undertow-deployment"
   },
   {
     "name": "Eclipse Vert.x",
@@ -218,8 +218,8 @@
       "vert.x",
       "reactive"
     ],
-    "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-vertx-deployment"
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-vertx-deployment"
   },
   {
     "name": "Undertow WebSockets",
@@ -231,24 +231,24 @@
       "web-socket",
       "web-sockets"
     ],
-    "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-undertow-websockets-deployment"
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-undertow-websockets-deployment"
   },
   {
     "name": "Spring DI compatibility layer",
     "labels": [
       "spring-di"
     ],
-    "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-spring-di-deployment"
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-spring-di-deployment"
   },
   {
     "name": "Security",
     "labels": [
       "security"
     ],
-    "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-security-deployment"
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-security-deployment"
   },
   {
     "name": "SmallRye JWT",
@@ -258,7 +258,7 @@
       "json-web-token",
       "rbac"
     ],
-    "groupId": "org.jboss.shamrock",
-    "artifactId": "shamrock-smallrye-jwt-deployment"
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-jwt-deployment"
   }
 ]

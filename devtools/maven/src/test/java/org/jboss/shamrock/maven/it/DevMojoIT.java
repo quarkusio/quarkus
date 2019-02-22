@@ -1,10 +1,10 @@
-package org.jboss.shamrock.maven.it;
+package io.quarkus.maven.it;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.MavenInvocationException;
-import org.jboss.shamrock.maven.it.verifier.MavenProcessInvocationResult;
-import org.jboss.shamrock.maven.it.verifier.RunningInvoker;
+import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
+import io.quarkus.maven.it.verifier.RunningInvoker;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -99,7 +99,7 @@ public class DevMojoIT extends MojoTestBase {
     }
 
     @Test
-    @Disabled("Issue https://github.com/protean-project/shamrock/issues/245")
+    @Disabled("Issue https://github.com/quarkus-project/quarkus/issues/245")
     public void testThatTheApplicationIsReloadedOnNewServlet() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-run-new-servlet");
         runAndCheck();
@@ -144,7 +144,7 @@ public class DevMojoIT extends MojoTestBase {
     private void runAndCheck() throws FileNotFoundException, MavenInvocationException {
         assertThat(testDir).isDirectory();
         running = new RunningInvoker(testDir, false);
-        running.execute(Arrays.asList("compile", "shamrock:dev"), Collections.emptyMap());
+        running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap());
 
         String resp = getHttpResponse();
 
@@ -160,7 +160,7 @@ public class DevMojoIT extends MojoTestBase {
         testDir = initProject("projects/classic", "projects/project-classic-run-config-change");
         assertThat(testDir).isDirectory();
         running = new RunningInvoker(testDir, false);
-        running.execute(Arrays.asList("compile", "shamrock:dev"), Collections.emptyMap());
+        running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap());
 
         String resp = getHttpResponse();
 
@@ -292,7 +292,7 @@ public class DevMojoIT extends MojoTestBase {
         testDir = initProject("projects/classic", "projects/project-no-sources");
         FileUtils.deleteQuietly(new File(testDir, "src/main/java"));
         running = new RunningInvoker(testDir, false);
-        MavenProcessInvocationResult result = running.execute(Arrays.asList("compile", "shamrock:dev"), Collections.emptyMap());
+        MavenProcessInvocationResult result = running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap());
         await().until(() -> result.getProcess() != null  && ! result.getProcess().isAlive());
         assertThat(running.log()).containsIgnoringCase("BUILD FAILURE");
     }
@@ -302,7 +302,7 @@ public class DevMojoIT extends MojoTestBase {
         testDir = initProject("projects/classic", "projects/project-no-target");
         FileUtils.deleteQuietly(new File(testDir, "target"));
         running = new RunningInvoker(testDir, false);
-        MavenProcessInvocationResult result = running.execute(Collections.singletonList("shamrock:dev"), Collections.emptyMap());
+        MavenProcessInvocationResult result = running.execute(Collections.singletonList("quarkus:dev"), Collections.emptyMap());
         await().until(() -> result.getProcess() != null  && ! result.getProcess().isAlive());
         assertThat(running.log()).containsIgnoringCase("BUILD FAILURE");
     }
@@ -315,7 +315,7 @@ public class DevMojoIT extends MojoTestBase {
         FileUtils.deleteQuietly(new File(testDir, "target/classes"));
 
         running = new RunningInvoker(testDir, false);
-        MavenProcessInvocationResult result = running.execute(Collections.singletonList("shamrock:dev"), Collections.emptyMap());
+        MavenProcessInvocationResult result = running.execute(Collections.singletonList("quarkus:dev"), Collections.emptyMap());
         await().until(() -> result.getProcess() != null  && ! result.getProcess().isAlive());
         assertThat(running.log()).containsIgnoringCase("BUILD FAILURE");
     }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.steps;
+package io.quarkus.deployment.steps;
 
 import static org.jboss.protean.gizmo.MethodDescriptor.ofMethod;
 
@@ -37,15 +37,15 @@ import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
 import org.jboss.protean.gizmo.TryBlock;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.ClassOutput;
-import org.jboss.shamrock.deployment.builditem.ClassOutputBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.*;
-import org.jboss.shamrock.runtime.ResourceHelper;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.ClassOutput;
+import io.quarkus.deployment.builditem.ClassOutputBuildItem;
+import io.quarkus.deployment.builditem.substrate.*;
+import io.quarkus.runtime.ResourceHelper;
 
 public class SubstrateAutoFeatureStep {
 
-    private static final String GRAAL_AUTOFEATURE = "org/jboss/shamrock/runner/AutoFeature";
+    private static final String GRAAL_AUTOFEATURE = "io.quarkus/runner/AutoFeature";
 
     @BuildStep
     SubstrateOutputBuildItem generateFeature(ClassOutputBuildItem output,
@@ -245,7 +245,7 @@ public class SubstrateAutoFeatureStep {
         print.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), print.getCaughtException());
 
 
-        beforeAn.loadClass("org.jboss.shamrock.runner.ApplicationImpl");
+        beforeAn.loadClass("io.quarkus.runner.ApplicationImpl");
         beforeAn.returnValue(null);
 
         file.close();

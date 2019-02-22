@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.undertow;
+package io.quarkus.undertow;
 
 import java.util.ArrayList;
 import java.util.List;

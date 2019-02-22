@@ -1,4 +1,4 @@
-package org.jboss.shamrock.undertow.test;
+package io.quarkus.undertow.test;
 
 import java.util.concurrent.LinkedBlockingDeque;
 

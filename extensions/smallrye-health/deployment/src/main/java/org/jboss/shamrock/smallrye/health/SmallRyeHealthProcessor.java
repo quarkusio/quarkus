@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.smallrye.health;
+package io.quarkus.smallrye.health;
 
 import java.io.IOException;
 import java.util.Set;
@@ -22,20 +22,20 @@ import java.util.Set;
 import org.eclipse.microprofile.health.Health;
 import org.eclipse.microprofile.health.spi.HealthCheckResponseProvider;
 import org.jboss.jandex.DotName;
-import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
-import org.jboss.shamrock.arc.deployment.BeanDefiningAnnotationBuildItem;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.annotations.ExecutionTime;
-import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
-import org.jboss.shamrock.deployment.recording.RecorderContext;
-import org.jboss.shamrock.deployment.util.ServiceUtil;
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
-import org.jboss.shamrock.runtime.annotations.ConfigRoot;
-import org.jboss.shamrock.smallrye.health.runtime.SmallRyeHealthServlet;
-import org.jboss.shamrock.smallrye.health.runtime.SmallRyeHealthTemplate;
-import org.jboss.shamrock.undertow.ServletBuildItem;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.smallrye.health.runtime.SmallRyeHealthServlet;
+import io.quarkus.smallrye.health.runtime.SmallRyeHealthTemplate;
+import io.quarkus.undertow.ServletBuildItem;
 
 import io.smallrye.health.SmallRyeHealthReporter;
 

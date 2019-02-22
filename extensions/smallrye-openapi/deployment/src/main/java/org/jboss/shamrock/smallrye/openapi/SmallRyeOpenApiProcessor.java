@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.smallrye.openapi;
+package io.quarkus.smallrye.openapi;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,24 +35,24 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.jboss.jandex.IndexView;
-import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
-import org.jboss.shamrock.arc.deployment.BeanContainerListenerBuildItem;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
-import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
-import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
-import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
-import org.jboss.shamrock.resteasy.ResteasyJaxrsConfig;
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
-import org.jboss.shamrock.runtime.annotations.ConfigRoot;
-import org.jboss.shamrock.smallrye.openapi.runtime.OpenApiDocumentProducer;
-import org.jboss.shamrock.smallrye.openapi.runtime.OpenApiServlet;
-import org.jboss.shamrock.smallrye.openapi.runtime.SmallRyeOpenApiTemplate;
-import org.jboss.shamrock.undertow.ServletBuildItem;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.HotDeploymentConfigFileBuildItem;
+import io.quarkus.resteasy.ResteasyJaxrsConfig;
+import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentProducer;
+import io.quarkus.smallrye.openapi.runtime.OpenApiServlet;
+import io.quarkus.smallrye.openapi.runtime.SmallRyeOpenApiTemplate;
+import io.quarkus.undertow.ServletBuildItem;
 
-import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 /**
  * @author Ken Finnigan

@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.builditem;
+package io.quarkus.deployment.builditem;
 
 import org.jboss.builder.item.MultiBuildItem;
-import org.jboss.shamrock.deployment.Capabilities;
+import io.quarkus.deployment.Capabilities;
 
 /**
  * Registers an internal feature.

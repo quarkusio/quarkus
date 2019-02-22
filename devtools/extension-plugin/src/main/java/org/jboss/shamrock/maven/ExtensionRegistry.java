@@ -14,10 +14,10 @@
  *  permissions and limitations under the License.
  */
 
-package org.jboss.shamrock.maven;
+package io.quarkus.maven;
 
 import org.apache.maven.project.MavenProject;
-import org.jboss.shamrock.dependencies.Extension;
+import io.quarkus.dependencies.Extension;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,10 +26,10 @@ import java.util.Map;
  * @author <a href="http://kenfinnigan.me">Ken Finnigan</a>
  */
 class ExtensionRegistry {
-    private static final String EXTENSION_NAME_PROPERTY_NAME = "shamrock.extension.name";
-    private static final String EXTENSION_DESC_PROPERTY_NAME = "shamrock.extension.desc";
-    private static final String EXTENSION_LABELS_PROPERTY_NAME = "shamrock.extension.labels";
-    private static final String EXTENSION_INTERNAL_PROPERTY_NAME = "shamrock.extension.internal";
+    private static final String EXTENSION_NAME_PROPERTY_NAME = "quarkus.extension.name";
+    private static final String EXTENSION_DESC_PROPERTY_NAME = "quarkus.extension.desc";
+    private static final String EXTENSION_LABELS_PROPERTY_NAME = "quarkus.extension.labels";
+    private static final String EXTENSION_INTERNAL_PROPERTY_NAME = "quarkus.extension.internal";
 
     private Map<Key, Extension> extensionRegistry = new HashMap<>();
 

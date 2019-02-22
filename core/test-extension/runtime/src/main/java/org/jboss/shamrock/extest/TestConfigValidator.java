@@ -1,4 +1,4 @@
-package org.jboss.shamrock.extest;
+package io.quarkus.extest;
 
 public interface TestConfigValidator {
 }

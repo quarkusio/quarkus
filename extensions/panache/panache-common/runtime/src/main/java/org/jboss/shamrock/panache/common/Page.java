@@ -1,4 +1,4 @@
-package org.jboss.shamrock.panache.common;
+package io.quarkus.panache.common;
 
 
 public class Page {

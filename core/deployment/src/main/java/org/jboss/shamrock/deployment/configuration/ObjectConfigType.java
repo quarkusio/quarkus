@@ -1,4 +1,4 @@
-package org.jboss.shamrock.deployment.configuration;
+package io.quarkus.deployment.configuration;
 
 import java.lang.reflect.Field;
 
@@ -6,8 +6,8 @@ import io.smallrye.config.SmallRyeConfig;
 import org.jboss.protean.gizmo.BytecodeCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
-import org.jboss.shamrock.deployment.AccessorFinder;
-import org.jboss.shamrock.runtime.configuration.NameIterator;
+import io.quarkus.deployment.AccessorFinder;
+import io.quarkus.runtime.configuration.NameIterator;
 
 /**
  */

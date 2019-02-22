@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.phase.nativeimage;
+package io.quarkus.creator.phase.nativeimage;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -119,7 +119,7 @@ public final class ErrorReplacingProcessReader implements Runnable {
         System.err.println("-- If an interface has multiple implementations SVM will just display one potential call  ---");
         System.err.println("-- path to the interface. This is often meaningless, and what you actually need to know is---");
         System.err.println("-- the path to the constructor of the object that implements this interface.              ---");
-        System.err.println("-- Shamrock has attempted to generate a more meaningful call flow analysis below          ---");
+        System.err.println("-- Quarkus has attempted to generate a more meaningful call flow analysis below          ---");
         System.err.println("---------------------------------------------------------------------------------------------\n");
         try {
             String fullName = m.group(1);

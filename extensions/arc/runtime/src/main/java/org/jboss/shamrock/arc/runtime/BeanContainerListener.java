@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.arc.runtime;
+package io.quarkus.arc.runtime;
 
 /**
  * An interface that can be used to configure beans immediately after the {@link BeanContainer} has been

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.phase.curate;
+package io.quarkus.creator.phase.curate;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -34,17 +34,17 @@ import org.apache.maven.model.Repository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.creator.AppArtifact;
-import org.jboss.shamrock.creator.AppArtifactResolver;
-import org.jboss.shamrock.creator.AppCreationPhase;
-import org.jboss.shamrock.creator.AppCreator;
-import org.jboss.shamrock.creator.AppCreatorException;
-import org.jboss.shamrock.creator.AppDependency;
-import org.jboss.shamrock.creator.config.reader.MappedPropertiesHandler;
-import org.jboss.shamrock.creator.config.reader.PropertiesConfigReaderException;
-import org.jboss.shamrock.creator.config.reader.PropertiesHandler;
-import org.jboss.shamrock.creator.outcome.OutcomeProviderRegistration;
-import org.jboss.shamrock.creator.resolver.aether.AetherArtifactResolver;
+import io.quarkus.creator.AppArtifact;
+import io.quarkus.creator.AppArtifactResolver;
+import io.quarkus.creator.AppCreationPhase;
+import io.quarkus.creator.AppCreator;
+import io.quarkus.creator.AppCreatorException;
+import io.quarkus.creator.AppDependency;
+import io.quarkus.creator.config.reader.MappedPropertiesHandler;
+import io.quarkus.creator.config.reader.PropertiesConfigReaderException;
+import io.quarkus.creator.config.reader.PropertiesHandler;
+import io.quarkus.creator.outcome.OutcomeProviderRegistration;
+import io.quarkus.creator.resolver.aether.AetherArtifactResolver;
 
 /**
  *
@@ -71,7 +71,7 @@ public class CuratePhase implements AppCreationPhase<CuratePhase> {
     private VersionUpdate update = VersionUpdate.NONE;
     private VersionUpdateNumber updateNumber = VersionUpdateNumber.MICRO;
     private Path localRepo;
-    private Set<String> updateGroupIds = Collections.singleton("org.jboss.shamrock");
+    private Set<String> updateGroupIds = Collections.singleton("io.quarkus");
 
     public void setInitialDeps(DependenciesOrigin initialDeps) {
         this.depsOrigin = initialDeps;

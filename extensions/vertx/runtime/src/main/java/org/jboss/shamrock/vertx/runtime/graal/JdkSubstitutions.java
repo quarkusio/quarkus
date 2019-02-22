@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.vertx.runtime.graal;
+package io.quarkus.vertx.runtime.graal;
 
 import java.io.FileDescriptor;
 import java.io.IOException;

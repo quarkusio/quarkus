@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm.runtime.service;
+package io.quarkus.hibernate.orm.runtime.service;
 
 import java.util.Map;
 
@@ -23,11 +23,11 @@ import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatform;
 import org.hibernate.engine.transaction.jta.platform.spi.JtaPlatformResolver;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
-public final class ProteanJtaPlatformResolver implements StandardServiceInitiator<JtaPlatformResolver> {
+public final class QuarkusJtaPlatformResolver implements StandardServiceInitiator<JtaPlatformResolver> {
 
     private final JtaPlatform jtaPlatform;
 
-    public ProteanJtaPlatformResolver(JtaPlatform jtaPlatform) {
+    public QuarkusJtaPlatformResolver(JtaPlatform jtaPlatform) {
         this.jtaPlatform = jtaPlatform;
     }
 

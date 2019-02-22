@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.test;
+package org.jboss.quarkus.arc.test;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -36,16 +36,16 @@ import java.util.stream.Collectors;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
-import org.jboss.protean.arc.Arc;
-import org.jboss.protean.arc.ComponentsProvider;
-import org.jboss.protean.arc.ResourceReferenceProvider;
-import org.jboss.protean.arc.processor.AnnotationsTransformer;
-import org.jboss.protean.arc.processor.BeanDeploymentValidator;
-import org.jboss.protean.arc.processor.BeanInfo;
-import org.jboss.protean.arc.processor.BeanProcessor;
-import org.jboss.protean.arc.processor.BeanRegistrar;
-import org.jboss.protean.arc.processor.DeploymentEnhancer;
-import org.jboss.protean.arc.processor.ResourceOutput;
+import org.jboss.quarkus.arc.Arc;
+import org.jboss.quarkus.arc.ComponentsProvider;
+import org.jboss.quarkus.arc.ResourceReferenceProvider;
+import org.jboss.quarkus.arc.processor.AnnotationsTransformer;
+import org.jboss.quarkus.arc.processor.BeanDeploymentValidator;
+import org.jboss.quarkus.arc.processor.BeanInfo;
+import org.jboss.quarkus.arc.processor.BeanProcessor;
+import org.jboss.quarkus.arc.processor.BeanRegistrar;
+import org.jboss.quarkus.arc.processor.DeploymentEnhancer;
+import org.jboss.quarkus.arc.processor.ResourceOutput;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.arc.deployment;
+package io.quarkus.arc.deployment;
 
 import org.jboss.builder.item.MultiBuildItem;
 import org.jboss.jandex.DotName;

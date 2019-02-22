@@ -1,4 +1,4 @@
-package org.jboss.shamrock.smallrye.reactivemessaging;
+package io.quarkus.smallrye.reactivemessaging;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -7,7 +7,7 @@ import java.util.List;
 
 import javax.inject.Inject;
 
-import org.jboss.shamrock.test.ShamrockUnitTest;
+import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -16,7 +16,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class SimpleTest {
 
     @RegisterExtension
-    static final ShamrockUnitTest config = new ShamrockUnitTest()
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(SimpleBean.class, StreamConsumer.class));
     

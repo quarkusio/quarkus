@@ -1,4 +1,4 @@
-package org.jboss.shamrock.security;
+package io.quarkus.security;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -16,7 +16,7 @@ public class AuthConfig {
     /**
      * The authentication mechanism
      */
-    @ConfigProperty(name = "realmName", defaultValue = "Shamrock")
+    @ConfigProperty(name = "realmName", defaultValue = "Quarkus")
     public String realmName;
 
     private Class<?> type;

@@ -1,4 +1,4 @@
-package org.jboss.shamrock.example.health;
+package io.quarkus.example.health;
 
 import org.eclipse.microprofile.health.Health;
 import org.eclipse.microprofile.health.HealthCheck;

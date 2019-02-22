@@ -12,14 +12,14 @@
    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
    <parent>
-      <artifactId>shamrock-parent</artifactId>
-      <groupId>org.jboss.shamrock</groupId>
+      <artifactId>quarkus-parent</artifactId>
+      <groupId>io.quarkus</groupId>
       <version>1.0.0.Alpha1-SNAPSHOT</version>
    </parent>
    <modelVersion>4.0.0</modelVersion>
 
-   <artifactId>shamrock-build-parent</artifactId>
-   <name>Shamrock - Build Parent</name>
+   <artifactId>quarkus-build-parent</artifactId>
+   <name>Quarkus - Build Parent</name>
    <description>Build parent to bring in required dependencies</description>
    <packaging>pom</packaging>
 
@@ -101,7 +101,7 @@
       <slf4j-jboss-logging.version>1.1.0.Final</slf4j-jboss-logging.version>
       <wildfly-common.version>1.5.0.Alpha4-format-002</wildfly-common.version>
       <wildfly-client-config.version>1.0.0.Final</wildfly-client-config.version>
-      <!-- This requires a release build of the https://github.com/jbossas/protean-wildfly-elytron-embedded project -->
+      <!-- This requires a release build of the https://github.com/jbossas/quarkus-wildfly-elytron-embedded project -->
       <wildfly-elytron.version>2.0.0.Alpha1</wildfly-elytron.version>
       <jboss-modules.version>1.8.7.Final</jboss-modules.version>
       <jboss-threads.version>3.0.0.Alpha4</jboss-threads.version>
@@ -136,437 +136,437 @@
    <dependencyManagement>
       <dependencies>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-agroal-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-agroal-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-agroal-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-agroal-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-hibernate-validator-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-validator-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-hibernate-validator-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-validator-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-builder</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-builder</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-             <groupId>org.jboss.shamrock</groupId>
-             <artifactId>shamrock-caffeine-deployment</artifactId>
+             <groupId>io.quarkus</groupId>
+             <artifactId>quarkus-caffeine-deployment</artifactId>
              <version>${project.version}</version>
          </dependency>
          <dependency>
-             <groupId>org.jboss.shamrock</groupId>
-             <artifactId>shamrock-caffeine-runtime</artifactId>
+             <groupId>io.quarkus</groupId>
+             <artifactId>quarkus-caffeine-runtime</artifactId>
              <version>${project.version}</version>
          </dependency>
          <dependency>
-             <groupId>org.jboss.shamrock</groupId>
-             <artifactId>shamrock-devtools-common</artifactId>
+             <groupId>io.quarkus</groupId>
+             <artifactId>quarkus-devtools-common</artifactId>
              <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-devtools-common-core</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devtools-common-core</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-core-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-core-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>shamrock-creator</artifactId>
+            <artifactId>quarkus-creator</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-integration-test-class-transformer</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-integration-test-class-transformer</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-development-mode</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-development-mode</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jdbc-postgresql-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-postgresql-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jdbc-postgresql-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-postgresql-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jdbc-h2-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-h2-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jdbc-h2-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-h2-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jdbc-mariadb-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-mariadb-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jdbc-mariadb-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-mariadb-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-kafka-client-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-kafka-client-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-kafka-client-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-kafka-client-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-health-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-netty-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-netty-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-netty-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-netty-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-reactive-streams-operators-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-reactive-streams-operators-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-reactive-streams-operators-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-reactive-streams-operators-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-reactive-type-converters-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-reactive-type-converters-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-reactive-type-converters-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-reactive-type-converters-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-fault-tolerance-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-fault-tolerance-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-fault-tolerance-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-fault-tolerance-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-health-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-metrics-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-metrics-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-metrics-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-metrics-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-openapi-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-openapi-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-openapi-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-openapi-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-opentracing-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-opentracing-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-opentracing-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-opentracing-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-rest-client-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-rest-client-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-rest-client-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-rest-client-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jaeger-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jaeger-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jaeger-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jaeger-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-resteasy-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-resteasy-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-resteasy-jsonb-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-jsonb-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-resteasy-jsonb-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-jsonb-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-jwt-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-jwt-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-jwt-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-jwt-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-test-common</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-common</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-test-h2</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-         </dependency>
-         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-junit4</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-h2</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-junit5</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit4</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-junit5-internal</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-war-launcher-runner</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-internal</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+         </dependency>
+         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-war-launcher-runner</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-legacy-launcher</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-legacy-launcher</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-openssl-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-openssl-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-openssl-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-openssl-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-resteasy-common-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-common-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-resteasy-common-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-common-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-integration-test-shared-library</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-integration-test-shared-library</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-narayana-jta-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-narayana-jta-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-narayana-jta-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-narayana-jta-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-undertow-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-undertow-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-undertow-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-undertow-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-hibernate-orm-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-hibernate-orm-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-panache-jpa-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-panache-jpa-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-panache-jpa-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-panache-jpa-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-panache-common-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-panache-common-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-arc-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-arc-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-vertx-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-vertx-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-undertow-websockets-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-undertow-websockets-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-undertow-websockets-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-undertow-websockets-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-scheduler-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-scheduler-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-scheduler-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-scheduler-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-reactive-messaging-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-reactive-messaging-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-reactive-messaging-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-reactive-messaging-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-reactive-messaging-kafka-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-reactive-messaging-kafka-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-reactive-messaging-kafka-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-reactive-messaging-kafka-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-spring-di-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-spring-di-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-security-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-security-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-security-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-security-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-infinispan-client-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-infinispan-client-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-infinispan-client-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-infinispan-client-deployment</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
@@ -1258,12 +1258,12 @@
             <version>${jboss-transaction-spi.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.protean.arc</groupId>
+            <groupId>org.jboss.quarkus.arc</groupId>
             <artifactId>arc-processor</artifactId>
             <version>${project.version}</version>
          </dependency>
          <dependency>
-            <groupId>org.jboss.protean.arc</groupId>
+            <groupId>org.jboss.quarkus.arc</groupId>
             <artifactId>arc-runtime</artifactId>
             <version>${project.version}</version>
          </dependency>
@@ -1420,7 +1420,7 @@
             <plugins>
                 <plugin>
                     <groupId>${project.groupId}</groupId>
-                    <artifactId>shamrock-maven-plugin</artifactId>
+                    <artifactId>quarkus-maven-plugin</artifactId>
                     <version>${project.version}</version>
                     <configuration>
                         <!-- Disable PrintAnalysisCallTree reports for native image building by default -->

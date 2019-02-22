@@ -1,4 +1,4 @@
-package org.jboss.shamrock.undertow;
+package io.quarkus.undertow;
 
 import org.jboss.builder.item.SimpleBuildItem;
 import org.jboss.metadata.web.spec.WebMetaData;

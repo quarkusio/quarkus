@@ -1,4 +1,4 @@
-package org.jboss.shamrock.jdbc.h2.runtime.graal;
+package io.quarkus.jdbc.h2.runtime.graal;
 
 import org.h2.engine.ConnectionInfo;
 import org.h2.engine.Session;

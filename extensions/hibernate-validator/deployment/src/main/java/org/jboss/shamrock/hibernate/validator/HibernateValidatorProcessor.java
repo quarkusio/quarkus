@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.validator;
+package io.quarkus.hibernate.validator;
 
-import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
@@ -36,21 +36,21 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
-import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
-import org.jboss.shamrock.arc.deployment.AnnotationsTransformerBuildItem;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
-import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
-import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveFieldBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveMethodBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildItem;
-import org.jboss.shamrock.deployment.recording.RecorderContext;
-import org.jboss.shamrock.hibernate.validator.runtime.HibernateValidatorTemplate;
-import org.jboss.shamrock.hibernate.validator.runtime.ValidatorProvider;
-import org.jboss.shamrock.hibernate.validator.runtime.interceptor.MethodValidationInterceptor;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.HotDeploymentConfigFileBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveFieldBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveMethodBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
+import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.hibernate.validator.runtime.HibernateValidatorTemplate;
+import io.quarkus.hibernate.validator.runtime.ValidatorProvider;
+import io.quarkus.hibernate.validator.runtime.interceptor.MethodValidationInterceptor;
 
 class HibernateValidatorProcessor {
 
@@ -73,7 +73,7 @@ class HibernateValidatorProcessor {
 
         if (isResteasyInClasspath()) {
             // The CDI interceptor which will validate the methods annotated with @JaxrsEndPointValidated
-            additionalBeans.produce(new AdditionalBeanBuildItem("org.jboss.shamrock.hibernate.validator.runtime.jaxrs.JaxrsEndPointValidationInterceptor"));
+            additionalBeans.produce(new AdditionalBeanBuildItem("io.quarkus.hibernate.validator.runtime.jaxrs.JaxrsEndPointValidationInterceptor"));
         }
     }
 

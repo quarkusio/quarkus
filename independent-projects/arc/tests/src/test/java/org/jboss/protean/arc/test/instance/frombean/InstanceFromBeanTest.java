@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.test.instance.frombean;
+package org.jboss.quarkus.arc.test.instance.frombean;
 
 import static org.junit.Assert.assertEquals;
 
@@ -23,9 +23,9 @@ import java.util.UUID;
 import javax.annotation.PostConstruct;
 import javax.inject.Singleton;
 
-import org.jboss.protean.arc.Arc;
-import org.jboss.protean.arc.InjectableBean;
-import org.jboss.protean.arc.test.ArcTestContainer;
+import org.jboss.quarkus.arc.Arc;
+import org.jboss.quarkus.arc.InjectableBean;
+import org.jboss.quarkus.arc.test.ArcTestContainer;
 import org.junit.Rule;
 import org.junit.Test;
 

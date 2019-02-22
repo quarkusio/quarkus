@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.test.requestcontext;
+package org.jboss.quarkus.arc.test.requestcontext;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.control.ActivateRequestContext;

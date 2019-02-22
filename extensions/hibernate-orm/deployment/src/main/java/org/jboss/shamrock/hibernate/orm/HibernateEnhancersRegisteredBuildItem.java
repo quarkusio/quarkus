@@ -1,4 +1,4 @@
-package org.jboss.shamrock.hibernate.orm;
+package io.quarkus.hibernate.orm;
 
 import org.jboss.builder.item.SimpleBuildItem;
 

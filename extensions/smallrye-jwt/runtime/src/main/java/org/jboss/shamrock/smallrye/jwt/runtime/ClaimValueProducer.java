@@ -1,4 +1,4 @@
-package org.jboss.shamrock.smallrye.jwt.runtime;
+package io.quarkus.smallrye.jwt.runtime;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;

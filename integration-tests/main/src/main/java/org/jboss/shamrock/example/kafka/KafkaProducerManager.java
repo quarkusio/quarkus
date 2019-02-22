@@ -1,4 +1,4 @@
-package org.jboss.shamrock.example.kafka;
+package io.quarkus.example.kafka;
 
 import java.util.Properties;
 

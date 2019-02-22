@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator;
+package io.quarkus.creator;
 
 /**
  * Main application creator exception.

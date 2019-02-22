@@ -14,7 +14,7 @@
  *   implied.  See the License for the specific language governing
  *   permissions and limitations under the License.
  */
-package org.jboss.shamrock.maven.components;
+package io.quarkus.maven.components;
 
 import jline.console.ConsoleReader;
 import org.apache.commons.lang3.StringUtils;

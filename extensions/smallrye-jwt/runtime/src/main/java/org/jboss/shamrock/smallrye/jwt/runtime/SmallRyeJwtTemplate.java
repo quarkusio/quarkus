@@ -1,14 +1,14 @@
-package org.jboss.shamrock.smallrye.jwt.runtime;
+package io.quarkus.smallrye.jwt.runtime;
 
 import java.security.Principal;
 
-import org.jboss.shamrock.arc.runtime.BeanContainer;
-import org.jboss.shamrock.runtime.RuntimeValue;
-import org.jboss.shamrock.runtime.annotations.Template;
-import org.jboss.shamrock.smallrye.jwt.runtime.auth.ElytronJwtCallerPrincipal;
-import org.jboss.shamrock.smallrye.jwt.runtime.auth.JWTAuthMethodExtension;
-import org.jboss.shamrock.smallrye.jwt.runtime.auth.JwtIdentityManager;
-import org.jboss.shamrock.smallrye.jwt.runtime.auth.MpJwtValidator;
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.annotations.Template;
+import io.quarkus.smallrye.jwt.runtime.auth.ElytronJwtCallerPrincipal;
+import io.quarkus.smallrye.jwt.runtime.auth.JWTAuthMethodExtension;
+import io.quarkus.smallrye.jwt.runtime.auth.JwtIdentityManager;
+import io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator;
 import org.wildfly.security.auth.realm.token.TokenSecurityRealm;
 import org.wildfly.security.auth.server.SecurityDomain;
 import org.wildfly.security.auth.server.SecurityRealm;

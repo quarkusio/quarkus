@@ -15,7 +15,7 @@
  *   permissions and limitations under the License.
  */
 
-package org.jboss.shamrock.maven.utilities;
+package io.quarkus.maven.utilities;
 
 
 import com.fasterxml.jackson.core.JsonParser;
@@ -29,7 +29,7 @@ import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
-import org.jboss.shamrock.dependencies.Extension;
+import io.quarkus.dependencies.Extension;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -47,7 +47,7 @@ public class MojoUtils {
 
     public static final String JAVA_EXTENSION = ".java";
 
-    private static final String PLUGIN_VERSION_PROPERTY_NAME = "shamrock.version";
+    private static final String PLUGIN_VERSION_PROPERTY_NAME = "quarkus.version";
     public static final String SHAMROCK_VERSION_PROPERTY = "${" + PLUGIN_VERSION_PROPERTY_NAME + "}";
 
     private static final Properties properties = new Properties();
@@ -84,12 +84,12 @@ public class MojoUtils {
     }
 
     private static void loadProperties() {
-        URL url = MojoUtils.class.getClassLoader().getResource("shamrock.properties");
+        URL url = MojoUtils.class.getClassLoader().getResource("quarkus.properties");
         Objects.requireNonNull(url);
         try (InputStream in = url.openStream()) {
             properties.load(in);
         } catch (IOException e) {
-            throw new IllegalStateException("The shamrock.properties file cannot be read", e);
+            throw new IllegalStateException("The quarkus.properties file cannot be read", e);
         }
     }
 

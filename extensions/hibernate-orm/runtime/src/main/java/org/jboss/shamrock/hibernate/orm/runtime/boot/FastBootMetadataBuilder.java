@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm.runtime.boot;
+package io.quarkus.hibernate.orm.runtime.boot;
 
 import static org.hibernate.cfg.AvailableSettings.DATASOURCE;
 import static org.hibernate.cfg.AvailableSettings.DRIVER;
@@ -90,11 +90,11 @@ import org.hibernate.jpa.spi.IdentifierGeneratorStrategyProvider;
 import org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorBuilderImpl;
 import org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorBuilderImpl;
 import org.hibernate.service.internal.AbstractServiceRegistryImpl;
-import org.infinispan.protean.hibernate.cache.ProteanInfinispanRegionFactory;
-import org.jboss.shamrock.hibernate.orm.runtime.recording.RecordableBootstrap;
-import org.jboss.shamrock.hibernate.orm.runtime.recording.RecordedState;
-import org.jboss.shamrock.hibernate.orm.runtime.recording.RecordingDialectFactory;
-import org.jboss.shamrock.hibernate.orm.runtime.service.FlatClassLoaderService;
+import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
+import io.quarkus.hibernate.orm.runtime.recording.RecordableBootstrap;
+import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
+import io.quarkus.hibernate.orm.runtime.recording.RecordingDialectFactory;
+import io.quarkus.hibernate.orm.runtime.service.FlatClassLoaderService;
 
 /**
  * Alternative to EntityManagerFactoryBuilderImpl so to have full control of how MetadataBuilderImplementor
@@ -217,7 +217,7 @@ public class FastBootMetadataBuilder {
 
         mergedSettings.configurationValues.put(PERSISTENCE_UNIT_NAME, persistenceUnit.getName());
 
-        // Protean specific
+        // Quarkus specific
 
         mergedSettings.configurationValues.put("hibernate.temp.use_jdbc_metadata_defaults", "false");
 
@@ -272,7 +272,7 @@ public class FastBootMetadataBuilder {
             }
         }
 
-        mergedSettings.configurationValues.put( org.hibernate.cfg.AvailableSettings.CACHE_REGION_FACTORY, ProteanInfinispanRegionFactory.class.getName());
+        mergedSettings.configurationValues.put( org.hibernate.cfg.AvailableSettings.CACHE_REGION_FACTORY, QuarkusInfinispanRegionFactory.class.getName());
 
         return mergedSettings;
     }

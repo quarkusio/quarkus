@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jboss.shamrock.scheduler.api;
+package io.quarkus.scheduler.api;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
@@ -24,7 +24,7 @@ import java.lang.annotation.Target;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
-import org.jboss.shamrock.scheduler.api.Scheduled.Schedules;
+import io.quarkus.scheduler.api.Scheduled.Schedules;
 
 /**
  * Marks a business method to be automatically scheduled and invoked by the container.

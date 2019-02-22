@@ -1,12 +1,12 @@
-package org.jboss.shamrock.runtime.logging;
+package io.quarkus.runtime.logging;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
-import org.jboss.shamrock.runtime.annotations.ConfigPhase;
-import org.jboss.shamrock.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
  *

@@ -30,4 +30,4 @@
 # limitations under the License.
 #
 
-org.jboss.shamrock.arc.runtime.InterceptorBindingProvider
+io.quarkus.arc.runtime.InterceptorBindingProvider

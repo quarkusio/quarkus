@@ -1,12 +1,12 @@
-package org.jboss.shamrock.panache.jpa;
+package io.quarkus.panache.jpa;
 
 import java.util.Map;
 
 import javax.persistence.EntityManager;
 import javax.transaction.TransactionManager;
 
-import org.jboss.shamrock.panache.common.Parameters;
-import org.jboss.shamrock.panache.jpa.impl.JpaOperations;
+import io.quarkus.panache.common.Parameters;
+import io.quarkus.panache.jpa.impl.JpaOperations;
 
 public class Panache {
     

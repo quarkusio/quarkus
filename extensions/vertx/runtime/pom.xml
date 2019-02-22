@@ -19,28 +19,28 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>shamrock-vertx</artifactId>
-        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>quarkus-vertx</artifactId>
+        <groupId>io.quarkus</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-vertx-runtime</artifactId>
-    <name>Shamrock - Vert.x - Runtime</name>
+    <artifactId>quarkus-vertx-runtime</artifactId>
+    <name>Quarkus - Vert.x - Runtime</name>
 
     <dependencies>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-core-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core-runtime</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-arc-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc-runtime</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-netty-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-netty-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.axle</groupId>
@@ -115,8 +115,8 @@
                 <configuration>
                     <annotationProcessorPaths>
                         <path>
-                            <groupId>org.jboss.shamrock</groupId>
-                            <artifactId>shamrock-extension-processor</artifactId>
+                            <groupId>io.quarkus</groupId>
+                            <artifactId>quarkus-extension-processor</artifactId>
                             <version>${project.version}</version>
                         </path>
                     </annotationProcessorPaths>

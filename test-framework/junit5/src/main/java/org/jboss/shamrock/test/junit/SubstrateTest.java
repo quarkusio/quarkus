@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.test.junit;
+package io.quarkus.test.junit;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -25,10 +25,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Annotation that indicates that this test should be run using a native image,
- * rather than in the JVM. This must also be combined with {@link ShamrockTestExtension}.
+ * rather than in the JVM. This must also be combined with {@link QuarkusTestExtension}.
  *
  * The standard usage pattern is expected to be a base test class that runs the
- * tests using the JVM version of Shamrock, with a subclass that extends the base
+ * tests using the JVM version of Quarkus, with a subclass that extends the base
  * test and is annotated with this annotation to perform the same checks against
  * the native image.
  *
@@ -39,7 +39,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  *
  */
 @Target(ElementType.TYPE)
-@ExtendWith(ShamrockTestExtension.class)
+@ExtendWith(QuarkusTestExtension.class)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface SubstrateTest {
 }

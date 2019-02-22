@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.arc.runtime;
+package io.quarkus.arc.runtime;
 
 import java.lang.annotation.Annotation;
 import java.util.Set;
 
 import javax.interceptor.InvocationContext;
 
-import org.jboss.protean.arc.InvocationContextImpl;
+import org.jboss.quarkus.arc.InvocationContextImpl;
 
 public class InterceptorBindings  {
 

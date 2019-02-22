@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.demo;
+package io.quarkus.creator.demo;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
-import org.jboss.shamrock.creator.AppCreator;
-import org.jboss.shamrock.creator.phase.nativeimage.NativeImageOutcome;
+import io.quarkus.creator.AppCreator;
+import io.quarkus.creator.phase.nativeimage.NativeImageOutcome;
 
 /**
  *
@@ -36,9 +36,9 @@ public class NativeImageOutcomeDemo extends ConfigDemoBase {
 
     @Override
     protected Path initAppJar() {
-        final Path shamrockRoot = Paths.get("").toAbsolutePath().getParent().getParent();
-        final Path appDir = shamrockRoot.resolve("integration-tests").resolve("bean-validation-strict").resolve("target");
-        return appDir.resolve("shamrock-integration-test-bean-validation-1.0.0.Alpha1-SNAPSHOT.jar");
+        final Path quarkusRoot = Paths.get("").toAbsolutePath().getParent().getParent();
+        final Path appDir = quarkusRoot.resolve("integration-tests").resolve("bean-validation-strict").resolve("target");
+        return appDir.resolve("quarkus-integration-test-bean-validation-1.0.0.Alpha1-SNAPSHOT.jar");
     }
 
     @Override

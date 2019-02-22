@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator;
+package io.quarkus.creator;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -28,12 +28,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 
-import org.jboss.shamrock.creator.config.reader.MappedPropertiesHandler;
-import org.jboss.shamrock.creator.config.reader.PropertiesConfigReaderException;
-import org.jboss.shamrock.creator.config.reader.PropertiesHandler;
-import org.jboss.shamrock.creator.outcome.OutcomeResolver;
-import org.jboss.shamrock.creator.outcome.OutcomeResolverFactory;
-import org.jboss.shamrock.creator.util.IoUtils;
+import io.quarkus.creator.config.reader.MappedPropertiesHandler;
+import io.quarkus.creator.config.reader.PropertiesConfigReaderException;
+import io.quarkus.creator.config.reader.PropertiesHandler;
+import io.quarkus.creator.outcome.OutcomeResolver;
+import io.quarkus.creator.outcome.OutcomeResolverFactory;
+import io.quarkus.creator.util.IoUtils;
 
 /**
  *

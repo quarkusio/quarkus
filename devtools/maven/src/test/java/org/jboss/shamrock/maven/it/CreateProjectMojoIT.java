@@ -1,4 +1,4 @@
-package org.jboss.shamrock.maven.it;
+package io.quarkus.maven.it;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
@@ -9,9 +9,9 @@ import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.shared.invoker.*;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
-import org.jboss.shamrock.maven.CreateProjectMojo;
-import org.jboss.shamrock.maven.it.verifier.RunningInvoker;
-import org.jboss.shamrock.maven.utilities.MojoUtils;
+import io.quarkus.maven.CreateProjectMojo;
+import io.quarkus.maven.it.verifier.RunningInvoker;
+import io.quarkus.maven.utilities.MojoUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -73,12 +73,12 @@ public class CreateProjectMojoIT extends MojoTestBase {
         final List<Dependency> dependencies = dependencyManagement.getDependencies();
         assertThat(dependencies.stream().anyMatch(d ->
                 d.getArtifactId().equalsIgnoreCase(MojoUtils.getBomArtifactId())
-                        && d.getVersion().equalsIgnoreCase("${shamrock.version}")
+                        && d.getVersion().equalsIgnoreCase("${quarkus.version}")
                         && d.getScope().equalsIgnoreCase("import")
                         && d.getType().equalsIgnoreCase("pom"))).isTrue();
 
         assertThat(model.getDependencies().stream().anyMatch(d ->
-                d.getArtifactId().equalsIgnoreCase("shamrock-resteasy-deployment")
+                d.getArtifactId().equalsIgnoreCase("quarkus-resteasy-deployment")
                         && d.getVersion() == null)).isTrue();
 
         assertThat(model.getProfiles()).hasSize(1);
@@ -116,7 +116,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         Model model = load(testDir);
         assertThat(model.getDependencyManagement().getDependencies().stream().anyMatch(d ->
                 d.getArtifactId().equalsIgnoreCase(MojoUtils.getBomArtifactId())
-                        && d.getVersion().equalsIgnoreCase("${shamrock.version}")
+                        && d.getVersion().equalsIgnoreCase("${quarkus.version}")
                         && d.getScope().equalsIgnoreCase("import")
                         && d.getType().equalsIgnoreCase("pom"))).isTrue();
 
@@ -155,7 +155,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         properties.put("className", "org.acme.MyResource.java");
         setup(properties);
 
-        check(new File(testDir, "pom.xml"), "shamrock.version");
+        check(new File(testDir, "pom.xml"), "quarkus.version");
 
         assertThat(new File(testDir, "src/main/java")).isDirectory();
 
@@ -183,21 +183,21 @@ public class CreateProjectMojoIT extends MojoTestBase {
         check(new File(testDir, "src/main/java/org/acme/MyResource.java"), "package org.acme;");
 
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
-                .contains("shamrock-resteasy-deployment", "shamrock-smallrye-metrics-deployment").doesNotContain("missing");
+                .contains("quarkus-resteasy-deployment", "quarkus-smallrye-metrics-deployment").doesNotContain("missing");
 
         Model model = load(testDir);
         assertThat(model.getDependencyManagement().getDependencies().stream().anyMatch(d ->
                 d.getArtifactId().equalsIgnoreCase(MojoUtils.getBomArtifactId())
-                        && d.getVersion().equalsIgnoreCase("${shamrock.version}")
+                        && d.getVersion().equalsIgnoreCase("${quarkus.version}")
                         && d.getScope().equalsIgnoreCase("import")
                         && d.getType().equalsIgnoreCase("pom"))).isTrue();
 
         assertThat(model.getDependencies().stream().anyMatch(d ->
-                d.getArtifactId().equalsIgnoreCase("shamrock-resteasy-deployment")
+                d.getArtifactId().equalsIgnoreCase("quarkus-resteasy-deployment")
                         && d.getVersion() == null)).isTrue();
 
         assertThat(model.getDependencies().stream().anyMatch(d ->
-                d.getArtifactId().equalsIgnoreCase("shamrock-smallrye-metrics-deployment")
+                d.getArtifactId().equalsIgnoreCase("quarkus-smallrye-metrics-deployment")
                         && d.getVersion() == null)).isTrue();
     }
 
@@ -224,12 +224,12 @@ public class CreateProjectMojoIT extends MojoTestBase {
         Model model = load(testDir);
         assertThat(model.getDependencyManagement().getDependencies().stream().anyMatch(d ->
                 d.getArtifactId().equalsIgnoreCase(MojoUtils.getBomArtifactId())
-                        && d.getVersion().equalsIgnoreCase("${shamrock.version}")
+                        && d.getVersion().equalsIgnoreCase("${quarkus.version}")
                         && d.getScope().equalsIgnoreCase("import")
                         && d.getType().equalsIgnoreCase("pom"))).isTrue();
 
         assertThat(model.getDependencies().stream().anyMatch(d ->
-                d.getArtifactId().equalsIgnoreCase("shamrock-resteasy-deployment")
+                d.getArtifactId().equalsIgnoreCase("quarkus-resteasy-deployment")
                         && d.getVersion() == null)).isTrue();
 
         assertThat(model.getDependencies().stream().anyMatch(d ->
@@ -252,7 +252,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
     }
 
     /**
-     * Reproducer for https://github.com/jbossas/protean-shamrock/issues/671
+     * Reproducer for https://github.com/jbossas/quarkus/issues/671
      */
     @Test
     public void testThatDefaultPackageAreReplaced() throws Exception {
@@ -263,13 +263,13 @@ public class CreateProjectMojoIT extends MojoTestBase {
         properties.put("className", "MyGreatResource");
         setup(properties);
         // As the directory is not empty (log) navigate to the artifactID directory
-        testDir = new File(testDir, "my-shamrock-project");
-        check(new File(testDir, "src/main/java/org/acme/shamrock/sample/MyGreatResource.java"), "package org.acme.shamrock.sample;");
+        testDir = new File(testDir, "my-quarkus-project");
+        check(new File(testDir, "src/main/java/org/acme/quarkus/sample/MyGreatResource.java"), "package org.acme.quarkus.sample;");
     }
 
 
     /**
-     * Reproducer for https://github.com/jbossas/protean-shamrock/issues/673
+     * Reproducer for https://github.com/jbossas/quarkus/issues/673
      */
     @Test
     public void testThatGenerationFailedWhenTheUserPassGAVonExistingPom() throws Exception {
@@ -314,7 +314,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         // As the directory is not empty (log) navigate to the artifactID directory
         testDir = new File(testDir, "acme");
         running = new RunningInvoker(testDir, false);
-        running.execute(Arrays.asList("compile", "shamrock:dev"), Collections.emptyMap());
+        running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap());
 
         String resp = getHttpResponse();
 

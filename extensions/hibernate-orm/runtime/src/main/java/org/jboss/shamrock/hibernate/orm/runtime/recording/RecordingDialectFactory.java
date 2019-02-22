@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm.runtime.recording;
+package io.quarkus.hibernate.orm.runtime.recording;
 
 import java.util.Map;
 

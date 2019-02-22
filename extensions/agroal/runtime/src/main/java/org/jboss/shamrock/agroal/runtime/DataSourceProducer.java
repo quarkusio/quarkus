@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jboss.shamrock.agroal.runtime;
+package io.quarkus.agroal.runtime;
 
 import java.sql.Driver;
 import java.sql.SQLException;

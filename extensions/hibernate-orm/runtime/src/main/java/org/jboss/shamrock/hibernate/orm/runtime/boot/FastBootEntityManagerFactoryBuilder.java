@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm.runtime.boot;
+package io.quarkus.hibernate.orm.runtime.boot;
 
 import java.io.Serializable;
 import java.security.NoSuchAlgorithmException;
@@ -111,7 +111,7 @@ public final class FastBootEntityManagerFactoryBuilder implements EntityManagerF
         Throwable t = cause;
         while (t != null) {
             if (t instanceof NoSuchAlgorithmException) {
-                message += "Unable to enable SSL support. You might be in the case where you used the `shamrock.ssl.native=false` configuration"
+                message += "Unable to enable SSL support. You might be in the case where you used the `quarkus.ssl.native=false` configuration"
                         + " and SSL was not disabled automatically for your driver.";
                 break;
             }

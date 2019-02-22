@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.demo;
+package io.quarkus.creator.demo;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -30,12 +30,12 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
-import org.jboss.shamrock.creator.AppCreator;
-import org.jboss.shamrock.creator.config.reader.PropertiesConfigReader;
-import org.jboss.shamrock.creator.config.reader.PropertiesHandler;
-import org.jboss.shamrock.creator.phase.curate.CuratePhase;
-import org.jboss.shamrock.creator.util.IoUtils;
-import org.jboss.shamrock.creator.util.PropertyUtils;
+import io.quarkus.creator.AppCreator;
+import io.quarkus.creator.config.reader.PropertiesConfigReader;
+import io.quarkus.creator.config.reader.PropertiesHandler;
+import io.quarkus.creator.phase.curate.CuratePhase;
+import io.quarkus.creator.util.IoUtils;
+import io.quarkus.creator.util.PropertyUtils;
 
 /**
  *
@@ -91,13 +91,13 @@ public class ConfigDemoBase {
     }
 
     protected Path initAppJar() {
-        final Path shamrockRoot = Paths.get("").toAbsolutePath().getParent().getParent();
-        //final Path appDir = shamrockRoot.resolve("integration-tests").resolve("bean-validation-strict").resolve("target");
-        //final Path appJar = appDir.resolve("shamrock-integration-test-bean-validation-1.0.0.Alpha1-SNAPSHOT.jar");
+        final Path quarkusRoot = Paths.get("").toAbsolutePath().getParent().getParent();
+        //final Path appDir = quarkusRoot.resolve("integration-tests").resolve("bean-validation-strict").resolve("target");
+        //final Path appJar = appDir.resolve("quarkus-integration-test-bean-validation-1.0.0.Alpha1-SNAPSHOT.jar");
 
-        final Path quickstartsRoot = shamrockRoot.getParent().resolve("protean-quickstarts");
+        final Path quickstartsRoot = quarkusRoot.getParent().resolve("quarkus-quickstarts");
         if(!Files.exists(quickstartsRoot)) {
-            throw new IllegalStateException("Failed to locate protean-quickstarts repo at " + quickstartsRoot);
+            throw new IllegalStateException("Failed to locate quarkus-quickstarts repo at " + quickstartsRoot);
         }
         final Path appDir = quickstartsRoot.resolve("application-configuration").resolve("target");
         final Path appJar = appDir.resolve("application-configuration-1.0-SNAPSHOT.jar");
@@ -109,7 +109,7 @@ public class ConfigDemoBase {
     }
 
     public Path getDemoWorkDir() {
-        return workDir == null ? workDir = Paths.get(PropertyUtils.getUserHome()).resolve("shamrock-creator-demo") : workDir;
+        return workDir == null ? workDir = Paths.get(PropertyUtils.getUserHome()).resolve("quarkus-creator-demo") : workDir;
     }
 
     public Properties getProperties() {
@@ -118,7 +118,7 @@ public class ConfigDemoBase {
         if(demoDir != null) {
             props.setProperty("output", demoDir.toString());
         }
-        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_LOCAL_REPO), Paths.get(PropertyUtils.getUserHome(), "shamrock-curate-repo").toString());
+        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_LOCAL_REPO), Paths.get(PropertyUtils.getUserHome(), "quarkus-curate-repo").toString());
         initProps(props);
         return props;
     }

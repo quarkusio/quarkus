@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc;
+package org.jboss.quarkus.arc;
 
 import javax.enterprise.inject.spi.Interceptor;
 import javax.enterprise.inject.spi.Prioritized;

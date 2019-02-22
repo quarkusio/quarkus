@@ -1,9 +1,9 @@
-package org.jboss.shamrock.reactivemessaging;
+package io.quarkus.reactivemessaging;
 
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 
 import io.vertx.kafka.client.serialization.BufferDeserializer;
 import io.vertx.kafka.client.serialization.BufferSerializer;

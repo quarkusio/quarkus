@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.test.h2;
+package io.quarkus.test.h2;
 
 import java.sql.SQLException;
 
 import org.h2.tools.Server;
-import org.jboss.shamrock.test.common.ShamrockTestResourceLifecycleManager;
+import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
-public class H2DatabaseTestResource implements ShamrockTestResourceLifecycleManager {
+public class H2DatabaseTestResource implements QuarkusTestResourceLifecycleManager {
 
     private Server tcpServer;
 

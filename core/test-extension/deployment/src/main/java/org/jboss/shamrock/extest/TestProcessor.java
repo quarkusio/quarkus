@@ -1,4 +1,4 @@
-package org.jboss.shamrock.extest;
+package io.quarkus.extest;
 
 import java.util.Collection;
 
@@ -7,19 +7,19 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.arc.deployment.BeanArchiveIndexBuildItem;
-import org.jboss.shamrock.arc.deployment.BeanContainerListenerBuildItem;
-import org.jboss.shamrock.arc.deployment.BeanDefiningAnnotationBuildItem;
-import org.jboss.shamrock.arc.runtime.BeanContainerListener;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.annotations.ExecutionTime;
-import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
-import org.jboss.shamrock.deployment.builditem.LaunchModeBuildItem;
-import org.jboss.shamrock.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
+import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.runtime.BeanContainerListener;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 
-import static org.jboss.shamrock.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
 /**
  * A test extension deployment processor
@@ -36,7 +36,7 @@ public final class TestProcessor {
      * Register a extension capability and feature
      * @return test-extension feature build item
      */
-    @BuildStep(providesCapabilities = "org.jboss.shamrock.test-extension")
+    @BuildStep(providesCapabilities = "io.quarkus.test-extension")
     FeatureBuildItem featureBuildItem() {
         return new FeatureBuildItem("test-extension");
     }
@@ -84,11 +84,11 @@ public final class TestProcessor {
         if(buildTimeConfig.allValues.longPrimitive != 1234567891L) {
             throw new IllegalStateException("buildTimeConfig.allValues.longPrimitive != 1234567891L; "+buildTimeConfig.allValues.longPrimitive);
         }
-        // shamrock.bt.all-values.double-primitive=3.1415926535897932384
+        // quarkus.bt.all-values.double-primitive=3.1415926535897932384
         if(Math.IEEEremainder(buildTimeConfig.allValues.doublePrimitive, 3.1415926535897932384) != 0) {
             throw new IllegalStateException("buildTimeConfig.allValues.doublePrimitive != 3.1415926535897932384; "+buildTimeConfig.allValues.doublePrimitive);
         }
-        // shamrock.bt.all-values.opt-double-value=3.1415926535897932384
+        // quarkus.bt.all-values.opt-double-value=3.1415926535897932384
         if(Math.IEEEremainder(buildTimeConfig.allValues.optDoubleValue.getAsDouble(), 3.1415926535897932384) != 0) {
             throw new IllegalStateException("buildTimeConfig.allValues.optDoubleValue != 3.1415926535897932384; "+buildTimeConfig.allValues.optDoubleValue);
         }
@@ -104,7 +104,7 @@ public final class TestProcessor {
         if(buildTimeConfig.allValues.nestedConfigMap.size() != 2) {
             throw new IllegalStateException("buildTimeConfig.allValues.simpleMap.size != 2; "+buildTimeConfig.allValues.nestedConfigMap.size());
         }
-        //shamrock.bt.all-values.string-list=value1,value2
+        //quarkus.bt.all-values.string-list=value1,value2
         if(buildTimeConfig.allValues.stringList.size() != 2) {
             throw new IllegalStateException("buildTimeConfig.allValues.stringList.size != 2; "+buildTimeConfig.allValues.stringList.size());
         }
@@ -114,7 +114,7 @@ public final class TestProcessor {
         if(!buildTimeConfig.allValues.stringList.get(1).equals("value2")) {
             throw new IllegalStateException("buildTimeConfig.allValues.stringList[1] != value2; "+buildTimeConfig.allValues.stringList.get(1));
         }
-        // shamrock.rt.all-values.long-list=1,2,3
+        // quarkus.rt.all-values.long-list=1,2,3
         if(buildTimeConfig.allValues.longList.size() != 3) {
             throw new IllegalStateException("buildTimeConfig.allValues.longList.size != 3; "+buildTimeConfig.allValues.longList.size());
         }

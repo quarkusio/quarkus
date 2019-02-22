@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.arc.test.interceptor;
+package io.quarkus.arc.test.interceptor;
 
 import javax.annotation.Priority;
 import javax.enterprise.inject.spi.DefinitionException;
@@ -22,7 +22,7 @@ import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
 
-import org.jboss.shamrock.test.ShamrockUnitTest;
+import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -31,7 +31,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class InterceptorNoBindingsTest {
 
     @RegisterExtension
-    static final ShamrockUnitTest config = new ShamrockUnitTest()
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(InterceptorWithoutBindings.class))
             .setExpectedException(DefinitionException.class);

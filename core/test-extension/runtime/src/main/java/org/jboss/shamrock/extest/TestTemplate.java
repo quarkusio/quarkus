@@ -1,9 +1,9 @@
-package org.jboss.shamrock.extest;
+package io.quarkus.extest;
 
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.arc.runtime.BeanContainer;
-import org.jboss.shamrock.arc.runtime.BeanContainerListener;
-import org.jboss.shamrock.runtime.annotations.Template;
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.arc.runtime.BeanContainerListener;
+import io.quarkus.runtime.annotations.Template;
 
 /**
  * The runtime template

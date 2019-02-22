@@ -1,12 +1,12 @@
-package org.jboss.shamrock.deployment;
+package io.quarkus.deployment;
 
 import java.util.Optional;
 
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.SslNativeConfigBuildItem;
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
-import org.jboss.shamrock.runtime.annotations.ConfigPhase;
-import org.jboss.shamrock.runtime.annotations.ConfigRoot;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
+import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.runtime.annotations.ConfigRoot;
 
 public class SslProcessor {
 

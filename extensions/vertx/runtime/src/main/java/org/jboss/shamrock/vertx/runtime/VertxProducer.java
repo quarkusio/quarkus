@@ -1,4 +1,4 @@
-package org.jboss.shamrock.vertx.runtime;
+package io.quarkus.vertx.runtime;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;

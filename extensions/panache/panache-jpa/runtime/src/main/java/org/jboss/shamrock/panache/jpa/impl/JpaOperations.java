@@ -1,4 +1,4 @@
-package org.jboss.shamrock.panache.jpa.impl;
+package io.quarkus.panache.jpa.impl;
 
 import java.util.List;
 import java.util.Map;
@@ -10,10 +10,10 @@ import javax.persistence.Query;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
-import org.jboss.protean.arc.Arc;
-import org.jboss.shamrock.panache.common.Parameters;
-import org.jboss.shamrock.panache.common.Sort;
-import org.jboss.shamrock.panache.jpa.PanacheQuery;
+import org.jboss.quarkus.arc.Arc;
+import io.quarkus.panache.common.Parameters;
+import io.quarkus.panache.common.Sort;
+import io.quarkus.panache.jpa.PanacheQuery;
 
 public class JpaOperations {
 

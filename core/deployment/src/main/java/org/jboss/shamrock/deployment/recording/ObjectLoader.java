@@ -1,4 +1,4 @@
-package org.jboss.shamrock.deployment.recording;
+package io.quarkus.deployment.recording;
 
 import org.jboss.protean.gizmo.BytecodeCreator;
 import org.jboss.protean.gizmo.ResultHandle;

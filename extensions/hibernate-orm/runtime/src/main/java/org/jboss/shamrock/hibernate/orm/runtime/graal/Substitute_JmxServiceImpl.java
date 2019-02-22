@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm.runtime.graal;
+package io.quarkus.hibernate.orm.runtime.graal;
 
 import java.util.Map;
 import javax.management.ObjectName;

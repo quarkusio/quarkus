@@ -1,4 +1,4 @@
-package org.jboss.shamrock.agroal;
+package io.quarkus.agroal;
 
 import org.jboss.builder.item.SimpleBuildItem;
 

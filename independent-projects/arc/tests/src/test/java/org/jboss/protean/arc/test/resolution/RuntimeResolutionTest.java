@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.test.resolution;
+package org.jboss.quarkus.arc.test.resolution;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -26,10 +26,10 @@ import java.util.List;
 import javax.enterprise.util.TypeLiteral;
 import javax.inject.Singleton;
 
-import org.jboss.protean.arc.Arc;
-import org.jboss.protean.arc.ArcContainer;
-import org.jboss.protean.arc.InstanceHandle;
-import org.jboss.protean.arc.test.ArcTestContainer;
+import org.jboss.quarkus.arc.Arc;
+import org.jboss.quarkus.arc.ArcContainer;
+import org.jboss.quarkus.arc.InstanceHandle;
+import org.jboss.quarkus.arc.test.ArcTestContainer;
 import org.junit.Rule;
 import org.junit.Test;
 

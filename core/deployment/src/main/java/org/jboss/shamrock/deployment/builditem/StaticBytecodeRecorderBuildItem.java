@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.builditem;
+package io.quarkus.deployment.builditem;
 
 import org.jboss.builder.item.MultiBuildItem;
-import org.jboss.shamrock.deployment.recording.BytecodeRecorderImpl;
+import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 
 public final class StaticBytecodeRecorderBuildItem extends MultiBuildItem {
 

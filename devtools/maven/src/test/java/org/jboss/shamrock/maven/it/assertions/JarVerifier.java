@@ -1,4 +1,4 @@
-package org.jboss.shamrock.maven.it.assertions;
+package io.quarkus.maven.it.assertions;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;

@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator;
+package io.quarkus.creator;
 
-import org.jboss.shamrock.creator.config.Configurable;
-import org.jboss.shamrock.creator.outcome.OutcomeProvider;
+import io.quarkus.creator.config.Configurable;
+import io.quarkus.creator.outcome.OutcomeProvider;
 
 /**
  * A phase in the application build flow

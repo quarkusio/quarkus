@@ -1,4 +1,4 @@
-package org.jboss.shamrock.deployment.builditem;
+package io.quarkus.deployment.builditem;
 
 import org.eclipse.microprofile.config.spi.Converter;
 import org.jboss.builder.item.MultiBuildItem;

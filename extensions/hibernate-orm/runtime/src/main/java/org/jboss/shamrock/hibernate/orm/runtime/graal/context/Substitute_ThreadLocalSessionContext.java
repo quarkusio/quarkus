@@ -1,4 +1,4 @@
-package org.jboss.shamrock.hibernate.orm.runtime.graal.context;
+package io.quarkus.hibernate.orm.runtime.graal.context;
 
 import org.hibernate.HibernateException;
 import org.hibernate.Session;

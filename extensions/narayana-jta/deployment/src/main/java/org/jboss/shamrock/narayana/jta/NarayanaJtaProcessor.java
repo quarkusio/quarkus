@@ -14,33 +14,33 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.narayana.jta;
+package io.quarkus.narayana.jta;
 
-import static org.jboss.shamrock.deployment.annotations.ExecutionTime.RUNTIME_INIT;
-import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.util.Properties;
 
 import javax.inject.Inject;
 
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
-import org.jboss.shamrock.deployment.Capabilities;
-import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
-import org.jboss.shamrock.deployment.logging.LogCleanupFilterBuildItem;
-import org.jboss.shamrock.narayana.jta.runtime.NarayanaJtaConfiguration;
-import org.jboss.shamrock.narayana.jta.runtime.NarayanaJtaProducers;
-import org.jboss.shamrock.narayana.jta.runtime.NarayanaJtaTemplate;
-import org.jboss.shamrock.narayana.jta.runtime.interceptor.TransactionalInterceptorMandatory;
-import org.jboss.shamrock.narayana.jta.runtime.interceptor.TransactionalInterceptorNever;
-import org.jboss.shamrock.narayana.jta.runtime.interceptor.TransactionalInterceptorNotSupported;
-import org.jboss.shamrock.narayana.jta.runtime.interceptor.TransactionalInterceptorRequired;
-import org.jboss.shamrock.narayana.jta.runtime.interceptor.TransactionalInterceptorRequiresNew;
-import org.jboss.shamrock.narayana.jta.runtime.interceptor.TransactionalInterceptorSupports;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.narayana.jta.runtime.NarayanaJtaConfiguration;
+import io.quarkus.narayana.jta.runtime.NarayanaJtaProducers;
+import io.quarkus.narayana.jta.runtime.NarayanaJtaTemplate;
+import io.quarkus.narayana.jta.runtime.interceptor.TransactionalInterceptorMandatory;
+import io.quarkus.narayana.jta.runtime.interceptor.TransactionalInterceptorNever;
+import io.quarkus.narayana.jta.runtime.interceptor.TransactionalInterceptorNotSupported;
+import io.quarkus.narayana.jta.runtime.interceptor.TransactionalInterceptorRequired;
+import io.quarkus.narayana.jta.runtime.interceptor.TransactionalInterceptorRequiresNew;
+import io.quarkus.narayana.jta.runtime.interceptor.TransactionalInterceptorSupports;
 
 import com.arjuna.ats.internal.arjuna.coordinator.CheckedActionFactoryImple;
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionManagerImple;

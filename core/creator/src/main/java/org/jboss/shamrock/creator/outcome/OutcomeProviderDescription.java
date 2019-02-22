@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.outcome;
+package io.quarkus.creator.outcome;
 
 import java.util.ArrayList;
 import java.util.Collections;

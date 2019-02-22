@@ -1,4 +1,4 @@
-package org.jboss.shamrock.runtime.annotations;
+package io.quarkus.runtime.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -13,13 +13,13 @@ import java.lang.annotation.Target;
  * that a group property can be disabled, this should be done using a {@code boolean} property (preferably the unnamed
  * property or a {@code enabled} property).  For example:
 <pre><code>
-shamrock.extra-fast-mode         = yes
-shamrock.extra-fast-mode.gadgets = 20
+quarkus.extra-fast-mode         = yes
+quarkus.extra-fast-mode.gadgets = 20
 </code></pre>
  * Or:
 <pre><code>
-shamrock.laser-beam.enabled    = true
-shamrock.laser-beam.mount-mode = sharks
+quarkus.laser-beam.enabled    = true
+quarkus.laser-beam.mount-mode = sharks
  </code></pre>
  */
 @Retention(RetentionPolicy.RUNTIME)

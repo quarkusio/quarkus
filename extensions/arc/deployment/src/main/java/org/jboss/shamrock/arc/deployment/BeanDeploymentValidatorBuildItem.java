@@ -1,7 +1,7 @@
-package org.jboss.shamrock.arc.deployment;
+package io.quarkus.arc.deployment;
 
 import org.jboss.builder.item.MultiBuildItem;
-import org.jboss.protean.arc.processor.BeanDeploymentValidator;
+import org.jboss.quarkus.arc.processor.BeanDeploymentValidator;
 
 public final class BeanDeploymentValidatorBuildItem extends MultiBuildItem {
 

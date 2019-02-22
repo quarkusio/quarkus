@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jboss.shamrock.scheduler.deployment;
+package io.quarkus.scheduler.deployment;
 
 import java.util.List;
 
 import org.jboss.builder.item.MultiBuildItem;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.protean.arc.processor.BeanInfo;
+import org.jboss.quarkus.arc.processor.BeanInfo;
 
 public final class ScheduledBusinessMethodItem extends MultiBuildItem {
 

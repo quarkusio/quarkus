@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jboss.shamrock.reactivemessaging.smallrye.deployment;
+package io.quarkus.reactivemessaging.smallrye.deployment;
 
-import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,21 +28,21 @@ import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
-import org.jboss.protean.arc.processor.AnnotationStore;
-import org.jboss.protean.arc.processor.BeanDeploymentValidator;
-import org.jboss.protean.arc.processor.BeanInfo;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
-import org.jboss.shamrock.arc.deployment.BeanContainerBuildItem;
-import org.jboss.shamrock.arc.deployment.BeanDeploymentValidatorBuildItem;
-import org.jboss.shamrock.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
-import org.jboss.shamrock.arc.deployment.UnremovableBeanBuildItem;
-import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import org.jboss.shamrock.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingLifecycle;
-import org.jboss.shamrock.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingTemplate;
+import org.jboss.quarkus.arc.processor.AnnotationStore;
+import org.jboss.quarkus.arc.processor.BeanDeploymentValidator;
+import org.jboss.quarkus.arc.processor.BeanInfo;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.BeanDeploymentValidatorBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingLifecycle;
+import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingTemplate;
 
 /**
  *
@@ -50,7 +50,7 @@ import org.jboss.shamrock.smallrye.reactivemessaging.runtime.SmallRyeReactiveMes
  */
 public class SmallRyeReactiveMessagingProcessor {
 
-    private static final Logger LOGGER = Logger.getLogger("org.jboss.shamrock.scheduler.deployment.processor");
+    private static final Logger LOGGER = Logger.getLogger("io.quarkus.scheduler.deployment.processor");
 
     static final DotName NAME_INCOMING = DotName.createSimple(Incoming.class.getName());
     static final DotName NAME_OUTGOING = DotName.createSimple(Outgoing.class.getName());

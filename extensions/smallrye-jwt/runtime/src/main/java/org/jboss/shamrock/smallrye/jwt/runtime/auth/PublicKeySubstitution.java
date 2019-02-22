@@ -1,4 +1,4 @@
-package org.jboss.shamrock.smallrye.jwt.runtime.auth;
+package io.quarkus.smallrye.jwt.runtime.auth;
 
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -6,7 +6,7 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 
-import org.jboss.shamrock.runtime.ObjectSubstitution;
+import io.quarkus.runtime.ObjectSubstitution;
 
 public class PublicKeySubstitution implements ObjectSubstitution<RSAPublicKey, PublicKeyProxy> {
     @Override

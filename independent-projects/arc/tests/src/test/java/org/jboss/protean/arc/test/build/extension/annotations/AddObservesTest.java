@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.test.build.extension.annotations;
+package org.jboss.quarkus.arc.test.build.extension.annotations;
 
 import static org.junit.Assert.assertTrue;
 
@@ -29,9 +29,9 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
-import org.jboss.protean.arc.Arc;
-import org.jboss.protean.arc.processor.AnnotationsTransformer;
-import org.jboss.protean.arc.test.ArcTestContainer;
+import org.jboss.quarkus.arc.Arc;
+import org.jboss.quarkus.arc.processor.AnnotationsTransformer;
+import org.jboss.quarkus.arc.test.ArcTestContainer;
 import org.junit.Rule;
 import org.junit.Test;
 

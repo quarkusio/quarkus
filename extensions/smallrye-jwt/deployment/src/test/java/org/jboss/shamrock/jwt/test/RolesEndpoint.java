@@ -17,7 +17,7 @@
  * limitations under the License.
  *
  */
-package org.jboss.shamrock.jwt.test;
+package io.quarkus.jwt.test;
 
 import java.security.Principal;
 import java.util.Date;

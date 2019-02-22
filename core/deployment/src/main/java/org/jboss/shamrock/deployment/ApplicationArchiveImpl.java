@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment;
+package io.quarkus.deployment;
 
 import java.io.Closeable;
 import java.io.IOException;

@@ -1,4 +1,4 @@
-package org.jboss.shamrock.smallrye.jwt.runtime.auth;
+package io.quarkus.smallrye.jwt.runtime.auth;
 
 public class PublicKeyProxy {
     private byte[] content;

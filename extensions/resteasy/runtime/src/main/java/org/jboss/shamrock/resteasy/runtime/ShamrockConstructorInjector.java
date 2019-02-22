@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.resteasy.runtime;
+package io.quarkus.resteasy.runtime;
 
 import java.lang.reflect.Constructor;
 import java.util.concurrent.CompletableFuture;
@@ -27,9 +27,9 @@ import org.jboss.resteasy.spi.ConstructorInjector;
 import org.jboss.resteasy.spi.Failure;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.jboss.resteasy.spi.HttpResponse;
-import org.jboss.shamrock.arc.runtime.BeanContainer;
+import io.quarkus.arc.runtime.BeanContainer;
 
-public class ShamrockConstructorInjector implements ConstructorInjector {
+public class QuarkusConstructorInjector implements ConstructorInjector {
 
     private volatile BeanContainer.Factory<?> factory;
 
@@ -37,7 +37,7 @@ public class ShamrockConstructorInjector implements ConstructorInjector {
 
     private final Constructor<?> ctor;
 
-    public ShamrockConstructorInjector(Constructor<?> ctor, ConstructorInjector delegate) {
+    public QuarkusConstructorInjector(Constructor<?> ctor, ConstructorInjector delegate) {
         this.ctor = ctor;
         this.delegate = delegate;
     }
@@ -50,11 +50,11 @@ public class ShamrockConstructorInjector implements ConstructorInjector {
     @Override
     public CompletionStage<Object> construct(HttpRequest request, HttpResponse response, boolean unwrapAsync)
             throws Failure, WebApplicationException, ApplicationException {
-        if (ShamrockInjectorFactory.CONTAINER == null) {
+        if (QuarkusInjectorFactory.CONTAINER == null) {
             return delegate.construct(request, response, unwrapAsync);
         }
         if(factory == null) {
-            factory = ShamrockInjectorFactory.CONTAINER.instanceFactory(this.ctor.getDeclaringClass());
+            factory = QuarkusInjectorFactory.CONTAINER.instanceFactory(this.ctor.getDeclaringClass());
         }
         if(factory == null) {
             return delegate.construct(request, response, unwrapAsync);

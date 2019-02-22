@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.websocket;
+package io.quarkus.example.websocket;
 
 import javax.websocket.OnMessage;
 import javax.websocket.server.ServerEndpoint;

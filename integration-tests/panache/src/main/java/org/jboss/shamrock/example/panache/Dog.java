@@ -1,11 +1,11 @@
-package org.jboss.shamrock.example.panache;
+package io.quarkus.example.panache;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 
-import org.jboss.shamrock.panache.jpa.PanacheEntityBase;
+import io.quarkus.panache.jpa.PanacheEntityBase;
 
 // custom id type
 @Entity

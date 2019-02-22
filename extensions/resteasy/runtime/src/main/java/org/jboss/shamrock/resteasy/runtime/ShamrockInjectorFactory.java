@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.resteasy.runtime;
+package io.quarkus.resteasy.runtime;
 
 import java.lang.reflect.Constructor;
 import java.util.concurrent.CompletionStage;
@@ -33,11 +33,11 @@ import org.jboss.resteasy.spi.PropertyInjector;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.jboss.resteasy.spi.metadata.ResourceClass;
 import org.jboss.resteasy.spi.metadata.ResourceConstructor;
-import org.jboss.shamrock.arc.runtime.BeanContainer;
+import io.quarkus.arc.runtime.BeanContainer;
 
-public class ShamrockInjectorFactory extends InjectorFactoryImpl {
+public class QuarkusInjectorFactory extends InjectorFactoryImpl {
 
-    private static final Logger log = Logger.getLogger("org.jboss.shamrock.resteasy.runtime");
+    private static final Logger log = Logger.getLogger("io.quarkus.resteasy.runtime");
     static volatile BeanContainer CONTAINER = null;
     static volatile Function<Object, Object> PROXY_UNWRAPPER;
 
@@ -51,7 +51,7 @@ public class ShamrockInjectorFactory extends InjectorFactoryImpl {
     @Override
     public ConstructorInjector createConstructor(ResourceConstructor constructor, ResteasyProviderFactory providerFactory) {
         log.debugf("Create resource constructor: %s", constructor.getConstructor());
-        return new ShamrockConstructorInjector(constructor.getConstructor(), super.createConstructor(constructor, providerFactory));
+        return new QuarkusConstructorInjector(constructor.getConstructor(), super.createConstructor(constructor, providerFactory));
     }
 
     @SuppressWarnings("rawtypes")

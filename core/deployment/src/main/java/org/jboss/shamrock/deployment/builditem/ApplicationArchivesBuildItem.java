@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.builditem;
+package io.quarkus.deployment.builditem;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -22,7 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.jboss.builder.item.SimpleBuildItem;
-import org.jboss.shamrock.deployment.ApplicationArchive;
+import io.quarkus.deployment.ApplicationArchive;
 
 //temp class
 public final class ApplicationArchivesBuildItem extends SimpleBuildItem {

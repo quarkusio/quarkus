@@ -1,8 +1,8 @@
-package org.jboss.shamrock.smallrye.jwt.runtime;
+package io.quarkus.smallrye.jwt.runtime;
 
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
-import org.jboss.shamrock.runtime.annotations.ConfigPhase;
-import org.jboss.shamrock.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
  * deployment configuration
@@ -19,7 +19,7 @@ public class JWTAuthContextInfoGroup {
     /**
      * The authentication mechanism
      */
-    @ConfigItem(defaultValue = "Shamrock-JWT")
+    @ConfigItem(defaultValue = "Quarkus-JWT")
     public String realmName;
 
     /**

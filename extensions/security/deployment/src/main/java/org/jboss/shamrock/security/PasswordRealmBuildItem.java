@@ -1,9 +1,9 @@
-package org.jboss.shamrock.security;
+package io.quarkus.security;
 
 import java.util.List;
 
 import org.jboss.builder.item.MultiBuildItem;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildProducer;
 
 /**
  * Marker build item indicating that a password based realm was installed.

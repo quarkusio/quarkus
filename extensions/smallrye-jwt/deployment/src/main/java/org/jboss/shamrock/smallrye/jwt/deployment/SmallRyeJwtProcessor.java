@@ -14,43 +14,43 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.smallrye.jwt.deployment;
+package io.quarkus.smallrye.jwt.deployment;
 
 import java.security.interfaces.RSAPublicKey;
 
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.servlet.ServletExtension;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.arc.deployment.BeanContainerBuildItem;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.annotations.ExecutionTime;
-import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
-import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
-import org.jboss.shamrock.deployment.builditem.ObjectSubstitutionBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import org.jboss.shamrock.runtime.RuntimeValue;
-import org.jboss.shamrock.security.AuthConfig;
-import org.jboss.shamrock.security.AuthConfigBuildItem;
-import org.jboss.shamrock.security.IdentityManagerBuildItem;
-import org.jboss.shamrock.security.SecurityDomainBuildItem;
-import org.jboss.shamrock.security.SecurityRealmBuildItem;
-import org.jboss.shamrock.smallrye.jwt.runtime.ClaimValueProducer;
-import org.jboss.shamrock.smallrye.jwt.runtime.CommonJwtProducer;
-import org.jboss.shamrock.smallrye.jwt.runtime.JWTAuthContextInfoGroup;
-import org.jboss.shamrock.smallrye.jwt.runtime.JsonValueProducer;
-import org.jboss.shamrock.smallrye.jwt.runtime.SmallRyeJwtTemplate;
-import org.jboss.shamrock.smallrye.jwt.runtime.PrincipalProducer;
-import org.jboss.shamrock.smallrye.jwt.runtime.RawClaimTypeProducer;
-import org.jboss.shamrock.smallrye.jwt.runtime.auth.ClaimAttributes;
-import org.jboss.shamrock.smallrye.jwt.runtime.auth.ElytronJwtCallerPrincipal;
-import org.jboss.shamrock.smallrye.jwt.runtime.auth.JWTAuthMethodExtension;
-import org.jboss.shamrock.smallrye.jwt.runtime.auth.MpJwtValidator;
-import org.jboss.shamrock.smallrye.jwt.runtime.auth.PublicKeyProxy;
-import org.jboss.shamrock.smallrye.jwt.runtime.auth.PublicKeySubstitution;
-import org.jboss.shamrock.undertow.ServletExtensionBuildItem;
+import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.security.AuthConfig;
+import io.quarkus.security.AuthConfigBuildItem;
+import io.quarkus.security.IdentityManagerBuildItem;
+import io.quarkus.security.SecurityDomainBuildItem;
+import io.quarkus.security.SecurityRealmBuildItem;
+import io.quarkus.smallrye.jwt.runtime.ClaimValueProducer;
+import io.quarkus.smallrye.jwt.runtime.CommonJwtProducer;
+import io.quarkus.smallrye.jwt.runtime.JWTAuthContextInfoGroup;
+import io.quarkus.smallrye.jwt.runtime.JsonValueProducer;
+import io.quarkus.smallrye.jwt.runtime.SmallRyeJwtTemplate;
+import io.quarkus.smallrye.jwt.runtime.PrincipalProducer;
+import io.quarkus.smallrye.jwt.runtime.RawClaimTypeProducer;
+import io.quarkus.smallrye.jwt.runtime.auth.ClaimAttributes;
+import io.quarkus.smallrye.jwt.runtime.auth.ElytronJwtCallerPrincipal;
+import io.quarkus.smallrye.jwt.runtime.auth.JWTAuthMethodExtension;
+import io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator;
+import io.quarkus.smallrye.jwt.runtime.auth.PublicKeyProxy;
+import io.quarkus.smallrye.jwt.runtime.auth.PublicKeySubstitution;
+import io.quarkus.undertow.ServletExtensionBuildItem;
 import org.wildfly.security.auth.server.SecurityRealm;
 
 /**

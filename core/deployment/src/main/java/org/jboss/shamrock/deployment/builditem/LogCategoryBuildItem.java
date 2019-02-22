@@ -1,4 +1,4 @@
-package org.jboss.shamrock.deployment.builditem;
+package io.quarkus.deployment.builditem;
 
 import java.util.logging.Level;
 

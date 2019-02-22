@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.arc.deployment;
+package io.quarkus.arc.deployment;
 
-import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,36 +37,36 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
-import org.jboss.protean.arc.ArcContainer;
-import org.jboss.protean.arc.processor.AnnotationsTransformer;
-import org.jboss.protean.arc.processor.BeanDefiningAnnotation;
-import org.jboss.protean.arc.processor.BeanDeployment;
-import org.jboss.protean.arc.processor.BeanProcessor;
-import org.jboss.protean.arc.processor.BeanProcessor.Builder;
-import org.jboss.protean.arc.processor.ReflectionRegistration;
-import org.jboss.protean.arc.processor.ResourceOutput;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.arc.deployment.UnremovableBeanBuildItem.BeanClassNameExclusion;
-import org.jboss.shamrock.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
-import org.jboss.shamrock.arc.runtime.ArcDeploymentTemplate;
-import org.jboss.shamrock.arc.runtime.BeanContainer;
-import org.jboss.shamrock.arc.runtime.LifecycleEventRunner;
-import org.jboss.shamrock.deployment.Capabilities;
-import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
-import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
-import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.GeneratedResourceBuildItem;
-import org.jboss.shamrock.deployment.builditem.ShutdownContextBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveFieldBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveMethodBuildItem;
-import org.jboss.shamrock.deployment.index.IndexingUtil;
+import org.jboss.quarkus.arc.ArcContainer;
+import org.jboss.quarkus.arc.processor.AnnotationsTransformer;
+import org.jboss.quarkus.arc.processor.BeanDefiningAnnotation;
+import org.jboss.quarkus.arc.processor.BeanDeployment;
+import org.jboss.quarkus.arc.processor.BeanProcessor;
+import org.jboss.quarkus.arc.processor.BeanProcessor.Builder;
+import org.jboss.quarkus.arc.processor.ReflectionRegistration;
+import org.jboss.quarkus.arc.processor.ResourceOutput;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassNameExclusion;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
+import io.quarkus.arc.runtime.ArcDeploymentTemplate;
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.arc.runtime.LifecycleEventRunner;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveFieldBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveMethodBuildItem;
+import io.quarkus.deployment.index.IndexingUtil;
 
 public class ArcAnnotationProcessor {
 
-    private static final Logger log = Logger.getLogger("org.jboss.shamrock.arc.deployment.processor");
+    private static final Logger log = Logger.getLogger("io.quarkus.arc.deployment.processor");
 
     @Inject
     BeanArchiveIndexBuildItem beanArchiveIndex;
@@ -127,7 +127,7 @@ public class ArcAnnotationProcessor {
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, Observes.class.getName())); // graal bug
 
-        // Index bean classes registered by shamrock
+        // Index bean classes registered by quarkus
         Indexer indexer = new Indexer();
         Set<DotName> additionalIndex = new HashSet<>();
         for (String beanClass : additionalBeans) {

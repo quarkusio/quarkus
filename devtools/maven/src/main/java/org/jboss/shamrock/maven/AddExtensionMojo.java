@@ -1,4 +1,4 @@
-package org.jboss.shamrock.maven;
+package io.quarkus.maven;
 
 import java.io.IOException;
 import java.util.Set;
@@ -10,13 +10,13 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
-import org.jboss.shamrock.cli.commands.AddExtensions;
+import io.quarkus.cli.commands.AddExtensions;
 
 @Mojo(name = "add-extension")
 public class AddExtensionMojo extends AbstractMojo {
 
     /**
-     * The Maven project which will define and configure the shamrock-maven-plugin
+     * The Maven project which will define and configure the quarkus-maven-plugin
      */
     @Parameter(defaultValue = "${project}")
     protected MavenProject project;

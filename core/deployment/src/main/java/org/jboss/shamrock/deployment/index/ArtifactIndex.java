@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.index;
+package io.quarkus.deployment.index;
 
 import java.nio.file.Path;
 

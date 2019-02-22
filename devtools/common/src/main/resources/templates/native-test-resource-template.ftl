@@ -1,6 +1,6 @@
 package ${package_name};
 
-import org.jboss.shamrock.test.junit.SubstrateTest;
+import io.quarkus.test.junit.SubstrateTest;
 
 @SubstrateTest
 public class Native${class_name}IT extends ${class_name}Test {

@@ -1,4 +1,4 @@
-package org.jboss.shamrock.deployment.annotations;
+package io.quarkus.deployment.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

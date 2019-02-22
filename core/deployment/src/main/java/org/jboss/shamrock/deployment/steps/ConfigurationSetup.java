@@ -1,6 +1,6 @@
-package org.jboss.shamrock.deployment.steps;
+package io.quarkus.deployment.steps;
 
-import static org.jboss.shamrock.deployment.util.ReflectUtil.toError;
+import static io.quarkus.deployment.util.ReflectUtil.toError;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -40,33 +40,33 @@ import org.jboss.protean.gizmo.FieldDescriptor;
 import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
-import org.jboss.shamrock.deployment.AccessorFinder;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
-import org.jboss.shamrock.deployment.builditem.ConfigurationBuildItem;
-import org.jboss.shamrock.deployment.builditem.ConfigurationCustomConverterBuildItem;
-import org.jboss.shamrock.deployment.builditem.ExtensionClassLoaderBuildItem;
-import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.GeneratedResourceBuildItem;
-import org.jboss.shamrock.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
-import org.jboss.shamrock.deployment.builditem.RunTimeConfigurationSourceBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem;
-import org.jboss.shamrock.deployment.configuration.ConfigDefinition;
-import org.jboss.shamrock.deployment.configuration.ConfigPatternMap;
-import org.jboss.shamrock.deployment.configuration.LeafConfigType;
-import org.jboss.shamrock.deployment.recording.ObjectLoader;
-import org.jboss.shamrock.deployment.util.ServiceUtil;
-import org.jboss.shamrock.runtime.annotations.ConfigPhase;
-import org.jboss.shamrock.runtime.configuration.CidrAddressConverter;
-import org.jboss.shamrock.runtime.configuration.ConverterFactory;
-import org.jboss.shamrock.runtime.configuration.DefaultConfigSource;
-import org.jboss.shamrock.runtime.configuration.ExpandingConfigSource;
-import org.jboss.shamrock.runtime.configuration.InetAddressConverter;
-import org.jboss.shamrock.runtime.configuration.InetSocketAddressConverter;
-import org.jboss.shamrock.runtime.configuration.NameIterator;
-import org.jboss.shamrock.runtime.configuration.RegexConverter;
-import org.jboss.shamrock.runtime.configuration.SimpleConfigurationProviderResolver;
+import io.quarkus.deployment.AccessorFinder;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
+import io.quarkus.deployment.builditem.ConfigurationBuildItem;
+import io.quarkus.deployment.builditem.ConfigurationCustomConverterBuildItem;
+import io.quarkus.deployment.builditem.ExtensionClassLoaderBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationSourceBuildItem;
+import io.quarkus.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.configuration.ConfigDefinition;
+import io.quarkus.deployment.configuration.ConfigPatternMap;
+import io.quarkus.deployment.configuration.LeafConfigType;
+import io.quarkus.deployment.recording.ObjectLoader;
+import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.runtime.configuration.CidrAddressConverter;
+import io.quarkus.runtime.configuration.ConverterFactory;
+import io.quarkus.runtime.configuration.DefaultConfigSource;
+import io.quarkus.runtime.configuration.ExpandingConfigSource;
+import io.quarkus.runtime.configuration.InetAddressConverter;
+import io.quarkus.runtime.configuration.InetSocketAddressConverter;
+import io.quarkus.runtime.configuration.NameIterator;
+import io.quarkus.runtime.configuration.RegexConverter;
+import io.quarkus.runtime.configuration.SimpleConfigurationProviderResolver;
 import org.objectweb.asm.Opcodes;
 import org.wildfly.common.net.CidrAddress;
 
@@ -75,11 +75,11 @@ import org.wildfly.common.net.CidrAddress;
  */
 public class ConfigurationSetup {
 
-    private static final Logger log = Logger.getLogger("org.jboss.shamrock.configuration");
+    private static final Logger log = Logger.getLogger("io.quarkus.configuration");
 
-    public static final String CONFIG_HELPER = "org.jboss.shamrock.runtime.generated.ConfigHelper";
-    public static final String CONFIG_HELPER_DATA = "org.jboss.shamrock.runtime.generated.ConfigHelperData";
-    public static final String CONFIG_ROOT = "org.jboss.shamrock.runtime.generated.ConfigRoot";
+    public static final String CONFIG_HELPER = "io.quarkus.runtime.generated.ConfigHelper";
+    public static final String CONFIG_HELPER_DATA = "io.quarkus.runtime.generated.ConfigHelperData";
+    public static final String CONFIG_ROOT = "io.quarkus.runtime.generated.ConfigRoot";
 
     public static final FieldDescriptor CONFIG_ROOT_FIELD = FieldDescriptor.of(CONFIG_HELPER_DATA, "configRoot", CONFIG_ROOT);
 
@@ -151,7 +151,7 @@ public class ConfigurationSetup {
         final SmallRyeConfig src = (SmallRyeConfig) builder.build();
         final ConfigDefinition configDefinition = new ConfigDefinition();
         // populate it with all known types
-        for (Class<?> clazz : ServiceUtil.classesNamedIn(extensionClassLoaderBuildItem.getExtensionClassLoader(), "META-INF/shamrock-config-roots.list")) {
+        for (Class<?> clazz : ServiceUtil.classesNamedIn(extensionClassLoaderBuildItem.getExtensionClassLoader(), "META-INF/quarkus-config-roots.list")) {
             configDefinition.registerConfigRoot(clazz);
         }
         SmallRyeConfigProviderResolver.instance().registerConfig(src, Thread.currentThread().getContextClassLoader());
@@ -414,9 +414,9 @@ public class ConfigurationSetup {
                 final ResultHandle keyIter = hasNext.newInstance(MethodDescriptor.ofConstructor(NameIterator.class, String.class), key);
                 // if (! keyIter.hasNext()) continue loop;
                 hasNext.ifNonZero(hasNext.invokeVirtualMethod(NI_HAS_NEXT, keyIter)).falseBranch().continueScope(loop);
-                // if (! keyIter.nextSegmentEquals("shamrock")) continue loop;
-                hasNext.ifNonZero(hasNext.invokeVirtualMethod(NI_NEXT_EQUALS, keyIter, hasNext.load("shamrock"))).falseBranch().continueScope(loop);
-                // keyIter.next(); // skip "shamrock"
+                // if (! keyIter.nextSegmentEquals("quarkus")) continue loop;
+                hasNext.ifNonZero(hasNext.invokeVirtualMethod(NI_NEXT_EQUALS, keyIter, hasNext.load("quarkus"))).falseBranch().continueScope(loop);
+                // keyIter.next(); // skip "quarkus"
                 hasNext.invokeVirtualMethod(NI_NEXT, keyIter);
                 // parse(config, keyIter);
                 hasNext.invokeStaticMethod(generateParserBody(cc, keyMap, new StringBuilder("parseKey"), new HashMap<>()), config, keyIter);

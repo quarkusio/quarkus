@@ -5,22 +5,22 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-smallrye-reactive-type-converters</artifactId>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-smallrye-reactive-type-converters</artifactId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>shamrock-smallrye-reactive-type-converters-deployment</artifactId>
-    <name>Shamrock - SmallRye Reactive Type Converters - Deployment</name>
+    <artifactId>quarkus-smallrye-reactive-type-converters-deployment</artifactId>
+    <name>Quarkus - SmallRye Reactive Type Converters - Deployment</name>
 
     <dependencies>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-core-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-smallrye-reactive-type-converters-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-reactive-type-converters-runtime</artifactId>
         </dependency>
     </dependencies>
 
@@ -31,8 +31,8 @@
                 <configuration>
                     <annotationProcessorPaths>
                         <path>
-                            <groupId>org.jboss.shamrock</groupId>
-                            <artifactId>shamrock-extension-processor</artifactId>
+                            <groupId>io.quarkus</groupId>
+                            <artifactId>quarkus-extension-processor</artifactId>
                             <version>${project.version}</version>
                         </path>
                     </annotationProcessorPaths>

@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.steps;
+package io.quarkus.deployment.steps;
 
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.HotDeploymentConfigFileBuildItem;
 
 class DevModeBuildStep {
 

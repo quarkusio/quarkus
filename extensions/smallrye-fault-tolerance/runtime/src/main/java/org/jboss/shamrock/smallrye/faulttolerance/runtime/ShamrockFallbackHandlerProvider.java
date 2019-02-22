@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.smallrye.faulttolerance.runtime;
+package io.quarkus.smallrye.faulttolerance.runtime;
 
 import javax.annotation.Priority;
 import javax.enterprise.context.Dependent;
@@ -33,7 +33,7 @@ import io.smallrye.faulttolerance.config.FaultToleranceOperation;
 @Dependent
 @Alternative
 @Priority(1)
-public class ShamrockFallbackHandlerProvider implements FallbackHandlerProvider {
+public class QuarkusFallbackHandlerProvider implements FallbackHandlerProvider {
 
     @Inject
     @Any

@@ -1,4 +1,4 @@
-package org.jboss.shamrock.jwt.test;
+package io.quarkus.jwt.test;
 
 import java.io.InputStream;
 import java.util.Arrays;
@@ -7,7 +7,7 @@ import java.util.HashSet;
 import javax.json.Json;
 import javax.json.JsonObject;
 
-import org.jboss.shamrock.smallrye.jwt.runtime.auth.ClaimAttributes;
+import io.quarkus.smallrye.jwt.runtime.auth.ClaimAttributes;
 import org.jose4j.jwt.JwtClaims;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

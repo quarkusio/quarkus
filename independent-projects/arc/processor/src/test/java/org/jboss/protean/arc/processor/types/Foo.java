@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.processor.types;
+package org.jboss.quarkus.arc.processor.types;
 
 import java.util.AbstractList;
 

@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.panache;
+package io.quarkus.example.panache;
 
 import javax.persistence.Entity;
 
-import org.jboss.shamrock.panache.jpa.PanacheEntity;
+import io.quarkus.panache.jpa.PanacheEntity;
 
 @Entity
 public class Address extends PanacheEntity {

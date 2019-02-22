@@ -1,8 +1,8 @@
-package org.jboss.shamrock.extest;
+package io.quarkus.extest;
 
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
-import org.jboss.shamrock.runtime.annotations.ConfigPhase;
-import org.jboss.shamrock.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.runtime.annotations.ConfigRoot;
 
 @ConfigRoot(name = "rt", phase = ConfigPhase.RUN_TIME)
 public class TestRunTimeConfig {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.smallrye.health.runtime;
+package io.quarkus.smallrye.health.runtime;
 
 import java.io.IOException;
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.steps;
+package io.quarkus.deployment.steps;
 
 import static org.jboss.protean.gizmo.MethodDescriptor.ofConstructor;
 import static org.jboss.protean.gizmo.MethodDescriptor.ofMethod;
@@ -33,29 +33,29 @@ import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
 import org.jboss.protean.gizmo.TryBlock;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.ClassOutput;
-import org.jboss.shamrock.deployment.builditem.ApplicationClassNameBuildItem;
-import org.jboss.shamrock.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
-import org.jboss.shamrock.deployment.builditem.ClassOutputBuildItem;
-import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
-import org.jboss.shamrock.deployment.builditem.HttpServerBuildItem;
-import org.jboss.shamrock.deployment.builditem.MainBytecodeRecorderBuildItem;
-import org.jboss.shamrock.deployment.builditem.MainClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.ObjectSubstitutionBuildItem;
-import org.jboss.shamrock.deployment.builditem.StaticBytecodeRecorderBuildItem;
-import org.jboss.shamrock.deployment.builditem.SystemPropertyBuildItem;
-import org.jboss.shamrock.deployment.recording.BytecodeRecorderImpl;
-import org.jboss.shamrock.runtime.Application;
-import org.jboss.shamrock.runtime.StartupContext;
-import org.jboss.shamrock.runtime.StartupTask;
-import org.jboss.shamrock.runtime.Timing;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.ClassOutput;
+import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
+import io.quarkus.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
+import io.quarkus.deployment.builditem.ClassOutputBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.HttpServerBuildItem;
+import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
+import io.quarkus.deployment.builditem.MainClassBuildItem;
+import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
+import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
+import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.deployment.recording.BytecodeRecorderImpl;
+import io.quarkus.runtime.Application;
+import io.quarkus.runtime.StartupContext;
+import io.quarkus.runtime.StartupTask;
+import io.quarkus.runtime.Timing;
 
 class MainClassBuildStep {
 
-    private static final String APP_CLASS = "org.jboss.shamrock.runner.ApplicationImpl";
-    private static final String MAIN_CLASS = "org.jboss.shamrock.runner.GeneratedMain";
+    private static final String APP_CLASS = "io.quarkus.runner.ApplicationImpl";
+    private static final String MAIN_CLASS = "io.quarkus.runner.GeneratedMain";
     private static final String STARTUP_CONTEXT = "STARTUP_CONTEXT";
 
     private static final AtomicInteger COUNT = new AtomicInteger();
@@ -115,7 +115,7 @@ class MainClassBuildStep {
 
         CatchBlockCreator cb = tryBlock.addCatch(Throwable.class);
         cb.invokeVirtualMethod(ofMethod(StartupContext.class, "close", void.class), startupContext);
-        cb.throwException(RuntimeException.class, "Failed to start shamrock", cb.getCaughtException());
+        cb.throwException(RuntimeException.class, "Failed to start quarkus", cb.getCaughtException());
 
         // Application class: start method
 
@@ -156,7 +156,7 @@ class MainClassBuildStep {
         cb = tryBlock.addCatch(Throwable.class);
         cb.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cb.getCaughtException());
         cb.invokeVirtualMethod(ofMethod(StartupContext.class, "close", void.class), startupContext);
-        cb.throwException(RuntimeException.class, "Failed to start shamrock", cb.getCaughtException());
+        cb.throwException(RuntimeException.class, "Failed to start quarkus", cb.getCaughtException());
         mv.returnValue(null);
 
         // Application class: stop method

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.test.requestcontext.propagation;
+package org.jboss.quarkus.arc.test.requestcontext.propagation;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;

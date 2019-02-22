@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.smallrye.openapi.runtime;
+package io.quarkus.smallrye.openapi.runtime;
 
 import java.io.IOException;
 import java.util.Map;

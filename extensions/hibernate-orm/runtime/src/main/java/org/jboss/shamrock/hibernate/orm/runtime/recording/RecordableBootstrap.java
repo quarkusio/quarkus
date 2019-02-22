@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm.runtime.recording;
+package io.quarkus.hibernate.orm.runtime.recording;
 
 import java.io.File;
 import java.net.URL;
@@ -64,9 +64,9 @@ import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitia
 import org.hibernate.service.spi.ServiceContributor;
 import org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractorInitiator;
 import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
-import org.jboss.shamrock.hibernate.orm.runtime.service.DialectFactoryInitiator;
-import org.jboss.shamrock.hibernate.orm.runtime.service.DisabledJMXInitiator;
-import org.jboss.shamrock.hibernate.orm.runtime.service.ProteanRegionFactoryInitiator;
+import io.quarkus.hibernate.orm.runtime.service.DialectFactoryInitiator;
+import io.quarkus.hibernate.orm.runtime.service.DisabledJMXInitiator;
+import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
 
 /**
  * Has to extend StandardServiceRegistryBuilder even if we don't want: needs to
@@ -146,7 +146,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 
         serviceInitiators.add(SessionFactoryServiceRegistryFactoryInitiator.INSTANCE);
 
-        serviceInitiators.add(ProteanRegionFactoryInitiator.INSTANCE);
+        serviceInitiators.add(QuarkusRegionFactoryInitiator.INSTANCE);
 
         serviceInitiators.add(TransactionCoordinatorBuilderInitiator.INSTANCE);
 

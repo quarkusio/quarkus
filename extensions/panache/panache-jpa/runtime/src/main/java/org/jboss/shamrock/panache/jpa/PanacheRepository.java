@@ -1,4 +1,4 @@
-package org.jboss.shamrock.panache.jpa;
+package io.quarkus.panache.jpa;
 
 
 public interface PanacheRepository<Entity> extends PanacheRepositoryBase<Entity, Long> {

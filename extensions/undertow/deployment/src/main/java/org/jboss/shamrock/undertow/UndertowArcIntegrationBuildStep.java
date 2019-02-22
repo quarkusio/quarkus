@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.undertow;
+package io.quarkus.undertow;
 
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.annotations.ExecutionTime;
-import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.arc.deployment.BeanContainerBuildItem;
-import org.jboss.shamrock.arc.deployment.BeanDefiningAnnotationBuildItem;
-import org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.undertow.runtime.UndertowDeploymentTemplate;
 
 public class UndertowArcIntegrationBuildStep {
 

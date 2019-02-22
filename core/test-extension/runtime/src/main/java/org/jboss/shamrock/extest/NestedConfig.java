@@ -1,7 +1,7 @@
-package org.jboss.shamrock.extest;
+package io.quarkus.extest;
 
-import org.jboss.shamrock.runtime.annotations.ConfigGroup;
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
 public class NestedConfig {

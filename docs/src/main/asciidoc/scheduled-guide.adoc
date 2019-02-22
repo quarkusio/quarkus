@@ -26,7 +26,7 @@ image:scheduling-task-architecture.png[alt=Architecture,width=640,height=480]
 We recommend you to follow the instructions in the next sections and create the application step by step.
 However, you can go right to the completed example.
 
-Clone the Git repository: `git clone https://github.com/jbossas/protean-quickstarts.git`, or download an https://github.com/jbossas/protean-quickstarts/archive/master.zip[archive].
+Clone the Git repository: `git clone https://github.com/jbossas/quarkus-quickstarts.git`, or download an https://github.com/jbossas/quarkus-quickstarts/archive/master.zip[archive].
 
 The solution is located in the `scheduling-periodic-task` directory.
 
@@ -36,7 +36,7 @@ First, we need a new project. Create a new project with the following command:
 
 [source, subs=attributes+]
 ----
-mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=scheduling-periodic-tasks \
     -DclassName="org.acme.scheduling.CountResource" \
@@ -53,7 +53,7 @@ It generates:
 * an `org.acme.scheduling.CountResource` resource
 * an associated test
 
-The Maven project also imports the Shamrock scheduler extension.
+The Maven project also imports the Quarkus scheduler extension.
 
 == Creating a scheduled job
 
@@ -65,7 +65,7 @@ package org.acme.scheduling;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.enterprise.context.ApplicationScoped;
-import org.jboss.shamrock.scheduler.api.Scheduled;
+import io.quarkus.scheduler.api.Scheduled;
 
 @ApplicationScoped              // <1>
 public class CounterBean {
@@ -84,7 +84,7 @@ public class CounterBean {
 }
 ----
 1. Declare the bean in the _application_ scope
-2. Use the `@Scheduled` annotation to instruct Shamrock to runs this method every 10 seconds
+2. Use the `@Scheduled` annotation to instruct Quarkus to runs this method every 10 seconds
 
 The code is pretty straightforward. Every 10 seconds, the counter is incremented.
 The `get()` method allows retrieving the current value.
@@ -129,13 +129,13 @@ We also need to update the tests. Edit the `CountResourceTest` class to match:
 ----
 package org.acme.scheduling;
 
-import org.jboss.shamrock.test.junit.ShamrockTest;
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
 
-@ShamrockTest
+@QuarkusTest
 public class CountResourceTest {
 
     @Test
@@ -153,7 +153,7 @@ public class CountResourceTest {
 
 == Package and run the application
 
-Run the application with: `mvn compile shamrock:dev`.
+Run the application with: `mvn compile quarkus:dev`.
 In another terminal, run `curl localhost:8080/count` to check the counter value.
 After a few seconds, re-run `curl localhost:8080/count` to verify the counter has been incremented.
 

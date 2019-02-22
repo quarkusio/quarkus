@@ -1,1 +1,1 @@
-org.jboss.shamrock.undertow.devmode.UndertowHotReplacementSetup
+io.quarkus.undertow.devmode.UndertowHotReplacementSetup

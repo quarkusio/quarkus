@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.processor;
+package org.jboss.quarkus.arc.processor;
 
 public class TypesTest {
 

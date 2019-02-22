@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.steps;
+package io.quarkus.deployment.steps;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -23,10 +23,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Properties;
 
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.ArchiveRootBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateOutputBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateOutputBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
 
 public class SubstrateSystemPropertiesBuildStep {
 

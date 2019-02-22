@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.test;
+package io.quarkus.example.test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -27,15 +27,15 @@ import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 
-import org.jboss.shamrock.test.common.http.TestHTTPResource;
-import org.jboss.shamrock.test.junit.ShamrockTest;
+import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 /**
  * @author Ken Finnigan
  */
-@ShamrockTest
+@QuarkusTest
 public class OpenApiTestCase {
 
     @TestHTTPResource("openapi")

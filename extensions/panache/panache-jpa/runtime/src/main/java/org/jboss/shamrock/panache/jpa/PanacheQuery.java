@@ -1,4 +1,4 @@
-package org.jboss.shamrock.panache.jpa;
+package io.quarkus.panache.jpa;
 
 import java.util.List;
 import java.util.Map;
@@ -7,8 +7,8 @@ import java.util.stream.Stream;
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 
-import org.jboss.shamrock.panache.common.Page;
-import org.jboss.shamrock.panache.jpa.impl.JpaOperations;
+import io.quarkus.panache.common.Page;
+import io.quarkus.panache.jpa.impl.JpaOperations;
 
 public class PanacheQuery<Entity> {
     

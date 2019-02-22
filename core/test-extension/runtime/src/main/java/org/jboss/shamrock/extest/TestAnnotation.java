@@ -1,4 +1,4 @@
-package org.jboss.shamrock.extest;
+package io.quarkus.extest;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Inherited;

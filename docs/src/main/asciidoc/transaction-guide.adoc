@@ -18,8 +18,8 @@ Add the following to your `pom.xml`:
 <dependencies>
     <!-- Transaction Manager extension -->
     <dependency>
-        <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-narayana-jta-deployment</artifactId>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-narayana-jta-deployment</artifactId>
     </dependency>
 </dependencies>
 --

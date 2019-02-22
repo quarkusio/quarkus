@@ -1,12 +1,12 @@
-package org.jboss.shamrock.panache.jpa;
+package io.quarkus.panache.jpa;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import org.jboss.shamrock.panache.common.Parameters;
-import org.jboss.shamrock.panache.common.Sort;
-import org.jboss.shamrock.panache.jpa.impl.JpaOperations;
+import io.quarkus.panache.common.Parameters;
+import io.quarkus.panache.common.Sort;
+import io.quarkus.panache.jpa.impl.JpaOperations;
 
 public interface PanacheRepositoryBase<Entity, Id> {
 

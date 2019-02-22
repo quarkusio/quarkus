@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm.runtime;
+package io.quarkus.hibernate.orm.runtime;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
@@ -25,10 +25,10 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceContext;
 import javax.persistence.PersistenceUnit;
 
-import org.jboss.protean.arc.Arc;
-import org.jboss.protean.arc.InstanceHandle;
-import org.jboss.protean.arc.ResourceReferenceProvider;
-import org.jboss.shamrock.hibernate.orm.runtime.entitymanager.ForwardingEntityManager;
+import org.jboss.quarkus.arc.Arc;
+import org.jboss.quarkus.arc.InstanceHandle;
+import org.jboss.quarkus.arc.ResourceReferenceProvider;
+import io.quarkus.hibernate.orm.runtime.entitymanager.ForwardingEntityManager;
 
 public class JPAResourceReferenceProvider implements ResourceReferenceProvider {
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm.runtime;
+package io.quarkus.hibernate.orm.runtime;
 
 import org.hibernate.cfg.AvailableSettings;
 import org.jboss.logging.Logger;
@@ -35,7 +35,7 @@ public class Hibernate {
     }
 
     public static void featureInit() {
-        Logger.getLogger("org.hibernate.protean.feature").debug("Hibernate Features Enabled");
+        Logger.getLogger("org.hibernate.quarkus.feature").debug("Hibernate Features Enabled");
     }
 
 }

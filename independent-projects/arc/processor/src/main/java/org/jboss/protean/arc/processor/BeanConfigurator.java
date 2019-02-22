@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.processor;
+package org.jboss.quarkus.arc.processor;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,8 +32,8 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
-import org.jboss.protean.arc.BeanCreator;
-import org.jboss.protean.arc.BeanDestroyer;
+import org.jboss.quarkus.arc.BeanCreator;
+import org.jboss.quarkus.arc.BeanDestroyer;
 import org.jboss.protean.gizmo.FieldDescriptor;
 import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;

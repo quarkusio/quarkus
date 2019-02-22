@@ -1,4 +1,4 @@
-package org.jboss.shamrock.test.common.http;
+package io.quarkus.test.common.http;
 
 import java.lang.reflect.Field;
 import java.net.URI;
@@ -22,8 +22,8 @@ public class TestHttpResourceManager {
         }
         providers = Collections.unmodifiableMap(map);
         Config config = ConfigProvider.getConfig();
-        String host = config.getOptionalValue("shamrock.http.host", String.class).orElse("localhost");
-        String port = config.getOptionalValue("shamrock.http.test-port", String.class).orElse("8081");
+        String host = config.getOptionalValue("quarkus.http.host", String.class).orElse("localhost");
+        String port = config.getOptionalValue("quarkus.http.test-port", String.class).orElse("8081");
         uri = "http://" + host + ":" + port;
         System.setProperty("test.url", uri);
     }

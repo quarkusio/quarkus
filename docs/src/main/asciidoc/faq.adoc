@@ -9,7 +9,7 @@
 :numbered:
 :sectnums:
 :sectnumlevels: 4
-:project-name: Protean
+:project-name: Quarkus
 
 == Native compilation
 

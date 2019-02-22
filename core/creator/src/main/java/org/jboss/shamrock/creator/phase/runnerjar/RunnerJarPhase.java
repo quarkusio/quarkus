@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.phase.runnerjar;
+package io.quarkus.creator.phase.runnerjar;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -42,29 +42,29 @@ import java.util.function.Consumer;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.creator.AppArtifact;
-import org.jboss.shamrock.creator.AppArtifactResolver;
-import org.jboss.shamrock.creator.AppCreationPhase;
-import org.jboss.shamrock.creator.AppCreator;
-import org.jboss.shamrock.creator.AppCreatorException;
-import org.jboss.shamrock.creator.AppDependency;
-import org.jboss.shamrock.creator.config.reader.MappedPropertiesHandler;
-import org.jboss.shamrock.creator.config.reader.PropertiesHandler;
-import org.jboss.shamrock.creator.outcome.OutcomeProviderRegistration;
-import org.jboss.shamrock.creator.phase.augment.AugmentOutcome;
-import org.jboss.shamrock.creator.phase.curate.CurateOutcome;
-import org.jboss.shamrock.creator.util.IoUtils;
-import org.jboss.shamrock.creator.util.ZipUtils;
+import io.quarkus.creator.AppArtifact;
+import io.quarkus.creator.AppArtifactResolver;
+import io.quarkus.creator.AppCreationPhase;
+import io.quarkus.creator.AppCreator;
+import io.quarkus.creator.AppCreatorException;
+import io.quarkus.creator.AppDependency;
+import io.quarkus.creator.config.reader.MappedPropertiesHandler;
+import io.quarkus.creator.config.reader.PropertiesHandler;
+import io.quarkus.creator.outcome.OutcomeProviderRegistration;
+import io.quarkus.creator.phase.augment.AugmentOutcome;
+import io.quarkus.creator.phase.curate.CurateOutcome;
+import io.quarkus.creator.util.IoUtils;
+import io.quarkus.creator.util.ZipUtils;
 
 /**
- * Based on the provided {@link org.jboss.shamrock.creator.phase.augment.AugmentOutcome},
+ * Based on the provided {@link io.quarkus.creator.phase.augment.AugmentOutcome},
  * this phase builds a runnable JAR.
  *
  * @author Alexey Loubyansky
  */
 public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJarOutcome {
 
-    private static final String DEFAULT_MAIN_CLASS = "org.jboss.shamrock.runner.GeneratedMain";
+    private static final String DEFAULT_MAIN_CLASS = "io.quarkus.runner.GeneratedMain";
     private static final String PROVIDED = "provided";
 
     private static final Logger log = Logger.getLogger(RunnerJarPhase.class);
@@ -118,7 +118,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
 
     /**
      * Main class name fir the runnable JAR. If none is set by the user
-     * org.jboss.shamrock.runner.GeneratedMain will be use by default.
+     * io.quarkus.runner.GeneratedMain will be use by default.
      *
      * @param mainClass  main class name for the runnable JAR
      * @return

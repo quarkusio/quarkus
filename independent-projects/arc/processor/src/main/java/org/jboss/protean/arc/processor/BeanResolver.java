@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.processor;
+package org.jboss.quarkus.arc.processor;
 
 import static java.util.Collections.singletonList;
 import static org.jboss.jandex.Type.Kind.*;
 import static org.jboss.jandex.Type.Kind.CLASS;
-import static org.jboss.protean.arc.processor.DotNames.*;
+import static org.jboss.quarkus.arc.processor.DotNames.*;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,7 +34,7 @@ import java.util.function.Function;
 
 import org.jboss.jandex.*;
 import org.jboss.jandex.Type.Kind;
-import org.jboss.protean.arc.processor.InjectionPointInfo.TypeAndQualifiers;
+import org.jboss.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
 
 /**
  *

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.processor;
+package org.jboss.quarkus.arc.processor;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -23,14 +23,14 @@ import java.util.function.Predicate;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.jboss.protean.arc.BeanManagerProvider;
-import org.jboss.protean.arc.BeanMetadataProvider;
-import org.jboss.protean.arc.EventProvider;
-import org.jboss.protean.arc.InjectableReferenceProvider;
-import org.jboss.protean.arc.InjectionPointProvider;
-import org.jboss.protean.arc.InstanceProvider;
-import org.jboss.protean.arc.ResourceProvider;
-import org.jboss.protean.arc.processor.InjectionPointInfo.Kind;
+import org.jboss.quarkus.arc.BeanManagerProvider;
+import org.jboss.quarkus.arc.BeanMetadataProvider;
+import org.jboss.quarkus.arc.EventProvider;
+import org.jboss.quarkus.arc.InjectableReferenceProvider;
+import org.jboss.quarkus.arc.InjectionPointProvider;
+import org.jboss.quarkus.arc.InstanceProvider;
+import org.jboss.quarkus.arc.ResourceProvider;
+import org.jboss.quarkus.arc.processor.InjectionPointInfo.Kind;
 import org.jboss.protean.gizmo.ClassCreator;
 import org.jboss.protean.gizmo.ClassOutput;
 import org.jboss.protean.gizmo.FieldDescriptor;

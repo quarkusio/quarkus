@@ -1,6 +1,6 @@
 = {project-name} - Using Web Sockets
 
-This guide explains how your Shamrock application can utilize web sockets to create interactive web applications.
+This guide explains how your Quarkus application can utilize web sockets to create interactive web applications.
 Because it's the _canonical_ web socket application, we are going to create a simple chat application.
 
 == Prerequisites
@@ -25,9 +25,9 @@ image:websocket-guide-architecture.png[alt=Architecture,width=640,height=480]
 We recommend you to follow the instructions in the next sections and create the application step by step.
 However, you can skip right to the completed example.
 
-Clone the Git repository: `git clone https://github.com/jbossas/protean-quickstarts.git`, or download an https://github.com/jbossas/protean-quickstarts/archive/master.zip[archive].
+Clone the Git repository: `git clone https://github.com/jbossas/quarkus-quickstarts.git`, or download an https://github.com/jbossas/quarkus-quickstarts/archive/master.zip[archive].
 
-The solution is located in the `using-websockets` https://github.com/jbossas/protean-quickstarts/tree/master/using-websockets[directory].
+The solution is located in the `using-websockets` https://github.com/jbossas/quarkus-quickstarts/tree/master/using-websockets[directory].
 
 == Creating the Maven project
 
@@ -35,7 +35,7 @@ First, we need a new project. Create a new project with the following command:
 
 [source, subs=attributes+]
 ----
-mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=using-websockets \
     -Dextensions="undertow-websockets"
@@ -112,15 +112,15 @@ public class ChatSocket {
 == A slick web frontend
 
 All chat applications need a _nice_ UI, well, this one may not be that nice, but does the work.
-Shamrock automatically serves static resources contained in the `META-INF/resources` directory.
-Create the `src/main/resources/META-INF/resources` directory and copy this https://github.com/jbossas/protean-quickstarts/blob/master/using-websockets/src/main/resources/assets/index.html[index.html] file in it.
+Quarkus automatically serves static resources contained in the `META-INF/resources` directory.
+Create the `src/main/resources/META-INF/resources` directory and copy this https://github.com/jbossas/quarkus-quickstarts/blob/master/using-websockets/src/main/resources/assets/index.html[index.html] file in it.
 
 == Run the application
 
 Now, let's see our application in action. Run it with:
 
 ```
-mvn compile shamrock:dev
+mvn compile quarkus:dev
 ```
 
 Then open your 2 browser windows to http://localhost:8080/:
@@ -134,4 +134,4 @@ image:websocket-guide-screenshot.png[alt=Application,width=800]
 As usual, the application can be packaged using `mvn clean package` and executed using the `-runner.jar` file.
 You can also build the native executable using `mvn package -Pnative`.
 
-You can also test your web socket applications using the approach detailed https://github.com/jbossas/protean-quickstarts/blob/master/using-websockets/src/test/java/org/acme/websocket/ChatTestCase.java[here].
+You can also test your web socket applications using the approach detailed https://github.com/jbossas/quarkus-quickstarts/blob/master/using-websockets/src/test/java/org/acme/websocket/ChatTestCase.java[here].

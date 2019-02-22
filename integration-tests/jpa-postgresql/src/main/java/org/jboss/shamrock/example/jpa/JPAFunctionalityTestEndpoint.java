@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.jpa;
+package io.quarkus.example.jpa;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -81,10 +81,10 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
         TypedQuery<Person> typedQuery = em.createNamedQuery(
               "get_person_by_name", Person.class
         );
-        typedQuery.setParameter("name", "Shamrock");
+        typedQuery.setParameter("name", "Quarkus");
         final Person singleResult = typedQuery.getSingleResult();
 
-        if ( ! singleResult.getName().equals("Shamrock")) {
+        if ( ! singleResult.getName().equals("Quarkus")) {
             throw new RuntimeException("Wrong result from named JPA query");
         }
 
@@ -106,7 +106,7 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
         EntityTransaction transaction = em.getTransaction();
         transaction.begin();
         persistNewPerson(em, "Gizmo");
-        persistNewPerson(em, "Shamrock");
+        persistNewPerson(em, "Quarkus");
         persistNewPerson(em, "Hibernate ORM");
         transaction.commit();
         em.close();

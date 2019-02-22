@@ -1,4 +1,4 @@
-package org.jboss.shamrock.test.common.http;
+package io.quarkus.test.common.http;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

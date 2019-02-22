@@ -1,4 +1,4 @@
-package org.jboss.shamrock.smallrye.reactivemessaging;
+package io.quarkus.smallrye.reactivemessaging;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;

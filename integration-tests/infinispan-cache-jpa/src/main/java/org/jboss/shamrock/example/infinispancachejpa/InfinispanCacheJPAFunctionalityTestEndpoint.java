@@ -1,4 +1,4 @@
-package org.jboss.shamrock.example.infinispancachejpa;
+package io.quarkus.example.infinispancachejpa;
 
 import org.hibernate.NaturalIdLoadAccess;
 import org.hibernate.Session;
@@ -7,7 +7,7 @@ import org.hibernate.cache.spi.CacheImplementor;
 import org.hibernate.cache.spi.RegionFactory;
 import org.hibernate.stat.CacheRegionStatistics;
 import org.hibernate.stat.Statistics;
-import org.infinispan.protean.hibernate.cache.ProteanInfinispanRegionFactory;
+import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -53,7 +53,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/memory-object-count/{region}")
     public String memoryObjectCount(@PathParam("region") String region) {
-        ProteanInfinispanRegionFactory regionFactory = getRegionFactory();
+        QuarkusInfinispanRegionFactory regionFactory = getRegionFactory();
         Optional<Long> result = regionFactory.getMemoryObjectCount(region);
         return result
                 .map(Object::toString)
@@ -66,7 +66,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/expiration-max-idle/{region}")
     public String expirationMaxIdle(@PathParam("region") String region) {
-        ProteanInfinispanRegionFactory regionFactory = getRegionFactory();
+        QuarkusInfinispanRegionFactory regionFactory = getRegionFactory();
         Optional<Duration> result = regionFactory.getExpirationMaxIdle(region);
         return result
                 .map(duration -> Long.toString(duration.getSeconds()))
@@ -75,10 +75,10 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
                 );
     }
 
-    private ProteanInfinispanRegionFactory getRegionFactory() {
+    private QuarkusInfinispanRegionFactory getRegionFactory() {
         SessionFactory sessionFactory = entityManagerFactory.unwrap(SessionFactory.class);
         CacheImplementor cache = (CacheImplementor) sessionFactory.getCache();
-        return (ProteanInfinispanRegionFactory) cache.getRegionFactory();
+        return (QuarkusInfinispanRegionFactory) cache.getRegionFactory();
     }
 
     /**
@@ -482,7 +482,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
         EntityTransaction transaction = em.getTransaction();
         transaction.begin();
         em.persist(new Person("Gizmo"));
-        em.persist(new Person("Shamrock"));
+        em.persist(new Person("Quarkus"));
         em.persist(new Person("Hibernate ORM"));
         em.persist(new Person("Infinispan"));
         transaction.commit();

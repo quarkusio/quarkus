@@ -1,4 +1,4 @@
-package org.jboss.shamrock.runtime;
+package io.quarkus.runtime;
 
 public enum LaunchMode {
     /**
@@ -7,7 +7,7 @@ public enum LaunchMode {
      */
     NORMAL,
     /**
-     * shamrock:dev or an IDE launch (when we support IDE launch)
+     * quarkus:dev or an IDE launch (when we support IDE launch)
      */
     DEVELOPMENT,
     /**

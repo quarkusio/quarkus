@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc;
+package org.jboss.quarkus.arc;
 
 /**
  * Represents an instance handle.

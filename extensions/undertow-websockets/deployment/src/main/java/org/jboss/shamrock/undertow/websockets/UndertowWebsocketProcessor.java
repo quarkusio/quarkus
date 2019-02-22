@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.undertow.websockets;
+package io.quarkus.undertow.websockets;
 
 import java.lang.reflect.Modifier;
 import java.util.Collection;
@@ -30,17 +30,17 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.annotations.ExecutionTime;
-import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
-import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
-import org.jboss.shamrock.deployment.builditem.ServiceStartBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import org.jboss.shamrock.undertow.ServletContextAttributeBuildItem;
-import org.jboss.shamrock.undertow.UndertowBuildItem;
-import org.jboss.shamrock.undertow.websockets.runtime.UndertowWebsocketTemplate;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.undertow.ServletContextAttributeBuildItem;
+import io.quarkus.undertow.UndertowBuildItem;
+import io.quarkus.undertow.websockets.runtime.UndertowWebsocketTemplate;
 
 import io.undertow.websockets.jsr.JsrWebSocketFilter;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;

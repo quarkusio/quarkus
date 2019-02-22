@@ -1,16 +1,16 @@
-package org.jboss.shamrock.deployment.configuration;
+package io.quarkus.deployment.configuration;
 
-import static org.jboss.shamrock.deployment.steps.ConfigurationSetup.CONFIG_ROOT;
-import static org.jboss.shamrock.deployment.steps.ConfigurationSetup.CONFIG_ROOT_FIELD;
-import static org.jboss.shamrock.deployment.util.ReflectUtil.rawTypeOf;
-import static org.jboss.shamrock.deployment.util.ReflectUtil.rawTypeOfParameter;
-import static org.jboss.shamrock.deployment.util.ReflectUtil.typeOfParameter;
-import static org.jboss.shamrock.deployment.util.StringUtil.camelHumpsIterator;
-import static org.jboss.shamrock.deployment.util.StringUtil.hyphenate;
-import static org.jboss.shamrock.deployment.util.StringUtil.join;
-import static org.jboss.shamrock.deployment.util.StringUtil.lowerCase;
-import static org.jboss.shamrock.deployment.util.StringUtil.lowerCaseFirst;
-import static org.jboss.shamrock.deployment.util.StringUtil.withoutSuffix;
+import static io.quarkus.deployment.steps.ConfigurationSetup.CONFIG_ROOT;
+import static io.quarkus.deployment.steps.ConfigurationSetup.CONFIG_ROOT_FIELD;
+import static io.quarkus.deployment.util.ReflectUtil.rawTypeOf;
+import static io.quarkus.deployment.util.ReflectUtil.rawTypeOfParameter;
+import static io.quarkus.deployment.util.ReflectUtil.typeOfParameter;
+import static io.quarkus.deployment.util.StringUtil.camelHumpsIterator;
+import static io.quarkus.deployment.util.StringUtil.hyphenate;
+import static io.quarkus.deployment.util.StringUtil.join;
+import static io.quarkus.deployment.util.StringUtil.lowerCase;
+import static io.quarkus.deployment.util.StringUtil.lowerCaseFirst;
+import static io.quarkus.deployment.util.StringUtil.withoutSuffix;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
@@ -36,12 +36,12 @@ import org.jboss.protean.gizmo.FieldDescriptor;
 import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
-import org.jboss.shamrock.deployment.AccessorFinder;
-import org.jboss.shamrock.runtime.annotations.ConfigGroup;
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
-import org.jboss.shamrock.runtime.annotations.ConfigPhase;
-import org.jboss.shamrock.runtime.annotations.ConfigRoot;
-import org.jboss.shamrock.runtime.configuration.NameIterator;
+import io.quarkus.deployment.AccessorFinder;
+import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.configuration.NameIterator;
 import org.objectweb.asm.Opcodes;
 import org.wildfly.common.Assert;
 
@@ -297,7 +297,7 @@ public class ConfigDefinition extends CompoundConfigType {
         initialize(config);
         for (String propertyName : config.getPropertyNames()) {
             final NameIterator name = new NameIterator(propertyName);
-            if (name.hasNext() && name.nextSegmentEquals("shamrock")) {
+            if (name.hasNext() && name.nextSegmentEquals("quarkus")) {
                 name.next();
                 final LeafConfigType leafType = leafPatterns.match(name);
                 if (leafType != null) {

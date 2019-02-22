@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.arc.test;
+package io.quarkus.arc.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -22,7 +22,7 @@ import static org.wildfly.common.Assert.assertFalse;
 
 import javax.inject.Inject;
 
-import org.jboss.shamrock.test.ShamrockUnitTest;
+import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -32,7 +32,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class SimpleBeanTest {
 
     @RegisterExtension
-    static final ShamrockUnitTest config = new ShamrockUnitTest()
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(SimpleBean.class)
                     .addAsManifestResource(new StringAsset("simpleBean.baz=1"), "microprofile-config.properties"));

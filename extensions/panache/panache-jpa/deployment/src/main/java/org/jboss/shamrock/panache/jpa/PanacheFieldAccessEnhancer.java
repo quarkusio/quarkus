@@ -1,4 +1,4 @@
-package org.jboss.shamrock.panache.jpa;
+package io.quarkus.panache.jpa;
 
 import java.util.Map;
 import java.util.function.BiFunction;

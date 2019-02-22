@@ -18,11 +18,13 @@ package org.jboss.protean.arc;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Computing cache backed by a {@link ConcurrentHashMap} which intentionally does not use {@link Map#computeIfAbsent(Object, Function)} and is reentrant.
@@ -82,6 +84,10 @@ public class ComputingCache<K, V> {
                 action.accept(value.get());
             }
         }
+    }
+    
+    public Set<V> getPresentValues() {
+        return map.values().stream().map(LazyValue::get).collect(Collectors.toSet());
     }
 
     public void forEachEntry(BiConsumer<? super K, ? super V> action) {

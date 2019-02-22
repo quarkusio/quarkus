@@ -63,7 +63,6 @@
         <module>independent-projects/arc</module>
         <module>independent-projects/infinispan-hibernate-cache-protean</module>
         <module>independent-projects/jboss-logmanager-embedded</module>
-        <module>independent-projects/panache</module>
 
           <!-- Devtools (Maven, cli, gradle) -->
         <module>devtools</module>

@@ -202,7 +202,7 @@
 
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-panache-deployment</artifactId>
+            <artifactId>shamrock-panache-jpa-deployment</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
          </dependency>

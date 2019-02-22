@@ -32,7 +32,7 @@
     <dependencies>
         <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-panache-deployment</artifactId>
+            <artifactId>shamrock-panache-jpa-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>

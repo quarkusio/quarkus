@@ -18,10 +18,10 @@ package org.jboss.shamrock.example.panache;
 
 import javax.persistence.Entity;
 
-import org.jboss.panache.jpa.Model;
+import org.jboss.shamrock.panache.jpa.PanacheEntity;
 
 @Entity
-public class Address extends Model {
+public class Address extends PanacheEntity {
 
     public String street;
 

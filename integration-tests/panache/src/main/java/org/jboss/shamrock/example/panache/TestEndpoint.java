@@ -17,6 +17,7 @@
 package org.jboss.shamrock.example.panache;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -28,8 +29,10 @@ import javax.transaction.Transactional;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 
-import org.jboss.panache.jpa.Page;
-import org.jboss.panache.jpa.Query;
+import org.jboss.shamrock.panache.common.Page;
+import org.jboss.shamrock.panache.common.Parameters;
+import org.jboss.shamrock.panache.common.Sort;
+import org.jboss.shamrock.panache.jpa.PanacheQuery;
 import org.junit.jupiter.api.Assertions;
 
 /**
@@ -45,21 +48,29 @@ public class TestEndpoint {
         List<Person> persons = Person.findAll().list();
         Assertions.assertEquals(0, persons.size());
 
+        persons = Person.listAll();
+        Assertions.assertEquals(0, persons.size());
+
         Stream<Person> personStream = Person.findAll().stream();
         Assertions.assertEquals(0, personStream.count());
 
+        personStream = Person.streamAll();
+        Assertions.assertEquals(0, personStream.count());
+
         try {
-            Person.findAll().getSingleResult();
-            Assertions.fail("getSingleResult should have thrown");
+            Person.findAll().singleResult();
+            Assertions.fail("singleResult should have thrown");
         }catch(NoResultException x) {}
         
-        Assertions.assertNull(Person.findAll().getFirstResult());
+        Assertions.assertNull(Person.findAll().firstResult());
 
         Person person = makeSavedPerson();
         Assertions.assertNotNull(person.id);
 
         Assertions.assertEquals(1, Person.count());
         Assertions.assertEquals(1, Person.count("name = ?1", "stef"));
+        Assertions.assertEquals(1, Person.count("name = :name", Parameters.with("name", "stef").map()));
+        Assertions.assertEquals(1, Person.count("name = :name", Parameters.with("name", "stef")));
         Assertions.assertEquals(1, Person.count("name", "stef"));
 
         Assertions.assertEquals(1, Dog.count());
@@ -69,13 +80,40 @@ public class TestEndpoint {
         Assertions.assertEquals(1, persons.size());
         Assertions.assertEquals(person, persons.get(0));
 
+        persons = Person.listAll();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+
         personStream = Person.findAll().stream();
         Assertions.assertEquals(persons, personStream.collect(Collectors.toList()));
 
-        Assertions.assertEquals(person, Person.findAll().getFirstResult());
-        Assertions.assertEquals(person, Person.findAll().getSingleResult());
+        personStream = Person.streamAll();
+        Assertions.assertEquals(persons, personStream.collect(Collectors.toList()));
+
+        Assertions.assertEquals(person, Person.findAll().firstResult());
+        Assertions.assertEquals(person, Person.findAll().singleResult());
 
         persons = Person.find("name = ?1", "stef").list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+
+        persons = Person.list("name = ?1", "stef");
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+
+        persons = Person.find("name = :name", Parameters.with("name", "stef").map()).list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+
+        persons = Person.find("name = :name", Parameters.with("name", "stef")).list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+
+        persons = Person.list("name = :name", Parameters.with("name", "stef").map());
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+
+        persons = Person.list("name = :name", Parameters.with("name", "stef"));
         Assertions.assertEquals(1, persons.size());
         Assertions.assertEquals(person, persons.get(0));
 
@@ -86,11 +124,20 @@ public class TestEndpoint {
         personStream = Person.find("name = ?1", "stef").stream();
         Assertions.assertEquals(persons, personStream.collect(Collectors.toList()));
 
+        personStream = Person.stream("name = ?1", "stef");
+        Assertions.assertEquals(persons, personStream.collect(Collectors.toList()));
+
+        personStream = Person.stream("name = :name", Parameters.with("name", "stef").map());
+        Assertions.assertEquals(persons, personStream.collect(Collectors.toList()));
+
+        personStream = Person.stream("name = :name", Parameters.with("name", "stef"));
+        Assertions.assertEquals(persons, personStream.collect(Collectors.toList()));
+
         personStream = Person.find("name", "stef").stream();
         Assertions.assertEquals(persons, personStream.collect(Collectors.toList()));
 
-        Assertions.assertEquals(person, Person.find("name", "stef").getFirstResult());
-        Assertions.assertEquals(person, Person.find("name", "stef").getSingleResult());
+        Assertions.assertEquals(person, Person.find("name", "stef").firstResult());
+        Assertions.assertEquals(person, Person.find("name", "stef").singleResult());
 
         Person byId = Person.findById(person.id);
         Assertions.assertEquals(person, byId);
@@ -103,6 +150,12 @@ public class TestEndpoint {
         Assertions.assertEquals(0, Person.delete("name = ?1", "emmanuel"));
         Assertions.assertEquals(1, Dog.delete("owner = ?1", person));
         Assertions.assertEquals(1, Person.delete("name", "stef"));
+        person = makeSavedPerson();
+        Assertions.assertEquals(1, Dog.delete("owner = :owner", Parameters.with("owner", person).map()));
+        Assertions.assertEquals(1, Person.delete("name", "stef"));
+        person = makeSavedPerson();
+        Assertions.assertEquals(1, Dog.delete("owner = :owner", Parameters.with("owner", person)));
+        Assertions.assertEquals(1, Person.delete("name", "stef"));
 
         Assertions.assertEquals(0, Person.deleteAll());
 
@@ -110,6 +163,13 @@ public class TestEndpoint {
         Assertions.assertEquals(1, Dog.deleteAll());
         Assertions.assertEquals(1, Person.deleteAll());
 
+        testPersist(PersistTest.Iterable);
+        testPersist(PersistTest.Stream);
+        testPersist(PersistTest.Variadic);
+        Assertions.assertEquals(6, Person.deleteAll());
+
+        testSorting();
+        
         // paging
         for(int i=0;i<7;i++) {
             makeSavedPerson(String.valueOf(i));
@@ -118,15 +178,76 @@ public class TestEndpoint {
         testPaging(Person.find("ORDER BY name"));
         
         try {
-            Person.findAll().getSingleResult();
-            Assertions.fail("getSingleResult should have thrown");
+            Person.findAll().singleResult();
+            Assertions.fail("singleResult should have thrown");
         }catch(NonUniqueResultException x) {}
         
-        Assertions.assertNotNull(Person.findAll().getFirstResult());
+        Assertions.assertNotNull(Person.findAll().firstResult());
 
         Assertions.assertEquals(7, Person.deleteAll());
 
         return "OK";
+    }
+
+    private void testSorting() {
+        Person person1 = new Person();
+        person1.name = "stef";
+        person1.status = Status.LIVING;
+        person1.persist();
+
+        Person person2 = new Person();
+        person2.name = "stef";
+        person2.status = Status.DECEASED;
+        person2.persist();
+
+        Person person3 = new Person();
+        person3.name = "emmanuel";
+        person3.status = Status.LIVING;
+        person3.persist();
+        
+        Sort sort1 = Sort.by("name", "status");
+        List<Person> order1 = Arrays.asList(person3, person1, person2);
+        
+        List<Person> list = Person.findAll(sort1).list();
+        Assertions.assertEquals(order1, list);
+
+        list = Person.listAll(sort1);
+        Assertions.assertEquals(order1, list);
+
+        list = Person.<Person>streamAll(sort1).collect(Collectors.toList());
+        Assertions.assertEquals(order1, list);
+
+        Sort sort2 = Sort.descending("name", "status");
+        List<Person> order2 = Arrays.asList(person2, person1);
+
+        list = Person.find("name", sort2, "stef").list();
+        Assertions.assertEquals(order2, list);
+
+        list = Person.list("name", sort2, "stef");
+        Assertions.assertEquals(order2, list);
+
+        list = Person.<Person>stream("name", sort2, "stef").collect(Collectors.toList());
+        Assertions.assertEquals(order2, list);
+
+        list = Person.find("name = :name", sort2, Parameters.with("name", "stef").map()).list();
+        Assertions.assertEquals(order2, list);
+
+        list = Person.list("name = :name", sort2, Parameters.with("name", "stef").map());
+        Assertions.assertEquals(order2, list);
+
+        list = Person.<Person>stream("name = :name", sort2, Parameters.with("name", "stef").map()).collect(Collectors.toList());
+        Assertions.assertEquals(order2, list);
+
+        list = Person.find("name = :name", sort2, Parameters.with("name", "stef")).list();
+        Assertions.assertEquals(order2, list);
+
+        list = Person.list("name = :name", sort2, Parameters.with("name", "stef"));
+        Assertions.assertEquals(order2, list);
+
+        list = Person.<Person>stream("name = :name", sort2, Parameters.with("name", "stef")).collect(Collectors.toList());
+        Assertions.assertEquals(order2, list);
+
+        Assertions.assertEquals(3, Person.deleteAll());
     }
 
     private Person makeSavedPerson(String suffix) {
@@ -134,9 +255,9 @@ public class TestEndpoint {
         person.name = "stef"+suffix;
         person.status = Status.LIVING;
         person.address = new Address("stef street");
-        person.address.save();
+        person.address.persist();
         
-        person.save();
+        person.persist();
         return person;
     }
     
@@ -145,14 +266,36 @@ public class TestEndpoint {
 
         Dog dog = new Dog("octave", "dalmatian");
         dog.owner = person;
-        dog.save();
+        dog.persist();
         person.dogs.add(dog);
         
         return person;
     }
 
+    private void testPersist(PersistTest persistTest) {
+        Person person1 = new Person();
+        person1.name = "stef1";
+        Person person2 = new Person();
+        person2.name = "stef2";
+        Assertions.assertFalse(person1.isPersistent());
+        Assertions.assertFalse(person2.isPersistent());
+        switch(persistTest) {
+        case Iterable:
+            Person.persist(Arrays.asList(person1, person2));
+            break;
+        case Stream:
+            Person.persist(Stream.of(person1, person2));
+            break;
+        case Variadic:
+            Person.persist(person1, person2);
+            break;
+        }
+        Assertions.assertTrue(person1.isPersistent());
+        Assertions.assertTrue(person2.isPersistent());
+    }
+
     @Inject
-    PersonDao personDao;
+    PersonRepository personDao;
     @Inject
     DogDao dogDao;
     @Inject
@@ -169,17 +312,19 @@ public class TestEndpoint {
         Assertions.assertEquals(0, personStream.count());
         
         try {
-            personDao.findAll().getSingleResult();
-            Assertions.fail("getSingleResult should have thrown");
+            personDao.findAll().singleResult();
+            Assertions.fail("singleResult should have thrown");
         }catch(NoResultException x) {}
         
-        Assertions.assertNull(personDao.findAll().getFirstResult());
+        Assertions.assertNull(personDao.findAll().firstResult());
 
         Person person = makeSavedPersonDao();
         Assertions.assertNotNull(person.id);
 
         Assertions.assertEquals(1, personDao.count());
         Assertions.assertEquals(1, personDao.count("name = ?1", "stef"));
+        Assertions.assertEquals(1, personDao.count("name = :name", Parameters.with("name", "stef").map()));
+        Assertions.assertEquals(1, personDao.count("name = :name", Parameters.with("name", "stef")));
         Assertions.assertEquals(1, personDao.count("name", "stef"));
 
         Assertions.assertEquals(1, dogDao.count());
@@ -189,13 +334,40 @@ public class TestEndpoint {
         Assertions.assertEquals(1, persons.size());
         Assertions.assertEquals(person, persons.get(0));
 
+        persons = personDao.listAll();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+
         personStream = personDao.findAll().stream();
         Assertions.assertEquals(persons, personStream.collect(Collectors.toList()));
 
-        Assertions.assertEquals(person, personDao.findAll().getFirstResult());
-        Assertions.assertEquals(person, personDao.findAll().getSingleResult());
+        personStream = personDao.streamAll();
+        Assertions.assertEquals(persons, personStream.collect(Collectors.toList()));
+
+        Assertions.assertEquals(person, personDao.findAll().firstResult());
+        Assertions.assertEquals(person, personDao.findAll().singleResult());
 
         persons = personDao.find("name = ?1", "stef").list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+
+        persons = personDao.list("name = ?1", "stef");
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+
+        persons = personDao.find("name = :name", Parameters.with("name", "stef").map()).list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+
+        persons = personDao.find("name = :name", Parameters.with("name", "stef")).list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+
+        persons = personDao.list("name = :name", Parameters.with("name", "stef").map());
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals(person, persons.get(0));
+
+        persons = personDao.list("name = :name", Parameters.with("name", "stef"));
         Assertions.assertEquals(1, persons.size());
         Assertions.assertEquals(person, persons.get(0));
 
@@ -206,11 +378,20 @@ public class TestEndpoint {
         personStream = personDao.find("name = ?1", "stef").stream();
         Assertions.assertEquals(persons, personStream.collect(Collectors.toList()));
 
+        personStream = personDao.stream("name = ?1", "stef");
+        Assertions.assertEquals(persons, personStream.collect(Collectors.toList()));
+
+        personStream = personDao.stream("name = :name", Parameters.with("name", "stef").map());
+        Assertions.assertEquals(persons, personStream.collect(Collectors.toList()));
+
+        personStream = personDao.stream("name = :name", Parameters.with("name", "stef"));
+        Assertions.assertEquals(persons, personStream.collect(Collectors.toList()));
+
         personStream = personDao.find("name", "stef").stream();
         Assertions.assertEquals(persons, personStream.collect(Collectors.toList()));
 
-        Assertions.assertEquals(person, personDao.find("name", "stef").getFirstResult());
-        Assertions.assertEquals(person, personDao.find("name", "stef").getSingleResult());
+        Assertions.assertEquals(person, personDao.find("name", "stef").firstResult());
+        Assertions.assertEquals(person, personDao.find("name", "stef").singleResult());
 
         Person byId = personDao.findById(person.id);
         Assertions.assertEquals(person, byId);
@@ -223,6 +404,12 @@ public class TestEndpoint {
         Assertions.assertEquals(0, personDao.delete("name = ?1", "emmanuel"));
         Assertions.assertEquals(1, dogDao.delete("owner = ?1", person));
         Assertions.assertEquals(1, personDao.delete("name", "stef"));
+        person = makeSavedPerson();
+        Assertions.assertEquals(1, dogDao.delete("owner = :owner", Parameters.with("owner", person).map()));
+        Assertions.assertEquals(1, personDao.delete("name", "stef"));
+        person = makeSavedPerson();
+        Assertions.assertEquals(1, dogDao.delete("owner = :owner", Parameters.with("owner", person)));
+        Assertions.assertEquals(1, personDao.delete("name", "stef"));
 
         Assertions.assertEquals(0, personDao.deleteAll());
 
@@ -230,6 +417,13 @@ public class TestEndpoint {
         Assertions.assertEquals(1, dogDao.deleteAll());
         Assertions.assertEquals(1, personDao.deleteAll());
 
+        testPersistDao(PersistTest.Iterable);
+        testPersistDao(PersistTest.Stream);
+        testPersistDao(PersistTest.Variadic);
+        Assertions.assertEquals(6, personDao.deleteAll());
+
+        testSortingDao();
+        
         // paging
         for(int i=0;i<7;i++) {
             makeSavedPersonDao(String.valueOf(i));
@@ -238,15 +432,102 @@ public class TestEndpoint {
         testPaging(personDao.find("ORDER BY name"));
         
         try {
-            personDao.findAll().getSingleResult();
-            Assertions.fail("getSingleResult should have thrown");
+            personDao.findAll().singleResult();
+            Assertions.fail("singleResult should have thrown");
         }catch(NonUniqueResultException x) {}
         
-        Assertions.assertNotNull(personDao.findAll().getFirstResult());
+        Assertions.assertNotNull(personDao.findAll().firstResult());
         
         Assertions.assertEquals(7, personDao.deleteAll());
 
         return "OK";
+    }
+
+    private void testSortingDao() {
+        Person person1 = new Person();
+        person1.name = "stef";
+        person1.status = Status.LIVING;
+        personDao.persist(person1);
+
+        Person person2 = new Person();
+        person2.name = "stef";
+        person2.status = Status.DECEASED;
+        personDao.persist(person2);
+
+        Person person3 = new Person();
+        person3.name = "emmanuel";
+        person3.status = Status.LIVING;
+        personDao.persist(person3);
+        
+        Sort sort1 = Sort.by("name", "status");
+        List<Person> order1 = Arrays.asList(person3, person1, person2);
+        
+        List<Person> list = personDao.findAll(sort1).list();
+        Assertions.assertEquals(order1, list);
+
+        list = personDao.listAll(sort1);
+        Assertions.assertEquals(order1, list);
+
+        list = personDao.streamAll(sort1).collect(Collectors.toList());
+        Assertions.assertEquals(order1, list);
+
+        Sort sort2 = Sort.descending("name", "status");
+        List<Person> order2 = Arrays.asList(person2, person1);
+
+        list = personDao.find("name", sort2, "stef").list();
+        Assertions.assertEquals(order2, list);
+
+        list = personDao.list("name", sort2, "stef");
+        Assertions.assertEquals(order2, list);
+
+        list = personDao.stream("name", sort2, "stef").collect(Collectors.toList());
+        Assertions.assertEquals(order2, list);
+
+        list = personDao.find("name = :name", sort2, Parameters.with("name", "stef").map()).list();
+        Assertions.assertEquals(order2, list);
+
+        list = personDao.list("name = :name", sort2, Parameters.with("name", "stef").map());
+        Assertions.assertEquals(order2, list);
+
+        list = personDao.stream("name = :name", sort2, Parameters.with("name", "stef").map()).collect(Collectors.toList());
+        Assertions.assertEquals(order2, list);
+
+        list = personDao.find("name = :name", sort2, Parameters.with("name", "stef")).list();
+        Assertions.assertEquals(order2, list);
+
+        list = personDao.list("name = :name", sort2, Parameters.with("name", "stef"));
+        Assertions.assertEquals(order2, list);
+
+        list = personDao.stream("name = :name", sort2, Parameters.with("name", "stef")).collect(Collectors.toList());
+        Assertions.assertEquals(order2, list);
+
+        Assertions.assertEquals(3, Person.deleteAll());
+    }
+
+    enum PersistTest {
+        Iterable, Variadic, Stream;
+    }
+    
+    private void testPersistDao(PersistTest persistTest) {
+        Person person1 = new Person();
+        person1.name = "stef1";
+        Person person2 = new Person();
+        person2.name = "stef2";
+        Assertions.assertFalse(person1.isPersistent());
+        Assertions.assertFalse(person2.isPersistent());
+        switch(persistTest) {
+        case Iterable:
+            personDao.persist(Arrays.asList(person1, person2));
+            break;
+        case Stream:
+            personDao.persist(Stream.of(person1, person2));
+            break;
+        case Variadic:
+            personDao.persist(person1, person2);
+            break;
+        }
+        Assertions.assertTrue(person1.isPersistent());
+        Assertions.assertTrue(person2.isPersistent());
     }
 
     private Person makeSavedPersonDao(String suffix) {
@@ -254,9 +535,9 @@ public class TestEndpoint {
         person.name = "stef"+suffix;
         person.status = Status.LIVING;
         person.address = new Address("stef street");
-        addressDao.save(person.address);
+        addressDao.persist(person.address);
 
-        personDao.save(person);
+        personDao.persist(person);
         
         return person;
     }
@@ -266,13 +547,14 @@ public class TestEndpoint {
 
         Dog dog = new Dog("octave", "dalmatian");
         dog.owner = person;
-        dogDao.save(dog);
+        dogDao.persist(dog);
         person.dogs.add(dog);
         
         return person;
     }
 
-    private void testPaging(Query<Person> query) {
+    private void testPaging(PanacheQuery<Person> query) {
+        // ints
         List<Person> persons = query.page(0, 3).list();
         Assertions.assertEquals(3, persons.size());
         Assertions.assertEquals("stef0", persons.get(0).name);
@@ -292,6 +574,7 @@ public class TestEndpoint {
         persons = query.page(2, 4).list();
         Assertions.assertEquals(0, persons.size());
 
+        // page
         Page page = new Page(3);
         persons = query.page(page).list();
         Assertions.assertEquals(3, persons.size());
@@ -314,6 +597,38 @@ public class TestEndpoint {
         page = page.next();
         persons = query.page(page).list();
         Assertions.assertEquals(0, persons.size());
+
+        // query paging
+        page = new Page(3);
+        persons = query.page(page).list();
+        Assertions.assertEquals(3, persons.size());
+        Assertions.assertEquals("stef0", persons.get(0).name);
+        Assertions.assertEquals("stef1", persons.get(1).name);
+        Assertions.assertEquals("stef2", persons.get(2).name);
+        Assertions.assertTrue(query.hasNextPage());
+        Assertions.assertFalse(query.hasPreviousPage());
+
+        persons = query.nextPage().list();
+        Assertions.assertEquals(1, query.page().index);
+        Assertions.assertEquals(3, query.page().size);
+        Assertions.assertEquals(3, persons.size());
+        Assertions.assertEquals("stef3", persons.get(0).name);
+        Assertions.assertEquals("stef4", persons.get(1).name);
+        Assertions.assertEquals("stef5", persons.get(2).name);
+        Assertions.assertTrue(query.hasNextPage());
+        Assertions.assertTrue(query.hasPreviousPage());
+
+        persons = query.nextPage().list();
+        Assertions.assertEquals(1, persons.size());
+        Assertions.assertEquals("stef6", persons.get(0).name);
+        Assertions.assertFalse(query.hasNextPage());
+        Assertions.assertTrue(query.hasPreviousPage());
+
+        persons = query.nextPage().list();
+        Assertions.assertEquals(0, persons.size());
+        
+        Assertions.assertEquals(7, query.count());
+        Assertions.assertEquals(3, query.pageCount());
     }
 
     @GET

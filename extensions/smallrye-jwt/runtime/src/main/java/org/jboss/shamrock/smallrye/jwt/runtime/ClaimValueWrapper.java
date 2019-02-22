@@ -1,4 +1,4 @@
-package org.jboss.shamrock.smallrye.jwt.runtime;
+package io.quarkus.smallrye.jwt.runtime;
 
 import org.eclipse.microprofile.jwt.ClaimValue;
 

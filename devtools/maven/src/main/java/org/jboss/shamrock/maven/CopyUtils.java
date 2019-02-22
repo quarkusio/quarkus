@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.maven;
+package io.quarkus.maven;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;

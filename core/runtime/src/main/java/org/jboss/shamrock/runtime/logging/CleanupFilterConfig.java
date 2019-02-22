@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.runtime.logging;
+package io.quarkus.runtime.logging;
 
-import org.jboss.shamrock.runtime.annotations.ConfigGroup;
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
 public class CleanupFilterConfig {

@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.jaeger;
+package io.quarkus.jaeger;
 
 import javax.inject.Inject;
 
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.annotations.ExecutionTime;
-import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.deployment.builditem.ExtensionSslNativeSupportBuildItem;
-import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
-import org.jboss.shamrock.jaeger.runtime.JaegerConfig;
-import org.jboss.shamrock.jaeger.runtime.JaegerDeploymentTemplate;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.jaeger.runtime.JaegerConfig;
+import io.quarkus.jaeger.runtime.JaegerDeploymentTemplate;
 
 public class JaegerProcessor {
 

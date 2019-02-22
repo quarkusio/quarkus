@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.narayana.jta.runtime.graal;
+package io.quarkus.narayana.jta.runtime.graal;
 
 import com.arjuna.common.util.ConfigurationInfo;
 import com.oracle.svm.core.annotate.Alias;

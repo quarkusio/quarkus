@@ -1,4 +1,4 @@
-package org.jboss.shamrock.maven.it.verifier;
+package io.quarkus.maven.it.verifier;
 
 import org.apache.maven.shared.invoker.InvocationRequest;
 import org.apache.maven.shared.invoker.InvocationResult;

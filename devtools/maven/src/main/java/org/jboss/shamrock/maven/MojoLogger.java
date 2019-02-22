@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.maven;
+package io.quarkus.maven;
 
 import java.text.MessageFormat;
 import java.util.Collections;

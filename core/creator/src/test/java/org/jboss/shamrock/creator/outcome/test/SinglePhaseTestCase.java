@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.outcome.test;
+package io.quarkus.creator.outcome.test;
 
 import static org.junit.Assert.assertEquals;
 
-import org.jboss.shamrock.creator.AppCreatorException;
-import org.jboss.shamrock.creator.outcome.OutcomeMap;
-import org.jboss.shamrock.creator.outcome.OutcomeProvider;
-import org.jboss.shamrock.creator.outcome.OutcomeProviderRegistration;
-import org.jboss.shamrock.creator.outcome.OutcomeResolver;
-import org.jboss.shamrock.creator.outcome.OutcomeResolverFactory;
+import io.quarkus.creator.AppCreatorException;
+import io.quarkus.creator.outcome.OutcomeMap;
+import io.quarkus.creator.outcome.OutcomeProvider;
+import io.quarkus.creator.outcome.OutcomeProviderRegistration;
+import io.quarkus.creator.outcome.OutcomeResolver;
+import io.quarkus.creator.outcome.OutcomeResolverFactory;
 import org.junit.Test;
 
 /**

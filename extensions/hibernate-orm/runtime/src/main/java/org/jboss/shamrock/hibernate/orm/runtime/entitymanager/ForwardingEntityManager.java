@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm.runtime.entitymanager;
+package io.quarkus.hibernate.orm.runtime.entitymanager;
 
 import java.util.List;
 import java.util.Map;

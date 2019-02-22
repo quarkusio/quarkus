@@ -1,4 +1,4 @@
-package org.jboss.shamrock.resteasy.runtime;
+package io.quarkus.resteasy.runtime;
 
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Response;

@@ -1,4 +1,4 @@
-package org.jboss.shamrock.security.test;
+package io.quarkus.security.test;
 
 import static io.undertow.UndertowMessages.MESSAGES;
 import static io.undertow.util.Headers.AUTHORIZATION;

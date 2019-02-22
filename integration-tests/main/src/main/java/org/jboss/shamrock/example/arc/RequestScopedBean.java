@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.arc;
+package io.quarkus.example.arc;
 
 import javax.enterprise.context.RequestScoped;
 
-import org.jboss.shamrock.example.arc.somepackage.Superclass;
+import io.quarkus.example.arc.somepackage.Superclass;
 
 @RequestScoped
 public class RequestScopedBean extends Superclass {

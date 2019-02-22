@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.config;
+package io.quarkus.creator.config;
 
-import org.jboss.shamrock.creator.config.reader.PropertiesHandler;
+import io.quarkus.creator.config.reader.PropertiesHandler;
 
 /**
  *

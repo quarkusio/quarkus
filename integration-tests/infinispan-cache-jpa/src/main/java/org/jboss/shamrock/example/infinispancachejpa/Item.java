@@ -1,4 +1,4 @@
-package org.jboss.shamrock.example.infinispancachejpa;
+package io.quarkus.example.infinispancachejpa;
 
 import javax.persistence.*;
 

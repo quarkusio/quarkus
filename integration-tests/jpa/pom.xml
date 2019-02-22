@@ -3,42 +3,42 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>shamrock-integration-tests-parent</artifactId>
-        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>quarkus-integration-tests-parent</artifactId>
+        <groupId>io.quarkus</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-integration-test-jpa</artifactId>
-    <name>Shamrock - Integration Tests - JPA</name>
+    <artifactId>quarkus-integration-test-jpa</artifactId>
+    <name>Quarkus - Integration Tests - JPA</name>
 
     <dependencies>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-resteasy-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-hibernate-orm-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-jdbc-h2-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-h2-deployment</artifactId>
             <scope>provided</scope>
         </dependency>
 
         <!-- test dependencies -->
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-junit5</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-test-h2</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-h2</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -58,7 +58,7 @@
         <plugins>
             <plugin>
                 <groupId>${project.groupId}</groupId>
-                <artifactId>shamrock-maven-plugin</artifactId>
+                <artifactId>quarkus-maven-plugin</artifactId>
                 <executions>
                     <execution>
                         <goals>
@@ -99,7 +99,7 @@
                     </plugin>
                     <plugin>
                         <groupId>${project.groupId}</groupId>
-                        <artifactId>shamrock-maven-plugin</artifactId>
+                        <artifactId>quarkus-maven-plugin</artifactId>
                         <executions>
                             <execution>
                                 <id>native-image</id>

@@ -1,4 +1,4 @@
-package org.jboss.shamrock.maven.it.verifier;
+package io.quarkus.maven.it.verifier;
 
 import java.io.File;
 

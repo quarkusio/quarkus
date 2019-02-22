@@ -11,7 +11,7 @@
 :sectnumlevels: 4
 
 
-Learn how to create a Hello World Shamrock app.
+Learn how to create a Hello World Quarkus app.
 This guide covers:
 
 * Bootstrapping an application
@@ -45,7 +45,7 @@ This guide also covers the testing of the endpoint.
 We recommend you to follow the instructions in the next sections and create the application step by step.
 However, you can go right to the completed example.
 
-Clone the Git repository: `git clone git@github.com:jbossas/protean-quickstarts.git`, or download an https://github.com/jbossas/protean-quickstarts/archive/master.zip[archive].
+Clone the Git repository: `git clone git@github.com:jbossas/quarkus-quickstarts.git`, or download an https://github.com/jbossas/quarkus-quickstarts/archive/master.zip[archive].
 
 The solution is located in the `getting-started` directory.
 
@@ -55,7 +55,7 @@ The easiest way to create a new {project-name} project is to open a terminal and
 
 [source, subs=attributes+]
 ----
-mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=getting-started \
     -DclassName="org.acme.quickstart.GreetingResource" \
@@ -72,17 +72,17 @@ It generates:
 * the application configuration file
 
 Once generated, look at the `pom.xml`.
-You will find the import of the Shamrock BOM, allowing to omit the version on the different {project-name} dependencies.
-In addition, you can see the `shamrock-maven-plugin` responsible of the packaging of the application and also providing the development mode.
+You will find the import of the Quarkus BOM, allowing to omit the version on the different {project-name} dependencies.
+In addition, you can see the `quarkus-maven-plugin` responsible of the packaging of the application and also providing the development mode.
 
 [source,xml,subs=attributes+]
 ----
 <dependencyManagement>
     <dependencies>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-bom</artifactId>
-            <version>${shamrock.version}</version>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-bom</artifactId>
+            <version>${quarkus.version}</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -92,9 +92,9 @@ In addition, you can see the `shamrock-maven-plugin` responsible of the packagin
 <build>
     <plugins>
         <plugin>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-maven-plugin</artifactId>
-            <version>${shamrock.version}</version>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-maven-plugin</artifactId>
+            <version>${quarkus.version}</version>
             <executions>
                 <execution>
                     <goals>
@@ -108,9 +108,9 @@ In addition, you can see the `shamrock-maven-plugin` responsible of the packagin
 ----
 
 [NOTE]
-.What's Shamrock?
+.What's Quarkus?
 ====
-Shamrock can be seen as {project-name} core.
+Quarkus can be seen as {project-name} core.
 ====
 
 If we focus on the dependencies section, you can see 2 extensions allowing the development of REST applications:
@@ -118,12 +118,12 @@ If we focus on the dependencies section, you can see 2 extensions allowing the d
 [source,xml]
 ----
     <dependency>
-        <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-resteasy-deployment</artifactId>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-resteasy-deployment</artifactId>
     </dependency>
     <dependency>
-        <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-arc-deployment</artifactId>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-arc-deployment</artifactId>
     </dependency>
 ----
 
@@ -162,37 +162,37 @@ It's a very simple REST endpoint, returning "hello" to requests on "/hello".
 [TIP]
 .Differences with vanilla Jax-RS
 ====
-With Shamrock no need to create an `Application` class. It's supported but not required. In addition, only one instance
+With Quarkus no need to create an `Application` class. It's supported but not required. In addition, only one instance
 of the resource is created and not one per request. You can configure this using the different `XScoped` annotations.
 ====
 
 == Running the application
 
 Now we are ready to run our application.
-Use: `mvn compile shamrock:dev`:
+Use: `mvn compile quarkus:dev`:
 
 [source, text]
 ----
-[INFO] --------------------< org.acme:shamrock-quickstart >--------------------
-[INFO] Building shamrock-quickstart 1.0-SNAPSHOT
+[INFO] --------------------< org.acme:quarkus-quickstart >--------------------
+[INFO] Building quarkus-quickstart 1.0-SNAPSHOT
 [INFO] --------------------------------[ jar ]---------------------------------
 [INFO] 
-[INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ shamrock-quickstart ---
+[INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ quarkus-quickstart ---
 [INFO] Using 'UTF-8' encoding to copy filtered resources.
-[INFO] skip non existing resourceDirectory /opt/source/protean/quickstarts/getting-started/src/main/resources
+[INFO] skip non existing resourceDirectory /opt/source/quarkus/quickstarts/getting-started/src/main/resources
 [INFO] 
-[INFO] --- maven-compiler-plugin:3.1:compile (default-compile) @ shamrock-quickstart ---
+[INFO] --- maven-compiler-plugin:3.1:compile (default-compile) @ quarkus-quickstart ---
 [INFO] Nothing to compile - all classes are up to date
 [INFO] 
-[INFO] --- shamrock-maven-plugin:0.4.0:dev (default-cli) @ shamrock-quickstart ---
+[INFO] --- quarkus-maven-plugin:0.4.0:dev (default-cli) @ quarkus-quickstart ---
 INFO  [o.j.s.u.r.UndertowDeploymentTemplate] (main) Starting Undertow on port 8080
 INFO  [o.xnio] (main) XNIO version 3.6.5.Final
 INFO  [o.x.nio] (main) XNIO NIO Implementation Version 3.6.5.Final
 INFO  [o.j.threads] (main) JBoss Threads version 3.0.0.Alpha4
-INFO  [o.j.s.d.ShamrockAugmentor] (main) Beginning shamrock augmentation
-INFO  [o.j.s.d.ShamrockAugmentor] (main) Shamrock augmentation completed in 322ms
+INFO  [o.j.s.d.QuarkusAugmentor] (main) Beginning quarkus augmentation
+INFO  [o.j.s.d.QuarkusAugmentor] (main) Quarkus augmentation completed in 322ms
 INFO  [o.j.r.r.i18n] (main) RESTEASY002225: Deploying javax.ws.rs.core.Application: class org.acme.quickstart.MyApplication
-INFO  [o.j.shamrock] (main) Shamrock started in 697.982ms
+INFO  [o.j.quarkus] (main) Quarkus started in 697.982ms
 ----
 
 Once started, you can request the provided endpoint:
@@ -259,12 +259,12 @@ public class GreetingResource {
 }
 ----
 
-If you stopped the application, restart the application with `mvn compile shamrock:dev`.
-Then check that http://localhost:8080/hello/greeting/shamrock returns `hello shamrock`.
+If you stopped the application, restart the application with `mvn compile quarkus:dev`.
+Then check that http://localhost:8080/hello/greeting/quarkus returns `hello quarkus`.
 
 == Development Mode
 
-`shamrock:dev` runs Shamrock in development mode. This enables hot deployment with background compilation, which means
+`quarkus:dev` runs Quarkus in development mode. This enables hot deployment with background compilation, which means
 that when you modify your Java files and refresh your browser these changes will automatically take effect. The act of
 refreshing the browser triggers a scan of the workspace, and if any changes are detected the Java files are compiled,
 and the application is redeployed, then your request is serviced by the redeployed application. If there are any issues
@@ -282,9 +282,9 @@ In the generated `pom.xml` file, you can see 2 test dependencies:
 [source,xml,subs=attributes+]
 ----
 <dependency>
-    <groupId>org.jboss.shamrock</groupId>
-    <artifactId>shamrock-junit5</artifactId>
-    <version>${shamrock.version}</version>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-junit5</artifactId>
+    <version>${quarkus.version}</version>
     <scope>test</scope>
 </dependency>
 <dependency>
@@ -295,7 +295,7 @@ In the generated `pom.xml` file, you can see 2 test dependencies:
 </dependency>
 ----
 
-Shamrock supports https://junit.org/junit4/[Junit 4] and https://junit.org/junit5/[Junit 5] tests.
+Quarkus supports https://junit.org/junit4/[Junit 4] and https://junit.org/junit5/[Junit 5] tests.
 In the generated project, we use Junit 5.
 Because of this, the version of the https://maven.apache.org/surefire/maven-surefire-plugin/[Surefire Maven Plugin] must be set, as the default version does not support Junit 5:
 
@@ -314,7 +314,7 @@ Edit the `src/test/java/org/acme/quickstart/GreetingResourceTest.java` to match 
 ----
 package org.acme.quickstart;
 
-import org.jboss.shamrock.test.junit.ShamrockTest;
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
@@ -322,7 +322,7 @@ import java.util.UUID;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
-@ShamrockTest
+@QuarkusTest
 public class GreetingResourceTest {
 
     @Test    // <1>
@@ -347,7 +347,7 @@ public class GreetingResourceTest {
 
 }
 ----
-<1> By using the `ShamrockTest` runner, you instruct JUnit to start the application before the tests.
+<1> By using the `QuarkusTest` runner, you instruct JUnit to start the application before the tests.
 <2> Check the HTTP response status code and content
 
 These tests use http://rest-assured.io/[RestAssured], but feel free to use your favorite library.
@@ -367,7 +367,7 @@ a Servlet mapped to `/myservlet` I would just add the following to my test:
 URL testUrl;
 ----
 
-The test port can be controlled via the `shamrock.http.test-port` config property. Shamrock also creates a system
+The test port can be controlled via the `quarkus.http.test-port` config property. Quarkus also creates a system
 property called `test.url` that is set to the base test URL for situations where you cannot use injection.
 
 
@@ -376,12 +376,12 @@ property called `test.url` that is set to the base test URL for situations where
 The application is packaged using `mvn package`.
 It produces 2 jar files:
 
-* `shamrock-quickstart-1.0-SNAPSHOT.jar` - containing just the classes and resources of the projects, it's the regular
+* `quarkus-quickstart-1.0-SNAPSHOT.jar` - containing just the classes and resources of the projects, it's the regular
 artifact produced by the Maven build;
-* `shamrock-quickstart-1.0-SNAPSHOT-runner.jar` - being an executable _jar_. Be aware that it's not an _über-jar_ as
+* `quarkus-quickstart-1.0-SNAPSHOT-runner.jar` - being an executable _jar_. Be aware that it's not an _über-jar_ as
 the dependencies are copied into the `target/lib` directory.
 
-You can run the application using: `java -jar target/shamrock-quickstart-1.0-SNAPSHOT-runner.jar`
+You can run the application using: `java -jar target/quarkus-quickstart-1.0-SNAPSHOT-runner.jar`
 
 NOTE: The `Class-Path` entry of the `MANIFEST.MF` from the _runner jar_ explicitly lists the jars from the `lib` directory.
 So if you want to deploy your application somewhere, you need to copy the _runner_ jar as well as the _lib_ directory.
@@ -401,11 +401,11 @@ public CompletionStage<String> hello() {
 }
 ----
 
-The async version of the code is available in the https://github.com/jbossas/protean-quickstarts[Github] repository, in the `getting-started-async` directory.
+The async version of the code is available in the https://github.com/jbossas/quarkus-quickstarts[Github] repository, in the `getting-started-async` directory.
 
 == What's next?
 
-This guide covered the creation of an application using Shamrock.
+This guide covered the creation of an application using Quarkus.
 However, there is much more.
 We recommend continuing the journey with the link:building-native-image-guide.html[building a native image guide], where you learn about the native executable creation and the packaging in a container.
 

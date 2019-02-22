@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.smallrye.reactivestreamoperators;
+package io.quarkus.smallrye.reactivestreamoperators;
 
 import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreamsFactory;
 import org.eclipse.microprofile.reactive.streams.operators.core.ReactiveStreamsFactoryImpl;
 import org.eclipse.microprofile.reactive.streams.operators.spi.ReactiveStreamsEngine;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ServiceProviderBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
 
 import io.smallrye.reactive.streams.Engine;
 

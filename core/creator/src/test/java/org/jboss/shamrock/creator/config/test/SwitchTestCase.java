@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.config.test;
+package io.quarkus.creator.config.test;
 
-import org.jboss.shamrock.creator.config.reader.PropertiesConfigReaderException;
-import org.jboss.shamrock.creator.config.reader.PropertiesHandler;
-import org.jboss.shamrock.creator.config.reader.PropertyContext;
+import io.quarkus.creator.config.reader.PropertiesConfigReaderException;
+import io.quarkus.creator.config.reader.PropertiesHandler;
+import io.quarkus.creator.config.reader.PropertyContext;
 
 /**
  *

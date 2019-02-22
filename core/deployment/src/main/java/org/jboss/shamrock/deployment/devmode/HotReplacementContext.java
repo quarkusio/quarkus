@@ -1,4 +1,4 @@
-package org.jboss.shamrock.deployment.devmode;
+package io.quarkus.deployment.devmode;
 
 import java.nio.file.Path;
 

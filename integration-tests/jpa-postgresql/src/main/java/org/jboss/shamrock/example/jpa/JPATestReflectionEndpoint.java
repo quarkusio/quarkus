@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.jpa;
+package io.quarkus.example.jpa;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -39,9 +39,9 @@ public class JPATestReflectionEndpoint extends HttpServlet {
         makeSureEntitiesAreAccessibleViaReflection(resp);
         makeSureNonAnnotatedEmbeddableAreAccessibleViaReflection(resp);
         makeSureAnnotatedEmbeddableAreAccessibleViaReflection(resp);
-        makeSureClassAreAccessibleViaReflection("org.jboss.shamrock.example.jpa.Human", "Unable to enlist @MappedSuperclass",
+        makeSureClassAreAccessibleViaReflection("io.quarkus.example.jpa.Human", "Unable to enlist @MappedSuperclass",
                 resp);
-        makeSureClassAreAccessibleViaReflection("org.jboss.shamrock.example.jpa.Animal", "Unable to enlist entity superclass",
+        makeSureClassAreAccessibleViaReflection("io.quarkus.example.jpa.Animal", "Unable to enlist entity superclass",
                 resp);
         resp.getWriter().write("OK");
     }
@@ -60,7 +60,7 @@ public class JPATestReflectionEndpoint extends HttpServlet {
 
     private void makeSureEntitiesAreAccessibleViaReflection(HttpServletResponse resp) throws IOException {
         try {
-            String className = getTrickedClassName(org.jboss.shamrock.example.jpa.Customer.class.getName());
+            String className = getTrickedClassName(io.quarkus.example.jpa.Customer.class.getName());
 
             Class<?> custClass = Class.forName(className);
             Object instance = custClass.getDeclaredConstructor().newInstance();
@@ -82,7 +82,7 @@ public class JPATestReflectionEndpoint extends HttpServlet {
 
     private void makeSureAnnotatedEmbeddableAreAccessibleViaReflection(HttpServletResponse resp) throws IOException {
         try {
-            String className = getTrickedClassName(org.jboss.shamrock.example.jpa.WorkAddress.class.getName());
+            String className = getTrickedClassName(io.quarkus.example.jpa.WorkAddress.class.getName());
 
             Class<?> custClass = Class.forName(className);
             Object instance = custClass.getDeclaredConstructor().newInstance();
@@ -99,7 +99,7 @@ public class JPATestReflectionEndpoint extends HttpServlet {
 
     private void makeSureNonAnnotatedEmbeddableAreAccessibleViaReflection(HttpServletResponse resp) throws IOException {
         try {
-            String className = getTrickedClassName(org.jboss.shamrock.example.jpa.Address.class.getName());
+            String className = getTrickedClassName(io.quarkus.example.jpa.Address.class.getName());
 
             Class<?> custClass = Class.forName(className);
             Object instance = custClass.getDeclaredConstructor().newInstance();
@@ -116,7 +116,7 @@ public class JPATestReflectionEndpoint extends HttpServlet {
 
     private void makeSureNonEntityAreDCE(HttpServletResponse resp) {
         try {
-            String className = getTrickedClassName(org.jboss.shamrock.example.jpa.NotAnEntityNotReferenced.class.getName());
+            String className = getTrickedClassName(io.quarkus.example.jpa.NotAnEntityNotReferenced.class.getName());
 
             Class<?> custClass = Class.forName(className);
             resp.getWriter().write("Should not be able to find a non referenced non entity class");

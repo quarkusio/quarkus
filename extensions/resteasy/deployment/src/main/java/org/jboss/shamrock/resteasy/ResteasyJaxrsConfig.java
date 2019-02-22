@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.resteasy;
+package io.quarkus.resteasy;
 
 import org.jboss.builder.item.SimpleBuildItem;
 

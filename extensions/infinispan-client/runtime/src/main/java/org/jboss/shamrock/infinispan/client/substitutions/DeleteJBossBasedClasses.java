@@ -1,4 +1,4 @@
-package org.jboss.shamrock.infinispan.client.substitutions;
+package io.quarkus.infinispan.client.substitutions;
 
 import org.infinispan.commons.dataconversion.DefaultTranscoder;
 import org.infinispan.commons.dataconversion.GenericJbossMarshallerEncoder;

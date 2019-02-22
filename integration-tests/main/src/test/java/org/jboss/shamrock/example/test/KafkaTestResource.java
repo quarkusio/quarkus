@@ -1,14 +1,14 @@
-package org.jboss.shamrock.example.test;
+package io.quarkus.example.test;
 
 import java.io.File;
 import java.util.Properties;
 
-import org.jboss.shamrock.test.common.ShamrockTestResourceLifecycleManager;
+import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
 import io.debezium.kafka.KafkaCluster;
 import io.debezium.util.Testing;
 
-public class KafkaTestResource implements ShamrockTestResourceLifecycleManager {
+public class KafkaTestResource implements QuarkusTestResourceLifecycleManager {
 
     private KafkaCluster kafka;
 

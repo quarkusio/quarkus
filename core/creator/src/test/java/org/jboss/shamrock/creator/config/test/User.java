@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.config.test;
+package io.quarkus.creator.config.test;
 
 import java.nio.file.Path;
 

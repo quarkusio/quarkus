@@ -1,4 +1,4 @@
-package org.jboss.shamrock.example.hibernate.validator.custom;
+package io.quarkus.example.hibernate.validator.custom;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

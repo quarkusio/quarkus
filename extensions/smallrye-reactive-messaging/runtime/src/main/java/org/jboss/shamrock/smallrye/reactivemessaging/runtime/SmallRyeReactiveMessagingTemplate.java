@@ -1,11 +1,11 @@
-package org.jboss.shamrock.smallrye.reactivemessaging.runtime;
+package io.quarkus.smallrye.reactivemessaging.runtime;
 
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.jboss.protean.arc.Arc;
-import org.jboss.shamrock.arc.runtime.BeanContainer;
-import org.jboss.shamrock.runtime.annotations.Template;
+import org.jboss.quarkus.arc.Arc;
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.runtime.annotations.Template;
 
 import io.smallrye.reactive.messaging.extension.MediatorManager;
 

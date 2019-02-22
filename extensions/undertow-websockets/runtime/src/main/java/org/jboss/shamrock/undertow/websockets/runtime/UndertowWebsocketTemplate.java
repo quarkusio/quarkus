@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.undertow.websockets.runtime;
+package io.quarkus.undertow.websockets.runtime;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -24,8 +24,8 @@ import javax.websocket.server.ServerApplicationConfig;
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.runtime.RuntimeValue;
-import org.jboss.shamrock.runtime.annotations.Template;
+import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.annotations.Template;
 
 import io.undertow.Undertow;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;

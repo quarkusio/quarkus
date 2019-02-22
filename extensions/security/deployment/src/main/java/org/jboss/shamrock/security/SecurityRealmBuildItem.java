@@ -1,7 +1,7 @@
-package org.jboss.shamrock.security;
+package io.quarkus.security;
 
 import org.jboss.builder.item.MultiBuildItem;
-import org.jboss.shamrock.runtime.RuntimeValue;
+import io.quarkus.runtime.RuntimeValue;
 import org.wildfly.security.auth.server.SecurityRealm;
 
 /**

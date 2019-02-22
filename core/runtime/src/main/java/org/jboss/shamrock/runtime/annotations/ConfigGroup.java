@@ -1,4 +1,4 @@
-package org.jboss.shamrock.runtime.annotations;
+package io.quarkus.runtime.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -15,8 +15,8 @@ import java.lang.annotation.Target;
  * 
  * <pre>
  * <code>
-shamrock.extra-fast-mode         = yes
-shamrock.extra-fast-mode.gadgets = 20
+quarkus.extra-fast-mode         = yes
+quarkus.extra-fast-mode.gadgets = 20
 </code>
  * </pre>
  * 
@@ -24,8 +24,8 @@ shamrock.extra-fast-mode.gadgets = 20
  * 
  * <pre>
  * <code>
-shamrock.laser-beam.enabled    = true
-shamrock.laser-beam.mount-mode = sharks
+quarkus.laser-beam.enabled    = true
+quarkus.laser-beam.mount-mode = sharks
  </code>
  * </pre>
  */

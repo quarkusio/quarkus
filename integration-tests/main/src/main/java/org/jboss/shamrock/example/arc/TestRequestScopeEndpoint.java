@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.arc;
+package io.quarkus.example.arc;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;

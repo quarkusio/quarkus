@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.rest;
+package io.quarkus.example.rest;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;

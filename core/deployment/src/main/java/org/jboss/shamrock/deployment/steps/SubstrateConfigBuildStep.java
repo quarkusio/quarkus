@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.steps;
+package io.quarkus.deployment.steps;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,17 +25,17 @@ import java.util.stream.Collectors;
 
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.ExtensionSslNativeSupportBuildItem;
-import org.jboss.shamrock.deployment.builditem.SslNativeConfigBuildItem;
-import org.jboss.shamrock.deployment.builditem.SystemPropertyBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBundleBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
+import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
+import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateResourceBundleBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
 
 //TODO: this should go away, once we decide on which one of the API's we want
 class SubstrateConfigBuildStep {
@@ -103,7 +103,7 @@ class SubstrateConfigBuildStep {
             }
         }
 
-        nativeImage.produce(new SubstrateSystemPropertyBuildItem("shamrock.ssl.native", sslNativeEnabled.toString()));
+        nativeImage.produce(new SubstrateSystemPropertyBuildItem("quarkus.ssl.native", sslNativeEnabled.toString()));
     }
 
     private Boolean isSslNativeEnabled(SslNativeConfigBuildItem sslNativeConfig,

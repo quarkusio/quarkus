@@ -1,4 +1,4 @@
-package org.jboss.shamrock.maven.it;
+package io.quarkus.maven.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -8,8 +8,8 @@ import java.util.Collections;
 import java.util.HashMap;
 
 import org.apache.maven.shared.invoker.MavenInvocationException;
-import org.jboss.shamrock.maven.it.verifier.MavenProcessInvocationResult;
-import org.jboss.shamrock.maven.it.verifier.RunningInvoker;
+import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
+import io.quarkus.maven.it.verifier.RunningInvoker;
 import org.junit.jupiter.api.Test;
 
 public class PackageIT extends MojoTestBase {

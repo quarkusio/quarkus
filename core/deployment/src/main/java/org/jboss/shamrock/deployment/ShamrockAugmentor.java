@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment;
+package io.quarkus.deployment;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -28,19 +28,19 @@ import org.jboss.builder.BuildChainBuilder;
 import org.jboss.builder.BuildResult;
 import org.jboss.builder.item.BuildItem;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.deployment.builditem.ArchiveRootBuildItem;
-import org.jboss.shamrock.deployment.builditem.ClassOutputBuildItem;
-import org.jboss.shamrock.deployment.builditem.ExtensionClassLoaderBuildItem;
-import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.GeneratedResourceBuildItem;
-import org.jboss.shamrock.deployment.builditem.LaunchModeBuildItem;
-import org.jboss.shamrock.deployment.builditem.ShutdownContextBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
-import org.jboss.shamrock.runtime.LaunchMode;
+import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
+import io.quarkus.deployment.builditem.ClassOutputBuildItem;
+import io.quarkus.deployment.builditem.ExtensionClassLoaderBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import io.quarkus.runtime.LaunchMode;
 
-public class ShamrockAugmentor {
+public class QuarkusAugmentor {
 
-    private static final Logger log = Logger.getLogger(ShamrockAugmentor.class);
+    private static final Logger log = Logger.getLogger(QuarkusAugmentor.class);
 
     private final ClassOutput output;
     private final ClassLoader classLoader;
@@ -49,7 +49,7 @@ public class ShamrockAugmentor {
     private final List<Consumer<BuildChainBuilder>> buildChainCustomizers;
     private final LaunchMode launchMode;
 
-    ShamrockAugmentor(Builder builder) {
+    QuarkusAugmentor(Builder builder) {
         this.output = builder.output;
         this.classLoader = builder.classLoader;
         this.root = builder.root;
@@ -60,7 +60,7 @@ public class ShamrockAugmentor {
 
     public BuildResult run() throws Exception {
         long time = System.currentTimeMillis();
-        log.info("Beginning shamrock augmentation");
+        log.info("Beginning quarkus augmentation");
         ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
         try {
             Thread.currentThread().setContextClassLoader(classLoader);
@@ -71,7 +71,7 @@ public class ShamrockAugmentor {
             chainBuilder.loadProviders(classLoader);
 
             chainBuilder
-                    .addInitial(ShamrockConfig.class)
+                    .addInitial(QuarkusConfig.class)
                     .addInitial(SubstrateResourceBuildItem.class)
                     .addInitial(ArchiveRootBuildItem.class)
                     .addInitial(ShutdownContextBuildItem.class)
@@ -92,7 +92,7 @@ public class ShamrockAugmentor {
                     .build();
             BuildResult buildResult = chain.createExecutionBuilder("main")
                     .produce(new SubstrateResourceBuildItem("META-INF/microprofile-config.properties"))
-                    .produce(ShamrockConfig.INSTANCE)
+                    .produce(QuarkusConfig.INSTANCE)
                     .produce(new ArchiveRootBuildItem(root))
                     .produce(new ClassOutputBuildItem(output))
                     .produce(new ShutdownContextBuildItem())
@@ -107,7 +107,7 @@ public class ShamrockAugmentor {
             for (GeneratedResourceBuildItem i : buildResult.consumeMulti(GeneratedResourceBuildItem.class)) {
                 output.writeResource(i.getName(), i.getClassData());
             }
-            log.info("Shamrock augmentation completed in " + (System.currentTimeMillis() - time) + "ms");
+            log.info("Quarkus augmentation completed in " + (System.currentTimeMillis() - time) + "ms");
             return buildResult;
         } finally {
             Thread.currentThread().setContextClassLoader(originalClassLoader);
@@ -183,8 +183,8 @@ public class ShamrockAugmentor {
             return this;
         }
 
-        public ShamrockAugmentor build() {
-            return new ShamrockAugmentor(this);
+        public QuarkusAugmentor build() {
+            return new QuarkusAugmentor(this);
         }
     }
 }

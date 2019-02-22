@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.test.injection.constructornoinject;
+package org.jboss.quarkus.arc.test.injection.constructornoinject;
 
-import org.jboss.protean.arc.Arc;
-import org.jboss.protean.arc.test.ArcTestContainer;
+import org.jboss.quarkus.arc.Arc;
+import org.jboss.quarkus.arc.test.ArcTestContainer;
 import org.junit.Rule;
 import org.junit.Test;
 

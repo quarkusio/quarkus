@@ -1,4 +1,4 @@
-package org.jboss.shamrock.jwt.test;
+package io.quarkus.jwt.test;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -14,7 +14,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.jboss.shamrock.smallrye.jwt.runtime.auth.MpJwtValidator;
+import io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator;
 import org.junit.jupiter.api.Test;
 import org.wildfly.security.auth.principal.NamePrincipal;
 import org.wildfly.security.auth.realm.token.TokenSecurityRealm;

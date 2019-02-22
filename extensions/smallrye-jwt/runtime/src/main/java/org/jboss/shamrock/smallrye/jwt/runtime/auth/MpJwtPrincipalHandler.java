@@ -1,8 +1,8 @@
-package org.jboss.shamrock.smallrye.jwt.runtime.auth;
+package io.quarkus.smallrye.jwt.runtime.auth;
 
 import javax.enterprise.inject.spi.CDI;
 
-import org.jboss.shamrock.smallrye.jwt.runtime.PrincipalProducer;
+import io.quarkus.smallrye.jwt.runtime.PrincipalProducer;
 
 import io.undertow.security.idm.Account;
 import io.undertow.server.HttpHandler;

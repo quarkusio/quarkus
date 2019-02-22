@@ -1,4 +1,4 @@
-package org.jboss.shamrock.cli.commands;
+package io.quarkus.cli.commands;
 
 import static java.util.Arrays.asList;
 
@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 import org.apache.maven.model.Model;
-import org.jboss.shamrock.maven.utilities.MojoUtils;
+import io.quarkus.maven.utilities.MojoUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -28,9 +28,9 @@ public class AddExtensionsTest {
                 .addExtensions(new HashSet<>(asList("agroal", "arc", " hibernate-validator")));
 
         Model model = MojoUtils.readPom(pom);
-        hasDependency(model, "shamrock-agroal-deployment");
-        hasDependency(model, "shamrock-arc-deployment");
-        hasDependency(model, "shamrock-hibernate-validator-deployment");
+        hasDependency(model, "quarkus-agroal-deployment");
+        hasDependency(model, "quarkus-arc-deployment");
+        hasDependency(model, "quarkus-hibernate-validator-deployment");
     }
 
     private void hasDependency(final Model model, final String artifactId) {

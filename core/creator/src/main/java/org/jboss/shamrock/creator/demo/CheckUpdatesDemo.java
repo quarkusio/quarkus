@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.demo;
+package io.quarkus.creator.demo;
 
 import java.util.Properties;
 
-import org.jboss.shamrock.creator.AppCreator;
-import org.jboss.shamrock.creator.AppDependency;
-import org.jboss.shamrock.creator.phase.curate.CurateOutcome;
-import org.jboss.shamrock.creator.phase.curate.CuratePhase;
-import org.jboss.shamrock.creator.phase.curate.VersionUpdate;
-import org.jboss.shamrock.creator.phase.curate.VersionUpdateNumber;
+import io.quarkus.creator.AppCreator;
+import io.quarkus.creator.AppDependency;
+import io.quarkus.creator.phase.curate.CurateOutcome;
+import io.quarkus.creator.phase.curate.CuratePhase;
+import io.quarkus.creator.phase.curate.VersionUpdate;
+import io.quarkus.creator.phase.curate.VersionUpdateNumber;
 
 /**
  *

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.runner;
+package io.quarkus.runner;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -44,8 +44,8 @@ import java.util.concurrent.Future;
 import java.util.function.BiFunction;
 
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.deployment.ClassOutput;
-import org.jboss.shamrock.deployment.ShamrockClassWriter;
+import io.quarkus.deployment.ClassOutput;
+import io.quarkus.deployment.QuarkusClassWriter;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -90,7 +90,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
         // TODO: some superugly hack for bean provider
         byte[] data = resources.get(name);
         if (data != null) {
-            URL url = new URL(null, "shamrock:" + name + "/", new URLStreamHandler() {
+            URL url = new URL(null, "quarkus:" + name + "/", new URLStreamHandler() {
                 @Override
                 protected URLConnection openConnection(final URL u) throws IOException {
                     return new URLConnection(u) {
@@ -224,7 +224,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
         }
 
         ClassReader cr = new ClassReader(bytes);
-        ClassWriter writer = new ShamrockClassWriter(cr, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+        ClassWriter writer = new QuarkusClassWriter(cr, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
         ClassVisitor visitor = writer;
         for (BiFunction<String, ClassVisitor, ClassVisitor> i : transformers) {
             visitor = i.apply(name, visitor);
@@ -274,7 +274,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
             String dotName = className.replace('/', '.');
             appClasses.put(dotName, data);
             try {
-                File debugPath = new File("/tmp/shamrock-classes");
+                File debugPath = new File("/tmp/quarkus-classes");
                 if (!debugPath.exists()) {
                     debugPath.mkdir();
                 }

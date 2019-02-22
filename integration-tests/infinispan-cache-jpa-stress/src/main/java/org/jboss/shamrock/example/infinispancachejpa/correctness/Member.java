@@ -1,4 +1,4 @@
-package org.jboss.shamrock.example.infinispancachejpa.correctness;
+package io.quarkus.example.infinispancachejpa.correctness;
 
 public interface Member {
 

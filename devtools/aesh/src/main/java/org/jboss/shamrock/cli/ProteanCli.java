@@ -1,4 +1,4 @@
-package org.jboss.shamrock.cli;
+package io.quarkus.cli;
 
 import java.io.IOException;
 
@@ -11,18 +11,18 @@ import org.aesh.command.parser.CommandLineParserException;
 import org.aesh.command.registry.CommandRegistryException;
 import org.aesh.command.validator.CommandValidatorException;
 import org.aesh.command.validator.OptionValidatorException;
-import org.jboss.shamrock.cli.commands.ProteanCommand;
+import io.quarkus.cli.commands.QuarkusCommand;
 
-public class ProteanCli {
+public class QuarkusCli {
 
     public static void main(String[] args) throws CommandRegistryException {
         CommandRuntime runtime = AeshCommandRuntimeBuilder
                 .builder()
-                .commandRegistry(AeshCommandRegistryBuilder.builder().command(ProteanCommand.class).create())
+                .commandRegistry(AeshCommandRegistryBuilder.builder().command(QuarkusCommand.class).create())
                 .build();
 
         if (args.length > 0) {
-            StringBuilder sb = new StringBuilder(ProteanCommand.COMMAND_NAME).append(" ");
+            StringBuilder sb = new StringBuilder(QuarkusCommand.COMMAND_NAME).append(" ");
             if (args.length == 1) {
                 sb.append(args[0]);
             } else {
@@ -53,6 +53,6 @@ public class ProteanCli {
         if (e != null) {
             System.err.println(e.getMessage());
         }
-        System.err.println(runtime.commandInfo(ProteanCommand.COMMAND_NAME));
+        System.err.println(runtime.commandInfo(QuarkusCommand.COMMAND_NAME));
     }
 }

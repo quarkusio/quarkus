@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.test;
+package io.quarkus.example.test;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
-import org.jboss.shamrock.test.junit.ShamrockTest;
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
 import io.restassured.RestAssured;
 
-@ShamrockTest
+@QuarkusTest
 public class MetricsTestCase {
 
     @Test
@@ -53,7 +53,7 @@ public class MetricsTestCase {
     private void testCounted(String val) {
         RestAssured.when().get("/metrics").then()
                 .body(containsString(
-                        "application:org_jboss_shamrock_example_metrics_metrics_resource_a_counted_resource " + val));
+                        "application:io_quarkus_example_metrics_metrics_resource_a_counted_resource " + val));
     }
 
     public void invokeResource() {

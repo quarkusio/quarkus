@@ -1,4 +1,4 @@
-package org.infinispan.protean.hibernate.cache;
+package org.infinispan.quarkus.hibernate.cache;
 
 import org.hibernate.boot.registry.selector.spi.StrategySelector;
 import org.hibernate.boot.spi.SessionFactoryOptions;
@@ -17,9 +17,9 @@ import org.jboss.logging.Logger;
 import java.time.Duration;
 import java.util.*;
 
-public final class ProteanInfinispanRegionFactory implements RegionFactory {
+public final class QuarkusInfinispanRegionFactory implements RegionFactory {
 
-    private static final Logger log = Logger.getLogger(ProteanInfinispanRegionFactory.class);
+    private static final Logger log = Logger.getLogger(QuarkusInfinispanRegionFactory.class);
 
     private static final String PREFIX = "hibernate.cache.";
     private static final String OBJECT_COUNT_SUFFIX = ".memory.object-count";
@@ -36,12 +36,12 @@ public final class ProteanInfinispanRegionFactory implements RegionFactory {
     private Time.MillisService regionTimeService;
     private Time.NanosService cacheTimeService;
 
-    public ProteanInfinispanRegionFactory() {
+    public QuarkusInfinispanRegionFactory() {
     }
 
     // Required by Hibernate
     @SuppressWarnings({"UnusedParameters", "unused"})
-    public ProteanInfinispanRegionFactory(Properties props) {
+    public QuarkusInfinispanRegionFactory(Properties props) {
         this();
     }
 

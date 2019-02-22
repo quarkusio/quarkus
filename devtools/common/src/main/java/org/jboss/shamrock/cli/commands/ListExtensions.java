@@ -1,9 +1,9 @@
-package org.jboss.shamrock.cli.commands;
+package io.quarkus.cli.commands;
 
 import static java.util.stream.Collectors.toList;
-import static org.jboss.shamrock.maven.utilities.MojoUtils.credentials;
-import static org.jboss.shamrock.maven.utilities.MojoUtils.getPluginVersion;
-import static org.jboss.shamrock.maven.utilities.MojoUtils.loadExtensions;
+import static io.quarkus.maven.utilities.MojoUtils.credentials;
+import static io.quarkus.maven.utilities.MojoUtils.getPluginVersion;
+import static io.quarkus.maven.utilities.MojoUtils.loadExtensions;
 
 import java.util.Collections;
 import java.util.List;
@@ -13,9 +13,9 @@ import java.util.TreeMap;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.DependencyManagement;
 import org.apache.maven.model.Model;
-import org.jboss.shamrock.dependencies.Extension;
-import org.jboss.shamrock.maven.utilities.MojoUtils;
-import org.jboss.shamrock.maven.utilities.ShamrockDependencyPredicate;
+import io.quarkus.dependencies.Extension;
+import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
 
 public class ListExtensions {
     private static final String FORMAT = "%-8s %-20s %-50s %s";
@@ -26,7 +26,7 @@ public class ListExtensions {
     }
 
     public void listExtensions() {
-        System.out.println("\nCurrent Shamrock extensions available: ");
+        System.out.println("\nCurrent Quarkus extensions available: ");
         System.out.println(String.format(FORMAT, "Status", "Extension", "ArtifactId", "Updated Version"));
 
         final Map<String, Dependency> installed = findInstalled();
@@ -84,7 +84,7 @@ public class ListExtensions {
 
         if (dependencies != null) {
             final List<Dependency> listed = dependencies.stream()
-                    .filter(new ShamrockDependencyPredicate())
+                    .filter(new QuarkusDependencyPredicate())
                     .collect(toList());
 
             listed.forEach(d -> {

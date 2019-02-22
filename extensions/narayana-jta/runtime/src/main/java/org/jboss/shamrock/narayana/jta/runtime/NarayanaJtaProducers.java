@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.narayana.jta.runtime;
+package io.quarkus.narayana.jta.runtime;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;

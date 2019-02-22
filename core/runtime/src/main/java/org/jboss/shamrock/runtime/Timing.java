@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.runtime;
+package io.quarkus.runtime;
 
 import java.math.BigDecimal;
 
@@ -23,7 +23,7 @@ import org.jboss.logging.Logger;
 /**
  * Class that is responsible for printing out timing results.
  * <p>
- * It is modified on substrate by {@link org.jboss.shamrock.runtime.graal.TimingReplacement}, in that mainStarted it rewritten
+ * It is modified on substrate by {@link io.quarkus.runtime.graal.TimingReplacement}, in that mainStarted it rewritten
  * to
  * actually update the start time.
  */
@@ -57,18 +57,18 @@ public class Timing {
 
     public static void printStartupTime(String version, String features, String httpServer) {
         final long bootTimeNanoSeconds = System.nanoTime() - bootStartTime;
-        final Logger logger = Logger.getLogger("org.jboss.shamrock");
+        final Logger logger = Logger.getLogger("io.quarkus");
         //Use a BigDecimal so we can render in seconds with 3 digits precision, as requested:
         final BigDecimal secondsRepresentation = convertToBigDecimalSeconds(bootTimeNanoSeconds);
-        logger.infof("Shamrock %s started in %ss. %s", version, secondsRepresentation, httpServer);
+        logger.infof("Quarkus %s started in %ss. %s", version, secondsRepresentation, httpServer);
         logger.infof("Installed features: [%s]", features);
     }
 
     public static void printStopTime() {
         final long stopTimeNanoSeconds = System.nanoTime() - bootStopTime;
-        final Logger logger = Logger.getLogger("org.jboss.shamrock");
+        final Logger logger = Logger.getLogger("io.quarkus");
         final BigDecimal secondsRepresentation = convertToBigDecimalSeconds(stopTimeNanoSeconds);
-        logger.infof("Shamrock stopped in %ss", secondsRepresentation);
+        logger.infof("Quarkus stopped in %ss", secondsRepresentation);
     }
 
     private static BigDecimal convertToBigDecimalSeconds(final long timeNanoSeconds) {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.test;
+package io.quarkus.example.test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -25,12 +25,12 @@ import java.nio.charset.StandardCharsets;
 
 import javax.json.Json;
 
-import org.jboss.shamrock.test.common.http.TestHTTPResource;
-import org.jboss.shamrock.test.junit.ShamrockTest;
+import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-@ShamrockTest
+@QuarkusTest
 public class ValidatorTestCase {
 
     @TestHTTPResource("validator/manual")

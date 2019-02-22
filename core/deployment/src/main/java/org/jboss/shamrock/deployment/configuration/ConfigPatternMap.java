@@ -1,11 +1,11 @@
-package org.jboss.shamrock.deployment.configuration;
+package io.quarkus.deployment.configuration;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.TreeMap;
 
-import org.jboss.shamrock.runtime.configuration.NameIterator;
+import io.quarkus.runtime.configuration.NameIterator;
 import org.wildfly.common.Assert;
 
 /**

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jboss.shamrock.scheduler.test;
+package io.quarkus.scheduler.test;
 
 import static org.wildfly.common.Assert.assertNotNull;
 import static org.wildfly.common.Assert.assertTrue;
@@ -23,8 +23,8 @@ import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 
-import org.jboss.shamrock.scheduler.api.Scheduler;
-import org.jboss.shamrock.test.ShamrockUnitTest;
+import io.quarkus.scheduler.api.Scheduler;
+import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -35,7 +35,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class SimpleScheduledMethodTest {
 
     @RegisterExtension
-    static final ShamrockUnitTest test = new ShamrockUnitTest()
+    static final QuarkusUnitTest test = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(SimpleJobs.class)
                     .addAsManifestResource(new StringAsset("simpleJobs.cron=0/1 * * * * ?\nsimpleJobs.every=1s"),

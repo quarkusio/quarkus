@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.builditem;
+package io.quarkus.deployment.builditem;
 
 import org.jboss.builder.item.SimpleBuildItem;
-import org.jboss.shamrock.deployment.recording.BytecodeRecorderImpl;
-import org.jboss.shamrock.runtime.ShutdownContext;
+import io.quarkus.deployment.recording.BytecodeRecorderImpl;
+import io.quarkus.runtime.ShutdownContext;
 
 /**
  * A build item that can be used to register shutdown tasks in runtime templates

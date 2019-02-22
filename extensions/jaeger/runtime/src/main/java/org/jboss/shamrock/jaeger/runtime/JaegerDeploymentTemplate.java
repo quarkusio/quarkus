@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.jaeger.runtime;
+package io.quarkus.jaeger.runtime;
 
 import static io.jaegertracing.Configuration.JAEGER_ENDPOINT;
 import static io.jaegertracing.Configuration.JAEGER_SERVICE_NAME;
@@ -25,7 +25,7 @@ import java.util.function.Function;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.runtime.annotations.Template;
+import io.quarkus.runtime.annotations.Template;
 
 import io.opentracing.util.GlobalTracer;
 
@@ -39,7 +39,7 @@ public class JaegerDeploymentTemplate {
         if (!registered) {
             if (isValidConfig(jaeger)) {
                 initTracerConfig(jaeger);
-                GlobalTracer.register(new ShamrockJaegerTracer());
+                GlobalTracer.register(new QuarkusJaegerTracer());
             }
             registered = true;
         }

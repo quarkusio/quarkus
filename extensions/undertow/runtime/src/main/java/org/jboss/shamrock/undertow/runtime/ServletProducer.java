@@ -1,4 +1,4 @@
-package org.jboss.shamrock.undertow.runtime;
+package io.quarkus.undertow.runtime;
 
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.inject.Produces;

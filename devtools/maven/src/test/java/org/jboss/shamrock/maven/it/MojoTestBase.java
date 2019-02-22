@@ -1,4 +1,4 @@
-package org.jboss.shamrock.maven.it;
+package io.quarkus.maven.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -18,7 +18,7 @@ import java.util.logging.Logger;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.maven.shared.utils.StringUtils;
-import org.jboss.shamrock.maven.utilities.MojoUtils;
+import io.quarkus.maven.utilities.MojoUtils;
 import org.junit.jupiter.api.BeforeAll;
 
 import com.google.common.collect.ImmutableMap;

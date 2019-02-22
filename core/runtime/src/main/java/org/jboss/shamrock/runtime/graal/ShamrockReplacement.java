@@ -14,29 +14,29 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.runtime.graal;
+package io.quarkus.runtime.graal;
 
-import org.jboss.shamrock.runtime.Shamrock;
+import io.quarkus.runtime.Quarkus;
 
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
 /**
- * class that avoids the use of reflection in Shamrock when actually running
+ * class that avoids the use of reflection in Quarkus when actually running
  * on Graal.
  * <p>
  * Graal does not seem to like registering the program entry point as availble for reflection
  */
-@TargetClass(Shamrock.class)
-final class ShamrockReplacement {
+@TargetClass(Quarkus.class)
+final class QuarkusReplacement {
 
     @Substitute
     public static void main(String... args) throws Exception {
         GenMain.main(args);
     }
 
-    @TargetClass(className = "org.jboss.shamrock.runner.GeneratedMain")
+    @TargetClass(className = "io.quarkus.runner.GeneratedMain")
     static final class GenMain {
 
         @Alias

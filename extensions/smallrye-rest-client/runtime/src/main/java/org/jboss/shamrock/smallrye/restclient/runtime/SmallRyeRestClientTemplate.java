@@ -14,10 +14,10 @@
  *  permissions and limitations under the License.
  */
 
-package org.jboss.shamrock.smallrye.restclient.runtime;
+package io.quarkus.smallrye.restclient.runtime;
 
 import org.eclipse.microprofile.rest.client.spi.RestClientBuilderResolver;
-import org.jboss.shamrock.runtime.annotations.Template;
+import io.quarkus.runtime.annotations.Template;
 
 /**
  * @author <a href="http://kenfinnigan.me">Ken Finnigan</a>

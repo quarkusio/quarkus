@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.smallrye.health.test;
+package io.quarkus.smallrye.health.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -27,7 +27,7 @@ import javax.inject.Inject;
 import org.eclipse.microprofile.health.Health;
 import org.eclipse.microprofile.health.HealthCheck;
 import org.eclipse.microprofile.health.HealthCheckResponse;
-import org.jboss.shamrock.test.ShamrockUnitTest;
+import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -39,7 +39,7 @@ import io.restassured.RestAssured;
 public class FailingUnitTest {
 
     @RegisterExtension
-    static final ShamrockUnitTest config = new ShamrockUnitTest()
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(FailingHealthCheck.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));

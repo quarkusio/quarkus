@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.arc.runtime;
+package io.quarkus.arc.runtime;
 
 import javax.enterprise.context.Dependent;
 import javax.enterprise.event.Event;
 import javax.inject.Inject;
 
-import org.jboss.shamrock.runtime.ShutdownEvent;
-import org.jboss.shamrock.runtime.StartupEvent;
+import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.runtime.StartupEvent;
 
 /**
  *

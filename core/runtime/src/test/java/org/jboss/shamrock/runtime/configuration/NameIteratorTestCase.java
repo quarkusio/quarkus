@@ -1,10 +1,10 @@
-package org.jboss.shamrock.runtime.configuration;
+package io.quarkus.runtime.configuration;
 
 import static org.junit.Assert.*;
 
 import java.util.NoSuchElementException;
 
-import org.jboss.shamrock.runtime.configuration.NameIterator;
+import io.quarkus.runtime.configuration.NameIterator;
 import org.junit.Test;
 
 /**

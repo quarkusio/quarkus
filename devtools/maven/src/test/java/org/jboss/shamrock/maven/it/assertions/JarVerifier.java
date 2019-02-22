@@ -1,4 +1,4 @@
-package org.jboss.shamrock.maven.it.assertions;
+package io.quarkus.maven.it.assertions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

@@ -1,4 +1,4 @@
-package org.jboss.shamrock.runtime.annotations;
+package io.quarkus.runtime.annotations;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.PARAMETER;

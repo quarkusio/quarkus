@@ -1,4 +1,4 @@
-package org.jboss.shamrock.runtime.logging;
+package io.quarkus.runtime.logging;
 
 public class LogCleanupFilterElement {
     private String loggerName;

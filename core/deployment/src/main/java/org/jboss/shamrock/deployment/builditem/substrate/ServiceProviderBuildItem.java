@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.builditem.substrate;
+package io.quarkus.deployment.builditem.substrate;
 
 import java.util.Arrays;
 import java.util.List;

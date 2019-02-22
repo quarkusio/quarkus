@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.smallrye.faulttolerance.runtime;
+package io.quarkus.smallrye.faulttolerance.runtime;
 
 import java.lang.reflect.Method;
 
@@ -28,7 +28,7 @@ import io.smallrye.faulttolerance.config.FaultToleranceOperation;
 @Dependent
 @Alternative
 @Priority(1)
-public class ShamrockFaultToleranceOperationProvider implements FaultToleranceOperationProvider {
+public class QuarkusFaultToleranceOperationProvider implements FaultToleranceOperationProvider {
 
     @Override
     public FaultToleranceOperation get(Class<?> beanClass, Method method) {

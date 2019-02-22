@@ -1,4 +1,4 @@
-package org.jboss.shamrock.cli.commands;
+package io.quarkus.cli.commands;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,8 +12,8 @@ import org.aesh.command.invocation.CommandInvocation;
 import org.aesh.command.option.Argument;
 import org.aesh.command.option.Option;
 import org.aesh.io.Resource;
-import org.jboss.shamrock.dependencies.Extension;
-import org.jboss.shamrock.maven.utilities.MojoUtils;
+import io.quarkus.dependencies.Extension;
+import io.quarkus.maven.utilities.MojoUtils;
 
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
@@ -33,7 +33,7 @@ public class AddExtensionCommand implements Command<CommandInvocation> {
     @Override
     public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
         if (help) {
-            commandInvocation.println(commandInvocation.getHelpInfo("protean add-extension"));
+            commandInvocation.println(commandInvocation.getHelpInfo("quarkus add-extension"));
             return CommandResult.SUCCESS;
         } else {
             if (!findExtension(extension)) {

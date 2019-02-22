@@ -1,4 +1,4 @@
-package org.infinispan.protean.hibernate.cache;
+package org.infinispan.quarkus.hibernate.cache;
 
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.ExtendedStatisticsSupport;
@@ -26,7 +26,7 @@ final class QueryResultsRegionImpl implements QueryResultsRegion, ExtendedStatis
 
     private final ConcurrentMap<Object, Map> transactionContext = new ConcurrentHashMap<>();
 
-    public QueryResultsRegionImpl(InternalCache cache, String name, ProteanInfinispanRegionFactory regionFactory) {
+    public QueryResultsRegionImpl(InternalCache cache, String name, QuarkusInfinispanRegionFactory regionFactory) {
         this.cache = cache;
         this.name = name;
         this.regionFactory = regionFactory;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm;
+package io.quarkus.hibernate.orm;
 
 import java.util.function.BiFunction;
 
@@ -29,8 +29,8 @@ import org.objectweb.asm.Opcodes;
 
 /**
  * Used to transform bytecode by registering to
- * org.jboss.shamrock.deployment.ProcessorContext#addByteCodeTransformer(java.util.function.Function).
- * This function adapts the Shamrock bytecode transformer API - which uses ASM - to use the Entity Enhancement API of
+ * io.quarkus.deployment.ProcessorContext#addByteCodeTransformer(java.util.function.Function).
+ * This function adapts the Quarkus bytecode transformer API - which uses ASM - to use the Entity Enhancement API of
  * Hibernate ORM, which exposes a simple byte array.
  *
  * N.B. For enhancement the hardcoded tool of choice is the Byte Buddy based enhancer.

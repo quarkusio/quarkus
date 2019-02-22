@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.steps;
+package io.quarkus.deployment.steps;
 
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.annotations.ExecutionTime;
-import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.deployment.builditem.ExecutorBuildItem;
-import org.jboss.shamrock.deployment.builditem.ShutdownContextBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
-import org.jboss.shamrock.runtime.ExecutorTemplate;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ExecutorBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
+import io.quarkus.runtime.ExecutorTemplate;
 
 /**
  */

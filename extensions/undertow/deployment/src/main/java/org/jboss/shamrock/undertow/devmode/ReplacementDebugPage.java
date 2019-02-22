@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.undertow.devmode;
+package io.quarkus.undertow.devmode;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -98,7 +98,7 @@ public class ReplacementDebugPage {
         sb.append("<html><head><title>ERROR</title>");
         sb.append(ERROR_CSS);
         sb.append(
-                "</head><body><div class=\"header\"><div class=\"error-div\"></div><div class=\"error-text-div\">Error Restarting Shamrock</div></div>");
+                "</head><body><div class=\"header\"><div class=\"error-div\"></div><div class=\"error-text-div\">Error Restarting Quarkus</div></div>");
         writeLabel(sb, "Stack Trace", "");
 
         sb.append("<br/><textarea readonly style=\"width:90%; height:80%\">");

@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.resteasy.runtime;
+package io.quarkus.resteasy.runtime;
 
 import java.util.List;
 import java.util.function.Function;
 
-import org.jboss.shamrock.arc.runtime.BeanContainer;
-import org.jboss.shamrock.runtime.annotations.Template;
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.runtime.annotations.Template;
 
 @Template
 public class ResteasyTemplate {
 
     public void setupIntegration(BeanContainer container, List<Function<Object, Object>> propertyUnwrappers) {
-        ShamrockInjectorFactory.CONTAINER = container;
-        ShamrockInjectorFactory.PROXY_UNWRAPPER = new Function<Object, Object>() {
+        QuarkusInjectorFactory.CONTAINER = container;
+        QuarkusInjectorFactory.PROXY_UNWRAPPER = new Function<Object, Object>() {
             @Override
             public Object apply(Object o) {
                 Object res = o;

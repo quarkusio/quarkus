@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.maven;
+package io.quarkus.maven;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -60,7 +60,7 @@ public class ExampleConfigMojo extends AbstractMojo {
                     continue;
                 }
                 try (ZipFile zip = openZipFile(a)) {
-                    ZipEntry deps = zip.getEntry("META-INF/shamrock-descriptions.properties");
+                    ZipEntry deps = zip.getEntry("META-INF/quarkus-descriptions.properties");
                     if (deps != null) {
                         try (InputStream in = zip.getInputStream(deps)) {
                             properties.load(in);
@@ -69,7 +69,7 @@ public class ExampleConfigMojo extends AbstractMojo {
 
                 }
             }
-            StringBuilder sb = new StringBuilder("Example shamrock config\n\n");
+            StringBuilder sb = new StringBuilder("Example quarkus config\n\n");
             for (Map.Entry<Object, Object> e : new TreeMap<Object, Object>(properties).entrySet()) {
                 sb.append("# ")
                         .append(e.getValue().toString().replace("\n", " "))

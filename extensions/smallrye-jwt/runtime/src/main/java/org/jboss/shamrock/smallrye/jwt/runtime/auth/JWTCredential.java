@@ -1,4 +1,4 @@
-package org.jboss.shamrock.smallrye.jwt.runtime.auth;
+package io.quarkus.smallrye.jwt.runtime.auth;
 
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.consumer.JwtConsumer;

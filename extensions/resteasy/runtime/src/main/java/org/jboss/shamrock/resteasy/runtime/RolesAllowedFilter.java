@@ -1,4 +1,4 @@
-package org.jboss.shamrock.resteasy.runtime;
+package io.quarkus.resteasy.runtime;
 
 import static java.util.Arrays.asList;
 

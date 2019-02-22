@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.spring.tests;
+package io.quarkus.spring.tests;
 
 import static org.hamcrest.Matchers.containsString;
 
-import org.jboss.shamrock.test.junit.ShamrockTest;
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
 import io.restassured.RestAssured;
 
-@ShamrockTest
+@QuarkusTest
 public class InjectedSpringBeansResourceTest {
 
     @Test

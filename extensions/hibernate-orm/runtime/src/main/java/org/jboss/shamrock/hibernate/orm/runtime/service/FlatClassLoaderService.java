@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm.runtime.service;
+package io.quarkus.hibernate.orm.runtime.service;
 
 import java.io.IOException;
 import java.io.InputStream;

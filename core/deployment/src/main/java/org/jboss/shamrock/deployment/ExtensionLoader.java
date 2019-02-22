@@ -1,15 +1,15 @@
-package org.jboss.shamrock.deployment;
+package io.quarkus.deployment;
 
-import static org.jboss.shamrock.deployment.util.ReflectUtil.isBuildProducerOf;
-import static org.jboss.shamrock.deployment.util.ReflectUtil.isConsumerOf;
-import static org.jboss.shamrock.deployment.util.ReflectUtil.isListOf;
-import static org.jboss.shamrock.deployment.util.ReflectUtil.isOptionalOf;
-import static org.jboss.shamrock.deployment.util.ReflectUtil.isSupplierOf;
-import static org.jboss.shamrock.deployment.util.ReflectUtil.isSupplierOfOptionalOf;
-import static org.jboss.shamrock.deployment.util.ReflectUtil.rawTypeExtends;
-import static org.jboss.shamrock.deployment.util.ReflectUtil.rawTypeIs;
-import static org.jboss.shamrock.deployment.util.ReflectUtil.rawTypeOf;
-import static org.jboss.shamrock.deployment.util.ReflectUtil.rawTypeOfParameter;
+import static io.quarkus.deployment.util.ReflectUtil.isBuildProducerOf;
+import static io.quarkus.deployment.util.ReflectUtil.isConsumerOf;
+import static io.quarkus.deployment.util.ReflectUtil.isListOf;
+import static io.quarkus.deployment.util.ReflectUtil.isOptionalOf;
+import static io.quarkus.deployment.util.ReflectUtil.isSupplierOf;
+import static io.quarkus.deployment.util.ReflectUtil.isSupplierOfOptionalOf;
+import static io.quarkus.deployment.util.ReflectUtil.rawTypeExtends;
+import static io.quarkus.deployment.util.ReflectUtil.rawTypeIs;
+import static io.quarkus.deployment.util.ReflectUtil.rawTypeOf;
+import static io.quarkus.deployment.util.ReflectUtil.rawTypeOfParameter;
 
 import java.io.IOException;
 import java.lang.reflect.AnnotatedElement;
@@ -42,21 +42,21 @@ import org.jboss.builder.ProduceFlags;
 import org.jboss.builder.item.BuildItem;
 import org.jboss.builder.item.MultiBuildItem;
 import org.jboss.builder.item.SimpleBuildItem;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.annotations.ExecutionTime;
-import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
-import org.jboss.shamrock.deployment.builditem.CapabilityBuildItem;
-import org.jboss.shamrock.deployment.builditem.ConfigurationBuildItem;
-import org.jboss.shamrock.deployment.builditem.MainBytecodeRecorderBuildItem;
-import org.jboss.shamrock.deployment.builditem.StaticBytecodeRecorderBuildItem;
-import org.jboss.shamrock.deployment.recording.BytecodeRecorderImpl;
-import org.jboss.shamrock.deployment.recording.RecorderContext;
-import org.jboss.shamrock.deployment.util.ReflectUtil;
-import org.jboss.shamrock.deployment.util.ServiceUtil;
-import org.jboss.shamrock.runtime.annotations.ConfigRoot;
-import org.jboss.shamrock.runtime.annotations.Template;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
+import io.quarkus.deployment.builditem.CapabilityBuildItem;
+import io.quarkus.deployment.builditem.ConfigurationBuildItem;
+import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
+import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
+import io.quarkus.deployment.recording.BytecodeRecorderImpl;
+import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.deployment.util.ReflectUtil;
+import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.annotations.Template;
 import org.wildfly.common.function.Functions;
 
 /**
@@ -81,7 +81,7 @@ public final class ExtensionLoader {
     public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader)
             throws IOException, ClassNotFoundException {
         Consumer<BuildChainBuilder> result = Functions.discardingConsumer();
-        for (Class<?> clazz : ServiceUtil.classesNamedIn(classLoader, "META-INF/shamrock-build-steps.list")) {
+        for (Class<?> clazz : ServiceUtil.classesNamedIn(classLoader, "META-INF/quarkus-build-steps.list")) {
             result = result.andThen(ExtensionLoader.loadStepsFrom(clazz));
         }
         return result;

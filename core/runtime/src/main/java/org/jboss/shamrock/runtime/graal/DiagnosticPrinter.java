@@ -1,4 +1,4 @@
-package org.jboss.shamrock.runtime.graal;
+package io.quarkus.runtime.graal;
 
 import java.io.PrintStream;
 import java.time.Instant;

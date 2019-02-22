@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.test.injection.superclass.foo;
+package org.jboss.quarkus.arc.test.injection.superclass.foo;
 
 import javax.inject.Inject;
 
-import org.jboss.protean.arc.test.injection.superclass.SuperclassInjectionTest.Head;
-import org.jboss.protean.arc.test.injection.superclass.SuperclassInjectionTest.SuperHarvester;
+import org.jboss.quarkus.arc.test.injection.superclass.SuperclassInjectionTest.Head;
+import org.jboss.quarkus.arc.test.injection.superclass.SuperclassInjectionTest.SuperHarvester;
 
 public abstract class FooHarvester extends SuperHarvester {
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.processor;
+package org.jboss.quarkus.arc.processor;
 
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
@@ -40,10 +40,10 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
-import org.jboss.protean.arc.ComputingCache;
-import org.jboss.protean.arc.processor.AnnotationLiteralProcessor.Key;
-import org.jboss.protean.arc.processor.AnnotationLiteralProcessor.Literal;
-import org.jboss.protean.arc.processor.ResourceOutput.Resource;
+import org.jboss.quarkus.arc.ComputingCache;
+import org.jboss.quarkus.arc.processor.AnnotationLiteralProcessor.Key;
+import org.jboss.quarkus.arc.processor.AnnotationLiteralProcessor.Literal;
+import org.jboss.quarkus.arc.processor.ResourceOutput.Resource;
 import org.jboss.protean.gizmo.BytecodeCreator;
 import org.jboss.protean.gizmo.ClassCreator;
 import org.jboss.protean.gizmo.ClassOutput;

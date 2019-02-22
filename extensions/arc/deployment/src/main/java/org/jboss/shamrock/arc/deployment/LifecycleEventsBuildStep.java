@@ -1,14 +1,14 @@
-package org.jboss.shamrock.arc.deployment;
+package io.quarkus.arc.deployment;
 
-import static org.jboss.shamrock.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
 import java.util.List;
 
-import org.jboss.shamrock.arc.runtime.ArcDeploymentTemplate;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.deployment.builditem.ServiceStartBuildItem;
-import org.jboss.shamrock.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.arc.runtime.ArcDeploymentTemplate;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 
 public class LifecycleEventsBuildStep {
 

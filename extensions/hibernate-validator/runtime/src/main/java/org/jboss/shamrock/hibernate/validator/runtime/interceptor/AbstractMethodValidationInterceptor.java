@@ -1,4 +1,4 @@
-package org.jboss.shamrock.hibernate.validator.runtime.interceptor;
+package io.quarkus.hibernate.validator.runtime.interceptor;
 
 import java.io.Serializable;
 import java.lang.reflect.Member;

@@ -1,4 +1,4 @@
-package org.jboss.shamrock.deployment;
+package io.quarkus.deployment;
 
 import static org.jboss.protean.gizmo.DescriptorUtils.isPrimitive;
 

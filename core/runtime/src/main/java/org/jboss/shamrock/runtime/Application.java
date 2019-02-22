@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.runtime;
+package io.quarkus.runtime;
 
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -22,7 +22,7 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.runtime.graal.DiagnosticPrinter;
+import io.quarkus.runtime.graal.DiagnosticPrinter;
 import org.jboss.threads.Locks;
 import org.wildfly.common.Assert;
 

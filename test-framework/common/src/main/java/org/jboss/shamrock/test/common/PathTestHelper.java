@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.test.common;
+package io.quarkus.test.common;
 
 import java.io.File;
 import java.net.URISyntaxException;

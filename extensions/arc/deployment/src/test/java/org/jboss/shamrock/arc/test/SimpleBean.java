@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jboss.shamrock.arc.test;
+package io.quarkus.arc.test;
 
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -23,7 +23,7 @@ import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.jboss.shamrock.runtime.StartupEvent;
+import io.quarkus.runtime.StartupEvent;
 
 @ApplicationScoped
 public class SimpleBean {

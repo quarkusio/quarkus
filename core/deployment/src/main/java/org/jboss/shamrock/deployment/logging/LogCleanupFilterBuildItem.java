@@ -1,7 +1,7 @@
-package org.jboss.shamrock.deployment.logging;
+package io.quarkus.deployment.logging;
 
 import org.jboss.builder.item.MultiBuildItem;
-import org.jboss.shamrock.runtime.logging.LogCleanupFilterElement;
+import io.quarkus.runtime.logging.LogCleanupFilterElement;
 
 /**
  * Declare that a log filter should be applied to the specified <tt>loggerName</tt>,

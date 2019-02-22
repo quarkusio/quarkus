@@ -1,4 +1,4 @@
-package org.jboss.shamrock.runtime.configuration;
+package io.quarkus.runtime.configuration;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;

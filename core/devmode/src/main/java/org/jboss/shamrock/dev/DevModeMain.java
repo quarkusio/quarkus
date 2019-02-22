@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.dev;
+package io.quarkus.dev;
 
 import java.io.Closeable;
 import java.io.File;
@@ -24,9 +24,9 @@ import java.net.URLClassLoader;
 
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.runner.RuntimeRunner;
-import org.jboss.shamrock.runtime.LaunchMode;
-import org.jboss.shamrock.runtime.Timing;
+import io.quarkus.runner.RuntimeRunner;
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.Timing;
 
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
@@ -100,7 +100,7 @@ public class DevModeMain {
                     }
                 }
             }
-        }, "Shamrock Shutdown Thread"));
+        }, "Quarkus Shutdown Thread"));
     }
 
     private static synchronized void doStart() {
@@ -126,7 +126,7 @@ public class DevModeMain {
             }
         } catch (Throwable t) {
             deploymentProblem = t;
-            log.error("Failed to start shamrock", t);
+            log.error("Failed to start quarkus", t);
         }
     }
 

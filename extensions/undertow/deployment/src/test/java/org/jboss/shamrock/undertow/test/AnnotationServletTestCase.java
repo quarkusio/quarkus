@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.undertow.test;
+package io.quarkus.undertow.test;
 
 import static org.hamcrest.Matchers.is;
 
-import org.jboss.shamrock.test.ShamrockUnitTest;
+import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -29,7 +29,7 @@ import io.restassured.RestAssured;
 public class AnnotationServletTestCase {
 
     @RegisterExtension
-    static ShamrockUnitTest runner = new ShamrockUnitTest()
+    static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TestServlet.class));
 

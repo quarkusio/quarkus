@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.smallrye.opentracing;
+package io.quarkus.smallrye.opentracing;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -23,15 +23,15 @@ import java.util.List;
 import javax.enterprise.inject.spi.ObserverMethod;
 import javax.servlet.DispatcherType;
 
-import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveMethodBuildItem;
-import org.jboss.shamrock.resteasy.ResteasyJaxrsProviderBuildItem;
-import org.jboss.shamrock.smallrye.opentracing.runtime.ShamrockSmallRyeTracingDynamicFeature;
-import org.jboss.shamrock.smallrye.opentracing.runtime.TracerProducer;
-import org.jboss.shamrock.undertow.FilterBuildItem;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveMethodBuildItem;
+import io.quarkus.resteasy.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.smallrye.opentracing.runtime.QuarkusSmallRyeTracingDynamicFeature;
+import io.quarkus.smallrye.opentracing.runtime.TracerProducer;
+import io.quarkus.undertow.FilterBuildItem;
 
 import io.opentracing.contrib.interceptors.OpenTracingInterceptor;
 import io.opentracing.contrib.jaxrs2.server.SpanFinishingFilter;
@@ -56,7 +56,7 @@ public class SmallRyeOpenTracingProcessor {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_OPENTRACING));
 
-        providers.produce(new ResteasyJaxrsProviderBuildItem(ShamrockSmallRyeTracingDynamicFeature.class.getName()));
+        providers.produce(new ResteasyJaxrsProviderBuildItem(QuarkusSmallRyeTracingDynamicFeature.class.getName()));
 
         FilterBuildItem filterInfo = new FilterBuildItem("tracingFilter", SpanFinishingFilter.class.getName());
         filterInfo.setAsyncSupported(true);

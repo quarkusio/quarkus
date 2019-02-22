@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm.runtime.boot;
+package io.quarkus.hibernate.orm.runtime.boot;
 
 import java.net.URL;
 import java.util.Collections;

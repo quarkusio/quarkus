@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.phase.curate;
+package io.quarkus.creator.phase.curate;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -37,9 +37,9 @@ import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
-import org.jboss.shamrock.creator.AppArtifact;
-import org.jboss.shamrock.creator.AppCreatorException;
-import org.jboss.shamrock.creator.AppDependency;
+import io.quarkus.creator.AppArtifact;
+import io.quarkus.creator.AppCreatorException;
+import io.quarkus.creator.AppDependency;
 
 /**
  *
@@ -56,7 +56,7 @@ public class Utils {
      * @return provisioning state artifact
      */
     static AppArtifact getStateArtifact(AppArtifact appArtifact) {
-        return new AppArtifact(appArtifact.getGroupId() + ".shamrock.curate",
+        return new AppArtifact(appArtifact.getGroupId() + ".quarkus.curate",
                 appArtifact.getArtifactId(),
                 "",
                 "pom",

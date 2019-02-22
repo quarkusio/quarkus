@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm.runtime.boot.scan;
+package io.quarkus.hibernate.orm.runtime.boot.scan;
 
 import java.util.Collections;
 import java.util.Set;
@@ -33,10 +33,10 @@ import org.hibernate.boot.archive.spi.InputStreamAccess;
 /**
  * A hard coded scanner. This scanner is serialized to bytecode, and used to avoid scanning on Hibernate startup.
  * Technically the scanners are receiving all classes and categorize them as JPA useful or not.
- * In Shamrock's case, we detect the JPA friendly ones and not list the other ones.
+ * In Quarkus's case, we detect the JPA friendly ones and not list the other ones.
  * Emmanuel thinks it's fine as AFAICS, Hibernate ORM filter out the non JPA specific ones.
  */
-public class ShamrockScanner implements Scanner {
+public class QuarkusScanner implements Scanner {
 
     private Set<ClassDescriptor> classDescriptors;
 

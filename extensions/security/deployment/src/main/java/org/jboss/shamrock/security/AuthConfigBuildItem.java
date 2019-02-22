@@ -1,9 +1,9 @@
-package org.jboss.shamrock.security;
+package io.quarkus.security;
 
 import java.util.List;
 
 import org.jboss.builder.item.MultiBuildItem;
-import org.jboss.shamrock.runtime.RuntimeValue;
+import io.quarkus.runtime.RuntimeValue;
 
 /**
  * Information about an authentication mechanism to enable. This is used to call the

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.spring.tests;
+package io.quarkus.spring.tests;
 
 import java.util.function.Function;
 

@@ -1,4 +1,4 @@
-package org.jboss.shamrock.jwt.test;
+package io.quarkus.jwt.test;
 
 import java.io.InputStream;
 import java.util.Arrays;
@@ -12,7 +12,7 @@ import javax.json.JsonObject;
 import javax.json.JsonString;
 
 import org.eclipse.microprofile.jwt.Claims;
-import org.jboss.shamrock.smallrye.jwt.runtime.auth.ElytronJwtCallerPrincipal;
+import io.quarkus.smallrye.jwt.runtime.auth.ElytronJwtCallerPrincipal;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.junit.jupiter.api.Assertions;

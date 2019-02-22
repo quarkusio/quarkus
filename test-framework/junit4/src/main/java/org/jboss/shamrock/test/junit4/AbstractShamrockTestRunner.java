@@ -14,36 +14,36 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.test.junit4;
+package io.quarkus.test.junit4;
 
 import java.util.function.BiFunction;
 
-import org.jboss.shamrock.test.common.http.TestHttpResourceManager;
+import io.quarkus.test.common.http.TestHttpResourceManager;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
 
-abstract class AbstractShamrockTestRunner extends BlockJUnit4ClassRunner {
+abstract class AbstractQuarkusTestRunner extends BlockJUnit4ClassRunner {
 
     private static boolean first = true;
-    private static AbstractShamrockRunListener shamrockRunListener;
+    private static AbstractQuarkusRunListener quarkusRunListener;
 
-    private final BiFunction<Class<?>, RunNotifier, AbstractShamrockRunListener> shamrockRunListenerSupplier;
+    private final BiFunction<Class<?>, RunNotifier, AbstractQuarkusRunListener> quarkusRunListenerSupplier;
 
-    public AbstractShamrockTestRunner(Class<?> klass,
-            BiFunction<Class<?>, RunNotifier, AbstractShamrockRunListener> shamrockRunListenerSupplier)
+    public AbstractQuarkusTestRunner(Class<?> klass,
+            BiFunction<Class<?>, RunNotifier, AbstractQuarkusRunListener> quarkusRunListenerSupplier)
             throws InitializationError {
         super(klass);
-        this.shamrockRunListenerSupplier = shamrockRunListenerSupplier;
+        this.quarkusRunListenerSupplier = quarkusRunListenerSupplier;
     }
 
     @Override
     public void run(final RunNotifier notifier) {
         if (first) {
             first = false;
-            shamrockRunListener = shamrockRunListenerSupplier.apply(getTestClass().getJavaClass(), notifier);
-            notifier.addListener(shamrockRunListener);
+            quarkusRunListener = quarkusRunListenerSupplier.apply(getTestClass().getJavaClass(), notifier);
+            notifier.addListener(quarkusRunListener);
         }
 
         super.run(notifier);
@@ -51,7 +51,7 @@ abstract class AbstractShamrockTestRunner extends BlockJUnit4ClassRunner {
 
     @Override
     protected void runChild(final FrameworkMethod method, RunNotifier notifier) {
-        if (!shamrockRunListener.isFailed()) {
+        if (!quarkusRunListener.isFailed()) {
             super.runChild(method, notifier);
         } else {
             notifier.fireTestIgnored(describeChild(method));

@@ -19,7 +19,7 @@ Remember, you need to configure Maven as indicated in the link:maven-config.html
 We recommend you to follow the instructions in the next sections and create the application step by step.
 However, you can go right to the completed example.
 
-Clone the Git repository: `git clone https://github.com/jbossas/protean-quickstarts.git`, or download an https://github.com/jbossas/protean-quickstarts/archive/master.zip[archive].
+Clone the Git repository: `git clone https://github.com/jbossas/quarkus-quickstarts.git`, or download an https://github.com/jbossas/quarkus-quickstarts/archive/master.zip[archive].
 
 The solution is located in the `rest-client` directory.
 
@@ -29,7 +29,7 @@ First, we need a new project. Create a new project with the following command:
 
 [source, subs=attributes+]
 ----
-mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=rest-client \
     -DclassName="org.acme.restclient.CountriesResource" \
@@ -232,13 +232,13 @@ Edit the `src/test/java/org/acme/restclient/CountriesResourceTest.java` file and
 ----
 package org.acme.restclient;
 
-import org.jboss.shamrock.test.junit.ShamrockTest;
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 
-@ShamrockTest
+@QuarkusTest
 public class CountriesResourceTest {
 
     @Test
@@ -262,7 +262,7 @@ The code above uses link:http://rest-assured.io/[REST Assured]'s link:https://gi
 
 == Package and run the application
 
-Run the application with: `mvn compile shamrock:dev`.
+Run the application with: `mvn compile quarkus:dev`.
 Open your browser to http://localhost:8080/country/name/greece.
 
 You should see a JSON object containing some basic information about Greece.

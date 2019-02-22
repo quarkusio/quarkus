@@ -1,4 +1,4 @@
-package org.jboss.shamrock.smallrye.jwt.runtime.auth;
+package io.quarkus.smallrye.jwt.runtime.auth;
 
 import static io.undertow.util.Headers.AUTHORIZATION;
 import static io.undertow.util.Headers.WWW_AUTHENTICATE;

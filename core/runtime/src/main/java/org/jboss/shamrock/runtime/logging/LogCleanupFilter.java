@@ -1,4 +1,4 @@
-package org.jboss.shamrock.runtime.logging;
+package io.quarkus.runtime.logging;
 
 import java.util.HashMap;
 import java.util.List;

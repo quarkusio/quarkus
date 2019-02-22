@@ -1,4 +1,4 @@
-package org.jboss.shamrock.example.rest;
+package io.quarkus.example.rest;
 
 import java.io.IOException;
 import java.io.OutputStream;

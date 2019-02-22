@@ -1,4 +1,4 @@
-package org.jboss.shamrock;
+package io.quarkus;
 
 import static java.lang.String.format;
 
@@ -18,9 +18,9 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import org.apache.maven.model.Model;
-import org.jboss.shamrock.maven.utilities.MojoUtils;
+import io.quarkus.maven.utilities.MojoUtils;
 
-public class BasicRest extends ShamrockTemplate {
+public class BasicRest extends QuarkusTemplate {
     private Map<String, Object> context;
     private String className;
     private String path = "/hello";

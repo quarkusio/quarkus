@@ -1,7 +1,7 @@
-package org.jboss.shamrock.deployment.builditem;
+package io.quarkus.deployment.builditem;
 
 import org.jboss.builder.item.SimpleBuildItem;
-import org.jboss.shamrock.runtime.LaunchMode;
+import io.quarkus.runtime.LaunchMode;
 
 /**
  * indicates the type of launch

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment;
+package io.quarkus.deployment;
 
 import java.util.Set;
 
@@ -25,8 +25,8 @@ import org.jboss.builder.item.SimpleBuildItem;
  */
 public final class Capabilities extends SimpleBuildItem {
 
-    public static final String CDI_ARC = "org.jboss.shamrock.cdi";
-    public static final String TRANSACTIONS = "org.jboss.shamrock.transactions";
+    public static final String CDI_ARC = "io.quarkus.cdi";
+    public static final String TRANSACTIONS = "io.quarkus.transactions";
 
     private final Set<String> capabilities;
 

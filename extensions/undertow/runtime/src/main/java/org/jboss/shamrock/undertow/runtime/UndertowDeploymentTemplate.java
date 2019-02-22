@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.undertow.runtime;
+package io.quarkus.undertow.runtime;
 
 import java.io.IOException;
 import java.net.SocketAddress;
@@ -32,12 +32,12 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
 import org.jboss.logging.Logger;
-import org.jboss.protean.arc.ManagedContext;
-import org.jboss.shamrock.arc.runtime.BeanContainer;
-import org.jboss.shamrock.runtime.LaunchMode;
-import org.jboss.shamrock.runtime.RuntimeValue;
-import org.jboss.shamrock.runtime.ShutdownContext;
-import org.jboss.shamrock.runtime.annotations.Template;
+import org.jboss.quarkus.arc.ManagedContext;
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.ShutdownContext;
+import io.quarkus.runtime.annotations.Template;
 
 import io.undertow.Undertow;
 import io.undertow.server.HandlerWrapper;
@@ -74,7 +74,7 @@ import io.undertow.servlet.handlers.ServletPathMatches;
 @Template
 public class UndertowDeploymentTemplate {
 
-    private static final Logger log = Logger.getLogger("org.jboss.shamrock.undertow");
+    private static final Logger log = Logger.getLogger("io.quarkus.undertow");
 
     public static final HttpHandler ROOT_HANDLER = new HttpHandler() {
         @Override
@@ -82,7 +82,7 @@ public class UndertowDeploymentTemplate {
             currentRoot.handleRequest(exchange);
         }
     };
-    private static final String RESOURCES_PROP = "shamrock.undertow.resources";
+    private static final String RESOURCES_PROP = "quarkus.undertow.resources";
 
     private static volatile Undertow undertow;
     private static volatile HttpHandler currentRoot = ResponseCodeHandler.HANDLE_404;
@@ -90,7 +90,7 @@ public class UndertowDeploymentTemplate {
     public RuntimeValue<DeploymentInfo> createDeployment(String name, Set<String> knownFile, Set<String> knownDirectories,
             LaunchMode launchMode, ShutdownContext context) {
         DeploymentInfo d = new DeploymentInfo();
-        d.setSessionIdGenerator(new ShamrockSessionIdGenerator());
+        d.setSessionIdGenerator(new QuarkusSessionIdGenerator());
         d.setClassLoader(getClass().getClassLoader());
         d.setDeploymentName(name);
         d.setContextPath("/");
@@ -154,7 +154,7 @@ public class UndertowDeploymentTemplate {
             int loadOnStartup,
             BeanContainer beanContainer) throws Exception {
         ServletInfo servletInfo = new ServletInfo(name, (Class<? extends Servlet>) servletClass,
-                new ShamrockInstanceFactory(beanContainer.instanceFactory(servletClass)));
+                new QuarkusInstanceFactory(beanContainer.instanceFactory(servletClass)));
         deploymentInfo.getValue().addServlet(servletInfo);
         servletInfo.setAsyncSupported(asyncSupported);
         if (loadOnStartup > 0) {
@@ -200,7 +200,7 @@ public class UndertowDeploymentTemplate {
             boolean asyncSupported,
             BeanContainer beanContainer) throws Exception {
         FilterInfo filterInfo = new FilterInfo(name, (Class<? extends Filter>) filterClass,
-                new ShamrockInstanceFactory(beanContainer.instanceFactory(filterClass)));
+                new QuarkusInstanceFactory(beanContainer.instanceFactory(filterClass)));
         info.getValue().addFilter(filterInfo);
         filterInfo.setAsyncSupported(asyncSupported);
         return new RuntimeValue<>(filterInfo);
@@ -223,7 +223,7 @@ public class UndertowDeploymentTemplate {
     public void registerListener(RuntimeValue<DeploymentInfo> info, Class<?> listenerClass, BeanContainer factory) {
         info.getValue()
                 .addListener(new ListenerInfo((Class<? extends EventListener>) listenerClass,
-                        (InstanceFactory<? extends EventListener>) new ShamrockInstanceFactory<>(
+                        (InstanceFactory<? extends EventListener>) new QuarkusInstanceFactory<>(
                                 factory.instanceFactory(listenerClass))));
     }
 
@@ -266,7 +266,7 @@ public class UndertowDeploymentTemplate {
     }
 
     /**
-     * Used for shamrock:run, where we want undertow to start very early in the process.
+     * Used for quarkus:run, where we want undertow to start very early in the process.
      * <p>
      * This enables recovery from errors on boot. In a normal boot undertow is one of the last things start, so there would
      * be no chance to use hot deployment to fix the error. In development mode we start Undertow early, so any error
@@ -381,7 +381,7 @@ public class UndertowDeploymentTemplate {
     /**
      * we can't have SecureRandom in the native image heap, so we need to lazy init
      */
-    private static class ShamrockSessionIdGenerator implements SessionIdGenerator {
+    private static class QuarkusSessionIdGenerator implements SessionIdGenerator {
 
         private volatile SecureRandom random;
 

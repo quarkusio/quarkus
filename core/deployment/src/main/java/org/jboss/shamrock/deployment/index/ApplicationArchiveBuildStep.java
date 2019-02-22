@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.index;
+package io.quarkus.deployment.index;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -45,16 +45,16 @@ import org.jboss.jandex.IndexReader;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.deployment.ApplicationArchive;
-import org.jboss.shamrock.deployment.ApplicationArchiveImpl;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
-import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
-import org.jboss.shamrock.deployment.builditem.ApplicationIndexBuildItem;
-import org.jboss.shamrock.deployment.builditem.ArchiveRootBuildItem;
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
-import org.jboss.shamrock.runtime.annotations.ConfigPhase;
-import org.jboss.shamrock.runtime.annotations.ConfigRoot;
+import io.quarkus.deployment.ApplicationArchive;
+import io.quarkus.deployment.ApplicationArchiveImpl;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
+import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
+import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
+import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.runtime.annotations.ConfigRoot;
 
 public class ApplicationArchiveBuildStep {
 
@@ -68,7 +68,7 @@ public class ApplicationArchiveBuildStep {
     static final class IndexDependencyConfiguration {
         /**
          * Artifacts on the class path that should also be indexed, which will allow classes in the index to be
-         * processed by shamrocks processors
+         * processed by quarkuss processors
          */
         @ConfigItem(name = ConfigItem.PARENT)
         Map<String, IndexDependencyConfig> indexDependency;

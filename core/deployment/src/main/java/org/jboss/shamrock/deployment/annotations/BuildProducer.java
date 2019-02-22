@@ -1,4 +1,4 @@
-package org.jboss.shamrock.deployment.annotations;
+package io.quarkus.deployment.annotations;
 
 import org.jboss.builder.item.BuildItem;
 

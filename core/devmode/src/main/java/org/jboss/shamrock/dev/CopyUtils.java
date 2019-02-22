@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.dev;
+package io.quarkus.dev;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;

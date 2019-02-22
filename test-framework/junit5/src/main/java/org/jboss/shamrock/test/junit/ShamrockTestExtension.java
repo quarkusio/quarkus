@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.test.junit;
+package io.quarkus.test.junit;
 
-import static org.jboss.shamrock.test.common.PathTestHelper.getAppClassLocation;
-import static org.jboss.shamrock.test.common.PathTestHelper.getTestClassesLocation;
+import static io.quarkus.test.common.PathTestHelper.getAppClassLocation;
+import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
 import java.io.Closeable;
 
-import org.jboss.shamrock.runner.RuntimeRunner;
-import org.jboss.shamrock.runtime.LaunchMode;
-import org.jboss.shamrock.test.common.NativeImageLauncher;
-import org.jboss.shamrock.test.common.RestAssuredURLManager;
-import org.jboss.shamrock.test.common.TestResourceManager;
-import org.jboss.shamrock.test.common.http.TestHttpResourceManager;
+import io.quarkus.runner.RuntimeRunner;
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.test.common.NativeImageLauncher;
+import io.quarkus.test.common.RestAssuredURLManager;
+import io.quarkus.test.common.TestResourceManager;
+import io.quarkus.test.common.http.TestHttpResourceManager;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -36,7 +36,7 @@ import org.junit.jupiter.api.extension.TestInstanceFactory;
 import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 
-public class ShamrockTestExtension implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback, TestInstanceFactory {
+public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback, TestInstanceFactory {
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {

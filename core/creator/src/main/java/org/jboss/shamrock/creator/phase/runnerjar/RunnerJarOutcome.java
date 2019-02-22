@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.phase.runnerjar;
+package io.quarkus.creator.phase.runnerjar;
 
 import java.nio.file.Path;
 

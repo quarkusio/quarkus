@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.reactive;
+package io.quarkus.example.reactive;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;

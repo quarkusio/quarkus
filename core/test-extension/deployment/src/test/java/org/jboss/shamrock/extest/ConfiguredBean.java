@@ -1,10 +1,10 @@
-package org.jboss.shamrock.extest;
+package io.quarkus.extest;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
-import org.jboss.shamrock.runtime.StartupEvent;
+import io.quarkus.runtime.StartupEvent;
 
 /**
  * A sample bean

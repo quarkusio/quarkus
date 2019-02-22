@@ -1,4 +1,4 @@
-package org.jboss.shamrock.caffeine.runtime.graal;
+package io.quarkus.caffeine.runtime.graal;
 
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;

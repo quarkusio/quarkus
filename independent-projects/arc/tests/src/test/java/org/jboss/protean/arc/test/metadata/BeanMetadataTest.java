@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.test.metadata;
+package org.jboss.quarkus.arc.test.metadata;
 
 import javax.enterprise.util.AnnotationLiteral;
 import javax.inject.Qualifier;
 
-import org.jboss.protean.arc.Arc;
-import org.jboss.protean.arc.ArcContainer;
-import org.jboss.protean.arc.test.ArcTestContainer;
+import org.jboss.quarkus.arc.Arc;
+import org.jboss.quarkus.arc.ArcContainer;
+import org.jboss.quarkus.arc.test.ArcTestContainer;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;

@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.runtime.logging;
+package io.quarkus.runtime.logging;
 
 import java.io.File;
 import java.util.logging.Level;
 
-import org.jboss.shamrock.runtime.annotations.ConfigGroup;
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
 public class FileConfig {
@@ -46,7 +46,7 @@ public class FileConfig {
     /**
      * The file logging log level
      */
-    @ConfigItem(defaultValue = "shamrock.log")
+    @ConfigItem(defaultValue = "quarkus.log")
     File path;
 
 }

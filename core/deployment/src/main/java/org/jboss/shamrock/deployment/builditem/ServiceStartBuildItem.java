@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.builditem;
+package io.quarkus.deployment.builditem;
 
 import org.jboss.builder.item.MultiBuildItem;
-import org.jboss.shamrock.runtime.StartupEvent;
+import io.quarkus.runtime.StartupEvent;
 
 /**
  * A symbolic class that represents a service start.

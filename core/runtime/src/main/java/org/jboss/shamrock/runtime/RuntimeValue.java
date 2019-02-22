@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.runtime;
+package io.quarkus.runtime;
 
 /**
  * Represents a proxyable object that can be returned from a bytecode recorder,

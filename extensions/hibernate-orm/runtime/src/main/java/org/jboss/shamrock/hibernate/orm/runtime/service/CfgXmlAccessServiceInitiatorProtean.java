@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm.runtime.service;
+package io.quarkus.hibernate.orm.runtime.service;
 
 import java.util.Map;
 
@@ -23,9 +23,9 @@ import org.hibernate.boot.cfgxml.spi.LoadedConfig;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
-public final class CfgXmlAccessServiceInitiatorProtean implements StandardServiceInitiator<CfgXmlAccessService> {
+public final class CfgXmlAccessServiceInitiatorQuarkus implements StandardServiceInitiator<CfgXmlAccessService> {
 
-    public static final CfgXmlAccessServiceInitiatorProtean INSTANCE = new CfgXmlAccessServiceInitiatorProtean();
+    public static final CfgXmlAccessServiceInitiatorQuarkus INSTANCE = new CfgXmlAccessServiceInitiatorQuarkus();
 
     @Override
     public CfgXmlAccessService initiateService(Map configurationValues, ServiceRegistryImplementor registry) {

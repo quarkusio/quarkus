@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.netty.runtime.graal;
+package io.quarkus.netty.runtime.graal;
 
 import java.security.PrivateKey;
 import java.security.Provider;

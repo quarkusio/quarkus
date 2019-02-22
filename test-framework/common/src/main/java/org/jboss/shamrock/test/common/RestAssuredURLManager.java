@@ -1,4 +1,4 @@
-package org.jboss.shamrock.test.common;
+package io.quarkus.test.common;
 
 import java.lang.reflect.Field;
 
@@ -39,7 +39,7 @@ public class RestAssuredURLManager {
         if (portField != null) {
             try {
                 oldPort = (Integer) portField.get(null);
-                int port = ConfigProvider.getConfig().getOptionalValue("shamrock.http.test-port", Integer.class).orElse(8081);
+                int port = ConfigProvider.getConfig().getOptionalValue("quarkus.http.test-port", Integer.class).orElse(8081);
                 portField.set(null, port);
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
@@ -49,7 +49,7 @@ public class RestAssuredURLManager {
             try {
                 oldBaseURI = (String) baseURIField.get(null);
                 String baseURI = "http://"
-                        + ConfigProvider.getConfig().getOptionalValue("shamrock.http.host", String.class).orElse("localhost");
+                        + ConfigProvider.getConfig().getOptionalValue("quarkus.http.host", String.class).orElse("localhost");
                 baseURIField.set(null, baseURI);
             } catch (IllegalAccessException e) {
                 e.printStackTrace();

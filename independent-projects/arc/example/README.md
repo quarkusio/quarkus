@@ -14,13 +14,13 @@ time java -jar target/weld-example-shaded.jar
 ## How to build native images
 
 ```bash
-native-image --class-path target/arc-example-shaded.jar -H:Class=org.jboss.protean.arc.ArcMain -H:Name=arc-example
+native-image --class-path target/arc-example-shaded.jar -H:Class=org.jboss.quarkus.arc.ArcMain -H:Name=arc-example
 ```
 
 And for Weld:
 
 ```bash
-native-image --class-path target/weld-example-shaded.jar -H:Class=org.jboss.protean.arc.WeldMain -H:Name=weld-example -H:+ReportUnsupportedElementsAtRuntime
+native-image --class-path target/weld-example-shaded.jar -H:Class=org.jboss.quarkus.arc.WeldMain -H:Name=weld-example -H:+ReportUnsupportedElementsAtRuntime
 ```
 
 Then run the example:

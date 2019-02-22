@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.undertow.runtime;
+package io.quarkus.undertow.runtime;
 
-import org.jboss.shamrock.runtime.ObjectSubstitution;
+import io.quarkus.runtime.ObjectSubstitution;
 
 import io.undertow.servlet.api.HttpMethodSecurityInfo;
 import io.undertow.servlet.api.ServletSecurityInfo;

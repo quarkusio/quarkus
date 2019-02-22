@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.datasource;
+package io.quarkus.example.datasource;
 
 import java.sql.Connection;
 import java.sql.ResultSet;

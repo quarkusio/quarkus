@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.scheduler.graal;
+package io.quarkus.scheduler.graal;
 
 import java.rmi.RemoteException;
 

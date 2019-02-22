@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.annotation.processor;
+package io.quarkus.annotation.processor;
 
 import static javax.lang.model.util.ElementFilter.constructorsIn;
 import static javax.lang.model.util.ElementFilter.fieldsIn;
@@ -81,11 +81,11 @@ import org.jboss.jdeparser.JTypes;
 
 public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
-    private static final String ANNOTATION_BUILD_STEP = "org.jboss.shamrock.deployment.annotations.BuildStep";
-    private static final String ANNOTATION_CONFIG_GROUP = "org.jboss.shamrock.runtime.annotations.ConfigGroup";
-    private static final String ANNOTATION_CONFIG_ITEM = "org.jboss.shamrock.runtime.annotations.ConfigItem";
-    private static final String ANNOTATION_CONFIG_ROOT = "org.jboss.shamrock.runtime.annotations.ConfigRoot";
-    private static final String ANNOTATION_TEMPLATE = "org.jboss.shamrock.runtime.annotations.Template";
+    private static final String ANNOTATION_BUILD_STEP = "io.quarkus.deployment.annotations.BuildStep";
+    private static final String ANNOTATION_CONFIG_GROUP = "io.quarkus.runtime.annotations.ConfigGroup";
+    private static final String ANNOTATION_CONFIG_ITEM = "io.quarkus.runtime.annotations.ConfigItem";
+    private static final String ANNOTATION_CONFIG_ROOT = "io.quarkus.runtime.annotations.ConfigRoot";
+    private static final String ANNOTATION_TEMPLATE = "io.quarkus.runtime.annotations.Template";
     private static final String INSTANCE_SYM = "__instance";
 
     private final Set<String> generatedAccessors = new ConcurrentHashMap<String, Boolean>().keySet(Boolean.TRUE);
@@ -235,7 +235,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         if (!bscListClasses.isEmpty())
             try {
                 final FileObject listResource = filer.createResource(StandardLocation.CLASS_OUTPUT, "",
-                        "META-INF/shamrock-build-steps.list");
+                        "META-INF/quarkus-build-steps.list");
                 try (OutputStream os = listResource.openOutputStream()) {
                     try (BufferedOutputStream bos = new BufferedOutputStream(os)) {
                         try (OutputStreamWriter osw = new OutputStreamWriter(bos, StandardCharsets.UTF_8)) {
@@ -255,7 +255,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         if (!crListClasses.isEmpty())
             try {
                 final FileObject listResource = filer.createResource(StandardLocation.CLASS_OUTPUT, "",
-                        "META-INF/shamrock-config-roots.list");
+                        "META-INF/quarkus-config-roots.list");
                 try (OutputStream os = listResource.openOutputStream()) {
                     try (BufferedOutputStream bos = new BufferedOutputStream(os)) {
                         try (OutputStreamWriter osw = new OutputStreamWriter(bos, StandardCharsets.UTF_8)) {
@@ -274,7 +274,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
             }
         try {
             final FileObject listResource = filer.createResource(StandardLocation.CLASS_OUTPUT, "",
-                    "META-INF/shamrock-javadoc.properties");
+                    "META-INF/quarkus-javadoc.properties");
             try (OutputStream os = listResource.openOutputStream()) {
                 try (BufferedOutputStream bos = new BufferedOutputStream(os)) {
                     try (OutputStreamWriter osw = new OutputStreamWriter(bos, StandardCharsets.UTF_8)) {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.corestuff;
+package io.quarkus.example.corestuff;
 
 import java.io.IOException;
 import java.io.PrintWriter;

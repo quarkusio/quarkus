@@ -28,7 +28,7 @@ Remember, you need to configure Maven as indicated in the link:maven-config.html
 We recommend to follow the instructions in the next sections and build the application step by step.
 However, you can go right to the completed example.
 
-Clone the Git repository: `git clone https://github.com/jbossas/protean-quickstarts.git`, or download an https://github.com/jbossas/protean-quickstarts/archive/master.zip[archive].
+Clone the Git repository: `git clone https://github.com/jbossas/quarkus-quickstarts.git`, or download an https://github.com/jbossas/quarkus-quickstarts/archive/master.zip[archive].
 
 The solution is located in the `getting-started-knative` directory.
 
@@ -48,7 +48,7 @@ The Kubernetes Service Account that will have access to Container Registry secre
 If you are not using private GitHub repo then you dont need the `Deploy Key` created and added to the Build Service Account
 ====
 
-Run the following commands to kick start https://github.com/knative/build[Knative Build] which will build the shamrock application container image
+Run the following commands to kick start https://github.com/knative/build[Knative Build] which will build the quarkus application container image
 using Dockerfile and https://github.com/GoogleContainerTools/kaniko[Kaniko].  After a successful build you will have the
 Knative serving application deployed with the built container image.  You can watch the application build pods using the
 command `kubectl get pods -w`. You can terminate the watch using the command kbd:[CTRL + c]
@@ -62,7 +62,7 @@ you need to run the following maven command to make them passed to the Knative r
 
 | github.deploy.key
 | the base64 encoded private key that is configured to be used as the GitHub private repo Deploy key
-| `cat ~/.ssh/protean-quickstarts \| base64 -w 0`
+| `cat ~/.ssh/quarkus-quickstarts \| base64 -w 0`
 
 | github.keyscan
 | the base64 encoded value of `ssh-keyscan github.com`
@@ -86,11 +86,11 @@ you need to run the following maven command to make them passed to the Knative r
 
 | git.source.repo.url
 | The GitHub repo url
-| https://github.com/jbossas/protean-quickstarts.git
+| https://github.com/jbossas/quarkus-quickstarts.git
 
 | app.container.image
 | The fully qualified name of the container image that will be pushed to the container registry after build
-| docker.io/demo/shamrock-knative-quickstart
+| docker.io/demo/quarkus-knative-quickstart
 |===
 
 
@@ -98,13 +98,13 @@ The following is the example command to generate the need knative resource files
 
 [source, bash]
 ----
-mvn -Dgithub.deploy.key=$(cat ~/.ssh/protean-quickstarts | base64 -w 0) \
+mvn -Dgithub.deploy.key=$(cat ~/.ssh/quarkus-quickstarts | base64 -w 0) \
     -Dgithub.keyscan=$(ssh-keyscan github.com | base64 -w 0) \
     -Dcontainer.registry.url='https://quay.io/v2' \
     -Dcontainer.registry.user='demo' \
     -Dcontainer.registry.password='password' \
     -Dgit.source.revision='master' \
-    -Dgit.source.repo.url='git@github.com:jbossas/protean-quickstarts.git' \ #<1>
+    -Dgit.source.repo.url='git@github.com:jbossas/quarkus-quickstarts.git' \ #<1>
     -Dapp.container.image='docker.io/demo/getting-started-knative' \
     clean process-resources
 ----
@@ -137,7 +137,7 @@ curl -v -H 'Host: getting-started-knative.example.com' $IP_ADDRESS/hello/greetin
 
 == Going further
 
-This guide covered the deployment of a Shamrock application as Knative application on Kubernetes
-However, there is much more, and the integration with these environments has been tailored to make Shamrock applications execution very smooth.
+This guide covered the deployment of a Quarkus application as Knative application on Kubernetes
+However, there is much more, and the integration with these environments has been tailored to make Quarkus applications execution very smooth.
 For instance, the health extension can be used for health check; the configuration support allows mounting the application configuration using config map, the metric extension produces data _scrappable_ by Prometheus and so on.
 

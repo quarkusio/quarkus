@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.health;
+package io.quarkus.example.health;
 
 import java.util.Map;
 import java.util.Optional;

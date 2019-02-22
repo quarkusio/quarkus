@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.narayana.jta.runtime;
+package io.quarkus.narayana.jta.runtime;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,11 +22,11 @@ import java.util.Properties;
 
 import com.arjuna.common.util.propertyservice.AbstractPropertiesFactory;
 
-public class ShamrockPropertiesFactory extends AbstractPropertiesFactory {
+public class QuarkusPropertiesFactory extends AbstractPropertiesFactory {
 
     private final Properties properties;
 
-    public ShamrockPropertiesFactory(Properties properties) {
+    public QuarkusPropertiesFactory(Properties properties) {
         this.properties = properties;
     }
 

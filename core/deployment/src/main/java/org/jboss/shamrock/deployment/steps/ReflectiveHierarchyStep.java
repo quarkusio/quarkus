@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.steps;
+package io.quarkus.deployment.steps;
 
 import java.util.HashSet;
 import java.util.List;
@@ -34,11 +34,11 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.UnresolvedTypeVariable;
 import org.jboss.jandex.VoidType;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
 
 public class ReflectiveHierarchyStep {
 

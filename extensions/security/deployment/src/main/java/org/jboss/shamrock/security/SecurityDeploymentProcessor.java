@@ -14,23 +14,23 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.security;
+package io.quarkus.security;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.deployment.ShamrockConfig;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.annotations.ExecutionTime;
-import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
-import org.jboss.shamrock.runtime.RuntimeValue;
-import org.jboss.shamrock.undertow.ServletExtensionBuildItem;
+import io.quarkus.deployment.QuarkusConfig;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.undertow.ServletExtensionBuildItem;
 import org.wildfly.security.auth.server.SecurityDomain;
 import org.wildfly.security.auth.server.SecurityRealm;
 
@@ -137,18 +137,18 @@ class SecurityDeploymentProcessor {
             // These are not being populated correctly by the core config Map logic for some reason, so reparse them here
             log.debugf("MPRealmConfig.users: %s", realmConfig.users);
             log.debugf("MPRealmConfig.roles: %s", realmConfig.roles);
-            Set<String> userKeys = ShamrockConfig.getNames("shamrock.security.embedded.users");
+            Set<String> userKeys = QuarkusConfig.getNames("quarkus.security.embedded.users");
 
             log.debugf("userKeys: %s", userKeys);
             for (String key : userKeys) {
-                String pass = ShamrockConfig.getString("shamrock.security.embedded.users." + key, null, false);
+                String pass = QuarkusConfig.getString("quarkus.security.embedded.users." + key, null, false);
                 log.debugf("%s.pass = %s", key, pass);
                 realmConfig.users.put(key, pass);
             }
-            Set<String> roleKeys = ShamrockConfig.getNames("shamrock.security.embedded.roles");
+            Set<String> roleKeys = QuarkusConfig.getNames("quarkus.security.embedded.roles");
             log.debugf("roleKeys: %s", roleKeys);
             for (String key : roleKeys) {
-                String roles = ShamrockConfig.getString("shamrock.security.embedded.roles." + key, null, false);
+                String roles = QuarkusConfig.getString("quarkus.security.embedded.roles." + key, null, false);
                 log.debugf("%s.roles = %s", key, roles);
                 realmConfig.roles.put(key, roles);
             }

@@ -1,4 +1,4 @@
-package org.jboss.shamrock.vertx.tests;
+package io.quarkus.vertx.tests;
 
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.core.Application;

@@ -1,4 +1,4 @@
-package org.jboss.shamrock.panache.jpa;
+package io.quarkus.panache.jpa;
 
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
@@ -13,9 +13,9 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.protean.gizmo.DescriptorUtils;
-import org.jboss.shamrock.panache.common.Parameters;
-import org.jboss.shamrock.panache.common.Sort;
-import org.jboss.shamrock.panache.jpa.impl.JpaOperations;
+import io.quarkus.panache.common.Parameters;
+import io.quarkus.panache.common.Sort;
+import io.quarkus.panache.jpa.impl.JpaOperations;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;

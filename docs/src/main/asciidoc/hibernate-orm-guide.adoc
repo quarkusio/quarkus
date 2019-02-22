@@ -17,22 +17,22 @@ and we make some opinionated choices and educated guesses.
 In your `pom.xml`, add the following dependencies:
 
 * the Hibernate ORM extension
-* your JDBC driver extension (`shamrock-jdbc-postgresql-deployment`, `shamrock-jdbc-h2-deployment`, `shamrock-jdbc-mariadb-deployment`, ...)
+* your JDBC driver extension (`quarkus-jdbc-postgresql-deployment`, `quarkus-jdbc-h2-deployment`, `quarkus-jdbc-mariadb-deployment`, ...)
 
 [source,xml]
 --
 <dependencies>
     <!-- Hibernate ORM specific dependencies -->
     <dependency>
-        <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-hibernate-orm-deployment</artifactId>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-hibernate-orm-deployment</artifactId>
         <scope>provided</scope>
     </dependency>
 
     <!-- JDBC driver dependencies -->
     <dependency>
-        <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-jdbc-postgresql-deployment</artifactId>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-jdbc-postgresql-deployment</artifactId>
         <scope>provided</scope>
     </dependency>
 </dependencies>
@@ -43,10 +43,10 @@ then add the relevant configuration properties in `{config-file}`.
 
 [source,properties]
 --
-shamrock.datasource.url: jdbc:postgresql://localhost:5432/mydatabase
-shamrock.datasource.driver: org.postgresql.Driver
-shamrock.datasource.username: sarah
-shamrock.datasource.password: connor
+quarkus.datasource.url: jdbc:postgresql://localhost:5432/mydatabase
+quarkus.datasource.driver: org.postgresql.Driver
+quarkus.datasource.username: sarah
+quarkus.datasource.password: connor
 --
 
 Note that these configuration properties are not the same ones as made available in `{config-file}`: they might differ in names, casing and don't necessarily map 1:1 to each other.
@@ -106,23 +106,23 @@ This is useful to have a data set ready for your tests or demos.
 
 There are optional properties useful to refine your `EntityManagerFactory` or guide guesses of {project-name}.
 
-`shamrock.hibernate.dialect`:: (e.g. `org.hibernate.dialect.PostgreSQL95Dialect`).
+`quarkus.hibernate.dialect`:: (e.g. `org.hibernate.dialect.PostgreSQL95Dialect`).
 Class name of the Hibernate ORM dialect.
 
-`shamrock.hibernate.schema-generation.database.action`::
+`quarkus.hibernate.schema-generation.database.action`::
 (e.g. `drop-and-create` which is awesome in development mode). Select whether the database schema is generated or not.
 Options are `none`, `create`, `drop-and-create`, `drop`
 
-`shamrock.hibernate.show-sql`:: (defaults to `false`).
+`quarkus.hibernate.show-sql`:: (defaults to `false`).
 Show SQL logs and format them nicely.
 
-`shamrock.hibernate.sql-load-script-source`::
+`quarkus.hibernate.sql-load-script-source`::
 (defaults to `/import.sql`) Name of the file containing the SQL statements to execute when Hibernate ORM starts.
 By default, simply add `import.sql` in the root of your resources directory and it will be picked up without having to set this property.
 
 [NOTE]
 --
-Do not mix `persistence.xml` and `shamrock.hibernate.*` properties in `{config-file}`.
+Do not mix `persistence.xml` and `quarkus.hibernate.*` properties in `{config-file}`.
 {project-name} will raise an exception.
 Make up your mind on which approach you want to use.
 --
@@ -133,7 +133,7 @@ Want to start a PostgreSQL server on the side with Docker?
 
 [source]
 --
-docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name postgres-protean-hibernate -e POSTGRES_USER=hibernate -e POSTGRES_PASSWORD=hibernate -e POSTGRES_DB=hibernate_db -p 5432:5432 postgres:10.5
+docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name postgres-quarkus-hibernate -e POSTGRES_USER=hibernate -e POSTGRES_PASSWORD=hibernate -e POSTGRES_DB=hibernate_db -p 5432:5432 postgres:10.5
 --
 
 ====
@@ -149,29 +149,29 @@ This is useful for:
 
 [NOTE]
 --
-If you have a `persistence.xml`, then you cannot use the `shamrock.hibernate.*` properties
+If you have a `persistence.xml`, then you cannot use the `quarkus.hibernate.*` properties
 and only persistence units defined in `persistence.xml` will be taken into account.
 --
 
 In your `pom.xml`, add the following dependencies:
 
 * the Hibernate ORM extension
-* your JDBC driver extension (`shamrock-jdbc-postgresql-deployment`, `shamrock-jdbc-h2-deployment`, `shamrock-jdbc-mariadb-deployment`, ...)
+* your JDBC driver extension (`quarkus-jdbc-postgresql-deployment`, `quarkus-jdbc-h2-deployment`, `quarkus-jdbc-mariadb-deployment`, ...)
 
 [source,xml]
 --
 <dependencies>
     <!-- Hibernate ORM specific dependencies -->
     <dependency>
-        <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-hibernate-orm-deployment</artifactId>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-hibernate-orm-deployment</artifactId>
         <scope>provided</scope>
     </dependency>
 
     <!-- JDBC driver dependencies -->
     <dependency>
-        <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-jdbc-postgresql-deployment</artifactId>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-jdbc-postgresql-deployment</artifactId>
         <scope>provided</scope>
     </dependency>
 </dependencies>

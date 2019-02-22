@@ -14,7 +14,7 @@
  *  permissions and limitations under the License.
  */
 
-package org.jboss.shamrock.smallrye.restclient.runtime;
+package io.quarkus.smallrye.restclient.runtime;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -46,7 +46,7 @@ public class RestClientBase {
         } catch (Exception e) {
             if ("com.oracle.svm.core.jdk.UnsupportedFeatureError".equals(e.getClass().getCanonicalName())) {
                 throw new IllegalArgumentException(baseUrl
-                        + " requires SSL support but it is disabled. You probably have set shamrock.ssl.native to false.");
+                        + " requires SSL support but it is disabled. You probably have set quarkus.ssl.native to false.");
             }
             throw e;
         }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.recording;
+package io.quarkus.deployment.recording;
 
 import java.util.Objects;
 

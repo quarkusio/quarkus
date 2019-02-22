@@ -1,4 +1,4 @@
-package org.jboss.shamrock.jdbc.mariadb.runtime.graal;
+package io.quarkus.jdbc.mariadb.runtime.graal;
 
 import com.oracle.svm.core.annotate.Delete;
 import com.oracle.svm.core.annotate.TargetClass;

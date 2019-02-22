@@ -1,8 +1,8 @@
-package org.jboss.shamrock.smallrye.health.runtime;
+package io.quarkus.smallrye.health.runtime;
 
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.spi.HealthCheckResponseProvider;
-import org.jboss.shamrock.runtime.annotations.Template;
+import io.quarkus.runtime.annotations.Template;
 
 @Template
 public class SmallRyeHealthTemplate {

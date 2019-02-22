@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.test;
+package io.quarkus.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -45,12 +45,12 @@ import org.jboss.builder.BuildStep;
 import org.jboss.builder.item.BuildItem;
 import org.jboss.invocation.proxy.ProxyConfiguration;
 import org.jboss.invocation.proxy.ProxyFactory;
-import org.jboss.shamrock.runner.RuntimeRunner;
-import org.jboss.shamrock.runtime.LaunchMode;
-import org.jboss.shamrock.test.common.PathTestHelper;
-import org.jboss.shamrock.test.common.RestAssuredURLManager;
-import org.jboss.shamrock.test.common.TestResourceManager;
-import org.jboss.shamrock.test.common.http.TestHttpResourceManager;
+import io.quarkus.runner.RuntimeRunner;
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.test.common.PathTestHelper;
+import io.quarkus.test.common.RestAssuredURLManager;
+import io.quarkus.test.common.TestResourceManager;
+import io.quarkus.test.common.http.TestHttpResourceManager;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -64,9 +64,9 @@ import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 
 /**
- * A test extension for testing Shamrock internals, not intended for end user consumption
+ * A test extension for testing Quarkus internals, not intended for end user consumption
  */
-public class ShamrockUnitTest
+public class QuarkusUnitTest
         implements BeforeAllCallback, AfterAllCallback, TestInstanceFactory, BeforeEachCallback, AfterEachCallback {
 
     static {
@@ -85,7 +85,7 @@ public class ShamrockUnitTest
         return expectedException;
     }
 
-    public ShamrockUnitTest setExpectedException(Class<? extends Throwable> expectedException) {
+    public QuarkusUnitTest setExpectedException(Class<? extends Throwable> expectedException) {
         this.expectedException = expectedException;
         return this;
     }
@@ -94,7 +94,7 @@ public class ShamrockUnitTest
         return archiveProducer;
     }
 
-    public ShamrockUnitTest setArchiveProducer(Supplier<JavaArchive> archiveProducer) {
+    public QuarkusUnitTest setArchiveProducer(Supplier<JavaArchive> archiveProducer) {
         this.archiveProducer = archiveProducer;
         return this;
     }
@@ -104,7 +104,7 @@ public class ShamrockUnitTest
         try {
             Class testClass = extensionContext.getRequiredTestClass();
             ProxyFactory<?> factory = new ProxyFactory<>(new ProxyConfiguration<>()
-                    .setProxyName(testClass.getName() + "$$ShamrockUnitTestProxy")
+                    .setProxyName(testClass.getName() + "$$QuarkusUnitTestProxy")
                     .setClassLoader(testClass.getClassLoader())
                     .setSuperClass(testClass));
 
@@ -133,7 +133,7 @@ public class ShamrockUnitTest
             archive.addClass(testClass);
             archive.as(ExplodedExporter.class).exportExplodedInto(deploymentDir.toFile());
 
-            String exportPath = System.getProperty("shamrock.deploymentExportPath");
+            String exportPath = System.getProperty("quarkus.deploymentExportPath");
             if (exportPath != null) {
                 File exportDir = new File(exportPath);
                 if (exportDir.exists()) {
@@ -156,7 +156,7 @@ public class ShamrockUnitTest
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
         if (archiveProducer == null) {
-            throw new RuntimeException("ShamrockUnitTest does not have archive producer set");
+            throw new RuntimeException("QuarkusUnitTest does not have archive producer set");
         }
 
         ExtensionContext.Store store = extensionContext.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
@@ -174,7 +174,7 @@ public class ShamrockUnitTest
 
         Class<?> testClass = extensionContext.getRequiredTestClass();
         try {
-            deploymentDir = Files.createTempDirectory("shamrock-unit-test");
+            deploymentDir = Files.createTempDirectory("quarkus-unit-test");
 
             exportArchive(deploymentDir, testClass);
 
@@ -184,7 +184,7 @@ public class ShamrockUnitTest
                 //this is a bit of a hack to avoid requiring a dep on the arc extension,
                 //as this would mean we cannot use this to test the extension
                 Class<? extends BuildItem> buildItem = (Class<? extends BuildItem>) Class
-                        .forName("org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem");
+                        .forName("io.quarkus.arc.deployment.AdditionalBeanBuildItem");
                 customiers.add(new Consumer<BuildChainBuilder>() {
                     @Override
                     public void accept(BuildChainBuilder buildChainBuilder) {
@@ -310,7 +310,7 @@ public class ShamrockUnitTest
         return afterUndeployListener;
     }
 
-    public ShamrockUnitTest setAfterUndeployListener(Runnable afterUndeployListener) {
+    public QuarkusUnitTest setAfterUndeployListener(Runnable afterUndeployListener) {
         this.afterUndeployListener = afterUndeployListener;
         return this;
     }

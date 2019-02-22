@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.test.stereotypes;
+package org.jboss.quarkus.arc.test.stereotypes;
 
 import static org.junit.Assert.assertTrue;
 
@@ -27,8 +27,8 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Stereotype;
 import javax.inject.Named;
 
-import org.jboss.protean.arc.Arc;
-import org.jboss.protean.arc.test.ArcTestContainer;
+import org.jboss.quarkus.arc.Arc;
+import org.jboss.quarkus.arc.test.ArcTestContainer;
 import org.junit.Rule;
 import org.junit.Test;
 

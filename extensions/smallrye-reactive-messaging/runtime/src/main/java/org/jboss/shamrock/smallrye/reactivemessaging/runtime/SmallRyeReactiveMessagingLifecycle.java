@@ -1,4 +1,4 @@
-package org.jboss.shamrock.smallrye.reactivemessaging.runtime;
+package io.quarkus.smallrye.reactivemessaging.runtime;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -7,7 +7,7 @@ import javax.enterprise.context.Dependent;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
-import org.jboss.shamrock.runtime.StartupEvent;
+import io.quarkus.runtime.StartupEvent;
 
 import io.smallrye.reactive.messaging.extension.MediatorManager;
 

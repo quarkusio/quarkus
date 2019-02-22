@@ -14,7 +14,7 @@
  *  permissions and limitations under the License.
  */
 
-package org.jboss.shamrock.smallrye.restclient;
+package io.quarkus.smallrye.restclient;
 
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
@@ -32,32 +32,32 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.jboss.protean.arc.processor.BeanConfigurator;
-import org.jboss.protean.arc.processor.BeanRegistrar;
-import org.jboss.protean.arc.processor.ScopeInfo;
+import org.jboss.quarkus.arc.processor.BeanConfigurator;
+import org.jboss.quarkus.arc.processor.BeanRegistrar;
+import org.jboss.quarkus.arc.processor.ScopeInfo;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
 import org.jboss.resteasy.client.jaxrs.internal.proxy.ProxyBuilderImpl;
 import org.jboss.resteasy.client.jaxrs.internal.proxy.ResteasyClientProxy;
 import org.jboss.resteasy.core.ResteasyProviderFactoryImpl;
 import org.jboss.resteasy.spi.ResteasyConfiguration;
-import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
-import org.jboss.shamrock.arc.deployment.BeanRegistrarBuildItem;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.annotations.ExecutionTime;
-import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
-import org.jboss.shamrock.deployment.builditem.ExtensionSslNativeSupportBuildItem;
-import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
-import org.jboss.shamrock.deployment.builditem.SslNativeConfigBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
-import org.jboss.shamrock.deployment.util.ServiceUtil;
-import org.jboss.shamrock.smallrye.restclient.runtime.RestClientBase;
-import org.jboss.shamrock.smallrye.restclient.runtime.RestClientBuilderImpl;
-import org.jboss.shamrock.smallrye.restclient.runtime.SmallRyeRestClientTemplate;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanRegistrarBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.smallrye.restclient.runtime.RestClientBase;
+import io.quarkus.smallrye.restclient.runtime.RestClientBuilderImpl;
+import io.quarkus.smallrye.restclient.runtime.SmallRyeRestClientTemplate;
 
 import io.smallrye.restclient.DefaultResponseExceptionMapper;
 import io.smallrye.restclient.RestClientProxy;

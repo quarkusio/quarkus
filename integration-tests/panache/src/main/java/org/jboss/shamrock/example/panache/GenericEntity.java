@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.panache;
+package io.quarkus.example.panache;
 
 import javax.persistence.MappedSuperclass;
 
-import org.jboss.shamrock.panache.jpa.PanacheEntity;
+import io.quarkus.panache.jpa.PanacheEntity;
 
 @MappedSuperclass
 public abstract class GenericEntity<T> extends PanacheEntity {

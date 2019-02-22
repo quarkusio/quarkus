@@ -1,4 +1,4 @@
-package org.jboss.shamrock.example.infinispancachejpa;
+package io.quarkus.example.infinispancachejpa;
 
 import java.util.Arrays;
 import java.util.List;

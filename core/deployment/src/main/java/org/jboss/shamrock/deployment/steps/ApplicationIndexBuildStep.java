@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.steps;
+package io.quarkus.deployment.steps;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,9 +26,9 @@ import java.nio.file.attribute.BasicFileAttributes;
 
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.ApplicationIndexBuildItem;
-import org.jboss.shamrock.deployment.builditem.ArchiveRootBuildItem;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
+import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 
 public class ApplicationIndexBuildStep {
 

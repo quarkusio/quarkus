@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment.steps;
+package io.quarkus.deployment.steps;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.IndexView;
-import org.jboss.shamrock.deployment.ApplicationArchive;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
-import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.ApplicationArchive;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 
 public class CombinedIndexBuildStep {
 

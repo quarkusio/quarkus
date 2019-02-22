@@ -1,4 +1,4 @@
-package org.jboss.shamrock.infinispan.client.runtime;
+package io.quarkus.infinispan.client.runtime;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;

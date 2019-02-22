@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.resolver.test;
+package io.quarkus.creator.resolver.test;
 
 import static org.junit.Assert.assertEquals;
 
@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.jboss.shamrock.creator.AppDependency;
+import io.quarkus.creator.AppDependency;
 import org.junit.Test;
 
 /**

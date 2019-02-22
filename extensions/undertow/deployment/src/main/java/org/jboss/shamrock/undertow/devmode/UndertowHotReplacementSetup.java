@@ -1,15 +1,15 @@
-package org.jboss.shamrock.undertow.devmode;
+package io.quarkus.undertow.devmode;
 
 import java.util.OptionalInt;
 
 import javax.servlet.ServletException;
 
-import org.jboss.shamrock.deployment.ShamrockConfig;
-import org.jboss.shamrock.deployment.devmode.HotReplacementContext;
-import org.jboss.shamrock.deployment.devmode.HotReplacementSetup;
-import org.jboss.shamrock.runtime.LaunchMode;
-import org.jboss.shamrock.undertow.runtime.HttpConfig;
-import org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate;
+import io.quarkus.deployment.QuarkusConfig;
+import io.quarkus.deployment.devmode.HotReplacementContext;
+import io.quarkus.deployment.devmode.HotReplacementSetup;
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.undertow.runtime.HttpConfig;
+import io.quarkus.undertow.runtime.UndertowDeploymentTemplate;
 
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
@@ -28,8 +28,8 @@ public class UndertowHotReplacementSetup implements HotReplacementSetup {
         HandlerWrapper wrapper = createHandlerWrapper();
         //TODO: we need to get these values from the config in runtime mode
         HttpConfig config = new HttpConfig();
-        config.port = ShamrockConfig.getInt("shamrock.http.port", "8080");
-        config.host = ShamrockConfig.getString("shamrock.http.host", "localhost", true);
+        config.port = QuarkusConfig.getInt("quarkus.http.port", "8080");
+        config.host = QuarkusConfig.getString("quarkus.http.host", "localhost", true);
         config.ioThreads = OptionalInt.empty();
         config.workerThreads = OptionalInt.empty();
 

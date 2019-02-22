@@ -1,7 +1,7 @@
 /**
  *
  */
-package org.jboss.shamrock.creator.resolver.aether;
+package io.quarkus.creator.resolver.aether;
 
 import java.util.Arrays;
 import java.util.HashSet;

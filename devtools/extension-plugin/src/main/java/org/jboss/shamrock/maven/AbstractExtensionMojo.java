@@ -14,7 +14,7 @@
  *  permissions and limitations under the License.
  */
 
-package org.jboss.shamrock.maven;
+package io.quarkus.maven;
 
 import java.util.Collections;
 import java.util.List;
@@ -29,7 +29,7 @@ import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.*;
-import org.jboss.shamrock.dependencies.Extension;
+import io.quarkus.dependencies.Extension;
 
 /**
  * @author <a href="http://kenfinnigan.me">Ken Finnigan</a>
@@ -91,7 +91,7 @@ public abstract class AbstractExtensionMojo extends AbstractMojo {
     }
 
     private MavenProject findRoot(MavenProject current) {
-        if (current.getArtifactId().equals("shamrock-parent")) {
+        if (current.getArtifactId().equals("quarkus-parent")) {
             return current;
         }
         return findRoot(current.getParent());

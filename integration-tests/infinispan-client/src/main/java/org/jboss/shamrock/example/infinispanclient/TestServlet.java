@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.infinispanclient;
+package io.quarkus.example.infinispanclient;
 
 import java.util.Collections;
 import java.util.List;
@@ -59,8 +59,8 @@ import org.infinispan.query.api.continuous.ContinuousQuery;
 import org.infinispan.query.api.continuous.ContinuousQueryListener;
 import org.infinispan.query.dsl.Query;
 import org.infinispan.query.dsl.QueryFactory;
-import org.jboss.shamrock.infinispan.client.runtime.Remote;
-import org.jboss.shamrock.runtime.StartupEvent;
+import io.quarkus.infinispan.client.runtime.Remote;
+import io.quarkus.runtime.StartupEvent;
 
 @Path("/")
 @ApplicationScoped

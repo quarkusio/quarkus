@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.undertow.runtime.graal;
+package io.quarkus.undertow.runtime.graal;
 
 import java.io.Closeable;
 

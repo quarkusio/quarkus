@@ -1,12 +1,12 @@
-package org.jboss.shamrock.maven.utilities;
+package io.quarkus.maven.utilities;
 
-import static org.jboss.shamrock.maven.utilities.MojoUtils.getPluginGroupId;
+import static io.quarkus.maven.utilities.MojoUtils.getPluginGroupId;
 
 import java.util.function.Predicate;
 
 import org.apache.maven.model.Dependency;
 
-public class ShamrockDependencyPredicate implements Predicate<Dependency> {
+public class QuarkusDependencyPredicate implements Predicate<Dependency> {
     @Override
     public boolean test(final Dependency d) {
         return d.getGroupId().equalsIgnoreCase(getPluginGroupId());

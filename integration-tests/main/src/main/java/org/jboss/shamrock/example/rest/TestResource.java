@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.rest;
+package io.quarkus.example.rest;
 
 import java.util.Collections;
 import java.util.List;
@@ -38,7 +38,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.jboss.shamrock.runtime.annotations.RegisterForReflection;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 
 import io.reactivex.Single;
 

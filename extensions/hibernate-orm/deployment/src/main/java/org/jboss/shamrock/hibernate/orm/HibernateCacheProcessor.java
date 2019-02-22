@@ -1,8 +1,8 @@
-package org.jboss.shamrock.hibernate.orm;
+package io.quarkus.hibernate.orm;
 
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 
 /**
  * TODO: is this the correct place for this? Should the cache have its own extension?

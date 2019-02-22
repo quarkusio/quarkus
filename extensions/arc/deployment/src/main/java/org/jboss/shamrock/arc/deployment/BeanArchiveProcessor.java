@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.arc.deployment;
+package io.quarkus.arc.deployment;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,13 +30,13 @@ import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
-import org.jboss.protean.arc.processor.BeanDefiningAnnotation;
-import org.jboss.protean.arc.processor.BeanDeployment;
-import org.jboss.protean.arc.processor.DotNames;
-import org.jboss.shamrock.deployment.ApplicationArchive;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
+import org.jboss.quarkus.arc.processor.BeanDefiningAnnotation;
+import org.jboss.quarkus.arc.processor.BeanDeployment;
+import org.jboss.quarkus.arc.processor.DotNames;
+import io.quarkus.deployment.ApplicationArchive;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 
 public class BeanArchiveProcessor {
 

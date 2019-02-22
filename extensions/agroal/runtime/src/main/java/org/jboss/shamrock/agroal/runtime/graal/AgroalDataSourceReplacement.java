@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.agroal.runtime.graal;
+package io.quarkus.agroal.runtime.graal;
 
 import java.sql.SQLException;
 

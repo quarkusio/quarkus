@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.config.test;
+package io.quarkus.creator.config.test;
 
 import static org.junit.Assert.assertEquals;
 
@@ -25,11 +25,11 @@ import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.microprofile.config.Config;
-import org.jboss.shamrock.creator.config.reader.MappedPropertiesHandler;
-import org.jboss.shamrock.creator.config.reader.MultirootedConfigHandler;
-import org.jboss.shamrock.creator.config.reader.PropertiesConfigReader;
-import org.jboss.shamrock.creator.config.reader.PropertiesHandler;
-import org.jboss.shamrock.creator.config.reader.PropertyLine;
+import io.quarkus.creator.config.reader.MappedPropertiesHandler;
+import io.quarkus.creator.config.reader.MultirootedConfigHandler;
+import io.quarkus.creator.config.reader.PropertiesConfigReader;
+import io.quarkus.creator.config.reader.PropertiesHandler;
+import io.quarkus.creator.config.reader.PropertyLine;
 import org.junit.Test;
 
 import io.smallrye.config.SmallRyeConfigProviderResolver;

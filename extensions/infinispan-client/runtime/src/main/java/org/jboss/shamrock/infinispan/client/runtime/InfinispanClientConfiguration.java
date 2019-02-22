@@ -1,10 +1,10 @@
-package org.jboss.shamrock.infinispan.client.runtime;
+package io.quarkus.infinispan.client.runtime;
 
 import java.util.Optional;
 
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
-import org.jboss.shamrock.runtime.annotations.ConfigPhase;
-import org.jboss.shamrock.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
  * @author William Burns

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.resteasy.common.runtime.graal;
+package io.quarkus.resteasy.common.runtime.graal;
 
 import java.lang.annotation.Annotation;
 import java.util.function.BooleanSupplier;

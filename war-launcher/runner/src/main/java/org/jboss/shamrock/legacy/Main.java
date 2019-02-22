@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.legacy;
+package io.quarkus.legacy;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -33,19 +33,19 @@ import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import org.jboss.shamrock.runner.RuntimeRunner;
+import io.quarkus.runner.RuntimeRunner;
 
 public class Main {
 
     public static void main(String... args) {
         if (args.length != 1) {
-            System.out.println("Usage: shamrock-legacy.jar ./path/to.war");
+            System.out.println("Usage: quarkus-legacy.jar ./path/to.war");
             System.exit(1);
         }
         String war = args[0];
 
         try {
-            Path path = Files.createTempDirectory("shamrock-legacy").toAbsolutePath();
+            Path path = Files.createTempDirectory("quarkus-legacy").toAbsolutePath();
             Path lib = path.resolve("lib").toAbsolutePath();
             Files.createDirectories(lib);
             Path archive = path.resolve("archive").toAbsolutePath();

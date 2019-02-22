@@ -5,14 +5,14 @@
  * See the lgpl.txt file in the root directory or <http://www.gnu.org/licenses/lgpl-2.1.html>.
  */
 
-package org.jboss.shamrock.example.infinispancachejpa.correctness.readwrite;
+package io.quarkus.example.infinispancachejpa.correctness.readwrite;
 
 import java.util.Date;
 
 import javax.persistence.*;
 
-import org.jboss.shamrock.example.infinispancachejpa.correctness.Family;
-import org.jboss.shamrock.example.infinispancachejpa.correctness.Member;
+import io.quarkus.example.infinispancachejpa.correctness.Family;
+import io.quarkus.example.infinispancachejpa.correctness.Member;
 
 @Entity
 public class MemberRW implements Member {

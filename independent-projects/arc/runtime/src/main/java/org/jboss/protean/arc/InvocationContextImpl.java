@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc;
+package org.jboss.quarkus.arc;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -37,7 +37,7 @@ import javax.interceptor.InvocationContext;
  */
 public class InvocationContextImpl implements InvocationContext {
 
-    public static final String KEY_INTERCEPTOR_BINDINGS = "org.jboss.protean.arc.interceptorBindings";
+    public static final String KEY_INTERCEPTOR_BINDINGS = "org.jboss.quarkus.arc.interceptorBindings";
 
     /**
      *

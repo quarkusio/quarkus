@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.test.common;
+package io.quarkus.test.common;
 
 import java.io.Closeable;
 import java.io.File;
@@ -31,18 +31,18 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.microprofile.config.ConfigProvider;
-import org.jboss.shamrock.test.common.http.TestHttpResourceManager;
+import io.quarkus.test.common.http.TestHttpResourceManager;
 
 public class NativeImageLauncher implements Closeable {
 
     private static final long IMAGE_WAIT_TIME = 60000;
 
     private final Class<?> testClass;
-    private Process shamrockProcess;
+    private Process quarkusProcess;
     private final int port;
 
     public NativeImageLauncher(Class<?> testClass) {
-        this(testClass, ConfigProvider.getConfig().getOptionalValue("shamrock.http.test-port", Integer.class).orElse(8081));
+        this(testClass, ConfigProvider.getConfig().getOptionalValue("quarkus.http.test-port", Integer.class).orElse(8081));
     }
 
     public NativeImageLauncher(Class<?> testClass, int port) {
@@ -58,16 +58,16 @@ public class NativeImageLauncher implements Closeable {
         }
         List<String> args = new ArrayList<>();
         args.add(path);
-        args.add("-Dshamrock.http.port=" + port);
+        args.add("-Dquarkus.http.port=" + port);
         args.add("-Dtest.url=" + TestHttpResourceManager.getUri());
 
         System.out.println("Executing " + args);
 
-        shamrockProcess = Runtime.getRuntime().exec(args.toArray(new String[args.size()]));
-        new Thread(new ProcessReader(shamrockProcess.getInputStream())).start();
-        new Thread(new ProcessReader(shamrockProcess.getErrorStream())).start();
+        quarkusProcess = Runtime.getRuntime().exec(args.toArray(new String[args.size()]));
+        new Thread(new ProcessReader(quarkusProcess.getInputStream())).start();
+        new Thread(new ProcessReader(quarkusProcess.getErrorStream())).start();
 
-        waitForShamrock();
+        waitForQuarkus();
     }
 
     private static String guessPath(Class<?> testClass) {
@@ -108,7 +108,7 @@ public class NativeImageLauncher implements Closeable {
         System.err.println();
     }
 
-    private void waitForShamrock() {
+    private void waitForQuarkus() {
         long bailout = System.currentTimeMillis() + IMAGE_WAIT_TIME;
 
         while (System.currentTimeMillis() < bailout) {
@@ -149,6 +149,6 @@ public class NativeImageLauncher implements Closeable {
 
     @Override
     public void close() {
-        shamrockProcess.destroy();
+        quarkusProcess.destroy();
     }
 }

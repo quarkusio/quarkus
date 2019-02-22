@@ -21,19 +21,19 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-test-framework</artifactId>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-test-framework</artifactId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
-    <artifactId>shamrock-test-common</artifactId>
-    <name>Shamrock - Test framework - Common</name>
+    <artifactId>quarkus-test-common</artifactId>
+    <name>Quarkus - Test framework - Common</name>
 
     <dependencies>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-core-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>org.glassfish</groupId>

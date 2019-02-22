@@ -1,4 +1,4 @@
-package org.jboss.shamrock.deployment.util;
+package io.quarkus.deployment.util;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
@@ -10,7 +10,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildProducer;
 
 /**
  */

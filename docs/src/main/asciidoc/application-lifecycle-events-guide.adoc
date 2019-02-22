@@ -22,7 +22,7 @@ Remember, you need to configure Maven as indicated in the link:maven-config.html
 We recommend you to follow the instructions in the next sections and create the application step by step.
 However, you can go right to the completed example.
 
-Clone the Git repository: `git clone https://github.com/jbossas/protean-quickstarts.git`, or download an https://github.com/jbossas/protean-quickstarts/archive/master.zip[archive].
+Clone the Git repository: `git clone https://github.com/jbossas/quarkus-quickstarts.git`, or download an https://github.com/jbossas/quarkus-quickstarts/archive/master.zip[archive].
 
 The solution is located in the `application-lifecycle-events` directory.
 
@@ -32,7 +32,7 @@ First, we need a new project. Create a new project with the following command:
 
 [source, subs=attributes+]
 ----
-mvn org.jboss.shamrock:shamrock-maven-plugin:{shamrock-version}:create \
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=application-lifecycle-events \
     -DclassName="org.acme.events.GreetingResource" \
@@ -60,8 +60,8 @@ package org.acme.events;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 
-import org.jboss.shamrock.runtime.ShutdownEvent;
-import org.jboss.shamrock.runtime.StartupEvent;
+import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.runtime.StartupEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,11 +85,11 @@ public class AppLifecycleBean {
 
 TIP: The events are also called in _dev mode_ between each redeployment.
 
-NOTE: The methods can access injected beans. Check the https://github.com/jbossas/protean-quickstarts/blob/master/application-lifecycle-events/src/main/java/org/acme/events/AppLifecycleBean.java[AppLifecycleBean.java] class for details.
+NOTE: The methods can access injected beans. Check the https://github.com/jbossas/quarkus-quickstarts/blob/master/application-lifecycle-events/src/main/java/org/acme/events/AppLifecycleBean.java[AppLifecycleBean.java] class for details.
 
 == Package and run the application
 
-Run the application with: `mvn compile shamrock:dev`, the logged message is printed.
+Run the application with: `mvn compile quarkus:dev`, the logged message is printed.
 When the application is stopped, the second log message is printed.
 
 As usual, the application can be packaged using `mvn clean package` and executed using the `-runner.jar` file.

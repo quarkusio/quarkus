@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.arc.runtime;
+package io.quarkus.arc.runtime;
 
 import java.util.function.Function;
 
-import org.jboss.protean.arc.ClientProxy;
+import org.jboss.quarkus.arc.ClientProxy;
 
 public class ClientProxyUnwrapper implements Function<Object, Object> {
     @Override

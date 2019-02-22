@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.phase.curate;
+package io.quarkus.creator.phase.curate;
 
 import java.util.List;
 
-import org.jboss.shamrock.creator.AppArtifact;
-import org.jboss.shamrock.creator.AppArtifactResolver;
-import org.jboss.shamrock.creator.AppCreatorException;
+import io.quarkus.creator.AppArtifact;
+import io.quarkus.creator.AppArtifactResolver;
+import io.quarkus.creator.AppCreatorException;
 
 /**
  *

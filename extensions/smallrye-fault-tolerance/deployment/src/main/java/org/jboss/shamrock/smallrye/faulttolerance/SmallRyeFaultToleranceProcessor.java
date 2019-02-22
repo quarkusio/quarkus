@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.smallrye.faulttolerance;
+package io.quarkus.smallrye.faulttolerance;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -34,17 +34,17 @@ import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
-import org.jboss.protean.arc.processor.AnnotationsTransformer;
-import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
-import org.jboss.shamrock.arc.deployment.AnnotationsTransformerBuildItem;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
-import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
-import org.jboss.shamrock.smallrye.faulttolerance.runtime.ShamrockFallbackHandlerProvider;
-import org.jboss.shamrock.smallrye.faulttolerance.runtime.ShamrockFaultToleranceOperationProvider;
+import org.jboss.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
+import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFallbackHandlerProvider;
+import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFaultToleranceOperationProvider;
 
 import com.netflix.hystrix.HystrixCircuitBreaker;
 
@@ -131,7 +131,7 @@ public class SmallRyeFaultToleranceProcessor {
         // Register bean classes
         additionalBean.produce(new AdditionalBeanBuildItem(HystrixCommandInterceptor.class, HystrixInitializer.class,
                 DefaultHystrixConcurrencyStrategy.class,
-                ShamrockFaultToleranceOperationProvider.class, ShamrockFallbackHandlerProvider.class,
+                QuarkusFaultToleranceOperationProvider.class, QuarkusFallbackHandlerProvider.class,
                 DefaultCommandListenersProvider.class,
                 MetricsCollectorFactory.class));
     }

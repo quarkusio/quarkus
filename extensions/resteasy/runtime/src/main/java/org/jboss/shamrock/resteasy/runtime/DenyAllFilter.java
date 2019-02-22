@@ -1,4 +1,4 @@
-package org.jboss.shamrock.resteasy.runtime;
+package io.quarkus.resteasy.runtime;
 
 import javax.annotation.Priority;
 import javax.ws.rs.Priorities;

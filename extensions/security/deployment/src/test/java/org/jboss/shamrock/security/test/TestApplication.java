@@ -1,4 +1,4 @@
-package org.jboss.shamrock.security.test;
+package io.quarkus.security.test;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.ws.rs.ApplicationPath;

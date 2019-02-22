@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jboss.shamrock.scheduler.test;
+package io.quarkus.scheduler.test;
 
 import javax.enterprise.inject.spi.DeploymentException;
 
-import org.jboss.shamrock.scheduler.api.Scheduled;
-import org.jboss.shamrock.test.ShamrockUnitTest;
+import io.quarkus.scheduler.api.Scheduled;
+import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -27,7 +27,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class NoExpressionTest {
 
     @RegisterExtension
-    static final ShamrockUnitTest test = new ShamrockUnitTest()
+    static final QuarkusUnitTest test = new QuarkusUnitTest()
             .setExpectedException(DeploymentException.class)
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(InvalidBean.class));

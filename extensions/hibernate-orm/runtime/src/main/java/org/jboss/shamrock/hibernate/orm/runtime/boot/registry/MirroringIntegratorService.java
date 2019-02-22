@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm.runtime.boot.registry;
+package io.quarkus.hibernate.orm.runtime.boot.registry;
 
 import java.util.LinkedHashSet;
 

@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.test;
+package io.quarkus.example.test;
 
-import org.jboss.shamrock.test.common.ShamrockTestResource;
-import org.jboss.shamrock.test.h2.H2DatabaseTestResource;
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.h2.H2DatabaseTestResource;
 
-@ShamrockTestResource(H2DatabaseTestResource.class)
+@QuarkusTestResource(H2DatabaseTestResource.class)
 public class TestResources {
 }

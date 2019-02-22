@@ -1,4 +1,4 @@
-package org.jboss.shamrock.example.infinispanclient;
+package io.quarkus.example.infinispanclient;
 
 import java.util.Objects;
 import java.util.Set;

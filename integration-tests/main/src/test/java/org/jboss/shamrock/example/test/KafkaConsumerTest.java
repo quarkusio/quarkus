@@ -1,4 +1,4 @@
-package org.jboss.shamrock.example.test;
+package io.quarkus.example.test;
 
 import java.util.Properties;
 
@@ -9,14 +9,14 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.hamcrest.Matchers;
-import org.jboss.shamrock.test.common.ShamrockTestResource;
-import org.jboss.shamrock.test.junit.ShamrockTest;
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
 import io.restassured.RestAssured;
 
-@ShamrockTestResource(KafkaTestResource.class)
-@ShamrockTest
+@QuarkusTestResource(KafkaTestResource.class)
+@QuarkusTest
 public class KafkaConsumerTest {
 
     public static Producer<Integer, String> createProducer() {

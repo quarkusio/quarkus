@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator;
+package io.quarkus.creator;
 
 /**
  * Represents an application artifact dependency.

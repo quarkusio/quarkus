@@ -1,4 +1,4 @@
-package org.jboss.shamrock.arc.deployment;
+package io.quarkus.arc.deployment;
 
 import java.util.List;
 import java.util.Map;
@@ -8,7 +8,7 @@ import java.util.function.Predicate;
 import org.jboss.builder.item.MultiBuildItem;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
-import org.jboss.protean.arc.processor.BeanInfo;
+import org.jboss.quarkus.arc.processor.BeanInfo;
 
 /**
  * This build item is used to exclude beans that would be normally removed if the config property

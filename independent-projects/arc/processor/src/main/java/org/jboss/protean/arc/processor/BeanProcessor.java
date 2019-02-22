@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.processor;
+package org.jboss.quarkus.arc.processor;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -47,12 +47,12 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
-import org.jboss.protean.arc.ActivateRequestContextInterceptor;
-import org.jboss.protean.arc.processor.BuildExtension.BuildContext;
-import org.jboss.protean.arc.processor.BuildExtension.Key;
-import org.jboss.protean.arc.processor.DeploymentEnhancer.DeploymentContext;
-import org.jboss.protean.arc.processor.ResourceOutput.Resource;
-import org.jboss.protean.arc.processor.ResourceOutput.Resource.SpecialType;
+import org.jboss.quarkus.arc.ActivateRequestContextInterceptor;
+import org.jboss.quarkus.arc.processor.BuildExtension.BuildContext;
+import org.jboss.quarkus.arc.processor.BuildExtension.Key;
+import org.jboss.quarkus.arc.processor.DeploymentEnhancer.DeploymentContext;
+import org.jboss.quarkus.arc.processor.ResourceOutput.Resource;
+import org.jboss.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 
 /**
  *

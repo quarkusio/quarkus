@@ -1,4 +1,4 @@
-package org.jboss.shamrock.deployment.devmode;
+package io.quarkus.deployment.devmode;
 
 /**
  * Service interface that is used to abstract away the details of how hot deployment is performed

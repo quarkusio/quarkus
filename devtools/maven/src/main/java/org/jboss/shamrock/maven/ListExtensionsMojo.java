@@ -1,9 +1,9 @@
-package org.jboss.shamrock.maven;
+package io.quarkus.maven;
 
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugins.annotations.Mojo;
-import org.jboss.shamrock.cli.commands.AddExtensions;
-import org.jboss.shamrock.maven.utilities.MojoUtils;
+import io.quarkus.cli.commands.AddExtensions;
+import io.quarkus.maven.utilities.MojoUtils;
 
 @Mojo(name = "list-extensions", requiresProject = false)
 public class ListExtensionsMojo extends AbstractMojo {
@@ -17,6 +17,6 @@ public class ListExtensionsMojo extends AbstractMojo {
                         .info("\t * " + ext.getName() + " (" + ext.getGroupId() + ":" + ext.getArtifactId() + ")"));
 
         getLog().info("\nAdd an extension to your project by adding the dependency to your " +
-                "project or use `mvn shamrock:add-extension -Dextensions=\"name\"`");
+                "project or use `mvn quarkus:add-extension -Dextensions=\"name\"`");
     }
 }

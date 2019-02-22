@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.runner;
+package io.quarkus.runner;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -29,15 +29,15 @@ import java.util.function.Consumer;
 
 import org.jboss.builder.BuildChainBuilder;
 import org.jboss.builder.BuildResult;
-import org.jboss.shamrock.deployment.ShamrockAugmentor;
-import org.jboss.shamrock.deployment.builditem.ApplicationClassNameBuildItem;
-import org.jboss.shamrock.deployment.builditem.BytecodeTransformerBuildItem;
-import org.jboss.shamrock.runtime.Application;
-import org.jboss.shamrock.runtime.LaunchMode;
+import io.quarkus.deployment.QuarkusAugmentor;
+import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
+import io.quarkus.runtime.Application;
+import io.quarkus.runtime.LaunchMode;
 import org.objectweb.asm.ClassVisitor;
 
 /**
- * Class that can be used to run shamrock directly, executing the build and runtime
+ * Class that can be used to run quarkus directly, executing the build and runtime
  * steps in the same JVM
  */
 public class RuntimeRunner implements Runnable, Closeable {
@@ -69,7 +69,7 @@ public class RuntimeRunner implements Runnable, Closeable {
     public void run() {
         Thread.currentThread().setContextClassLoader(loader);
         try {
-            ShamrockAugmentor.Builder builder = ShamrockAugmentor.builder();
+            QuarkusAugmentor.Builder builder = QuarkusAugmentor.builder();
             builder.setRoot(target);
             builder.setClassLoader(loader);
             builder.setOutput(loader);

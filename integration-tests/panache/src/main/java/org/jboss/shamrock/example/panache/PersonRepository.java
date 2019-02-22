@@ -1,8 +1,8 @@
-package org.jboss.shamrock.example.panache;
+package io.quarkus.example.panache;
 
 import javax.enterprise.context.ApplicationScoped;
 
-import org.jboss.shamrock.panache.jpa.PanacheRepository;
+import io.quarkus.panache.jpa.PanacheRepository;
 
 @ApplicationScoped
 public class PersonRepository implements PanacheRepository<Person> {

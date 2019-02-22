@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.security.test;
+package io.quarkus.security.test;
 
 import java.io.IOException;
 

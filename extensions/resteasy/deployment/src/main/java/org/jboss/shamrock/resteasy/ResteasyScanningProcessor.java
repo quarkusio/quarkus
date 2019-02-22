@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.jboss.shamrock.resteasy;
+package io.quarkus.resteasy;
 
-import static org.jboss.shamrock.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -60,31 +60,31 @@ import org.jboss.resteasy.plugins.interceptors.GZIPDecodingInterceptor;
 import org.jboss.resteasy.plugins.interceptors.GZIPEncodingInterceptor;
 import org.jboss.resteasy.plugins.server.servlet.HttpServlet30Dispatcher;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
-import org.jboss.shamrock.arc.deployment.BeanContainerBuildItem;
-import org.jboss.shamrock.arc.deployment.BeanDefiningAnnotationBuildItem;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
-import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
-import org.jboss.shamrock.deployment.builditem.ProxyUnwrapperBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateConfigBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
-import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
-import org.jboss.shamrock.deployment.logging.LogCleanupFilterBuildItem;
-import org.jboss.shamrock.deployment.util.ServiceUtil;
-import org.jboss.shamrock.resteasy.runtime.ResteasyFilter;
-import org.jboss.shamrock.resteasy.runtime.ResteasyTemplate;
-import org.jboss.shamrock.resteasy.runtime.RolesFilterRegistrar;
-import org.jboss.shamrock.resteasy.runtime.ShamrockInjectorFactory;
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
-import org.jboss.shamrock.runtime.annotations.ConfigRoot;
-import org.jboss.shamrock.undertow.FilterBuildItem;
-import org.jboss.shamrock.undertow.ServletBuildItem;
-import org.jboss.shamrock.undertow.ServletInitParamBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.ProxyUnwrapperBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
+import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.resteasy.runtime.ResteasyFilter;
+import io.quarkus.resteasy.runtime.ResteasyTemplate;
+import io.quarkus.resteasy.runtime.RolesFilterRegistrar;
+import io.quarkus.resteasy.runtime.QuarkusInjectorFactory;
+import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.undertow.FilterBuildItem;
+import io.quarkus.undertow.ServletBuildItem;
+import io.quarkus.undertow.ServletInitParamBuildItem;
 
 /**
  * Processor that finds JAX-RS classes in the deployment
@@ -206,11 +206,11 @@ public class ResteasyScanningProcessor {
         String path;
     }
 
-    private static final Logger log = Logger.getLogger("org.jboss.shamrock.resteasy");
+    private static final Logger log = Logger.getLogger("io.quarkus.resteasy");
 
     @BuildStep
-    org.jboss.shamrock.resteasy.ResteasyJaxrsConfig exportConfig() {
-        return new org.jboss.shamrock.resteasy.ResteasyJaxrsConfig(resteasyConfig.path);
+    io.quarkus.resteasy.ResteasyJaxrsConfig exportConfig() {
+        return new io.quarkus.resteasy.ResteasyJaxrsConfig(resteasyConfig.path);
     }
 
     @BuildStep
@@ -475,7 +475,7 @@ public class ResteasyScanningProcessor {
         template.setupIntegration(beanContainerBuildItem.getValue(), unwrappers);
 
         servletContextParams
-                .produce(new ServletInitParamBuildItem("resteasy.injector.factory", ShamrockInjectorFactory.class.getName()));
+                .produce(new ServletInitParamBuildItem("resteasy.injector.factory", QuarkusInjectorFactory.class.getName()));
     }
 
     @BuildStep

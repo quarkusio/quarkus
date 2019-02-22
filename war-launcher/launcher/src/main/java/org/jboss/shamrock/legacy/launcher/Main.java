@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.legacy.launcher;
+package io.quarkus.legacy.launcher;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -62,7 +62,7 @@ public class Main {
             URLClassLoader ucl = new URLClassLoader(urls.toArray(new URL[urls.size()]));
             try {
                 Thread.currentThread().setContextClassLoader(ucl);
-                Class<?> main = ucl.loadClass("org.jboss.shamrock.legacy.Main");
+                Class<?> main = ucl.loadClass("io.quarkus.legacy.Main");
                 Method run = main.getDeclaredMethod("main", String[].class);
                 run.invoke(null, (Object) args);
             } finally {

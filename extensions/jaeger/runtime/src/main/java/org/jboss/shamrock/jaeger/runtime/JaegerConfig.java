@@ -1,4 +1,4 @@
-package org.jboss.shamrock.jaeger.runtime;
+package io.quarkus.jaeger.runtime;
 
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
@@ -6,9 +6,9 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.Optional;
 
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
-import org.jboss.shamrock.runtime.annotations.ConfigPhase;
-import org.jboss.shamrock.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.runtime.annotations.ConfigRoot;
 
 /**
  * The Jaeger configuration.

@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.example.test;
+package io.quarkus.example.test;
 
 import static org.hamcrest.Matchers.is;
 
-import org.jboss.shamrock.test.junit.ShamrockTest;
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
 import io.restassured.RestAssured;
 
 /**
- * Test various Panache operations running in Shamrock
+ * Test various Panache operations running in Quarkus
  */
-@ShamrockTest
+@QuarkusTest
 public class PanacheFunctionalityTest {
 
     @Test

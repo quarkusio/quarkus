@@ -1,4 +1,4 @@
-package org.jboss.shamrock.jpa.tests.configurationless;
+package io.quarkus.jpa.tests.configurationless;
 
 import javax.enterprise.context.Dependent;
 import javax.enterprise.event.Observes;
@@ -6,7 +6,7 @@ import javax.inject.Inject;
 import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 
-import org.jboss.shamrock.runtime.StartupEvent;
+import io.quarkus.runtime.StartupEvent;
 
 /**
  * creates a chocolate cake on startup to make sure JPA works in the startup event

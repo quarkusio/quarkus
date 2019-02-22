@@ -1,4 +1,4 @@
-package org.jboss.shamrock.vertx.tests;
+package io.quarkus.vertx.tests;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -49,7 +49,7 @@ public class VertxProducerResource {
 
         CompletableFuture<String> future = new CompletableFuture<>();
         // Use the Vert.x bean.
-        vertx.eventBus().<String> send(address, "shamrock", ar -> {
+        vertx.eventBus().<String> send(address, "quarkus", ar -> {
             if (ar.failed()) {
                 future.completeExceptionally(ar.cause());
             } else {

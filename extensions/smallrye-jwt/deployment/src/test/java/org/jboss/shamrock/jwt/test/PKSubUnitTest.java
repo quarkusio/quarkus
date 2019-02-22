@@ -1,9 +1,9 @@
-package org.jboss.shamrock.jwt.test;
+package io.quarkus.jwt.test;
 
 import java.security.interfaces.RSAPublicKey;
 
-import org.jboss.shamrock.smallrye.jwt.runtime.auth.PublicKeyProxy;
-import org.jboss.shamrock.smallrye.jwt.runtime.auth.PublicKeySubstitution;
+import io.quarkus.smallrye.jwt.runtime.auth.PublicKeyProxy;
+import io.quarkus.smallrye.jwt.runtime.auth.PublicKeySubstitution;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

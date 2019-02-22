@@ -1,4 +1,4 @@
-package org.jboss.shamrock.jdbc.postresql.runtime.graal;
+package io.quarkus.jdbc.postresql.runtime.graal;
 
 import org.postgresql.sspi.NTDSAPIWrapper;
 

@@ -1,4 +1,4 @@
-package org.jboss.shamrock.deployment.configuration;
+package io.quarkus.deployment.configuration;
 
 public class PropertiesUtil {
     private PropertiesUtil() {

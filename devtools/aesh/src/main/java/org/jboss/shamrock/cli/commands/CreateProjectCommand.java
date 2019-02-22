@@ -1,4 +1,4 @@
-package org.jboss.shamrock.cli.commands;
+package io.quarkus.cli.commands;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,7 +15,7 @@ import org.aesh.io.Resource;
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
  */
-@CommandDefinition(name = "create-project", description = "Creates a base Shamrock maven project")
+@CommandDefinition(name = "create-project", description = "Creates a base Quarkus maven project")
 public class CreateProjectCommand implements Command<CommandInvocation> {
 
     @Option(shortName = 'h', hasValue = false)
@@ -24,7 +24,7 @@ public class CreateProjectCommand implements Command<CommandInvocation> {
     @Option(shortName = 'g', defaultValue = "com.acme")
     private String groupid;
 
-    @Option(shortName = 'a', defaultValue = "shamrocks")
+    @Option(shortName = 'a', defaultValue = "quarkuss")
     private String artifactid;
 
     @Option(shortName = 'v', defaultValue = "1.0.0-SNAPSHOT")
@@ -35,7 +35,7 @@ public class CreateProjectCommand implements Command<CommandInvocation> {
 
     public CommandResult execute(CommandInvocation commandInvocation) {
         if (help) {
-            commandInvocation.println(commandInvocation.getHelpInfo("protean create-project"));
+            commandInvocation.println(commandInvocation.getHelpInfo("quarkus create-project"));
             return CommandResult.SUCCESS;
         }
 

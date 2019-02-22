@@ -1,4 +1,4 @@
-package org.jboss.shamrock.deployment.annotations;
+package io.quarkus.deployment.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -12,8 +12,8 @@ import java.util.function.Supplier;
 import org.jboss.builder.item.BuildItem;
 import org.jboss.builder.item.MultiBuildItem;
 import org.jboss.builder.item.SimpleBuildItem;
-import org.jboss.shamrock.deployment.recording.BytecodeRecorderImpl;
-import org.jboss.shamrock.runtime.annotations.Template;
+import io.quarkus.deployment.recording.BytecodeRecorderImpl;
+import io.quarkus.runtime.annotations.Template;
 
 /**
  * Indicates that a given method is a build step that is run at deployment time to

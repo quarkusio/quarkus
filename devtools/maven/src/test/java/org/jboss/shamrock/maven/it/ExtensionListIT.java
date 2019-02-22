@@ -14,7 +14,7 @@
  *  permissions and limitations under the License.
  */
 
-package org.jboss.shamrock.maven.it;
+package io.quarkus.maven.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -28,8 +28,8 @@ import java.util.logging.Logger;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.apache.maven.shared.utils.StringUtils;
-import org.jboss.shamrock.maven.it.verifier.MavenProcessInvocationResult;
-import org.jboss.shamrock.maven.it.verifier.RunningInvoker;
+import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
+import io.quarkus.maven.it.verifier.RunningInvoker;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableMap;
@@ -118,17 +118,17 @@ public class ExtensionListIT {
     }
 
     public static void installPluginToLocalRepository(File local) {
-        File repo = new File(local, "org/jboss/shamrock/shamrock-extension-plugin/" + System.getProperty("project.version"));
+        File repo = new File(local, "io.quarkus/quarkus-extension-plugin/" + System.getProperty("project.version"));
         if (!repo.isDirectory()) {
             boolean mkdirs = repo.mkdirs();
             Logger.getLogger(ExtensionListIT.class.getName())
                     .log(Level.FINE, repo.getAbsolutePath() + " created? " + mkdirs);
         }
 
-        File plugin = new File("target", "shamrock-extension-plugin-" + System.getProperty("project.version") + ".jar");
+        File plugin = new File("target", "quarkus-extension-plugin-" + System.getProperty("project.version") + ".jar");
         if (!plugin.isFile()) {
             File[] files = new File("target").listFiles(
-                    file -> file.getName().startsWith("shamrock-extension-plugin") && file.getName().endsWith(".jar"));
+                    file -> file.getName().startsWith("quarkus-extension-plugin") && file.getName().endsWith(".jar"));
             if (files != null && files.length != 0) {
                 plugin = files[0];
             }
@@ -136,7 +136,7 @@ public class ExtensionListIT {
 
         try {
             FileUtils.copyFileToDirectory(plugin, repo);
-            String installedPomName = "shamrock-extension-plugin-" + System.getProperty("project.version") + ".pom";
+            String installedPomName = "quarkus-extension-plugin-" + System.getProperty("project.version") + ".pom";
             FileUtils.copyFile(new File("pom.xml"), new File(repo, installedPomName));
         } catch (IOException e) {
             throw new RuntimeException("Cannot copy the plugin jar, or the pom file, to the local repository", e);

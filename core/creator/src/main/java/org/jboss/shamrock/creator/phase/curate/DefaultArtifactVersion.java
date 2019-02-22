@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.phase.curate;
+package io.quarkus.creator.phase.curate;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -25,7 +25,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.jboss.shamrock.creator.AppCreatorException;
+import io.quarkus.creator.AppCreatorException;
 
 /**
  *

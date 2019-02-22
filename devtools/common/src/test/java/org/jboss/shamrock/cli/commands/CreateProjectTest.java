@@ -1,7 +1,7 @@
-package org.jboss.shamrock.cli.commands;
+package io.quarkus.cli.commands;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.jboss.shamrock.maven.utilities.MojoUtils.*;
+import static io.quarkus.maven.utilities.MojoUtils.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,7 +14,7 @@ import java.util.stream.Stream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.model.Model;
-import org.jboss.shamrock.maven.utilities.MojoUtils;
+import io.quarkus.maven.utilities.MojoUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -23,7 +23,7 @@ public class CreateProjectTest {
     public void create() throws IOException {
         final File file = new File("target/basic-rest");
         delete(file);
-        final CreateProject createProject = new CreateProject(file).groupId("org.jboss.shamrock")
+        final CreateProject createProject = new CreateProject(file).groupId("io.quarkus")
                 .artifactId("basic-rest")
                 .version("1.0.0-SNAPSHOT");
 

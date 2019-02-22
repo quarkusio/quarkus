@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm.runtime.service;
+package io.quarkus.hibernate.orm.runtime.service;
 
 import java.util.Map;
 
@@ -44,7 +44,7 @@ public final class DisabledJMXInitiator implements StandardServiceInitiator<JmxS
     public JmxService initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
         if (ConfigurationHelper.getBoolean(AvailableSettings.JMX_ENABLED, configurationValues, false)) {
             Logger.getLogger(DisabledJMXInitiator.class)
-                    .warn("Enabling JMX is not allowed in Protean: forcefully disabled. Ignoring property:"
+                    .warn("Enabling JMX is not allowed in Quarkus: forcefully disabled. Ignoring property:"
                             + AvailableSettings.JMX_ENABLED);
         }
         return DisabledJmxServiceImpl.INSTANCE;

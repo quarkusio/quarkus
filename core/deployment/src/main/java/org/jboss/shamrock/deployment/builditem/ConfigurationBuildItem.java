@@ -1,7 +1,7 @@
-package org.jboss.shamrock.deployment.builditem;
+package io.quarkus.deployment.builditem;
 
 import org.jboss.builder.item.SimpleBuildItem;
-import org.jboss.shamrock.deployment.configuration.ConfigDefinition;
+import io.quarkus.deployment.configuration.ConfigDefinition;
 
 /**
  * The build item which carries the build time configuration.

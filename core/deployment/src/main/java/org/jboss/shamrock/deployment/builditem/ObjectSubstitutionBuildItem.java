@@ -1,7 +1,7 @@
-package org.jboss.shamrock.deployment.builditem;
+package io.quarkus.deployment.builditem;
 
 import org.jboss.builder.item.MultiBuildItem;
-import org.jboss.shamrock.runtime.ObjectSubstitution;
+import io.quarkus.runtime.ObjectSubstitution;
 
 /**
  * Used to capture object substitution information for non-serializable classes

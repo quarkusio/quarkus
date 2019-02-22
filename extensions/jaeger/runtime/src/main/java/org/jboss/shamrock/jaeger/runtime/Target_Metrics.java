@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.jaeger.runtime;
+package io.quarkus.jaeger.runtime;
 
 import java.util.Collections;
 import java.util.HashMap;

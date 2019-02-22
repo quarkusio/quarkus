@@ -1,10 +1,10 @@
-package org.jboss.shamrock.security;
+package io.quarkus.security;
 
 import java.util.List;
 
 import org.jboss.builder.item.MultiBuildItem;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.runtime.RuntimeValue;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.runtime.RuntimeValue;
 
 import io.undertow.security.idm.IdentityManager;
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.security;
+package io.quarkus.security;
 
 import java.security.Principal;
 import java.util.HashSet;

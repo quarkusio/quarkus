@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.demo;
+package io.quarkus.creator.demo;
 
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -28,15 +28,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.jboss.shamrock.creator.AppCreator;
-import org.jboss.shamrock.creator.phase.augment.AugmentPhase;
-import org.jboss.shamrock.creator.phase.curate.CuratePhase;
-import org.jboss.shamrock.creator.phase.nativeimage.NativeImageOutcome;
-import org.jboss.shamrock.creator.phase.nativeimage.NativeImagePhase;
-import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarOutcome;
-import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarPhase;
-import org.jboss.shamrock.creator.util.IoUtils;
-import org.jboss.shamrock.creator.util.PropertyUtils;
+import io.quarkus.creator.AppCreator;
+import io.quarkus.creator.phase.augment.AugmentPhase;
+import io.quarkus.creator.phase.curate.CuratePhase;
+import io.quarkus.creator.phase.nativeimage.NativeImageOutcome;
+import io.quarkus.creator.phase.nativeimage.NativeImagePhase;
+import io.quarkus.creator.phase.runnerjar.RunnerJarOutcome;
+import io.quarkus.creator.phase.runnerjar.RunnerJarPhase;
+import io.quarkus.creator.util.IoUtils;
+import io.quarkus.creator.util.PropertyUtils;
 
 /**
  *
@@ -45,24 +45,24 @@ import org.jboss.shamrock.creator.util.PropertyUtils;
 public class AppCreatorDemo {
 
     /**
-     * This demo assumes you've built shamrock and its artifacts are in your local repo
+     * This demo assumes you've built quarkus and its artifacts are in your local repo
      * (otherwise they would have to be available in one of the remote repos to be resolvable)
      *
-     * AND also example shamrock-strict-bean-validation-example-1.0.0.Alpha1-SNAPSHOT.jar. This jar is
+     * AND also example quarkus-strict-bean-validation-example-1.0.0.Alpha1-SNAPSHOT.jar. This jar is
      * used as an example user app that is augmented and turned into a runnable application
      */
 
     public static void main(String[] args) throws Exception {
-        final Path shamrockRoot = Paths.get("").toAbsolutePath().getParent().getParent();
-        final Path exampleTarget = shamrockRoot.resolve("integration-tests").resolve("bean-validation-strict")
+        final Path quarkusRoot = Paths.get("").toAbsolutePath().getParent().getParent();
+        final Path exampleTarget = quarkusRoot.resolve("integration-tests").resolve("bean-validation-strict")
                 .resolve("target");
 
-        final Path appJar = exampleTarget.resolve("shamrock-integration-test-bean-validation-1.0.0.Alpha1-SNAPSHOT.jar");
+        final Path appJar = exampleTarget.resolve("quarkus-integration-test-bean-validation-1.0.0.Alpha1-SNAPSHOT.jar");
         if (!Files.exists(appJar)) {
             throw new Exception("Failed to locate user app " + appJar);
         }
 
-        final Path demoDir = Paths.get(PropertyUtils.getUserHome()).resolve("shamrock-creator-demo");
+        final Path demoDir = Paths.get(PropertyUtils.getUserHome()).resolve("quarkus-creator-demo");
         IoUtils.recursiveDelete(demoDir);
 
         buildRunnableJar(appJar, demoDir);

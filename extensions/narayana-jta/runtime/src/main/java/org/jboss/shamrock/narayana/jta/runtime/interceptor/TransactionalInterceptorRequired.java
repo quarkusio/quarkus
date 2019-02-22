@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.narayana.jta.runtime.interceptor;
+package io.quarkus.narayana.jta.runtime.interceptor;
 
 import javax.annotation.Priority;
 import javax.interceptor.AroundInvoke;

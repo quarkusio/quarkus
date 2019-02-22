@@ -14,44 +14,44 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.test.junit4;
+package io.quarkus.test.junit4;
 
 import java.io.IOException;
 
-import org.jboss.shamrock.test.common.NativeImageLauncher;
+import io.quarkus.test.common.NativeImageLauncher;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.model.InitializationError;
 
 /**
  * A test runner for GraalVM native images.
  */
-public class SubstrateTest extends AbstractShamrockTestRunner {
+public class SubstrateTest extends AbstractQuarkusTestRunner {
 
     public SubstrateTest(Class<?> klass) throws InitializationError {
-        super(klass, (c, n) -> new ShamrockNativeImageRunListener(c, n));
+        super(klass, (c, n) -> new QuarkusNativeImageRunListener(c, n));
     }
 
-    private static class ShamrockNativeImageRunListener extends AbstractShamrockRunListener {
+    private static class QuarkusNativeImageRunListener extends AbstractQuarkusRunListener {
 
-        private NativeImageLauncher shamrockProcess;
+        private NativeImageLauncher quarkusProcess;
 
-        ShamrockNativeImageRunListener(Class<?> testClass, RunNotifier runNotifier) {
+        QuarkusNativeImageRunListener(Class<?> testClass, RunNotifier runNotifier) {
             super(testClass, runNotifier);
         }
 
         @Override
-        protected void startShamrock() throws IOException {
-            shamrockProcess = new NativeImageLauncher(getTestClass());
+        protected void startQuarkus() throws IOException {
+            quarkusProcess = new NativeImageLauncher(getTestClass());
             try {
-                shamrockProcess.start();
+                quarkusProcess.start();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
 
         @Override
-        protected void stopShamrock() {
-            shamrockProcess.close();
+        protected void stopQuarkus() {
+            quarkusProcess.close();
         }
     }
 }

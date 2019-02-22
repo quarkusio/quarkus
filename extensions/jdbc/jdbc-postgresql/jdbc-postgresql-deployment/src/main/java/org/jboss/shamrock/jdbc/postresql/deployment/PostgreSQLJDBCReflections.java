@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.jdbc.postresql.deployment;
+package io.quarkus.jdbc.postresql.deployment;
 
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 
 /**
  * Registers the {@code org.postgresql.Driver} so that it can be loaded

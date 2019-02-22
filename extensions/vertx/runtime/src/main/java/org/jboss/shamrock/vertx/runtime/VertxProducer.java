@@ -1,4 +1,4 @@
-package org.jboss.shamrock.vertx.runtime;
+package io.quarkus.vertx.runtime;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;

@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.resolver.test;
+package io.quarkus.creator.resolver.test;
 
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 
-import org.jboss.shamrock.creator.AppCreatorException;
-import org.jboss.shamrock.creator.AppDependency;
-import org.jboss.shamrock.creator.resolver.aether.AetherArtifactResolver;
-import org.jboss.shamrock.creator.util.IoUtils;
+import io.quarkus.creator.AppCreatorException;
+import io.quarkus.creator.AppDependency;
+import io.quarkus.creator.resolver.aether.AetherArtifactResolver;
+import io.quarkus.creator.util.IoUtils;
 import org.junit.After;
 import org.junit.Before;
 

@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.arc.deployment;
+package io.quarkus.arc.deployment;
 
-import org.jboss.shamrock.arc.runtime.ClientProxyUnwrapper;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.ProxyUnwrapperBuildItem;
+import io.quarkus.arc.runtime.ClientProxyUnwrapper;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.ProxyUnwrapperBuildItem;
 
 public class ProxyUnwrapProcessor {
 

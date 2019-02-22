@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.vertx;
+package io.quarkus.vertx;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -31,9 +31,9 @@ import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 
-import org.jboss.protean.arc.Arc;
-import org.jboss.shamrock.test.ShamrockUnitTest;
-import org.jboss.shamrock.vertx.runtime.ConsumeEvent;
+import org.jboss.quarkus.arc.Arc;
+import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.vertx.runtime.ConsumeEvent;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -45,7 +45,7 @@ import io.vertx.core.eventbus.Message;
 public class MessageConsumerMethodTest {
 
     @RegisterExtension
-    static final ShamrockUnitTest config = new ShamrockUnitTest()
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(SimpleBean.class));
 
     @Inject
@@ -91,7 +91,7 @@ public class MessageConsumerMethodTest {
     public void testSendDefaultAddress() throws InterruptedException {
         EventBus eventBus = Arc.container().instance(EventBus.class).get();
         BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
-        eventBus.send("org.jboss.shamrock.vertx.MessageConsumerMethodTest$SimpleBean", "Hello", ar -> {
+        eventBus.send("io.quarkus.vertx.MessageConsumerMethodTest$SimpleBean", "Hello", ar -> {
             if (ar.succeeded()) {
                 try {
                     synchronizer.put(ar.result().body());
@@ -121,7 +121,7 @@ public class MessageConsumerMethodTest {
 
         static final List<String> MESSAGES = new CopyOnWriteArrayList<>();
 
-        @ConsumeEvent // org.jboss.shamrock.vertx.MessageConsumerMethodTest$SimpleBean
+        @ConsumeEvent // io.quarkus.vertx.MessageConsumerMethodTest$SimpleBean
         String sendDefaultAddress(String message) {
             return message.toLowerCase();
         }

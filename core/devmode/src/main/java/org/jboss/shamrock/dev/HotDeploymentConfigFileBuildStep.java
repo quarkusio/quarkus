@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.dev;
+package io.quarkus.dev;
 
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.HotDeploymentConfigFileBuildItem;
-import org.jboss.shamrock.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.HotDeploymentConfigFileBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 
 public class HotDeploymentConfigFileBuildStep {
 

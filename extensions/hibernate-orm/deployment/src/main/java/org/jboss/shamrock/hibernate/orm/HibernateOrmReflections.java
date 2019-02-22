@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm;
+package io.quarkus.hibernate.orm;
 
 import org.hibernate.type.EnumType;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 
 /**
  * This list of classes which any Hibernate ORM using application should register for reflective access on SubstrateVM.

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm.runtime;
+package io.quarkus.hibernate.orm.runtime;
 
 import java.util.Collections;
 import java.util.List;
@@ -35,9 +35,9 @@ import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.hibernate.jpa.internal.util.PersistenceUtilHelper;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.hibernate.orm.runtime.boot.FastBootEntityManagerFactoryBuilder;
-import org.jboss.shamrock.hibernate.orm.runtime.boot.registry.PreconfiguredServiceRegistryBuilder;
-import org.jboss.shamrock.hibernate.orm.runtime.recording.RecordedState;
+import io.quarkus.hibernate.orm.runtime.boot.FastBootEntityManagerFactoryBuilder;
+import io.quarkus.hibernate.orm.runtime.boot.registry.PreconfiguredServiceRegistryBuilder;
+import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 
 /**
  * This can not inherit from HibernatePersistenceProvider as that would force

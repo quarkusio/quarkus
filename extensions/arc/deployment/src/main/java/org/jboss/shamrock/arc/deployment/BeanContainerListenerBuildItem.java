@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.arc.deployment;
+package io.quarkus.arc.deployment;
 
 import org.jboss.builder.item.MultiBuildItem;
-import org.jboss.shamrock.arc.runtime.BeanContainerListener;
+import io.quarkus.arc.runtime.BeanContainerListener;
 
 public final class BeanContainerListenerBuildItem extends MultiBuildItem {
 

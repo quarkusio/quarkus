@@ -1,8 +1,8 @@
-package org.jboss.shamrock.extest;
+package io.quarkus.extest;
 
 import javax.inject.Inject;
 
-import org.jboss.shamrock.test.ShamrockUnitTest;
+import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
@@ -15,7 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
  */
 public class ConfiguredBeanTest {
     @RegisterExtension
-    static final ShamrockUnitTest config = new ShamrockUnitTest()
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(ConfiguredBean.class)
                     .addAsManifestResource("microprofile-config.properties"));
@@ -36,10 +36,10 @@ public class ConfiguredBeanTest {
 
     /**
      * Validate that the TestBuildAndRunTimeConfig is the same as seen at build time
-     * Currently disabled due to https://github.com/jbossas/protean-shamrock/issues/962
+     * Currently disabled due to https://github.com/jbossas/quarkus/issues/962
      */
     @Test
-    @Disabled("https://github.com/jbossas/protean-shamrock/issues/962")
+    @Disabled("https://github.com/jbossas/quarkus/issues/962")
     public void validateBuildTimeConfig() {
         TestBuildAndRunTimeConfig buildTimeConfig = configuredBean.getBuildTimeConfig();
         Assertions.assertEquals("StringBasedValue", buildTimeConfig.btSBV.getValue(),
@@ -49,9 +49,9 @@ public class ConfiguredBeanTest {
         Assertions.assertEquals("btStringOptValue", buildTimeConfig.btStringOpt,
                 "buildTimeConfig.btStringOpt != btStringOptValue; " + buildTimeConfig.btStringOpt);
 
-        // shamrock.btrt.all-values.double-primitive=3.1415926535897932384
+        // quarkus.btrt.all-values.double-primitive=3.1415926535897932384
         Assertions.assertEquals(3.1415926535897932384, buildTimeConfig.allValues.doublePrimitive, 0.00000001);
-        // shamrock.btrt.all-values.opt-double-value=3.1415926535897932384
+        // quarkus.btrt.all-values.opt-double-value=3.1415926535897932384
         Assertions.assertTrue(buildTimeConfig.allValues.optDoubleValue.isPresent(),
                 "runTimeConfig.allValues.optDoubleValue.isPresent");
         Assertions.assertEquals(3.1415926535897932384, buildTimeConfig.allValues.optDoubleValue.getAsDouble(), 0.00000001);
@@ -102,38 +102,38 @@ public class ConfiguredBeanTest {
     @Test
     public void validateRuntimeConfig() {
         TestRunTimeConfig runTimeConfig = configuredBean.getRunTimeConfig();
-        // shamrock.rt.rt-string-opt=rtStringOptValue
+        // quarkus.rt.rt-string-opt=rtStringOptValue
         Assertions.assertEquals("rtStringOptValue", runTimeConfig.rtStringOpt);
-        // shamrock.rt.rt-string-opt-with-default=rtStringOptWithDefaultValue
+        // quarkus.rt.rt-string-opt-with-default=rtStringOptWithDefaultValue
         Assertions.assertEquals("rtStringOptWithDefaultValue", runTimeConfig.rtStringOptWithDefault);
 
-        //shamrock.rt.all-values.oov=configPart1+configPart2
+        //quarkus.rt.all-values.oov=configPart1+configPart2
         Assertions.assertEquals(new ObjectOfValue("configPart1", "configPart2"), runTimeConfig.allValues.oov);
-        //shamrock.rt.all-values.ovo=configPart1+configPart2
+        //quarkus.rt.all-values.ovo=configPart1+configPart2
         Assertions.assertEquals(new ObjectValueOf("configPart1", "configPart2"), runTimeConfig.allValues.ovo);
-        // shamrock.rt.all-values.long-primitive=12345678911
+        // quarkus.rt.all-values.long-primitive=12345678911
         Assertions.assertEquals(12345678911l, runTimeConfig.allValues.longPrimitive);
-        // shamrock.rt.all-values.long-value=12345678921
+        // quarkus.rt.all-values.long-value=12345678921
         Assertions.assertEquals(12345678921l, runTimeConfig.allValues.longValue.longValue());
-        // shamrock.rt.all-values.opt-long-value=12345678931
+        // quarkus.rt.all-values.opt-long-value=12345678931
         Assertions.assertTrue(runTimeConfig.allValues.optLongValue.isPresent(),
                 "runTimeConfig.allValues.optLongValue.isPresent");
         Assertions.assertEquals(12345678931l, runTimeConfig.allValues.optLongValue.getAsLong());
-        // shamrock.rt.all-values.optional-long-value=12345678941
+        // quarkus.rt.all-values.optional-long-value=12345678941
         Assertions.assertTrue(runTimeConfig.allValues.optionalLongValue.isPresent(),
                 "runTimeConfig.allValues.optionalLongValue.isPresent");
         Assertions.assertEquals(12345678941l, runTimeConfig.allValues.optionalLongValue.get().longValue());
-        // shamrock.btrt.all-values.double-primitive=3.1415926535897932384
+        // quarkus.btrt.all-values.double-primitive=3.1415926535897932384
         Assertions.assertEquals(3.1415926535897932384, runTimeConfig.allValues.doublePrimitive, 0.00000001);
-        // shamrock.btrt.all-values.opt-double-value=3.1415926535897932384
+        // quarkus.btrt.all-values.opt-double-value=3.1415926535897932384
         Assertions.assertTrue(runTimeConfig.allValues.optDoubleValue.isPresent(),
                 "runTimeConfig.allValues.optDoubleValue.isPresent");
         Assertions.assertEquals(3.1415926535897932384, runTimeConfig.allValues.optDoubleValue.getAsDouble(), 0.00000001);
-        // shamrock.rt.all-values.string-list=value1,value2
+        // quarkus.rt.all-values.string-list=value1,value2
         Assertions.assertEquals(2, runTimeConfig.allValues.stringList.size());
         Assertions.assertEquals("value1", runTimeConfig.allValues.stringList.get(0));
         Assertions.assertEquals("value2", runTimeConfig.allValues.stringList.get(1));
-        // shamrock.rt.all-values.long-list=1,2,3
+        // quarkus.rt.all-values.long-list=1,2,3
         Assertions.assertEquals(3, runTimeConfig.allValues.longList.size());
         Assertions.assertEquals(1, runTimeConfig.allValues.longList.get(0).longValue());
         Assertions.assertEquals(2, runTimeConfig.allValues.longList.get(1).longValue());
@@ -144,18 +144,18 @@ public class ConfiguredBeanTest {
      * Break out the validation of the RUN_TIME config nested map as that currently is not working.
      */
     @Test
-    @Disabled("https://github.com/jbossas/protean-shamrock/issues/956")
+    @Disabled("https://github.com/jbossas/quarkus/issues/956")
     public void validateRuntimeConfigMap() {
         TestRunTimeConfig runTimeConfig = configuredBean.getRunTimeConfig();
         Assertions.assertEquals(2, runTimeConfig.allValues.nestedConfigMap.size());
-        //shamrock.rt.all-values.nested-config-map.key1.nested-value=value1
-        //shamrock.rt.all-values.nested-config-map.key1.oov=value1.1+value1.2
+        //quarkus.rt.all-values.nested-config-map.key1.nested-value=value1
+        //quarkus.rt.all-values.nested-config-map.key1.oov=value1.1+value1.2
         NestedConfig nc1 = runTimeConfig.allValues.nestedConfigMap.get("key1");
         Assertions.assertNotNull(nc1);
         Assertions.assertEquals("value1", nc1.nestedValue);
         Assertions.assertEquals(new ObjectOfValue("value1.1", "value1.2"), nc1.oov);
-        //shamrock.rt.all-values.nested-config-map.key2.nested-value=value2
-        //shamrock.rt.all-values.nested-config-map.key2.oov=value2.1+value2.2
+        //quarkus.rt.all-values.nested-config-map.key2.nested-value=value2
+        //quarkus.rt.all-values.nested-config-map.key2.oov=value2.1+value2.2
         NestedConfig nc2 = runTimeConfig.allValues.nestedConfigMap.get("key2");
         Assertions.assertNotNull(nc2);
         Assertions.assertEquals("value2", nc2.nestedValue);

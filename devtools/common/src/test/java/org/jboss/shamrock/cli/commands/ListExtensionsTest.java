@@ -1,9 +1,9 @@
-package org.jboss.shamrock.cli.commands;
+package io.quarkus.cli.commands;
 
 import static java.util.Arrays.asList;
-import static org.jboss.shamrock.maven.utilities.MojoUtils.getPluginGroupId;
-import static org.jboss.shamrock.maven.utilities.MojoUtils.getPluginVersion;
-import static org.jboss.shamrock.maven.utilities.MojoUtils.readPom;
+import static io.quarkus.maven.utilities.MojoUtils.getPluginGroupId;
+import static io.quarkus.maven.utilities.MojoUtils.getPluginVersion;
+import static io.quarkus.maven.utilities.MojoUtils.readPom;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -16,8 +16,8 @@ import java.util.Map;
 
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
-import org.jboss.shamrock.maven.utilities.MojoUtils;
-import org.jboss.shamrock.maven.utilities.ShamrockDependencyPredicate;
+import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -45,7 +45,7 @@ public class ListExtensionsTest {
 
         final Map<String, Dependency> installed = listExtensions.findInstalled();
 
-        Assertions.assertNotNull(installed.get(getPluginGroupId() + ":shamrock-agroal-deployment"));
+        Assertions.assertNotNull(installed.get(getPluginGroupId() + ":quarkus-agroal-deployment"));
     }
 
     /**
@@ -76,8 +76,8 @@ public class ListExtensionsTest {
 
         final Map<String, Dependency> installed = listExtensions.findInstalled();
 
-        Assertions.assertNotNull(installed.get(getPluginGroupId() + ":shamrock-resteasy-deployment"));
-        Assertions.assertNotNull(installed.get(getPluginGroupId() + ":shamrock-hibernate-validator-deployment"));
+        Assertions.assertNotNull(installed.get(getPluginGroupId() + ":quarkus-resteasy-deployment"));
+        Assertions.assertNotNull(installed.get(getPluginGroupId() + ":quarkus-hibernate-validator-deployment"));
     }
 
     @Test
@@ -97,7 +97,7 @@ public class ListExtensionsTest {
 
         model.setDependencyManagement(null);
         model.getDependencies().stream()
-                .filter(new ShamrockDependencyPredicate())
+                .filter(new QuarkusDependencyPredicate())
                 .forEach(d -> d.setVersion("0.0.1"));
 
         MojoUtils.write(model, pom);

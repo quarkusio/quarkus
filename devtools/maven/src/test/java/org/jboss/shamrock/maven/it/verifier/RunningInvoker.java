@@ -1,6 +1,6 @@
-package org.jboss.shamrock.maven.it.verifier;
+package io.quarkus.maven.it.verifier;
 
-import static org.jboss.shamrock.maven.it.MojoTestBase.installPluginToLocalRepository;
+import static io.quarkus.maven.it.MojoTestBase.installPluginToLocalRepository;
 
 import java.io.*;
 import java.util.List;
@@ -52,7 +52,7 @@ public class RunningInvoker extends MavenProcessInvoker {
         List<ProcessInfo> list = JProcesses.getProcessList().stream().filter(pi ->
         // Kill all process using the live reload and the live reload process.
         // This might be too much
-        pi.getCommand().contains("shamrock:dev") || pi.getCommand().contains(getWorkingDirectory().getAbsolutePath()))
+        pi.getCommand().contains("quarkus:dev") || pi.getCommand().contains(getWorkingDirectory().getAbsolutePath()))
                 .collect(Collectors.toList());
 
         list.stream()

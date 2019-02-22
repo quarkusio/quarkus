@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.creator.phase.nativeimage;
+package io.quarkus.creator.phase.nativeimage;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -35,15 +35,15 @@ import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
-import org.jboss.shamrock.creator.AppCreationPhase;
-import org.jboss.shamrock.creator.AppCreator;
-import org.jboss.shamrock.creator.AppCreatorException;
-import org.jboss.shamrock.creator.config.reader.PropertiesHandler;
-import org.jboss.shamrock.creator.config.reader.PropertyContext;
-import org.jboss.shamrock.creator.outcome.OutcomeProviderRegistration;
-import org.jboss.shamrock.creator.phase.augment.AugmentOutcome;
-import org.jboss.shamrock.creator.phase.runnerjar.RunnerJarOutcome;
-import org.jboss.shamrock.creator.util.IoUtils;
+import io.quarkus.creator.AppCreationPhase;
+import io.quarkus.creator.AppCreator;
+import io.quarkus.creator.AppCreatorException;
+import io.quarkus.creator.config.reader.PropertiesHandler;
+import io.quarkus.creator.config.reader.PropertyContext;
+import io.quarkus.creator.outcome.OutcomeProviderRegistration;
+import io.quarkus.creator.phase.augment.AugmentOutcome;
+import io.quarkus.creator.phase.runnerjar.RunnerJarOutcome;
+import io.quarkus.creator.util.IoUtils;
 
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 
@@ -58,7 +58,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
     private static final String GRAALVM_HOME = "GRAALVM_HOME";
 
-    private static final String SHAMROCK_PREFIX = "shamrock.";
+    private static final String SHAMROCK_PREFIX = "quarkus.";
 
     private Path outputDir;
 
@@ -260,7 +260,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
         if (dockerBuild != null && !dockerBuild.toLowerCase().equals("false")) {
 
-            // E.g. "/usr/bin/docker run -v {{PROJECT_DIR}}:/project --rm protean/graalvm-native-image"
+            // E.g. "/usr/bin/docker run -v {{PROJECT_DIR}}:/project --rm quarkus/graalvm-native-image"
             nativeImage = new ArrayList<>();
             //TODO: use an 'official' image
             String image;
@@ -322,8 +322,8 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
                     }
                 }
 
-                enableSslNative = properties.getProperty("shamrock.ssl.native") != null
-                        ? Boolean.parseBoolean(properties.getProperty("shamrock.ssl.native"))
+                enableSslNative = properties.getProperty("quarkus.ssl.native") != null
+                        ? Boolean.parseBoolean(properties.getProperty("quarkus.ssl.native"))
                         : false;
             }
             if (enableSslNative) {
@@ -440,7 +440,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
     //FIXME remove after transition period
     private boolean isThisGraalVMRCObsolete() {
         final String vmName = System.getProperty("java.vm.name");
-        log.info("Running Shamrock native-image plugin on " + vmName);
+        log.info("Running Quarkus native-image plugin on " + vmName);
         if (vmName.contains("-rc9") || vmName.contains("-rc10") || vmName.contains("-rc11")) {
             log.error("Out of date RC build of GraalVM detected! Please upgrade to RC12");
             return true;

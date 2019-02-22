@@ -1,9 +1,9 @@
-package org.jboss.shamrock.arc.deployment;
+package io.quarkus.arc.deployment;
 
-import static org.jboss.shamrock.runtime.annotations.ConfigPhase.BUILD_TIME;
+import static io.quarkus.runtime.annotations.ConfigPhase.BUILD_TIME;
 
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
-import org.jboss.shamrock.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigRoot;
 
 @ConfigRoot(phase = BUILD_TIME)
 public class ArcConfig {

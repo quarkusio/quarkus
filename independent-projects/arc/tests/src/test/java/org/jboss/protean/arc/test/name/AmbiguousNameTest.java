@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.protean.arc.test.name;
+package org.jboss.quarkus.arc.test.name;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -24,7 +24,7 @@ import javax.enterprise.inject.spi.DeploymentException;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-import org.jboss.protean.arc.test.ArcTestContainer;
+import org.jboss.quarkus.arc.test.ArcTestContainer;
 import org.junit.Rule;
 import org.junit.Test;
 

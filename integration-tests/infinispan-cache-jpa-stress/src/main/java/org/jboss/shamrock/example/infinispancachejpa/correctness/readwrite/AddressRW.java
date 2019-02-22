@@ -5,7 +5,7 @@
  * See the lgpl.txt file in the root directory or <http://www.gnu.org/licenses/lgpl-2.1.html>.
  */
 
-package org.jboss.shamrock.example.infinispancachejpa.correctness.readwrite;
+package io.quarkus.example.infinispancachejpa.correctness.readwrite;
 
 import java.util.HashSet;
 import java.util.Iterator;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.dev;
+package io.quarkus.dev;
 
 import java.io.File;
 import java.nio.file.Paths;
@@ -22,16 +22,16 @@ import java.util.ServiceLoader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.jboss.shamrock.deployment.devmode.HotReplacementSetup;
+import io.quarkus.deployment.devmode.HotReplacementSetup;
 
 public class RuntimeCompilationSetup {
 
     private static Logger log = Logger.getLogger(RuntimeCompilationSetup.class.getName());
 
     public static RuntimeUpdatesProcessor setup() throws Exception {
-        String classesDir = System.getProperty("shamrock.runner.classes");
-        String sourcesDir = System.getProperty("shamrock.runner.sources");
-        String resourcesDir = System.getProperty("shamrock.runner.resources");
+        String classesDir = System.getProperty("quarkus.runner.classes");
+        String sourcesDir = System.getProperty("quarkus.runner.sources");
+        String resourcesDir = System.getProperty("quarkus.runner.resources");
         if (classesDir != null) {
             ClassLoaderCompiler compiler = null;
             try {

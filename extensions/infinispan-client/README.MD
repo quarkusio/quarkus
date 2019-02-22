@@ -1,4 +1,4 @@
-# Infinispan Client for Protean
+# Infinispan Client for Quarkus
 
 ## Status
 
@@ -82,7 +82,7 @@ java cacerts file.
 
 You (currently) need to enable all security services in Substrate
 (https://github.com/oracle/graal/blob/master/substratevm/JCA-SECURITY-SERVICES.md). This can be done by adding
-`<enableAllSecurityServices>true</enableAllSecurityServices>` to the shamrock-maven-plugin configuration values.
+`<enableAllSecurityServices>true</enableAllSecurityServices>` to the quarkus-maven-plugin configuration values.
 
 You may have to also enable JNI, depending on the security provider by also adding `<enableJni>true</enableJni>` to the
 same configuration values. If you have to enable JNI you will then also have to add the appropriate shared library to

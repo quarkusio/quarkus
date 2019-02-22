@@ -1,6 +1,6 @@
-package org.jboss.shamrock.security.test;
+package io.quarkus.security.test;
 
-import org.jboss.shamrock.test.ShamrockUnitTest;
+import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -12,7 +12,7 @@ import io.undertow.servlet.ServletExtension;
 
 public class CustomAuthTestCase {
     @RegisterExtension
-    static final ShamrockUnitTest config = new ShamrockUnitTest()
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TestSecureServlet.class, CustomAuth.class, CustomAuthExtension.class, CustomAuthFactory.class)
                     .addAsManifestResource("microprofile-config-custom-auth.properties", "microprofile-config.properties")

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.validator.runtime;
+package io.quarkus.hibernate.validator.runtime;
 
 import java.lang.reflect.Method;
 import java.util.Collections;
@@ -26,7 +26,7 @@ import javax.validation.Validation;
 import org.hibernate.validator.PredefinedScopeHibernateValidator;
 import org.hibernate.validator.PredefinedScopeHibernateValidatorConfiguration;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
-import org.jboss.shamrock.runtime.annotations.Template;
+import io.quarkus.runtime.annotations.Template;
 
 @Template
 public class HibernateValidatorTemplate {

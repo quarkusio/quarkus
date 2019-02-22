@@ -20,9 +20,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.infinispan.protean</groupId>
-    <artifactId>infinispan-hibernate-cache-protean</artifactId>
-    <name>Infinispan Hibernate Cache - Protean</name>
+    <groupId>org.infinispan.quarkus</groupId>
+    <artifactId>infinispan-hibernate-cache-quarkus</artifactId>
+    <name>Infinispan Hibernate Cache - Quarkus</name>
     <version>1.0.0.Alpha1-SNAPSHOT</version>
 
     <properties>
@@ -144,8 +144,8 @@
                 <configuration>
                     <annotationProcessorPaths>
                         <path>
-                            <groupId>org.jboss.shamrock</groupId>
-                            <artifactId>shamrock-extension-processor</artifactId>
+                            <groupId>io.quarkus</groupId>
+                            <artifactId>quarkus-extension-processor</artifactId>
                             <version>${project.version}</version>
                         </path>
                     </annotationProcessorPaths>
@@ -156,12 +156,12 @@
 
     <distributionManagement>
         <repository>
-            <id>protean-nexus-release</id>
+            <id>quarkus-nexus-release</id>
             <name>Temporary unreliable Nexus - Releases</name>
             <url>http://ec2-18-234-117-118.compute-1.amazonaws.com:8081/nexus/content/repositories/releases/</url>
         </repository>
         <snapshotRepository>
-            <id>protean-nexus-snapshot</id>
+            <id>quarkus-nexus-snapshot</id>
             <name>Temporary unreliable Nexus - Snapshots</name>
             <url>http://ec2-18-234-117-118.compute-1.amazonaws.com:8081/nexus/content/repositories/snapshots/</url>
         </snapshotRepository>

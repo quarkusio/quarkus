@@ -1,4 +1,4 @@
-package org.jboss.shamrock.arc.deployment;
+package io.quarkus.arc.deployment;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -7,10 +7,10 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
-import org.jboss.protean.arc.processor.BeanDeploymentValidator;
-import org.jboss.protean.arc.processor.DotNames;
-import org.jboss.protean.arc.processor.InjectionPointInfo;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
+import org.jboss.quarkus.arc.processor.BeanDeploymentValidator;
+import org.jboss.quarkus.arc.processor.DotNames;
+import org.jboss.quarkus.arc.processor.InjectionPointInfo;
+import io.quarkus.deployment.annotations.BuildStep;
 
 import io.smallrye.config.inject.ConfigProducer;
 

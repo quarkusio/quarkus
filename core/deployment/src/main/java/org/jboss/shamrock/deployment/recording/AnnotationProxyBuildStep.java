@@ -1,11 +1,11 @@
-package org.jboss.shamrock.deployment.recording;
+package io.quarkus.deployment.recording;
 
 import org.jboss.protean.gizmo.ClassOutput;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.AnnotationProxyBuildItem;
-import org.jboss.shamrock.deployment.builditem.ApplicationIndexBuildItem;
-import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.AnnotationProxyBuildItem;
+import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 
 public class AnnotationProxyBuildStep {
 

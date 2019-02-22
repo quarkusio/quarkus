@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.hibernate.orm.runtime.boot.registry;
+package io.quarkus.hibernate.orm.runtime.boot.registry;
 
 import static org.hibernate.internal.HEMLogging.messageLogger;
 
@@ -56,8 +56,8 @@ import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitia
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractorInitiator;
 import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
-import org.jboss.shamrock.hibernate.orm.runtime.recording.RecordedState;
-import org.jboss.shamrock.hibernate.orm.runtime.service.*;
+import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
+import io.quarkus.hibernate.orm.runtime.service.*;
 
 /**
  * Helps to instantiate a ServiceRegistryBuilder from a previous state. This
@@ -79,7 +79,7 @@ public class PreconfiguredServiceRegistryBuilder {
     private final StandardServiceRegistryImpl destroyedRegistry;
 
     public PreconfiguredServiceRegistryBuilder(RecordedState rs) {
-        this.initiators = buildProteanServiceInitiatorList(rs);
+        this.initiators = buildQuarkusServiceInitiatorList(rs);
         this.destroyedRegistry = (StandardServiceRegistryImpl) rs.getMetadata().getMetadataBuildingOptions()
                 .getServiceRegistry();
     }
@@ -155,13 +155,13 @@ public class PreconfiguredServiceRegistryBuilder {
      *
      * @return
      */
-    private static List<StandardServiceInitiator> buildProteanServiceInitiatorList(RecordedState rs) {
+    private static List<StandardServiceInitiator> buildQuarkusServiceInitiatorList(RecordedState rs) {
         final ArrayList<StandardServiceInitiator> serviceInitiators = new ArrayList<StandardServiceInitiator>();
 
         // Replaces org.hibernate.boot.cfgxml.internal.CfgXmlAccessServiceInitiator :
         // not used
         // (Original disabled)
-        serviceInitiators.add(CfgXmlAccessServiceInitiatorProtean.INSTANCE);
+        serviceInitiators.add(CfgXmlAccessServiceInitiatorQuarkus.INSTANCE);
 
         // Useful as-is
         serviceInitiators.add(ConfigurationServiceInitiator.INSTANCE);
@@ -176,7 +176,7 @@ public class PreconfiguredServiceRegistryBuilder {
         serviceInitiators.add(SchemaManagementToolInitiator.INSTANCE);
 
         // Replaces JdbcEnvironmentInitiator.INSTANCE :
-        serviceInitiators.add(new ProteanJdbcEnvironmentInitiator(rs.getDialect()));
+        serviceInitiators.add(new QuarkusJdbcEnvironmentInitiator(rs.getDialect()));
 
         serviceInitiators.add(JndiServiceInitiator.INSTANCE);
 
@@ -203,7 +203,7 @@ public class PreconfiguredServiceRegistryBuilder {
         serviceInitiators.add(MutableIdentifierGeneratorFactoryInitiator.INSTANCE);
 
         // Replaces JtaPlatformResolverInitiator.INSTANCE );
-        serviceInitiators.add(new ProteanJtaPlatformResolver(rs.getJtaPlatform()));
+        serviceInitiators.add(new QuarkusJtaPlatformResolver(rs.getJtaPlatform()));
         serviceInitiators.add(new JtaPlatformInitiator() {
             @Override
             protected JtaPlatform getFallbackProvider(Map configurationValues, ServiceRegistryImplementor registry) {
@@ -216,7 +216,7 @@ public class PreconfiguredServiceRegistryBuilder {
         serviceInitiators.add(SessionFactoryServiceRegistryFactoryInitiator.INSTANCE);
 
         // Replaces RegionFactoryInitiator.INSTANCE
-        serviceInitiators.add(ProteanRegionFactoryInitiator.INSTANCE);
+        serviceInitiators.add(QuarkusRegionFactoryInitiator.INSTANCE);
 
         serviceInitiators.add(TransactionCoordinatorBuilderInitiator.INSTANCE);
 

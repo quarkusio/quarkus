@@ -1,4 +1,4 @@
-package org.jboss.shamrock.example.jpah2;
+package io.quarkus.example.jpah2;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;

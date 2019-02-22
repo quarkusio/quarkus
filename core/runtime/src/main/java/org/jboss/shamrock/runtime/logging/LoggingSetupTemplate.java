@@ -1,4 +1,4 @@
-package org.jboss.shamrock.runtime.logging;
+package io.quarkus.runtime.logging;
 
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
@@ -18,7 +18,7 @@ import org.jboss.logmanager.formatters.ColorPatternFormatter;
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.jboss.logmanager.handlers.ConsoleHandler;
 import org.jboss.logmanager.handlers.FileHandler;
-import org.jboss.shamrock.runtime.annotations.Template;
+import io.quarkus.runtime.annotations.Template;
 
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
 

@@ -14,7 +14,7 @@
  *  permissions and limitations under the License.
  */
 
-package org.jboss.shamrock.maven.extensionlist;
+package io.quarkus.maven.extensionlist;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -30,8 +30,8 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
-import org.jboss.shamrock.dependencies.Extension;
-import org.jboss.shamrock.maven.AbstractExtensionMojo;
+import io.quarkus.dependencies.Extension;
+import io.quarkus.maven.AbstractExtensionMojo;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;

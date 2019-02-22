@@ -1,9 +1,9 @@
-package org.jboss.shamrock.cli.commands;
+package io.quarkus.cli.commands;
 
-import static org.jboss.shamrock.ShamrockTemplate.*;
-import static org.jboss.shamrock.maven.utilities.MojoUtils.*;
-import static org.jboss.shamrock.maven.utilities.MojoUtils.configuration;
-import static org.jboss.shamrock.maven.utilities.MojoUtils.plugin;
+import static io.quarkus.QuarkusTemplate.*;
+import static io.quarkus.maven.utilities.MojoUtils.*;
+import static io.quarkus.maven.utilities.MojoUtils.configuration;
+import static io.quarkus.maven.utilities.MojoUtils.plugin;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,8 +23,8 @@ import org.apache.maven.model.Plugin;
 import org.apache.maven.model.PluginExecution;
 import org.apache.maven.model.PluginManagement;
 import org.apache.maven.model.Profile;
-import org.jboss.shamrock.BasicRest;
-import org.jboss.shamrock.maven.utilities.MojoUtils;
+import io.quarkus.BasicRest;
+import io.quarkus.maven.utilities.MojoUtils;
 
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
@@ -152,7 +152,7 @@ public class CreateProject {
             Plugin plugin = plugin(getPluginGroupId(), getPluginArtifactId(), SHAMROCK_VERSION_PROPERTY);
             if (isParentPom(model)) {
                 addPluginManagementSection(model, plugin);
-                //strip the shamrockVersion off
+                //strip the quarkusVersion off
                 plugin = plugin(getPluginGroupId(), getPluginArtifactId());
             }
             PluginExecution pluginExec = new PluginExecution();
@@ -209,7 +209,7 @@ public class CreateProject {
             properties = new Properties();
             model.setProperties(properties);
         }
-        properties.putIfAbsent("shamrock.version", getPluginVersion());
+        properties.putIfAbsent("quarkus.version", getPluginVersion());
     }
 
     private boolean isParentPom(Model model) {

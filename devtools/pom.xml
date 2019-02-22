@@ -21,15 +21,15 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <artifactId>shamrock-build-parent</artifactId>
-        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>quarkus-build-parent</artifactId>
+        <groupId>io.quarkus</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
         <relativePath>../build-parent/pom.xml</relativePath>
     </parent>
 
-    <artifactId>shamrock-devtools-all</artifactId>
+    <artifactId>quarkus-devtools-all</artifactId>
     <packaging>pom</packaging>
-    <name>Shamrock - Devtools</name>
+    <name>Quarkus - Devtools</name>
 
     <properties>
         <test.level>INFO</test.level>

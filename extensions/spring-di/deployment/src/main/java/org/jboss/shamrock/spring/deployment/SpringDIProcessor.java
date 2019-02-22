@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.spring.deployment;
+package io.quarkus.spring.deployment;
 
 import static org.jboss.jandex.AnnotationInstance.create;
 
@@ -31,13 +31,13 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.protean.arc.processor.AnnotationsTransformer;
-import org.jboss.protean.arc.processor.DotNames;
-import org.jboss.protean.arc.processor.ScopeInfo;
-import org.jboss.protean.arc.processor.Transformation;
-import org.jboss.shamrock.arc.deployment.AnnotationsTransformerBuildItem;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
+import org.jboss.quarkus.arc.processor.AnnotationsTransformer;
+import org.jboss.quarkus.arc.processor.DotNames;
+import org.jboss.quarkus.arc.processor.ScopeInfo;
+import org.jboss.quarkus.arc.processor.Transformation;
+import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
 
 /*
  * A simple processor that maps annotations Spring DI annotation to CDI annotation

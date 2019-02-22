@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.shamrock.deployment;
+package io.quarkus.deployment;
 
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -25,15 +25,15 @@ import java.util.Set;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.builder.item.SimpleBuildItem;
-import org.jboss.shamrock.deployment.configuration.ConfigurationError;
+import io.quarkus.deployment.configuration.ConfigurationError;
 
-public final class ShamrockConfig extends SimpleBuildItem {
+public final class QuarkusConfig extends SimpleBuildItem {
 
-    public static final ShamrockConfig INSTANCE = new ShamrockConfig();
+    public static final QuarkusConfig INSTANCE = new QuarkusConfig();
 
     private static final Map<Object, String> reverseMap = new IdentityHashMap<>();
 
-    private ShamrockConfig() {
+    private QuarkusConfig() {
         //not to be constructed
     }
 

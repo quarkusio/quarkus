@@ -18,7 +18,9 @@ package org.jboss.protean.arc;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
@@ -67,7 +69,18 @@ abstract class AbstractSharedContext implements InjectableContext {
 
     @Override
     public synchronized void destroy() {
-        instances.forEachExistingValue(InstanceHandleImpl::destroyInternal);
+        Set<InstanceHandleImpl<?>> values = instances.getPresentValues();
+        // Destroy the producers first
+        for (Iterator<InstanceHandleImpl<?>> iterator = values.iterator(); iterator.hasNext();) {
+            InstanceHandleImpl<?> instanceHandle = iterator.next();
+            if (instanceHandle.getBean().getDeclaringBean() != null) {
+                instanceHandle.destroyInternal();
+                iterator.remove();
+            }
+        }
+        for (InstanceHandleImpl<?> instanceHandle : values) {
+            instanceHandle.destroyInternal();
+        }
         instances.clear();
     }
 

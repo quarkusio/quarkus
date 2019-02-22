@@ -16,7 +16,7 @@ The OpenShift section leverages OpenShift build and route features which are not
 
 For this guide you need:
 
-* roughly 10 minutes
+* roughly 20 minutes
 * having access to a Kubernetes and/or OpenShift cluster. Minikube and Minishift are valid options.
 * having deployed Knative components on https://github.com/knative/docs/blob/master/install/Knative-with-Minikube.md[Minikube]
 or https://github.com/openshift-cloud-functions/Documentation/blob/master/knative-minishift.md[Minishift]

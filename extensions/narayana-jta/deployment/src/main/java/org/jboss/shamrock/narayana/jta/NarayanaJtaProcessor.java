@@ -31,6 +31,7 @@ import org.jboss.shamrock.deployment.Capabilities;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
+import org.jboss.shamrock.deployment.logging.LogCleanupFilterBuildItem;
 import org.jboss.shamrock.narayana.jta.runtime.NarayanaJtaConfiguration;
 import org.jboss.shamrock.narayana.jta.runtime.NarayanaJtaProducers;
 import org.jboss.shamrock.narayana.jta.runtime.NarayanaJtaTemplate;
@@ -88,5 +89,10 @@ class NarayanaJtaProcessor {
         tt.setDefaultProperties(defaultProperties);
         tt.setNodeName(transactions);
 
+    }
+    
+    @BuildStep
+    void setupLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
+        filters.produce(new LogCleanupFilterBuildItem("com.arjuna.ats.arjuna", "ARJUNA012170"));
     }
 }

@@ -20,6 +20,12 @@ public final class LogConfig {
     public Map<String, CategoryConfig> categories;
 
     /**
+     * The log cleanup filter config
+     */
+    @ConfigItem(name = "filter")
+    public Map<String, CleanupFilterConfig> filters;
+
+    /**
      * The default log level
      */
     @ConfigItem

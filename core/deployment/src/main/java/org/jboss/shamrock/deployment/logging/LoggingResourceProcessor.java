@@ -20,8 +20,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 import org.jboss.logmanager.EmbeddedConfigurator;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.annotations.ExecutionTime;
 import org.jboss.shamrock.deployment.annotations.Record;
@@ -33,15 +35,20 @@ import org.jboss.shamrock.deployment.builditem.SystemPropertyBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ServiceProviderBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem;
-import org.jboss.shamrock.runtime.logging.LogConfig;
 import org.jboss.shamrock.runtime.logging.InitialConfigurator;
 import org.jboss.shamrock.runtime.logging.LevelConverter;
+import org.jboss.shamrock.runtime.logging.LogConfig;
 import org.jboss.shamrock.runtime.logging.LoggingSetupTemplate;
 
 /**
  */
 public final class LoggingResourceProcessor {
 
+    @BuildStep
+    void setupLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
+        filters.produce(new LogCleanupFilterBuildItem("org.jboss.threads", "JBoss Threads version"));
+    }
+    
     @BuildStep
     SystemPropertyBuildItem setProperty() {
         return new SystemPropertyBuildItem("java.util.logging.manager", "org.jboss.logmanager.LogManager");
@@ -54,10 +61,23 @@ public final class LoggingResourceProcessor {
                 new RunTimeConfigurationDefaultBuildItem(
                     "shamrock.log.categories.\"" + category.getCategory() + "\".level",
                     category.getLevel().toString()
-                )
+                    )
             );
         }
     }
+    
+    @BuildStep
+    void setUpDefaultLogCleanupFilters(List<LogCleanupFilterBuildItem> logCleanupFilters, Consumer<RunTimeConfigurationDefaultBuildItem> configOutput) {
+        for (LogCleanupFilterBuildItem logCleanupFilter : logCleanupFilters) {
+            configOutput.accept(
+                new RunTimeConfigurationDefaultBuildItem(
+                    "shamrock.log.filters.\"" + logCleanupFilter.getFilterElement().getLoggerName() + "\".if-starts-with",
+                    logCleanupFilter.getFilterElement().getMessageStart()
+                    )
+            );
+        }
+    }
+    
 
     @BuildStep
     void miscSetup(

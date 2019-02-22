@@ -16,15 +16,15 @@
 
 package org.jboss.shamrock.example.test;
 
-import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 
-import io.restassured.http.ContentType;
 import org.hamcrest.Matchers;
 import org.jboss.shamrock.test.junit.ShamrockTest;
 import org.junit.jupiter.api.Test;
 
 import io.restassured.RestAssured;
+import io.restassured.http.ContentType;
 
 @ShamrockTest
 public class HealthTestCase {
@@ -36,8 +36,8 @@ public class HealthTestCase {
                     .contentType(ContentType.JSON)
                     .header("Content-Type", Matchers.containsString("charset=UTF-8"))
                     .body("outcome", is("UP"),
-                            "checks.state", contains("UP"),
-                            "checks.name", contains("basic"));
+                            "checks.state", containsInAnyOrder("UP", "UP"),
+                            "checks.name", containsInAnyOrder("basic", "basic-with-builder"));
         } finally {
             RestAssured.reset();
         }

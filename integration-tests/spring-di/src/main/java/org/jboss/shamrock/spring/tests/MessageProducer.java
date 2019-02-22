@@ -23,7 +23,7 @@ import org.springframework.stereotype.Service;
 public class MessageProducer {
 
     @Value("${greeting.message}")
-    private String message;
+    String message;
 
     public String getPrefix() {
         return message;

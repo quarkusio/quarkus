@@ -20,10 +20,10 @@ import java.util.concurrent.CompletionStage;
 public class VertxProducerResource {
 
     @Inject
-    private Vertx vertx;
+    Vertx vertx;
 
     @Inject
-    private EventBus eventBus;
+    EventBus eventBus;
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)

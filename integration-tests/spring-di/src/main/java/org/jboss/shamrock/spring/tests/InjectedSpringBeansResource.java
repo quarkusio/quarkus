@@ -26,7 +26,7 @@ import javax.ws.rs.core.MediaType;
 public class InjectedSpringBeansResource {
 
     @Inject
-    private GreeterBean greeterBean;
+    GreeterBean greeterBean;
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)

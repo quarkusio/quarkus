@@ -174,8 +174,8 @@ public class QuartzScheduler implements Scheduler {
                         String cron = scheduled.cron().trim();
                         if (!cron.isEmpty()) {
                             try {
-                                if (ScheduledLiteral.isConfigValue(cron)) {
-                                    cron = config.getValue(ScheduledLiteral.getConfigProperty(cron), String.class);
+                                if (SchedulerConfiguration.isConfigValue(cron)) {
+                                    cron = config.getValue(SchedulerConfiguration.getConfigProperty(cron), String.class);
                                 }
                                 scheduleBuilder = CronScheduleBuilder.cronSchedule(cron);
                             } catch (RuntimeException e) {
@@ -184,8 +184,8 @@ public class QuartzScheduler implements Scheduler {
                             }
                         } else if (!scheduled.every().isEmpty()) {
                             String every = scheduled.every().trim();
-                            if (ScheduledLiteral.isConfigValue(every)) {
-                                every = config.getValue(ScheduledLiteral.getConfigProperty(every), String.class);
+                            if (SchedulerConfiguration.isConfigValue(every)) {
+                                every = config.getValue(SchedulerConfiguration.getConfigProperty(every), String.class);
                             }
                             if (Character.isDigit(every.charAt(0))) {
                                 every = "PT" + every;

@@ -24,6 +24,8 @@ import java.lang.annotation.Target;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
+import org.jboss.shamrock.scheduler.api.Scheduled.Schedules;
+
 /**
  * Marks a business method to be automatically scheduled and invoked by the container.
  * <p>
@@ -47,7 +49,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Target(METHOD)
 @Retention(RUNTIME)
-@Repeatable(Scheduleds.class)
+@Repeatable(Schedules.class)
 public @interface Scheduled {
 
     /**
@@ -85,5 +87,14 @@ public @interface Scheduled {
      * @return the unit of initial delay
      */
     TimeUnit delayUnit() default TimeUnit.MINUTES;
+    
+
+    @Retention(RUNTIME)
+    @Target(METHOD)
+    @interface Schedules {
+
+        Scheduled[] value();
+
+    }
 
 }

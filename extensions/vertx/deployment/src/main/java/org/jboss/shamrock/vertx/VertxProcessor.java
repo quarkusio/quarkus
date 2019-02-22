@@ -16,7 +16,6 @@
 
 package org.jboss.shamrock.vertx;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +26,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -59,6 +57,7 @@ import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.annotations.ExecutionTime;
 import org.jboss.shamrock.deployment.annotations.Record;
+import org.jboss.shamrock.deployment.builditem.AnnotationProxyBuildItem;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
@@ -117,9 +116,10 @@ class VertxProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void build(VertxTemplate template, BeanContainerBuildItem beanContainer, BuildProducer<FeatureBuildItem> feature,
-            List<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods, BuildProducer<GeneratedClassBuildItem> generatedClass) {
+            List<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods, BuildProducer<GeneratedClassBuildItem> generatedClass,
+            AnnotationProxyBuildItem annotationProxy) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.VERTX));
-        List<Map<String, String>> messageConsumerConfigurations = new ArrayList<>();
+        Map<String, ConsumeEvent> messageConsumerConfigurations = new HashMap<>();
         ClassOutput classOutput = new ClassOutput() {
             @Override
             public void write(String name, byte[] data) {
@@ -127,15 +127,10 @@ class VertxProcessor {
             }
         };
         for (EventConsumerBusinessMethodItem businessMethod : messageConsumerBusinessMethods) {
-            Map<String, String> config = new HashMap<>();
             String invokerClass = generateInvoker(businessMethod.getBean(), businessMethod.getMethod(), classOutput);
+            messageConsumerConfigurations.put(invokerClass, annotationProxy.builder(businessMethod.getConsumeEvent(), ConsumeEvent.class)
+                    .withDefaultValue("value", businessMethod.getBean().getBeanClass().toString()).build());
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, invokerClass));
-            config.put("invokerClazz", invokerClass);
-            AnnotationValue addressValue = businessMethod.getConsumeEvent().value();
-            config.put("address", addressValue != null ? addressValue.asString() : businessMethod.getBean().getBeanClass().toString());
-            AnnotationValue localValue = businessMethod.getConsumeEvent().value("local");
-            config.put("local", localValue != null ? localValue.asString() : Boolean.FALSE.toString());
-            messageConsumerConfigurations.add(config);
         }
         template.configureVertx(beanContainer.getValue(), vertx, messageConsumerConfigurations);
     }

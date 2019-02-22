@@ -34,15 +34,22 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.commons.beanutils.PropertyUtils;
 import org.jboss.invocation.proxy.ProxyConfiguration;
 import org.jboss.invocation.proxy.ProxyFactory;
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ArrayType;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 import org.jboss.protean.gizmo.AssignableResultHandle;
 import org.jboss.protean.gizmo.BytecodeCreator;
 import org.jboss.protean.gizmo.CatchBlockCreator;
@@ -53,6 +60,7 @@ import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
 import org.jboss.protean.gizmo.TryBlock;
 import org.jboss.shamrock.deployment.ClassOutput;
+import org.jboss.shamrock.deployment.recording.AnnotationProxyProvider.AnnotationProxy;
 import org.jboss.shamrock.runtime.ObjectSubstitution;
 import org.jboss.shamrock.runtime.RuntimeValue;
 import org.jboss.shamrock.runtime.StartupContext;
@@ -415,6 +423,39 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 ResultHandle component = loadObjectInstance(method, Array.get(param, i), returnValueResults, expectedType.getComponentType());
                 method.writeArrayValue(out, i, component);
             }
+        } else if(AnnotationProxy.class.isAssignableFrom(expectedType)) {
+            // new com.foo.MyAnnotation_Proxy_AnnotationLiteral("foo")
+            AnnotationProxy annotationProxy = (AnnotationProxy) param;
+            List<MethodInfo> constructorParams = annotationProxy.getAnnotationClass().methods().stream().filter(m -> !m.name().equals("<clinit>") && !m.name().equals("<init>"))
+                    .collect(Collectors.toList());
+            Map<String, AnnotationValue> annotationValues = annotationProxy.getAnnotationInstance().values().stream()
+                    .collect(Collectors.toMap(AnnotationValue::name, Function.identity()));
+            ResultHandle[] constructorParamsHandles = new ResultHandle[constructorParams.size()];
+
+            for (ListIterator<MethodInfo> iterator = constructorParams.listIterator(); iterator.hasNext();) {
+                MethodInfo valueMethod = iterator.next();
+                AnnotationValue value = annotationValues.get(valueMethod.name());
+                if (value == null) {
+                    // method.invokeInterfaceMethod(MAP_PUT, valuesHandle, method.load(entry.getKey()), loadObjectInstance(method, entry.getValue(), returnValueResults, entry.getValue().getClass()));
+                    Object defaultValue = annotationProxy.getDefaultValues().get(valueMethod.name()); 
+                    if (defaultValue != null) {
+                        constructorParamsHandles[iterator.previousIndex()] = loadObjectInstance(method, defaultValue, returnValueResults, defaultValue.getClass());
+                        continue;
+                    }
+                    if (value == null) {
+                        value = valueMethod.defaultValue();    
+                    }
+                }
+                if (value == null) {
+                    throw new NullPointerException("Value not set for " + method);
+                }
+                ResultHandle retValue = loadValue(method, value, annotationProxy.getAnnotationClass(), valueMethod);
+                constructorParamsHandles[iterator.previousIndex()] = retValue;
+            }
+            out = method
+                    .newInstance(MethodDescriptor.ofConstructor(annotationProxy.getAnnotationLiteralType(),
+                            constructorParams.stream().map(m -> m.returnType().name().toString()).toArray()), constructorParamsHandles);
+
         } else {
             if (nonDefaultConstructors.containsKey(param.getClass())) {
                 NonDefaultConstructorHolder holder = nonDefaultConstructors.get(param.getClass());
@@ -622,13 +663,121 @@ public class BytecodeRecorderImpl implements RecorderContext {
             this.key = key;
         }
 
-        public Object getProxy() {
-            return proxy;
-        }
-
-        public String getKey() {
-            return key;
-        }
     }
+    
+    static ResultHandle loadValue(BytecodeCreator valueMethod, AnnotationValue value, ClassInfo annotationClass, MethodInfo method) {
+        ResultHandle retValue;
+        switch (value.kind()) {
+            case BOOLEAN:
+                retValue = valueMethod.load(value.asBoolean());
+                break;
+            case STRING:
+                retValue = valueMethod.load(value.asString());
+                break;
+            case BYTE:
+                retValue = valueMethod.load(value.asByte());
+                break;
+            case SHORT:
+                retValue = valueMethod.load(value.asShort());
+                break;
+            case LONG:
+                retValue = valueMethod.load(value.asLong());
+                break;
+            case INTEGER:
+                retValue = valueMethod.load(value.asInt());
+                break;
+            case FLOAT:
+                retValue = valueMethod.load(value.asFloat());
+                break;
+            case DOUBLE:
+                retValue = valueMethod.load(value.asDouble());
+                break;
+            case CHARACTER:
+                retValue = valueMethod.load(value.asChar());
+                break;
+            case CLASS:
+                retValue = valueMethod.loadClass(value.asClass().toString());
+                break;
+            case ARRAY:
+                retValue = arrayValue(value, valueMethod, method, annotationClass);
+                break;
+            case ENUM:
+                retValue = valueMethod
+                        .readStaticField(FieldDescriptor.of(value.asEnumType().toString(), value.asEnum(), value.asEnumType().toString()));
+                break;
+            case NESTED:
+            default:
+                throw new UnsupportedOperationException("Unsupported value: " + value);
+        }
+        return retValue;
+    }
+
+    static ResultHandle arrayValue(AnnotationValue value, BytecodeCreator valueMethod, MethodInfo method, ClassInfo annotationClass) {
+        ResultHandle retValue;
+        switch (value.componentKind()) {
+            case CLASS:
+                Type[] classArray = value.asClassArray();
+                retValue = valueMethod.newArray(componentType(method), valueMethod.load(classArray.length));
+                for (int i = 0; i < classArray.length; i++) {
+                    valueMethod.writeArrayValue(retValue, i, valueMethod.loadClass(classArray[i].name().toString()));
+                }
+                break;
+            case STRING:
+                String[] stringArray = value.asStringArray();
+                retValue = valueMethod.newArray(componentType(method), valueMethod.load(stringArray.length));
+                for (int i = 0; i < stringArray.length; i++) {
+                    valueMethod.writeArrayValue(retValue, i, valueMethod.load(stringArray[i]));
+                }
+                break;
+            case INTEGER:
+                int[] intArray = value.asIntArray();
+                retValue = valueMethod.newArray(componentType(method), valueMethod.load(intArray.length));
+                for (int i = 0; i < intArray.length; i++) {
+                    valueMethod.writeArrayValue(retValue, i, valueMethod.load(intArray[i]));
+                }
+                break;
+            case LONG:
+                long[] longArray = value.asLongArray();
+                retValue = valueMethod.newArray(componentType(method), valueMethod.load(longArray.length));
+                for (int i = 0; i < longArray.length; i++) {
+                    valueMethod.writeArrayValue(retValue, i, valueMethod.load(longArray[i]));
+                }
+                break;
+            case BYTE:
+                byte[] byteArray = value.asByteArray();
+                retValue = valueMethod.newArray(componentType(method), valueMethod.load(byteArray.length));
+                for (int i = 0; i < byteArray.length; i++) {
+                    valueMethod.writeArrayValue(retValue, i, valueMethod.load(byteArray[i]));
+                }
+                break;
+            case CHARACTER:
+                char[] charArray = value.asCharArray();
+                retValue = valueMethod.newArray(componentType(method), valueMethod.load(charArray.length));
+                for (int i = 0; i < charArray.length; i++) {
+                    valueMethod.writeArrayValue(retValue, i, valueMethod.load(charArray[i]));
+                }
+                break;
+            case ENUM:
+                String[] enumArray = value.asEnumArray();
+                retValue = valueMethod.newArray(componentType(method), valueMethod.load(enumArray.length));
+                String enumType = componentType(method);
+                for (int i = 0; i < enumArray.length; i++) {
+                    valueMethod.writeArrayValue(retValue, i, valueMethod.readStaticField(FieldDescriptor.of(enumType, enumArray[i], enumType)));
+                }
+                break;
+            // TODO: handle other less common types of array components
+            default:
+                // Return empty array for empty arrays and unsupported types
+                // For an empty array the component kind is UNKNOWN
+                retValue = valueMethod.newArray(componentType(method), valueMethod.load(0));
+        }
+        return retValue;
+    }
+
+    static String componentType(MethodInfo method) {
+        ArrayType arrayType = method.returnType().asArrayType();
+        return arrayType.component().name().toString();
+    }
+
 
 }

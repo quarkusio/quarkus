@@ -138,7 +138,7 @@
 
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-resteasy-common-deployment</artifactId>
+            <artifactId>shamrock-smallrye-rest-client-deployment</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
          </dependency>
@@ -159,6 +159,13 @@
 
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
+            <artifactId>shamrock-jaxrs-json-deployment</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+         </dependency>
+
+         <dependency>
+            <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-netty-deployment</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
@@ -167,13 +174,6 @@
          <dependency>
             <groupId>org.jboss.shamrock</groupId>
             <artifactId>shamrock-openssl-deployment</artifactId>
-            <version>${project.version}</version>
-            <scope>provided</scope>
-         </dependency>
-
-         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-rest-client-deployment</artifactId>
             <version>${project.version}</version>
             <scope>provided</scope>
          </dependency>

@@ -1,21 +1,22 @@
 package io.quarkus.cli.commands;
 
-import org.apache.maven.model.Dependency;
-import org.apache.maven.model.DependencyManagement;
-import org.apache.maven.model.Model;
-import io.quarkus.dependencies.Extension;
-import io.quarkus.maven.utilities.MojoUtils;
-import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
+import static io.quarkus.maven.utilities.MojoUtils.credentials;
+import static io.quarkus.maven.utilities.MojoUtils.getPluginVersion;
+import static io.quarkus.maven.utilities.MojoUtils.loadExtensions;
+import static java.util.stream.Collectors.toList;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import static java.util.stream.Collectors.toList;
-import static io.quarkus.maven.utilities.MojoUtils.credentials;
-import static io.quarkus.maven.utilities.MojoUtils.getPluginVersion;
-import static io.quarkus.maven.utilities.MojoUtils.loadExtensions;
+import org.apache.maven.model.Dependency;
+import org.apache.maven.model.DependencyManagement;
+import org.apache.maven.model.Model;
+
+import io.quarkus.dependencies.Extension;
+import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
 
 public class ListExtensions {
     private static final String FORMAT = "%-8s %-20s %-50s %s";
@@ -55,9 +56,9 @@ public class ListExtensions {
 
     private String extractVersion(final Dependency dependency) {
         String version = dependency != null ? dependency.getVersion() : null;
-        if(version != null && version.startsWith("$")) {
+        if (version != null && version.startsWith("$")) {
             final String value = (String) model.getProperties().get(propertyName(version));
-            if(value != null) {
+            if (value != null) {
                 version = value;
             }
         }
@@ -75,24 +76,24 @@ public class ListExtensions {
     private Map<String, Dependency> loadManaged() {
         final DependencyManagement managed = model.getDependencyManagement();
         return managed != null ? mapDependencies(managed.getDependencies(), Collections.emptyMap())
-                               : Collections.emptyMap();
+                : Collections.emptyMap();
     }
 
     private Map<String, Dependency> mapDependencies(final List<Dependency> dependencies,
-                                                    final Map<String, Dependency> managed) {
+            final Map<String, Dependency> managed) {
         final Map<String, Dependency> map = new TreeMap<>();
 
         if (dependencies != null) {
             final List<Dependency> listed = dependencies.stream()
-                                                         .filter(new QuarkusDependencyPredicate())
-                                                         .collect(toList());
+                    .filter(new QuarkusDependencyPredicate())
+                    .collect(toList());
 
             listed.forEach(d -> {
-                if(d.getVersion() == null) {
+                if (d.getVersion() == null) {
                     final Dependency managedDep = managed.get(credentials(d));
-                    if(managedDep != null) {
+                    if (managedDep != null) {
                         final String version = managedDep.getVersion();
-                        if(version != null) {
+                        if (version != null) {
                             d.setVersion(version);
                         }
                     }

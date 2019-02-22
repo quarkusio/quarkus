@@ -19,7 +19,6 @@ package io.quarkus.runtime.graal;
 import java.util.logging.Handler;
 
 import org.jboss.logmanager.handlers.DelayedHandler;
-import io.quarkus.runtime.logging.InitialConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +26,8 @@ import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
+
+import io.quarkus.runtime.logging.InitialConfigurator;
 
 /**
  */
@@ -54,4 +55,5 @@ final class Target_io_quarkus_runtime_logging_InitialConfigurator {
     public static DelayedHandler DELAYED_HANDLER = new DelayedHandler();
 }
 
-final class LoggingSubstitutions {}
+final class LoggingSubstitutions {
+}

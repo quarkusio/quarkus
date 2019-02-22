@@ -1,6 +1,5 @@
 package io.quarkus.smallrye.jwt.runtime;
 
-
 import org.eclipse.microprofile.jwt.ClaimValue;
 
 /**
@@ -34,6 +33,6 @@ public class ClaimValueWrapper<T> implements ClaimValue<T> {
     @Override
     public String toString() {
         return String.format("ClaimValueWrapper[@%s], name=%s, value[%s]=%s", Integer.toHexString(hashCode()),
-                             name, value.getClass(), value);
+                name, value.getClass(), value);
     }
 }

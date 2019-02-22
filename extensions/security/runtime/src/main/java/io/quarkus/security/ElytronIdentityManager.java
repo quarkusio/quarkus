@@ -51,7 +51,8 @@ public class ElytronIdentityManager implements IdentityManager {
             if (credential instanceof PasswordCredential) {
                 PasswordCredential passwordCredential = (PasswordCredential) credential;
                 try {
-                    SecurityIdentity result = domain.authenticate(id, new PasswordGuessEvidence(passwordCredential.getPassword()));
+                    SecurityIdentity result = domain.authenticate(id,
+                            new PasswordGuessEvidence(passwordCredential.getPassword()));
                     log.debugf("authenticate, id=%s, result=%s", id, result);
                     if (result != null) {
                         return new ElytronAccount(result);

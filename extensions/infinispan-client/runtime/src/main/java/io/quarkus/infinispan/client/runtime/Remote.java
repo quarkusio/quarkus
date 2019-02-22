@@ -18,13 +18,14 @@ import javax.inject.Qualifier;
  *
  * @author William Burns
  */
-@Target({METHOD, FIELD, PARAMETER, TYPE})
+@Target({ METHOD, FIELD, PARAMETER, TYPE })
 @Retention(RUNTIME)
 @Documented
 @Qualifier
 public @interface Remote {
-   /**
-    * The remote cache name. If no value is provided the default cache is assumed.
-    */
-   @Nonbinding String value() default "";
+    /**
+     * The remote cache name. If no value is provided the default cache is assumed.
+     */
+    @Nonbinding
+    String value() default "";
 }

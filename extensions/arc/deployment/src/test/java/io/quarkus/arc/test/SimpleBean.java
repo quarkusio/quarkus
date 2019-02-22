@@ -23,11 +23,12 @@ import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+
 import io.quarkus.runtime.StartupEvent;
 
 @ApplicationScoped
 public class SimpleBean {
-    
+
     static final String DEFAULT = "bar";
 
     private final AtomicReference<StartupEvent> startupEvent = new AtomicReference<StartupEvent>();
@@ -39,7 +40,7 @@ public class SimpleBean {
     @Inject
     @ConfigProperty(name = "unconfigured")
     Optional<String> fooOptional;
-    
+
     @Inject
     @ConfigProperty(name = "simpleBean.baz")
     Optional<String> bazOptional;
@@ -63,7 +64,5 @@ public class SimpleBean {
     Optional<String> getBazOptional() {
         return bazOptional;
     }
-    
+
 }
-
-

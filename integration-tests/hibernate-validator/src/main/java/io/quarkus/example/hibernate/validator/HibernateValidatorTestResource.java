@@ -22,6 +22,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import org.hibernate.validator.constraints.Length;
+
 import io.quarkus.example.hibernate.validator.custom.MyOtherBean;
 
 @Path("/hibernate-validator/test")
@@ -47,8 +48,7 @@ public class HibernateValidatorTestResource {
                 "b",
                 Collections.singletonList("c"),
                 -4d,
-                invalidCategorizedEmails
-        ))));
+                invalidCategorizedEmails))));
 
         Map<String, List<String>> validCategorizedEmails = new HashMap<>();
         validCategorizedEmails.put("Professional", Collections.singletonList("bill.jones@example.com"));
@@ -58,8 +58,7 @@ public class HibernateValidatorTestResource {
                 "bill.jones@example.com",
                 Collections.singletonList("biji@example.com"),
                 5d,
-                validCategorizedEmails
-        ))));
+                validCategorizedEmails))));
 
         return result.build();
     }
@@ -130,7 +129,8 @@ public class HibernateValidatorTestResource {
         @Valid
         private NestedBeanWithoutConstraints nestedBeanWithoutConstraints;
 
-        public MyBean(String name, String email, List<String> additionalEmails, Double score, Map<String, List<String>> categorizedEmails) {
+        public MyBean(String name, String email, List<String> additionalEmails, Double score,
+                Map<String, List<String>> categorizedEmails) {
             this.name = name;
             this.email = email;
             this.additionalEmails = additionalEmails;

@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.runtime;
 
+import static java.util.Arrays.asList;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.net.URL;
@@ -19,8 +21,6 @@ import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.FeatureContext;
 import javax.ws.rs.ext.Provider;
 
-import static java.util.Arrays.asList;
-
 /**
  * A JAXRS provider that installs security filters to support the RBAC access to endpoints based on the
  * common security annotations.
@@ -29,9 +29,8 @@ import static java.util.Arrays.asList;
 public class RolesFilterRegistrar implements DynamicFeature {
 
     private static final DenyAllFilter denyAllFilter = new DenyAllFilter();
-    private final Set<Class<? extends Annotation>> mpJwtAnnotations =
-            new HashSet<>(asList(DenyAll.class, PermitAll.class, RolesAllowed.class));
-
+    private final Set<Class<? extends Annotation>> mpJwtAnnotations = new HashSet<>(
+            asList(DenyAll.class, PermitAll.class, RolesAllowed.class));
 
     @Override
     public void configure(ResourceInfo resourceInfo, FeatureContext context) {
@@ -62,18 +61,17 @@ public class RolesFilterRegistrar implements DynamicFeature {
     private Annotation getMpJwtAnnotation(ResourceInfo resourceInfo) {
         Annotation annotation = getAnnotation(
                 resourceInfo.getResourceMethod().getDeclaredAnnotations(),
-                () -> resourceInfo.getResourceClass().getCanonicalName() + ":" + resourceInfo.getResourceMethod().getName()
-        );
+                () -> resourceInfo.getResourceClass().getCanonicalName() + ":" + resourceInfo.getResourceMethod().getName());
         if (annotation == null) {
             annotation = getAnnotation(resourceInfo.getResourceMethod().getDeclaringClass().getDeclaredAnnotations(),
-                                       () -> resourceInfo.getResourceClass().getCanonicalName());
+                    () -> resourceInfo.getResourceClass().getCanonicalName());
         }
 
         return annotation;
     }
 
     private Annotation getAnnotation(Annotation[] declaredAnnotations,
-                                     Supplier<String> annotationPlacementDescriptor) {
+            Supplier<String> annotationPlacementDescriptor) {
         List<Annotation> annotations = Stream.of(declaredAnnotations)
                 .filter(annotation -> mpJwtAnnotations.contains(annotation.annotationType()))
                 .collect(Collectors.toList());
@@ -84,8 +82,8 @@ public class RolesFilterRegistrar implements DynamicFeature {
                 return annotations.iterator().next();
             default:
                 throw new RuntimeException("Duplicate MicroProfile JWT annotations found on "
-                                                   + annotationPlacementDescriptor.get() +
-                                                   ". Expected at most 1 annotation, found: " + annotations);
+                        + annotationPlacementDescriptor.get() +
+                        ". Expected at most 1 annotation, found: " + annotations);
         }
     }
 

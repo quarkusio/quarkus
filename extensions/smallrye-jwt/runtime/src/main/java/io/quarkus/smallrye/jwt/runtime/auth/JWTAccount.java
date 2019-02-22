@@ -3,8 +3,9 @@ package io.quarkus.smallrye.jwt.runtime.auth;
 import java.security.Principal;
 import java.util.Set;
 
-import io.undertow.security.idm.Account;
 import org.eclipse.microprofile.jwt.JsonWebToken;
+
+import io.undertow.security.idm.Account;
 
 /**
  * Representation of the caller account using the JWTCallerPrincipal as an Undertow Account object.

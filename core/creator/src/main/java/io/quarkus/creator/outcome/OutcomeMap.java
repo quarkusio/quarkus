@@ -38,12 +38,12 @@ public class OutcomeMap {
     @SuppressWarnings("unchecked")
     public <T> T resolveOutcome(Class<T> type) throws AppCreatorException {
         Object o = outcomes.get(type);
-        if(o != null || outcomes.containsKey(type)) {
+        if (o != null || outcomes.containsKey(type)) {
             return (T) o;
         }
         router.resolve(this, type);
         o = outcomes.get(type);
-        if(o != null || outcomes.containsKey(type)) {
+        if (o != null || outcomes.containsKey(type)) {
             return (T) o;
         }
         throw new AppCreatorException("Outcome of type " + type + " has not been provided");
@@ -60,11 +60,11 @@ public class OutcomeMap {
 
     @SuppressWarnings("unchecked")
     public <T> void pushOutcome(T outcome) throws AppCreatorException {
-        pushOutcome((Class<T>)outcome.getClass(), outcome);
+        pushOutcome((Class<T>) outcome.getClass(), outcome);
     }
 
     public <T> void pushOutcome(Class<T> type, T value) throws AppCreatorException {
-        if(outcomes.containsKey(type)) {
+        if (outcomes.containsKey(type)) {
             throw new AppCreatorException("Outcome of type " + type.getName() + " has already been provided");
         }
         outcomes.put(type, value);

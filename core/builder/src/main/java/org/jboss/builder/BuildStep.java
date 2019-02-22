@@ -17,8 +17,8 @@
 package org.jboss.builder;
 
 /**
- * A single atomic unit of build work.  A build step either succeeds or it does not, with no intermediate states
- * possible.  Build steps should be as fine-grained as possible.
+ * A single atomic unit of build work. A build step either succeeds or it does not, with no intermediate states
+ * possible. Build steps should be as fine-grained as possible.
  *
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
@@ -34,5 +34,6 @@ public interface BuildStep {
     /**
      * The empty build step, which immediately succeeds.
      */
-    BuildStep EMPTY = context -> {};
+    BuildStep EMPTY = context -> {
+    };
 }

@@ -18,9 +18,9 @@ package io.quarkus.spring.tests;
 
 import static org.hamcrest.Matchers.containsString;
 
-import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
 @QuarkusTest

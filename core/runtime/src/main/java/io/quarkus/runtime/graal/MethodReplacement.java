@@ -33,6 +33,7 @@ final class MethodReplacement {
     public Object getDefaultValue() {
         return null;
     }
+
     @Alias
     public Type getGenericReturnType() {
         return null;

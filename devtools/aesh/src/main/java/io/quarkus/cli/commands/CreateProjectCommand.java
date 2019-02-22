@@ -1,5 +1,9 @@
 package io.quarkus.cli.commands;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+
 import org.aesh.command.Command;
 import org.aesh.command.CommandDefinition;
 import org.aesh.command.CommandException;
@@ -7,10 +11,6 @@ import org.aesh.command.CommandResult;
 import org.aesh.command.invocation.CommandInvocation;
 import org.aesh.command.option.Option;
 import org.aesh.io.Resource;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
 
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
@@ -42,10 +42,10 @@ public class CreateProjectCommand implements Command<CommandInvocation> {
         if (path != null) {
             try {
                 boolean status = new CreateProject(new File(path.getAbsolutePath()))
-                                     .groupId(groupid)
-                                     .artifactId(artifactid)
-                                     .version(this.version)
-                                     .doCreateProject(new HashMap<>());
+                        .groupId(groupid)
+                        .artifactId(artifactid)
+                        .version(this.version)
+                        .doCreateProject(new HashMap<>());
                 if (status) {
                     commandInvocation.println("Project " + artifactid + " created successfully.");
                 } else {

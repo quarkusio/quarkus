@@ -23,21 +23,18 @@ package io.quarkus.creator.phase.curate;
  */
 public enum VersionUpdateNumber {
 
-    MAJOR("major"),
-    MINOR("minor"),
-    MICRO("micro"),
-    UNKNOWN(null);
+    MAJOR("major"), MINOR("minor"), MICRO("micro"), UNKNOWN(null);
 
     private final String name;
 
     static VersionUpdateNumber of(String name) {
-        if(MAJOR.name.equals(name)) {
+        if (MAJOR.name.equals(name)) {
             return MAJOR;
         }
-        if(MINOR.name.equals(name)) {
+        if (MINOR.name.equals(name)) {
             return MINOR;
         }
-        if(MICRO.name.equals(name)) {
+        if (MICRO.name.equals(name)) {
             return MICRO;
         }
         return UNKNOWN;

@@ -28,4 +28,3 @@ public final class Target_JaegerTracer {
         return "";
     }
 }
-

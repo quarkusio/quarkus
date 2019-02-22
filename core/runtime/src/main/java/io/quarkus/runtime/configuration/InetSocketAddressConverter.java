@@ -8,14 +8,15 @@ import org.wildfly.common.net.Inet;
 
 /**
  * A converter which converts a socket address in the form of {@code &lt;host-or-address&gt;[:&lt;port&gt;]} into
- * an instance of {@link InetSocketAddress}.  If an address is given, then a resolved instance is returned, otherwise
+ * an instance of {@link InetSocketAddress}. If an address is given, then a resolved instance is returned, otherwise
  * an unresolved instance is returned.
  */
 public class InetSocketAddressConverter implements Converter<InetSocketAddress> {
 
     @Override
     public InetSocketAddress convert(final String value) {
-        if (value.isEmpty()) return null;
+        if (value.isEmpty())
+            return null;
         final int lastColon = value.lastIndexOf(':');
         final int lastCloseBracket = value.lastIndexOf(']');
         String hostPart;
@@ -32,6 +33,7 @@ public class InetSocketAddressConverter implements Converter<InetSocketAddress> 
             hostPart = hostPart.substring(1, hostPart.length() - 1);
         }
         InetAddress resolved = Inet.parseInetAddress(hostPart);
-        return resolved == null ? InetSocketAddress.createUnresolved(hostPart, portPart) : new InetSocketAddress(resolved, portPart);
+        return resolved == null ? InetSocketAddress.createUnresolved(hostPart, portPart)
+                : new InetSocketAddress(resolved, portPart);
     }
 }

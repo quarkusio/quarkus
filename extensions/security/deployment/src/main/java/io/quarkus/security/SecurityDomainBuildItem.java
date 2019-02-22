@@ -17,8 +17,9 @@
 package io.quarkus.security;
 
 import org.jboss.builder.item.SimpleBuildItem;
-import io.quarkus.runtime.RuntimeValue;
 import org.wildfly.security.auth.server.SecurityDomain;
+
+import io.quarkus.runtime.RuntimeValue;
 
 /**
  * This represent a {@linkplain SecurityDomain} instance output by a build step.

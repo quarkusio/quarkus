@@ -27,6 +27,7 @@ import org.jboss.quarkus.arc.Arc;
 import org.jboss.quarkus.arc.ArcContainer;
 import org.jboss.quarkus.arc.InstanceHandle;
 import org.jboss.quarkus.arc.ManagedContext;
+
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Template;
 
@@ -35,7 +36,7 @@ import io.quarkus.runtime.annotations.Template;
  */
 @Template
 public class ArcDeploymentTemplate {
-    
+
     private static final Logger LOGGER = Logger.getLogger(ArcDeploymentTemplate.class.getName());
 
     public ArcContainer getContainer(ShutdownContext shutdown) throws Exception {
@@ -49,7 +50,8 @@ public class ArcDeploymentTemplate {
         return container;
     }
 
-    public BeanContainer initBeanContainer(ArcContainer container, List<BeanContainerListener> listeners, Collection<String> removedBeanTypes)
+    public BeanContainer initBeanContainer(ArcContainer container, List<BeanContainerListener> listeners,
+            Collection<String> removedBeanTypes)
             throws Exception {
         BeanContainer beanContainer = new BeanContainer() {
             @SuppressWarnings("unchecked")

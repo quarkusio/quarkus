@@ -8,7 +8,8 @@ public class ObjectOfValue {
     private String part2;
 
     public static ObjectOfValue of(String serial) {
-        if(serial.isEmpty()) return null;
+        if (serial.isEmpty())
+            return null;
 
         String[] parts = serial.split("\\+");
         return new ObjectOfValue(parts[0], parts[1]);
@@ -17,6 +18,7 @@ public class ObjectOfValue {
     public ObjectOfValue() {
 
     }
+
     public ObjectOfValue(String part1, String part2) {
         this.part1 = part1;
         this.part2 = part2;

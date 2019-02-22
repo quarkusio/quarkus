@@ -1,9 +1,9 @@
 package io.quarkus.hibernate.orm;
 
+import java.util.Optional;
+
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
-
-import java.util.Optional;
 
 /**
  * @author Emmanuel Bernard emmanuel@hibernate.org
@@ -46,7 +46,8 @@ public class HibernateConfig {
     public boolean generateStatistics;
 
     public boolean isAnyPropertySet() {
-        return dialect.isPresent() || schemaGeneration.isPresent() || showSql || sqlLoadScriptSource.isPresent() || generateStatistics;
+        return dialect.isPresent() || schemaGeneration.isPresent() || showSql || sqlLoadScriptSource.isPresent()
+                || generateStatistics;
     }
 
 }

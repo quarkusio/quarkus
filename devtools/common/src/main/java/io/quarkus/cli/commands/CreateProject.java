@@ -1,5 +1,16 @@
 package io.quarkus.cli.commands;
 
+import static io.quarkus.QuarkusTemplate.*;
+import static io.quarkus.maven.utilities.MojoUtils.*;
+import static io.quarkus.maven.utilities.MojoUtils.configuration;
+import static io.quarkus.maven.utilities.MojoUtils.plugin;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 import org.apache.maven.model.Activation;
 import org.apache.maven.model.ActivationProperty;
@@ -12,20 +23,9 @@ import org.apache.maven.model.Plugin;
 import org.apache.maven.model.PluginExecution;
 import org.apache.maven.model.PluginManagement;
 import org.apache.maven.model.Profile;
+
 import io.quarkus.BasicRest;
 import io.quarkus.maven.utilities.MojoUtils;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-
-import static io.quarkus.QuarkusTemplate.*;
-import static io.quarkus.maven.utilities.MojoUtils.*;
-import static io.quarkus.maven.utilities.MojoUtils.configuration;
-import static io.quarkus.maven.utilities.MojoUtils.plugin;
 
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
@@ -84,7 +84,7 @@ public class CreateProject {
         context.put(SHAMROCK_VERSION, getPluginVersion());
 
         new BasicRest()
-            .generate(root, context);
+                .generate(root, context);
 
         final File pom = new File(root + "/pom.xml");
         model = MojoUtils.readPom(pom);
@@ -105,9 +105,8 @@ public class CreateProject {
             model.setDependencyManagement(dm);
         } else {
             hasBom = dm.getDependencies().stream()
-                       .anyMatch(d ->
-                                     d.getGroupId().equals(getPluginGroupId()) &&
-                                     d.getArtifactId().equals(getBomArtifactId()));
+                    .anyMatch(d -> d.getGroupId().equals(getPluginGroupId()) &&
+                            d.getArtifactId().equals(getBomArtifactId()));
         }
 
         if (!hasBom) {
@@ -167,22 +166,21 @@ public class CreateProject {
 
     private boolean hasPlugin(final Model model) {
         List<Plugin> plugins = null;
-        if(isParentPom(model)) {
+        if (isParentPom(model)) {
             final PluginManagement management = model.getBuild().getPluginManagement();
-            if(management != null) {
+            if (management != null) {
                 plugins = management.getPlugins();
             }
         } else {
             final Build build = model.getBuild();
-            if(build != null) {
+            if (build != null) {
                 plugins = build.getPlugins();
             }
         }
         return plugins != null && model.getBuild().getPlugins()
-                    .stream()
-                    .anyMatch(p ->
-                         p.getGroupId().equalsIgnoreCase(getPluginGroupId()) &&
-                         p.getArtifactId().equalsIgnoreCase(getPluginArtifactId()));
+                .stream()
+                .anyMatch(p -> p.getGroupId().equalsIgnoreCase(getPluginGroupId()) &&
+                        p.getArtifactId().equalsIgnoreCase(getPluginArtifactId()));
     }
 
     private void addPluginManagementSection(Model model, Plugin plugin) {

@@ -17,6 +17,7 @@
 package io.quarkus.deployment.builditem;
 
 import org.jboss.builder.item.MultiBuildItem;
+
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 
 public final class StaticBytecodeRecorderBuildItem extends MultiBuildItem {

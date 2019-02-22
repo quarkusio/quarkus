@@ -12,28 +12,27 @@ import org.jboss.logging.Logger;
 public class LogCleanupFilter implements Filter {
 
     private Map<String, LogCleanupFilterElement> filterElements = new HashMap<>();
-    
+
     public LogCleanupFilter(List<LogCleanupFilterElement> filterElements) {
         for (LogCleanupFilterElement element : filterElements) {
             this.filterElements.put(element.getLoggerName(), element);
         }
     }
-    
+
     @Override
     public boolean isLoggable(LogRecord record) {
-        if(record.getLevel().intValue() != Level.INFO.intValue())
+        if (record.getLevel().intValue() != Level.INFO.intValue())
             return true;
         LogCleanupFilterElement filterElement = filterElements.get(record.getLoggerName());
-        if(filterElement != null) {
-            if(record.getMessage().startsWith(filterElement.getMessageStart())) {
+        if (filterElement != null) {
+            if (record.getMessage().startsWith(filterElement.getMessageStart())) {
                 record.setLevel(org.jboss.logmanager.Level.DEBUG);
                 return Logger.getLogger(record.getLoggerName()).isDebugEnabled();
             }
         }
-//            System.err.println("isLoggable: "+record.getLoggerName());
-//            System.err.println("isLoggable: "+record.getMessage());
+        //            System.err.println("isLoggable: "+record.getLoggerName());
+        //            System.err.println("isLoggable: "+record.getMessage());
         return true;
     }
-
 
 }

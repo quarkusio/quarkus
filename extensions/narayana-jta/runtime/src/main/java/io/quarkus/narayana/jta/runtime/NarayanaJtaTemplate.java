@@ -20,12 +20,13 @@ import java.lang.reflect.Field;
 import java.util.Properties;
 
 import org.jboss.logging.Logger;
-import io.quarkus.runtime.annotations.Template;
 
 import com.arjuna.ats.arjuna.common.CoreEnvironmentBeanException;
 import com.arjuna.ats.arjuna.common.arjPropertyManager;
 import com.arjuna.ats.arjuna.coordinator.TxControl;
 import com.arjuna.common.util.propertyservice.PropertiesFactory;
+
+import io.quarkus.runtime.annotations.Template;
 
 @Template
 public class NarayanaJtaTemplate {

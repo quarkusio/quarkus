@@ -1,5 +1,7 @@
 package io.quarkus.runtime.configuration;
 
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Delete;
 import com.oracle.svm.core.annotate.RecomputeFieldValue;
@@ -8,7 +10,6 @@ import com.oracle.svm.core.annotate.TargetClass;
 import com.oracle.svm.core.annotate.TargetElement;
 import com.oracle.svm.core.threadlocal.FastThreadLocalFactory;
 import com.oracle.svm.core.threadlocal.FastThreadLocalInt;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 
 /**
  */

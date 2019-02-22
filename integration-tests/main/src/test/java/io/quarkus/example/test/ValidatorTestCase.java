@@ -25,10 +25,11 @@ import java.nio.charset.StandardCharsets;
 
 import javax.json.Json;
 
-import io.quarkus.test.common.http.TestHTTPResource;
-import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
 public class ValidatorTestCase {
@@ -59,7 +60,6 @@ public class ValidatorTestCase {
         }
         Assertions.assertEquals("failed:email", new String(out.toByteArray(), "UTF-8"));
     }
-
 
     @Test
     public void testManualValidationPassed() throws Exception {

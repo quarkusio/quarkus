@@ -17,7 +17,6 @@
 package io.quarkus.undertow.runtime;
 
 import io.quarkus.arc.runtime.BeanContainer;
-
 import io.undertow.servlet.api.InstanceFactory;
 import io.undertow.servlet.api.InstanceHandle;
 
@@ -28,7 +27,6 @@ public class QuarkusInstanceFactory<T> implements InstanceFactory<T> {
     public QuarkusInstanceFactory(BeanContainer.Factory<T> factory) {
         this.factory = factory;
     }
-
 
     @Override
     public InstanceHandle<T> createInstance() throws InstantiationException {

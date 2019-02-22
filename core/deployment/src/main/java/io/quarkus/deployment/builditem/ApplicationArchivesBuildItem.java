@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.jboss.builder.item.SimpleBuildItem;
+
 import io.quarkus.deployment.ApplicationArchive;
 
 //temp class
@@ -34,7 +35,6 @@ public final class ApplicationArchivesBuildItem extends SimpleBuildItem {
         this.root = root;
         this.applicationArchives = applicationArchives;
     }
-
 
     /**
      * Returns an {@link ApplicationArchive} that represents the classes and resources that are part of the current

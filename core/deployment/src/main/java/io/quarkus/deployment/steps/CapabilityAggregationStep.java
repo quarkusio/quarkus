@@ -22,9 +22,9 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
+import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
 
 public class CapabilityAggregationStep {

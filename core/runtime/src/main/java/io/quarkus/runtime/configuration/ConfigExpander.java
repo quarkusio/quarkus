@@ -9,7 +9,7 @@ import org.wildfly.common.expression.Expression;
 import org.wildfly.common.expression.ResolveContext;
 
 /**
- * A property value expander that works with {@link Config}.  This can be passed in as an expander
+ * A property value expander that works with {@link Config}. This can be passed in as an expander
  * to {@link Expression#evaluate(BiConsumer)}.
  */
 public final class ConfigExpander implements BiConsumer<ResolveContext<RuntimeException>, StringBuilder> {
@@ -20,7 +20,8 @@ public final class ConfigExpander implements BiConsumer<ResolveContext<RuntimeEx
     // substitute
     private static final ThreadLocal<int[]> depth = ThreadLocal.withInitial(() -> new int[1]);
 
-    private ConfigExpander() {}
+    private ConfigExpander() {
+    }
 
     // substitute
     private static boolean enter() {
@@ -38,18 +39,19 @@ public final class ConfigExpander implements BiConsumer<ResolveContext<RuntimeEx
     }
 
     public void accept(final ResolveContext<RuntimeException> context, final StringBuilder stringBuilder) {
-        if (! enter()) {
+        if (!enter()) {
             throw new IllegalArgumentException("Nested recursive expansion is too deep");
-        } else try {
-            final String key = context.getKey();
-            final Optional<String> expanded = ConfigProvider.getConfig().getOptionalValue(key, String.class);
-            if (expanded.isPresent()) {
-                stringBuilder.append(expanded.get());
-            } else {
-                context.expandDefault();
+        } else
+            try {
+                final String key = context.getKey();
+                final Optional<String> expanded = ConfigProvider.getConfig().getOptionalValue(key, String.class);
+                if (expanded.isPresent()) {
+                    stringBuilder.append(expanded.get());
+                } else {
+                    context.expandDefault();
+                }
+            } finally {
+                exit();
             }
-        } finally {
-            exit();
-        }
     }
 }

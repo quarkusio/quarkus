@@ -6,6 +6,7 @@ import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.quarkus.arc.processor.AnnotationsTransformer;
+
 import io.quarkus.hibernate.validator.runtime.interceptor.MethodValidated;
 import io.quarkus.hibernate.validator.runtime.jaxrs.JaxrsEndPointValidated;
 

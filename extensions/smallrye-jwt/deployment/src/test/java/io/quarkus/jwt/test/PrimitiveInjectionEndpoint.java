@@ -83,12 +83,10 @@ public class PrimitiveInjectionEndpoint {
         String issValue = this.issuer;
         if (issValue == null || issValue.length() == 0) {
             msg = Claims.iss.name() + "value is null or empty, FAIL";
-        }
-        else if (issValue.equals(iss)) {
+        } else if (issValue.equals(iss)) {
             msg = Claims.iss.name() + " PASS";
             pass = true;
-        }
-        else {
+        } else {
             msg = String.format("%s: %s != %s", Claims.iss.name(), issValue, iss);
         }
         JsonObject result = Json.createObjectBuilder()
@@ -108,12 +106,10 @@ public class PrimitiveInjectionEndpoint {
         String rawTokenValue = this.rawToken;
         if (rawTokenValue == null || rawTokenValue.length() == 0) {
             msg = Claims.raw_token.name() + "value is null or empty, FAIL";
-        }
-        else if (rawTokenValue.equals(rt)) {
+        } else if (rawTokenValue.equals(rt)) {
             msg = Claims.raw_token.name() + " PASS";
             pass = true;
-        }
-        else {
+        } else {
             msg = String.format("%s: %s != %s", Claims.raw_token.name(), rawTokenValue, rt);
         }
         JsonObject result = Json.createObjectBuilder()
@@ -133,12 +129,10 @@ public class PrimitiveInjectionEndpoint {
         String jtiValue = this.jti;
         if (jtiValue == null || jtiValue.length() == 0) {
             msg = Claims.jti.name() + "value is null or empty, FAIL";
-        }
-        else if (jtiValue.equals(jwtID)) {
+        } else if (jtiValue.equals(jwtID)) {
             msg = Claims.jti.name() + " PASS";
             pass = true;
-        }
-        else {
+        } else {
             msg = String.format("%s: %s != %s", Claims.jti.name(), jtiValue, jwtID);
         }
         JsonObject result = Json.createObjectBuilder()
@@ -158,12 +152,10 @@ public class PrimitiveInjectionEndpoint {
         String upnValue = this.upn;
         if (upnValue == null || upnValue.length() == 0) {
             msg = Claims.upn.name() + "value is null or empty, FAIL";
-        }
-        else if (upnValue.equals(upn)) {
+        } else if (upnValue.equals(upn)) {
             msg = Claims.upn.name() + " PASS";
             pass = true;
-        }
-        else {
+        } else {
             msg = String.format("%s: %s != %s", Claims.upn.name(), upnValue, upn);
         }
         JsonObject result = Json.createObjectBuilder()
@@ -183,12 +175,10 @@ public class PrimitiveInjectionEndpoint {
         String subValue = this.subject;
         if (subValue == null || subValue.length() == 0) {
             msg = Claims.sub.name() + "value is null or empty, FAIL";
-        }
-        else if (subValue.equals(sub)) {
+        } else if (subValue.equals(sub)) {
             msg = Claims.sub.name() + " PASS";
             pass = true;
-        }
-        else {
+        } else {
             msg = String.format("%s: %s != %s", Claims.sub.name(), subValue, sub);
         }
         JsonObject result = Json.createObjectBuilder()
@@ -208,12 +198,10 @@ public class PrimitiveInjectionEndpoint {
         Set<String> audValue = aud;
         if (audValue == null || audValue.size() == 0) {
             msg = Claims.aud.name() + "value is null or empty, FAIL";
-        }
-        else if (audValue.contains(audience)) {
+        } else if (audValue.contains(audience)) {
             msg = Claims.aud.name() + " PASS";
             pass = true;
-        }
-        else {
+        } else {
             msg = String.format("%s: %s != %s", Claims.aud.name(), audValue, audience);
         }
         JsonObject result = Json.createObjectBuilder()
@@ -233,12 +221,10 @@ public class PrimitiveInjectionEndpoint {
         Set<String> groupsValue = this.groups;
         if (groupsValue == null || groupsValue.size() == 0) {
             msg = Claims.groups.name() + "value is null or empty, FAIL";
-        }
-        else if (groupsValue.containsAll(groups)) {
+        } else if (groupsValue.containsAll(groups)) {
             msg = Claims.groups.name() + " PASS";
             pass = true;
-        }
-        else {
+        } else {
             msg = String.format("%s: %s != %s", Claims.groups.name(), groupsValue, groups);
         }
         JsonObject result = Json.createObjectBuilder()
@@ -258,12 +244,10 @@ public class PrimitiveInjectionEndpoint {
         Long iatValue = this.issuedAt;
         if (iatValue == null || iatValue.intValue() == 0) {
             msg = Claims.iat.name() + "value is null or empty, FAIL";
-        }
-        else if (iatValue.equals(iat)) {
+        } else if (iatValue.equals(iat)) {
             msg = Claims.iat.name() + " PASS";
             pass = true;
-        }
-        else {
+        } else {
             msg = String.format("%s: %s != %s", Claims.iat.name(), iatValue, iat);
         }
         JsonObject result = Json.createObjectBuilder()
@@ -283,12 +267,10 @@ public class PrimitiveInjectionEndpoint {
         Long expValue = this.expiration;
         if (expValue == null || expValue.intValue() == 0) {
             msg = Claims.exp.name() + "value is null or empty, FAIL";
-        }
-        else if (expValue.equals(exp)) {
+        } else if (expValue.equals(exp)) {
             msg = Claims.exp.name() + " PASS";
             pass = true;
-        }
-        else {
+        } else {
             msg = String.format("%s: %s != %s", Claims.exp.name(), expValue, exp);
         }
         JsonObject result = Json.createObjectBuilder()
@@ -308,12 +290,10 @@ public class PrimitiveInjectionEndpoint {
         String customValue = this.customString;
         if (customValue == null || customValue.length() == 0) {
             msg = "customString value is null or empty, FAIL";
-        }
-        else if (customValue.equals(value)) {
+        } else if (customValue.equals(value)) {
             msg = "customString PASS";
             pass = true;
-        }
-        else {
+        } else {
             msg = String.format("customString: %s != %s", customValue, value);
         }
         JsonObject result = Json.createObjectBuilder()
@@ -331,12 +311,10 @@ public class PrimitiveInjectionEndpoint {
         String msg;
         if (customDouble == 0) {
             msg = "customString value is not set or empty, FAIL";
-        }
-        else if (Math.IEEEremainder(customDouble, value) == 0) {
+        } else if (Math.IEEEremainder(customDouble, value) == 0) {
             msg = "customString PASS";
             pass = true;
-        }
-        else {
+        } else {
             msg = String.format("customDouble: %.6f != %.6f", customDouble, value);
         }
         JsonObject result = Json.createObjectBuilder()

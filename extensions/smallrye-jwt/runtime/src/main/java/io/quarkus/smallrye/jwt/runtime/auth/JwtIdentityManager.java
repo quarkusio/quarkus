@@ -1,17 +1,18 @@
 package io.quarkus.smallrye.jwt.runtime.auth;
 
+import org.jboss.logging.Logger;
+import org.wildfly.security.auth.server.RealmUnavailableException;
+import org.wildfly.security.auth.server.SecurityDomain;
+import org.wildfly.security.auth.server.SecurityIdentity;
+import org.wildfly.security.evidence.BearerTokenEvidence;
+
+import io.quarkus.security.ElytronAccount;
 import io.smallrye.jwt.auth.principal.JWTCallerPrincipal;
 import io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory;
 import io.smallrye.jwt.auth.principal.ParseException;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.IdentityManager;
-import org.jboss.logging.Logger;
-import io.quarkus.security.ElytronAccount;
-import org.wildfly.security.auth.server.RealmUnavailableException;
-import org.wildfly.security.auth.server.SecurityDomain;
-import org.wildfly.security.auth.server.SecurityIdentity;
-import org.wildfly.security.evidence.BearerTokenEvidence;
 
 public class JwtIdentityManager implements IdentityManager {
     private static Logger log = Logger.getLogger(JwtIdentityManager.class);

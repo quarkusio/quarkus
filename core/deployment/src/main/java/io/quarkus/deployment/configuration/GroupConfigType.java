@@ -8,15 +8,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeSet;
 
-import io.smallrye.config.SmallRyeConfig;
 import org.jboss.protean.gizmo.AssignableResultHandle;
 import org.jboss.protean.gizmo.BytecodeCreator;
 import org.jboss.protean.gizmo.FieldDescriptor;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
+import org.wildfly.common.Assert;
+
 import io.quarkus.deployment.AccessorFinder;
 import io.quarkus.runtime.configuration.NameIterator;
-import org.wildfly.common.Assert;
+import io.smallrye.config.SmallRyeConfig;
 
 /**
  * A configuration definition node describing a configuration group.
@@ -29,7 +30,8 @@ public class GroupConfigType extends CompoundConfigType {
     private final MethodDescriptor constructorAccessor;
     private final Map<String, FieldInfo> fieldInfos;
 
-    public GroupConfigType(final String containingName, final CompoundConfigType container, final boolean consumeSegment, final Class<?> class_, final AccessorFinder accessorFinder) {
+    public GroupConfigType(final String containingName, final CompoundConfigType container, final boolean consumeSegment,
+            final Class<?> class_, final AccessorFinder accessorFinder) {
         super(containingName, container, consumeSegment);
         Assert.checkNotNullParam("containingName", containingName);
         Assert.checkNotNullParam("container", container);
@@ -54,23 +56,25 @@ public class GroupConfigType extends CompoundConfigType {
             if ((modifiers & Modifier.STATIC) == 0) {
                 // consider this one
                 if ((modifiers & Modifier.PRIVATE) != 0) {
-                    throw new IllegalArgumentException("Field \"" + field.getName() + "\" of " + class_ + " must not be private");
+                    throw new IllegalArgumentException(
+                            "Field \"" + field.getName() + "\" of " + class_ + " must not be private");
                 }
                 field.setAccessible(true);
                 final FieldDescriptor descr = FieldDescriptor.of(field);
-                fieldInfos.put(field.getName(), new FieldInfo(field, accessorFinder.getSetterFor(descr), accessorFinder.getGetterFor(descr)));
+                fieldInfos.put(field.getName(),
+                        new FieldInfo(field, accessorFinder.getSetterFor(descr), accessorFinder.getGetterFor(descr)));
             }
         }
     }
 
     public void load() throws ClassNotFoundException {
         assert class_ != null && constructor != null;
-        if (! fieldInfos.keySet().containsAll(fields.keySet())) {
+        if (!fieldInfos.keySet().containsAll(fields.keySet())) {
             final TreeSet<String> missing = new TreeSet<>(fields.keySet());
             missing.removeAll(fieldInfos.keySet());
             throw new IllegalArgumentException("Fields missing from " + class_ + ": " + missing);
         }
-        if (! fields.keySet().containsAll(fieldInfos.keySet())) {
+        if (!fields.keySet().containsAll(fieldInfos.keySet())) {
             final TreeSet<String> extra = new TreeSet<>(fieldInfos.keySet());
             extra.removeAll(fields.keySet());
             throw new IllegalArgumentException("Extra unknown fields on " + class_ + ": " + extra);
@@ -80,8 +84,10 @@ public class GroupConfigType extends CompoundConfigType {
         }
     }
 
-    public ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorFinder, final ResultHandle smallRyeConfig) {
-        final ResultHandle instance = body.invokeStaticMethod(accessorFinder.getConstructorFor(MethodDescriptor.ofConstructor(class_)));
+    public ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorFinder,
+            final ResultHandle smallRyeConfig) {
+        final ResultHandle instance = body
+                .invokeStaticMethod(accessorFinder.getConstructorFor(MethodDescriptor.ofConstructor(class_)));
         for (Map.Entry<String, ConfigType> entry : fields.entrySet()) {
             final String fieldName = entry.getKey();
             final ConfigType fieldType = entry.getValue();
@@ -105,9 +111,11 @@ public class GroupConfigType extends CompoundConfigType {
     }
 
     private Field findField(final String name) {
-        if (class_ == null) throw notLoadedException();
+        if (class_ == null)
+            throw notLoadedException();
         final FieldInfo fieldInfo = fieldInfos.get(name);
-        if (fieldInfo == null) throw new IllegalStateException("Missing field " + name + " on " + class_);
+        if (fieldInfo == null)
+            throw new IllegalStateException("Missing field " + name + " on " + class_);
         return fieldInfo.getField();
     }
 
@@ -149,7 +157,8 @@ public class GroupConfigType extends CompoundConfigType {
         return val;
     }
 
-    ResultHandle generateGetChildObject(final BytecodeCreator body, final ResultHandle name, final ResultHandle config, final ResultHandle self, final String childName) {
+    ResultHandle generateGetChildObject(final BytecodeCreator body, final ResultHandle name, final ResultHandle config,
+            final ResultHandle self, final String childName) {
         final AssignableResultHandle val = body.createVariable(Object.class);
         final FieldInfo fieldInfo = fieldInfos.get(childName);
         body.assign(val, body.invokeStaticMethod(fieldInfo.getGetter(), self));
@@ -171,34 +180,42 @@ public class GroupConfigType extends CompoundConfigType {
 
     Object getOrCreate(final NameIterator name, final SmallRyeConfig config) {
         final CompoundConfigType container = getContainer();
-        if (isConsumeSegment()) name.previous();
+        if (isConsumeSegment())
+            name.previous();
         final Object enclosing = container.getOrCreate(name, config);
         Object self = container.getChildObject(name, config, enclosing, getContainingName());
-        if (isConsumeSegment()) name.next();
+        if (isConsumeSegment())
+            name.next();
         if (self == null) {
             // it's a map, and it doesn't contain our key.
             self = create(config);
-            if (isConsumeSegment()) name.previous();
+            if (isConsumeSegment())
+                name.previous();
             container.setChildObject(name, enclosing, getContainingName(), self);
-            if (isConsumeSegment()) name.next();
+            if (isConsumeSegment())
+                name.next();
         }
         return self;
     }
 
     ResultHandle generateGetOrCreate(final BytecodeCreator body, final ResultHandle name, final ResultHandle config) {
         final CompoundConfigType container = getContainer();
-        if (isConsumeSegment()) body.invokeVirtualMethod(NI_PREV_METHOD, name);
+        if (isConsumeSegment())
+            body.invokeVirtualMethod(NI_PREV_METHOD, name);
         final ResultHandle enclosing = container.generateGetOrCreate(body, name, config);
         final AssignableResultHandle var = body.createVariable(Object.class);
         body.assign(var, container.generateGetChildObject(body, name, config, enclosing, getContainingName()));
-        if (isConsumeSegment()) body.invokeVirtualMethod(NI_NEXT_METHOD, name);
+        if (isConsumeSegment())
+            body.invokeVirtualMethod(NI_NEXT_METHOD, name);
         if (container.getClass() == MapConfigType.class) {
             // it could be null
             try (BytecodeCreator createBranch = body.ifNull(var).trueBranch()) {
                 createBranch.assign(var, generateCreate(createBranch, config));
-                if (isConsumeSegment()) createBranch.invokeVirtualMethod(NI_PREV_METHOD, name);
+                if (isConsumeSegment())
+                    createBranch.invokeVirtualMethod(NI_PREV_METHOD, name);
                 container.generateSetChildObject(createBranch, name, enclosing, getContainingName(), var);
-                if (isConsumeSegment()) createBranch.invokeVirtualMethod(NI_NEXT_METHOD, name);
+                if (isConsumeSegment())
+                    createBranch.invokeVirtualMethod(NI_NEXT_METHOD, name);
             }
         }
         return var;
@@ -209,9 +226,11 @@ public class GroupConfigType extends CompoundConfigType {
         leafType.acceptConfigurationValueIntoGroup(getOrCreate(name, config), fieldInfo.getField(), name, config);
     }
 
-    void generateAcceptConfigurationValueIntoLeaf(final BytecodeCreator body, final LeafConfigType leafType, final ResultHandle name, final ResultHandle config) {
+    void generateAcceptConfigurationValueIntoLeaf(final BytecodeCreator body, final LeafConfigType leafType,
+            final ResultHandle name, final ResultHandle config) {
         final FieldInfo fieldInfo = fieldInfos.get(leafType.getContainingName());
-        leafType.generateAcceptConfigurationValueIntoGroup(body, generateGetOrCreate(body, name, config), fieldInfo.getSetter(), name, config);
+        leafType.generateAcceptConfigurationValueIntoGroup(body, generateGetOrCreate(body, name, config), fieldInfo.getSetter(),
+                name, config);
     }
 
     void setChildObject(final NameIterator name, final Object self, final String containingName, final Object value) {
@@ -222,7 +241,8 @@ public class GroupConfigType extends CompoundConfigType {
         }
     }
 
-    void generateSetChildObject(final BytecodeCreator body, final ResultHandle name, final ResultHandle self, final String containingName, final ResultHandle value) {
+    void generateSetChildObject(final BytecodeCreator body, final ResultHandle name, final ResultHandle self,
+            final String containingName, final ResultHandle value) {
         body.invokeStaticMethod(fieldInfos.get(containingName).getSetter(), self, value);
     }
 
@@ -234,7 +254,8 @@ public class GroupConfigType extends CompoundConfigType {
         }
     }
 
-    void generateGetDefaultValueIntoEnclosingGroup(final BytecodeCreator body, final ResultHandle enclosing, final MethodDescriptor setter, final ResultHandle config) {
+    void generateGetDefaultValueIntoEnclosingGroup(final BytecodeCreator body, final ResultHandle enclosing,
+            final MethodDescriptor setter, final ResultHandle config) {
         final ResultHandle self = generateCreate(body, config);
         body.invokeStaticMethod(setter, enclosing, self);
     }

@@ -11,15 +11,16 @@ import org.aesh.command.parser.CommandLineParserException;
 import org.aesh.command.registry.CommandRegistryException;
 import org.aesh.command.validator.CommandValidatorException;
 import org.aesh.command.validator.OptionValidatorException;
+
 import io.quarkus.cli.commands.QuarkusCommand;
 
 public class QuarkusCli {
 
     public static void main(String[] args) throws CommandRegistryException {
         CommandRuntime runtime = AeshCommandRuntimeBuilder
-                                         .builder()
-                                         .commandRegistry(AeshCommandRegistryBuilder.builder().command(QuarkusCommand.class).create())
-                                         .build();
+                .builder()
+                .commandRegistry(AeshCommandRegistryBuilder.builder().command(QuarkusCommand.class).create())
+                .build();
 
         if (args.length > 0) {
             StringBuilder sb = new StringBuilder(QuarkusCommand.COMMAND_NAME).append(" ");

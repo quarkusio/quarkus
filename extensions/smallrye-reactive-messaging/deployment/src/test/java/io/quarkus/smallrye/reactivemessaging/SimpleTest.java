@@ -7,11 +7,12 @@ import java.util.List;
 
 import javax.inject.Inject;
 
-import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.test.QuarkusUnitTest;
 
 public class SimpleTest {
 
@@ -19,7 +20,7 @@ public class SimpleTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(SimpleBean.class, StreamConsumer.class));
-    
+
     @Inject
     StreamConsumer streamConsumer;
 
@@ -31,7 +32,7 @@ public class SimpleTest {
         assertTrue(SimpleBean.RESULT.contains("REACTIVE"));
         assertTrue(SimpleBean.RESULT.contains("MESSAGE"));
     }
-    
+
     @Test
     public void testStreamInject() {
         List<String> consumed = streamConsumer.consume();

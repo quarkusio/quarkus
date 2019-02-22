@@ -26,6 +26,7 @@ import javax.persistence.PersistenceException;
 import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
+
 import io.quarkus.hibernate.orm.runtime.boot.FastBootMetadataBuilder;
 import io.quarkus.hibernate.orm.runtime.boot.LightPersistenceXmlDescriptor;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;

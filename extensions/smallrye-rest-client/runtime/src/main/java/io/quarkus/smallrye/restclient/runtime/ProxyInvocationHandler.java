@@ -15,14 +15,11 @@
  */
 package io.quarkus.smallrye.restclient.runtime;
 
-import io.smallrye.restclient.InvocationContextImpl;
-import io.smallrye.restclient.RestClientProxy;
-import io.smallrye.restclient.async.AsyncInvocationInterceptorHandler;
-import io.smallrye.restclient.header.ClientHeaderFillingException;
-import org.eclipse.microprofile.rest.client.ext.AsyncInvocationInterceptor;
-import org.eclipse.microprofile.rest.client.ext.AsyncInvocationInterceptorFactory;
-import org.jboss.logging.Logger;
-import org.jboss.resteasy.client.jaxrs.ResteasyClient;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.*;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.inject.spi.BeanManager;
@@ -33,11 +30,16 @@ import javax.ws.rs.ProcessingException;
 import javax.ws.rs.client.ResponseProcessingException;
 import javax.ws.rs.ext.ParamConverter;
 import javax.ws.rs.ext.ParamConverterProvider;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.*;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
+
+import org.eclipse.microprofile.rest.client.ext.AsyncInvocationInterceptor;
+import org.eclipse.microprofile.rest.client.ext.AsyncInvocationInterceptorFactory;
+import org.jboss.logging.Logger;
+import org.jboss.resteasy.client.jaxrs.ResteasyClient;
+
+import io.smallrye.restclient.InvocationContextImpl;
+import io.smallrye.restclient.RestClientProxy;
+import io.smallrye.restclient.async.AsyncInvocationInterceptorHandler;
+import io.smallrye.restclient.header.ClientHeaderFillingException;
 
 /**
  * Created by hbraun on 22.01.18.
@@ -62,10 +64,10 @@ public class ProxyInvocationHandler implements InvocationHandler {
     private final List<AsyncInvocationInterceptorFactory> asyncInterceptorFactories;
 
     public ProxyInvocationHandler(Class<?> restClientInterface,
-                                  Object target,
-                                  Set<Object> providerInstances,
-                                  ResteasyClient client,
-                                  List<AsyncInvocationInterceptorFactory> asyncInterceptorFactories) {
+            Object target,
+            Set<Object> providerInstances,
+            ResteasyClient client,
+            List<AsyncInvocationInterceptorFactory> asyncInterceptorFactories) {
         this.target = target;
         this.providerInstances = providerInstances;
         this.client = client;
@@ -104,7 +106,8 @@ public class ProxyInvocationHandler implements InvocationHandler {
 
                     if (parameterAnnotations[index].length > 0) { // does a parameter converter apply?
 
-                        ParamConverter<?> converter = ((ParamConverterProvider) p).getConverter(arg.getClass(), null, parameterAnnotations[index]);
+                        ParamConverter<?> converter = ((ParamConverterProvider) p).getConverter(arg.getClass(), null,
+                                parameterAnnotations[index]);
                         if (converter != null) {
                             Type[] genericTypes = getGenericTypes(converter.getClass());
                             if (genericTypes.length == 1) {
@@ -230,12 +233,14 @@ public class ProxyInvocationHandler implements InvocationHandler {
             CDI<Object> current = CDI.current();
             return current != null ? current.getBeanManager() : null;
         } catch (IllegalStateException e) {
-            LOGGER.warnf("CDI container is not available - interceptor bindings declared on %s will be ignored", restClientInterface.getSimpleName());
+            LOGGER.warnf("CDI container is not available - interceptor bindings declared on %s will be ignored",
+                    restClientInterface.getSimpleName());
             return null;
         }
     }
 
-    private static Map<Method, List<InvocationContextImpl.InterceptorInvocation>> initInterceptorChains(BeanManager beanManager, CreationalContext<?> creationalContext, Class<?> restClientInterface) {
+    private static Map<Method, List<InvocationContextImpl.InterceptorInvocation>> initInterceptorChains(BeanManager beanManager,
+            CreationalContext<?> creationalContext, Class<?> restClientInterface) {
 
         Map<Method, List<InvocationContextImpl.InterceptorInvocation>> chains = new HashMap<>();
         // Interceptor as a key in a map is not entirely correct (custom interceptors) but should work in most cases
@@ -253,12 +258,14 @@ public class ProxyInvocationHandler implements InvocationHandler {
 
                 Annotation[] interceptorBindings = merge(methodLevelBindings, classLevelBindings);
 
-                List<Interceptor<?>> interceptors = beanManager.resolveInterceptors(InterceptionType.AROUND_INVOKE, interceptorBindings);
+                List<Interceptor<?>> interceptors = beanManager.resolveInterceptors(InterceptionType.AROUND_INVOKE,
+                        interceptorBindings);
                 if (!interceptors.isEmpty()) {
                     List<InvocationContextImpl.InterceptorInvocation> chain = new ArrayList<>();
                     for (Interceptor<?> interceptor : interceptors) {
                         chain.add(new InvocationContextImpl.InterceptorInvocation(interceptor,
-                                interceptorInstances.computeIfAbsent(interceptor, i -> beanManager.getReference(i, i.getBeanClass(), creationalContext))));
+                                interceptorInstances.computeIfAbsent(interceptor,
+                                        i -> beanManager.getReference(i, i.getBeanClass(), creationalContext))));
                     }
                     chains.put(method, chain);
                 }
@@ -268,14 +275,15 @@ public class ProxyInvocationHandler implements InvocationHandler {
     }
 
     private static Annotation[] merge(List<Annotation> methodLevelBindings, List<Annotation> classLevelBindings) {
-        Set<Class<? extends Annotation>> types = methodLevelBindings.stream().map(a -> a.annotationType()).collect(Collectors.toSet());
+        Set<Class<? extends Annotation>> types = methodLevelBindings.stream().map(a -> a.annotationType())
+                .collect(Collectors.toSet());
         List<Annotation> merged = new ArrayList<>(methodLevelBindings);
         for (Annotation annotation : classLevelBindings) {
             if (!types.contains(annotation.annotationType())) {
                 merged.add(annotation);
             }
         }
-        return merged.toArray(new Annotation[]{});
+        return merged.toArray(new Annotation[] {});
     }
 
 }

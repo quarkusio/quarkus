@@ -7,22 +7,23 @@ public class Sort {
     private enum Direction {
         Ascending, Descending;
     }
+
     private class Column {
         private String name;
         private Direction direction;
-        
+
         public Column(String name) {
             this(name, Direction.Ascending);
         }
-        
+
         public Column(String name, Direction direction) {
             this.name = name;
             this.direction = direction;
         }
     }
-    
+
     private List<Column> columns = new ArrayList<>();
-    
+
     private Sort() {
     }
 
@@ -73,7 +74,7 @@ public class Sort {
         columns.add(new Column(name));
         return this;
     }
-    
+
     public Sort and(String name, Direction direction) {
         columns.add(new Column(name, direction));
         return this;
@@ -83,10 +84,10 @@ public class Sort {
         StringBuilder sb = new StringBuilder(" ORDER BY ");
         for (int i = 0; i < columns.size(); i++) {
             Column column = columns.get(i);
-            if(i > 0)
+            if (i > 0)
                 sb.append(" , ");
             sb.append(column.name);
-            if(column.direction != Direction.Ascending)
+            if (column.direction != Direction.Ascending)
                 sb.append(" DESC");
         }
         return sb.toString();

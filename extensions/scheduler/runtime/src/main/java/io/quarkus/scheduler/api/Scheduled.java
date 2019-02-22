@@ -29,7 +29,8 @@ import io.quarkus.scheduler.api.Scheduled.Schedules;
 /**
  * Marks a business method to be automatically scheduled and invoked by the container.
  * <p>
- * The schedule is defined either by {@link #cron()} or by {@link #every()} attribute. If both are specified, the cron expression takes precedence.
+ * The schedule is defined either by {@link #cron()} or by {@link #every()} attribute. If both are specified, the cron
+ * expression takes precedence.
  *
  * <pre>
  * &#64;ApplicationScoped
@@ -42,7 +43,8 @@ import io.quarkus.scheduler.api.Scheduled.Schedules;
  * }
  * </pre>
  *
- * The annotated method must return {@code void} and either declare no parameters or one parameter of type {@link ScheduledExecution}.
+ * The annotated method must return {@code void} and either declare no parameters or one parameter of type
+ * {@link ScheduledExecution}.
  *
  * @author Martin Kouba
  * @see ScheduledExecution
@@ -55,7 +57,8 @@ public @interface Scheduled {
     /**
      * Defines a cron-like expression. For example "0 15 10 * * ?" fires at 10:15am every day.
      * <p>
-     * If the value starts with "&#123;" and ends with "&#125;" the scheduler attempts to find a corresponding config property and use the configured value
+     * If the value starts with "&#123;" and ends with "&#125;" the scheduler attempts to find a corresponding config property
+     * and use the configured value
      * instead: {@code &#64;Scheduled(cron = "{myservice.check.cron.expr}")}.
      *
      * @return the cron-like expression
@@ -65,10 +68,13 @@ public @interface Scheduled {
     /**
      * Defines a period between invocations.
      * <p>
-     * The value is parsed with {@link Duration#parse(CharSequence)}. However, if an expression starts with a digit, "PT" prefix is added automatically, so for
-     * example, {@code 15m} can be used instead of {@code PT15M} and is parsed as "15 minutes". Note that the absolute value of the value is always used.
+     * The value is parsed with {@link Duration#parse(CharSequence)}. However, if an expression starts with a digit, "PT" prefix
+     * is added automatically, so for
+     * example, {@code 15m} can be used instead of {@code PT15M} and is parsed as "15 minutes". Note that the absolute value of
+     * the value is always used.
      * <p>
-     * If the value starts with "&#123;" and ends with "&#125;" the scheduler attempts to find a corresponding config property and use the configured value
+     * If the value starts with "&#123;" and ends with "&#125;" the scheduler attempts to find a corresponding config property
+     * and use the configured value
      * instead: {@code &#64;Scheduled(every = "{myservice.check.every.expr}")}.
      *
      * @return the period expression based on the ISO-8601 duration format {@code PnDTnHnMn.nS}
@@ -87,7 +93,6 @@ public @interface Scheduled {
      * @return the unit of initial delay
      */
     TimeUnit delayUnit() default TimeUnit.MINUTES;
-    
 
     @Retention(RUNTIME)
     @Target(METHOD)

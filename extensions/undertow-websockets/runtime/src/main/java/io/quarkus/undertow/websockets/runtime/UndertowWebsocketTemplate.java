@@ -24,9 +24,9 @@ import javax.websocket.server.ServerApplicationConfig;
 import javax.websocket.server.ServerEndpointConfig;
 
 import org.jboss.logging.Logger;
+
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Template;
-
 import io.undertow.Undertow;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
 
@@ -35,20 +35,20 @@ public class UndertowWebsocketTemplate {
 
     private static final Logger log = Logger.getLogger(UndertowWebsocketTemplate.class);
 
-
     public void setupWorker(RuntimeValue<Undertow> undertow) {
         WorkerSupplier.worker = undertow.getValue().getWorker();
     }
 
-
     @SuppressWarnings("unchecked")
-    public WebSocketDeploymentInfo createDeploymentInfo(Set<String> annotatedEndpoints, Set<String> endpoints, Set<String> serverApplicationConfigClasses) {
+    public WebSocketDeploymentInfo createDeploymentInfo(Set<String> annotatedEndpoints, Set<String> endpoints,
+            Set<String> serverApplicationConfigClasses) {
         WebSocketDeploymentInfo container = new WebSocketDeploymentInfo();
         container.setWorker(new WorkerSupplier());
         Set<Class<? extends Endpoint>> allScannedEndpointImplementations = new HashSet<>();
         for (String i : endpoints) {
             try {
-                allScannedEndpointImplementations.add((Class<? extends Endpoint>) Class.forName(i, true, Thread.currentThread().getContextClassLoader()));
+                allScannedEndpointImplementations.add(
+                        (Class<? extends Endpoint>) Class.forName(i, true, Thread.currentThread().getContextClassLoader()));
             } catch (Exception e) {
                 log.error("Could not initialize websocket class " + i, e);
             }
@@ -64,16 +64,15 @@ public class UndertowWebsocketTemplate {
         Set<Class<?>> newAnnotatatedEndpoints = new HashSet<>();
         Set<ServerEndpointConfig> serverEndpointConfigurations = new HashSet<>();
 
-
         final Set<ServerApplicationConfig> configInstances = new HashSet<>();
         for (String clazzName : serverApplicationConfigClasses) {
             try {
-                configInstances.add((ServerApplicationConfig) Class.forName(clazzName, true, Thread.currentThread().getContextClassLoader()).newInstance());
+                configInstances.add((ServerApplicationConfig) Class
+                        .forName(clazzName, true, Thread.currentThread().getContextClassLoader()).newInstance());
             } catch (Exception e) {
                 log.error("Could not initialize websocket config class " + clazzName, e);
             }
         }
-
 
         if (!configInstances.isEmpty()) {
             for (ServerApplicationConfig config : configInstances) {
@@ -104,6 +103,5 @@ public class UndertowWebsocketTemplate {
         }
         return container;
     }
-
 
 }

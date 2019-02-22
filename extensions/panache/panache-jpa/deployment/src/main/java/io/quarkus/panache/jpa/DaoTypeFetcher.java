@@ -20,11 +20,11 @@ class DaoTypeFetcher extends SignatureVisitor {
 
             @Override
             public void visitClassType(String name) {
-                if(recordNextType) {
+                if (recordNextType) {
                     foundType = name;
                     // skip the remaining type params
                     recordNextType = false;
-                }else if(name.equals(daoBinaryName)) {
+                } else if (name.equals(daoBinaryName)) {
                     recordNextType = true;
                 }
                 super.visitClassType(name);

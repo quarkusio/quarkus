@@ -19,8 +19,9 @@ public class ConfiguredBean implements IConfigConsumer {
         System.out.printf("ConfiguredBean.ctor, %s\n", super.toString());
     }
 
-   /**
+    /**
      * Called by runtime with the runtime config object
+     * 
      * @param runTimeConfig
      */
     @Override
@@ -32,6 +33,7 @@ public class ConfiguredBean implements IConfigConsumer {
 
     /**
      * Called when the runtime has started
+     * 
      * @param event
      */
     void onStart(@Observes StartupEvent event) {

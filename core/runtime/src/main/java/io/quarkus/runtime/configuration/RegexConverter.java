@@ -11,7 +11,8 @@ public class RegexConverter implements Converter<Pattern> {
     /**
      * Construct a new instance.
      */
-    public RegexConverter() {}
+    public RegexConverter() {
+    }
 
     public Pattern convert(final String value) {
         return Pattern.compile(value);

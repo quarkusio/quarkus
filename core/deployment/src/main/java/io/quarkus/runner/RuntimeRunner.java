@@ -29,12 +29,13 @@ import java.util.function.Consumer;
 
 import org.jboss.builder.BuildChainBuilder;
 import org.jboss.builder.BuildResult;
+import org.objectweb.asm.ClassVisitor;
+
 import io.quarkus.deployment.QuarkusAugmentor;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.runtime.Application;
 import io.quarkus.runtime.LaunchMode;
-import org.objectweb.asm.ClassVisitor;
 
 /**
  * Class that can be used to run quarkus directly, executing the build and runtime
@@ -54,7 +55,8 @@ public class RuntimeRunner implements Runnable, Closeable {
         this.additionalArchives = new ArrayList<>(builder.additionalArchives);
         this.chainCustomizers = new ArrayList<>(builder.chainCustomizers);
         this.launchMode = builder.launchMode;
-        this.loader = new RuntimeClassLoader(builder.classLoader, target, builder.frameworkClassesPath, builder.transformerCache);
+        this.loader = new RuntimeClassLoader(builder.classLoader, target, builder.frameworkClassesPath,
+                builder.transformerCache);
     }
 
     @Override
@@ -83,7 +85,8 @@ public class RuntimeRunner implements Runnable, Closeable {
                     .addFinal(ApplicationClassNameBuildItem.class);
 
             BuildResult result = builder.build().run();
-            List<BytecodeTransformerBuildItem> bytecodeTransformerBuildItems = result.consumeMulti(BytecodeTransformerBuildItem.class);
+            List<BytecodeTransformerBuildItem> bytecodeTransformerBuildItems = result
+                    .consumeMulti(BytecodeTransformerBuildItem.class);
             if (!bytecodeTransformerBuildItems.isEmpty()) {
                 Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> functions = new HashMap<>();
                 for (BytecodeTransformerBuildItem i : bytecodeTransformerBuildItems) {
@@ -93,9 +96,10 @@ public class RuntimeRunner implements Runnable, Closeable {
                 loader.setTransformers(functions);
             }
 
-
             final Application application;
-            Class<? extends Application> appClass = loader.loadClass(result.consume(ApplicationClassNameBuildItem.class).getClassName()).asSubclass(Application.class);
+            Class<? extends Application> appClass = loader
+                    .loadClass(result.consume(ApplicationClassNameBuildItem.class).getClassName())
+                    .asSubclass(Application.class);
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             try {
                 Thread.currentThread().setContextClassLoader(loader);
@@ -156,6 +160,7 @@ public class RuntimeRunner implements Runnable, Closeable {
             this.additionalArchives.add(additionalArchive);
             return this;
         }
+
         public Builder addAdditionalArchives(Collection<Path> additionalArchive) {
             this.additionalArchives.addAll(additionalArchives);
             return this;
@@ -165,6 +170,7 @@ public class RuntimeRunner implements Runnable, Closeable {
             this.chainCustomizers.add(chainCustomizer);
             return this;
         }
+
         public Builder addChainCustomizers(Collection<Consumer<BuildChainBuilder>> chainCustomizer) {
             this.chainCustomizers.addAll(chainCustomizer);
             return this;

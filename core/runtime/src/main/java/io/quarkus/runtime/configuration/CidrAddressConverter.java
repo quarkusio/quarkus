@@ -11,9 +11,11 @@ public class CidrAddressConverter implements Converter<CidrAddress> {
 
     @Override
     public CidrAddress convert(final String value) {
-        if (value.isEmpty()) return null;
+        if (value.isEmpty())
+            return null;
         final CidrAddress result = Inet.parseCidrAddress(value);
-        if (result == null) throw new IllegalArgumentException("Failed to parse CIDR address \"" + value + "\"");
+        if (result == null)
+            throw new IllegalArgumentException("Failed to parse CIDR address \"" + value + "\"");
         return result;
     }
 }

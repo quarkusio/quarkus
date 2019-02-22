@@ -16,14 +16,15 @@
  */
 package io.quarkus.maven.components;
 
-import jline.console.ConsoleReader;
-import org.apache.commons.lang3.StringUtils;
-import org.codehaus.plexus.component.annotations.Component;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Objects;
+
+import org.apache.commons.lang3.StringUtils;
+import org.codehaus.plexus.component.annotations.Component;
+
+import jline.console.ConsoleReader;
 
 /**
  * Prompt implementation.
@@ -58,11 +59,9 @@ public class Prompter {
         String value;
         do {
             value = console.readLine(prompt, mask);
-        }
-        while (StringUtils.isBlank(value));
+        } while (StringUtils.isBlank(value));
         return value;
     }
-
 
     public String prompt(final String message) throws IOException {
         Objects.requireNonNull(message);

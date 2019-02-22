@@ -27,10 +27,11 @@ import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 
-import io.quarkus.test.common.http.TestHTTPResource;
-import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.junit.QuarkusTest;
 
 /**
  * @author Ken Finnigan
@@ -67,7 +68,6 @@ public class OpenApiTestCase {
         Set<String> keys = testObj.keySet();
         Assertions.assertEquals(1, keys.size());
         Assertions.assertEquals("get", keys.iterator().next());
-
 
         JsonObject injectionObj = paths.getJsonObject("/test/rx");
         Assertions.assertNotNull(injectionObj);

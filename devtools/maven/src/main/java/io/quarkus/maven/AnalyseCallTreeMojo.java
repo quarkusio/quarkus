@@ -23,15 +23,14 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
+
 import io.quarkus.creator.phase.nativeimage.ReportAnalyzer;
 
 @Mojo(name = "analyze-call-tree")
 public class AnalyseCallTreeMojo extends AbstractMojo {
 
-
     @Parameter(defaultValue = "${class}")
     private String className;
-
 
     @Parameter(defaultValue = "${method}")
     private String methodName;
@@ -41,12 +40,12 @@ public class AnalyseCallTreeMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-        if(methodName != null && className != null) {
+        if (methodName != null && className != null) {
             throw new MojoFailureException("Cannot specify both class and method name");
         }
         String clazz = className;
         String method = "<init>";
-        if(methodName != null) {
+        if (methodName != null) {
             int idex = methodName.lastIndexOf('.');
             clazz = methodName.substring(0, idex);
             method = methodName.substring(idex + 1);

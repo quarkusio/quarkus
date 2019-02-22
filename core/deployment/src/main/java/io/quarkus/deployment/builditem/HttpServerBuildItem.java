@@ -3,7 +3,7 @@ package io.quarkus.deployment.builditem;
 import org.jboss.builder.item.SimpleBuildItem;
 
 public final class HttpServerBuildItem extends SimpleBuildItem {
-    
+
     private final String host;
 
     private final Integer port;

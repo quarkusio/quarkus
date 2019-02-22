@@ -28,6 +28,7 @@ import org.jboss.builder.BuildChainBuilder;
 import org.jboss.builder.BuildResult;
 import org.jboss.builder.item.BuildItem;
 import org.jboss.logging.Logger;
+
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.ClassOutputBuildItem;
 import io.quarkus.deployment.builditem.ExtensionClassLoaderBuildItem;
@@ -71,13 +72,13 @@ public class QuarkusAugmentor {
             chainBuilder.loadProviders(classLoader);
 
             chainBuilder
-                .addInitial(QuarkusConfig.class)
-                .addInitial(SubstrateResourceBuildItem.class)
-                .addInitial(ArchiveRootBuildItem.class)
-                .addInitial(ShutdownContextBuildItem.class)
-                .addInitial(ClassOutputBuildItem.class)
-                .addInitial(LaunchModeBuildItem.class)
-                .addInitial(ExtensionClassLoaderBuildItem.class);
+                    .addInitial(QuarkusConfig.class)
+                    .addInitial(SubstrateResourceBuildItem.class)
+                    .addInitial(ArchiveRootBuildItem.class)
+                    .addInitial(ShutdownContextBuildItem.class)
+                    .addInitial(ClassOutputBuildItem.class)
+                    .addInitial(LaunchModeBuildItem.class)
+                    .addInitial(ExtensionClassLoaderBuildItem.class);
             for (Class<? extends BuildItem> i : finalResults) {
                 chainBuilder.addFinal(i);
             }
@@ -91,14 +92,14 @@ public class QuarkusAugmentor {
             BuildChain chain = chainBuilder
                     .build();
             BuildResult buildResult = chain.createExecutionBuilder("main")
-                .produce(new SubstrateResourceBuildItem("META-INF/microprofile-config.properties"))
-                .produce(QuarkusConfig.INSTANCE)
-                .produce(new ArchiveRootBuildItem(root))
-                .produce(new ClassOutputBuildItem(output))
-                .produce(new ShutdownContextBuildItem())
-                .produce(new LaunchModeBuildItem(launchMode))
-                .produce(new ExtensionClassLoaderBuildItem(classLoader))
-                .execute();
+                    .produce(new SubstrateResourceBuildItem("META-INF/microprofile-config.properties"))
+                    .produce(QuarkusConfig.INSTANCE)
+                    .produce(new ArchiveRootBuildItem(root))
+                    .produce(new ClassOutputBuildItem(output))
+                    .produce(new ShutdownContextBuildItem())
+                    .produce(new LaunchModeBuildItem(launchMode))
+                    .produce(new ExtensionClassLoaderBuildItem(classLoader))
+                    .execute();
 
             //TODO: this seems wrong
             for (GeneratedClassBuildItem i : buildResult.consumeMulti(GeneratedClassBuildItem.class)) {
@@ -113,7 +114,6 @@ public class QuarkusAugmentor {
             Thread.currentThread().setContextClassLoader(originalClassLoader);
         }
     }
-
 
     public static Builder builder() {
         return new Builder();

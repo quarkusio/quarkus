@@ -17,6 +17,7 @@
 package io.quarkus.deployment.builditem;
 
 import org.jboss.builder.item.MultiBuildItem;
+
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 
 public final class MainBytecodeRecorderBuildItem extends MultiBuildItem {
@@ -30,6 +31,5 @@ public final class MainBytecodeRecorderBuildItem extends MultiBuildItem {
     public BytecodeRecorderImpl getBytecodeRecorder() {
         return bytecodeRecorder;
     }
-
 
 }

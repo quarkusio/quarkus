@@ -1,9 +1,9 @@
 package io.quarkus.cli.commands;
 
-import static java.util.Arrays.asList;
 import static io.quarkus.maven.utilities.MojoUtils.getPluginGroupId;
 import static io.quarkus.maven.utilities.MojoUtils.getPluginVersion;
 import static io.quarkus.maven.utilities.MojoUtils.readPom;
+import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -16,10 +16,11 @@ import java.util.Map;
 
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
-import io.quarkus.maven.utilities.MojoUtils;
-import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.maven.utilities.QuarkusDependencyPredicate;
 
 public class ListExtensionsTest {
 
@@ -31,13 +32,13 @@ public class ListExtensionsTest {
         final HashMap<String, Object> context = new HashMap<>();
 
         new CreateProject(pom.getParentFile())
-            .groupId(getPluginGroupId())
-            .artifactId("add-extension-test")
-            .version("0.0.1-SNAPSHOT")
-            .doCreateProject(context);
+                .groupId(getPluginGroupId())
+                .artifactId("add-extension-test")
+                .version("0.0.1-SNAPSHOT")
+                .doCreateProject(context);
 
         new AddExtensions(pom)
-            .addExtensions(new HashSet<>(asList("commons-io:commons-io:2.5", "Agroal")));
+                .addExtensions(new HashSet<>(asList("commons-io:commons-io:2.5", "Agroal")));
 
         Model model = readPom(pom);
 
@@ -62,13 +63,13 @@ public class ListExtensionsTest {
         final HashMap<String, Object> context = new HashMap<>();
 
         new CreateProject(pom.getParentFile())
-            .groupId(getPluginGroupId())
-            .artifactId("add-extension-test")
-            .version("0.0.1-SNAPSHOT")
-            .doCreateProject(context);
+                .groupId(getPluginGroupId())
+                .artifactId("add-extension-test")
+                .version("0.0.1-SNAPSHOT")
+                .doCreateProject(context);
 
         new AddExtensions(pom)
-            .addExtensions(new HashSet<>(asList("resteasy", " hibernate-validator ")));
+                .addExtensions(new HashSet<>(asList("resteasy", " hibernate-validator ")));
 
         Model model = readPom(pom);
 
@@ -88,22 +89,22 @@ public class ListExtensionsTest {
         final HashMap<String, Object> context = new HashMap<>();
 
         new CreateProject(pom.getParentFile())
-            .groupId(getPluginGroupId())
-            .artifactId("add-extension-test")
-            .version("0.0.1-SNAPSHOT")
-            .doCreateProject(context);
+                .groupId(getPluginGroupId())
+                .artifactId("add-extension-test")
+                .version("0.0.1-SNAPSHOT")
+                .doCreateProject(context);
 
         Model model = readPom(pom);
 
         model.setDependencyManagement(null);
         model.getDependencies().stream()
-             .filter(new QuarkusDependencyPredicate())
-             .forEach(d -> d.setVersion("0.0.1"));
+                .filter(new QuarkusDependencyPredicate())
+                .forEach(d -> d.setVersion("0.0.1"));
 
         MojoUtils.write(model, pom);
 
         new AddExtensions(pom)
-            .addExtensions(new HashSet<>(asList("commons-io:commons-io:2.5", "Agroal")));
+                .addExtensions(new HashSet<>(asList("commons-io:commons-io:2.5", "Agroal")));
 
         model = readPom(pom);
 
@@ -112,7 +113,7 @@ public class ListExtensionsTest {
         try (final PrintStream printStream = new PrintStream(baos, false, "UTF-8")) {
             System.setOut(printStream);
             new ListExtensions(model)
-                .listExtensions();
+                    .listExtensions();
         } finally {
             System.setOut(out);
         }

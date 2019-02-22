@@ -1,17 +1,16 @@
 package io.quarkus.vertx.runtime;
 
-import org.junit.Test;
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsNull.notNullValue;
+import static org.junit.Assert.*;
 
 import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalInt;
 
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.notNullValue;
-import static org.junit.Assert.*;
+import org.junit.Test;
 
 public class VertxProducerTest {
-
 
     @Test
     public void shouldNotFailWithoutConfig() {
@@ -106,7 +105,7 @@ public class VertxProducerTest {
         vc.eventbus.reconnectInterval = Duration.ofSeconds(1);
         vc.eventbus.reuseAddress = true;
         vc.eventbus.reusePort = false;
-        vc.eventbus.sendBufferSize =  OptionalInt.empty();
+        vc.eventbus.sendBufferSize = OptionalInt.empty();
         vc.eventbus.soLinger = OptionalInt.empty();
         vc.eventbus.ssl = false;
         vc.eventbus.tcpKeepAlive = false;

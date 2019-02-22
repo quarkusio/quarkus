@@ -124,13 +124,14 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
     }
 
     @Override
-    public Iterable<? extends Completion> getCompletions(Element element, AnnotationMirror annotation, ExecutableElement member, String userText) {
+    public Iterable<? extends Completion> getCompletions(Element element, AnnotationMirror annotation, ExecutableElement member,
+            String userText) {
         return Collections.emptySet();
     }
 
     public void doProcess(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         for (TypeElement annotation : annotations) {
-            switch(annotation.getQualifiedName().toString()) {
+            switch (annotation.getQualifiedName().toString()) {
                 case ANNOTATION_BUILD_STEP:
                     processBuildStep(roundEnv, annotation);
                     break;
@@ -157,7 +158,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
             return;
         }
         final URI uri = tempResource.toUri();
-//        tempResource.delete();
+        //        tempResource.delete();
         Path path;
         try {
             path = Paths.get(uri).getParent();
@@ -181,31 +182,34 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                             String line;
                             while ((line = br.readLine()) != null) {
                                 line = line.trim();
-                                if (! line.isEmpty()) {
+                                if (!line.isEmpty()) {
                                     bscListClasses.add(line);
                                 }
                             }
                         } catch (IOException e) {
-                            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to read file " + file + ": " + e);
+                            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                                    "Failed to read file " + file + ": " + e);
                         }
                     } else if (nameStr.endsWith(".cr")) {
                         try (BufferedReader br = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
                             String line;
                             while ((line = br.readLine()) != null) {
                                 line = line.trim();
-                                if (! line.isEmpty()) {
+                                if (!line.isEmpty()) {
                                     crListClasses.add(line);
                                 }
                             }
                         } catch (IOException e) {
-                            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to read file " + file + ": " + e);
+                            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                                    "Failed to read file " + file + ": " + e);
                         }
                     } else if (nameStr.endsWith(".jdp")) {
                         final Properties p = new Properties();
                         try (BufferedReader br = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
                             p.load(br);
                         } catch (IOException e) {
-                            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to read file " + file + ": " + e);
+                            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                                    "Failed to read file " + file + ": " + e);
                         }
                         final Set<String> names = p.stringPropertyNames();
                         for (String name : names) {
@@ -216,7 +220,8 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                 }
 
                 public FileVisitResult visitFileFailed(final Path file, final IOException exc) {
-                    processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to visit file " + file + ": " + exc);
+                    processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                            "Failed to visit file " + file + ": " + exc);
                     return FileVisitResult.CONTINUE;
                 }
 
@@ -227,44 +232,49 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         } catch (IOException e) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "File walk failed: " + e);
         }
-        if (! bscListClasses.isEmpty()) try {
-            final FileObject listResource = filer.createResource(StandardLocation.CLASS_OUTPUT, "", "META-INF/quarkus-build-steps.list");
-            try (OutputStream os = listResource.openOutputStream()) {
-                try (BufferedOutputStream bos = new BufferedOutputStream(os)) {
-                    try (OutputStreamWriter osw = new OutputStreamWriter(bos, StandardCharsets.UTF_8)) {
-                        try (BufferedWriter bw = new BufferedWriter(osw)) {
-                            for (String item : bscListClasses) {
-                                bw.write(item);
-                                bw.newLine();
+        if (!bscListClasses.isEmpty())
+            try {
+                final FileObject listResource = filer.createResource(StandardLocation.CLASS_OUTPUT, "",
+                        "META-INF/quarkus-build-steps.list");
+                try (OutputStream os = listResource.openOutputStream()) {
+                    try (BufferedOutputStream bos = new BufferedOutputStream(os)) {
+                        try (OutputStreamWriter osw = new OutputStreamWriter(bos, StandardCharsets.UTF_8)) {
+                            try (BufferedWriter bw = new BufferedWriter(osw)) {
+                                for (String item : bscListClasses) {
+                                    bw.write(item);
+                                    bw.newLine();
+                                }
                             }
                         }
                     }
                 }
+            } catch (IOException e) {
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to write build steps listing: " + e);
+                return;
             }
-        } catch (IOException e) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to write build steps listing: " + e);
-            return;
-        }
-        if (! crListClasses.isEmpty()) try {
-            final FileObject listResource = filer.createResource(StandardLocation.CLASS_OUTPUT, "", "META-INF/quarkus-config-roots.list");
-            try (OutputStream os = listResource.openOutputStream()) {
-                try (BufferedOutputStream bos = new BufferedOutputStream(os)) {
-                    try (OutputStreamWriter osw = new OutputStreamWriter(bos, StandardCharsets.UTF_8)) {
-                        try (BufferedWriter bw = new BufferedWriter(osw)) {
-                            for (String item : crListClasses) {
-                                bw.write(item);
-                                bw.newLine();
+        if (!crListClasses.isEmpty())
+            try {
+                final FileObject listResource = filer.createResource(StandardLocation.CLASS_OUTPUT, "",
+                        "META-INF/quarkus-config-roots.list");
+                try (OutputStream os = listResource.openOutputStream()) {
+                    try (BufferedOutputStream bos = new BufferedOutputStream(os)) {
+                        try (OutputStreamWriter osw = new OutputStreamWriter(bos, StandardCharsets.UTF_8)) {
+                            try (BufferedWriter bw = new BufferedWriter(osw)) {
+                                for (String item : crListClasses) {
+                                    bw.write(item);
+                                    bw.newLine();
+                                }
                             }
                         }
                     }
                 }
+            } catch (IOException e) {
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to write config roots listing: " + e);
+                return;
             }
-        } catch (IOException e) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to write config roots listing: " + e);
-            return;
-        }
         try {
-            final FileObject listResource = filer.createResource(StandardLocation.CLASS_OUTPUT, "", "META-INF/quarkus-javadoc.properties");
+            final FileObject listResource = filer.createResource(StandardLocation.CLASS_OUTPUT, "",
+                    "META-INF/quarkus-javadoc.properties");
             try (OutputStream os = listResource.openOutputStream()) {
                 try (BufferedOutputStream bos = new BufferedOutputStream(os)) {
                     try (OutputStreamWriter osw = new OutputStreamWriter(bos, StandardCharsets.UTF_8)) {
@@ -290,7 +300,8 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
             }
             final PackageElement pkg = processingEnv.getElementUtils().getPackageOf(clazz);
             if (pkg == null) {
-                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Element " + clazz + " has no enclosing package");
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                        "Element " + clazz + " has no enclosing package");
                 continue;
             }
             final String binaryName = processingEnv.getElementUtils().getBinaryName(clazz).toString();
@@ -301,11 +312,10 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                 final StringBuilder rbn = getRelativeBinaryName(clazz, new StringBuilder());
                 try {
                     final FileObject itemResource = processingEnv.getFiler().createResource(
-                        StandardLocation.SOURCE_OUTPUT,
-                        pkg.getQualifiedName().toString(),
-                        rbn.toString() + ".bsc",
-                        clazz
-                    );
+                            StandardLocation.SOURCE_OUTPUT,
+                            pkg.getQualifiedName().toString(),
+                            rbn.toString() + ".bsc",
+                            clazz);
                     try (OutputStream os = itemResource.openOutputStream()) {
                         try (BufferedOutputStream bos = new BufferedOutputStream(os)) {
                             try (OutputStreamWriter osw = new OutputStreamWriter(bos, StandardCharsets.UTF_8)) {
@@ -317,7 +327,8 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                         }
                     }
                 } catch (IOException e1) {
-                    processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to create " + rbn + " in " + pkg + ": " + e1, clazz);
+                    processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                            "Failed to create " + rbn + " in " + pkg + ": " + e1, clazz);
                 }
             }
         }
@@ -335,7 +346,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
     private TypeElement getClassOf(Element e) {
         Element t = e;
-        while (! (t instanceof TypeElement)) {
+        while (!(t instanceof TypeElement)) {
             if (t == null) {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Element " + e + " has no enclosing class");
                 return null;
@@ -346,7 +357,8 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
     }
 
     private void recordConfigJavadoc(TypeElement clazz) {
-        if (! generatedJavaDocs.add(clazz.getQualifiedName().toString())) return;
+        if (!generatedJavaDocs.add(clazz.getQualifiedName().toString()))
+            return;
         final Properties javadocProps = new Properties();
         for (Element e : clazz.getEnclosedElements()) {
             switch (e.getKind()) {
@@ -373,16 +385,16 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                 default:
             }
         }
-        if (javadocProps.isEmpty()) return;
+        if (javadocProps.isEmpty())
+            return;
         final PackageElement pkg = processingEnv.getElementUtils().getPackageOf(clazz);
         final String rbn = getRelativeBinaryName(clazz, new StringBuilder()).append(".jdp").toString();
         try {
             FileObject file = processingEnv.getFiler().createResource(
-                StandardLocation.SOURCE_OUTPUT,
-                pkg.getQualifiedName().toString(),
-                rbn,
-                clazz
-            );
+                    StandardLocation.SOURCE_OUTPUT,
+                    pkg.getQualifiedName().toString(),
+                    rbn,
+                    clazz);
             try (Writer writer = file.openWriter()) {
                 javadocProps.store(writer, "");
             }
@@ -426,7 +438,8 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         for (TypeElement clazz : typesIn(roundEnv.getElementsAnnotatedWith(annotation))) {
             final PackageElement pkg = processingEnv.getElementUtils().getPackageOf(clazz);
             if (pkg == null) {
-                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Element " + clazz + " has no enclosing package");
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                        "Element " + clazz + " has no enclosing package");
                 continue;
             }
             final String binaryName = processingEnv.getElementUtils().getBinaryName(clazz).toString();
@@ -437,11 +450,10 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                 final StringBuilder rbn = getRelativeBinaryName(clazz, new StringBuilder());
                 try {
                     final FileObject itemResource = processingEnv.getFiler().createResource(
-                        StandardLocation.SOURCE_OUTPUT,
-                        pkg.getQualifiedName().toString(),
-                        rbn.toString() + ".cr",
-                        clazz
-                    );
+                            StandardLocation.SOURCE_OUTPUT,
+                            pkg.getQualifiedName().toString(),
+                            rbn.toString() + ".cr",
+                            clazz);
                     try (OutputStream os = itemResource.openOutputStream()) {
                         try (BufferedOutputStream bos = new BufferedOutputStream(os)) {
                             try (OutputStreamWriter osw = new OutputStreamWriter(bos, StandardCharsets.UTF_8)) {
@@ -453,7 +465,8 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
                         }
                     }
                 } catch (IOException e1) {
-                    processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to create " + rbn + " in " + pkg + ": " + e1, clazz);
+                    processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                            "Failed to create " + rbn + " in " + pkg + ": " + e1, clazz);
                 }
             }
         }
@@ -470,17 +483,18 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
     }
 
     private void generateAccessor(final TypeElement clazz) {
-        if (! generatedAccessors.add(clazz.getQualifiedName().toString())) return;
+        if (!generatedAccessors.add(clazz.getQualifiedName().toString()))
+            return;
         final FormatPreferences fp = new FormatPreferences();
         final JSources sources = JDeparser.createSources(JFiler.newInstance(processingEnv.getFiler()), fp);
         final PackageElement packageElement = processingEnv.getElementUtils().getPackageOf(clazz);
         final String className = getRelativeBinaryName(clazz, new StringBuilder()).append("$$accessor").toString();
         final JSourceFile sourceFile = sources.createSourceFile(packageElement.getQualifiedName().toString(), className);
         JType clazzType = JTypes.typeOf(clazz.asType());
-        if(clazz.asType() instanceof DeclaredType) {
-            DeclaredType declaredType = ((DeclaredType)clazz.asType());
+        if (clazz.asType() instanceof DeclaredType) {
+            DeclaredType declaredType = ((DeclaredType) clazz.asType());
             TypeMirror enclosingType = declaredType.getEnclosingType();
-            if(enclosingType != null && enclosingType.getKind() == TypeKind.DECLARED
+            if (enclosingType != null && enclosingType.getKind() == TypeKind.DECLARED
                     && clazz.getModifiers().contains(Modifier.STATIC)) {
                 // Ugly workaround for Eclipse APT and static nested types
                 clazzType = unnestStaticNestedType(declaredType);
@@ -510,7 +524,8 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
             setter.param(JType.OBJECT, INSTANCE_SYM);
             setter.param(publicType, fieldName);
             final JAssignableExpr fieldExpr = JExprs.name(fieldName);
-            setter.body().assign(instanceName.cast(clazzType).field(fieldName), (publicType.equals(realType) ? fieldExpr : fieldExpr.cast(realType)));
+            setter.body().assign(instanceName.cast(clazzType).field(fieldName),
+                    (publicType.equals(realType) ? fieldExpr : fieldExpr.cast(realType)));
         }
         // iterate constructors
         for (ExecutableElement ctor : constructorsIn(clazz.getEnclosedElements())) {
@@ -563,7 +578,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
     private void appendParamTypes(ExecutableElement ex, final StringBuilder buf) {
         final List<? extends VariableElement> params = ex.getParameters();
-        if(params.isEmpty()) {
+        if (params.isEmpty()) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Expected at least one parameter", ex);
             return;
         }
@@ -571,7 +586,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         DeclaredType dt = (DeclaredType) param.asType();
         String typeName = processingEnv.getElementUtils().getBinaryName(((TypeElement) dt.asElement())).toString();
         buf.append('(').append(typeName);
-        for(int i = 1; i < params.size(); ++i) {
+        for (int i = 1; i < params.size(); ++i) {
             param = params.get(i);
             dt = (DeclaredType) param.asType();
             typeName = processingEnv.getElementUtils().getBinaryName(((TypeElement) dt.asElement())).toString();
@@ -582,7 +597,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
     private String getRequiredJavadoc(Element e) {
         final String docComment = processingEnv.getElementUtils().getDocComment(e);
-        if(docComment == null) {
+        if (docComment == null) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Unable to find javadoc for config item " + e, e);
             return "";
         }
@@ -590,8 +605,8 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
     }
 
     private static boolean hasParameterAnnotated(ExecutableElement ex, String annotationName) {
-        for(VariableElement param : ex.getParameters()) {
-            if(isAnnotationPresent(param, annotationName)) {
+        for (VariableElement param : ex.getParameters()) {
+            if (isAnnotationPresent(param, annotationName)) {
                 return true;
             }
         }

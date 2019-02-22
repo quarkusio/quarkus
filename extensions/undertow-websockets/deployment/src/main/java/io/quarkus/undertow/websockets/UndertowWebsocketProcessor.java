@@ -30,6 +30,7 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -41,7 +42,6 @@ import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.undertow.ServletContextAttributeBuildItem;
 import io.quarkus.undertow.UndertowBuildItem;
 import io.quarkus.undertow.websockets.runtime.UndertowWebsocketTemplate;
-
 import io.undertow.websockets.jsr.JsrWebSocketFilter;
 import io.undertow.websockets.jsr.WebSocketDeploymentInfo;
 
@@ -52,10 +52,10 @@ public class UndertowWebsocketProcessor {
     private static final DotName SERVER_APPLICATION_CONFIG = DotName.createSimple(ServerApplicationConfig.class.getName());
     private static final DotName ENDPOINT = DotName.createSimple(Endpoint.class.getName());
 
-
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    public ServletContextAttributeBuildItem deploy(final CombinedIndexBuildItem indexBuildItem, UndertowWebsocketTemplate template,
+    public ServletContextAttributeBuildItem deploy(final CombinedIndexBuildItem indexBuildItem,
+            UndertowWebsocketTemplate template,
             BuildProducer<ReflectiveClassBuildItem> reflection, BuildProducer<FeatureBuildItem> feature) throws Exception {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.UNDERTOW_WEBSOCKETS));
@@ -106,10 +106,12 @@ public class UndertowWebsocketProcessor {
                 config.isEmpty()) {
             return null;
         }
-        reflection.produce(new ReflectiveClassBuildItem(true, false , annotatedEndpoints.toArray(new String[annotatedEndpoints.size()])));
-        reflection.produce(new ReflectiveClassBuildItem(false, false , JsrWebSocketFilter.class.getName()));
-        
-        return new ServletContextAttributeBuildItem(WebSocketDeploymentInfo.ATTRIBUTE_NAME, template.createDeploymentInfo(annotatedEndpoints, endpoints, config));
+        reflection.produce(
+                new ReflectiveClassBuildItem(true, false, annotatedEndpoints.toArray(new String[annotatedEndpoints.size()])));
+        reflection.produce(new ReflectiveClassBuildItem(false, false, JsrWebSocketFilter.class.getName()));
+
+        return new ServletContextAttributeBuildItem(WebSocketDeploymentInfo.ATTRIBUTE_NAME,
+                template.createDeploymentInfo(annotatedEndpoints, endpoints, config));
     }
 
     @BuildStep

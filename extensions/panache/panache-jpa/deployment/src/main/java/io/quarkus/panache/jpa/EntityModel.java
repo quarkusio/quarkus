@@ -8,7 +8,7 @@ public class EntityModel {
 
     final String name;
     final String superClassName;
-    final  Map<String, EntityField> fields;
+    final Map<String, EntityField> fields;
 
     public EntityModel(ClassInfo classInfo, Map<String, EntityField> fields) {
         this.name = classInfo.name().toString();

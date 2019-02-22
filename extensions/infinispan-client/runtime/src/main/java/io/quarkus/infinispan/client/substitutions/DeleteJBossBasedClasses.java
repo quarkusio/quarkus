@@ -10,10 +10,12 @@ import com.oracle.svm.core.annotate.TargetClass;
 
 /**
  * This class removes jboss marshalling based classes in client, which we don't support with substrate
+ * 
  * @author William Burns
  */
 
-final class DeleteJBossBasedClasses { }
+final class DeleteJBossBasedClasses {
+}
 
 @TargetClass(GenericJBossMarshaller.class)
 @Delete

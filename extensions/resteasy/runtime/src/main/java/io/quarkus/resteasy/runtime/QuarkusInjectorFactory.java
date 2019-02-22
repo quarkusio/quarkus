@@ -33,6 +33,7 @@ import org.jboss.resteasy.spi.PropertyInjector;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.jboss.resteasy.spi.metadata.ResourceClass;
 import org.jboss.resteasy.spi.metadata.ResourceConstructor;
+
 import io.quarkus.arc.runtime.BeanContainer;
 
 public class QuarkusInjectorFactory extends InjectorFactoryImpl {
@@ -51,7 +52,8 @@ public class QuarkusInjectorFactory extends InjectorFactoryImpl {
     @Override
     public ConstructorInjector createConstructor(ResourceConstructor constructor, ResteasyProviderFactory providerFactory) {
         log.debugf("Create resource constructor: %s", constructor.getConstructor());
-        return new QuarkusConstructorInjector(constructor.getConstructor(), super.createConstructor(constructor, providerFactory));
+        return new QuarkusConstructorInjector(constructor.getConstructor(),
+                super.createConstructor(constructor, providerFactory));
     }
 
     @SuppressWarnings("rawtypes")
@@ -80,7 +82,8 @@ public class QuarkusInjectorFactory extends InjectorFactoryImpl {
         }
 
         @Override
-        public CompletionStage<Void> inject(HttpRequest request, HttpResponse response, Object target, boolean unwrapAsync) throws Failure, WebApplicationException, ApplicationException {
+        public CompletionStage<Void> inject(HttpRequest request, HttpResponse response, Object target, boolean unwrapAsync)
+                throws Failure, WebApplicationException, ApplicationException {
             return delegate.inject(request, response, PROXY_UNWRAPPER.apply(target), unwrapAsync);
         }
     }

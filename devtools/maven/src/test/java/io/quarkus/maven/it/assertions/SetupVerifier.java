@@ -16,6 +16,7 @@ import org.apache.maven.model.Profile;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
+
 import io.quarkus.maven.CreateProjectMojo;
 import io.quarkus.maven.utilities.MojoUtils;
 
@@ -69,7 +70,6 @@ public class SetupVerifier {
             assertThat(execution.getGoals()).containsExactly("build");
             assertThat(execution.getConfiguration()).isNull();
         });
-
 
         // Check profile
         assertThat(model.getProfiles()).hasSize(1);

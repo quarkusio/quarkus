@@ -6,13 +6,13 @@ import java.util.Map;
 
 public class Parameters {
     private final Map<String, Object> values = new HashMap<>();
-    
+
     public Parameters and(String name, Object value) {
         values.put(name, value);
         return this;
     }
-    
-    public Map<String, Object> map(){
+
+    public Map<String, Object> map() {
         return Collections.unmodifiableMap(values);
     }
 

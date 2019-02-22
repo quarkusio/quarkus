@@ -1,21 +1,22 @@
 package io.quarkus.resteasy.runtime;
 
+import static java.util.Arrays.asList;
+
+import java.util.HashSet;
+import java.util.Set;
+
 import javax.annotation.Priority;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.core.SecurityContext;
-import java.util.HashSet;
-import java.util.Set;
-
-import static java.util.Arrays.asList;
 
 /**
  * Supports role based access to an endpoint
  *
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- * <br>
- * Date: 6/12/18
+ *         <br>
+ *         Date: 6/12/18
  */
 @Priority(Priorities.AUTHORIZATION)
 public class RolesAllowedFilter implements ContainerRequestFilter {

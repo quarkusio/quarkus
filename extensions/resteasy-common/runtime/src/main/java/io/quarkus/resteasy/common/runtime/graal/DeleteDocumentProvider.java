@@ -16,21 +16,22 @@
 
 package io.quarkus.resteasy.common.runtime.graal;
 
-import com.oracle.svm.core.annotate.Substitute;
-import com.oracle.svm.core.annotate.TargetClass;
-
-import org.jboss.resteasy.spi.ResteasyConfiguration;
-import org.w3c.dom.Document;
-
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
+
+import org.jboss.resteasy.spi.ResteasyConfiguration;
+import org.w3c.dom.Document;
+
+import com.oracle.svm.core.annotate.Substitute;
+import com.oracle.svm.core.annotate.TargetClass;
 
 /**
  * Manipulating {@link Document}s in REST services is very unlikely to be needed
@@ -53,7 +54,8 @@ final class DeleteDocumentProvider {
     }
 
     @Substitute
-    public Document readFrom(Class<Document> clazz, Type type, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, String> headers,
+    public Document readFrom(Class<Document> clazz, Type type, Annotation[] annotations, MediaType mediaType,
+            MultivaluedMap<String, String> headers,
             InputStream input) throws IOException, WebApplicationException {
         return null;
     }
@@ -64,7 +66,8 @@ final class DeleteDocumentProvider {
     }
 
     @Substitute
-    public void writeTo(Document document, Class<?> clazz, Type type, Annotation[] annotation, MediaType mediaType, MultivaluedMap<String, Object> headers,
+    public void writeTo(Document document, Class<?> clazz, Type type, Annotation[] annotation, MediaType mediaType,
+            MultivaluedMap<String, Object> headers,
             OutputStream output) throws IOException, WebApplicationException {
 
     }

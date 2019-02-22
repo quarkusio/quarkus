@@ -33,7 +33,6 @@ final class ConfigurationInfoSubstitution {
     @Alias
     private static boolean isInitialized = false;
 
-
     // initialize build time properties from data in the jar's META-INF/MANIFEST.MF
     //TODO: actually implement this somehow so these values are baked in at build time
     @Substitute

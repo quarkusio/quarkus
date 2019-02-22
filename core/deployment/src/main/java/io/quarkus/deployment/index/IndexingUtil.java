@@ -10,6 +10,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
+
 import io.quarkus.deployment.util.IoUtil;
 
 public class IndexingUtil {
@@ -19,7 +20,7 @@ public class IndexingUtil {
     public static final DotName OBJECT = DotName.createSimple(Object.class.getName());
 
     public static void indexClass(String beanClass, Indexer indexer, IndexView quarkusIndex,
-                                  Set<DotName> additionalIndex, ClassLoader classLoader) {
+            Set<DotName> additionalIndex, ClassLoader classLoader) {
         DotName beanClassName = DotName.createSimple(beanClass);
         if (additionalIndex.contains(beanClassName)) {
             return;
@@ -54,8 +55,8 @@ public class IndexingUtil {
     }
 
     public static void indexClass(String beanClass, Indexer indexer,
-                                  IndexView quarkusIndex, Set<DotName> additionalIndex,
-                                  ClassLoader classLoader, byte[] beanData) {
+            IndexView quarkusIndex, Set<DotName> additionalIndex,
+            ClassLoader classLoader, byte[] beanData) {
         DotName beanClassName = DotName.createSimple(beanClass);
         if (additionalIndex.contains(beanClassName)) {
             return;

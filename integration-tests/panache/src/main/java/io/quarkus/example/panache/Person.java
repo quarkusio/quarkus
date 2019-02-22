@@ -34,13 +34,13 @@ public class Person extends PanacheEntity {
 
     @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     public Address address;
-    
+
     public Status status;
-    
+
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     public List<Dog> dogs = new ArrayList<>();
-    
-    public static List<Dog> findOrdered(){
+
+    public static List<Dog> findOrdered() {
         return find("ORDER BY name").list();
     }
 }

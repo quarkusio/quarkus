@@ -32,7 +32,8 @@ public class PanacheFieldAccessEnhancer implements BiFunction<String, ClassVisit
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String methodName, String descriptor, String signature, String[] exceptions) {
+        public MethodVisitor visitMethod(int access, String methodName, String descriptor, String signature,
+                String[] exceptions) {
             MethodVisitor superVisitor = super.visitMethod(access, methodName, descriptor, signature, exceptions);
             return new PanacheFieldAccessMethodVisitor(superVisitor, classBinaryName, methodName, descriptor, entities);
         }

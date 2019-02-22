@@ -16,15 +16,16 @@
 
 package io.quarkus.test.junit4;
 
-import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 import static io.quarkus.test.common.PathTestHelper.getAppClassLocation;
+import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
 import java.io.IOException;
 
-import io.quarkus.runner.RuntimeRunner;
-import io.quarkus.runtime.LaunchMode;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.model.InitializationError;
+
+import io.quarkus.runner.RuntimeRunner;
+import io.quarkus.runtime.LaunchMode;
 
 public class QuarkusTest extends AbstractQuarkusTestRunner {
 

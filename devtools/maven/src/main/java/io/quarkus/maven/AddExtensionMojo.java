@@ -10,6 +10,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
+
 import io.quarkus.cli.commands.AddExtensions;
 
 @Mojo(name = "add-extension")
@@ -30,7 +31,7 @@ public class AddExtensionMojo extends AbstractMojo {
             Model model = project.getOriginalModel().clone();
 
             new AddExtensions(model.getPomFile())
-                .addExtensions(extensions.stream().map(String::trim).collect(Collectors.toSet()));
+                    .addExtensions(extensions.stream().map(String::trim).collect(Collectors.toSet()));
         } catch (IOException e) {
             throw new MojoExecutionException("Unable to update the pom.xml file", e);
         }

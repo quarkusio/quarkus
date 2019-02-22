@@ -17,6 +17,7 @@
 package io.quarkus.arc.deployment;
 
 import org.jboss.builder.item.MultiBuildItem;
+
 import io.quarkus.arc.runtime.BeanContainerListener;
 
 public final class BeanContainerListenerBuildItem extends MultiBuildItem {

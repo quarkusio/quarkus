@@ -25,12 +25,13 @@ import java.util.HashSet;
 import java.util.function.Consumer;
 
 import org.jboss.protean.gizmo.TestClassLoader;
+import org.junit.Assert;
+import org.junit.Test;
+
 import io.quarkus.deployment.ClassOutput;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.StartupContext;
 import io.quarkus.runtime.StartupTask;
-import org.junit.Assert;
-import org.junit.Test;
 
 public class BytecodeRecorderTestCase {
 
@@ -57,11 +58,11 @@ public class BytecodeRecorderTestCase {
         runTest(recorder -> {
             TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
             template.intArray(4, 5, 6);
-        }, (Object) new int[]{4, 5, 6});
+        }, (Object) new int[] { 4, 5, 6 });
         runTest(recorder -> {
             TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
             template.doubleArray(4, 5, 6);
-        }, (Object) new double[]{4, 5, 6});
+        }, (Object) new double[] { 4, 5, 6 });
     }
 
     @Test
@@ -91,7 +92,8 @@ public class BytecodeRecorderTestCase {
     @Test
     public void testSubstitution() throws Exception {
         runTest(recorder -> {
-            recorder.registerSubstitution(NonSerializable.class, NonSerializable.Serialized.class, NonSerializable.Substitution.class);
+            recorder.registerSubstitution(NonSerializable.class, NonSerializable.Serialized.class,
+                    NonSerializable.Substitution.class);
             TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
             template.bean(new NonSerializable("A string", 99));
         }, new NonSerializable("A string", 99));

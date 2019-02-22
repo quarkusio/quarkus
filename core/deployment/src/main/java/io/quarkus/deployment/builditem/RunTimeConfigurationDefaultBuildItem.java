@@ -1,8 +1,9 @@
 package io.quarkus.deployment.builditem;
 
 import org.jboss.builder.item.MultiBuildItem;
-import io.quarkus.runtime.annotations.ConfigItem;
 import org.wildfly.common.Assert;
+
+import io.quarkus.runtime.annotations.ConfigItem;
 
 /**
  * A build item which specifies a configuration default value for run time, which is used to establish a default other

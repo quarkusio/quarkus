@@ -17,7 +17,6 @@
 
 package io.quarkus.creator.config.reader;
 
-
 /**
  *
  * @author Alexey Loubyansky
@@ -34,7 +33,8 @@ public class PropertyContext {
     PropertyLine nestedProperty;
     int nameElement;
 
-    PropertyContext(PropertyContext parent, String mappedName, int mappedNameElements, String[] nameEls, PropertiesHandler<?> handler) {
+    PropertyContext(PropertyContext parent, String mappedName, int mappedNameElements, String[] nameEls,
+            PropertiesHandler<?> handler) {
         this.parent = parent;
         this.mappedName = mappedName;
         this.mappedNameElements = mappedNameElements;

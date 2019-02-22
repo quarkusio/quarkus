@@ -79,12 +79,11 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
         EntityTransaction transaction = em.getTransaction();
         transaction.begin();
         TypedQuery<Person> typedQuery = em.createNamedQuery(
-              "get_person_by_name", Person.class
-        );
+                "get_person_by_name", Person.class);
         typedQuery.setParameter("name", "Quarkus");
         final Person singleResult = typedQuery.getSingleResult();
 
-        if ( ! singleResult.getName().equals("Quarkus")) {
+        if (!singleResult.getName().equals("Quarkus")) {
             throw new RuntimeException("Wrong result from named JPA query");
         }
 
@@ -129,17 +128,17 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
         cq.select(from).orderBy(cb.asc(from.get("name")));
         TypedQuery<Person> q = em.createQuery(cq);
         List<Person> allpersons = q.getResultList();
-        if ( allpersons.size() != 3 ) {
+        if (allpersons.size() != 3) {
             throw new RuntimeException("Incorrect number of results");
         }
-        if ( ! allpersons.get(0).getName().equals("Gizmo") ) {
+        if (!allpersons.get(0).getName().equals("Gizmo")) {
             throw new RuntimeException("Incorrect order of results");
         }
         StringBuilder sb = new StringBuilder("list of stored Person names:\n\t");
         for (Person p : allpersons) {
             p.describeFully(sb);
             sb.append("\n\t");
-            if(p.getStatus() != Status.LIVING) {
+            if (p.getStatus() != Status.LIVING) {
                 throw new RuntimeException("Incorrect status " + p);
             }
         }

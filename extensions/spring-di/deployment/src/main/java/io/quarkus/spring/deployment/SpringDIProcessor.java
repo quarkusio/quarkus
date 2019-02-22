@@ -35,6 +35,7 @@ import org.jboss.quarkus.arc.processor.AnnotationsTransformer;
 import org.jboss.quarkus.arc.processor.DotNames;
 import org.jboss.quarkus.arc.processor.ScopeInfo;
 import org.jboss.quarkus.arc.processor.Transformation;
+
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -46,8 +47,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
  */
 public class SpringDIProcessor {
 
-    private static final DotName SPRING_SCOPE_ANNOTATION
-            = DotName.createSimple("org.springframework.context.annotation.Scope");
+    private static final DotName SPRING_SCOPE_ANNOTATION = DotName.createSimple("org.springframework.context.annotation.Scope");
 
     private static final DotName[] SPRING_STEREOTYPE_ANNOTATIONS = {
             DotName.createSimple("org.springframework.stereotype.Component"),
@@ -55,20 +55,18 @@ public class SpringDIProcessor {
             DotName.createSimple("org.springframework.stereotype.Repository"),
     };
 
-    private static final DotName CONFIGURATION_ANNOTATION
-            = DotName.createSimple("org.springframework.context.annotation.Configuration");
+    private static final DotName CONFIGURATION_ANNOTATION = DotName
+            .createSimple("org.springframework.context.annotation.Configuration");
 
-    private static final DotName BEAN_ANNOTATION
-            = DotName.createSimple("org.springframework.context.annotation.Bean");
+    private static final DotName BEAN_ANNOTATION = DotName.createSimple("org.springframework.context.annotation.Bean");
 
-    private static final DotName AUTOWIRED_ANNOTATION
-            = DotName.createSimple("org.springframework.beans.factory.annotation.Autowired");
+    private static final DotName AUTOWIRED_ANNOTATION = DotName
+            .createSimple("org.springframework.beans.factory.annotation.Autowired");
 
-    private static final DotName SPRING_QUALIFIER_ANNOTATION
-            = DotName.createSimple("org.springframework.beans.factory.annotation.Qualifier");
+    private static final DotName SPRING_QUALIFIER_ANNOTATION = DotName
+            .createSimple("org.springframework.beans.factory.annotation.Qualifier");
 
-    private static final DotName VALUE_ANNOTATION
-            = DotName.createSimple("org.springframework.beans.factory.annotation.Value");
+    private static final DotName VALUE_ANNOTATION = DotName.createSimple("org.springframework.beans.factory.annotation.Value");
 
     private static final DotName CDI_SINGLETON_ANNOTATION = ScopeInfo.SINGLETON.getDotName();
     private static final DotName CDI_DEPENDENT_ANNOTATION = ScopeInfo.DEPENDENT.getDotName();
@@ -95,7 +93,7 @@ public class SpringDIProcessor {
                 final Set<AnnotationInstance> annotationsToAdd = new HashSet<>();
 
                 //if it's a class, it's a Bean or a Bean producer
-                if(context.isClass()) {
+                if (context.isClass()) {
                     final ClassInfo classInfo = context.getTarget().asClass();
                     for (DotName springStereotypeAnnotation : SPRING_STEREOTYPE_ANNOTATIONS) {
                         if (classInfo.annotations().containsKey(springStereotypeAnnotation)) {
@@ -105,7 +103,7 @@ public class SpringDIProcessor {
                             if (classInfo.annotations().containsKey(SPRING_SCOPE_ANNOTATION)) {
                                 final AnnotationInstance annotation = classInfo.classAnnotation(SPRING_SCOPE_ANNOTATION);
                                 final AnnotationValue springScopeAnnotationValue = annotation.value();
-                                if(springScopeAnnotationValue != null &&
+                                if (springScopeAnnotationValue != null &&
                                         "prototype".equals(springScopeAnnotationValue.asString())) {
                                     cdiAnnotation = CDI_DEPENDENT_ANNOTATION;
                                 }
@@ -113,12 +111,11 @@ public class SpringDIProcessor {
                             annotationsToAdd.add(create(
                                     cdiAnnotation,
                                     context.getTarget(),
-                                    new ArrayList<>()
-                            ));
+                                    new ArrayList<>()));
 
                             //check if the spring annotation defines a name for the bean
-                            final AnnotationValue beanNameAnnotationValue
-                                    = classInfo.classAnnotation(springStereotypeAnnotation).value();
+                            final AnnotationValue beanNameAnnotationValue = classInfo
+                                    .classAnnotation(springStereotypeAnnotation).value();
                             addCDINamedAnnotation(context, beanNameAnnotationValue, annotationsToAdd);
 
                             break;
@@ -129,18 +126,16 @@ public class SpringDIProcessor {
                         annotationsToAdd.add(create(
                                 CDI_APP_SCOPED_ANNOTATION,
                                 context.getTarget(),
-                                new ArrayList<>()
-                        ));
+                                new ArrayList<>()));
 
                     }
-                } else if(context.isField()) { // here we check for @Autowired and @Value annotations
+                } else if (context.isField()) { // here we check for @Autowired and @Value annotations
                     final FieldInfo fieldInfo = context.getTarget().asField();
                     if (fieldInfo.hasAnnotation(AUTOWIRED_ANNOTATION)) {
                         annotationsToAdd.add(create(
                                 CDI_INJECT_ANNOTATION,
                                 context.getTarget(),
-                                new ArrayList<>()
-                        ));
+                                new ArrayList<>()));
 
                         if (fieldInfo.hasAnnotation(SPRING_QUALIFIER_ANNOTATION)) {
                             final AnnotationInstance annotation = fieldInfo.annotation(SPRING_QUALIFIER_ANNOTATION);
@@ -150,10 +145,11 @@ public class SpringDIProcessor {
                                 annotationsToAdd.add(create(
                                         CDI_NAMED_ANNOTATION,
                                         context.getTarget(),
-                                        new ArrayList<AnnotationValue>() {{
-                                            add(AnnotationValue.createStringValue("value", value));
-                                        }}
-                                ));
+                                        new ArrayList<AnnotationValue>() {
+                                            {
+                                                add(AnnotationValue.createStringValue("value", value));
+                                            }
+                                        }));
                             }
                         }
                     } else if (fieldInfo.hasAnnotation(VALUE_ANNOTATION)) {
@@ -178,13 +174,11 @@ public class SpringDIProcessor {
                             annotationsToAdd.add(create(
                                     MP_CONFIG_PROPERTY_ANNOTATION,
                                     context.getTarget(),
-                                    annotationValues
-                            ));
+                                    annotationValues));
                             annotationsToAdd.add(create(
                                     CDI_INJECT_ANNOTATION,
                                     context.getTarget(),
-                                    new ArrayList<>()
-                            ));
+                                    new ArrayList<>()));
                         }
                     }
                 } else if (context.isMethod()) {
@@ -193,44 +187,42 @@ public class SpringDIProcessor {
                         annotationsToAdd.add(create(
                                 CDI_PRODUCES_ANNOTATION,
                                 context.getTarget(),
-                                new ArrayList<>()
-                        ));
+                                new ArrayList<>()));
                         annotationsToAdd.add(create(
                                 CDI_DEPENDENT_ANNOTATION,
                                 context.getTarget(),
-                                new ArrayList<>()
-                        ));
+                                new ArrayList<>()));
 
                         //check if the spring annotation defines a name for the bean
-                        final AnnotationValue beanNameAnnotationValue
-                                = methodInfo.annotation(BEAN_ANNOTATION).value("name");
-                        final AnnotationValue beanValueAnnotationValue
-                                = methodInfo.annotation(BEAN_ANNOTATION).value("value");
-                        if(!addCDINamedAnnotation(context, beanNameAnnotationValue, annotationsToAdd)) {
+                        final AnnotationValue beanNameAnnotationValue = methodInfo.annotation(BEAN_ANNOTATION).value("name");
+                        final AnnotationValue beanValueAnnotationValue = methodInfo.annotation(BEAN_ANNOTATION).value("value");
+                        if (!addCDINamedAnnotation(context, beanNameAnnotationValue, annotationsToAdd)) {
                             addCDINamedAnnotation(context, beanValueAnnotationValue, annotationsToAdd);
                         }
                     }
 
                     // add method parameter conversion annotations
                     for (AnnotationInstance annotation : methodInfo.annotations()) {
-                        if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER && annotation.name().equals(SPRING_QUALIFIER_ANNOTATION)) {
+                        if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER
+                                && annotation.name().equals(SPRING_QUALIFIER_ANNOTATION)) {
                             final AnnotationValue annotationValue = annotation.value();
                             if (annotationValue != null) {
                                 final String value = annotationValue.asString();
                                 annotationsToAdd.add(create(
                                         CDI_NAMED_ANNOTATION,
                                         annotation.target(),
-                                        new ArrayList<AnnotationValue>() {{
-                                            add(AnnotationValue.createStringValue("value", value));
-                                        }}
-                                ));
+                                        new ArrayList<AnnotationValue>() {
+                                            {
+                                                add(AnnotationValue.createStringValue("value", value));
+                                            }
+                                        }));
                             }
                         }
                     }
 
                 }
 
-                if(!annotationsToAdd.isEmpty()) {
+                if (!annotationsToAdd.isEmpty()) {
                     final Transformation transform = context.transform();
                     for (AnnotationInstance annotationInstance : annotationsToAdd) {
                         transform.add(annotationInstance);
@@ -240,8 +232,8 @@ public class SpringDIProcessor {
             }
 
             private boolean addCDINamedAnnotation(TransformationContext context,
-                                                  AnnotationValue annotationValue,
-                                               Set<AnnotationInstance> annotationsToAdd) {
+                    AnnotationValue annotationValue,
+                    Set<AnnotationInstance> annotationsToAdd) {
                 if (annotationValue == null) {
                     return false;
                 }
@@ -251,10 +243,11 @@ public class SpringDIProcessor {
                     annotationsToAdd.add(create(
                             CDI_NAMED_ANNOTATION,
                             context.getTarget(),
-                            new ArrayList<AnnotationValue>() {{
-                                add(AnnotationValue.createStringValue("value", beanName));
-                            }}
-                    ));
+                            new ArrayList<AnnotationValue>() {
+                                {
+                                    add(AnnotationValue.createStringValue("value", beanName));
+                                }
+                            }));
 
                     return true;
                 }
@@ -266,7 +259,7 @@ public class SpringDIProcessor {
                 if (annotationValue.kind() == AnnotationValue.Kind.ARRAY) {
                     return annotationValue.asStringArray()[0];
                 } else if (annotationValue.kind() == AnnotationValue.Kind.STRING) {
-                    return  annotationValue.asString();
+                    return annotationValue.asString();
                 }
                 return null;
             }

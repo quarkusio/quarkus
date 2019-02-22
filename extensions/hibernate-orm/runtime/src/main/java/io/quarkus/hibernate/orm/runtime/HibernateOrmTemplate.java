@@ -24,6 +24,7 @@ import javax.sql.DataSource;
 import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.jboss.logging.Logger;
+
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.runtime.annotations.Template;
@@ -77,7 +78,8 @@ public class HibernateOrmTemplate {
         };
     }
 
-    public BeanContainerListener initMetadata(List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors, Scanner scanner) {
+    public BeanContainerListener initMetadata(List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors,
+            Scanner scanner) {
         return new BeanContainerListener() {
             @Override
             public void created(BeanContainer beanContainer) {

@@ -24,19 +24,19 @@ import java.util.Set;
 import org.hibernate.engine.spi.ManagedEntity;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.SelfDirtinessTracker;
+import org.jboss.protean.gizmo.TestClassLoader;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 
-import org.jboss.protean.gizmo.TestClassLoader;
 import io.quarkus.hibernate.orm.HibernateEntityEnhancer;
 
 /**
  * Verifies the HibernateEntityEnhancer actually does enhance the entity class
  *
- * @author Sanne Grinovero  <sanne@hibernate.org>
+ * @author Sanne Grinovero <sanne@hibernate.org>
  */
 public class HibernateEntityEnhancerTest {
 
@@ -65,8 +65,8 @@ public class HibernateEntityEnhancerTest {
         Set<Class> interfaces = new HashSet<Class>(Arrays.asList(modifiedClass.getInterfaces()));
         //Assert it now implements these three interfaces:
         return interfaces.contains(ManagedEntity.class) &&
-              interfaces.contains(PersistentAttributeInterceptable.class);// &&
-              //interfaces.contains(SelfDirtinessTracker.class);
+                interfaces.contains(PersistentAttributeInterceptable.class);// &&
+        //interfaces.contains(SelfDirtinessTracker.class);
     }
 
 }

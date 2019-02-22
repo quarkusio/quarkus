@@ -3,7 +3,8 @@ package io.quarkus.security;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /**
- * Authentication mechanism and SecurityRealm name information used for configuring the {@linkplain io.undertow.servlet.api.LoginConfig}
+ * Authentication mechanism and SecurityRealm name information used for configuring the
+ * {@linkplain io.undertow.servlet.api.LoginConfig}
  * instance for the deployment.
  */
 public class AuthConfig {
@@ -26,6 +27,7 @@ public class AuthConfig {
         this.realmName = realmName;
         this.type = type;
     }
+
     public AuthConfig() {
 
     }

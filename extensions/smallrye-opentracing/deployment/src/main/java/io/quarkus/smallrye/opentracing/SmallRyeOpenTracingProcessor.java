@@ -23,18 +23,17 @@ import java.util.List;
 import javax.enterprise.inject.spi.ObserverMethod;
 import javax.servlet.DispatcherType;
 
+import io.opentracing.contrib.interceptors.OpenTracingInterceptor;
+import io.opentracing.contrib.jaxrs2.server.SpanFinishingFilter;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveMethodBuildItem;
 import io.quarkus.resteasy.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.smallrye.opentracing.runtime.QuarkusSmallRyeTracingDynamicFeature;
 import io.quarkus.smallrye.opentracing.runtime.TracerProducer;
 import io.quarkus.undertow.FilterBuildItem;
-
-import io.opentracing.contrib.interceptors.OpenTracingInterceptor;
-import io.opentracing.contrib.jaxrs2.server.SpanFinishingFilter;
 
 public class SmallRyeOpenTracingProcessor {
 
@@ -50,9 +49,9 @@ public class SmallRyeOpenTracingProcessor {
     }
 
     @BuildStep
-            void setupFilter(BuildProducer<ResteasyJaxrsProviderBuildItem> providers,
-                     BuildProducer<FilterBuildItem> filterProducer,
-                     BuildProducer<FeatureBuildItem> feature) {
+    void setupFilter(BuildProducer<ResteasyJaxrsProviderBuildItem> providers,
+            BuildProducer<FilterBuildItem> filterProducer,
+            BuildProducer<FeatureBuildItem> feature) {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_OPENTRACING));
 

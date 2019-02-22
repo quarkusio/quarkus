@@ -2,8 +2,8 @@ package io.quarkus.infinispan.client.runtime;
 
 import java.util.Properties;
 
-import io.quarkus.runtime.annotations.Template;
 import io.quarkus.arc.runtime.BeanContainerListener;
+import io.quarkus.runtime.annotations.Template;
 
 @Template
 public class InfinispanTemplate {

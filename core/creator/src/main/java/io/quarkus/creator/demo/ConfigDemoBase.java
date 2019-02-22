@@ -64,14 +64,14 @@ public class ConfigDemoBase {
         final Properties props = getProperties();
         Files.createDirectories(demoDir);
         final Path propsFile = demoDir.resolve("app-creator.properties");
-        try(OutputStream out = Files.newOutputStream(propsFile)) {
+        try (OutputStream out = Files.newOutputStream(propsFile)) {
             props.store(out, "Example AppCreator properties");
         }
 
         final PropertiesHandler<AppCreator> propsHandler = AppCreator.builder()
                 .setAppJar(appJar)
                 .getPropertiesHandler();
-        try(final AppCreator appCreator = PropertiesConfigReader.getInstance(propsHandler).read(propsFile)) {
+        try (final AppCreator appCreator = PropertiesConfigReader.getInstance(propsHandler).read(propsFile)) {
             demo(appCreator);
             if (isLogLibDiff()) {
                 logLibDiff(appJar.getParent(), demoDir);
@@ -96,7 +96,7 @@ public class ConfigDemoBase {
         //final Path appJar = appDir.resolve("quarkus-integration-test-bean-validation-1.0.0.Alpha1-SNAPSHOT.jar");
 
         final Path quickstartsRoot = quarkusRoot.getParent().resolve("quarkus-quickstarts");
-        if(!Files.exists(quickstartsRoot)) {
+        if (!Files.exists(quickstartsRoot)) {
             throw new IllegalStateException("Failed to locate quarkus-quickstarts repo at " + quickstartsRoot);
         }
         final Path appDir = quickstartsRoot.resolve("application-configuration").resolve("target");
@@ -115,10 +115,11 @@ public class ConfigDemoBase {
     public Properties getProperties() {
         final Properties props = new Properties();
         final Path demoDir = getDemoWorkDir();
-        if(demoDir != null) {
+        if (demoDir != null) {
             props.setProperty("output", demoDir.toString());
         }
-        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_LOCAL_REPO), Paths.get(PropertyUtils.getUserHome(), "quarkus-curate-repo").toString());
+        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_LOCAL_REPO),
+                Paths.get(PropertyUtils.getUserHome(), "quarkus-curate-repo").toString());
         initProps(props);
         return props;
     }
@@ -140,21 +141,21 @@ public class ConfigDemoBase {
     }
 
     private static void logNames(String header, Set<String> names) {
-        if(names.isEmpty()) {
+        if (names.isEmpty()) {
             return;
         }
         System.out.println(header);
         final List<String> sorted = new ArrayList<>(names);
         Collections.sort(sorted);
-        for(int i = 0; i < sorted.size(); ++i) {
+        for (int i = 0; i < sorted.size(); ++i) {
             System.out.println((i + 1) + ") " + sorted.get(i));
         }
     }
 
     private static Set<String> readNames(Path path) throws IOException {
         Set<String> names = new HashSet<>();
-        try(DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
-            for(Path p : stream) {
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
+            for (Path p : stream) {
                 names.add(p.getFileName().toString());
             }
         }

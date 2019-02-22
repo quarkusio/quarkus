@@ -26,13 +26,15 @@ import javax.validation.Validation;
 import org.hibernate.validator.PredefinedScopeHibernateValidator;
 import org.hibernate.validator.PredefinedScopeHibernateValidatorConfiguration;
 import org.hibernate.validator.messageinterpolation.ParameterMessageInterpolator;
+
 import io.quarkus.runtime.annotations.Template;
 
 @Template
 public class HibernateValidatorTemplate {
 
     public void initializeValidatorFactory(Set<Class<?>> classesToBeValidated) {
-        PredefinedScopeHibernateValidatorConfiguration configuration = Validation.byProvider(PredefinedScopeHibernateValidator.class)
+        PredefinedScopeHibernateValidatorConfiguration configuration = Validation
+                .byProvider(PredefinedScopeHibernateValidator.class)
                 .configure();
 
         Set<Locale> localesToInitialize = Collections.singleton(Locale.getDefault());

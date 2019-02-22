@@ -18,11 +18,12 @@ package io.quarkus.test.junit4;
 
 import java.util.function.BiFunction;
 
-import io.quarkus.test.common.http.TestHttpResourceManager;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
+
+import io.quarkus.test.common.http.TestHttpResourceManager;
 
 abstract class AbstractQuarkusTestRunner extends BlockJUnit4ClassRunner {
 
@@ -31,7 +32,9 @@ abstract class AbstractQuarkusTestRunner extends BlockJUnit4ClassRunner {
 
     private final BiFunction<Class<?>, RunNotifier, AbstractQuarkusRunListener> quarkusRunListenerSupplier;
 
-    public AbstractQuarkusTestRunner(Class<?> klass, BiFunction<Class<?>, RunNotifier, AbstractQuarkusRunListener> quarkusRunListenerSupplier) throws InitializationError {
+    public AbstractQuarkusTestRunner(Class<?> klass,
+            BiFunction<Class<?>, RunNotifier, AbstractQuarkusRunListener> quarkusRunListenerSupplier)
+            throws InitializationError {
         super(klass);
         this.quarkusRunListenerSupplier = quarkusRunListenerSupplier;
     }

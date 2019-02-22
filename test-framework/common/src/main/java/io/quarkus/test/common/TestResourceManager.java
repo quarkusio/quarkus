@@ -64,7 +64,6 @@ public class TestResourceManager {
         }
     }
 
-
     @SuppressWarnings("unchecked")
     private Set<QuarkusTestResourceLifecycleManager> getTestResources(Class<?> testClass) {
         IndexView index = indexTestClasses(testClass);
@@ -91,13 +90,12 @@ public class TestResourceManager {
             }
         }
 
-        for(QuarkusTestResourceLifecycleManager i : ServiceLoader.load(QuarkusTestResourceLifecycleManager.class)) {
+        for (QuarkusTestResourceLifecycleManager i : ServiceLoader.load(QuarkusTestResourceLifecycleManager.class)) {
             testResourceRunners.add(i);
         }
 
         return testResourceRunners;
     }
-
 
     private IndexView indexTestClasses(Class<?> testClass) {
         Indexer indexer = new Indexer();

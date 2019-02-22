@@ -11,6 +11,7 @@ import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
 import org.jboss.quarkus.arc.Arc;
+
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.jpa.PanacheQuery;
@@ -19,7 +20,7 @@ public class JpaOperations {
 
     //
     // Instance methods
-    
+
     public static void persist(Object entity) {
         EntityManager em = getEntityManager();
         persist(em, entity);
@@ -62,7 +63,7 @@ public class JpaOperations {
 
     //
     // Private stuff
-    
+
     public static EntityManager getEntityManager() {
         return Arc.container().instance(EntityManager.class).get();
     }
@@ -72,16 +73,16 @@ public class JpaOperations {
     }
 
     public static Query bindParameters(Query query, Object[] params) {
-        if(params == null || params.length == 0)
+        if (params == null || params.length == 0)
             return query;
         for (int i = 0; i < params.length; i++) {
-            query.setParameter(i+1,  params[i]);
+            query.setParameter(i + 1, params[i]);
         }
         return query;
     }
 
     public static Query bindParameters(Query query, Map<String, Object> params) {
-        if(params == null || params.size() == 0)
+        if (params == null || params.size() == 0)
             return query;
         for (Entry<String, Object> entry : params.entrySet()) {
             query.setParameter(entry.getKey(), entry.getValue());
@@ -103,73 +104,73 @@ public class JpaOperations {
     }
 
     private static String createFindQuery(Class<?> entityClass, String query, int paramCount) {
-        if(query == null)
-            return "FROM "+getEntityName(entityClass);
+        if (query == null)
+            return "FROM " + getEntityName(entityClass);
 
         String trimmed = query.trim();
-        if(trimmed.isEmpty())
-            return "FROM "+getEntityName(entityClass);
-        
+        if (trimmed.isEmpty())
+            return "FROM " + getEntityName(entityClass);
+
         String trimmedLc = trimmed.toLowerCase();
-        if(trimmedLc.startsWith("from ") || trimmedLc.startsWith("select ")) {
+        if (trimmedLc.startsWith("from ") || trimmedLc.startsWith("select ")) {
             return query;
         }
-        if(trimmedLc.startsWith("order by ")) {
-            return "FROM "+getEntityName(entityClass) + " " + query;
+        if (trimmedLc.startsWith("order by ")) {
+            return "FROM " + getEntityName(entityClass) + " " + query;
         }
         if (trimmedLc.indexOf(' ') == -1 && trimmedLc.indexOf('=') == -1 && paramCount == 1) {
             query += " = ?1";
         }
-        return "FROM "+getEntityName(entityClass)+" WHERE "+query;
+        return "FROM " + getEntityName(entityClass) + " WHERE " + query;
     }
 
     private static String createCountQuery(Class<?> entityClass, String query, int paramCount) {
-        if(query == null)
-            return "SELECT COUNT(*) FROM "+getEntityName(entityClass);
+        if (query == null)
+            return "SELECT COUNT(*) FROM " + getEntityName(entityClass);
 
         String trimmed = query.trim();
-        if(trimmed.isEmpty())
-            return "SELECT COUNT(*) FROM "+getEntityName(entityClass);
-        
+        if (trimmed.isEmpty())
+            return "SELECT COUNT(*) FROM " + getEntityName(entityClass);
+
         String trimmedLc = trimmed.toLowerCase();
-        if(trimmedLc.startsWith("from ")) {
-            return "SELECT COUNT(*) "+query;
+        if (trimmedLc.startsWith("from ")) {
+            return "SELECT COUNT(*) " + query;
         }
-        if(trimmedLc.startsWith("order by ")) {
+        if (trimmedLc.startsWith("order by ")) {
             // ignore it
-            return "SELECT COUNT(*) FROM "+getEntityName(entityClass);
+            return "SELECT COUNT(*) FROM " + getEntityName(entityClass);
         }
         if (trimmedLc.indexOf(' ') == -1 && trimmedLc.indexOf('=') == -1 && paramCount == 1) {
             query += " = ?1";
         }
-        return "SELECT COUNT(*) FROM "+getEntityName(entityClass)+" WHERE "+query;
+        return "SELECT COUNT(*) FROM " + getEntityName(entityClass) + " WHERE " + query;
     }
 
     private static String createDeleteQuery(Class<?> entityClass, String query, int paramCount) {
-        if(query == null)
-            return "DELETE FROM "+getEntityName(entityClass);
+        if (query == null)
+            return "DELETE FROM " + getEntityName(entityClass);
 
         String trimmed = query.trim();
-        if(trimmed.isEmpty())
-            return "DELETE FROM "+getEntityName(entityClass);
-        
+        if (trimmed.isEmpty())
+            return "DELETE FROM " + getEntityName(entityClass);
+
         String trimmedLc = trimmed.toLowerCase();
-        if(trimmedLc.startsWith("from ")) {
-            return "DELETE "+query;
+        if (trimmedLc.startsWith("from ")) {
+            return "DELETE " + query;
         }
-        if(trimmedLc.startsWith("order by ")) {
+        if (trimmedLc.startsWith("order by ")) {
             // ignore it
-            return "DELETE FROM "+getEntityName(entityClass);
+            return "DELETE FROM " + getEntityName(entityClass);
         }
         if (trimmedLc.indexOf(' ') == -1 && trimmedLc.indexOf('=') == -1 && paramCount == 1) {
             query += " = ?1";
         }
-        return "DELETE FROM "+getEntityName(entityClass)+" WHERE "+query;
+        return "DELETE FROM " + getEntityName(entityClass) + " WHERE " + query;
     }
 
     //
     // Queries
-    
+
     public static Object findById(Class<?> entityClass, Object id) {
         return getEntityManager().find(entityClass, id);
     }
@@ -183,21 +184,21 @@ public class JpaOperations {
         String findQuery = createFindQuery(entityClass, query, paramCount(params));
         EntityManager em = getEntityManager();
         // FIXME: check for duplicate ORDER BY clause?
-        Query jpaQuery = em.createQuery(sort != null ? findQuery+sort.toOrderBy() : findQuery);
+        Query jpaQuery = em.createQuery(sort != null ? findQuery + sort.toOrderBy() : findQuery);
         bindParameters(jpaQuery, params);
         return new PanacheQuery(em, jpaQuery, findQuery, params);
     }
 
-    public static PanacheQuery<?> find(Class<?> entityClass, String query, Map<String,Object> params) {
+    public static PanacheQuery<?> find(Class<?> entityClass, String query, Map<String, Object> params) {
         return find(entityClass, query, null, params);
     }
 
     @SuppressWarnings("rawtypes")
-    public static PanacheQuery<?> find(Class<?> entityClass, String query, Sort sort, Map<String,Object> params) {
+    public static PanacheQuery<?> find(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
         String findQuery = createFindQuery(entityClass, query, paramCount(params));
         EntityManager em = getEntityManager();
         // FIXME: check for duplicate ORDER BY clause?
-        Query jpaQuery = em.createQuery(sort != null ? findQuery+sort.toOrderBy() : findQuery);
+        Query jpaQuery = em.createQuery(sort != null ? findQuery + sort.toOrderBy() : findQuery);
         bindParameters(jpaQuery, params);
         return new PanacheQuery(em, jpaQuery, findQuery, params);
     }
@@ -218,11 +219,11 @@ public class JpaOperations {
         return find(entityClass, query, sort, params).list();
     }
 
-    public static List<?> list(Class<?> entityClass, String query, Map<String,Object> params) {
+    public static List<?> list(Class<?> entityClass, String query, Map<String, Object> params) {
         return find(entityClass, query, params).list();
     }
 
-    public static List<?> list(Class<?> entityClass, String query, Sort sort, Map<String,Object> params) {
+    public static List<?> list(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
         return find(entityClass, query, sort, params).list();
     }
 
@@ -242,11 +243,11 @@ public class JpaOperations {
         return find(entityClass, query, sort, params).stream();
     }
 
-    public static Stream<?> stream(Class<?> entityClass, String query, Map<String,Object> params) {
+    public static Stream<?> stream(Class<?> entityClass, String query, Map<String, Object> params) {
         return find(entityClass, query, params).stream();
     }
 
-    public static Stream<?> stream(Class<?> entityClass, String query, Sort sort, Map<String,Object> params) {
+    public static Stream<?> stream(Class<?> entityClass, String query, Sort sort, Map<String, Object> params) {
         return find(entityClass, query, sort, params).stream();
     }
 
@@ -260,14 +261,14 @@ public class JpaOperations {
 
     @SuppressWarnings("rawtypes")
     public static PanacheQuery<?> findAll(Class<?> entityClass) {
-        String query = "FROM "+getEntityName(entityClass);
+        String query = "FROM " + getEntityName(entityClass);
         EntityManager em = getEntityManager();
         return new PanacheQuery(em, em.createQuery(query), query, null);
     }
 
     @SuppressWarnings("rawtypes")
     public static PanacheQuery<?> findAll(Class<?> entityClass, Sort sort) {
-        String query = "FROM "+getEntityName(entityClass);
+        String query = "FROM " + getEntityName(entityClass);
         String sortedQuery = query + sort.toOrderBy();
         EntityManager em = getEntityManager();
         return new PanacheQuery(em, em.createQuery(sortedQuery), query, null);
@@ -290,15 +291,17 @@ public class JpaOperations {
     }
 
     public static long count(Class<?> entityClass) {
-        return (long) getEntityManager().createQuery("SELECT COUNT(*) FROM "+getEntityName(entityClass)).getSingleResult();
+        return (long) getEntityManager().createQuery("SELECT COUNT(*) FROM " + getEntityName(entityClass)).getSingleResult();
     }
 
     public static long count(Class<?> entityClass, String query, Object... params) {
-        return (long) bindParameters(getEntityManager().createQuery(createCountQuery(entityClass, query, paramCount(params))), params).getSingleResult();
+        return (long) bindParameters(getEntityManager().createQuery(createCountQuery(entityClass, query, paramCount(params))),
+                params).getSingleResult();
     }
 
-    public static long count(Class<?> entityClass, String query, Map<String,Object> params) {
-        return (long) bindParameters(getEntityManager().createQuery(createCountQuery(entityClass, query, paramCount(params))), params).getSingleResult();
+    public static long count(Class<?> entityClass, String query, Map<String, Object> params) {
+        return (long) bindParameters(getEntityManager().createQuery(createCountQuery(entityClass, query, paramCount(params))),
+                params).getSingleResult();
     }
 
     public static long count(Class<?> entityClass, String query, Parameters params) {
@@ -306,15 +309,17 @@ public class JpaOperations {
     }
 
     public static long deleteAll(Class<?> entityClass) {
-        return (long) getEntityManager().createQuery("DELETE FROM "+getEntityName(entityClass)).executeUpdate();
+        return (long) getEntityManager().createQuery("DELETE FROM " + getEntityName(entityClass)).executeUpdate();
     }
 
     public static long delete(Class<?> entityClass, String query, Object... params) {
-        return bindParameters(getEntityManager().createQuery(createDeleteQuery(entityClass, query, paramCount(params))), params).executeUpdate();
+        return bindParameters(getEntityManager().createQuery(createDeleteQuery(entityClass, query, paramCount(params))), params)
+                .executeUpdate();
     }
 
-    public static long delete(Class<?> entityClass, String query, Map<String,Object> params) {
-        return bindParameters(getEntityManager().createQuery(createDeleteQuery(entityClass, query, paramCount(params))), params).executeUpdate();
+    public static long delete(Class<?> entityClass, String query, Map<String, Object> params) {
+        return bindParameters(getEntityManager().createQuery(createDeleteQuery(entityClass, query, paramCount(params))), params)
+                .executeUpdate();
     }
 
     public static long delete(Class<?> entityClass, String query, Parameters params) {
@@ -322,7 +327,8 @@ public class JpaOperations {
     }
 
     public static IllegalStateException implementationInjectionMissing() {
-        return new IllegalStateException("This method is normally automatically overridden in subclasses: did you forget to annotated your entity with @Entity?");
+        return new IllegalStateException(
+                "This method is normally automatically overridden in subclasses: did you forget to annotated your entity with @Entity?");
     }
 
     public static int executeUpdate(String query, Object... params) {
@@ -331,7 +337,7 @@ public class JpaOperations {
         return jpaQuery.executeUpdate();
     }
 
-    public static int executeUpdate(String query, Map<String,Object> params) {
+    public static int executeUpdate(String query, Map<String, Object> params) {
         Query jpaQuery = getEntityManager().createQuery(query);
         bindParameters(jpaQuery, params);
         return jpaQuery.executeUpdate();

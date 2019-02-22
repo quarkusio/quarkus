@@ -17,6 +17,7 @@
 package io.quarkus.deployment.builditem;
 
 import org.jboss.builder.item.SimpleBuildItem;
+
 import io.quarkus.deployment.ClassOutput;
 
 public final class ClassOutputBuildItem extends SimpleBuildItem {

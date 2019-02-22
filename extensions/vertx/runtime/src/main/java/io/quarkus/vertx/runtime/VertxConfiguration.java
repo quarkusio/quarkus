@@ -1,11 +1,11 @@
 package io.quarkus.vertx.runtime;
 
+import java.time.Duration;
+import java.util.OptionalInt;
+
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
-
-import java.time.Duration;
-import java.util.OptionalInt;
 
 @ConfigRoot(phase = ConfigPhase.RUN_TIME_STATIC)
 public class VertxConfiguration {
@@ -75,6 +75,5 @@ public class VertxConfiguration {
      */
     @ConfigItem
     public ClusterConfiguration cluster;
-
 
 }

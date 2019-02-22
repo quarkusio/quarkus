@@ -1,6 +1,5 @@
 package io.quarkus.panache.jpa;
 
-
 public class JavaBeanUtil {
 
     public static String getGetterName(String name, String type) {

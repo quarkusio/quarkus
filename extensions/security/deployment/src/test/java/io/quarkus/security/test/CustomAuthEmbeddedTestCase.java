@@ -1,15 +1,16 @@
 package io.quarkus.security.test;
 
-import io.restassured.RestAssured;
-import io.undertow.servlet.ServletExtension;
-import io.quarkus.test.QuarkusUnitTest;
+import static org.hamcrest.Matchers.equalTo;
+
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import static org.hamcrest.Matchers.equalTo;
+import io.quarkus.test.QuarkusUnitTest;
+import io.restassured.RestAssured;
+import io.undertow.servlet.ServletExtension;
 
 /**
  * Tests of a CUSTOM authentication mechanism that uses the BASIC authentication headers
@@ -21,14 +22,13 @@ public class CustomAuthEmbeddedTestCase {
     };
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() ->
-                                        ShrinkWrap.create(JavaArchive.class)
-                                                .addClasses(testClasses)
-                                                .addClasses(CustomAuth.class, CustomAuthExtension.class, CustomAuthFactory.class)
-                                                .addAsManifestResource("microprofile-config-custom-auth-embedded.properties", "microprofile-config.properties")
-                                                .addAsManifestResource(new StringAsset(CustomAuthExtension.class.getName()), "services/"+ ServletExtension.class.getName())
-            );
-
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(testClasses)
+                    .addClasses(CustomAuth.class, CustomAuthExtension.class, CustomAuthFactory.class)
+                    .addAsManifestResource("microprofile-config-custom-auth-embedded.properties",
+                            "microprofile-config.properties")
+                    .addAsManifestResource(new StringAsset(CustomAuthExtension.class.getName()),
+                            "services/" + ServletExtension.class.getName()));
 
     // Basic @ServletSecurity tests
     @Test()
@@ -36,12 +36,14 @@ public class CustomAuthEmbeddedTestCase {
         RestAssured.when().get("/secure-test").then()
                 .statusCode(401);
     }
+
     @Test()
     public void testSecureRoleFailure() {
         RestAssured.given().auth().preemptive().basic("jdoe", "p4ssw0rd")
                 .when().get("/secure-test").then()
                 .statusCode(403);
     }
+
     @Test()
     public void testSecureAccessSuccess() {
         RestAssured.given().auth().preemptive().basic("stuart", "test")
@@ -57,6 +59,7 @@ public class CustomAuthEmbeddedTestCase {
         RestAssured.when().get("/jaxrs-secured/rolesClass").then()
                 .statusCode(401);
     }
+
     /**
      * Test access a secured jaxrs resource with authentication, but no authorization. should see 403 error code.
      */
@@ -66,6 +69,7 @@ public class CustomAuthEmbeddedTestCase {
                 .when().get("/jaxrs-secured/rolesClass").then()
                 .statusCode(403);
     }
+
     /**
      * Test access a secured jaxrs resource with authentication, and authorization. should see 200 success code.
      */
@@ -85,12 +89,14 @@ public class CustomAuthEmbeddedTestCase {
                 .when().get("/jaxrs-secured/parameterized-paths/my/banking/admin").then()
                 .statusCode(200);
     }
+
     @Test
     public void testJaxrsPathAdminRoleFailure() {
         RestAssured.given().auth().preemptive().basic("noadmin", "n0Adm1n")
                 .when().get("/jaxrs-secured/parameterized-paths/my/banking/admin").then()
                 .statusCode(403);
     }
+
     /**
      * Test access a secured jaxrs resource with authentication, and authorization. should see 200 success code.
      */

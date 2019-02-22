@@ -48,6 +48,7 @@ import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.util.repository.AuthenticationBuilder;
 import org.eclipse.aether.util.repository.DefaultProxySelector;
 import org.jboss.logging.Logger;
+
 import io.quarkus.creator.AppCreatorException;
 import io.quarkus.creator.util.PropertyUtils;
 
@@ -76,7 +77,7 @@ public class MavenRepoInitializer {
     private static final Logger log = Logger.getLogger(MavenRepoInitializer.class);
 
     public static RepositorySystem getRepositorySystem() {
-        if(repoSystem != null) {
+        if (repoSystem != null) {
             return repoSystem;
         }
 
@@ -106,7 +107,7 @@ public class MavenRepoInitializer {
         final org.apache.maven.settings.Proxy proxy = settings.getActiveProxy();
         if (proxy != null) {
             Authentication auth = null;
-            if(proxy.getUsername() != null) {
+            if (proxy.getUsername() != null) {
                 auth = new AuthenticationBuilder()
                         .addUsername(proxy.getUsername())
                         .addPassword(proxy.getPassword())
@@ -130,7 +131,7 @@ public class MavenRepoInitializer {
     }
 
     public static List<RemoteRepository> getRemoteRepos() throws AppCreatorException {
-        if(remoteRepos != null) {
+        if (remoteRepos != null) {
             return remoteRepos;
         }
         remoteRepos = Collections.unmodifiableList(getRemoteRepos(getSettings()));
@@ -146,7 +147,8 @@ public class MavenRepoInitializer {
             final Profile profile = profilesMap.get(profileName);
             final List<Repository> repositories = profile.getRepositories();
             for (Repository repo : repositories) {
-                final RemoteRepository.Builder repoBuilder = new RemoteRepository.Builder(repo.getId(), repo.getLayout(), repo.getUrl());
+                final RemoteRepository.Builder repoBuilder = new RemoteRepository.Builder(repo.getId(), repo.getLayout(),
+                        repo.getUrl());
                 org.apache.maven.settings.RepositoryPolicy policy = repo.getReleases();
                 if (policy != null) {
                     repoBuilder.setReleasePolicy(
@@ -164,7 +166,7 @@ public class MavenRepoInitializer {
     }
 
     public static Settings getSettings() throws AppCreatorException {
-        if(settings != null) {
+        if (settings != null) {
             return settings;
         }
         final SettingsBuildingRequest settingsBuildingRequest = new DefaultSettingsBuildingRequest();
@@ -174,14 +176,16 @@ public class MavenRepoInitializer {
 
         final Settings effectiveSettings;
         try {
-            final SettingsBuildingResult result = new DefaultSettingsBuilderFactory().newInstance().build(settingsBuildingRequest);
+            final SettingsBuildingResult result = new DefaultSettingsBuilderFactory().newInstance()
+                    .build(settingsBuildingRequest);
             final List<SettingsProblem> problems = result.getProblems();
-            if(!problems.isEmpty()) {
-                for(SettingsProblem problem : problems) {
-                    switch(problem.getSeverity()) {
+            if (!problems.isEmpty()) {
+                for (SettingsProblem problem : problems) {
+                    switch (problem.getSeverity()) {
                         case ERROR:
                         case FATAL:
-                            throw new AppCreatorException("Settings problem encountered at " + problem.getLocation(), problem.getException());
+                            throw new AppCreatorException("Settings problem encountered at " + problem.getLocation(),
+                                    problem.getException());
                         default:
                             log.warn("Settings problem encountered at " + problem.getLocation(), problem.getException());
                     }

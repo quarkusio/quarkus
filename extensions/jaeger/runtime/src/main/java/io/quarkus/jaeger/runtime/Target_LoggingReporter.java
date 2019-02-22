@@ -34,7 +34,7 @@ final public class Target_LoggingReporter implements Reporter {
     @Substitute
     @Override
     public void report(JaegerSpan span) {
-        System.err.println( "--- not logging: " + span);
+        System.err.println("--- not logging: " + span);
     }
 
     @Substitute

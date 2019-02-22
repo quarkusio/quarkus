@@ -71,7 +71,6 @@ public class KnownPathResourceManager implements ResourceManager {
         this.directories = Collections.unmodifiableSet(tmp);
     }
 
-
     @Override
     public Resource getResource(String path) throws IOException {
         if (path.startsWith("/")) {

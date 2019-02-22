@@ -23,5 +23,6 @@ public abstract class SimpleBuildItem extends BuildItem {
     /**
      * Construct a new instance.
      */
-    protected SimpleBuildItem() {}
+    protected SimpleBuildItem() {
+    }
 }

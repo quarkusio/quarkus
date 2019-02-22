@@ -26,7 +26,6 @@ public final class ApplicationIndexBuildItem extends SimpleBuildItem {
 
     private final Index index;
 
-
     public ApplicationIndexBuildItem(Index index) {
         this.index = index;
     }

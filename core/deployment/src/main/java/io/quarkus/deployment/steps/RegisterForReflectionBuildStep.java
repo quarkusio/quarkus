@@ -21,6 +21,7 @@ import javax.inject.Inject;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -41,7 +42,8 @@ public class RegisterForReflectionBuildStep {
 
     @BuildStep
     public void build() throws Exception {
-        for (AnnotationInstance i : combinedIndexBuildItem.getIndex().getAnnotations(DotName.createSimple(RegisterForReflection.class.getName()))) {
+        for (AnnotationInstance i : combinedIndexBuildItem.getIndex()
+                .getAnnotations(DotName.createSimple(RegisterForReflection.class.getName()))) {
             ClassInfo target = i.target().asClass();
             boolean methods = i.value("methods") == null || i.value("methods").asBoolean();
             boolean fields = i.value("fields") == null || i.value("fields").asBoolean();

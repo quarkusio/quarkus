@@ -16,14 +16,15 @@
 
 package io.quarkus.example.jpa;
 
-import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * Various tests for the JPA integration.
@@ -43,14 +44,14 @@ public class JPATestReflectionEndpoint extends HttpServlet {
         resp.getWriter().write("OK");
     }
 
-    private void makeSureClassAreAccessibleViaReflection(String className, String errorMessage, HttpServletResponse resp) throws IOException {
+    private void makeSureClassAreAccessibleViaReflection(String className, String errorMessage, HttpServletResponse resp)
+            throws IOException {
         try {
             className = getTrickedClassName(className);
 
             Class<?> custClass = Class.forName(className);
             Object instance = custClass.getDeclaredConstructor().newInstance();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             reportException(errorMessage, e, resp);
         }
     }
@@ -69,11 +70,10 @@ public class JPATestReflectionEndpoint extends HttpServlet {
             Method setter = custClass.getMethod("setName", String.class);
             Method getter = custClass.getMethod("getName");
             setter.invoke(instance, "Emmanuel");
-            if (! "Emmanuel".equals(getter.invoke(instance))) {
+            if (!"Emmanuel".equals(getter.invoke(instance))) {
                 resp.getWriter().write("getter / setter should be reachable and usable");
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             reportException(e, resp);
         }
     }
@@ -87,14 +87,14 @@ public class JPATestReflectionEndpoint extends HttpServlet {
             Method setter = custClass.getDeclaredMethod("setCompany", String.class);
             Method getter = custClass.getDeclaredMethod("getCompany");
             setter.invoke(instance, "Red Hat");
-            if (! "Red Hat".equals(getter.invoke(instance))) {
+            if (!"Red Hat".equals(getter.invoke(instance))) {
                 resp.getWriter().write("@Embeddable embeddable should be reachable and usable");
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             reportException(e, resp);
         }
     }
+
     private void makeSureNonAnnotatedEmbeddableAreAccessibleViaReflection(HttpServletResponse resp) throws IOException {
         try {
             String className = getTrickedClassName(io.quarkus.example.jpa.Address.class.getName());
@@ -104,11 +104,10 @@ public class JPATestReflectionEndpoint extends HttpServlet {
             Method setter = custClass.getDeclaredMethod("setStreet1", String.class);
             Method getter = custClass.getDeclaredMethod("getStreet1");
             setter.invoke(instance, "1 rue du General Leclerc");
-            if (! "1 rue du General Leclerc".equals(getter.invoke(instance))) {
+            if (!"1 rue du General Leclerc".equals(getter.invoke(instance))) {
                 resp.getWriter().write("Non @Embeddable embeddable getter / setter should be reachable and usable");
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             reportException(e, resp);
         }
     }
@@ -120,8 +119,7 @@ public class JPATestReflectionEndpoint extends HttpServlet {
             Class<?> custClass = Class.forName(className);
             resp.getWriter().write("Should not be able to find a non referenced non entity class");
             Object instance = custClass.getDeclaredConstructor().newInstance();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             // Expected outcome
         }
     }
@@ -141,7 +139,7 @@ public class JPATestReflectionEndpoint extends HttpServlet {
 
     private void reportException(String errorMessage, final Exception e, final HttpServletResponse resp) throws IOException {
         final PrintWriter writer = resp.getWriter();
-        if ( errorMessage != null ) {
+        if (errorMessage != null) {
             writer.write(errorMessage);
             writer.write(" ");
         }

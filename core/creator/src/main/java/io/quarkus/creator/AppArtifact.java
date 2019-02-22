@@ -140,7 +140,8 @@ public class AppArtifact {
     @Override
     public String toString() {
         final StringBuilder buf = new StringBuilder(128);
-        buf.append(groupId).append(':').append(artifactId).append(':').append(classifier).append(':').append(type).append(':').append(version);
+        buf.append(groupId).append(':').append(artifactId).append(':').append(classifier).append(':').append(type).append(':')
+                .append(version);
         return buf.toString();
     }
 }

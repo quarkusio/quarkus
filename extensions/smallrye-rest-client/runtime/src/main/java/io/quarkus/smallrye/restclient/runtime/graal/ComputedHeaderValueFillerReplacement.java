@@ -16,11 +16,11 @@
 
 package io.quarkus.smallrye.restclient.runtime.graal;
 
-import com.oracle.svm.core.annotate.Substitute;
-import com.oracle.svm.core.annotate.TargetClass;
-
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
+
+import com.oracle.svm.core.annotate.Substitute;
+import com.oracle.svm.core.annotate.TargetClass;
 
 /**
  * @author <a href="http://kenfinnigan.me">Ken Finnigan</a>

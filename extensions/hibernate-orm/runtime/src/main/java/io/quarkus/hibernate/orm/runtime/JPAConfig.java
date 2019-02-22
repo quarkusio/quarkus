@@ -67,7 +67,7 @@ public class JPAConfig {
     }
 
     void startAll() {
-        for(Map.Entry<String, LazyPersistenceUnit> i : persistenceUnits.entrySet()) {
+        for (Map.Entry<String, LazyPersistenceUnit> i : persistenceUnits.entrySet()) {
             i.getValue().get();
         }
     }
@@ -105,12 +105,12 @@ public class JPAConfig {
         }
 
         EntityManagerFactory get() {
-            if(value == null) {
+            if (value == null) {
                 synchronized (this) {
-                    if(closed) {
+                    if (closed) {
                         throw new IllegalStateException("Persistence unit is closed");
                     }
-                    if(value == null) {
+                    if (value == null) {
                         value = Persistence.createEntityManagerFactory(name);
                     }
                 }
@@ -122,7 +122,7 @@ public class JPAConfig {
             closed = true;
             EntityManagerFactory emf = this.value;
             this.value = null;
-            if(emf != null) {
+            if (emf != null) {
                 emf.close();
             }
         }

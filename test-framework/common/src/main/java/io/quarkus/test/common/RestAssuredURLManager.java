@@ -18,7 +18,7 @@ public class RestAssuredURLManager {
     private static int oldPort;
     private static String oldBaseURI;
 
-    static  {
+    static {
         Field p;
         Field base;
         try {
@@ -48,7 +48,8 @@ public class RestAssuredURLManager {
         if (baseURIField != null) {
             try {
                 oldBaseURI = (String) baseURIField.get(null);
-                String baseURI = "http://" + ConfigProvider.getConfig().getOptionalValue("quarkus.http.host", String.class).orElse("localhost");
+                String baseURI = "http://"
+                        + ConfigProvider.getConfig().getOptionalValue("quarkus.http.host", String.class).orElse("localhost");
                 baseURIField.set(null, baseURI);
             } catch (IllegalAccessException e) {
                 e.printStackTrace();

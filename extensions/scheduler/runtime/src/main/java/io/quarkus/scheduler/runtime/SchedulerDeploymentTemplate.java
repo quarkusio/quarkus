@@ -37,7 +37,8 @@ public class SchedulerDeploymentTemplate {
     public void registerSchedules(List<Map<String, Object>> configurations, BeanContainer container) {
         SchedulerConfiguration schedulerConfig = container.instance(SchedulerConfiguration.class);
         for (Map<String, Object> config : configurations) {
-            schedulerConfig.register(config.get(INVOKER_KEY).toString(), config.get(DESC_KEY).toString(), (List<Scheduled>) config.get(SCHEDULES_KEY));
+            schedulerConfig.register(config.get(INVOKER_KEY).toString(), config.get(DESC_KEY).toString(),
+                    (List<Scheduled>) config.get(SCHEDULES_KEY));
         }
     }
 

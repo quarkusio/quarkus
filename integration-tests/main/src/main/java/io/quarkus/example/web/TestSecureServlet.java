@@ -29,12 +29,9 @@ import javax.servlet.http.HttpServletResponse;
 /**
  * Basic secured servlet test target
  */
-@ServletSecurity(
-        @HttpConstraint(
-                rolesAllowed={"tester", "user"}
-        )
-)
-@WebServlet(name = "MySecureServlet", urlPatterns = "/secure-test", initParams = {@WebInitParam(name = "message", value = "A secured message")})
+@ServletSecurity(@HttpConstraint(rolesAllowed = { "tester", "user" }))
+@WebServlet(name = "MySecureServlet", urlPatterns = "/secure-test", initParams = {
+        @WebInitParam(name = "message", value = "A secured message") })
 public class TestSecureServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {

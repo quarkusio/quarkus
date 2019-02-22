@@ -17,15 +17,15 @@ package io.quarkus.scheduler.test;
 
 import javax.enterprise.inject.spi.DeploymentException;
 
-import io.quarkus.scheduler.api.Scheduled;
-import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-public class NoExpressionTest {
+import io.quarkus.scheduler.api.Scheduled;
+import io.quarkus.test.QuarkusUnitTest;
 
+public class NoExpressionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
@@ -33,13 +33,11 @@ public class NoExpressionTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(InvalidBean.class));
 
-
     @Test
     public void test() throws InterruptedException {
     }
 
     static class InvalidBean {
-
 
         @Scheduled
         void wrong() {

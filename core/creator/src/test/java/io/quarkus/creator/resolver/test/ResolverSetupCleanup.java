@@ -21,12 +21,13 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 
+import org.junit.After;
+import org.junit.Before;
+
 import io.quarkus.creator.AppCreatorException;
 import io.quarkus.creator.AppDependency;
 import io.quarkus.creator.resolver.aether.AetherArtifactResolver;
 import io.quarkus.creator.util.IoUtils;
-import org.junit.After;
-import org.junit.Before;
 
 /**
  *
@@ -49,7 +50,7 @@ public class ResolverSetupCleanup {
 
     @After
     public void cleanup() {
-        if(workDir != null) {
+        if (workDir != null) {
             IoUtils.recursiveDelete(workDir);
         }
     }

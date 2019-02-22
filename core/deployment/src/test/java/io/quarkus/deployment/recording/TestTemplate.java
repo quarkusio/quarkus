@@ -53,7 +53,6 @@ public class TestTemplate {
         RESULT.add(args);
     }
 
-
     public void doubleArray(double... args) {
         RESULT.add(args);
     }

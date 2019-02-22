@@ -57,7 +57,6 @@ final class URLResourceSubstitution {
     @Alias
     private String path;
 
-
     @Substitute
     private void openConnection() {
         if (!connectionOpened) {
@@ -69,7 +68,6 @@ final class URLResourceSubstitution {
             }
         }
     }
-
 
     static final class ResourceInfo {
 
@@ -96,7 +94,8 @@ final class URLResourceSubstitution {
                         while (e.hasMoreElements()) {
                             JarEntry entry = e.nextElement();
                             if (entry.getName().startsWith(META_INF_RESOURCES)) {
-                                map.put(entry.getName().substring(META_INF_RESOURCES.length()), new ResourceInfo(entry.getLastModifiedTime().toMillis(), entry.getSize()));
+                                map.put(entry.getName().substring(META_INF_RESOURCES.length()),
+                                        new ResourceInfo(entry.getLastModifiedTime().toMillis(), entry.getSize()));
                             }
                         }
 

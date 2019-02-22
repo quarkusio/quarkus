@@ -2,9 +2,9 @@ package io.quarkus.jpa.tests.configurationless;
 
 import static org.hamcrest.core.StringContains.containsString;
 
-import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
 /**

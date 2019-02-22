@@ -18,10 +18,12 @@ package io.quarkus.deployment;
 
 import org.jboss.builder.BuildContext;
 import org.jboss.builder.item.BuildItem;
+
 import io.quarkus.deployment.annotations.BuildProducer;
 
 /**
  * Producer class used by the source generated from the annotation processor
+ * 
  * @param <T>
  */
 @SuppressWarnings("unused")

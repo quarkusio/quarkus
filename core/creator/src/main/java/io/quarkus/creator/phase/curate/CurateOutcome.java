@@ -26,6 +26,7 @@ import org.apache.maven.model.Exclusion;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Repository;
 import org.jboss.logging.Logger;
+
 import io.quarkus.creator.AppArtifact;
 import io.quarkus.creator.AppArtifactResolver;
 import io.quarkus.creator.AppCreator;
@@ -116,8 +117,10 @@ public class CurateOutcome {
     public CurateOutcome(Builder builder) {
         this.appArtifact = builder.appArtifact;
         this.stateArtifact = builder.stateArtifact;
-        this.initialDeps = builder.initialDeps.isEmpty() ? builder.initialDeps : Collections.unmodifiableList(builder.initialDeps);
-        this.updatedDeps = builder.updatedDeps.isEmpty() ? builder.updatedDeps : Collections.unmodifiableList(builder.updatedDeps);
+        this.initialDeps = builder.initialDeps.isEmpty() ? builder.initialDeps
+                : Collections.unmodifiableList(builder.initialDeps);
+        this.updatedDeps = builder.updatedDeps.isEmpty() ? builder.updatedDeps
+                : Collections.unmodifiableList(builder.updatedDeps);
         this.resolver = builder.resolver == null ? new NoOpArtifactResolver() : builder.resolver;
         this.artifactRepos = builder.artifactRepos;
         this.loadedFromState = builder.loadedFromState;
@@ -144,10 +147,10 @@ public class CurateOutcome {
     }
 
     public List<AppDependency> getEffectiveDeps() throws AppCreatorException {
-        if(effectiveDeps != null) {
+        if (effectiveDeps != null) {
             return effectiveDeps;
         }
-        if(updatedDeps.isEmpty()) {
+        if (updatedDeps.isEmpty()) {
             return effectiveDeps = initialDeps;
         }
         return effectiveDeps = resolver.collectDependencies(appArtifact, updatedDeps);
@@ -158,7 +161,7 @@ public class CurateOutcome {
     }
 
     public void persist(AppCreator ctx) throws AppCreatorException {
-        if(persisted || loadedFromState && !hasUpdatedDeps()) {
+        if (persisted || loadedFromState && !hasUpdatedDeps()) {
             log.info("Skipping provisioning state persistence");
             return;
         }
@@ -168,7 +171,7 @@ public class CurateOutcome {
         final Path statePom = stateDir.resolve("pom.xml");
 
         AppArtifact stateArtifact;
-        if(this.stateArtifact == null) {
+        if (this.stateArtifact == null) {
             stateArtifact = Utils.getStateArtifact(appArtifact);
         } else {
             stateArtifact = new AppArtifact(this.stateArtifact.getGroupId(),
@@ -198,7 +201,7 @@ public class CurateOutcome {
         final Dependency appDep = new Dependency();
         appDep.setGroupId("${" + CREATOR_APP_GROUP_ID + "}");
         appDep.setArtifactId("${" + CREATOR_APP_ARTIFACT_ID + "}");
-        if(!classifier.isEmpty()) {
+        if (!classifier.isEmpty()) {
             appDep.setClassifier("${" + CREATOR_APP_CLASSIFIER + "}");
         }
         appDep.setType("${" + CREATOR_APP_TYPE + "}");
@@ -230,16 +233,16 @@ public class CurateOutcome {
                 model.addDependency(updateDep);
             }
         }
-/*
-        if(!artifactRepos.isEmpty()) {
-            for(Repository repo : artifactRepos) {
-                model.addRepository(repo);
-            }
-        }
-*/
+        /*
+         * if(!artifactRepos.isEmpty()) {
+         * for(Repository repo : artifactRepos) {
+         * model.addRepository(repo);
+         * }
+         * }
+         */
         Utils.persistModel(statePom, model);
 
-        ((AetherArtifactResolver)resolver).install(stateArtifact, statePom);
+        ((AetherArtifactResolver) resolver).install(stateArtifact, statePom);
 
         log.info("Persisted provisioning state as " + stateArtifact);
         //ctx.getArtifactResolver().relink(stateArtifact, statePom);

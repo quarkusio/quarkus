@@ -39,7 +39,6 @@ import javax.ws.rs.core.Response;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
-
 import io.reactivex.Single;
 
 @Path("/test")
@@ -169,21 +168,21 @@ public class TestResource {
     @GET
     @Path("params/{path}")
     public void regularParams(@PathParam("path") String path,
-                              @FormParam("form") String form,
-                              @CookieParam("cookie") String cookie,
-                              @HeaderParam("header") String header,
-                              @MatrixParam("matrix") String matrix,
-                              @QueryParam("query") String query) {
+            @FormParam("form") String form,
+            @CookieParam("cookie") String cookie,
+            @HeaderParam("header") String header,
+            @MatrixParam("matrix") String matrix,
+            @QueryParam("query") String query) {
     }
 
     @GET
     @Path("params2/{path}")
     public void resteasyParams(@org.jboss.resteasy.annotations.jaxrs.PathParam String path,
-                               @org.jboss.resteasy.annotations.jaxrs.FormParam String form,
-                               @org.jboss.resteasy.annotations.jaxrs.CookieParam String cookie,
-                               @org.jboss.resteasy.annotations.jaxrs.HeaderParam String header,
-                               @org.jboss.resteasy.annotations.jaxrs.MatrixParam String matrix,
-                               @org.jboss.resteasy.annotations.jaxrs.QueryParam String query) {
+            @org.jboss.resteasy.annotations.jaxrs.FormParam String form,
+            @org.jboss.resteasy.annotations.jaxrs.CookieParam String cookie,
+            @org.jboss.resteasy.annotations.jaxrs.HeaderParam String header,
+            @org.jboss.resteasy.annotations.jaxrs.MatrixParam String matrix,
+            @org.jboss.resteasy.annotations.jaxrs.QueryParam String query) {
     }
 
     @XmlRootElement

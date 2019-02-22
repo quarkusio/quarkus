@@ -23,8 +23,8 @@ public class AppCreatorDependencySelector implements DependencySelector {
     static final String SYSTEM = "system";
     static final String WILDCARD = "*";
 
-    static final Set<String> APP_SCOPES = new HashSet<>(Arrays.asList(new String[] {COMPILE, SYSTEM, PROVIDED, RUNTIME}));
-    static final Set<String> TRANSITIVE_SCOPES = new HashSet<>(Arrays.asList(new String[] {COMPILE, SYSTEM, RUNTIME}));
+    static final Set<String> APP_SCOPES = new HashSet<>(Arrays.asList(new String[] { COMPILE, SYSTEM, PROVIDED, RUNTIME }));
+    static final Set<String> TRANSITIVE_SCOPES = new HashSet<>(Arrays.asList(new String[] { COMPILE, SYSTEM, RUNTIME }));
 
     protected final boolean debug;
 

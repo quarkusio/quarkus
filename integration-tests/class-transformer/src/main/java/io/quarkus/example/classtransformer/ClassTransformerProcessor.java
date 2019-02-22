@@ -22,20 +22,20 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiFunction;
 
+import javax.inject.Inject;
+
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
-import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.BuildProducer;
-import javax.inject.Inject;
-
-import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
-import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 
 /**
  * class that adds an additional @GET @Path("/transformed") method to every JAX-RS endpoint.
@@ -71,9 +71,11 @@ public class ClassTransformerProcessor {
                         ClassVisitor cv = new ClassVisitor(Opcodes.ASM6, classVisitor) {
 
                             @Override
-                            public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+                            public void visit(int version, int access, String name, String signature, String superName,
+                                    String[] interfaces) {
                                 super.visit(version, access, name, signature, superName, interfaces);
-                                MethodVisitor mv = visitMethod(Modifier.PUBLIC, "transformed", "()Ljava/lang/String;", null, null);
+                                MethodVisitor mv = visitMethod(Modifier.PUBLIC, "transformed", "()Ljava/lang/String;", null,
+                                        null);
 
                                 AnnotationVisitor annotation = mv.visitAnnotation("Ljavax/ws/rs/Path;", true);
                                 annotation.visit("value", "/transformed");

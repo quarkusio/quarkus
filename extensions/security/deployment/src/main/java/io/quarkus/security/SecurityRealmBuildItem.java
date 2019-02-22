@@ -1,8 +1,9 @@
 package io.quarkus.security;
 
 import org.jboss.builder.item.MultiBuildItem;
-import io.quarkus.runtime.RuntimeValue;
 import org.wildfly.security.auth.server.SecurityRealm;
+
+import io.quarkus.runtime.RuntimeValue;
 
 /**
  * A build item for the {@linkplain SecurityRealm} runtime values created for the deployment. These are combined into a
@@ -20,6 +21,7 @@ public final class SecurityRealmBuildItem extends MultiBuildItem {
     public RuntimeValue<SecurityRealm> getRealm() {
         return realm;
     }
+
     public AuthConfig getAuthConfig() {
         return authConfig;
     }

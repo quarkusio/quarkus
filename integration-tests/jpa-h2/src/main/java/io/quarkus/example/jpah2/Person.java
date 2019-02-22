@@ -10,10 +10,7 @@ import javax.persistence.ManyToOne;
 import javax.persistence.NamedQuery;
 
 @Entity
-@NamedQuery(
-      name = "get_person_by_name",
-      query = "select p from Person p where name = :name"
-)
+@NamedQuery(name = "get_person_by_name", query = "select p from Person p where name = :name")
 public class Person {
 
     private long id;
@@ -29,7 +26,8 @@ public class Person {
         this.address = address;
     }
 
-    @Id @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="personSeq")
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "personSeq")
     public long getId() {
         return id;
     }
@@ -56,8 +54,8 @@ public class Person {
     }
 
     public void describeFully(StringBuilder sb) {
-        sb.append( "Person with id=" ).append( id ).append( ", name='" ).append( name ).append( "', address { " );
-        getAddress().describeFully( sb );
-        sb.append( " }" );
+        sb.append("Person with id=").append(id).append(", name='").append(name).append("', address { ");
+        getAddress().describeFully(sb);
+        sb.append(" }");
     }
 }

@@ -1,11 +1,11 @@
 package io.quarkus.vertx.runtime;
 
-import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
-
 import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalInt;
+
+import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
 public class ClusterConfiguration {

@@ -56,8 +56,8 @@ public class DefaultArtifactVersion implements Comparable<DefaultArtifactVersion
             final String v = version.toString();
             final boolean snapshot = isSnapshot(v);
             final DefaultArtifactVersion next;
-            if(snapshot) {
-                if(!snapshotsAllowed) {
+            if (snapshot) {
+                if (!snapshotsAllowed) {
                     continue;
                 }
                 next = new DefaultArtifactVersion(v.substring(0, v.length() - SNAPSHOT.length() - 1));
@@ -67,13 +67,13 @@ public class DefaultArtifactVersion implements Comparable<DefaultArtifactVersion
                     continue;
                 }
             }
-            if(latestRelease == null) {
+            if (latestRelease == null) {
                 latestRelease = next;
                 latestSnapshot = snapshot ? v : null;
                 continue;
             }
             final int c = latestRelease.compareTo(next);
-            if(c > 0 || c == 0 && latestSnapshot == null) {
+            if (c > 0 || c == 0 && latestSnapshot == null) {
                 continue;
             }
             latestRelease = next;
@@ -105,18 +105,18 @@ public class DefaultArtifactVersion implements Comparable<DefaultArtifactVersion
 
     public boolean isQualifierHigher(String qualifier, boolean orEqual) throws AppCreatorException {
         Integer minQualifier = Tokenizer.QUALIFIERS.get(qualifier);
-        if(minQualifier == null) {
+        if (minQualifier == null) {
             throw new AppCreatorException("Unrecognized qualifier " + qualifier);
         }
-        for(Item item : items) {
-            if(item.kind != Item.KIND_QUALIFIER) {
+        for (Item item : items) {
+            if (item.kind != Item.KIND_QUALIFIER) {
                 continue;
             }
             final int res = ((Integer) item.value).compareTo(minQualifier);
-            if(res > 0) {
+            if (res > 0) {
                 continue;
             }
-            if(res == 0 && orEqual) {
+            if (res == 0 && orEqual) {
                 minQualifier = 0;
                 continue;
             }

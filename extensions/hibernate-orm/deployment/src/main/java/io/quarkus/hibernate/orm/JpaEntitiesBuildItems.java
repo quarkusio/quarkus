@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.jboss.builder.item.SimpleBuildItem;
+
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 
@@ -30,7 +31,7 @@ import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 public final class JpaEntitiesBuildItems extends SimpleBuildItem {
 
     private final Set<String> classNames = new HashSet<String>();
-    
+
     void addEntity(final String className) {
         classNames.add(className);
     }

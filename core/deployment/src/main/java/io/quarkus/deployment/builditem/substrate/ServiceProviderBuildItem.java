@@ -16,15 +16,16 @@
 
 package io.quarkus.deployment.builditem.substrate;
 
-import org.jboss.builder.item.MultiBuildItem;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
+import org.jboss.builder.item.MultiBuildItem;
+
 /**
  * Represents a Service Provider registration.
- * When processed, it embeds the service interface descriptor (META-INF/services/...) and allow reflection (instantiation only) on a set of provider
+ * When processed, it embeds the service interface descriptor (META-INF/services/...) and allow reflection (instantiation only)
+ * on a set of provider
  * classes.
  */
 public final class ServiceProviderBuildItem extends MultiBuildItem {

@@ -8,7 +8,8 @@ public class ObjectValueOf {
     private String part2;
 
     public static ObjectValueOf valueOf(String serial) {
-        if(serial.isEmpty()) return null;
+        if (serial.isEmpty())
+            return null;
 
         String[] parts = serial.split("\\+");
         return new ObjectValueOf(parts[0], parts[1]);
@@ -18,6 +19,7 @@ public class ObjectValueOf {
     public ObjectValueOf() {
 
     }
+
     public ObjectValueOf(String part1, String part2) {
         this.part1 = part1;
         this.part2 = part2;
@@ -42,4 +44,5 @@ public class ObjectValueOf {
                 "part1='" + part1 + '\'' +
                 ", part2='" + part2 + '\'' +
                 '}';
-    }}
+    }
+}

@@ -1,10 +1,10 @@
 package io.quarkus.maven.utilities;
 
-import org.apache.maven.model.Dependency;
+import static io.quarkus.maven.utilities.MojoUtils.getPluginGroupId;
 
 import java.util.function.Predicate;
 
-import static io.quarkus.maven.utilities.MojoUtils.getPluginGroupId;
+import org.apache.maven.model.Dependency;
 
 public class QuarkusDependencyPredicate implements Predicate<Dependency> {
     @Override

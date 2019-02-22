@@ -2,13 +2,14 @@ package io.quarkus.runtime.configuration;
 
 import java.util.HashMap;
 
-import io.smallrye.config.PropertiesConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.wildfly.common.Assert;
 
+import io.smallrye.config.PropertiesConfigSource;
+
 /**
  * A configuration source that copies all the keys from another configuration source and then
- * drops any reference to it.  Useful for handling configuration sources which have inefficient iteration
+ * drops any reference to it. Useful for handling configuration sources which have inefficient iteration
  * capabilities.
  */
 public final class FastCachedConfigSource extends PropertiesConfigSource {

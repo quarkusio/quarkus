@@ -22,6 +22,7 @@ import java.util.Set;
 import org.eclipse.microprofile.health.Health;
 import org.eclipse.microprofile.health.spi.HealthCheckResponseProvider;
 import org.jboss.jandex.DotName;
+
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -36,7 +37,6 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthServlet;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthTemplate;
 import io.quarkus.undertow.ServletBuildItem;
-
 import io.smallrye.health.SmallRyeHealthReporter;
 
 class SmallRyeHealthProcessor {
@@ -61,10 +61,10 @@ class SmallRyeHealthProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     @SuppressWarnings("unchecked")
     void build(SmallRyeHealthTemplate template, RecorderContext recorder,
-                BuildProducer<FeatureBuildItem> feature,
-                BuildProducer<ServletBuildItem> servlet,
-                BuildProducer<AdditionalBeanBuildItem> additionalBean,
-                BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotation) throws IOException {
+            BuildProducer<FeatureBuildItem> feature,
+            BuildProducer<ServletBuildItem> servlet,
+            BuildProducer<AdditionalBeanBuildItem> additionalBean,
+            BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotation) throws IOException {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_HEALTH));
 
@@ -80,14 +80,17 @@ class SmallRyeHealthProcessor {
         additionalBean.produce(new AdditionalBeanBuildItem(SmallRyeHealthReporter.class, SmallRyeHealthServlet.class));
 
         // Discover and register the HealthCheckResponseProvider
-        Set<String> providers = ServiceUtil.classNamesNamedIn(getClass().getClassLoader(), "META-INF/services/" + HealthCheckResponseProvider.class.getName());
+        Set<String> providers = ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
+                "META-INF/services/" + HealthCheckResponseProvider.class.getName());
 
         if (providers.isEmpty()) {
             throw new IllegalStateException("No HealthCheckResponseProvider implementation found.");
         } else if (providers.size() > 1) {
-            throw new IllegalStateException(String.format("Multiple HealthCheckResponseProvider implementations found: %s", providers));
+            throw new IllegalStateException(
+                    String.format("Multiple HealthCheckResponseProvider implementations found: %s", providers));
         }
 
-        template.registerHealthCheckResponseProvider((Class<? extends HealthCheckResponseProvider>) recorder.classProxy(providers.iterator().next()));
+        template.registerHealthCheckResponseProvider(
+                (Class<? extends HealthCheckResponseProvider>) recorder.classProxy(providers.iterator().next()));
     }
 }

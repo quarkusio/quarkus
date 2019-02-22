@@ -47,7 +47,7 @@ public final class ApplicationArchiveImpl extends MultiBuildItem implements Appl
 
     @Override
     public void close() throws IOException {
-        if(closeable != null) {
+        if (closeable != null) {
             closeable.close();
         }
     }

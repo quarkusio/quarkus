@@ -31,14 +31,15 @@ import org.jboss.logging.Logger;
 import org.jboss.quarkus.arc.processor.AnnotationStore;
 import org.jboss.quarkus.arc.processor.BeanDeploymentValidator;
 import org.jboss.quarkus.arc.processor.BeanInfo;
-import io.quarkus.deployment.annotations.BuildProducer;
-import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
+
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDeploymentValidatorBuildItem;
-import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
+import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.smallrye.reactivemessaging.runtime.SmallRyeReactiveMessagingLifecycle;
@@ -63,7 +64,8 @@ public class SmallRyeReactiveMessagingProcessor {
     }
 
     @BuildStep
-    BeanDeploymentValidatorBuildItem beanDeploymentValidator(BuildProducer<MediatorBuildItem> mediatorMethods, BuildProducer<FeatureBuildItem> feature) {
+    BeanDeploymentValidatorBuildItem beanDeploymentValidator(BuildProducer<MediatorBuildItem> mediatorMethods,
+            BuildProducer<FeatureBuildItem> feature) {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_REACTIVE_MESSAGING));
 
@@ -82,7 +84,8 @@ public class SmallRyeReactiveMessagingProcessor {
                                 .get()
                                 .asClass()
                                 .methods()) {
-                            if (annotationStore.hasAnnotation(method, NAME_INCOMING) || annotationStore.hasAnnotation(method, NAME_OUTGOING)) {
+                            if (annotationStore.hasAnnotation(method, NAME_INCOMING)
+                                    || annotationStore.hasAnnotation(method, NAME_OUTGOING)) {
                                 // TODO: validate method params and return type?
                                 mediatorMethods.produce(new MediatorBuildItem(bean, method));
                                 LOGGER.debugf("Found mediator business method %s declared on %s", method, bean);
@@ -102,11 +105,14 @@ public class SmallRyeReactiveMessagingProcessor {
 
     @BuildStep
     @Record(STATIC_INIT)
-    public void build(SmallRyeReactiveMessagingTemplate template, BeanContainerBuildItem beanContainer, List<MediatorBuildItem> mediatorMethods,
+    public void build(SmallRyeReactiveMessagingTemplate template, BeanContainerBuildItem beanContainer,
+            List<MediatorBuildItem> mediatorMethods,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         /*
-         * IMPLEMENTATION NOTE/FUTURE IMPROVEMENTS: It would be possible to replace the reflection completely and use Jandex and generated
-         * io.smallrye.reactive.messaging.Invoker instead. However, we would have to mirror the logic from io.smallrye.reactive.messaging.MediatorConfiguration
+         * IMPLEMENTATION NOTE/FUTURE IMPROVEMENTS: It would be possible to replace the reflection completely and use Jandex and
+         * generated
+         * io.smallrye.reactive.messaging.Invoker instead. However, we would have to mirror the logic from
+         * io.smallrye.reactive.messaging.MediatorConfiguration
          * too.
          */
         Map<String, String> beanClassToBeanId = new HashMap<>();

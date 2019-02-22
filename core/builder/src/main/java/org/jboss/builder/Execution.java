@@ -62,11 +62,12 @@ final class Execution {
         final EnhancedQueueExecutor.Builder executorBuilder = new EnhancedQueueExecutor.Builder();
         executorBuilder.setCorePoolSize(8).setMaximumPoolSize(1024);
         executorBuilder.setExceptionHandler(JBossExecutors.loggingExceptionHandler());
-        executorBuilder.setThreadFactory(new JBossThreadFactory(new ThreadGroup("build group"), Boolean.FALSE, null, "build-%t", JBossExecutors.loggingExceptionHandler(), null));
+        executorBuilder.setThreadFactory(new JBossThreadFactory(new ThreadGroup("build group"), Boolean.FALSE, null, "build-%t",
+                JBossExecutors.loggingExceptionHandler(), null));
         buildTargetName = builder.getBuildTargetName();
         executor = executorBuilder.build();
         lastStepCount.set(builder.getChain().getEndStepCount());
-        if(lastStepCount.get() == 0)
+        if (lastStepCount.get() == 0)
             done = true;
     }
 
@@ -94,36 +95,44 @@ final class Execution {
         boolean intr = false;
         try {
             for (;;) {
-                if (Thread.interrupted()) intr = true;
-                if (done) break;
+                if (Thread.interrupted())
+                    intr = true;
+                if (done)
+                    break;
                 park(this);
             }
         } finally {
-            if (intr) Thread.currentThread().interrupt();
+            if (intr)
+                Thread.currentThread().interrupt();
             runningThread = null;
         }
         executor.shutdown();
-        for (;;) try {
-            executor.awaitTermination(1000L, TimeUnit.DAYS);
-            break;
-        } catch (InterruptedException e) {
-            intr = true;
-        } finally {
-            if (intr) Thread.currentThread().interrupt();
-        }
+        for (;;)
+            try {
+                executor.awaitTermination(1000L, TimeUnit.DAYS);
+                break;
+            } catch (InterruptedException e) {
+                intr = true;
+            } finally {
+                if (intr)
+                    Thread.currentThread().interrupt();
+            }
         for (Diagnostic diagnostic : diagnostics) {
             if (diagnostic.getLevel() == Diagnostic.Level.ERROR) {
-                BuildException failed = new BuildException("Build failed due to errors",diagnostic.getThrown(),  Collections.unmodifiableList(diagnostics));
-                for(Diagnostic i : diagnostics) {
-                    if(i.getThrown() != null && i.getThrown() != diagnostic.getThrown()) {
+                BuildException failed = new BuildException("Build failed due to errors", diagnostic.getThrown(),
+                        Collections.unmodifiableList(diagnostics));
+                for (Diagnostic i : diagnostics) {
+                    if (i.getThrown() != null && i.getThrown() != diagnostic.getThrown()) {
                         failed.addSuppressed(i.getThrown());
                     }
                 }
                 throw failed;
             }
         }
-        if (lastStepCount.get() > 0) throw new BuildException("Extra steps left over", Collections.emptyList());
-        return new BuildResult(singles, multis, finalIds, Collections.unmodifiableList(diagnostics), max(0, System.nanoTime() - start));
+        if (lastStepCount.get() > 0)
+            throw new BuildException("Extra steps left over", Collections.emptyList());
+        return new BuildResult(singles, multis, finalIds, Collections.unmodifiableList(diagnostics),
+                max(0, System.nanoTime() - start));
     }
 
     EnhancedQueueExecutor getExecutor() {

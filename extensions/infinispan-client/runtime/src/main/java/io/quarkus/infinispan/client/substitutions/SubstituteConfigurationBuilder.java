@@ -10,15 +10,16 @@ import com.oracle.svm.core.annotate.TargetClass;
 
 /**
  * We only support byte[] by default for marshalling
+ * 
  * @author William Burns
  */
 @TargetClass(ConfigurationBuilder.class)
 public final class SubstituteConfigurationBuilder {
-   @Alias
-   private Marshaller marshaller;
+    @Alias
+    private Marshaller marshaller;
 
-   @Substitute
-   private void handleNullMarshaller() {
-      marshaller = BytesOnlyMarshaller.INSTANCE;
-   }
+    @Substitute
+    private void handleNullMarshaller() {
+        marshaller = BytesOnlyMarshaller.INSTANCE;
+    }
 }

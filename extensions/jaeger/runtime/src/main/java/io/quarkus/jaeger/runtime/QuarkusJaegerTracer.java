@@ -71,4 +71,3 @@ public class QuarkusJaegerTracer implements Tracer {
         return tracer().activeSpan();
     }
 }
-

@@ -31,6 +31,7 @@ import org.apache.maven.project.MavenProject;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
+
 import io.quarkus.creator.AppArtifact;
 import io.quarkus.creator.AppCreator;
 import io.quarkus.creator.AppCreatorException;
@@ -71,7 +72,7 @@ public class BuildMojo extends AbstractMojo {
      * @parameter default-value="${project.remoteProjectRepositories}"
      * @readonly
      */
-    @Parameter( defaultValue = "${project.remoteProjectRepositories}", readonly = true, required = true )
+    @Parameter(defaultValue = "${project.remoteProjectRepositories}", readonly = true, required = true)
     private List<RemoteRepository> repos;
 
     /**
@@ -80,7 +81,7 @@ public class BuildMojo extends AbstractMojo {
      * @parameter default-value="${project.remotePluginRepositories}"
      * @readonly
      */
-    @Parameter( defaultValue = "${project.remotePluginRepositories}", readonly = true, required = true )
+    @Parameter(defaultValue = "${project.remotePluginRepositories}", readonly = true, required = true)
     private List<RemoteRepository> pluginRepos;
 
     /**
@@ -130,7 +131,7 @@ public class BuildMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException {
-        try(AppCreator appCreator = AppCreator.builder()
+        try (AppCreator appCreator = AppCreator.builder()
                 // configure the build phases we want the app to go through
                 .addPhase(new AugmentPhase()
                         .setAppClassesDir(outputDirectory.toPath())
@@ -144,7 +145,8 @@ public class BuildMojo extends AbstractMojo {
                 .setWorkDir(buildDir.toPath())
                 .build()) {
 
-            final AppArtifact appArtifact = new AppArtifact(project.getGroupId(), project.getArtifactId(), project.getVersion());
+            final AppArtifact appArtifact = new AppArtifact(project.getGroupId(), project.getArtifactId(),
+                    project.getVersion());
             final List<AppDependency> appDeps = new ResolvedMavenArtifactDeps(project.getGroupId(), project.getArtifactId(),
                     project.getVersion(), project.getArtifacts()).collectDependencies(appArtifact);
 

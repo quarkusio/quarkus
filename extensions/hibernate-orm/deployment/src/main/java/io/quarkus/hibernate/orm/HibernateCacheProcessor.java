@@ -11,7 +11,7 @@ public final class HibernateCacheProcessor {
 
     @BuildStep
     public void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        String[] classes = new String[]{
+        String[] classes = new String[] {
                 "com.github.benmanes.caffeine.cache.SSA",
                 "com.github.benmanes.caffeine.cache.SSMSA",
                 "com.github.benmanes.caffeine.cache.PSA",

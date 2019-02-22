@@ -9,16 +9,15 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.hamcrest.Matchers;
-import io.quarkus.test.common.QuarkusTestResource;
-import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
 @QuarkusTestResource(KafkaTestResource.class)
 @QuarkusTest
 public class KafkaConsumerTest {
-
 
     public static Producer<Integer, String> createProducer() {
         Properties props = new Properties();
@@ -35,6 +34,5 @@ public class KafkaConsumerTest {
         consumer.send(new ProducerRecord<>("test-consumer", 1, "hi world"));
         RestAssured.when().get("/kafka").then().body(Matchers.is("hi world"));
     }
-
 
 }

@@ -16,11 +16,12 @@
 
 package io.quarkus.maven;
 
-import org.apache.maven.project.MavenProject;
-import io.quarkus.dependencies.Extension;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import org.apache.maven.project.MavenProject;
+
+import io.quarkus.dependencies.Extension;
 
 /**
  * @author <a href="http://kenfinnigan.me">Ken Finnigan</a>

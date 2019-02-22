@@ -5,12 +5,13 @@ import java.util.Collection;
 import java.util.Optional;
 import java.util.function.IntFunction;
 
-import io.smallrye.config.SmallRyeConfig;
 import org.jboss.protean.gizmo.BytecodeCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
+
 import io.quarkus.deployment.AccessorFinder;
 import io.quarkus.runtime.configuration.NameIterator;
+import io.smallrye.config.SmallRyeConfig;
 
 /**
  */
@@ -18,21 +19,28 @@ public abstract class ConfigType {
     static final MethodDescriptor NI_PREV_METHOD = MethodDescriptor.ofMethod(NameIterator.class, "previous", void.class);
     static final MethodDescriptor NI_NEXT_METHOD = MethodDescriptor.ofMethod(NameIterator.class, "next", void.class);
     static final MethodDescriptor NI_HAS_NEXT_METHOD = MethodDescriptor.ofMethod(NameIterator.class, "hasNext", boolean.class);
-    static final MethodDescriptor NI_GET_NEXT_SEGMENT = MethodDescriptor.ofMethod(NameIterator.class, "getNextSegment", String.class);
+    static final MethodDescriptor NI_GET_NEXT_SEGMENT = MethodDescriptor.ofMethod(NameIterator.class, "getNextSegment",
+            String.class);
 
-    static final MethodDescriptor SRC_CONVERT_METHOD = MethodDescriptor.ofMethod(SmallRyeConfig.class, "convert", Object.class, String.class, Class.class);
-    static final MethodDescriptor SRC_GET_OPT_METHOD = MethodDescriptor.ofMethod(SmallRyeConfig.class, "getOptionalValue", Optional.class, String.class, Class.class);
-    static final MethodDescriptor SRC_GET_VALUE = MethodDescriptor.ofMethod(SmallRyeConfig.class, "getValue", Object.class, String.class, Class.class);
-    static final MethodDescriptor SRC_GET_VALUES_METHOD = MethodDescriptor.ofMethod(SmallRyeConfig.class, "getValues", Collection.class, String.class, Class.class, IntFunction.class);
+    static final MethodDescriptor SRC_CONVERT_METHOD = MethodDescriptor.ofMethod(SmallRyeConfig.class, "convert", Object.class,
+            String.class, Class.class);
+    static final MethodDescriptor SRC_GET_OPT_METHOD = MethodDescriptor.ofMethod(SmallRyeConfig.class, "getOptionalValue",
+            Optional.class, String.class, Class.class);
+    static final MethodDescriptor SRC_GET_VALUE = MethodDescriptor.ofMethod(SmallRyeConfig.class, "getValue", Object.class,
+            String.class, Class.class);
+    static final MethodDescriptor SRC_GET_VALUES_METHOD = MethodDescriptor.ofMethod(SmallRyeConfig.class, "getValues",
+            Collection.class, String.class, Class.class, IntFunction.class);
 
     static final MethodDescriptor OBJ_TO_STRING_METHOD = MethodDescriptor.ofMethod(Object.class, "toString", String.class);
 
-    static final MethodDescriptor OPT_OR_ELSE_METHOD = MethodDescriptor.ofMethod(Optional.class, "orElse", Object.class, Object.class);
-    static final MethodDescriptor OPT_OF_NULLABLE_METHOD = MethodDescriptor.ofMethod(Optional.class, "ofNullable", Optional.class, Object.class);
+    static final MethodDescriptor OPT_OR_ELSE_METHOD = MethodDescriptor.ofMethod(Optional.class, "orElse", Object.class,
+            Object.class);
+    static final MethodDescriptor OPT_OF_NULLABLE_METHOD = MethodDescriptor.ofMethod(Optional.class, "ofNullable",
+            Optional.class, Object.class);
     static final MethodDescriptor OPT_EMPTY_METHOD = MethodDescriptor.ofMethod(Optional.class, "empty", Optional.class);
 
     /**
-     * Containing name.  This is a field name or a map key, <em>not</em> a configuration key segment; as such, it is
+     * Containing name. This is a field name or a map key, <em>not</em> a configuration key segment; as such, it is
      * never {@code null} unless the containing name is intentionally dynamic.
      */
     private final String containingName;
@@ -41,7 +49,7 @@ public abstract class ConfigType {
      */
     private final CompoundConfigType container;
     /**
-     * Consume a segment of the name when traversing this node.  Always {@code true} if the containing name is dynamic,
+     * Consume a segment of the name when traversing this node. Always {@code true} if the containing name is dynamic,
      * otherwise only {@code true} if the node is a configuration group node with an empty relative name.
      */
     private final boolean consumeSegment;
@@ -74,8 +82,10 @@ public abstract class ConfigType {
 
     public <T extends CompoundConfigType> T getContainer(Class<T> expect) {
         final CompoundConfigType container = getContainer();
-        if (expect.isInstance(container)) return expect.cast(container);
-        throw new IllegalStateException("Container is not a supported type; expected " + expect + " but got " + container.getClass());
+        if (expect.isInstance(container))
+            return expect.cast(container);
+        throw new IllegalStateException(
+                "Container is not a supported type; expected " + expect + " but got " + container.getClass());
     }
 
     public boolean isConsumeSegment() {
@@ -108,13 +118,13 @@ public abstract class ConfigType {
      */
     abstract void getDefaultValueIntoEnclosingGroup(final Object enclosing, final SmallRyeConfig config, final Field field);
 
-    abstract void generateGetDefaultValueIntoEnclosingGroup(final BytecodeCreator body, final ResultHandle enclosing, final MethodDescriptor setter, final ResultHandle config);
+    abstract void generateGetDefaultValueIntoEnclosingGroup(final BytecodeCreator body, final ResultHandle enclosing,
+            final MethodDescriptor setter, final ResultHandle config);
 
-    public abstract ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorFinder, final ResultHandle smallRyeConfig);
+    public abstract ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorFinder,
+            final ResultHandle smallRyeConfig);
 
     public ConfigDefinition getConfigDefinition() {
         return container.getConfigDefinition();
     }
 }
-
-

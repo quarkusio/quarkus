@@ -8,9 +8,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 import org.apache.maven.model.Model;
-import io.quarkus.maven.utilities.MojoUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import io.quarkus.maven.utilities.MojoUtils;
 
 public class AddExtensionsTest {
     @Test
@@ -19,13 +20,13 @@ public class AddExtensionsTest {
 
         CreateProjectTest.delete(pom.getParentFile());
         new CreateProject(pom.getParentFile())
-            .groupId("org.acme")
-            .artifactId("add-extension-test")
-            .version("0.0.1-SNAPSHOT")
-            .doCreateProject(new HashMap<>());
+                .groupId("org.acme")
+                .artifactId("add-extension-test")
+                .version("0.0.1-SNAPSHOT")
+                .doCreateProject(new HashMap<>());
 
         new AddExtensions(pom)
-            .addExtensions(new HashSet<>(asList("agroal", "arc", " hibernate-validator")));
+                .addExtensions(new HashSet<>(asList("agroal", "arc", " hibernate-validator")));
 
         Model model = MojoUtils.readPom(pom);
         hasDependency(model, "quarkus-agroal-deployment");
@@ -35,8 +36,8 @@ public class AddExtensionsTest {
 
     private void hasDependency(final Model model, final String artifactId) {
         Assertions.assertTrue(model.getDependencies()
-                               .stream()
-                               .anyMatch(d -> d.getGroupId().equals(MojoUtils.getPluginGroupId()) &&
-                                              d.getArtifactId().equals(artifactId)));
+                .stream()
+                .anyMatch(d -> d.getGroupId().equals(MojoUtils.getPluginGroupId()) &&
+                        d.getArtifactId().equals(artifactId)));
     }
 }

@@ -25,13 +25,13 @@ import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.microprofile.config.Config;
+import org.junit.Test;
+
 import io.quarkus.creator.config.reader.MappedPropertiesHandler;
 import io.quarkus.creator.config.reader.MultirootedConfigHandler;
 import io.quarkus.creator.config.reader.PropertiesConfigReader;
 import io.quarkus.creator.config.reader.PropertiesHandler;
 import io.quarkus.creator.config.reader.PropertyLine;
-import org.junit.Test;
-
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 /**
@@ -52,12 +52,11 @@ public class SmallryeTestCase {
                 return new User();
             }
         }
-        .map("name", (User user, String value) -> user.setName(value))
-        .map("country", (User user, String value) -> user.setCountry(value))
-        .map("dir", (User user, String value) -> user.setDir(Paths.get(value)))
-        .map("home", (User user, String value) -> user.setHome(Paths.get(value)))
-        .map("language", (User user, String value) -> user.setLanguage(value));
-
+                .map("name", (User user, String value) -> user.setName(value))
+                .map("country", (User user, String value) -> user.setCountry(value))
+                .map("dir", (User user, String value) -> user.setDir(Paths.get(value)))
+                .map("home", (User user, String value) -> user.setHome(Paths.get(value)))
+                .map("language", (User user, String value) -> user.setLanguage(value));
 
         /*
          * java.vm.specification info
@@ -68,9 +67,9 @@ public class SmallryeTestCase {
                 return new JavaVmSpec();
             }
         }
-        .map("name", (JavaVmSpec vm, String value) -> vm.setName(value))
-        .map("version", (JavaVmSpec vm, String value) -> vm.setVersion(value))
-        .map("vendor", (JavaVmSpec vm, String value) -> vm.setVendor(value));
+                .map("name", (JavaVmSpec vm, String value) -> vm.setName(value))
+                .map("version", (JavaVmSpec vm, String value) -> vm.setVersion(value))
+                .map("vendor", (JavaVmSpec vm, String value) -> vm.setVendor(value));
 
         /*
          * java.vm info
@@ -81,10 +80,10 @@ public class SmallryeTestCase {
                 return new JavaVm();
             }
         }
-        .map("name", (JavaVm vm, String value) -> vm.setName(value))
-        .map("info", (JavaVm vm, String value) -> vm.setInfo(value))
-        .map("version", (JavaVm vm, String value) -> vm.setVersion(value))
-        .map("specification", javaVmSpecHandler, (JavaVm vm, JavaVmSpec spec) -> vm.setSpec(spec));
+                .map("name", (JavaVm vm, String value) -> vm.setName(value))
+                .map("info", (JavaVm vm, String value) -> vm.setInfo(value))
+                .map("version", (JavaVm vm, String value) -> vm.setVersion(value))
+                .map("specification", javaVmSpecHandler, (JavaVm vm, JavaVmSpec spec) -> vm.setSpec(spec));
 
         /*
          * java info
@@ -95,8 +94,8 @@ public class SmallryeTestCase {
                 return new JavaInfo();
             }
         }
-        .map("version", (JavaInfo java, String value) -> java.setVersion(value))
-        .map("vm", javaVmHandler, (JavaInfo java, JavaVm vm) -> java.setVM(vm));
+                .map("version", (JavaInfo java, String value) -> java.setVersion(value))
+                .map("vm", javaVmHandler, (JavaInfo java, JavaVm vm) -> java.setVM(vm));
 
         /*
          * Main properties handler
@@ -119,12 +118,13 @@ public class SmallryeTestCase {
          */
         PropertiesConfigReader.getInstance(
                 configHandler, // properties handler
-                (PropertyLine line) -> {} // ignore unrecognized properties, otherwise it's going to complain
-                )
-        // read config as properties
-        .read(config.getPropertyNames(), (String name) -> {
-            return new PropertyLine(name, config.getValue(name, String.class));
-        });
+                (PropertyLine line) -> {
+                } // ignore unrecognized properties, otherwise it's going to complain
+        )
+                // read config as properties
+                .read(config.getPropertyNames(), (String name) -> {
+                    return new PropertyLine(name, config.getValue(name, String.class));
+                });
 
         final User expectedUser = new User();
         expectedUser.setCountry(getProperty("user.country"));

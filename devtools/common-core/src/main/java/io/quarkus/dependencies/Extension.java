@@ -16,12 +16,12 @@
  */
 package io.quarkus.dependencies;
 
-import org.apache.maven.model.Dependency;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.apache.maven.model.Dependency;
 
 /**
  * @author <a href="http://escoffier.me">Clement Escoffier</a>
@@ -161,7 +161,7 @@ public class Extension {
         if (classifier != null && !classifier.isEmpty()) {
             dependency.setClassifier(classifier);
         }
-        if (version != null  && ! version.isEmpty()  && ! stripVersion) {
+        if (version != null && !version.isEmpty() && !stripVersion) {
             dependency.setVersion(version);
         }
         return dependency;

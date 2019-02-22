@@ -20,7 +20,8 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
 /**
- * A configuration object for a properties resource based realm configuration, {@linkplain org.wildfly.security.auth.realm.LegacyPropertiesSecurityRealm}
+ * A configuration object for a properties resource based realm configuration,
+ * {@linkplain org.wildfly.security.auth.realm.LegacyPropertiesSecurityRealm}
  * It consists of a users.properties that has the format:
  * user1=password1
  * user2=password2
@@ -66,7 +67,6 @@ public class PropertiesRealmConfig {
         return "{enabled,users,roles,authMechanism,realmName}";
     }
 
-
     public boolean isEnabled() {
         return enabled;
     }
@@ -110,6 +110,7 @@ public class PropertiesRealmConfig {
     /**
      * Used to access what should be a parent class, but parsing of the MP config properties is not working
      * from parent to child
+     * 
      * @return AuthConfig information
      */
     public AuthConfig getAuthConfig() {

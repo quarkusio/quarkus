@@ -37,7 +37,7 @@ public class TestValidatorEndpoint {
     @Consumes("application/json")
     public String manualValidation(MyData data) {
         Set<ConstraintViolation<MyData>> result = validator.validate(data);
-        if(result.isEmpty()) {
+        if (result.isEmpty()) {
             return "passed";
         }
         return "failed:" + result.iterator().next().getPropertyPath().toString();

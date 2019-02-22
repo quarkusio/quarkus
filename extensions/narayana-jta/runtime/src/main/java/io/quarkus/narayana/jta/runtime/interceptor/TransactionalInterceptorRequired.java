@@ -24,7 +24,6 @@ import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.Transactional;
 
-
 /**
  * @author paul.robinson@redhat.com 25/05/2013
  */

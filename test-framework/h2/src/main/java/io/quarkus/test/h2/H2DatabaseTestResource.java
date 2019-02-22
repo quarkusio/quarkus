@@ -19,6 +19,7 @@ package io.quarkus.test.h2;
 import java.sql.SQLException;
 
 import org.h2.tools.Server;
+
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
 public class H2DatabaseTestResource implements QuarkusTestResourceLifecycleManager {

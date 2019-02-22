@@ -21,8 +21,9 @@ import java.util.List;
 
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.IndexView;
-import io.quarkus.deployment.annotations.BuildStep;
+
 import io.quarkus.deployment.ApplicationArchive;
+import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 

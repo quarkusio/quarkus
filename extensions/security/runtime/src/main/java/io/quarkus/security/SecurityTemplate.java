@@ -30,10 +30,7 @@ import java.util.function.Supplier;
 
 import javax.servlet.ServletContext;
 
-import io.undertow.security.idm.IdentityManager;
 import org.jboss.logging.Logger;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.Template;
 import org.wildfly.security.WildFlyElytronProvider;
 import org.wildfly.security.auth.realm.LegacyPropertiesSecurityRealm;
 import org.wildfly.security.auth.realm.SimpleMapBackedSecurityRealm;
@@ -54,6 +51,9 @@ import org.wildfly.security.credential.PasswordCredential;
 import org.wildfly.security.password.interfaces.ClearPassword;
 import org.wildfly.security.permission.PermissionVerifier;
 
+import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.annotations.Template;
+import io.undertow.security.idm.IdentityManager;
 import io.undertow.servlet.ServletExtension;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.LoginConfig;
@@ -68,6 +68,7 @@ public class SecurityTemplate {
 
     /**
      * Load the user.properties and roles.properties files into the {@linkplain SecurityRealm}
+     * 
      * @param realm - a {@linkplain LegacyPropertiesSecurityRealm}
      * @param config - realm configuration info
      * @throws Exception
@@ -75,17 +76,19 @@ public class SecurityTemplate {
     public void loadRealm(RuntimeValue<SecurityRealm> realm, PropertiesRealmConfig config) throws Exception {
         log.debugf("loadRealm, config=%s", config);
         SecurityRealm secRealm = realm.getValue();
-        if(!(secRealm instanceof LegacyPropertiesSecurityRealm)) {
+        if (!(secRealm instanceof LegacyPropertiesSecurityRealm)) {
             return;
         }
         log.debugf("Trying to loader users: /%s", config.users);
-        URL users = Thread.currentThread().getContextClassLoader().getResource( config.users);
+        URL users = Thread.currentThread().getContextClassLoader().getResource(config.users);
         log.debugf("users: %s", users);
         log.debugf("Trying to loader roles: %s", config.roles);
-        URL roles = Thread.currentThread().getContextClassLoader().getResource( config.roles);
+        URL roles = Thread.currentThread().getContextClassLoader().getResource(config.roles);
         log.debugf("roles: %s", roles);
-        if(users == null && roles == null) {
-            String msg = String.format("No PropertiesRealmConfig users/roles settings found. Configure the quarkus.security.file.%s properties", config.help());
+        if (users == null && roles == null) {
+            String msg = String.format(
+                    "No PropertiesRealmConfig users/roles settings found. Configure the quarkus.security.file.%s properties",
+                    config.help());
             throw new IllegalStateException(msg);
         }
         LegacyPropertiesSecurityRealm propsRealm = (LegacyPropertiesSecurityRealm) secRealm;
@@ -94,6 +97,7 @@ public class SecurityTemplate {
 
     /**
      * Load the embedded user and role information into the {@linkplain SecurityRealm}
+     * 
      * @param realm - a {@linkplain SimpleMapBackedSecurityRealm}
      * @param config - the realm config
      * @throws Exception
@@ -101,7 +105,7 @@ public class SecurityTemplate {
     public void loadRealm(RuntimeValue<SecurityRealm> realm, MPRealmConfig config) throws Exception {
         log.debugf("loadRealm, config=%s", config);
         SecurityRealm secRealm = realm.getValue();
-        if(!(secRealm instanceof SimpleMapBackedSecurityRealm)) {
+        if (!(secRealm instanceof SimpleMapBackedSecurityRealm)) {
             return;
         }
         SimpleMapBackedSecurityRealm memRealm = (SimpleMapBackedSecurityRealm) secRealm;
@@ -110,7 +114,7 @@ public class SecurityTemplate {
         log.debugf("UserInfoMap: %s\n", userInfo);
         Map<String, String> roleInfo = config.getRoles();
         log.debugf("RoleInfoMap: %s\n", roleInfo);
-        for(String user : userInfo.keySet()) {
+        for (String user : userInfo.keySet()) {
             String password = userInfo.get(user);
             ClearPassword clear = ClearPassword.createRaw(ClearPassword.ALGORITHM_CLEAR, password.toCharArray());
             PasswordCredential passwordCred = new PasswordCredential(clear);
@@ -119,7 +123,7 @@ public class SecurityTemplate {
             String rawRoles = roleInfo.get(user);
             String[] roles = rawRoles.split(",");
             Attributes attributes = new MapAttributes();
-            for(String role : roles) {
+            for (String role : roles) {
                 attributes.addLast("groups", role);
             }
             SimpleRealmEntry entry = new SimpleRealmEntry(credentials, attributes);
@@ -131,6 +135,7 @@ public class SecurityTemplate {
 
     /**
      * Create a runtime value for a {@linkplain LegacyPropertiesSecurityRealm}
+     * 
      * @param config - the realm config
      * @return - runtime value wrapper for the SecurityRealm
      * @throws Exception
@@ -143,15 +148,17 @@ public class SecurityTemplate {
                 .setProviders(new Supplier<Provider[]>() {
                     @Override
                     public Provider[] get() {
-                        return new Provider[]{new WildFlyElytronProvider()};
+                        return new Provider[] { new WildFlyElytronProvider() };
                     }
                 })
                 .setPlainText(true)
                 .build();
         return new RuntimeValue<>(realm);
     }
+
     /**
      * Create a runtime value for a {@linkplain SimpleMapBackedSecurityRealm}
+     * 
      * @param config - the realm config
      * @return - runtime value wrapper for the SecurityRealm
      * @throws Exception
@@ -162,7 +169,7 @@ public class SecurityTemplate {
         Supplier<Provider[]> providers = new Supplier<Provider[]>() {
             @Override
             public Provider[] get() {
-                return new Provider[]{new WildFlyElytronProvider()};
+                return new Provider[] { new WildFlyElytronProvider() };
             }
         };
         SecurityRealm realm = new SimpleMapBackedSecurityRealm(NameRewriter.IDENTITY_REWRITER, providers);
@@ -171,12 +178,14 @@ public class SecurityTemplate {
 
     /**
      * Create a {@linkplain SecurityDomain.Builder} for the given default {@linkplain SecurityRealm}.
+     * 
      * @param realmName - the default realm name
      * @param realm - the default SecurityRealm
      * @return a runtime value for the SecurityDomain.Builder
      * @throws Exception on any error
      */
-    public RuntimeValue<SecurityDomain.Builder> configureDomainBuilder(String realmName, RuntimeValue<SecurityRealm> realm) throws Exception {
+    public RuntimeValue<SecurityDomain.Builder> configureDomainBuilder(String realmName, RuntimeValue<SecurityRealm> realm)
+            throws Exception {
         log.debugf("buildDomain, realm=%s", realm.getValue());
 
         SecurityDomain.Builder domain = SecurityDomain.builder()
@@ -212,15 +221,16 @@ public class SecurityTemplate {
                             }
                         };
                     }
-                })
-                ;
+                });
 
         return new RuntimeValue<>(domain);
     }
 
     /**
      * Called to add an additional realm to the {@linkplain SecurityDomain} being built
-     * @param builder - runtime value for SecurityDomain.Builder created by {@linkplain #configureDomainBuilder(String, RuntimeValue)}
+     * 
+     * @param builder - runtime value for SecurityDomain.Builder created by
+     *        {@linkplain #configureDomainBuilder(String, RuntimeValue)}
      * @param realmName - the name of the SecurityRealm
      * @param realm - the runtime value for the SecurityRealm
      */
@@ -230,6 +240,7 @@ public class SecurityTemplate {
 
     /**
      * Called to invoke the builder created by {@linkplain #configureDomainBuilder(String, RuntimeValue)}
+     * 
      * @param builder - the security domain builder
      * @return the security domain runtime value
      */
@@ -239,6 +250,7 @@ public class SecurityTemplate {
 
     /**
      * Create an ElytronIdentityManager for the given SecurityDomain
+     * 
      * @param domain - configured SecurityDomain
      * @return runtime value for ElytronIdentityManager
      */
@@ -256,8 +268,8 @@ public class SecurityTemplate {
      * @return - the ServletExtension instance to register
      */
     public ServletExtension configureUndertowIdentityManager(RuntimeValue<SecurityDomain> domain,
-                                                             IdentityManager identityManager,
-                                                             List<AuthConfig> authConfigs) {
+            IdentityManager identityManager,
+            List<AuthConfig> authConfigs) {
         return new ServletExtension() {
             @Override
             public void handleDeployment(DeploymentInfo deploymentInfo, ServletContext servletContext) {
@@ -265,7 +277,7 @@ public class SecurityTemplate {
                     AuthConfig first = authConfigs.get(0);
                     log.debugf("configureUndertowIdentityManager, %s", authConfigs);
                     LoginConfig loginConfig = new LoginConfig(first.authMechanism, first.realmName);
-                    for(int n = 1; n < authConfigs.size(); n ++) {
+                    for (int n = 1; n < authConfigs.size(); n++) {
                         AuthConfig ac = authConfigs.get(n);
                         loginConfig.addLastAuthMethod(ac.getAuthMechanism());
                     }

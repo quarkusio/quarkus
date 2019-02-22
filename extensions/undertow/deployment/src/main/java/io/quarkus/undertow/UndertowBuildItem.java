@@ -17,8 +17,8 @@
 package io.quarkus.undertow;
 
 import org.jboss.builder.item.SimpleBuildItem;
-import io.quarkus.runtime.RuntimeValue;
 
+import io.quarkus.runtime.RuntimeValue;
 import io.undertow.Undertow;
 
 public final class UndertowBuildItem extends SimpleBuildItem {

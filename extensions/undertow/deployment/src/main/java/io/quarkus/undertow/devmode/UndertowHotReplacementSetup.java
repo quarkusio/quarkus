@@ -10,7 +10,6 @@ import io.quarkus.deployment.devmode.HotReplacementSetup;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.undertow.runtime.HttpConfig;
 import io.quarkus.undertow.runtime.UndertowDeploymentTemplate;
-
 import io.undertow.server.HandlerWrapper;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
@@ -39,7 +38,6 @@ public class UndertowHotReplacementSetup implements HotReplacementSetup {
             throw new RuntimeException(e);
         }
     }
-
 
     private HandlerWrapper createHandlerWrapper() {
         return new HandlerWrapper() {

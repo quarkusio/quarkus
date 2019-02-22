@@ -4,9 +4,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.jboss.quarkus.arc.Arc;
+
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.annotations.Template;
-
 import io.smallrye.reactive.messaging.extension.MediatorManager;
 
 /**

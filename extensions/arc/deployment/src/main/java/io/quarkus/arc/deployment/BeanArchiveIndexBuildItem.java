@@ -27,7 +27,6 @@ public final class BeanArchiveIndexBuildItem extends SimpleBuildItem {
         this.index = index;
     }
 
-
     public IndexView getIndex() {
         return index;
     }

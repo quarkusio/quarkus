@@ -23,7 +23,8 @@ public final class PersistenceProviderSetup {
     }
 
     public static void registerPersistenceProvider() {
-        javax.persistence.spi.PersistenceProviderResolverHolder.setPersistenceProviderResolver(new FastBootHibernatePersistenceProviderResolver());
+        javax.persistence.spi.PersistenceProviderResolverHolder
+                .setPersistenceProviderResolver(new FastBootHibernatePersistenceProviderResolver());
     }
 
 }

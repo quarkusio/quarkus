@@ -13,6 +13,7 @@ import javax.validation.ConstraintViolationException;
 import javax.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.util.MediaTypeHelper;
+
 import io.quarkus.hibernate.validator.runtime.interceptor.AbstractMethodValidationInterceptor;
 
 @JaxrsEndPointValidated

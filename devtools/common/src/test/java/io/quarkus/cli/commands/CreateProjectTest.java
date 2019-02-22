@@ -1,10 +1,7 @@
 package io.quarkus.cli.commands;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.maven.model.Model;
-import io.quarkus.maven.utilities.MojoUtils;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import static io.quarkus.maven.utilities.MojoUtils.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,8 +12,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static io.quarkus.maven.utilities.MojoUtils.*;
+import org.apache.commons.io.FileUtils;
+import org.apache.maven.model.Model;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.maven.utilities.MojoUtils;
 
 public class CreateProjectTest {
     @Test
@@ -24,8 +25,8 @@ public class CreateProjectTest {
         final File file = new File("target/basic-rest");
         delete(file);
         final CreateProject createProject = new CreateProject(file).groupId("io.quarkus")
-                                                                   .artifactId("basic-rest")
-                                                                   .version("1.0.0-SNAPSHOT");
+                .artifactId("basic-rest")
+                .version("1.0.0-SNAPSHOT");
 
         Assertions.assertTrue(createProject.doCreateProject(new HashMap<>()));
     }
@@ -44,13 +45,13 @@ public class CreateProjectTest {
         final File pom = new File(testDir, "pom.xml");
         MojoUtils.write(model, pom);
         final CreateProject createProject = new CreateProject(testDir).groupId("something.is")
-                                                                   .artifactId("wrong")
-                                                                   .version("1.0.0-SNAPSHOT");
+                .artifactId("wrong")
+                .version("1.0.0-SNAPSHOT");
 
         Assertions.assertTrue(createProject.doCreateProject(new HashMap<>()));
 
         assertThat(FileUtils.readFileToString(pom, "UTF-8"))
-            .contains(getPluginArtifactId(), SHAMROCK_VERSION_PROPERTY, getPluginGroupId());
+                .contains(getPluginArtifactId(), SHAMROCK_VERSION_PROPERTY, getPluginGroupId());
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/test/java")).isDirectory();
 
@@ -58,18 +59,17 @@ public class CreateProjectTest {
         assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).isFile();
         assertThat(new File(testDir, "src/main/java")).isDirectory().matches(f -> {
             String[] list = f.list();
-            return list != null  && list.length == 0;
+            return list != null && list.length == 0;
         });
         assertThat(new File(testDir, "src/test/java")).isDirectory().matches(f -> {
             String[] list = f.list();
-            return list != null  && list.length == 0;
+            return list != null && list.length == 0;
         });
 
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
-            .containsIgnoringCase(getBomArtifactId());
+                .containsIgnoringCase(getBomArtifactId());
 
     }
-
 
     @Test
     public void createOnTopPomWithResource() throws IOException {
@@ -124,9 +124,9 @@ public class CreateProjectTest {
         properties.put("extensions", "commons-io:commons-io:2.5");
 
         Assertions.assertTrue(new CreateProject(testDir).groupId("org.acme")
-                                                    .artifactId("acme")
-                                                    .version("1.0.0-SNAPSHOT")
-                                                    .doCreateProject(properties));
+                .artifactId("acme")
+                .version("1.0.0-SNAPSHOT")
+                .doCreateProject(properties));
 
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(new File(testDir, "src/main/java/org/acme/MyResource.java")).isFile();
@@ -141,21 +141,21 @@ public class CreateProjectTest {
         assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).exists();
 
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
-            .containsIgnoringCase(MojoUtils.SHAMROCK_VERSION_PROPERTY);
+                .containsIgnoringCase(MojoUtils.SHAMROCK_VERSION_PROPERTY);
 
     }
 
     public static void delete(final File file) throws IOException {
 
         if (file.exists()) {
-            try (Stream<Path> stream = Files.walk(file.toPath())){
-                 stream.sorted(Comparator.reverseOrder())
+            try (Stream<Path> stream = Files.walk(file.toPath())) {
+                stream.sorted(Comparator.reverseOrder())
                         .map(Path::toFile)
                         .forEach(File::delete);
             }
         }
 
         Assertions.assertFalse(
-            Files.exists(file.toPath()), "Directory still exists");
+                Files.exists(file.toPath()), "Directory still exists");
     }
 }

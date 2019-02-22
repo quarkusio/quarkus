@@ -1,19 +1,6 @@
 package io.quarkus.maven.it;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
-import org.apache.commons.io.FileUtils;
-import org.apache.maven.model.Dependency;
-import org.apache.maven.model.DependencyManagement;
-import org.apache.maven.model.Model;
-import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
-import org.apache.maven.shared.invoker.*;
-import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
-import io.quarkus.maven.CreateProjectMojo;
-import io.quarkus.maven.it.verifier.RunningInvoker;
-import io.quarkus.maven.utilities.MojoUtils;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -22,7 +9,22 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.apache.commons.io.FileUtils;
+import org.apache.maven.model.Dependency;
+import org.apache.maven.model.DependencyManagement;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
+import org.apache.maven.shared.invoker.*;
+import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
+
+import io.quarkus.maven.CreateProjectMojo;
+import io.quarkus.maven.it.verifier.RunningInvoker;
+import io.quarkus.maven.utilities.MojoUtils;
 
 /**
  * @author <a href="http://escoffier.me">Clement Escoffier</a>
@@ -62,7 +64,8 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/main/resources/META-INF/microprofile-config.properties")).isFile();
 
-        String config = Files.asCharSource(new File(testDir, "src/main/resources/META-INF/microprofile-config.properties"), Charsets.UTF_8)
+        String config = Files
+                .asCharSource(new File(testDir, "src/main/resources/META-INF/microprofile-config.properties"), Charsets.UTF_8)
                 .read();
         assertThat(config).contains("key = value");
 
@@ -71,14 +74,13 @@ public class CreateProjectMojoIT extends MojoTestBase {
         Model model = load(testDir);
         final DependencyManagement dependencyManagement = model.getDependencyManagement();
         final List<Dependency> dependencies = dependencyManagement.getDependencies();
-        assertThat(dependencies.stream().anyMatch(d ->
-                d.getArtifactId().equalsIgnoreCase(MojoUtils.getBomArtifactId())
-                        && d.getVersion().equalsIgnoreCase("${quarkus.version}")
-                        && d.getScope().equalsIgnoreCase("import")
-                        && d.getType().equalsIgnoreCase("pom"))).isTrue();
+        assertThat(dependencies.stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase(MojoUtils.getBomArtifactId())
+                && d.getVersion().equalsIgnoreCase("${quarkus.version}")
+                && d.getScope().equalsIgnoreCase("import")
+                && d.getType().equalsIgnoreCase("pom"))).isTrue();
 
-        assertThat(model.getDependencies().stream().anyMatch(d ->
-                d.getArtifactId().equalsIgnoreCase("quarkus-resteasy-deployment")
+        assertThat(
+                model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy-deployment")
                         && d.getVersion() == null)).isTrue();
 
         assertThat(model.getProfiles()).hasSize(1);
@@ -111,11 +113,11 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).exists();
 
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
-            .containsIgnoringCase(MojoUtils.getBomArtifactId());
+                .containsIgnoringCase(MojoUtils.getBomArtifactId());
 
         Model model = load(testDir);
-        assertThat(model.getDependencyManagement().getDependencies().stream().anyMatch(d ->
-                d.getArtifactId().equalsIgnoreCase(MojoUtils.getBomArtifactId())
+        assertThat(model.getDependencyManagement().getDependencies().stream()
+                .anyMatch(d -> d.getArtifactId().equalsIgnoreCase(MojoUtils.getBomArtifactId())
                         && d.getVersion().equalsIgnoreCase("${quarkus.version}")
                         && d.getScope().equalsIgnoreCase("import")
                         && d.getType().equalsIgnoreCase("pom"))).isTrue();
@@ -186,18 +188,18 @@ public class CreateProjectMojoIT extends MojoTestBase {
                 .contains("quarkus-resteasy-deployment", "quarkus-smallrye-metrics-deployment").doesNotContain("missing");
 
         Model model = load(testDir);
-        assertThat(model.getDependencyManagement().getDependencies().stream().anyMatch(d ->
-                d.getArtifactId().equalsIgnoreCase(MojoUtils.getBomArtifactId())
+        assertThat(model.getDependencyManagement().getDependencies().stream()
+                .anyMatch(d -> d.getArtifactId().equalsIgnoreCase(MojoUtils.getBomArtifactId())
                         && d.getVersion().equalsIgnoreCase("${quarkus.version}")
                         && d.getScope().equalsIgnoreCase("import")
                         && d.getType().equalsIgnoreCase("pom"))).isTrue();
 
-        assertThat(model.getDependencies().stream().anyMatch(d ->
-                d.getArtifactId().equalsIgnoreCase("quarkus-resteasy-deployment")
+        assertThat(
+                model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy-deployment")
                         && d.getVersion() == null)).isTrue();
 
-        assertThat(model.getDependencies().stream().anyMatch(d ->
-                d.getArtifactId().equalsIgnoreCase("quarkus-smallrye-metrics-deployment")
+        assertThat(model.getDependencies().stream()
+                .anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-smallrye-metrics-deployment")
                         && d.getVersion() == null)).isTrue();
     }
 
@@ -222,19 +224,18 @@ public class CreateProjectMojoIT extends MojoTestBase {
                 .contains("commons-io");
 
         Model model = load(testDir);
-        assertThat(model.getDependencyManagement().getDependencies().stream().anyMatch(d ->
-                d.getArtifactId().equalsIgnoreCase(MojoUtils.getBomArtifactId())
+        assertThat(model.getDependencyManagement().getDependencies().stream()
+                .anyMatch(d -> d.getArtifactId().equalsIgnoreCase(MojoUtils.getBomArtifactId())
                         && d.getVersion().equalsIgnoreCase("${quarkus.version}")
                         && d.getScope().equalsIgnoreCase("import")
                         && d.getType().equalsIgnoreCase("pom"))).isTrue();
 
-        assertThat(model.getDependencies().stream().anyMatch(d ->
-                d.getArtifactId().equalsIgnoreCase("quarkus-resteasy-deployment")
+        assertThat(
+                model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy-deployment")
                         && d.getVersion() == null)).isTrue();
 
-        assertThat(model.getDependencies().stream().anyMatch(d ->
-                d.getArtifactId().equalsIgnoreCase("commons-io")
-                        && d.getVersion().equalsIgnoreCase("2.5"))).isTrue();
+        assertThat(model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("commons-io")
+                && d.getVersion().equalsIgnoreCase("2.5"))).isTrue();
     }
 
     @Test
@@ -264,16 +265,16 @@ public class CreateProjectMojoIT extends MojoTestBase {
         setup(properties);
         // As the directory is not empty (log) navigate to the artifactID directory
         testDir = new File(testDir, "my-quarkus-project");
-        check(new File(testDir, "src/main/java/org/acme/quarkus/sample/MyGreatResource.java"), "package org.acme.quarkus.sample;");
+        check(new File(testDir, "src/main/java/org/acme/quarkus/sample/MyGreatResource.java"),
+                "package org.acme.quarkus.sample;");
     }
-
 
     /**
      * Reproducer for https://github.com/jbossas/quarkus/issues/673
      */
     @Test
     public void testThatGenerationFailedWhenTheUserPassGAVonExistingPom() throws Exception {
-        testDir = initProject("projects/simple-pom-it","projects/fail-on-gav-and-existing-pom");
+        testDir = initProject("projects/simple-pom-it", "projects/fail-on-gav-and-existing-pom");
         assertThat(testDir).isDirectory();
         init(testDir);
         Properties properties = new Properties();
@@ -283,7 +284,6 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(result.getExitCode()).isNotZero();
         assertThat(new File(testDir, "src/main/java/org/acme/MyResource.java")).doesNotExist();
     }
-
 
     private void check(final File resource, final String contentsToFind) throws IOException {
         assertThat(resource).isFile();
@@ -325,12 +325,12 @@ public class CreateProjectMojoIT extends MojoTestBase {
         assertThat(greeting).containsIgnoringCase("hello");
     }
 
-    private InvocationResult setup(Properties params) throws MavenInvocationException, FileNotFoundException, UnsupportedEncodingException {
+    private InvocationResult setup(Properties params)
+            throws MavenInvocationException, FileNotFoundException, UnsupportedEncodingException {
         InvocationRequest request = new DefaultInvocationRequest();
         request.setBatchMode(true);
         request.setGoals(Collections.singletonList(
-            CreateProjectMojo.PLUGIN_KEY + ":" + MojoUtils.getPluginVersion() + ":create"
-        ));
+                CreateProjectMojo.PLUGIN_KEY + ":" + MojoUtils.getPluginVersion() + ":create"));
         request.setProperties(params);
         getEnv().forEach(request::addShellEnvironment);
         File log = new File(testDir, "build-create-" + testDir.getName() + ".log");

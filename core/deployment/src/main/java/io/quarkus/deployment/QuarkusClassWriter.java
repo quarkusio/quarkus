@@ -27,7 +27,6 @@ import org.objectweb.asm.ClassWriter;
  */
 public class QuarkusClassWriter extends ClassWriter {
 
-
     public QuarkusClassWriter(final ClassReader classReader, final int flags) {
         super(classReader, flags);
     }
@@ -49,6 +48,5 @@ public class QuarkusClassWriter extends ClassWriter {
         }
         return Object.class.getName().replace('.', '/');
     }
-
 
 }

@@ -16,11 +16,11 @@
 
 package io.quarkus.runtime.graal;
 
-import io.quarkus.runtime.Timing;
-
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
+
+import io.quarkus.runtime.Timing;
 
 @TargetClass(Timing.class)
 final class TimingReplacement {

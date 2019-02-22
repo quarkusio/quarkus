@@ -45,23 +45,27 @@ public class DerivedDependencySelector implements DependencySelector {
         }
 
         boolean isExcluded(Dependency dep) {
-            for(Exclusion excl : exclusions) {
+            for (Exclusion excl : exclusions) {
                 final String exclGroupId = excl.getGroupId();
                 final String exclArtifactId = excl.getArtifactId();
                 final String exclClassifier = excl.getClassifier();
                 final String exclExt = excl.getExtension();
                 final Artifact artifact = dep.getArtifact();
-                if((exclGroupId.equals(AppCreatorDependencySelector.WILDCARD) || exclGroupId.equals(artifact.getGroupId())) &&
-                        (exclArtifactId.equals(AppCreatorDependencySelector.WILDCARD) || exclArtifactId.equals(artifact.getArtifactId())) &&
-                        (exclClassifier.equals(AppCreatorDependencySelector.WILDCARD) || exclClassifier.equals(artifact.getClassifier())) &&
+                if ((exclGroupId.equals(AppCreatorDependencySelector.WILDCARD) || exclGroupId.equals(artifact.getGroupId())) &&
+                        (exclArtifactId.equals(AppCreatorDependencySelector.WILDCARD)
+                                || exclArtifactId.equals(artifact.getArtifactId()))
+                        &&
+                        (exclClassifier.equals(AppCreatorDependencySelector.WILDCARD)
+                                || exclClassifier.equals(artifact.getClassifier()))
+                        &&
                         (exclExt.equals(AppCreatorDependencySelector.WILDCARD) || exclExt.equals(artifact.getExtension()))) {
                     return true;
                 }
             }
-            if(parent != null) {
+            if (parent != null) {
                 DepExclusions parent = this.parent;
-                while(parent != null) {
-                    if(parent.isExcluded(dep)) {
+                while (parent != null) {
+                    if (parent.isExcluded(dep)) {
                         return true;
                     }
                     parent = parent.parent;
@@ -91,16 +95,18 @@ public class DerivedDependencySelector implements DependencySelector {
         this.depth = debug && log.isDebugEnabled() ? 0 : -1;
         //this.selected = new HashSet<>();
         //this.childrenProcessed = new HashSet<>();
-        if(dependency == null) {
+        if (dependency == null) {
             depExclusions = null;
         } else {
             //childrenProcessed.add(dependency.getArtifact().toString());
-            this.depExclusions = dependency.getExclusions().isEmpty() ? null : new DepExclusions(null, dependency.getExclusions());
+            this.depExclusions = dependency.getExclusions().isEmpty() ? null
+                    : new DepExclusions(null, dependency.getExclusions());
         }
         this.acceptedScopes = AppCreatorDependencySelector.APP_SCOPES;
     }
 
-    private DerivedDependencySelector(DerivedDependencySelector parent, Set<String> acceptedScopes, DepExclusions depExclusions) {
+    private DerivedDependencySelector(DerivedDependencySelector parent, Set<String> acceptedScopes,
+            DepExclusions depExclusions) {
         this.depth = parent.depth < 0 ? parent.depth : parent.depth + 1;
         //this.selected = parent.selected;
         //this.childrenProcessed = parent.childrenProcessed;
@@ -120,7 +126,7 @@ public class DerivedDependencySelector implements DependencySelector {
             return false;
         }
 
-        if(depth >= 0) {
+        if (depth >= 0) {
             final StringBuilder buf = new StringBuilder();
             for (int i = 0; i < depth; ++i) {
                 buf.append("  ");
@@ -128,13 +134,14 @@ public class DerivedDependencySelector implements DependencySelector {
             String offset = buf.toString();
             log.debug(offset + dependency);
             //System.out.println(offset + dependency);
-            if(!dependency.getExclusions().isEmpty()) {
+            if (!dependency.getExclusions().isEmpty()) {
                 log.debug(offset + " Excludes:");
                 //System.out.println(offset + " Excludes:");
                 buf.append("  - ");
                 offset = buf.toString();
-                for(Exclusion excl : dependency.getExclusions()) {
-                    log.debug(offset + excl.getGroupId() + ":" + excl.getArtifactId() + ":" + excl.getClassifier() + ":" + excl.getExtension());
+                for (Exclusion excl : dependency.getExclusions()) {
+                    log.debug(offset + excl.getGroupId() + ":" + excl.getArtifactId() + ":" + excl.getClassifier() + ":"
+                            + excl.getExtension());
                     //System.out.println(offset + excl.getGroupId() + ":" + excl.getArtifactId() + ":" + excl.getClassifier() + ":" + excl.getExtension());
                 }
             }
@@ -146,70 +153,75 @@ public class DerivedDependencySelector implements DependencySelector {
     @Override
     public DependencySelector deriveChildSelector(DependencyCollectionContext context) {
         //System.out.println("derivedChildSelector " + context.getDependency());
-        /* doesn't seem to be relevant to look into the managed deps at the root
-        if(managedExcl == null && depth <= 0) {
-            final List<Dependency> managedDeps = context.getManagedDependencies();
-            if(managedDeps.isEmpty()) {
-                managedExcl = Collections.emptyMap();
-            } else {
-                System.out.println("Managed dependencies");
-                managedExcl = new HashMap<>(managedDeps.size());
-                for(Dependency dep : managedDeps) {
-                    final Collection<Exclusion> exclusions = dep.getExclusions();
-                    if(!exclusions.isEmpty()) {
-                        managedExcl.put(getKey(dep.getArtifact()), exclusions);
-                        if(depth == 0) {
-                            System.out.println("  " + dep);
-                            System.out.println("    Excludes:");
-                            for (Exclusion excl : exclusions) {
-                                System.out.println("    - " + excl.getGroupId() + ":" + excl.getArtifactId() + ":"
-                                        + excl.getClassifier() + ":" + excl.getExtension());
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        */
+        /*
+         * doesn't seem to be relevant to look into the managed deps at the root
+         * if(managedExcl == null && depth <= 0) {
+         * final List<Dependency> managedDeps = context.getManagedDependencies();
+         * if(managedDeps.isEmpty()) {
+         * managedExcl = Collections.emptyMap();
+         * } else {
+         * System.out.println("Managed dependencies");
+         * managedExcl = new HashMap<>(managedDeps.size());
+         * for(Dependency dep : managedDeps) {
+         * final Collection<Exclusion> exclusions = dep.getExclusions();
+         * if(!exclusions.isEmpty()) {
+         * managedExcl.put(getKey(dep.getArtifact()), exclusions);
+         * if(depth == 0) {
+         * System.out.println("  " + dep);
+         * System.out.println("    Excludes:");
+         * for (Exclusion excl : exclusions) {
+         * System.out.println("    - " + excl.getGroupId() + ":" + excl.getArtifactId() + ":"
+         * + excl.getClassifier() + ":" + excl.getExtension());
+         * }
+         * }
+         * }
+         * }
+         * }
+         * }
+         */
         final Dependency dependency = context.getDependency();
-        /* this condition actually leads to a trouble
+        /*
+         * this condition actually leads to a trouble
          * while the version might not match, the dependencies will still be of the version selected at the end
-         * skipping it here will result in the dependency graph transformer removing the dependencies of this artifact from the tree
-        if(lastSelected != null && !lastSelected.getArtifact().getVersion().equals(dependency.getArtifact().getVersion())) {
-            return DisabledDependencySelector.INSTANCE;
-        }
-        */
+         * skipping it here will result in the dependency graph transformer removing the dependencies of this artifact from the
+         * tree
+         * if(lastSelected != null && !lastSelected.getArtifact().getVersion().equals(dependency.getArtifact().getVersion())) {
+         * return DisabledDependencySelector.INSTANCE;
+         * }
+         */
 
         /*
-        if (dependency.isOptional()
-                / *|| !acceptedScopes.contains(dependency.getScope())* /
-                || !childrenProcessed.add(dependency.getArtifact().toString())) {
-            //System.out.println("Filtering out children of " + dependency);
-            return DisabledDependencySelector.INSTANCE;
-        }
-        */
+         * if (dependency.isOptional()
+         * / *|| !acceptedScopes.contains(dependency.getScope())* /
+         * || !childrenProcessed.add(dependency.getArtifact().toString())) {
+         * //System.out.println("Filtering out children of " + dependency);
+         * return DisabledDependencySelector.INSTANCE;
+         * }
+         */
 
         if (acceptedScopes.size() != AppCreatorDependencySelector.TRANSITIVE_SCOPES.size()) {
             return new DerivedDependencySelector(this, AppCreatorDependencySelector.TRANSITIVE_SCOPES,
                     dependency.getExclusions().isEmpty() ? depExclusions
                             : new DepExclusions(depExclusions, dependency.getExclusions()));
         }
-        return depth < 0 && dependency.getExclusions().isEmpty() ? this : new DerivedDependencySelector(this, acceptedScopes,
-                dependency.getExclusions().isEmpty() ? depExclusions : new DepExclusions(depExclusions, dependency.getExclusions()));
+        return depth < 0 && dependency.getExclusions().isEmpty() ? this
+                : new DerivedDependencySelector(this, acceptedScopes,
+                        dependency.getExclusions().isEmpty() ? depExclusions
+                                : new DepExclusions(depExclusions, dependency.getExclusions()));
     }
-/*
-    private static String getKey(Artifact artifact) {
-        StringBuilder sb = new StringBuilder(128);
-        sb.append(artifact.getGroupId());
-        sb.append(':');
-        sb.append(artifact.getArtifactId());
-        sb.append(':');
-        sb.append(artifact.getExtension());
-        if (!artifact.getClassifier().isEmpty()) {
-            sb.append(':');
-            sb.append(artifact.getClassifier());
-        }
-        return sb.toString();
-    }
-    */
+    /*
+     * private static String getKey(Artifact artifact) {
+     * StringBuilder sb = new StringBuilder(128);
+     * sb.append(artifact.getGroupId());
+     * sb.append(':');
+     * sb.append(artifact.getArtifactId());
+     * sb.append(':');
+     * sb.append(artifact.getExtension());
+     * if (!artifact.getClassifier().isEmpty()) {
+     * sb.append(':');
+     * sb.append(artifact.getClassifier());
+     * }
+     * return sb.toString();
+     * }
+     */
 }

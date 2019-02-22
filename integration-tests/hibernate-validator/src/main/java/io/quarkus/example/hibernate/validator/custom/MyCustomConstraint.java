@@ -16,7 +16,9 @@ import javax.validation.Payload;
 public @interface MyCustomConstraint {
 
     String message() default "{MyCustomConstraint.message}";
+
     Class<?>[] groups() default {};
+
     Class<? extends Payload>[] payload() default {};
 
     class Validator implements ConstraintValidator<MyCustomConstraint, MyOtherBean> {

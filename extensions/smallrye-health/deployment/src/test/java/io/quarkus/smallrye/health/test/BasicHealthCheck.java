@@ -14,7 +14,7 @@ import org.eclipse.microprofile.health.HealthCheckResponse;
 @Health
 public class BasicHealthCheck implements HealthCheck {
 
-	@Override
+    @Override
     public HealthCheckResponse call() {
         return new HealthCheckResponse() {
             @Override

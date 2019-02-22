@@ -1,21 +1,21 @@
 package io.smallrye.reactive.kafka.graal;
 
+import static org.apache.kafka.common.record.CompressionType.GZIP;
+import static org.apache.kafka.common.record.CompressionType.NONE;
 
-import com.oracle.svm.core.annotate.Alias;
-import com.oracle.svm.core.annotate.RecomputeFieldValue;
-import com.oracle.svm.core.annotate.Substitute;
-import com.oracle.svm.core.annotate.TargetClass;
+import java.lang.invoke.MethodHandle;
+import java.util.List;
+
 import org.apache.kafka.common.metrics.JmxReporter;
 import org.apache.kafka.common.metrics.KafkaMetric;
 import org.apache.kafka.common.metrics.Metrics;
 import org.apache.kafka.common.record.CompressionType;
 import org.apache.kafka.common.utils.AppInfoParser;
 
-import java.lang.invoke.MethodHandle;
-import java.util.List;
-
-import static org.apache.kafka.common.record.CompressionType.GZIP;
-import static org.apache.kafka.common.record.CompressionType.NONE;
+import com.oracle.svm.core.annotate.Alias;
+import com.oracle.svm.core.annotate.RecomputeFieldValue;
+import com.oracle.svm.core.annotate.Substitute;
+import com.oracle.svm.core.annotate.TargetClass;
 
 /**
  * Here is where surgery happens
@@ -23,8 +23,7 @@ import static org.apache.kafka.common.record.CompressionType.NONE;
  * * Remove JMX
  */
 
-@TargetClass(value = CompressionType.class,
-        innerClass = "SnappyConstructors")
+@TargetClass(value = CompressionType.class, innerClass = "SnappyConstructors")
 final class SubstituteSnappy {
 
     @Alias
@@ -64,7 +63,6 @@ final class FixEnumAccess {
     }
 }
 
-
 @TargetClass(value = AppInfoParser.class)
 final class RemoveJMXAccess {
 
@@ -102,6 +100,4 @@ final class JMXReporting {
     public void close() {
     }
 
-
 }
-

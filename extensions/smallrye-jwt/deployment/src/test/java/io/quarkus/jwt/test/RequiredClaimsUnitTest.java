@@ -8,15 +8,16 @@ import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
 
-import io.restassured.RestAssured;
 import org.eclipse.microprofile.jwt.Claims;
-import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.test.QuarkusUnitTest;
+import io.restassured.RestAssured;
 
 public class RequiredClaimsUnitTest {
     private static Class[] testClasses = {
@@ -37,12 +38,9 @@ public class RequiredClaimsUnitTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() ->
-                                        ShrinkWrap.create(JavaArchive.class)
-                                                .addClasses(testClasses)
-                                                .addAsManifestResource("microprofile-config.properties")
-            );
-
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(testClasses)
+                    .addAsManifestResource("microprofile-config.properties"));
 
     @BeforeEach
     public void generateToken() throws Exception {

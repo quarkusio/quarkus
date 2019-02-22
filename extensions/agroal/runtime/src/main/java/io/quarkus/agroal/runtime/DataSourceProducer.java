@@ -74,7 +74,8 @@ public class DataSourceProducer {
                 throw new RuntimeException("Driver is not an XA datasource and xa has been configured");
             }
         } else {
-            if (providerClass != null && !DataSource.class.isAssignableFrom(providerClass) && !Driver.class.isAssignableFrom(providerClass)) {
+            if (providerClass != null && !DataSource.class.isAssignableFrom(providerClass)
+                    && !Driver.class.isAssignableFrom(providerClass)) {
                 throw new RuntimeException("Driver is an XA datasource and xa has been configured");
             }
         }
@@ -85,51 +86,51 @@ public class DataSourceProducer {
         }
 
         AgroalDataSourceConfigurationSupplier dataSourceConfiguration = new AgroalDataSourceConfigurationSupplier();
-        final AgroalConnectionPoolConfigurationSupplier poolConfiguration = dataSourceConfiguration.connectionPoolConfiguration();
-        poolConfiguration.connectionFactoryConfiguration().jdbcUrl( targetUrl);
-        poolConfiguration.connectionFactoryConfiguration().connectionProviderClass( providerClass);
+        final AgroalConnectionPoolConfigurationSupplier poolConfiguration = dataSourceConfiguration
+                .connectionPoolConfiguration();
+        poolConfiguration.connectionFactoryConfiguration().jdbcUrl(targetUrl);
+        poolConfiguration.connectionFactoryConfiguration().connectionProviderClass(providerClass);
 
         if (jta || xa) {
-            TransactionIntegration txIntegration = new NarayanaTransactionIntegration(transactionManager, transactionSynchronizationRegistry, null, connectable);
-            poolConfiguration.transactionIntegration( txIntegration);
+            TransactionIntegration txIntegration = new NarayanaTransactionIntegration(transactionManager,
+                    transactionSynchronizationRegistry, null, connectable);
+            poolConfiguration.transactionIntegration(txIntegration);
         }
         // use the name / password from the callbacks
         if (userName != null) {
             poolConfiguration
-                    .connectionFactoryConfiguration().principal( new NamePrincipal( userName));
+                    .connectionFactoryConfiguration().principal(new NamePrincipal(userName));
         }
         if (password != null) {
             poolConfiguration
-                    .connectionFactoryConfiguration().credential( new SimplePassword( password));
+                    .connectionFactoryConfiguration().credential(new SimplePassword(password));
         }
 
         //Pool size configuration:
         if (minSize != null) {
-            poolConfiguration.minSize( minSize );
-        }
-        else {
-            log.warning( "Agroal pool 'minSize' was not set: setting to default value " + DEFAULT_MIN_POOL_SIZE );
-            poolConfiguration.minSize( DEFAULT_MIN_POOL_SIZE );
+            poolConfiguration.minSize(minSize);
+        } else {
+            log.warning("Agroal pool 'minSize' was not set: setting to default value " + DEFAULT_MIN_POOL_SIZE);
+            poolConfiguration.minSize(DEFAULT_MIN_POOL_SIZE);
         }
         if (maxSize != null) {
-            poolConfiguration.maxSize( maxSize );
-        }
-        else {
-            log.warning( "Agroal pool 'maxSize' was not set: setting to default value " + DEFAULT_MAX_POOL_SIZE );
-            poolConfiguration.maxSize( DEFAULT_MAX_POOL_SIZE );
+            poolConfiguration.maxSize(maxSize);
+        } else {
+            log.warning("Agroal pool 'maxSize' was not set: setting to default value " + DEFAULT_MAX_POOL_SIZE);
+            poolConfiguration.maxSize(DEFAULT_MAX_POOL_SIZE);
         }
 
         // SSL support: we should push the driver specific code to the driver extensions but it will have to do for now
         if (disableSslSupport) {
             switch (driver.getName()) {
-            case "org.postgresql.Driver":
-                poolConfiguration.connectionFactoryConfiguration().jdbcProperty("sslmode", "disable");
-                break;
-            case "com.mysql.jdbc.Driver":
-                poolConfiguration.connectionFactoryConfiguration().jdbcProperty("useSSL", "false");
-                break;
-            default:
-                log.warning("Agroal does not support disabling SSL for driver " + driver.getName());
+                case "org.postgresql.Driver":
+                    poolConfiguration.connectionFactoryConfiguration().jdbcProperty("sslmode", "disable");
+                    break;
+                case "com.mysql.jdbc.Driver":
+                    poolConfiguration.connectionFactoryConfiguration().jdbcProperty("useSSL", "false");
+                    break;
+                default:
+                    log.warning("Agroal does not support disabling SSL for driver " + driver.getName());
             }
         }
 

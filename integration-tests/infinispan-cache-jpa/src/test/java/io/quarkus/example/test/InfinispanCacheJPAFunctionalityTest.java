@@ -1,10 +1,11 @@
 package io.quarkus.example.test;
 
-import io.restassured.RestAssured;
-import io.quarkus.test.junit.QuarkusTest;
+import static org.hamcrest.Matchers.is;
+
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.Matchers.is;
+import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.RestAssured;
 
 /**
  * Test connecting Hibernate ORM to H2.

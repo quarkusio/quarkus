@@ -3,10 +3,9 @@ package io.quarkus.example.test;
 import java.io.File;
 import java.util.Properties;
 
-import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
-
 import io.debezium.kafka.KafkaCluster;
 import io.debezium.util.Testing;
+import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
 public class KafkaTestResource implements QuarkusTestResourceLifecycleManager {
 

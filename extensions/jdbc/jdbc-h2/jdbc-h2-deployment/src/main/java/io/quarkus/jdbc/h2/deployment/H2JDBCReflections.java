@@ -28,13 +28,13 @@ import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
  */
 public final class H2JDBCReflections {
 
-	@BuildStep
-	void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-		//Not strictly necessary when using Agroal, as it also registers
-		//any JDBC driver being configured explicitly through its configuration.
-		//We register it for the sake of people not using Agroal.
-		final String driverName = "org.h2.Driver";
-		reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, driverName));
-	}
+    @BuildStep
+    void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        //Not strictly necessary when using Agroal, as it also registers
+        //any JDBC driver being configured explicitly through its configuration.
+        //We register it for the sake of people not using Agroal.
+        final String driverName = "org.h2.Driver";
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, driverName));
+    }
 
 }

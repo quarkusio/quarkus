@@ -17,15 +17,15 @@ package io.quarkus.scheduler.test;
 
 import javax.enterprise.inject.spi.DeploymentException;
 
-import io.quarkus.scheduler.api.Scheduled;
-import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-public class InvalidCronExpressionTest {
+import io.quarkus.scheduler.api.Scheduled;
+import io.quarkus.test.QuarkusUnitTest;
 
+public class InvalidCronExpressionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
@@ -38,7 +38,6 @@ public class InvalidCronExpressionTest {
     }
 
     static class InvalidBean {
-
 
         @Scheduled(cron = "0 0 0 ????")
         void wrong() {

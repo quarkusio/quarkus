@@ -46,6 +46,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+
 import io.quarkus.dev.ClassLoaderCompiler;
 import io.quarkus.dev.DevModeMain;
 import io.quarkus.maven.utilities.MojoUtils;
@@ -73,19 +74,24 @@ public class DevMojo extends AbstractMojo {
      * port 5005. It supports the following options:
      * <table>
      * <tr>
-     * <td><b>Value</b></td><td>Effect</td>
+     * <td><b>Value</b></td>
+     * <td>Effect</td>
      * </tr>
      * <tr>
-     * <td><b>false</b></td><td>The JVM is not started in debug mode</td>
+     * <td><b>false</b></td>
+     * <td>The JVM is not started in debug mode</td>
      * </tr>
      * <tr>
-     * <td><b>true</b></td><td>The JVM is started in debug mode and suspends until a debugger is attached to port 5005</td>
+     * <td><b>true</b></td>
+     * <td>The JVM is started in debug mode and suspends until a debugger is attached to port 5005</td>
      * </tr>
      * <tr>
-     * <td><b>client</b></td><td>The JVM is started in client mode, and attempts to connect to localhost:5005</td>
+     * <td><b>client</b></td>
+     * <td>The JVM is started in client mode, and attempts to connect to localhost:5005</td>
      * </tr>
      * <tr>
-     * <td><b>{port}</b></td><td>The JVM is started in debug mode and suspends until a debugger is attached to {port}</td>
+     * <td><b>{port}</b></td>
+     * <td>The JVM is started in debug mode and suspends until a debugger is attached to {port}</td>
      * </tr>
      * </table>
      */
@@ -108,34 +114,33 @@ public class DevMojo extends AbstractMojo {
     @Parameter(defaultValue = "${preventnoverify}")
     private boolean preventnoverify = false;
 
-
     @Override
     public void execute() throws MojoFailureException {
 
         boolean found = false;
-        for(Plugin i : project.getBuildPlugins()) {
-            if(i.getGroupId().equals(MojoUtils.getPluginGroupId())
+        for (Plugin i : project.getBuildPlugins()) {
+            if (i.getGroupId().equals(MojoUtils.getPluginGroupId())
                     && i.getArtifactId().equals(MojoUtils.getPluginArtifactId())) {
-                for(PluginExecution p : i.getExecutions()) {
-                    if(p.getGoals().contains("build")) {
+                for (PluginExecution p : i.getExecutions()) {
+                    if (p.getGoals().contains("build")) {
                         found = true;
                         break;
                     }
                 }
             }
         }
-        if(!found) {
+        if (!found) {
             getLog().warn("The quarkus-maven-plugin build goal was not configured for this project, " +
                     "skipping quarkus:dev as this is assumed to be a support library. If you want to run quarkus dev" +
                     " on this project make sure the quarkus-maven-plugin is configured with a build goal.");
             return;
         }
 
-        if (! sourceDir.isDirectory()) {
+        if (!sourceDir.isDirectory()) {
             throw new MojoFailureException("The `src/main/java` directory is required, please create it.");
         }
 
-        if (! buildDir.isDirectory()  || ! new File(buildDir, "classes").isDirectory()) {
+        if (!buildDir.isDirectory() || !new File(buildDir, "classes").isDirectory()) {
             throw new MojoFailureException("The project has no output yet, run `mvn compile quarkus:dev`.");
         }
 
@@ -145,7 +150,7 @@ public class DevMojo extends AbstractMojo {
             if (debug == null) {
                 // debug mode not specified
                 // make sure 5005 is not used, we don't want to just fail if something else is using it
-                try (Socket socket = new Socket(InetAddress.getByAddress(new byte[]{127, 0, 0, 1}), 5005)) {
+                try (Socket socket = new Socket(InetAddress.getByAddress(new byte[] { 127, 0, 0, 1 }), 5005)) {
                     getLog().error("Port 5005 in use, not starting in debug mode");
                 } catch (IOException e) {
                     args.add("-Xdebug");
@@ -174,8 +179,8 @@ public class DevMojo extends AbstractMojo {
                 args.addAll(Arrays.asList(jvmArgs.split(" ")));
             }
             //we don't want to just copy every system property, as a lot of them are set by the JVM
-            for(Map.Entry<Object, Object> i: System.getProperties().entrySet()) {
-                if(i.getKey().toString().startsWith("quarkus.")) {
+            for (Map.Entry<Object, Object> i : System.getProperties().entrySet()) {
+                if (i.getKey().toString().startsWith("quarkus.")) {
                     args.add("-D" + i.getKey() + "=" + i.getValue());
                 }
             }
@@ -192,7 +197,7 @@ public class DevMojo extends AbstractMojo {
 
             // the following flags reduce startup time and are acceptable only for dev purposes
             args.add("-XX:TieredStopAtLevel=1");
-            if(!preventnoverify) {
+            if (!preventnoverify) {
                 args.add("-Xverify:none");
             }
 
@@ -213,15 +218,17 @@ public class DevMojo extends AbstractMojo {
             //we also want to add the maven plugin jar to the class path
             //this allows us to just directly use classes, without messing around copying them
             //to the runner jar
-            URL classFile = DevModeMain.class.getClassLoader().getResource(DevModeMain.class.getName().replace('.', '/') + ".class");
+            URL classFile = DevModeMain.class.getClassLoader()
+                    .getResource(DevModeMain.class.getName().replace('.', '/') + ".class");
             File path;
             if (classFile.getProtocol().equals("jar")) {
                 String jarPath = classFile.getPath().substring(0, classFile.getPath().lastIndexOf('!'));
-                if(jarPath.startsWith("file:"))
+                if (jarPath.startsWith("file:"))
                     jarPath = jarPath.substring(5);
                 path = new File(jarPath);
             } else if (classFile.getProtocol().equals("file")) {
-                String filePath = classFile.getPath().substring(0, classFile.getPath().lastIndexOf(DevModeMain.class.getName().replace('.', '/')));
+                String filePath = classFile.getPath().substring(0,
+                        classFile.getPath().lastIndexOf(DevModeMain.class.getName().replace('.', '/')));
                 path = new File(filePath);
             } else {
                 throw new MojoFailureException("Unsupported DevModeMain artifact URL:" + classFile);
@@ -230,7 +237,7 @@ public class DevMojo extends AbstractMojo {
 
             //now we need to build a temporary jar to actually run
 
-            File tempFile = new File(buildDir, project.getArtifactId()+"-dev.jar");
+            File tempFile = new File(buildDir, project.getArtifactId() + "-dev.jar");
             tempFile.delete();
             tempFile.deleteOnExit();
 
@@ -247,7 +254,7 @@ public class DevMojo extends AbstractMojo {
                 out.write(classPath.toString().getBytes(StandardCharsets.UTF_8));
             }
             String resources = null;
-            for(Resource i : project.getBuild().getResources()) {
+            for (Resource i : project.getBuild().getResources()) {
                 //todo: support multiple resources dirs for config hot deployment
                 resources = i.getDirectory();
                 break;
@@ -257,7 +264,7 @@ public class DevMojo extends AbstractMojo {
 
             args.add("-Dquarkus.runner.classes=" + outputDirectory.getAbsolutePath());
             args.add("-Dquarkus.runner.sources=" + sourceDir.getAbsolutePath());
-            if(resources != null) {
+            if (resources != null) {
                 args.add("-Dquarkus.runner.resources=" + new File(resources).getAbsolutePath());
             }
             args.add("-jar");
@@ -281,7 +288,7 @@ public class DevMojo extends AbstractMojo {
             }, "Development Mode Shutdown Hook"));
             try {
                 p.waitFor();
-            } catch (Exception e)  {
+            } catch (Exception e) {
                 p.destroy();
                 throw e;
             }
@@ -291,12 +298,12 @@ public class DevMojo extends AbstractMojo {
         }
     }
 
-
-    private void addToClassPaths(StringBuilder classPathManifest, StringBuilder classPath, File file) throws MalformedURLException {
+    private void addToClassPaths(StringBuilder classPathManifest, StringBuilder classPath, File file)
+            throws MalformedURLException {
         URI uri = file.toPath().toAbsolutePath().toUri();
         classPathManifest.append(uri.getPath());
         classPath.append(uri.toURL().toString());
-        if(file.isDirectory()) {
+        if (file.isDirectory()) {
             classPathManifest.append("/");
             classPath.append("/");
         }

@@ -56,6 +56,7 @@ import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitia
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractorInitiator;
 import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
+
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 import io.quarkus.hibernate.orm.runtime.service.*;
 
@@ -121,13 +122,13 @@ public class PreconfiguredServiceRegistryBuilder {
         destroyedRegistry.resetAndReactivate(bootstrapServiceRegistry, initiators, providedServices, settingsCopy);
         return destroyedRegistry;
 
-//		return new StandardServiceRegistryImpl(
-//				true,
-//				bootstrapServiceRegistry,
-//				initiators,
-//				providedServices,
-//				settingsCopy
-//		);
+        //		return new StandardServiceRegistryImpl(
+        //				true,
+        //				bootstrapServiceRegistry,
+        //				initiators,
+        //				providedServices,
+        //				settingsCopy
+        //		);
     }
 
     private BootstrapServiceRegistry buildEmptyBootstrapServiceRegistry() {

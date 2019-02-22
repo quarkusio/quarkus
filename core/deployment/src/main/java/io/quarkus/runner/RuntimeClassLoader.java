@@ -44,11 +44,12 @@ import java.util.concurrent.Future;
 import java.util.function.BiFunction;
 
 import org.jboss.logging.Logger;
-import io.quarkus.deployment.ClassOutput;
-import io.quarkus.deployment.QuarkusClassWriter;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+
+import io.quarkus.deployment.ClassOutput;
+import io.quarkus.deployment.QuarkusClassWriter;
 
 public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
 
@@ -145,7 +146,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
         }
         return super.getResourceAsStream(name);
     }
-    
+
     @Override
     protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
         Class<?> ex = findLoadedClass(name);
@@ -164,7 +165,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
         if (Files.exists(classLoc)) {
             CompletableFuture<Class<?>> res = new CompletableFuture<>();
             Future<Class<?>> existing = loadingClasses.putIfAbsent(name, res);
-            if(existing != null) {
+            if (existing != null) {
                 try {
                     return existing.get();
                 } catch (Exception e) {
@@ -208,21 +209,20 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
         }
 
         Path hashPath = null;
-        if(transformerCache != null) {
+        if (transformerCache != null) {
 
             try {
                 MessageDigest md = MessageDigest.getInstance("MD5");
                 byte[] thedigest = md.digest(bytes);
                 String hash = Base64.getUrlEncoder().encodeToString(thedigest);
                 hashPath = transformerCache.resolve(hash);
-                if(Files.exists(hashPath)) {
+                if (Files.exists(hashPath)) {
                     return readFileContent(hashPath);
                 }
             } catch (Exception e) {
                 log.error("Unable to load transformed class from cache", e);
             }
         }
-
 
         ClassReader cr = new ClassReader(bytes);
         ClassWriter writer = new QuarkusClassWriter(cr, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
@@ -232,7 +232,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
         }
         cr.accept(visitor, 0);
         byte[] data = writer.toByteArray();
-        if(hashPath != null) {
+        if (hashPath != null) {
             try {
 
                 File file = hashPath.toFile();
@@ -250,7 +250,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
     @Override
     protected Class<?> findClass(String name) throws ClassNotFoundException {
         Class<?> existing = findLoadedClass(name);
-        if(existing != null) {
+        if (existing != null) {
             return existing;
         }
         byte[] bytes = appClasses.get(name);
@@ -262,7 +262,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
         } catch (Error e) {
             //potential race conditions if another thread is loading the same class
             existing = findLoadedClass(name);
-            if(existing != null) {
+            if (existing != null) {
                 return existing;
             }
             throw e;
@@ -279,7 +279,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
                 if (!debugPath.exists()) {
                     debugPath.mkdir();
                 }
-                File classFile = new File(debugPath, dotName+".class");
+                File classFile = new File(debugPath, dotName + ".class");
                 FileOutputStream classWriter = new FileOutputStream(classFile);
                 classWriter.write(data);
                 classWriter.close();

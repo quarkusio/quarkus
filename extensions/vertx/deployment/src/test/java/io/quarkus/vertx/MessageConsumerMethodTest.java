@@ -32,20 +32,21 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 
 import org.jboss.quarkus.arc.Arc;
-import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.vertx.runtime.ConsumeEvent;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.vertx.runtime.ConsumeEvent;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
 
 public class MessageConsumerMethodTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(SimpleBean.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(SimpleBean.class));
 
     @Inject
     SimpleBean simpleBean;
@@ -67,7 +68,7 @@ public class MessageConsumerMethodTest {
         });
         assertEquals("HELLO", synchronizer.poll(2, TimeUnit.SECONDS));
     }
-    
+
     @Test
     public void testSendAsync() throws InterruptedException {
         EventBus eventBus = Arc.container().instance(EventBus.class).get();
@@ -85,7 +86,7 @@ public class MessageConsumerMethodTest {
         });
         assertEquals("olleh", synchronizer.poll(2, TimeUnit.SECONDS));
     }
-    
+
     @Test
     public void testSendDefaultAddress() throws InterruptedException {
         EventBus eventBus = Arc.container().instance(EventBus.class).get();
@@ -124,7 +125,7 @@ public class MessageConsumerMethodTest {
         String sendDefaultAddress(String message) {
             return message.toLowerCase();
         }
-        
+
         @ConsumeEvent("foo")
         String reply(String message) {
             return message.toUpperCase();
@@ -141,7 +142,7 @@ public class MessageConsumerMethodTest {
             MESSAGES.add(message.body().toUpperCase());
             latch.countDown();
         }
-        
+
         @ConsumeEvent("foo-async")
         CompletionStage<String> replyAsync(String message) {
             return CompletableFuture.completedFuture(new StringBuilder(message).reverse().toString());

@@ -17,6 +17,7 @@
 package io.quarkus.smallrye.restclient.runtime;
 
 import org.eclipse.microprofile.rest.client.spi.RestClientBuilderResolver;
+
 import io.quarkus.runtime.annotations.Template;
 
 /**

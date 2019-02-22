@@ -34,16 +34,17 @@ public final class PathTestHelper {
         String classFileName = testClass.getName().replace('.', File.separatorChar) + ".class";
         URL resource = testClass.getClassLoader().getResource(classFileName);
 
-		try {
-			Path path = Paths.get(resource.toURI());
-	        if (!path.toString().contains(TEST_CLASSES_FRAGMENT)) {
-	            throw new RuntimeException("The test class " + testClass + " is not located in the " + TEST_CLASSES_FRAGMENT + " directory.");
-	        }
+        try {
+            Path path = Paths.get(resource.toURI());
+            if (!path.toString().contains(TEST_CLASSES_FRAGMENT)) {
+                throw new RuntimeException(
+                        "The test class " + testClass + " is not located in the " + TEST_CLASSES_FRAGMENT + " directory.");
+            }
 
-	        return path.getRoot().resolve(path.subpath(0, path.getNameCount() - Paths.get(classFileName).getNameCount()));
-		} catch (URISyntaxException e) {
-			throw new RuntimeException(e);
-		}
+            return path.getRoot().resolve(path.subpath(0, path.getNameCount() - Paths.get(classFileName).getNameCount()));
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
 
     }
 

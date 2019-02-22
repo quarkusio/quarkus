@@ -34,10 +34,10 @@ public final class SubstrateProxyDefinitionBuildItem extends MultiBuildItem {
     public SubstrateProxyDefinitionBuildItem(String... classes) {
         this.classes = Arrays.asList(classes);
     }
+
     public SubstrateProxyDefinitionBuildItem(List<String> classes) {
         this.classes = new ArrayList<>(classes);
     }
-
 
     public List<String> getClasses() {
         return classes;

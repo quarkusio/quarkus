@@ -16,9 +16,12 @@
 
 package io.quarkus.maven.extensionlist;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.Set;
+
 import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.artifact.handler.DefaultArtifactHandler;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -27,24 +30,18 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
+
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+
 import io.quarkus.dependencies.Extension;
 import io.quarkus.maven.AbstractExtensionMojo;
-
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.Set;
 
 /**
  * @author <a href="http://kenfinnigan.me">Ken Finnigan</a>
  */
-@Mojo(
-        name = "extension-list",
-        defaultPhase = LifecyclePhase.GENERATE_RESOURCES,
-        requiresDependencyCollection = ResolutionScope.COMPILE,
-        requiresDependencyResolution = ResolutionScope.COMPILE
-)
+@Mojo(name = "extension-list", defaultPhase = LifecyclePhase.GENERATE_RESOURCES, requiresDependencyCollection = ResolutionScope.COMPILE, requiresDependencyResolution = ResolutionScope.COMPILE)
 public class ExtensionListMojo extends AbstractExtensionMojo {
 
     //TODO Change file name when we replace the current hand coded file
@@ -104,8 +101,7 @@ public class ExtensionListMojo extends AbstractExtensionMojo {
                 "compile",
                 type,
                 "",
-                new DefaultArtifactHandler(type)
-        );
+                new DefaultArtifactHandler(type));
 
         artifact.setFile(file);
         this.project.addAttachedArtifact(artifact);

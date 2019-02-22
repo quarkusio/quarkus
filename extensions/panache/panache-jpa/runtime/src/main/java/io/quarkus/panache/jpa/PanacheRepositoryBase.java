@@ -11,21 +11,21 @@ import io.quarkus.panache.jpa.impl.JpaOperations;
 public interface PanacheRepositoryBase<Entity, Id> {
 
     // Operations
-    
+
     public default void persist(Entity entity) {
         JpaOperations.persist(entity);
     }
-    
+
     public default void delete(Entity entity) {
         JpaOperations.delete(entity);
     }
-    
+
     public default boolean isPersistent(Entity entity) {
         return JpaOperations.isPersistent(entity);
     }
 
     // Queries
-    
+
     public default Entity findById(Id id) {
         throw JpaOperations.implementationInjectionMissing();
     }
@@ -38,11 +38,11 @@ public interface PanacheRepositoryBase<Entity, Id> {
         throw JpaOperations.implementationInjectionMissing();
     }
 
-    public default PanacheQuery<Entity> find(String query, Map<String,Object> params) {
+    public default PanacheQuery<Entity> find(String query, Map<String, Object> params) {
         throw JpaOperations.implementationInjectionMissing();
     }
 
-    public default PanacheQuery<Entity> find(String query, Sort sort, Map<String,Object> params) {
+    public default PanacheQuery<Entity> find(String query, Sort sort, Map<String, Object> params) {
         throw JpaOperations.implementationInjectionMissing();
     }
 
@@ -70,11 +70,11 @@ public interface PanacheRepositoryBase<Entity, Id> {
         throw JpaOperations.implementationInjectionMissing();
     }
 
-    public default List<Entity> list(String query, Map<String,Object> params) {
+    public default List<Entity> list(String query, Map<String, Object> params) {
         throw JpaOperations.implementationInjectionMissing();
     }
 
-    public default List<Entity> list(String query, Sort sort, Map<String,Object> params) {
+    public default List<Entity> list(String query, Sort sort, Map<String, Object> params) {
         throw JpaOperations.implementationInjectionMissing();
     }
 
@@ -102,11 +102,11 @@ public interface PanacheRepositoryBase<Entity, Id> {
         throw JpaOperations.implementationInjectionMissing();
     }
 
-    public default Stream<Entity> stream(String query, Map<String,Object> params) {
+    public default Stream<Entity> stream(String query, Map<String, Object> params) {
         throw JpaOperations.implementationInjectionMissing();
     }
 
-    public default Stream<Entity> stream(String query, Sort sort, Map<String,Object> params) {
+    public default Stream<Entity> stream(String query, Sort sort, Map<String, Object> params) {
         throw JpaOperations.implementationInjectionMissing();
     }
 
@@ -134,7 +134,7 @@ public interface PanacheRepositoryBase<Entity, Id> {
         throw JpaOperations.implementationInjectionMissing();
     }
 
-    public default long count(String query, Map<String,Object> params) {
+    public default long count(String query, Map<String, Object> params) {
         throw JpaOperations.implementationInjectionMissing();
     }
 
@@ -150,14 +150,14 @@ public interface PanacheRepositoryBase<Entity, Id> {
         throw JpaOperations.implementationInjectionMissing();
     }
 
-    public default long delete(String query, Map<String,Object> params) {
+    public default long delete(String query, Map<String, Object> params) {
         throw JpaOperations.implementationInjectionMissing();
     }
-    
+
     public default long delete(String query, Parameters params) {
         throw JpaOperations.implementationInjectionMissing();
     }
-    
+
     public default void persist(Iterable<Entity> entities) {
         JpaOperations.persist(entities);
     }

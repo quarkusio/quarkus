@@ -39,16 +39,19 @@ public class UpdateToNextAndPersistStateDemo extends ConfigDemoBase {
 
     @Override
     protected void initProps(Properties props) {
-        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_DEPS_ORIGIN), DependenciesOrigin.LAST_UPDATE.getName()); // APPLICATION, last-update
-        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_VERSION_UPDATE), VersionUpdate.NEXT.getName());
-        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_VERSION_UPDATE_NUMBER), VersionUpdateNumber.MINOR.getName());
+        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_DEPS_ORIGIN),
+                DependenciesOrigin.LAST_UPDATE.getName()); // APPLICATION, last-update
+        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_VERSION_UPDATE),
+                VersionUpdate.NEXT.getName());
+        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_VERSION_UPDATE_NUMBER),
+                VersionUpdateNumber.MINOR.getName());
     }
 
     @Override
     public void demo(AppCreator creator) throws Exception {
         creator.resolveOutcome(RunnerJarOutcome.class);
         final CurateOutcome curateOutcome = creator.getOutcome(CurateOutcome.class);
-        if(curateOutcome == null) {
+        if (curateOutcome == null) {
             throw new IllegalStateException("Curate outcome isn't available");
         }
         curateOutcome.persist(creator);

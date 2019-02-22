@@ -6,21 +6,28 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Indicates that a given class can be injected as a configuration object.  A configuration group can contain multiple
+ * Indicates that a given class can be injected as a configuration object. A configuration group can contain multiple
  * nested items and configuration groups.
  * <p>
- * <em>Configuration group properties cannot be {@code Optional} or {@code null}.</em>  It is expected that, in the event
+ * <em>Configuration group properties cannot be {@code Optional} or {@code null}.</em> It is expected that, in the event
  * that a group property can be disabled, this should be done using a {@code boolean} property (preferably the unnamed
- * property or a {@code enabled} property).  For example:
-<pre><code>
+ * property or a {@code enabled} property). For example:
+ * 
+ * <pre>
+ * <code>
 quarkus.extra-fast-mode         = yes
 quarkus.extra-fast-mode.gadgets = 20
-</code></pre>
+</code>
+ * </pre>
+ * 
  * Or:
-<pre><code>
+ * 
+ * <pre>
+ * <code>
 quarkus.laser-beam.enabled    = true
 quarkus.laser-beam.mount-mode = sharks
- </code></pre>
+ </code>
+ * </pre>
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)

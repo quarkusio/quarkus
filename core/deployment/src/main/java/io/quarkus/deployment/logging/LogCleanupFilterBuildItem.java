@@ -1,6 +1,7 @@
 package io.quarkus.deployment.logging;
 
 import org.jboss.builder.item.MultiBuildItem;
+
 import io.quarkus.runtime.logging.LogCleanupFilterElement;
 
 /**
@@ -12,11 +13,11 @@ import io.quarkus.runtime.logging.LogCleanupFilterElement;
 public final class LogCleanupFilterBuildItem extends MultiBuildItem {
 
     private LogCleanupFilterElement filterElement;
-    
+
     public LogCleanupFilterBuildItem(String loggerName, String messageStart) {
         this.filterElement = new LogCleanupFilterElement(loggerName, messageStart);
     }
-    
+
     public LogCleanupFilterElement getFilterElement() {
         return filterElement;
     }

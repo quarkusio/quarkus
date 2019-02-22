@@ -1,13 +1,13 @@
 package io.quarkus.maven.it.assertions;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class JarVerifier {
 

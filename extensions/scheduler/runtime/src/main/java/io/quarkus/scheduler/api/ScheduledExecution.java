@@ -18,10 +18,10 @@ package io.quarkus.scheduler.api;
 import java.time.Instant;
 
 /**
-* Scheduled execution metadata.
-*
-* @author Martin Kouba
-*/
+ * Scheduled execution metadata.
+ *
+ * @author Martin Kouba
+ */
 public interface ScheduledExecution {
 
     /**

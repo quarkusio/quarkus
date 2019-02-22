@@ -17,12 +17,13 @@ package io.quarkus.scheduler.test;
 
 import javax.enterprise.inject.spi.DeploymentException;
 
-import io.quarkus.scheduler.api.Scheduled;
-import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.scheduler.api.Scheduled;
+import io.quarkus.test.QuarkusUnitTest;
 
 public class InvalidEveryExpressionTest {
 
@@ -37,7 +38,6 @@ public class InvalidEveryExpressionTest {
     }
 
     static class InvalidBean {
-
 
         @Scheduled(every = "call me every other day")
         void wrong() {

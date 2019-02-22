@@ -1,9 +1,9 @@
 package io.quarkus.example.infinispancachejpa;
 
+import javax.persistence.*;
+
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-
-import javax.persistence.*;
 
 @Entity
 @Cacheable
@@ -61,8 +61,7 @@ public class Item {
     public void describeFully(StringBuilder sb) {
         sb.append("Item with id=").append(id)
                 .append(", name='").append(name).append("'")
-                .append(", description='").append(description).append("'")
-        ;
+                .append(", description='").append(description).append("'");
     }
 
 }

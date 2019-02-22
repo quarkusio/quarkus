@@ -44,9 +44,14 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+
 import org.eclipse.microprofile.config.Config;
 import org.jboss.builder.BuildResult;
 import org.jboss.logging.Logger;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.ClassWriter;
+
 import io.quarkus.creator.AppArtifact;
 import io.quarkus.creator.AppArtifactResolver;
 import io.quarkus.creator.AppCreationPhase;
@@ -65,10 +70,6 @@ import io.quarkus.deployment.QuarkusClassWriter;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateOutputBuildItem;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
-import org.objectweb.asm.ClassWriter;
-
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 
@@ -97,8 +98,8 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
      * If not set by the user the work directory of the creator
      * will be used instead.
      *
-     * @param outputDir  output directory for this phase
-     * @return  this phase instance
+     * @param outputDir output directory for this phase
+     * @return this phase instance
      */
     public AugmentPhase setOutputDir(Path outputDir) {
         this.outputDir = outputDir;
@@ -110,8 +111,8 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
      * the creation process has to be initiated with an application JAR which
      * will be unpacked into classes directory in the creator's work directory.
      *
-     * @param appClassesDir  directory for application classes
-     * @return  this phase instance
+     * @param appClassesDir directory for application classes
+     * @return this phase instance
      */
     public AugmentPhase setAppClassesDir(Path appClassesDir) {
         this.appClassesDir = appClassesDir;
@@ -123,8 +124,8 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
      * the user, transformed-classes directory will be created in the work
      * directory of the creator.
      *
-     * @param transformedClassesDir  directory for transformed application classes
-     * @return  this phase instance
+     * @param transformedClassesDir directory for transformed application classes
+     * @return this phase instance
      */
     public AugmentPhase setTransformedClassesDir(Path transformedClassesDir) {
         this.transformedClassesDir = transformedClassesDir;
@@ -135,8 +136,8 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
      * The directory for generated classes. If none is set by the user,
      * wiring-classes directory will be created in the work directory of the creator.
      *
-     * @param wiringClassesDir  directory for generated classes
-     * @return  this phase instance
+     * @param wiringClassesDir directory for generated classes
+     * @return this phase instance
      */
     public AugmentPhase setWiringClassesDir(Path wiringClassesDir) {
         this.wiringClassesDir = wiringClassesDir;
@@ -188,7 +189,8 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
             IoUtils.recursiveDelete(metaInf.resolve("MANIFEST.MF"));
         }
 
-        transformedClassesDir = IoUtils.mkdirs(transformedClassesDir == null ? outputDir.resolve("transformed-classes") : transformedClassesDir);
+        transformedClassesDir = IoUtils
+                .mkdirs(transformedClassesDir == null ? outputDir.resolve("transformed-classes") : transformedClassesDir);
         wiringClassesDir = IoUtils.mkdirs(wiringClassesDir == null ? outputDir.resolve("wiring-classes") : wiringClassesDir);
 
         doProcess(appState);
@@ -200,7 +202,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
         //first lets look for some config, as it is not on the current class path
         //and we need to load it to run the build process
         Path config = appClassesDir.resolve("META-INF").resolve("microprofile-config.properties");
-        if(Files.exists(config)) {
+        if (Files.exists(config)) {
             try {
                 Config built = SmallRyeConfigProviderResolver.instance().getBuilder()
                         .addDefaultSources()
@@ -234,12 +236,13 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                 try (ZipFile zip = openZipFile(resolvedDep)) {
                     boolean deploymentArtifact = zip.getEntry("META-INF/quarkus-build-steps.list") != null;
                     if (!appDep.getScope().equals(PROVIDED) && deploymentArtifact) {
-                        if(problems == null) {
+                        if (problems == null) {
                             problems = new ArrayList<>();
                         }
-                        problems.add("Artifact " + appDep + " is a deployment artifact, however it does not have scope required. This will result in unnecessary jars being included in the final image");
+                        problems.add("Artifact " + appDep
+                                + " is a deployment artifact, however it does not have scope required. This will result in unnecessary jars being included in the final image");
                     }
-                    if(!deploymentArtifact) {
+                    if (!deploymentArtifact) {
                         ZipEntry entry = zip.getEntry(DEPENDENCIES_RUNTIME);
                         if (entry != null) {
                             whitelist.add(getDependencyConflictId(appDep.getArtifact()));
@@ -315,12 +318,15 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                 Thread.currentThread().setContextClassLoader(old);
             }
 
-            final List<BytecodeTransformerBuildItem> bytecodeTransformerBuildItems = result.consumeMulti(BytecodeTransformerBuildItem.class);
+            final List<BytecodeTransformerBuildItem> bytecodeTransformerBuildItems = result
+                    .consumeMulti(BytecodeTransformerBuildItem.class);
             if (!bytecodeTransformerBuildItems.isEmpty()) {
-                final Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers = new HashMap<>(bytecodeTransformerBuildItems.size());
+                final Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> bytecodeTransformers = new HashMap<>(
+                        bytecodeTransformerBuildItems.size());
                 if (!bytecodeTransformerBuildItems.isEmpty()) {
                     for (BytecodeTransformerBuildItem i : bytecodeTransformerBuildItems) {
-                        bytecodeTransformers.computeIfAbsent(i.getClassToTransform(), (h) -> new ArrayList<>()).add(i.getVisitorFunction());
+                        bytecodeTransformers.computeIfAbsent(i.getClassToTransform(), (h) -> new ArrayList<>())
+                                .add(i.getVisitorFunction());
                     }
                 }
 
@@ -342,7 +348,8 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                                 return;
                             }
                             final String className = pathName.substring(0, pathName.length() - 6).replace('/', '.');
-                            final List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors = bytecodeTransformers.get(className);
+                            final List<BiFunction<String, ClassVisitor, ClassVisitor>> visitors = bytecodeTransformers
+                                    .get(className);
                             if (visitors == null || visitors.isEmpty()) {
                                 return;
                             }
@@ -350,10 +357,12 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                                 @Override
                                 public FutureEntry call() throws Exception {
                                     if (Files.size(path) > Integer.MAX_VALUE) {
-                                        throw new RuntimeException("Can't process class files larger than Integer.MAX_VALUE bytes");
+                                        throw new RuntimeException(
+                                                "Can't process class files larger than Integer.MAX_VALUE bytes");
                                     }
                                     ClassReader cr = new ClassReader(Files.readAllBytes(path));
-                                    ClassWriter writer = new QuarkusClassWriter(cr, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+                                    ClassWriter writer = new QuarkusClassWriter(cr,
+                                            ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
                                     ClassVisitor visitor = writer;
                                     for (BiFunction<String, ClassVisitor, ClassVisitor> i : visitors) {
                                         visitor = i.apply(className, visitor);
@@ -372,7 +381,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                         final FutureEntry res = i.get();
                         final Path classFile = transformedClassesDir.resolve(res.location);
                         Files.createDirectories(classFile.getParent());
-                        try(OutputStream out = Files.newOutputStream(classFile)) {
+                        try (OutputStream out = Files.newOutputStream(classFile)) {
                             IoUtils.copy(out, new ByteArrayInputStream(res.data));
                         }
                     }
@@ -381,7 +390,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
         } catch (Exception e) {
             throw new AppCreatorException("Failed to augment application classes", e);
         } finally {
-            if(runnerClassLoader != null) {
+            if (runnerClassLoader != null) {
                 try {
                     runnerClassLoader.close();
                 } catch (IOException e) {
@@ -439,9 +448,9 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
                 return AugmentPhase.this;
             }
         }
-        .map("output", (AugmentPhase t, String value) -> t.setOutputDir(Paths.get(value)))
-        .map("classes", (AugmentPhase t, String value) -> t.setAppClassesDir(Paths.get(value)))
-        .map("transformed-classes", (AugmentPhase t, String value) -> t.setTransformedClassesDir(Paths.get(value)))
-        .map("wiring-classes", (AugmentPhase t, String value) -> t.setWiringClassesDir(Paths.get(value)));
+                .map("output", (AugmentPhase t, String value) -> t.setOutputDir(Paths.get(value)))
+                .map("classes", (AugmentPhase t, String value) -> t.setAppClassesDir(Paths.get(value)))
+                .map("transformed-classes", (AugmentPhase t, String value) -> t.setTransformedClassesDir(Paths.get(value)))
+                .map("wiring-classes", (AugmentPhase t, String value) -> t.setWiringClassesDir(Paths.get(value)));
     }
 }

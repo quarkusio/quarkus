@@ -11,21 +11,21 @@ import io.quarkus.panache.jpa.impl.JpaOperations;
 public class PanacheEntityBase {
 
     // Operations
-    
+
     public void persist() {
         JpaOperations.persist(this);
     }
-    
+
     public void delete() {
         JpaOperations.delete(this);
     }
-    
+
     public boolean isPersistent() {
         return JpaOperations.isPersistent(this);
     }
 
     // Queries
-    
+
     public static <T extends PanacheEntityBase> T findById(Object id) {
         throw JpaOperations.implementationInjectionMissing();
     }
@@ -38,11 +38,11 @@ public class PanacheEntityBase {
         throw JpaOperations.implementationInjectionMissing();
     }
 
-    public static <T extends PanacheEntityBase> PanacheQuery<T> find(String query, Map<String,Object> params) {
+    public static <T extends PanacheEntityBase> PanacheQuery<T> find(String query, Map<String, Object> params) {
         throw JpaOperations.implementationInjectionMissing();
     }
 
-    public static <T extends PanacheEntityBase> PanacheQuery<T> find(String query, Sort sort, Map<String,Object> params) {
+    public static <T extends PanacheEntityBase> PanacheQuery<T> find(String query, Sort sort, Map<String, Object> params) {
         throw JpaOperations.implementationInjectionMissing();
     }
 
@@ -70,11 +70,11 @@ public class PanacheEntityBase {
         throw JpaOperations.implementationInjectionMissing();
     }
 
-    public static <T extends PanacheEntityBase> List<T> list(String query, Map<String,Object> params) {
+    public static <T extends PanacheEntityBase> List<T> list(String query, Map<String, Object> params) {
         throw JpaOperations.implementationInjectionMissing();
     }
 
-    public static <T extends PanacheEntityBase> List<T> list(String query, Sort sort, Map<String,Object> params) {
+    public static <T extends PanacheEntityBase> List<T> list(String query, Sort sort, Map<String, Object> params) {
         throw JpaOperations.implementationInjectionMissing();
     }
 
@@ -102,11 +102,11 @@ public class PanacheEntityBase {
         throw JpaOperations.implementationInjectionMissing();
     }
 
-    public static <T extends PanacheEntityBase> Stream<T> stream(String query, Map<String,Object> params) {
+    public static <T extends PanacheEntityBase> Stream<T> stream(String query, Map<String, Object> params) {
         throw JpaOperations.implementationInjectionMissing();
     }
 
-    public static <T extends PanacheEntityBase> Stream<T> stream(String query, Sort sort, Map<String,Object> params) {
+    public static <T extends PanacheEntityBase> Stream<T> stream(String query, Sort sort, Map<String, Object> params) {
         throw JpaOperations.implementationInjectionMissing();
     }
 
@@ -121,11 +121,11 @@ public class PanacheEntityBase {
     public static <T extends PanacheEntityBase> Stream<T> streamAll() {
         throw JpaOperations.implementationInjectionMissing();
     }
-    
+
     public static <T extends PanacheEntityBase> Stream<T> streamAll(Sort sort) {
         throw JpaOperations.implementationInjectionMissing();
     }
-    
+
     public static long count() {
         throw JpaOperations.implementationInjectionMissing();
     }
@@ -134,7 +134,7 @@ public class PanacheEntityBase {
         throw JpaOperations.implementationInjectionMissing();
     }
 
-    public static long count(String query, Map<String,Object> params) {
+    public static long count(String query, Map<String, Object> params) {
         throw JpaOperations.implementationInjectionMissing();
     }
 
@@ -150,7 +150,7 @@ public class PanacheEntityBase {
         throw JpaOperations.implementationInjectionMissing();
     }
 
-    public static long delete(String query, Map<String,Object> params) {
+    public static long delete(String query, Map<String, Object> params) {
         throw JpaOperations.implementationInjectionMissing();
     }
 

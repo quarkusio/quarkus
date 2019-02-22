@@ -27,6 +27,7 @@ import org.jboss.resteasy.spi.ConstructorInjector;
 import org.jboss.resteasy.spi.Failure;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.jboss.resteasy.spi.HttpResponse;
+
 import io.quarkus.arc.runtime.BeanContainer;
 
 public class QuarkusConstructorInjector implements ConstructorInjector {
@@ -53,10 +54,10 @@ public class QuarkusConstructorInjector implements ConstructorInjector {
         if (QuarkusInjectorFactory.CONTAINER == null) {
             return delegate.construct(request, response, unwrapAsync);
         }
-        if(factory == null) {
+        if (factory == null) {
             factory = QuarkusInjectorFactory.CONTAINER.instanceFactory(this.ctor.getDeclaringClass());
         }
-        if(factory == null) {
+        if (factory == null) {
             return delegate.construct(request, response, unwrapAsync);
         }
         return CompletableFuture.completedFuture(factory.create().get());

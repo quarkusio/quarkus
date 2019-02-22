@@ -10,7 +10,8 @@ import io.smallrye.config.StringUtil;
  *
  */
 public final class ConfigUtils {
-    private ConfigUtils() {}
+    private ConfigUtils() {
+    }
 
     /**
      * This method replicates the logic of {@link SmallRyeConfig#getValues(String, Class, IntFunction)} for the given
@@ -24,7 +25,8 @@ public final class ConfigUtils {
      * @param <C> the collection type
      * @return the collection (not {@code null})
      */
-    public static <T, C extends Collection<T>> C getDefaults(SmallRyeConfig config, String defaultValue, Class<T> itemType, IntFunction<C> collectionFactory) {
+    public static <T, C extends Collection<T>> C getDefaults(SmallRyeConfig config, String defaultValue, Class<T> itemType,
+            IntFunction<C> collectionFactory) {
         final String[] items = StringUtil.split(defaultValue);
         final C collection = collectionFactory.apply(items.length);
         for (String item : items) {

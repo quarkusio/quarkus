@@ -16,20 +16,22 @@
 
 package io.quarkus.vertx;
 
-import io.vertx.axle.core.buffer.Buffer;
-import io.vertx.core.Vertx;
-import io.quarkus.test.QuarkusUnitTest;
+import java.io.File;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
-import java.io.File;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import io.quarkus.test.QuarkusUnitTest;
+import io.vertx.axle.core.buffer.Buffer;
+import io.vertx.core.Vertx;
 
 public class VertxProducerTest {
 
@@ -56,7 +58,6 @@ public class VertxProducerTest {
         beanUsingAxle.verify();
         beanUsingRx.verify();
     }
-
 
     @ApplicationScoped
     static class BeanUsingBareVertx {

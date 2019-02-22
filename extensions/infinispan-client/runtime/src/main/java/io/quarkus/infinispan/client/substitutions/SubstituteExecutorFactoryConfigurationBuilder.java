@@ -14,27 +14,30 @@ import com.oracle.svm.core.annotate.TargetClass;
 
 /**
  * Avoids using reflection for DefaultAsyncExecutorFactory class
+ * 
  * @author William Burns
  */
 @TargetClass(ExecutorFactoryConfigurationBuilder.class)
 public final class SubstituteExecutorFactoryConfigurationBuilder {
-   @Alias
-   private ExecutorFactory factory;
-   @Alias
-   private Properties properties;
+    @Alias
+    private ExecutorFactory factory;
+    @Alias
+    private Properties properties;
 
-   @Substitute
-   public SubstituteExecutorFactoryConfiguration create() {
-      if (factory != null)
-         return new SubstituteExecutorFactoryConfiguration(factory, TypedProperties.toTypedProperties(properties));
-      else
-         return new SubstituteExecutorFactoryConfiguration(new DefaultAsyncExecutorFactory(), TypedProperties.toTypedProperties(properties));
-   }
+    @Substitute
+    public SubstituteExecutorFactoryConfiguration create() {
+        if (factory != null)
+            return new SubstituteExecutorFactoryConfiguration(factory, TypedProperties.toTypedProperties(properties));
+        else
+            return new SubstituteExecutorFactoryConfiguration(new DefaultAsyncExecutorFactory(),
+                    TypedProperties.toTypedProperties(properties));
+    }
 }
 
 @TargetClass(ExecutorFactoryConfiguration.class)
 final class SubstituteExecutorFactoryConfiguration {
-   @Alias
-   SubstituteExecutorFactoryConfiguration(ExecutorFactory factory, TypedProperties properties) { }
+    @Alias
+    SubstituteExecutorFactoryConfiguration(ExecutorFactory factory, TypedProperties properties) {
+    }
 
 }

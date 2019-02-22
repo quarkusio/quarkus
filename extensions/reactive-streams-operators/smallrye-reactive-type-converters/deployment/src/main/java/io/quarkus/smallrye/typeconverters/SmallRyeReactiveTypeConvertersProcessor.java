@@ -16,17 +16,17 @@
 
 package io.quarkus.smallrye.typeconverters;
 
+import java.util.Collection;
 
-import io.smallrye.reactive.converters.ReactiveTypeConverter;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
-
-import java.util.Collection;
+import io.smallrye.reactive.converters.ReactiveTypeConverter;
 
 /**
  * Searches for implementations of the {@link ReactiveTypeConverter} class and register them as SPI. So the result depends
@@ -40,12 +40,12 @@ public class SmallRyeReactiveTypeConvertersProcessor {
 
     @BuildStep
     public void build(BuildProducer<ServiceProviderBuildItem> serviceProvider, BuildProducer<FeatureBuildItem> feature,
-                      CombinedIndexBuildItem indexBuildItem) {
+            CombinedIndexBuildItem indexBuildItem) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_REACTIVE_TYPE_CONVERTERS));
         Collection<ClassInfo> implementors = indexBuildItem.getIndex().getAllKnownImplementors(REACTIVE_TYPE_CONVERTER);
 
-        implementors.forEach(info ->
-                serviceProvider.produce(new ServiceProviderBuildItem(REACTIVE_TYPE_CONVERTER.toString(), info.toString())));
+        implementors.forEach(info -> serviceProvider
+                .produce(new ServiceProviderBuildItem(REACTIVE_TYPE_CONVERTER.toString(), info.toString())));
     }
 
 }

@@ -18,9 +18,9 @@ package io.quarkus.example.test;
 
 import static org.hamcrest.Matchers.is;
 
-import io.quarkus.test.junit.SubstrateTest;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.junit.SubstrateTest;
 import io.restassured.RestAssured;
 
 @SubstrateTest

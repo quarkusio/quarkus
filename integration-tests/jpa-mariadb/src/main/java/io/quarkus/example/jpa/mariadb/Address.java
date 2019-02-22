@@ -36,6 +36,6 @@ public class Address {
     }
 
     public void describeFully(StringBuilder sb) {
-        sb.append( "Address with id=" ).append( id ).append( ", street='" ).append( street ).append( "'" );
+        sb.append("Address with id=").append(id).append(", street='").append(street).append("'");
     }
 }

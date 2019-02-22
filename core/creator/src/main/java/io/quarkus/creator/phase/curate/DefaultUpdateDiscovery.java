@@ -49,23 +49,24 @@ public class DefaultUpdateDiscovery implements UpdateDiscovery {
 
     @Override
     public String getLatestVersion(AppArtifact artifact) throws AppCreatorException {
-        /* to control how the versions are compared
-        DefaultArtifactVersion latest = null;
-        String latestStr = null;
-        for (String version : listUpdates(artifact)) {
-            final DefaultArtifactVersion next = new DefaultArtifactVersion(version);
-            if (latest == null || next.compareTo(latest) > 0) {
-                latest = next;
-                latestStr = version;
-            }
-        }
-        return latestStr;
-        */
+        /*
+         * to control how the versions are compared
+         * DefaultArtifactVersion latest = null;
+         * String latestStr = null;
+         * for (String version : listUpdates(artifact)) {
+         * final DefaultArtifactVersion next = new DefaultArtifactVersion(version);
+         * if (latest == null || next.compareTo(latest) > 0) {
+         * latest = next;
+         * latestStr = version;
+         * }
+         * }
+         * return latestStr;
+         */
         return resolver.getLatestVersion(artifact, resolveUpToVersion(artifact), false);
     }
 
     private String resolveUpToVersion(AppArtifact artifact) throws AppCreatorException {
-        if(updateNumber == VersionUpdateNumber.MAJOR) {
+        if (updateNumber == VersionUpdateNumber.MAJOR) {
             return null;
         }
 
@@ -73,7 +74,7 @@ public class DefaultUpdateDiscovery implements UpdateDiscovery {
         // as the base for the version range to look for the updates
         final String version = artifact.getVersion();
         final int majorMinorSep = version.indexOf('.');
-        if(majorMinorSep <= 0) {
+        if (majorMinorSep <= 0) {
             throw new AppCreatorException("Failed to determine the major version in " + version);
         }
         final String majorStr = version.substring(0, majorMinorSep);
@@ -89,7 +90,7 @@ public class DefaultUpdateDiscovery implements UpdateDiscovery {
         }
 
         final int minorMicroSep = version.indexOf('.', majorMinorSep + 1);
-        if(minorMicroSep <= 0) {
+        if (minorMicroSep <= 0) {
             throw new AppCreatorException("Failed to determine the minor version in " + version);
         }
         final String minorStr = version.substring(majorMinorSep + 1, minorMicroSep);

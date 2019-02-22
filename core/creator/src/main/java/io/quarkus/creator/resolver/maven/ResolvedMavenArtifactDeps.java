@@ -23,7 +23,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+
 import org.apache.maven.artifact.Artifact;
+
 import io.quarkus.creator.AppArtifact;
 import io.quarkus.creator.AppArtifactResolverBase;
 import io.quarkus.creator.AppCreatorException;
@@ -46,18 +48,20 @@ public class ResolvedMavenArtifactDeps extends AppArtifactResolverBase {
         this(groupId, artifactId, "", version, artifacts);
     }
 
-    public ResolvedMavenArtifactDeps(String groupId, String artifactId, String classifier, String version, Collection<Artifact> artifacts) {
+    public ResolvedMavenArtifactDeps(String groupId, String artifactId, String classifier, String version,
+            Collection<Artifact> artifacts) {
         this(groupId, artifactId, "", "jar", version, artifacts);
     }
 
-    public ResolvedMavenArtifactDeps(String groupId, String artifactId, String classifier, String type, String version, Collection<Artifact> artifacts) {
+    public ResolvedMavenArtifactDeps(String groupId, String artifactId, String classifier, String type, String version,
+            Collection<Artifact> artifacts) {
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.classifier = classifier;
         this.type = type;
         this.version = version;
         final List<AppDependency> tmp = new ArrayList<>(artifacts.size());
-        for(Artifact artifact : artifacts) {
+        for (Artifact artifact : artifacts) {
             tmp.add(new AppDependency(toMvnArtifact(artifact), artifact.getScope()));
         }
         deps = Collections.unmodifiableList(tmp);
@@ -75,12 +79,13 @@ public class ResolvedMavenArtifactDeps extends AppArtifactResolverBase {
 
     @Override
     public List<AppDependency> collectDependencies(AppArtifact coords) throws AppCreatorException {
-        if(!coords.getGroupId().equals(groupId) ||
+        if (!coords.getGroupId().equals(groupId) ||
                 !coords.getArtifactId().equals(artifactId) ||
                 !coords.getClassifier().equals(classifier) ||
                 !coords.getType().equals(type) ||
                 !coords.getVersion().equals(version)) {
-            throw new AppCreatorException("The resolve can only resolve dependencies for " + groupId + ':' + artifactId + ':' + classifier + ':' + type + ':' + version + ": " + coords);
+            throw new AppCreatorException("The resolve can only resolve dependencies for " + groupId + ':' + artifactId + ':'
+                    + classifier + ':' + type + ':' + version + ": " + coords);
         }
         return deps;
     }
@@ -91,16 +96,18 @@ public class ResolvedMavenArtifactDeps extends AppArtifactResolverBase {
     }
 
     private static AppArtifact toMvnArtifact(Artifact artifact) {
-        final AppArtifact mvn = new AppArtifact(artifact.getGroupId(), artifact.getArtifactId(), artifact.getClassifier(), artifact.getType(), artifact.getVersion());
+        final AppArtifact mvn = new AppArtifact(artifact.getGroupId(), artifact.getArtifactId(), artifact.getClassifier(),
+                artifact.getType(), artifact.getVersion());
         final File file = artifact.getFile();
-        if(file != null) {
+        if (file != null) {
             setPath(mvn, file.toPath());
         }
         return mvn;
     }
 
     @Override
-    public List<String> listLaterVersions(AppArtifact artifact, String upToVersion, boolean inclusive) throws AppCreatorException {
+    public List<String> listLaterVersions(AppArtifact artifact, String upToVersion, boolean inclusive)
+            throws AppCreatorException {
         throw new UnsupportedOperationException();
     }
 

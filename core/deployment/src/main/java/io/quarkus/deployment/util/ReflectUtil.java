@@ -15,18 +15,21 @@ import io.quarkus.deployment.annotations.BuildProducer;
 /**
  */
 public final class ReflectUtil {
-    private ReflectUtil() {}
+    private ReflectUtil() {
+    }
 
     public static boolean rawTypeIs(Type type, Class<?> clazz) {
         return type instanceof Class<?> && clazz == type
-            || type instanceof ParameterizedType && ((ParameterizedType) type).getRawType() == clazz
-            || type instanceof GenericArrayType && clazz.isArray() && rawTypeIs(((GenericArrayType) type).getGenericComponentType(), clazz.getComponentType());
+                || type instanceof ParameterizedType && ((ParameterizedType) type).getRawType() == clazz
+                || type instanceof GenericArrayType && clazz.isArray()
+                        && rawTypeIs(((GenericArrayType) type).getGenericComponentType(), clazz.getComponentType());
     }
 
     public static boolean rawTypeExtends(Type type, Class<?> clazz) {
         return type instanceof Class<?> && clazz.isAssignableFrom((Class<?>) type)
-            || type instanceof ParameterizedType && rawTypeExtends(((ParameterizedType) type).getRawType(), clazz)
-            || type instanceof GenericArrayType && rawTypeExtends(((GenericArrayType) type).getGenericComponentType(), clazz.getComponentType());
+                || type instanceof ParameterizedType && rawTypeExtends(((ParameterizedType) type).getRawType(), clazz)
+                || type instanceof GenericArrayType
+                        && rawTypeExtends(((GenericArrayType) type).getGenericComponentType(), clazz.getComponentType());
     }
 
     public static boolean isListOf(Type type, Class<?> nestedType) {
@@ -46,7 +49,8 @@ public final class ReflectUtil {
     }
 
     public static boolean isSupplierOfOptionalOf(Type type, Class<?> nestedType) {
-        return type instanceof ParameterizedType && rawTypeIs(type, Supplier.class) && isOptionalOf(typeOfParameter(type, 0), nestedType);
+        return type instanceof ParameterizedType && rawTypeIs(type, Supplier.class)
+                && isOptionalOf(typeOfParameter(type, 0), nestedType);
     }
 
     public static boolean isOptionalOf(Type type, Class<?> nestedType) {
@@ -54,7 +58,8 @@ public final class ReflectUtil {
     }
 
     public static boolean isThingOf(Type type, Class<?> thing, Class<?> nestedType) {
-        return type instanceof ParameterizedType && rawTypeIs(type, thing) && rawTypeExtends(typeOfParameter(type, 0), nestedType);
+        return type instanceof ParameterizedType && rawTypeIs(type, thing)
+                && rawTypeExtends(typeOfParameter(type, 0), nestedType);
     }
 
     public static Class<?> rawTypeOf(final Type type) {

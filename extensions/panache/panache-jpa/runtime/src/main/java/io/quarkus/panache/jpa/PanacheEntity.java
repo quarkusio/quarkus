@@ -6,7 +6,7 @@ import javax.persistence.MappedSuperclass;
 
 @MappedSuperclass
 public class PanacheEntity extends PanacheEntityBase {
-    
+
     @Id
     @GeneratedValue
     public Long id;

@@ -2,6 +2,11 @@ package io.quarkus.smallrye.jwt.runtime;
 
 import java.security.Principal;
 
+import org.wildfly.security.auth.realm.token.TokenSecurityRealm;
+import org.wildfly.security.auth.server.SecurityDomain;
+import org.wildfly.security.auth.server.SecurityRealm;
+import org.wildfly.security.authz.Attributes;
+
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Template;
@@ -9,11 +14,6 @@ import io.quarkus.smallrye.jwt.runtime.auth.ElytronJwtCallerPrincipal;
 import io.quarkus.smallrye.jwt.runtime.auth.JWTAuthMethodExtension;
 import io.quarkus.smallrye.jwt.runtime.auth.JwtIdentityManager;
 import io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator;
-import org.wildfly.security.auth.realm.token.TokenSecurityRealm;
-import org.wildfly.security.auth.server.SecurityDomain;
-import org.wildfly.security.auth.server.SecurityRealm;
-import org.wildfly.security.authz.Attributes;
-
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.servlet.ServletExtension;
 
@@ -25,6 +25,7 @@ public class SmallRyeJwtTemplate {
 
     /**
      * Create the JwtIdentityManager
+     * 
      * @param securityDomain - the SecurityDomain to use for auth decisions
      * @return - the IdentityManager instance to register
      */
@@ -34,6 +35,7 @@ public class SmallRyeJwtTemplate {
 
     /**
      * Create the JWTAuthMethodExtension servlet extension
+     * 
      * @param authMechanism - name to use for MP-JWT auth mechanism
      * @param container - bean container to create JWTAuthMethodExtension bean
      * @return JWTAuthMethodExtension
@@ -46,6 +48,7 @@ public class SmallRyeJwtTemplate {
 
     /**
      * Create the TokenSecurityRealm
+     * 
      * @return runtime wrapped TokenSecurityRealm
      */
     public RuntimeValue<SecurityRealm> createTokenRealm(BeanContainer container) {
@@ -59,6 +62,7 @@ public class SmallRyeJwtTemplate {
 
     /**
      * MP-JWT logic for determining the name to use for the principal
+     * 
      * @param claims - token claims
      * @return JWTCallerPrincipal implementation
      */

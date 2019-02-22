@@ -16,9 +16,9 @@
 
 package io.quarkus.undertow.runtime;
 
+import io.quarkus.runtime.ObjectSubstitution;
 import io.undertow.servlet.api.HttpMethodSecurityInfo;
 import io.undertow.servlet.api.ServletSecurityInfo;
-import io.quarkus.runtime.ObjectSubstitution;
 
 public class ServletSecurityInfoSubstitution implements ObjectSubstitution<ServletSecurityInfo, ServletSecurityInfoProxy> {
     @Override

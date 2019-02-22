@@ -1,14 +1,5 @@
 package io.quarkus.example.infinispancachejpa;
 
-import org.hibernate.NaturalIdLoadAccess;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.cache.spi.CacheImplementor;
-import org.hibernate.cache.spi.RegionFactory;
-import org.hibernate.stat.CacheRegionStatistics;
-import org.hibernate.stat.Statistics;
-import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.Duration;
@@ -29,6 +20,15 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+
+import org.hibernate.NaturalIdLoadAccess;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.cache.spi.CacheImplementor;
+import org.hibernate.cache.spi.RegionFactory;
+import org.hibernate.stat.CacheRegionStatistics;
+import org.hibernate.stat.Statistics;
+import org.infinispan.quarkus.hibernate.cache.QuarkusInfinispanRegionFactory;
 
 /**
  * Basic test running JPA with the H2 database and Infinispan as second level cache provider.
@@ -58,8 +58,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
         return result
                 .map(Object::toString)
                 .orElseGet(
-                        () -> String.format("Region %s not found", region)
-                );
+                        () -> String.format("Region %s not found", region));
     }
 
     @GET
@@ -71,8 +70,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
         return result
                 .map(duration -> Long.toString(duration.getSeconds()))
                 .orElseGet(
-                        () -> String.format("Region %s not found", region)
-                );
+                        () -> String.format("Region %s not found", region));
     }
 
     private QuarkusInfinispanRegionFactory getRegionFactory() {
@@ -196,7 +194,8 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
         assertRegionStats(counts, stats);
     }
 
-    private static void verifyFindCitizenByNaturalId(EntityManagerFactory emf, String ssn, String expectedLastName, Map<String, Counts> counts) {
+    private static void verifyFindCitizenByNaturalId(EntityManagerFactory emf, String ssn, String expectedLastName,
+            Map<String, Counts> counts) {
         Statistics stats = getStatistics(emf);
 
         EntityManager em = emf.createEntityManager();
@@ -296,7 +295,8 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
         assertRegionStats(counts, stats);
     }
 
-    private static void verifyReadWriteCollection(final EntityManagerFactory emf, int expectedSize, Map<String, Counts> counts) {
+    private static void verifyReadWriteCollection(final EntityManagerFactory emf, int expectedSize,
+            Map<String, Counts> counts) {
         Statistics stats = getStatistics(emf);
 
         EntityManager em = emf.createEntityManager();
@@ -320,11 +320,11 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
         storeTestItems(entityManagerFactory, new Counts(3, 0, 0, 3));
 
         //Load all items and run some checks on the cache hits
-        final String[] expected = {"Hibernate T-shirt", "Hibernate Sticker", "Hibernate Mug"};
+        final String[] expected = { "Hibernate T-shirt", "Hibernate Sticker", "Hibernate Mug" };
         verifyFindByIdItems(entityManagerFactory, expected, new Counts(0, 3, 0, 3));
 
         //Modify item descriptions
-        final String[] newValues = {"Infinispan T-shirt", "Infinispan Sticker", "Infinispan Mug"};
+        final String[] newValues = { "Infinispan T-shirt", "Infinispan Sticker", "Infinispan Mug" };
         updateItemDescriptions(entityManagerFactory, newValues, new Counts(3, 3, 0, 3));
 
         //Verify descriptions after update
@@ -546,7 +546,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
         assertRegionStats(new Counts(0, 3, 0, 4), Pokemon.class.getName(), stats);
 
         stats = getStatistics(emf);
-        
+
         em = emf.createEntityManager();
         transaction = em.getTransaction();
         transaction.begin();
@@ -590,13 +590,13 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
         storeTestPokemons(entityManagerFactory, new Counts(3, 0, 0, 3));
 
         //Load all persons and run some checks on the cache hits
-        verifyFindByIdPokemons(entityManagerFactory, new int[]{2555, 3670, 3219}, new Counts(0, 3, 0, 3));
+        verifyFindByIdPokemons(entityManagerFactory, new int[] { 2555, 3670, 3219 }, new Counts(0, 3, 0, 3));
 
         //Rebalance cp values for pokemons
         rebalanceCpsForPokemons(entityManagerFactory, new Counts(3, 3, 0, 3));
 
         //Verify cp values after update
-        verifyFindByIdPokemons(entityManagerFactory, new int[]{2707, 3834, 2757}, new Counts(0, 3, 0, 3));
+        verifyFindByIdPokemons(entityManagerFactory, new int[] { 2707, 3834, 2757 }, new Counts(0, 3, 0, 3));
     }
 
     private static void rebalanceCpsForPokemons(final EntityManagerFactory emf, Counts expected) {
@@ -699,11 +699,8 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
     private static Counts statsToCounts(String region, Statistics stats) {
         final CacheRegionStatistics cacheStats = stats.getDomainDataRegionStatistics(region);
         return new Counts(
-                cacheStats.getPutCount()
-                , cacheStats.getHitCount()
-                , cacheStats.getMissCount()
-                , cacheStats.getElementCountInMemory()
-        );
+                cacheStats.getPutCount(), cacheStats.getHitCount(), cacheStats.getMissCount(),
+                cacheStats.getElementCountInMemory());
     }
 
     private static void assertCountEquals(Counts expected, Counts actual, String msg) {
@@ -713,8 +710,7 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
 
     private static RuntimeException unequalCounts(Counts expected, String region, Counts actual) {
         return new RuntimeException(
-                "[" + region + "] expected " + expected + " second level cache count, instead got: " + actual
-        );
+                "[" + region + "] expected " + expected + " second level cache count, instead got: " + actual);
     }
 
     static final class Counts {
@@ -732,8 +728,10 @@ public class InfinispanCacheJPAFunctionalityTestEndpoint {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
             Counts counts = (Counts) o;
             return puts == counts.puts &&
                     hits == counts.hits &&

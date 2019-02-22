@@ -25,9 +25,9 @@ import java.util.function.Function;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
-import io.quarkus.runtime.annotations.Template;
 
 import io.opentracing.util.GlobalTracer;
+import io.quarkus.runtime.annotations.Template;
 
 @Template
 public class JaegerDeploymentTemplate {
@@ -50,9 +50,11 @@ public class JaegerDeploymentTemplate {
         Optional<String> serviceName = mpconfig.getOptionalValue(JAEGER_SERVICE_NAME, String.class);
         Optional<String> endpoint = mpconfig.getOptionalValue(JAEGER_ENDPOINT, String.class);
         if (!jaeger.serviceName.isPresent() && !serviceName.isPresent()) {
-            log.warn("Jaeger service name has not been defined (e.g. JAEGER_SERVICE_NAME environment variable or system properties)");
+            log.warn(
+                    "Jaeger service name has not been defined (e.g. JAEGER_SERVICE_NAME environment variable or system properties)");
         } else if (!jaeger.endpoint.isPresent() && !endpoint.isPresent()) {
-            log.warn("Jaeger collector endpoint has not been defined (e.g. JAEGER_ENDPOINT environment variable or system properties)");
+            log.warn(
+                    "Jaeger collector endpoint has not been defined (e.g. JAEGER_ENDPOINT environment variable or system properties)");
             // Return true for now, so we can reproduce issue with UdpSender
             return true;
         } else {
@@ -70,7 +72,8 @@ public class JaegerDeploymentTemplate {
         initTracerProperty("JAEGER_AGENT_PORT", jaeger.agentHostPort, address -> String.valueOf(address.getPort()));
         initTracerProperty("JAEGER_REPORTER_LOG_SPANS", jaeger.reporterLogSpans, log -> log.toString());
         initTracerProperty("JAEGER_REPORTER_MAX_QUEUE_SIZE", jaeger.reporterMaxQueueSize, size -> size.toString());
-        initTracerProperty("JAEGER_REPORTER_FLUSH_INTERVAL", jaeger.reporterFlushInterval, duration -> String.valueOf(duration.toMillis()));
+        initTracerProperty("JAEGER_REPORTER_FLUSH_INTERVAL", jaeger.reporterFlushInterval,
+                duration -> String.valueOf(duration.toMillis()));
         initTracerProperty("JAEGER_SAMPLER_TYPE", jaeger.samplerType, type -> type);
         initTracerProperty("JAEGER_SAMPLER_PARAM", jaeger.samplerParam, param -> param.toString());
         initTracerProperty("JAEGER_SAMPLER_MANAGER_HOST_PORT", jaeger.samplerManagerHostPort, hostPort -> hostPort.toString());
@@ -86,4 +89,3 @@ public class JaegerDeploymentTemplate {
         }
     }
 }
-

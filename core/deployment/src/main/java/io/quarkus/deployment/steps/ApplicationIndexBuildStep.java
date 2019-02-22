@@ -26,6 +26,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
+
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;

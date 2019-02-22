@@ -21,8 +21,8 @@ import java.util.Properties;
 
 import io.quarkus.creator.AppCreator;
 import io.quarkus.creator.phase.curate.CuratePhase;
-import io.quarkus.creator.phase.curate.VersionUpdateNumber;
 import io.quarkus.creator.phase.curate.VersionUpdate;
+import io.quarkus.creator.phase.curate.VersionUpdateNumber;
 import io.quarkus.creator.phase.runnerjar.RunnerJarOutcome;
 
 /**
@@ -37,8 +37,10 @@ public class UpdateToLatestVersionDemo extends ConfigDemoBase {
 
     @Override
     protected void initProps(Properties props) {
-        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_VERSION_UPDATE), VersionUpdate.LATEST.getName());
-        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_VERSION_UPDATE_NUMBER), VersionUpdateNumber.MINOR.getName());
+        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_VERSION_UPDATE),
+                VersionUpdate.LATEST.getName());
+        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_VERSION_UPDATE_NUMBER),
+                VersionUpdateNumber.MINOR.getName());
     }
 
     @Override

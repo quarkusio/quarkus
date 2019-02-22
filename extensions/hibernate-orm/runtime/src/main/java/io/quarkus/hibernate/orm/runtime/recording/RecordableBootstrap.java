@@ -64,6 +64,7 @@ import org.hibernate.service.internal.SessionFactoryServiceRegistryFactoryInitia
 import org.hibernate.service.spi.ServiceContributor;
 import org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractorInitiator;
 import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
+
 import io.quarkus.hibernate.orm.runtime.service.DialectFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.service.DisabledJMXInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
@@ -172,7 +173,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
      * {@link #configure} we read the XML variant.
      *
      * @param resourceName The name by which to perform a resource look up for the
-     *                     properties file.
+     *        properties file.
      *
      * @return this, for method chaining
      *
@@ -257,7 +258,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
      * Apply a setting value.
      *
      * @param settingName The name of the setting
-     * @param value       The value to use.
+     * @param value The value to use.
      *
      * @return this, for method chaining
      */
@@ -305,7 +306,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
      * Adds a user-provided service.
      *
      * @param serviceRole The role of the service being added
-     * @param service     The service implementation
+     * @param service The service implementation
      *
      * @return this, for method chaining
      */

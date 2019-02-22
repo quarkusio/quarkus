@@ -59,6 +59,7 @@ import org.infinispan.query.api.continuous.ContinuousQuery;
 import org.infinispan.query.api.continuous.ContinuousQueryListener;
 import org.infinispan.query.dsl.Query;
 import org.infinispan.query.dsl.QueryFactory;
+
 import io.quarkus.infinispan.client.runtime.Remote;
 import io.quarkus.runtime.StartupEvent;
 
@@ -67,7 +68,8 @@ import io.quarkus.runtime.StartupEvent;
 public class TestServlet {
     private static final Log log = LogFactory.getLog(TestServlet.class);
 
-    @Inject @Remote("default")
+    @Inject
+    @Remote("default")
     RemoteCache<String, Book> cache;
 
     @Inject
@@ -88,8 +90,8 @@ public class TestServlet {
 
         QueryFactory queryFactory = Search.getQueryFactory(cache);
         Query query = queryFactory.from(Book.class)
-              .having("publicationYear").gt(2011)
-              .build();
+                .having("publicationYear").gt(2011)
+                .build();
 
         ContinuousQueryListener<String, Book> listener = new ContinuousQueryListener<String, Book>() {
             @Override
@@ -97,6 +99,7 @@ public class TestServlet {
                 log.warn("Adding key: " + key + " for book: " + value);
                 matches.put(key, value);
             }
+
             @Override
             public void resultLeaving(String key) {
                 log.warn("Removing key: " + key);
@@ -109,53 +112,53 @@ public class TestServlet {
         log.info("Added continuous query listener");
 
         cache.put("book1", new Book("Game of Thrones", "Lots of people perish", 2010,
-              Collections.singleton(new Author("George", "Martin"))));
+                Collections.singleton(new Author("George", "Martin"))));
         cache.put("book2", new Book("Game of Thrones Path 2", "They win?", 2023,
-              Collections.singleton(new Author("Son", "Martin"))));
+                Collections.singleton(new Author("Son", "Martin"))));
 
         log.info("Inserted values");
 
         waitUntilStarted.countDown();
     }
 
-   @ClientListener
-   static class EventPrintListener {
+    @ClientListener
+    static class EventPrintListener {
 
-      @ClientCacheEntryCreated
-      public void handleCreatedEvent(ClientCacheEntryCreatedEvent e) {
-         log.warn("Someone has created an entry: " + e);
-      }
+        @ClientCacheEntryCreated
+        public void handleCreatedEvent(ClientCacheEntryCreatedEvent e) {
+            log.warn("Someone has created an entry: " + e);
+        }
 
-      @ClientCacheEntryModified
-      public void handleModifiedEvent(ClientCacheEntryModifiedEvent e) {
-         log.warn("Someone has modified an entry: " + e);
-      }
+        @ClientCacheEntryModified
+        public void handleModifiedEvent(ClientCacheEntryModifiedEvent e) {
+            log.warn("Someone has modified an entry: " + e);
+        }
 
-      @ClientCacheEntryRemoved
-      public void handleRemovedEvent(ClientCacheEntryRemovedEvent e) {
-         log.warn("Someone has removed an entry: " + e);
-      }
+        @ClientCacheEntryRemoved
+        public void handleRemovedEvent(ClientCacheEntryRemovedEvent e) {
+            log.warn("Someone has removed an entry: " + e);
+        }
 
-   }
+    }
 
-   /**
-    * This is needed because start notification is done async - you can receive requests while running start
-    */
-   private void ensureStart() {
-      try {
-         if (!waitUntilStarted.await(10, TimeUnit.SECONDS)) {
-            throw new RuntimeException(new TimeoutException());
-         }
-      } catch (InterruptedException e) {
-         throw new RuntimeException(e);
-      }
-   }
+    /**
+     * This is needed because start notification is done async - you can receive requests while running start
+     */
+    private void ensureStart() {
+        try {
+            if (!waitUntilStarted.await(10, TimeUnit.SECONDS)) {
+                throw new RuntimeException(new TimeoutException());
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public List<String> getIDs() {
-       ensureStart();
-       log.fatal("Retrieving all IDs");
+        ensureStart();
+        log.fatal("Retrieving all IDs");
         return cache.keySet().stream().sorted().collect(Collectors.toList());
     }
 
@@ -163,7 +166,7 @@ public class TestServlet {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String getCachedValue(@PathParam("id") String id) {
-       ensureStart();
+        ensureStart();
         Book book = cache.get(id);
         return book.getTitle();
     }
@@ -172,29 +175,29 @@ public class TestServlet {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String queryAuthorSurname(@PathParam("id") String name) {
-       ensureStart();
+        ensureStart();
         QueryFactory queryFactory = Search.getQueryFactory(cache);
         Query query = queryFactory.from(Book.class)
-              .having("authors.name").like("%" + name + "%")
-              .build();
+                .having("authors.name").like("%" + name + "%")
+                .build();
         List<Book> list = query.list();
         if (list.isEmpty()) {
             return "No one found for " + name;
         }
 
         return list.stream()
-              .map(Book::getAuthors)
-              .flatMap(Set::stream)
-              .map(author -> author.getName() + " " + author.getSurname())
-              .sorted()
-              .collect(Collectors.joining(",", "[", "]"));
+                .map(Book::getAuthors)
+                .flatMap(Set::stream)
+                .map(author -> author.getName() + " " + author.getSurname())
+                .sorted()
+                .collect(Collectors.joining(",", "[", "]"));
     }
 
     @Path("icklequery/{id}")
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String ickleQueryAuthorSurname(@PathParam("id") String name) {
-       ensureStart();
+        ensureStart();
         QueryFactory queryFactory = Search.getQueryFactory(cache);
         Query query = queryFactory.create("from book_sample.Book b where b.authors.name like '%" + name + "%'");
         List<Book> list = query.list();
@@ -202,18 +205,18 @@ public class TestServlet {
             return "No one found for " + name;
         }
         return list.stream()
-              .map(Book::getAuthors)
-              .flatMap(Set::stream)
-              .map(author -> author.getName() + " " + author.getSurname())
-              .sorted()
-              .collect(Collectors.joining(",", "[", "]"));
+                .map(Book::getAuthors)
+                .flatMap(Set::stream)
+                .map(author -> author.getName() + " " + author.getSurname())
+                .sorted()
+                .collect(Collectors.joining(",", "[", "]"));
     }
 
     @Path("incr/{id}")
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public CompletionStage<Long> incrementCounter(@PathParam("id") String id) {
-       ensureStart();
+        ensureStart();
         CounterConfiguration configuration = counterManager.getConfiguration(id);
         if (configuration == null) {
             configuration = CounterConfiguration.builder(CounterType.BOUNDED_STRONG).build();
@@ -227,87 +230,88 @@ public class TestServlet {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String continuousQuery() {
-       ensureStart();
+        ensureStart();
         return matches.values().stream()
-              .mapToInt(Book::getPublicationYear)
-              .mapToObj(Integer::toString)
-              .collect(Collectors.joining(","));
+                .mapToInt(Book::getPublicationYear)
+                .mapToObj(Integer::toString)
+                .collect(Collectors.joining(","));
     }
 
     @Path("nearcache")
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String nearCache() {
-       ensureStart();
-       RemoteCacheClientStatisticsMXBean stats = cache.clientStatistics();
-       long nearCacheMisses = stats.getNearCacheMisses();
-       long nearCacheHits = stats.getNearCacheHits();
-       long nearCacheInvalidations = stats.getNearCacheInvalidations();
+        ensureStart();
+        RemoteCacheClientStatisticsMXBean stats = cache.clientStatistics();
+        long nearCacheMisses = stats.getNearCacheMisses();
+        long nearCacheHits = stats.getNearCacheHits();
+        long nearCacheInvalidations = stats.getNearCacheInvalidations();
 
-       Book nearCacheBook = new Book("Near Cache Book", "Just here to test", 2010,
-             Collections.emptySet());
+        Book nearCacheBook = new Book("Near Cache Book", "Just here to test", 2010,
+                Collections.emptySet());
 
-       String id = "nearcache";
-       cache.put(id, nearCacheBook);
+        String id = "nearcache";
+        cache.put(id, nearCacheBook);
 
-       Book retrievedBook = cache.get(id);
-       if (retrievedBook == null) {
-          return "Couldn't retrieve id on first attempt";
-       }
+        Book retrievedBook = cache.get(id);
+        if (retrievedBook == null) {
+            return "Couldn't retrieve id on first attempt";
+        }
 
-       long misses = stats.getNearCacheMisses();
-       if (nearCacheMisses + 1 != misses) {
-          return "Near cache didn't miss for some reason. Expected: " + nearCacheMisses + 1 + " but got: " + misses;
-       }
+        long misses = stats.getNearCacheMisses();
+        if (nearCacheMisses + 1 != misses) {
+            return "Near cache didn't miss for some reason. Expected: " + nearCacheMisses + 1 + " but got: " + misses;
+        }
 
-       if (!retrievedBook.equals(nearCacheBook)) {
-          return "first retrieved book doesn't match";
-       }
+        if (!retrievedBook.equals(nearCacheBook)) {
+            return "first retrieved book doesn't match";
+        }
 
-       retrievedBook = cache.get(id);
-       if (retrievedBook == null) {
-          return "Couldn't retrieve id on second attempt";
-       }
+        retrievedBook = cache.get(id);
+        if (retrievedBook == null) {
+            return "Couldn't retrieve id on second attempt";
+        }
 
-       long hits = stats.getNearCacheHits();
+        long hits = stats.getNearCacheHits();
 
-       if (nearCacheHits + 1 != hits) {
-          return "Near cache didn't hit for some reason. Expected: " + nearCacheHits + 1 + " but got: " + hits;
-       }
+        if (nearCacheHits + 1 != hits) {
+            return "Near cache didn't hit for some reason. Expected: " + nearCacheHits + 1 + " but got: " + hits;
+        }
 
-       if (!retrievedBook.equals(nearCacheBook)) {
-          return "second retrieved book doesn't match";
-       }
+        if (!retrievedBook.equals(nearCacheBook)) {
+            return "second retrieved book doesn't match";
+        }
 
-       nearCacheBook = new Book("Near Cache Book", "Just here to test", 2011, Collections.emptySet());
+        nearCacheBook = new Book("Near Cache Book", "Just here to test", 2011, Collections.emptySet());
 
-       cache.put(id, nearCacheBook);
+        cache.put(id, nearCacheBook);
 
-       long invalidations = stats.getNearCacheInvalidations();
-       if (nearCacheInvalidations + 1 != invalidations) {
-          return "Near cache didn't invalidate for some reason. Expected: " + nearCacheInvalidations + 1 + " but got: " + invalidations;
-       }
+        long invalidations = stats.getNearCacheInvalidations();
+        if (nearCacheInvalidations + 1 != invalidations) {
+            return "Near cache didn't invalidate for some reason. Expected: " + nearCacheInvalidations + 1 + " but got: "
+                    + invalidations;
+        }
 
-       cache.remove(id);
+        cache.remove(id);
 
-       return "worked";
+        return "worked";
     }
 
     @Path("{id}")
     @PUT
     @Consumes(MediaType.TEXT_PLAIN)
     public Response createItem(String value, @PathParam("id") String id) {
-       ensureStart();
+        ensureStart();
         Book book = new Book(id, value, 2019, Collections.emptySet());
         Book previous = cache.putIfAbsent(id, book);
         if (previous == null) {
             //status code 201
             return Response.status(Response.Status.CREATED)
-                  .entity(id)
-                  .build();
+                    .entity(id)
+                    .build();
         } else {
             return Response.noContent()
-                  .build();
+                    .build();
         }
     }
 }

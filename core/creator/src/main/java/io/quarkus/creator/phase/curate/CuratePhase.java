@@ -34,6 +34,7 @@ import org.apache.maven.model.Repository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
 import org.jboss.logging.Logger;
+
 import io.quarkus.creator.AppArtifact;
 import io.quarkus.creator.AppArtifactResolver;
 import io.quarkus.creator.AppCreationPhase;
@@ -96,30 +97,39 @@ public class CuratePhase implements AppCreationPhase<CuratePhase> {
             @Override
             public CuratePhase getTarget() throws PropertiesConfigReaderException {
                 return CuratePhase.this;
-            }}
-        .map(CONFIG_PROP_DEPS_ORIGIN, (target, value) -> {
-            depsOrigin = DependenciesOrigin.of(value);
-            if(depsOrigin == DependenciesOrigin.UNKNOWN) {
-                throw new PropertiesConfigReaderException("The value of initial-deps property is expected to be either "
-                + DependenciesOrigin.APPLICATION + " or " + DependenciesOrigin.LAST_UPDATE + " but was " + value);
             }
-        })
-        .map(CONFIG_PROP_LOCAL_REPO, (target, value) -> {localRepo = Paths.get(value);})
-        .map(CONFIG_PROP_VERSION_UPDATE, (target, value) -> {
-            update = VersionUpdate.of(value);
-            if(update == VersionUpdate.UNKNOWN) {
-                throw new PropertiesConfigReaderException("The value of update property is expected to be one of "
-                + VersionUpdate.LATEST + ", " + VersionUpdate.NEXT + " or " + VersionUpdate.NONE + " but was " + value);
-            }
-        })
-        .map(CONFIG_PROP_VERSION_UPDATE_NUMBER, (target, value) -> {
-            updateNumber = VersionUpdateNumber.of(value);
-            if(updateNumber == VersionUpdateNumber.UNKNOWN) {
-                throw new PropertiesConfigReaderException("The value of update-number property is expected to be one of "
-                + VersionUpdateNumber.MAJOR + ", " + VersionUpdateNumber.MINOR + " or " + VersionUpdateNumber.MICRO + " but was " + value);
-            }
-        })
-        .map(CONFIG_PROP_UPDATE_GROUP_ID, (target, value) -> {updateGroupIds = new HashSet<>(Arrays.asList(value.split(GROUP_ID_SPLIT_EXPR)));});
+        }
+                .map(CONFIG_PROP_DEPS_ORIGIN, (target, value) -> {
+                    depsOrigin = DependenciesOrigin.of(value);
+                    if (depsOrigin == DependenciesOrigin.UNKNOWN) {
+                        throw new PropertiesConfigReaderException("The value of initial-deps property is expected to be either "
+                                + DependenciesOrigin.APPLICATION + " or " + DependenciesOrigin.LAST_UPDATE + " but was "
+                                + value);
+                    }
+                })
+                .map(CONFIG_PROP_LOCAL_REPO, (target, value) -> {
+                    localRepo = Paths.get(value);
+                })
+                .map(CONFIG_PROP_VERSION_UPDATE, (target, value) -> {
+                    update = VersionUpdate.of(value);
+                    if (update == VersionUpdate.UNKNOWN) {
+                        throw new PropertiesConfigReaderException("The value of update property is expected to be one of "
+                                + VersionUpdate.LATEST + ", " + VersionUpdate.NEXT + " or " + VersionUpdate.NONE + " but was "
+                                + value);
+                    }
+                })
+                .map(CONFIG_PROP_VERSION_UPDATE_NUMBER, (target, value) -> {
+                    updateNumber = VersionUpdateNumber.of(value);
+                    if (updateNumber == VersionUpdateNumber.UNKNOWN) {
+                        throw new PropertiesConfigReaderException(
+                                "The value of update-number property is expected to be one of "
+                                        + VersionUpdateNumber.MAJOR + ", " + VersionUpdateNumber.MINOR + " or "
+                                        + VersionUpdateNumber.MICRO + " but was " + value);
+                    }
+                })
+                .map(CONFIG_PROP_UPDATE_GROUP_ID, (target, value) -> {
+                    updateGroupIds = new HashSet<>(Arrays.asList(value.split(GROUP_ID_SPLIT_EXPR)));
+                });
     }
 
     @Override
@@ -130,13 +140,14 @@ public class CuratePhase implements AppCreationPhase<CuratePhase> {
     @Override
     public void provideOutcome(AppCreator ctx) throws AppCreatorException {
 
-        log.info("provideOutcome depsOrigin=" + depsOrigin + ", versionUpdate=" + update + ", versionUpdateNumber=" + updateNumber);
+        log.info("provideOutcome depsOrigin=" + depsOrigin + ", versionUpdate=" + update + ", versionUpdateNumber="
+                + updateNumber);
 
         final Path appJar = ctx.getAppJar();
-        if(appJar == null) {
+        if (appJar == null) {
             throw new AppCreatorException("Application JAR has not been provided");
         }
-        if(!Files.exists(appJar)) {
+        if (!Files.exists(appJar)) {
             throw new AppCreatorException("Application " + appJar + " does not exist on disk");
         }
 
@@ -146,25 +157,25 @@ public class CuratePhase implements AppCreationPhase<CuratePhase> {
         outcome.setAppArtifact(appArtifact);
 
         AppArtifactResolver resolver = ctx.getArtifactResolver();
-        if(resolver == null) {
+        if (resolver == null) {
             final AetherArtifactResolver aetherResolver = AetherArtifactResolver
                     .getInstance(this.localRepo == null ? ctx.getWorkPath("repo") : this.localRepo);
             aetherResolver.relink(appArtifact, appJar);
             final List<RemoteRepository> artifactRepos = aetherResolver.resolveArtifactRepos(appArtifact);
-            if(!artifactRepos.isEmpty()) {
+            if (!artifactRepos.isEmpty()) {
                 aetherResolver.addRemoteRepositories(artifactRepos);
                 final List<Repository> modelRepos = new ArrayList<>(artifactRepos.size());
-                for(RemoteRepository repo : artifactRepos) {
+                for (RemoteRepository repo : artifactRepos) {
                     final Repository modelRepo = new Repository();
                     modelRepo.setId(repo.getId());
                     modelRepo.setUrl(repo.getUrl());
                     modelRepo.setLayout(repo.getContentType());
                     RepositoryPolicy policy = repo.getPolicy(true);
-                    if(policy != null) {
+                    if (policy != null) {
                         modelRepo.setSnapshots(toMavenRepoPolicy(policy));
                     }
                     policy = repo.getPolicy(false);
-                    if(policy != null) {
+                    if (policy != null) {
                         modelRepo.setReleases(toMavenRepoPolicy(policy));
                     }
                     modelRepos.add(modelRepo);
@@ -178,13 +189,13 @@ public class CuratePhase implements AppCreationPhase<CuratePhase> {
         outcome.setArtifactResolver(resolver);
 
         final List<AppDependency> initialDepsList;
-        if(depsOrigin == DependenciesOrigin.LAST_UPDATE) {
+        if (depsOrigin == DependenciesOrigin.LAST_UPDATE) {
             log.info("Looking for the state of the last update");
             Path statePath = null;
             try {
                 AppArtifact stateArtifact = Utils.getStateArtifact(appArtifact);
                 final String latest = resolver.getLatestVersion(stateArtifact, null, false);
-                if(!stateArtifact.getVersion().equals(latest)) {
+                if (!stateArtifact.getVersion().equals(latest)) {
                     stateArtifact = new AppArtifact(stateArtifact.getGroupId(),
                             stateArtifact.getArtifactId(),
                             stateArtifact.getClassifier(),
@@ -194,7 +205,7 @@ public class CuratePhase implements AppCreationPhase<CuratePhase> {
                 statePath = resolver.resolve(stateArtifact);
                 outcome.setStateArtifact(stateArtifact);
                 log.info("- located the state at " + statePath);
-            } catch(AppCreatorException e) {
+            } catch (AppCreatorException e) {
                 // for now let's assume this means artifact does not exist
                 //System.out.println(" no state found");
             }
@@ -203,14 +214,15 @@ public class CuratePhase implements AppCreationPhase<CuratePhase> {
                 try {
                     final Model model = Utils.readModel(statePath);
                     /*
-                    final Properties props = model.getProperties();
-                    final String appGroupId = props.getProperty(CurateOutcome.CREATOR_APP_GROUP_ID);
-                    final String appArtifactId = props.getProperty(CurateOutcome.CREATOR_APP_ARTIFACT_ID);
-                    final String appClassifier = props.getProperty(CurateOutcome.CREATOR_APP_CLASSIFIER);
-                    final String appType = props.getProperty(CurateOutcome.CREATOR_APP_TYPE);
-                    final String appVersion = props.getProperty(CurateOutcome.CREATOR_APP_VERSION);
-                    final AppArtifact modelAppArtifact = new AppArtifact(appGroupId, appArtifactId, appClassifier, appType, appVersion);
-                    */
+                     * final Properties props = model.getProperties();
+                     * final String appGroupId = props.getProperty(CurateOutcome.CREATOR_APP_GROUP_ID);
+                     * final String appArtifactId = props.getProperty(CurateOutcome.CREATOR_APP_ARTIFACT_ID);
+                     * final String appClassifier = props.getProperty(CurateOutcome.CREATOR_APP_CLASSIFIER);
+                     * final String appType = props.getProperty(CurateOutcome.CREATOR_APP_TYPE);
+                     * final String appVersion = props.getProperty(CurateOutcome.CREATOR_APP_VERSION);
+                     * final AppArtifact modelAppArtifact = new AppArtifact(appGroupId, appArtifactId, appClassifier, appType,
+                     * appVersion);
+                     */
                     final List<Dependency> modelStateDeps = model.getDependencies();
                     final List<AppDependency> updatedDeps = new ArrayList<>(modelStateDeps.size());
                     final String groupIdProp = "${" + CurateOutcome.CREATOR_APP_GROUP_ID + "}";
@@ -242,7 +254,8 @@ public class CuratePhase implements AppCreationPhase<CuratePhase> {
         }
 
         log.info("Checking for available updates");
-        final List<AppDependency> appDeps = Utils.getUpdateCandidates(Utils.readAppModel(appJar, appArtifact).getDependencies(), initialDepsList, updateGroupIds);
+        final List<AppDependency> appDeps = Utils.getUpdateCandidates(Utils.readAppModel(appJar, appArtifact).getDependencies(),
+                initialDepsList, updateGroupIds);
         final UpdateDiscovery ud = new DefaultUpdateDiscovery(resolver, updateNumber);
         List<AppDependency> availableUpdates = null;
         int i = 0;
@@ -281,12 +294,12 @@ public class CuratePhase implements AppCreationPhase<CuratePhase> {
 
     private static void logDeps(String header, List<AppDependency> deps) {
         final List<String> list = new ArrayList<>(deps.size());
-        for(AppDependency dep : deps) {
+        for (AppDependency dep : deps) {
             list.add(dep.toString());
         }
         Collections.sort(list);
         System.out.println(header);
-        for(String str : list) {
+        for (String str : list) {
             System.out.println("- " + str);
         }
     }

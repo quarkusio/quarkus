@@ -16,8 +16,14 @@
 
 package io.quarkus.smallrye.restclient;
 
-import io.smallrye.restclient.DefaultResponseExceptionMapper;
-import io.smallrye.restclient.RestClientProxy;
+import java.lang.reflect.Modifier;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.ws.rs.client.ClientRequestFilter;
+import javax.ws.rs.client.ClientResponseFilter;
+import javax.ws.rs.ext.Providers;
+
 import org.apache.commons.logging.impl.Jdk14Logger;
 import org.apache.commons.logging.impl.LogFactoryImpl;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
@@ -26,15 +32,16 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.protean.gizmo.MethodDescriptor;
+import org.jboss.protean.gizmo.ResultHandle;
 import org.jboss.quarkus.arc.processor.BeanConfigurator;
 import org.jboss.quarkus.arc.processor.BeanRegistrar;
 import org.jboss.quarkus.arc.processor.ScopeInfo;
-import org.jboss.protean.gizmo.MethodDescriptor;
-import org.jboss.protean.gizmo.ResultHandle;
 import org.jboss.resteasy.client.jaxrs.internal.proxy.ProxyBuilderImpl;
 import org.jboss.resteasy.client.jaxrs.internal.proxy.ResteasyClientProxy;
 import org.jboss.resteasy.core.ResteasyProviderFactoryImpl;
 import org.jboss.resteasy.spi.ResteasyConfiguration;
+
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrarBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -52,13 +59,8 @@ import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.smallrye.restclient.runtime.RestClientBase;
 import io.quarkus.smallrye.restclient.runtime.RestClientBuilderImpl;
 import io.quarkus.smallrye.restclient.runtime.SmallRyeRestClientTemplate;
-
-import javax.ws.rs.client.ClientRequestFilter;
-import javax.ws.rs.client.ClientResponseFilter;
-import javax.ws.rs.ext.Providers;
-import java.lang.reflect.Modifier;
-import java.util.HashMap;
-import java.util.Map;
+import io.smallrye.restclient.DefaultResponseExceptionMapper;
+import io.smallrye.restclient.RestClientProxy;
 
 class SmallRyeRestClientProcessor {
 
@@ -70,15 +72,14 @@ class SmallRyeRestClientProcessor {
 
     @BuildStep
     void setupProviders(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-                        BuildProducer<SubstrateResourceBuildItem> resources,
-                        BuildProducer<SubstrateProxyDefinitionBuildItem> proxyDefinition) throws Exception {
+            BuildProducer<SubstrateResourceBuildItem> resources,
+            BuildProducer<SubstrateProxyDefinitionBuildItem> proxyDefinition) throws Exception {
 
         proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem("javax.ws.rs.ext.Providers"));
 
         // This abstract one is also accessed directly via reflection
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true,
-                "org.jboss.resteasy.plugins.providers.jsonb.AbstractJsonBindingProvider"
-        ));
+                "org.jboss.resteasy.plugins.providers.jsonb.AbstractJsonBindingProvider"));
 
         // for now, register all the providers for reflection. This is not something we want to keep but not having it generates a pile of warnings.
         // we will improve that later with the SmallRye REST client.
@@ -96,9 +97,9 @@ class SmallRyeRestClientProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void setup(BuildProducer<FeatureBuildItem> feature,
-               BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-               BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-               SmallRyeRestClientTemplate smallRyeRestClientTemplate) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            SmallRyeRestClientTemplate smallRyeRestClientTemplate) {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_REST_CLIENT));
 
@@ -114,17 +115,16 @@ class SmallRyeRestClientProcessor {
                 ProxyBuilderImpl.class.getName(),
                 ClientRequestFilter[].class.getName(),
                 ClientResponseFilter[].class.getName(),
-                javax.ws.rs.ext.ReaderInterceptor[].class.getName()
-        ));
+                javax.ws.rs.ext.ReaderInterceptor[].class.getName()));
     }
 
     @BuildStep
     void processInterfaces(CombinedIndexBuildItem combinedIndexBuildItem,
-                           SslNativeConfigBuildItem sslNativeConfig,
-                           BuildProducer<SubstrateProxyDefinitionBuildItem> proxyDefinition,
-                           BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-                           BuildProducer<BeanRegistrarBuildItem> beanRegistrars,
-                           BuildProducer<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport) {
+            SslNativeConfigBuildItem sslNativeConfig,
+            BuildProducer<SubstrateProxyDefinitionBuildItem> proxyDefinition,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<BeanRegistrarBuildItem> beanRegistrars,
+            BuildProducer<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport) {
 
         // According to the spec only rest client interfaces annotated with RegisterRestClient are registered as beans
         Map<DotName, ClassInfo> interfaces = new HashMap<>();
@@ -170,8 +170,10 @@ class SmallRyeRestClientProcessor {
                     configurator.creator(m -> {
                         // return new RestClientBase(proxyType).create();
                         ResultHandle interfaceHandle = m.loadClass(entry.getKey().toString());
-                        ResultHandle baseHandle = m.newInstance(MethodDescriptor.ofConstructor(RestClientBase.class, Class.class), interfaceHandle);
-                        ResultHandle ret = m.invokeVirtualMethod(MethodDescriptor.ofMethod(RestClientBase.class, "create", Object.class), baseHandle);
+                        ResultHandle baseHandle = m.newInstance(
+                                MethodDescriptor.ofConstructor(RestClientBase.class, Class.class), interfaceHandle);
+                        ResultHandle ret = m.invokeVirtualMethod(
+                                MethodDescriptor.ofMethod(RestClientBase.class, "create", Object.class), baseHandle);
                         m.returnValue(ret);
                     });
                     configurator.done();

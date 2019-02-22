@@ -1,7 +1,8 @@
 package io.quarkus.deployment.configuration;
 
 public class PropertiesUtil {
-    private PropertiesUtil() {}
+    private PropertiesUtil() {
+    }
 
     public static boolean escape(int codePoint) {
         return codePoint == '#' || codePoint == '!' || codePoint == '=' || codePoint == ':';

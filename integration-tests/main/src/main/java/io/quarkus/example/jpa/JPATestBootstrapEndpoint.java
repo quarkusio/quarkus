@@ -50,18 +50,16 @@ public class JPATestBootstrapEndpoint extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
             testStoreLoadOnJPA();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
-           reportException("An error occurred while performing Hibernate operations", e, resp);
+            reportException("An error occurred while performing Hibernate operations", e, resp);
         }
-
 
         resp.getWriter().write("OK");
     }
 
     public void testStoreLoadOnJPA() throws Exception {
-        doStuffWithHibernate( entityManagerFactory );
+        doStuffWithHibernate(entityManagerFactory);
 
     }
 
@@ -70,10 +68,10 @@ public class JPATestBootstrapEndpoint extends HttpServlet {
         EntityTransaction transaction = em.getTransaction();
         transaction.begin();
 
-        persistNewPerson( em );
-        persistNewClown( em );
+        persistNewPerson(em);
+        persistNewClown(em);
 
-        listExistingPersons( em );
+        listExistingPersons(em);
 
         transaction.commit();
         em.close();
@@ -82,31 +80,31 @@ public class JPATestBootstrapEndpoint extends HttpServlet {
     private static void listExistingPersons(EntityManager em) {
         CriteriaBuilder cb = em.getCriteriaBuilder();
 
-        CriteriaQuery<Person> cq = cb.createQuery( Person.class );
-        Root<Person> from = cq.from( Person.class );
-        cq.select( from );
-        TypedQuery<Person> q = em.createQuery( cq );
+        CriteriaQuery<Person> cq = cb.createQuery(Person.class);
+        Root<Person> from = cq.from(Person.class);
+        cq.select(from);
+        TypedQuery<Person> q = em.createQuery(cq);
         List<Person> allpersons = q.getResultList();
-        StringBuilder sb = new StringBuilder( "list of stored Person names:\n\t" );
-        for ( Person p : allpersons ) {
-            p.describeFully( sb );
-            sb.append( "\n\t" );
+        StringBuilder sb = new StringBuilder("list of stored Person names:\n\t");
+        for (Person p : allpersons) {
+            p.describeFully(sb);
+            sb.append("\n\t");
         }
-        sb.append( "\nList complete.\n" );
-        System.out.print( sb );
+        sb.append("\nList complete.\n");
+        System.out.print(sb);
     }
 
     private static void persistNewPerson(EntityManager entityManager) {
         Person person = new Person();
-        person.setName( randomName() );
-        person.setAddress( new SequencedAddress( "Street " + randomName() ) );
-        entityManager.persist( person );
+        person.setName(randomName());
+        person.setAddress(new SequencedAddress("Street " + randomName()));
+        entityManager.persist(person);
     }
 
     private static void persistNewClown(EntityManager entityManager) {
         Clown clown = new Clown();
         clown.setName("Bozo");
-        entityManager.persist( clown );
+        entityManager.persist(clown);
     }
 
     private static String randomName() {
@@ -115,7 +113,7 @@ public class JPATestBootstrapEndpoint extends HttpServlet {
 
     private void reportException(String errorMessage, final Exception e, final HttpServletResponse resp) throws IOException {
         final PrintWriter writer = resp.getWriter();
-        if ( errorMessage != null ) {
+        if (errorMessage != null) {
             writer.write(errorMessage);
             writer.write(" ");
         }

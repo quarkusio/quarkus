@@ -22,11 +22,12 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
-import io.quarkus.runtime.annotations.Template;
 import org.jboss.threads.EnhancedQueueExecutor;
 import org.jboss.threads.JBossExecutors;
 import org.jboss.threads.JBossThreadFactory;
 import org.wildfly.common.cpu.ProcessorInfo;
+
+import io.quarkus.runtime.annotations.Template;
 
 /**
  *
@@ -43,16 +44,18 @@ public class ExecutorTemplate {
     public ExecutorTemplate() {
     }
 
-    public Executor setupRunTime(ShutdownContext shutdownContext, int defaultCoreSize, int defaultMaxSize, int defaultQueueSize, float defaultGrowthResistance, int defaultKeepAliveMillis) {
-        final JBossThreadFactory threadFactory = new JBossThreadFactory(new ThreadGroup("executor"), Boolean.TRUE, null, "executor-thread-%t", JBossExecutors.loggingExceptionHandler("org.jboss.executor.uncaught"), null);
+    public Executor setupRunTime(ShutdownContext shutdownContext, int defaultCoreSize, int defaultMaxSize, int defaultQueueSize,
+            float defaultGrowthResistance, int defaultKeepAliveMillis) {
+        final JBossThreadFactory threadFactory = new JBossThreadFactory(new ThreadGroup("executor"), Boolean.TRUE, null,
+                "executor-thread-%t", JBossExecutors.loggingExceptionHandler("org.jboss.executor.uncaught"), null);
         final EnhancedQueueExecutor.Builder builder = new EnhancedQueueExecutor.Builder()
-            .setRegisterMBean(false)
-            .setHandoffExecutor(JBossExecutors.rejectingExecutor())
-            .setThreadFactory(JBossExecutors.resettingThreadFactory(threadFactory));
+                .setRegisterMBean(false)
+                .setHandoffExecutor(JBossExecutors.rejectingExecutor())
+                .setThreadFactory(JBossExecutors.resettingThreadFactory(threadFactory));
         final int cpus = ProcessorInfo.availableProcessors();
         // run time config variables
-        builder.setCorePoolSize(getIntConfigVal(CORE_POOL_SIZE, defaultCoreSize == - 1 ? 4 * cpus : defaultCoreSize));
-        builder.setMaximumPoolSize(getIntConfigVal(MAX_POOL_SIZE, defaultMaxSize == - 1 ? 10 * cpus : defaultMaxSize));
+        builder.setCorePoolSize(getIntConfigVal(CORE_POOL_SIZE, defaultCoreSize == -1 ? 4 * cpus : defaultCoreSize));
+        builder.setMaximumPoolSize(getIntConfigVal(MAX_POOL_SIZE, defaultMaxSize == -1 ? 10 * cpus : defaultMaxSize));
         builder.setMaximumQueueSize(getIntConfigVal(QUEUE_SIZE, defaultQueueSize));
         builder.setGrowthResistance(getFloatConfigVal(GROWTH_RESISTANCE, defaultGrowthResistance));
         builder.setKeepAliveTime(getIntConfigVal("executor.keep-alive-millis", defaultKeepAliveMillis), TimeUnit.MILLISECONDS);
@@ -61,11 +64,12 @@ public class ExecutorTemplate {
             @Override
             public void run() {
                 executor.shutdown();
-                for (;;) try {
-                    executor.awaitTermination(Long.MAX_VALUE, TimeUnit.HOURS);
-                    return;
-                } catch (InterruptedException ignored) {
-                }
+                for (;;)
+                    try {
+                        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.HOURS);
+                        return;
+                    } catch (InterruptedException ignored) {
+                    }
             }
         });
         return executor;

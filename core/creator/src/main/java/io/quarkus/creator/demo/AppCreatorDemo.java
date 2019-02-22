@@ -76,8 +76,8 @@ public class AppCreatorDemo {
         final RunnerJarOutcome runnerJar;
         try (AppCreator appCreator = AppCreator.builder()
                 .addPhase(new CuratePhase())
-                .addPhase(new AugmentPhase()/*.setOutputDir(outputDir)*/)
-                .addPhase(new RunnerJarPhase()/*.setOutputDir(outputDir)*/)
+                .addPhase(new AugmentPhase()/* .setOutputDir(outputDir) */)
+                .addPhase(new RunnerJarPhase()/* .setOutputDir(outputDir) */)
                 .addPhase(new NativeImagePhase())
                 .setAppJar(userApp)
                 .build()) {
@@ -115,21 +115,21 @@ public class AppCreatorDemo {
     }
 
     private static void logNames(String header, Set<String> names) {
-        if(names.isEmpty()) {
+        if (names.isEmpty()) {
             return;
         }
         System.out.println(header);
         final List<String> sorted = new ArrayList<>(names);
         Collections.sort(sorted);
-        for(int i = 0; i < sorted.size(); ++i) {
+        for (int i = 0; i < sorted.size(); ++i) {
             System.out.println((i + 1) + ") " + sorted.get(i));
         }
     }
 
     private static Set<String> readNames(Path path) throws IOException {
         Set<String> names = new HashSet<>();
-        try(DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
-            for(Path p : stream) {
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
+            for (Path p : stream) {
                 names.add(p.getFileName().toString());
             }
         }

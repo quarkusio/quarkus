@@ -49,8 +49,10 @@ public class TestJavaBean {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         TestJavaBean that = (TestJavaBean) o;
         return ival == that.ival &&
                 Objects.equals(sval, that.sval);

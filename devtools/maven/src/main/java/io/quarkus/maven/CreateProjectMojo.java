@@ -35,6 +35,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.fusesource.jansi.Ansi;
+
 import io.quarkus.cli.commands.AddExtensions;
 import io.quarkus.cli.commands.CreateProject;
 import io.quarkus.maven.components.Prompter;
@@ -84,8 +85,8 @@ public class CreateProjectMojo extends AbstractMojo {
 
         if (pom.isFile()) {
             // Enforce that the GAV are not set
-            if (! StringUtils.isBlank(projectGroupId) || ! StringUtils.isBlank(projectArtifactId)
-                    || ! StringUtils.isBlank(projectVersion)) {
+            if (!StringUtils.isBlank(projectGroupId) || !StringUtils.isBlank(projectArtifactId)
+                    || !StringUtils.isBlank(projectVersion)) {
                 throw new MojoExecutionException("Unable to generate the project, the `projectGroupId`, " +
                         "`projectArtifactId` and `projectVersion` parameters are not supported when applied to an " +
                         "existing `pom.xml` file");
@@ -98,7 +99,7 @@ public class CreateProjectMojo extends AbstractMojo {
 
         } else {
             askTheUserForMissingValues();
-            if (! isDirectoryEmpty(projectRoot)) {
+            if (!isDirectoryEmpty(projectRoot)) {
                 projectRoot = new File(projectArtifactId);
                 if (projectRoot.exists()) {
                     throw new MojoExecutionException("Unable to create the project - the current directory is not empty and" +
@@ -133,12 +134,11 @@ public class CreateProjectMojo extends AbstractMojo {
         }
     }
 
-
     private void askTheUserForMissingValues() throws MojoExecutionException {
 
         // If the user has disabled the interactive mode or if the user has specified the artifactId, disable the
         // user interactions.
-        if (! session.getRequest().isInteractiveMode()  || shouldUseDefaults()) {
+        if (!session.getRequest().isInteractiveMode() || shouldUseDefaults()) {
             // Inject default values in all non-set parameters
             if (StringUtils.isBlank(projectGroupId)) {
                 projectGroupId = DEFAULT_GROUP_ID;
@@ -183,7 +183,6 @@ public class CreateProjectMojo extends AbstractMojo {
                     path = null;
                 }
             }
-
 
         } catch (IOException e) {
             throw new MojoExecutionException("Unable to get user input", e);
@@ -231,7 +230,8 @@ public class CreateProjectMojo extends AbstractMojo {
     private void printUserInstructions(File root) {
         getLog().info("");
         getLog().info("========================================================================================");
-        getLog().info(ansi().a("Your new application has been created in ").bold().a(root.getAbsolutePath()).boldOff().toString());
+        getLog().info(
+                ansi().a("Your new application has been created in ").bold().a(root.getAbsolutePath()).boldOff().toString());
         getLog().info(ansi().a("Navigate into this directory and launch your application with ")
                 .bold()
                 .fg(Ansi.Color.CYAN)
@@ -239,13 +239,14 @@ public class CreateProjectMojo extends AbstractMojo {
                 .reset()
                 .toString());
         getLog().info(
-                ansi().a("Your application will be accessible on ").bold().fg(Ansi.Color.CYAN).a("http://localhost:8080").reset().toString());
+                ansi().a("Your application will be accessible on ").bold().fg(Ansi.Color.CYAN).a("http://localhost:8080")
+                        .reset().toString());
         getLog().info("========================================================================================");
         getLog().info("");
     }
 
     private boolean isDirectoryEmpty(File dir) {
-        if (! dir.isDirectory()) {
+        if (!dir.isDirectory()) {
             throw new IllegalArgumentException("The specified file must be a directory: " + dir.getAbsolutePath());
         }
 

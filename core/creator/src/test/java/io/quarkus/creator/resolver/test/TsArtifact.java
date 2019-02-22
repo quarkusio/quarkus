@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.maven.model.Model;
+
 import io.quarkus.creator.AppArtifact;
 
 /**
@@ -72,7 +73,7 @@ public class TsArtifact {
     }
 
     public TsArtifact addDependency(TsDependency dep) {
-        if(deps.isEmpty()) {
+        if (deps.isEmpty()) {
             deps = new ArrayList<>();
         }
         deps.add(dep);
@@ -80,18 +81,18 @@ public class TsArtifact {
     }
 
     public String getArtifactFileName() {
-        if(artifactId == null) {
+        if (artifactId == null) {
             throw new IllegalArgumentException("artifactId is missing");
         }
-        if(version == null) {
+        if (version == null) {
             throw new IllegalArgumentException("version is missing");
         }
-        if(type == null) {
+        if (type == null) {
             throw new IllegalArgumentException("type is missing");
         }
         final StringBuilder fileName = new StringBuilder();
         fileName.append(artifactId).append('-').append(version);
-        if(classifier != null && !classifier.isEmpty()) {
+        if (classifier != null && !classifier.isEmpty()) {
             fileName.append('-').append(classifier);
         }
         fileName.append('.').append(type);
@@ -111,7 +112,7 @@ public class TsArtifact {
         model.setPackaging(type);
         model.setVersion(version);
 
-        if(!deps.isEmpty()) {
+        if (!deps.isEmpty()) {
             for (TsDependency dep : deps) {
                 model.addDependency(dep.toPomDependency());
             }

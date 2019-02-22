@@ -16,13 +16,7 @@
 
 package io.quarkus.maven.it;
 
-import com.google.common.collect.ImmutableMap;
-import org.apache.commons.io.FileUtils;
-import org.apache.maven.shared.invoker.MavenInvocationException;
-import org.apache.maven.shared.utils.StringUtils;
-import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
-import io.quarkus.maven.it.verifier.RunningInvoker;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,7 +25,15 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.apache.commons.io.FileUtils;
+import org.apache.maven.shared.invoker.MavenInvocationException;
+import org.apache.maven.shared.utils.StringUtils;
+import org.junit.jupiter.api.Test;
+
+import com.google.common.collect.ImmutableMap;
+
+import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
+import io.quarkus.maven.it.verifier.RunningInvoker;
 
 public class ExtensionListIT {
 
@@ -43,7 +45,8 @@ public class ExtensionListIT {
         testDir = initProject();
 
         running = new RunningInvoker(testDir, false);
-        final MavenProcessInvocationResult result = running.execute(Collections.singletonList("package"), Collections.emptyMap());
+        final MavenProcessInvocationResult result = running.execute(Collections.singletonList("package"),
+                Collections.emptyMap());
 
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
 
@@ -57,7 +60,6 @@ public class ExtensionListIT {
         assertThat(data).contains("\"labels\" : [ \"agroal\", \"database-connection-pool\", \"jsf\" ]");
         assertThat(data).contains("\"internal\" : false,");
     }
-
 
     static File initProject() {
         String name = "projects/extension-check";

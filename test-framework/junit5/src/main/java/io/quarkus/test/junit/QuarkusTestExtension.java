@@ -21,12 +21,6 @@ import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
 import java.io.Closeable;
 
-import io.quarkus.runner.RuntimeRunner;
-import io.quarkus.runtime.LaunchMode;
-import io.quarkus.test.common.NativeImageLauncher;
-import io.quarkus.test.common.RestAssuredURLManager;
-import io.quarkus.test.common.TestResourceManager;
-import io.quarkus.test.common.http.TestHttpResourceManager;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -36,8 +30,14 @@ import org.junit.jupiter.api.extension.TestInstanceFactory;
 import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 
-public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback, TestInstanceFactory {
+import io.quarkus.runner.RuntimeRunner;
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.test.common.NativeImageLauncher;
+import io.quarkus.test.common.RestAssuredURLManager;
+import io.quarkus.test.common.TestResourceManager;
+import io.quarkus.test.common.http.TestHttpResourceManager;
 
+public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback, TestInstanceFactory {
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
@@ -59,7 +59,8 @@ public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallba
             store.put(ExtensionState.class.getName(), state);
         } else {
             if (substrateTest != state.isSubstrate()) {
-                throw new RuntimeException("Attempted to mix @SubstrateTest and JVM mode tests in the same test run. This is not allowed.");
+                throw new RuntimeException(
+                        "Attempted to mix @SubstrateTest and JVM mode tests in the same test run. This is not allowed.");
             }
         }
     }
@@ -86,7 +87,8 @@ public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallba
     }
 
     @Override
-    public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext) throws TestInstantiationException {
+    public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext)
+            throws TestInstantiationException {
         try {
             Object instance = factoryContext.getTestClass().newInstance();
             TestHttpResourceManager.inject(instance);
@@ -95,7 +97,6 @@ public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallba
             throw new TestInstantiationException("Failed to create test instance", e);
         }
     }
-
 
     static class ExtensionState implements ExtensionContext.Store.CloseableResource {
 

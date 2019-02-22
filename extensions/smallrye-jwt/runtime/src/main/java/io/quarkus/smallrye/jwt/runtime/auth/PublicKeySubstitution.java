@@ -26,7 +26,7 @@ public class PublicKeySubstitution implements ObjectSubstitution<RSAPublicKey, P
             KeyFactory kf = KeyFactory.getInstance("RSA");
             rsaPubKey = (RSAPublicKey) kf.generatePublic(publicKeySpec);
 
-        } catch (NoSuchAlgorithmException|InvalidKeySpecException e) {
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
             e.printStackTrace();
         }
         return rsaPubKey;

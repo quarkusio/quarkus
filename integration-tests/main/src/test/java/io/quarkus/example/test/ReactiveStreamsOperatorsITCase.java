@@ -21,5 +21,4 @@ import io.quarkus.test.junit.SubstrateTest;
 @SubstrateTest
 public class ReactiveStreamsOperatorsITCase extends ReactiveStreamsOperatorsTestCase {
 
-
 }

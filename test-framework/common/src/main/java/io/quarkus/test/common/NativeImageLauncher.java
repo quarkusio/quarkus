@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.microprofile.config.ConfigProvider;
+
 import io.quarkus.test.common.http.TestHttpResourceManager;
 
 public class NativeImageLauncher implements Closeable {
@@ -96,7 +97,8 @@ public class NativeImageLauncher implements Closeable {
     }
 
     private static void logGuessedPath(String guessedPath) {
-        String errorString = "\n=native.image.path was not set, making a guess that  " + guessedPath + " is the correct native image=";
+        String errorString = "\n=native.image.path was not set, making a guess that  " + guessedPath
+                + " is the correct native image=";
         for (int i = 0; i < errorString.length(); ++i) {
             System.err.print("=");
         }

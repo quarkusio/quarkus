@@ -1,13 +1,13 @@
 package io.quarkus.deployment.util;
 
-import org.junit.Assert;
-import org.junit.Test;
-
 import static io.quarkus.deployment.util.StringUtil.camelHumpsIterator;
 import static io.quarkus.deployment.util.StringUtil.join;
 import static io.quarkus.deployment.util.StringUtil.lowerCase;
 import static io.quarkus.deployment.util.StringUtil.lowerCaseFirst;
 import static io.quarkus.deployment.util.StringUtil.withoutSuffix;
+
+import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * Tests of the {@linkplain StringUtil} methods
@@ -22,6 +22,7 @@ public class StringUtilTestCase {
         String hyphenated = StringUtil.hyphenate("SBVbt");
         Assert.assertEquals("sb-vbt", hyphenated);
     }
+
     /**
      * Test word with only uppercase letters
      */
@@ -39,6 +40,7 @@ public class StringUtilTestCase {
         String hyphenated = StringUtil.hyphenate("btSBVsuffix");
         Assert.assertEquals("bt-sb-vsuffix", hyphenated);
     }
+
     /**
      * Test word with multiple uppercase letters at end
      */
@@ -56,6 +58,7 @@ public class StringUtilTestCase {
         String hyphenated = StringUtil.hyphenate("JBossHome");
         Assert.assertEquals("jboss-home", hyphenated);
     }
+
     /**
      * Test the special case of a word with JBoss in it as the JB are treated as one
      */
@@ -73,6 +76,7 @@ public class StringUtilTestCase {
         String result = StringUtil.join(StringUtil.lowerCaseFirst(StringUtil.camelHumpsIterator("SomeRootConfig")));
         Assert.assertEquals("someRootConfig", result);
     }
+
     /**
      * Test only lower casing first word and removing a suffix word
      */
@@ -83,6 +87,7 @@ public class StringUtilTestCase {
         result = join(withoutSuffix(lowerCaseFirst(camelHumpsIterator("SomeRootClass")), "Config", "Class"));
         Assert.assertEquals("someRoot", result);
     }
+
     /**
      * Test only lower casing and removing a suffix word
      */

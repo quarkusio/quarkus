@@ -1,10 +1,18 @@
 package io.quarkus.security.test;
 
+import static io.undertow.UndertowMessages.MESSAGES;
+import static io.undertow.util.Headers.AUTHORIZATION;
+import static io.undertow.util.Headers.BASIC;
+import static io.undertow.util.Headers.WWW_AUTHENTICATE;
+import static io.undertow.util.StatusCodes.UNAUTHORIZED;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
+
+import org.jboss.logging.Logger;
 
 import io.undertow.UndertowLogger;
 import io.undertow.security.api.AuthenticationMechanism;
@@ -14,13 +22,6 @@ import io.undertow.security.idm.IdentityManager;
 import io.undertow.security.idm.PasswordCredential;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.FlexBase64;
-import org.jboss.logging.Logger;
-
-import static io.undertow.UndertowMessages.MESSAGES;
-import static io.undertow.util.Headers.AUTHORIZATION;
-import static io.undertow.util.Headers.BASIC;
-import static io.undertow.util.Headers.WWW_AUTHENTICATE;
-import static io.undertow.util.StatusCodes.UNAUTHORIZED;
 
 /**
  * An alternate BASIC auth based mechanism to test installing a custom AuthenticationMechanism into Undertow
@@ -37,7 +38,7 @@ public class CustomAuth implements AuthenticationMechanism {
     @Override
     public AuthenticationMechanismOutcome authenticate(HttpServerExchange exchange, SecurityContext securityContext) {
         List<String> authHeaders = exchange.getRequestHeaders().get(AUTHORIZATION);
-        log.info("CustomAuth, authHeaders: "+authHeaders);
+        log.info("CustomAuth, authHeaders: " + authHeaders);
         if (authHeaders != null) {
             for (String current : authHeaders) {
                 if (current.toLowerCase(Locale.ENGLISH).startsWith(LOWERCASE_BASIC_PREFIX)) {
@@ -47,10 +48,13 @@ public class CustomAuth implements AuthenticationMechanism {
                     try {
                         ByteBuffer decode = FlexBase64.decode(base64Challenge);
 
-                        plainChallenge = new String(decode.array(), decode.arrayOffset(), decode.limit(), StandardCharsets.UTF_8);
-                        UndertowLogger.SECURITY_LOGGER.infof("Found basic auth header %s (decoded using charset %s) in %s", plainChallenge, StandardCharsets.UTF_8, exchange);
+                        plainChallenge = new String(decode.array(), decode.arrayOffset(), decode.limit(),
+                                StandardCharsets.UTF_8);
+                        UndertowLogger.SECURITY_LOGGER.infof("Found basic auth header %s (decoded using charset %s) in %s",
+                                plainChallenge, StandardCharsets.UTF_8, exchange);
                     } catch (IOException e) {
-                        UndertowLogger.SECURITY_LOGGER.infof(e, "Failed to decode basic auth header %s in %s", base64Challenge, exchange);
+                        UndertowLogger.SECURITY_LOGGER.infof(e, "Failed to decode basic auth header %s in %s", base64Challenge,
+                                exchange);
                     }
                     int colonPos;
                     if (plainChallenge != null && (colonPos = plainChallenge.indexOf(COLON)) > -1) {

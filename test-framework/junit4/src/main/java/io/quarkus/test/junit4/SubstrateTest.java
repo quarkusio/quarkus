@@ -18,9 +18,10 @@ package io.quarkus.test.junit4;
 
 import java.io.IOException;
 
-import io.quarkus.test.common.NativeImageLauncher;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.model.InitializationError;
+
+import io.quarkus.test.common.NativeImageLauncher;
 
 /**
  * A test runner for GraalVM native images.

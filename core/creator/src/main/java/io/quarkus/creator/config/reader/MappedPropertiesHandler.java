@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-
 /**
  *
  * @author Alexey Loubyansky
@@ -45,8 +44,8 @@ public abstract class MappedPropertiesHandler<T> implements PropertiesHandler<T>
         private final NestedSetter<P, C> nestedSetter;
         private final RootSetter<C> nestedNamedSetter;
 
-
-        public NestedHandlerWithSetter(PropertiesHandler<C> delegate, NestedSetter<P, C> nestedSetter, RootSetter<C> rootSetter) {
+        public NestedHandlerWithSetter(PropertiesHandler<C> delegate, NestedSetter<P, C> nestedSetter,
+                RootSetter<C> rootSetter) {
             this.delegate = delegate;
             this.nestedSetter = nestedSetter;
             this.nestedNamedSetter = rootSetter;
@@ -84,7 +83,7 @@ public abstract class MappedPropertiesHandler<T> implements PropertiesHandler<T>
 
         @SuppressWarnings("unchecked")
         protected void setOnParent(P t, Object c) throws PropertiesConfigReaderException {
-            if(nestedSetter == null) {
+            if (nestedSetter == null) {
                 nestedNamedSetter.setRoot((C) c);
             } else {
                 nestedSetter.setNested(t, (C) c);
@@ -96,7 +95,7 @@ public abstract class MappedPropertiesHandler<T> implements PropertiesHandler<T>
     protected Map<String, NestedHandlerWithSetter<T, ?>> nestedHandlers = Collections.emptyMap();
 
     public MappedPropertiesHandler<T> map(String name, PropertySetter<T> setter) {
-        if(setters.isEmpty()) {
+        if (setters.isEmpty()) {
             setters = new HashMap<>(1);
         }
         setters.put(name, setter);
@@ -112,7 +111,7 @@ public abstract class MappedPropertiesHandler<T> implements PropertiesHandler<T>
     }
 
     protected <C> MappedPropertiesHandler<T> map(String name, NestedHandlerWithSetter<T, C> setter) {
-        if(nestedHandlers.isEmpty()) {
+        if (nestedHandlers.isEmpty()) {
             nestedHandlers = new HashMap<>(1);
         }
         nestedHandlers.put(name, setter);
@@ -123,7 +122,7 @@ public abstract class MappedPropertiesHandler<T> implements PropertiesHandler<T>
     public boolean set(T t, PropertyContext ctx) throws PropertiesConfigReaderException {
         final String lastNameElement = ctx.getRelativeName();
         final PropertySetter<T> setter = setters.get(lastNameElement);
-        if(setter == null) {
+        if (setter == null) {
             return false;
         }
         setter.setProperty(t, ctx.getValue());
@@ -142,7 +141,7 @@ public abstract class MappedPropertiesHandler<T> implements PropertiesHandler<T>
     @Override
     public void setNested(T t, String name, Object child) throws PropertiesConfigReaderException {
         final NestedHandlerWithSetter<T, ?> nestedSetter = nestedHandlers.get(name);
-        if(nestedSetter == null) {
+        if (nestedSetter == null) {
             throw new PropertiesConfigReaderException("Failed to locate nested setter for " + name);
         }
         nestedSetter.setOnParent(t, child);

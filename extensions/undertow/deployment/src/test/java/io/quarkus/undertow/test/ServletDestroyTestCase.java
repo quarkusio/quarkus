@@ -20,7 +20,6 @@ import static org.hamcrest.Matchers.is;
 
 import java.util.concurrent.TimeUnit;
 
-import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterAll;
@@ -29,15 +28,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.wildfly.common.Assert;
 
+import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
 public class ServletDestroyTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() ->
-                    ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(PreDestroyServlet.class))
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(PreDestroyServlet.class))
             .setAfterUndeployListener(() -> {
                 try {
                     Assertions.assertEquals("Servlet Destroyed", Messages.MESSAGES.poll(2, TimeUnit.SECONDS));

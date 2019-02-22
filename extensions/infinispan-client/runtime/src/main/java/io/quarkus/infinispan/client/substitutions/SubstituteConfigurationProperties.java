@@ -13,13 +13,13 @@ import com.oracle.svm.core.annotate.TargetClass;
  */
 @TargetClass(ConfigurationProperties.class)
 public final class SubstituteConfigurationProperties {
-   @Alias
-   public static String MARSHALLER = null;
-   @Alias
-   private TypedProperties props = null;
+    @Alias
+    public static String MARSHALLER = null;
+    @Alias
+    private TypedProperties props = null;
 
-   @Substitute
-   public String getMarshaller() {
-      return props.getProperty(MARSHALLER, BytesOnlyMarshaller.class.getName());
-   }
+    @Substitute
+    public String getMarshaller() {
+        return props.getProperty(MARSHALLER, BytesOnlyMarshaller.class.getName());
+    }
 }

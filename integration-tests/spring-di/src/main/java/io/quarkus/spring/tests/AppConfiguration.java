@@ -25,7 +25,7 @@ public class AppConfiguration {
 
     @Bean(name = "cap")
     public StringFunction capitalizer(@Qualifier("dumb") Dummy notUsedJustMakingSureDIInMethodsWorks,
-                                      OtherDummy alsoNotUsed) {
+            OtherDummy alsoNotUsed) {
         return String::toUpperCase;
     }
 }

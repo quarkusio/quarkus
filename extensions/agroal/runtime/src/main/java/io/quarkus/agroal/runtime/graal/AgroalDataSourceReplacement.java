@@ -20,6 +20,7 @@ import java.sql.SQLException;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
+
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.AgroalDataSourceListener;
 import io.agroal.api.configuration.AgroalDataSourceConfiguration;
@@ -29,7 +30,8 @@ import io.agroal.pool.DataSource;
 final class AgroalDataSourceReplacement {
 
     @Substitute
-    static AgroalDataSource from(AgroalDataSourceConfiguration configuration, AgroalDataSourceListener... listeners) throws SQLException {
+    static AgroalDataSource from(AgroalDataSourceConfiguration configuration, AgroalDataSourceListener... listeners)
+            throws SQLException {
         return new DataSource(configuration, listeners);
 
     }

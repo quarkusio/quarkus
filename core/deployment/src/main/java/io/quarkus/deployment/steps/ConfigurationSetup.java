@@ -21,10 +21,6 @@ import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
-import io.smallrye.config.SmallRyeConfig;
-import io.smallrye.config.SmallRyeConfigBuilder;
-import io.smallrye.config.SmallRyeConfigProviderResolver;
-
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigBuilder;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
@@ -40,6 +36,9 @@ import org.jboss.protean.gizmo.FieldDescriptor;
 import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
+import org.objectweb.asm.Opcodes;
+import org.wildfly.common.net.CidrAddress;
+
 import io.quarkus.deployment.AccessorFinder;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -67,8 +66,9 @@ import io.quarkus.runtime.configuration.InetSocketAddressConverter;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.quarkus.runtime.configuration.RegexConverter;
 import io.quarkus.runtime.configuration.SimpleConfigurationProviderResolver;
-import org.objectweb.asm.Opcodes;
-import org.wildfly.common.net.CidrAddress;
+import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 /**
  * Setup steps for configuration purposes.
@@ -84,50 +84,59 @@ public class ConfigurationSetup {
     public static final FieldDescriptor CONFIG_ROOT_FIELD = FieldDescriptor.of(CONFIG_HELPER_DATA, "configRoot", CONFIG_ROOT);
 
     private static final MethodDescriptor NI_HAS_NEXT = MethodDescriptor.ofMethod(NameIterator.class, "hasNext", boolean.class);
-    private static final MethodDescriptor NI_NEXT_EQUALS = MethodDescriptor.ofMethod(NameIterator.class, "nextSegmentEquals", boolean.class, String.class);
+    private static final MethodDescriptor NI_NEXT_EQUALS = MethodDescriptor.ofMethod(NameIterator.class, "nextSegmentEquals",
+            boolean.class, String.class);
     private static final MethodDescriptor NI_NEXT = MethodDescriptor.ofMethod(NameIterator.class, "next", void.class);
     private static final MethodDescriptor ITR_HAS_NEXT = MethodDescriptor.ofMethod(Iterator.class, "hasNext", boolean.class);
     private static final MethodDescriptor ITR_NEXT = MethodDescriptor.ofMethod(Iterator.class, "next", Object.class);
-    private static final MethodDescriptor CF_GET_CONVERTER = MethodDescriptor.ofMethod(ConverterFactory.class, "getConverter", Converter.class, SmallRyeConfig.class, Class.class);
-    private static final MethodDescriptor CPR_SET_INSTANCE = MethodDescriptor.ofMethod(ConfigProviderResolver.class, "setInstance", void.class, ConfigProviderResolver.class);
-    private static final MethodDescriptor SCPR_CONSTRUCT = MethodDescriptor.ofConstructor(SimpleConfigurationProviderResolver.class, Config.class);
-    private static final MethodDescriptor SRCB_BUILD = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class, "build", Config.class);
-    private static final MethodDescriptor SRCB_WITH_CONVERTER = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class, "withConverter", ConfigBuilder.class, Class.class, int.class, Converter.class);
-    private static final MethodDescriptor SRCB_WITH_SOURCES = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class, "withSources", ConfigBuilder.class, ConfigSource[].class);
-    private static final MethodDescriptor SRCB_ADD_DEFAULT_SOURCES = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class, "addDefaultSources", ConfigBuilder.class);
+    private static final MethodDescriptor CF_GET_CONVERTER = MethodDescriptor.ofMethod(ConverterFactory.class, "getConverter",
+            Converter.class, SmallRyeConfig.class, Class.class);
+    private static final MethodDescriptor CPR_SET_INSTANCE = MethodDescriptor.ofMethod(ConfigProviderResolver.class,
+            "setInstance", void.class, ConfigProviderResolver.class);
+    private static final MethodDescriptor SCPR_CONSTRUCT = MethodDescriptor
+            .ofConstructor(SimpleConfigurationProviderResolver.class, Config.class);
+    private static final MethodDescriptor SRCB_BUILD = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class, "build",
+            Config.class);
+    private static final MethodDescriptor SRCB_WITH_CONVERTER = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class,
+            "withConverter", ConfigBuilder.class, Class.class, int.class, Converter.class);
+    private static final MethodDescriptor SRCB_WITH_SOURCES = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class,
+            "withSources", ConfigBuilder.class, ConfigSource[].class);
+    private static final MethodDescriptor SRCB_ADD_DEFAULT_SOURCES = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class,
+            "addDefaultSources", ConfigBuilder.class);
     private static final MethodDescriptor SRCB_CONSTRUCT = MethodDescriptor.ofConstructor(SmallRyeConfigBuilder.class);
-    private static final MethodDescriptor II_IN_IMAGE_BUILD = MethodDescriptor.ofMethod(ImageInfo.class, "inImageBuildtimeCode", boolean.class);
-    private static final MethodDescriptor II_IN_IMAGE_RUN = MethodDescriptor.ofMethod(ImageInfo.class, "inImageRuntimeCode", boolean.class);
-    private static final MethodDescriptor SRCB_WITH_WRAPPER = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class, "withWrapper", SmallRyeConfigBuilder.class, UnaryOperator.class);
+    private static final MethodDescriptor II_IN_IMAGE_BUILD = MethodDescriptor.ofMethod(ImageInfo.class, "inImageBuildtimeCode",
+            boolean.class);
+    private static final MethodDescriptor II_IN_IMAGE_RUN = MethodDescriptor.ofMethod(ImageInfo.class, "inImageRuntimeCode",
+            boolean.class);
+    private static final MethodDescriptor SRCB_WITH_WRAPPER = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class,
+            "withWrapper", SmallRyeConfigBuilder.class, UnaryOperator.class);
 
     public static final MethodDescriptor GET_ROOT_METHOD = MethodDescriptor.ofMethod(CONFIG_HELPER, "getRoot", CONFIG_ROOT);
 
-    private static final FieldDescriptor ECS_WRAPPER = FieldDescriptor.of(ExpandingConfigSource.class, "WRAPPER", UnaryOperator.class);
+    private static final FieldDescriptor ECS_WRAPPER = FieldDescriptor.of(ExpandingConfigSource.class, "WRAPPER",
+            UnaryOperator.class);
 
-    public ConfigurationSetup() {}
+    public ConfigurationSetup() {
+    }
 
     @BuildStep
     public void setUpConverters(BuildProducer<ConfigurationCustomConverterBuildItem> configurationTypes) {
         configurationTypes.produce(new ConfigurationCustomConverterBuildItem(
-            200,
-            InetSocketAddress.class,
-            InetSocketAddressConverter.class
-        ));
+                200,
+                InetSocketAddress.class,
+                InetSocketAddressConverter.class));
         configurationTypes.produce(new ConfigurationCustomConverterBuildItem(
-            200,
-            CidrAddress.class,
-            CidrAddressConverter.class
-        ));
+                200,
+                CidrAddress.class,
+                CidrAddressConverter.class));
         configurationTypes.produce(new ConfigurationCustomConverterBuildItem(
-            200,
-            InetAddress.class,
-            InetAddressConverter.class
-        ));
+                200,
+                InetAddress.class,
+                InetAddressConverter.class));
         configurationTypes.produce(new ConfigurationCustomConverterBuildItem(
-            200,
-            Pattern.class,
-            RegexConverter.class
-        ));
+                200,
+                Pattern.class,
+                RegexConverter.class));
     }
 
     /**
@@ -138,9 +147,8 @@ public class ConfigurationSetup {
      */
     @BuildStep
     public ConfigurationBuildItem initializeConfiguration(
-        List<ConfigurationCustomConverterBuildItem> converters,
-        ExtensionClassLoaderBuildItem extensionClassLoaderBuildItem
-    ) throws IOException, ClassNotFoundException {
+            List<ConfigurationCustomConverterBuildItem> converters,
+            ExtensionClassLoaderBuildItem extensionClassLoaderBuildItem) throws IOException, ClassNotFoundException {
         SmallRyeConfigBuilder builder = new SmallRyeConfigBuilder();
         // expand properties
         builder.withWrapper(ExpandingConfigSource::new);
@@ -151,7 +159,8 @@ public class ConfigurationSetup {
         final SmallRyeConfig src = (SmallRyeConfig) builder.build();
         final ConfigDefinition configDefinition = new ConfigDefinition();
         // populate it with all known types
-        for (Class<?> clazz : ServiceUtil.classesNamedIn(extensionClassLoaderBuildItem.getExtensionClassLoader(), "META-INF/quarkus-config-roots.list")) {
+        for (Class<?> clazz : ServiceUtil.classesNamedIn(extensionClassLoaderBuildItem.getExtensionClassLoader(),
+                "META-INF/quarkus-config-roots.list")) {
             configDefinition.registerConfigRoot(clazz);
         }
         SmallRyeConfigProviderResolver.instance().registerConfig(src, Thread.currentThread().getContextClassLoader());
@@ -160,7 +169,8 @@ public class ConfigurationSetup {
     }
 
     @SuppressWarnings("unchecked")
-    private static <T> void withConverterHelper(final SmallRyeConfigBuilder builder, final Class<T> type, final int priority, final Class<? extends Converter<?>> converterClass) {
+    private static <T> void withConverterHelper(final SmallRyeConfigBuilder builder, final Class<T> type, final int priority,
+            final Class<? extends Converter<?>> converterClass) {
         try {
             builder.withConverter(type, priority, ((Class<? extends Converter<T>>) converterClass).newInstance());
         } catch (InstantiationException e) {
@@ -175,20 +185,19 @@ public class ConfigurationSetup {
      */
     @BuildStep
     RunTimeConfigurationSourceBuildItem writeDefaults(
-        List<RunTimeConfigurationDefaultBuildItem> defaults,
-        Consumer<GeneratedResourceBuildItem> resourceConsumer
-    ) throws IOException {
+            List<RunTimeConfigurationDefaultBuildItem> defaults,
+            Consumer<GeneratedResourceBuildItem> resourceConsumer) throws IOException {
         final Properties properties = new Properties();
         for (RunTimeConfigurationDefaultBuildItem item : defaults) {
             final String key = item.getKey();
             final String value = item.getValue();
             final String existing = properties.getProperty(key);
-            if (existing != null && ! existing.equals(value)) {
-                log.warnf("Two conflicting default values were specified for configuration key \"%s\": \"%s\" and \"%s\" (using \"%2$s\")",
-                    key,
-                    existing,
-                    value
-                );
+            if (existing != null && !existing.equals(value)) {
+                log.warnf(
+                        "Two conflicting default values were specified for configuration key \"%s\": \"%s\" and \"%s\" (using \"%2$s\")",
+                        key,
+                        existing,
+                        value);
             } else {
                 properties.setProperty(key, value);
             }
@@ -197,7 +206,8 @@ public class ConfigurationSetup {
             try (OutputStreamWriter osw = new OutputStreamWriter(os, StandardCharsets.UTF_8)) {
                 properties.store(osw, "This is the generated set of default configuration values");
                 osw.flush();
-                resourceConsumer.accept(new GeneratedResourceBuildItem(DefaultConfigSource.DEFAULT_CONFIG_PROPERTIES_NAME, os.toByteArray()));
+                resourceConsumer.accept(
+                        new GeneratedResourceBuildItem(DefaultConfigSource.DEFAULT_CONFIG_PROPERTIES_NAME, os.toByteArray()));
             }
         }
         return new RunTimeConfigurationSourceBuildItem(DefaultConfigSource.class.getName(), OptionalInt.empty());
@@ -212,13 +222,12 @@ public class ConfigurationSetup {
      */
     @BuildStep
     void finalizeConfigLoader(
-        ConfigurationBuildItem configurationBuildItem,
-        Consumer<GeneratedClassBuildItem> classConsumer,
-        Consumer<RuntimeReinitializedClassBuildItem> runTimeInitConsumer,
-        Consumer<BytecodeRecorderObjectLoaderBuildItem> objectLoaderConsumer,
-        List<ConfigurationCustomConverterBuildItem> converters,
-        List<RunTimeConfigurationSourceBuildItem> runTimeSources
-    ) {
+            ConfigurationBuildItem configurationBuildItem,
+            Consumer<GeneratedClassBuildItem> classConsumer,
+            Consumer<RuntimeReinitializedClassBuildItem> runTimeInitConsumer,
+            Consumer<BytecodeRecorderObjectLoaderBuildItem> objectLoaderConsumer,
+            List<ConfigurationCustomConverterBuildItem> converters,
+            List<RunTimeConfigurationSourceBuildItem> runTimeSources) {
         final ClassOutput classOutput = new ClassOutput() {
             public void write(final String name, final byte[] data) {
                 classConsumer.accept(new GeneratedClassBuildItem(false, name, data));
@@ -247,8 +256,10 @@ public class ConfigurationSetup {
         final FieldDescriptor convertersField;
         // This must be a separate class, because CONFIG_HELPER is re-initialized at run time (native image).
         try (final ClassCreator cc = new ClassCreator(classOutput, CONFIG_HELPER_DATA, null, Object.class.getName())) {
-            convertersField = cc.getFieldCreator("$CONVERTERS", Converter[].class).setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_VOLATILE).getFieldDescriptor();
-            cc.getFieldCreator(CONFIG_ROOT_FIELD).setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_VOLATILE).getFieldDescriptor();
+            convertersField = cc.getFieldCreator("$CONVERTERS", Converter[].class)
+                    .setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_VOLATILE).getFieldDescriptor();
+            cc.getFieldCreator(CONFIG_ROOT_FIELD).setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_VOLATILE)
+                    .getFieldDescriptor();
         }
 
         try (final ClassCreator cc = new ClassCreator(classOutput, CONFIG_HELPER, null, Object.class.getName())) {
@@ -262,31 +273,30 @@ public class ConfigurationSetup {
                 final int size = runTimeSources.size();
                 if (size > 0) {
                     final ResultHandle arrayHandle = carc.newArray(ConfigSource[].class, carc.load(size));
-                    for (int i = 0; i < size; i ++) {
+                    for (int i = 0; i < size; i++) {
                         final RunTimeConfigurationSourceBuildItem source = runTimeSources.get(i);
                         final OptionalInt priority = source.getPriority();
                         final ResultHandle val;
                         if (priority.isPresent()) {
-                            val = carc.newInstance(MethodDescriptor.ofConstructor(source.getClassName(), int.class), carc.load(priority.getAsInt()));
+                            val = carc.newInstance(MethodDescriptor.ofConstructor(source.getClassName(), int.class),
+                                    carc.load(priority.getAsInt()));
                         } else {
                             val = carc.newInstance(MethodDescriptor.ofConstructor(source.getClassName()));
                         }
                         carc.writeArrayValue(arrayHandle, i, val);
                     }
                     carc.invokeVirtualMethod(
-                        SRCB_WITH_SOURCES,
-                        builder,
-                        arrayHandle
-                    );
+                            SRCB_WITH_SOURCES,
+                            builder,
+                            arrayHandle);
                 }
                 for (ConfigurationCustomConverterBuildItem converter : converters) {
                     carc.invokeVirtualMethod(
-                        SRCB_WITH_CONVERTER,
-                        builder,
-                        carc.loadClass(converter.getType()),
-                        carc.load(converter.getPriority()),
-                        carc.newInstance(MethodDescriptor.ofConstructor(converter.getConverter()))
-                    );
+                            SRCB_WITH_CONVERTER,
+                            builder,
+                            carc.loadClass(converter.getType()),
+                            carc.load(converter.getPriority()),
+                            carc.newInstance(MethodDescriptor.ofConstructor(converter.getConverter())));
                 }
                 // todo: add custom sources
                 final ResultHandle wrapper = carc.readStaticField(ECS_WRAPPER);
@@ -299,7 +309,7 @@ public class ConfigurationSetup {
                 ArrayList<Class<?>> configTypes = new ArrayList<>();
                 for (LeafConfigType item : allLeafPatterns) {
                     final Class<?> typeClass = item.getItemClass();
-                    if (! typeClass.isPrimitive() && encountered.add(typeClass)) {
+                    if (!typeClass.isPrimitive() && encountered.add(typeClass)) {
                         configTypes.add(typeClass);
                     }
                 }
@@ -313,15 +323,14 @@ public class ConfigurationSetup {
                 final BranchResult imgRun = carc.ifNonZero(carc.invokeStaticMethod(II_IN_IMAGE_RUN));
                 try (BytecodeCreator inImageRun = imgRun.trueBranch()) {
                     final ResultHandle array = inImageRun.readStaticField(convertersField);
-                    for (int i = 0; i < cnt; i ++) {
+                    for (int i = 0; i < cnt; i++) {
                         // implicit converters will have a priority of 100.
                         inImageRun.invokeVirtualMethod(
-                            SRCB_WITH_CONVERTER,
-                            builder,
-                            inImageRun.loadClass(configTypes.get(i)),
-                            inImageRun.load(100),
-                            inImageRun.readArrayValue(array, i)
-                        );
+                                SRCB_WITH_CONVERTER,
+                                builder,
+                                inImageRun.loadClass(configTypes.get(i)),
+                                inImageRun.load(100),
+                                inImageRun.readArrayValue(array, i));
                     }
                 }
 
@@ -338,8 +347,9 @@ public class ConfigurationSetup {
                 final BranchResult imgBuild = carc.ifNonZero(carc.invokeStaticMethod(II_IN_IMAGE_BUILD));
                 try (BytecodeCreator inImageBuild = imgBuild.trueBranch()) {
                     final ResultHandle array = inImageBuild.newArray(Converter.class, inImageBuild.load(cnt));
-                    for (int i = 0; i < cnt; i ++) {
-                        inImageBuild.writeArrayValue(array, i, inImageBuild.invokeStaticMethod(CF_GET_CONVERTER, config, inImageBuild.loadClass(configTypes.get(i))));
+                    for (int i = 0; i < cnt; i++) {
+                        inImageBuild.writeArrayValue(array, i, inImageBuild.invokeStaticMethod(CF_GET_CONVERTER, config,
+                                inImageBuild.loadClass(configTypes.get(i))));
                     }
                     inImageBuild.writeStaticField(convertersField, array);
                 }
@@ -360,7 +370,8 @@ public class ConfigurationSetup {
                 ccInit.setModifiers(Opcodes.ACC_STATIC);
 
                 // write out the parsing
-                final BranchResult ccIfImage = ccInit.ifNonZero(ccInit.invokeStaticMethod(MethodDescriptor.ofMethod(ImageInfo.class, "inImageRuntimeCode", boolean.class)));
+                final BranchResult ccIfImage = ccInit.ifNonZero(ccInit
+                        .invokeStaticMethod(MethodDescriptor.ofMethod(ImageInfo.class, "inImageRuntimeCode", boolean.class)));
                 try (BytecodeCreator ccIsNotImage = ccIfImage.falseBranch()) {
                     // common case: JVM mode, or image-building initialization
                     final ResultHandle mccConfig = ccIsNotImage.invokeStaticMethod(createAndRegisterConfig);
@@ -379,11 +390,13 @@ public class ConfigurationSetup {
         objectLoaderConsumer.accept(new BytecodeRecorderObjectLoaderBuildItem(new ObjectLoader() {
             public ResultHandle load(final BytecodeCreator body, final Object obj) {
                 final ConfigDefinition.RootInfo rootInfo = configDefinition.getInstanceInfo(obj);
-                if (rootInfo == null) return null;
+                if (rootInfo == null)
+                    return null;
 
                 if (!rootInfo.getConfigPhase().isAvailableAtRun()) {
-                    String msg = String.format("You are trying to use a ConfigRoot[%s] at runtime whose phase[%s] does not allow this",
-                                               rootInfo.getRootClass().getName(), rootInfo.getConfigPhase());
+                    String msg = String.format(
+                            "You are trying to use a ConfigRoot[%s] at runtime whose phase[%s] does not allow this",
+                            rootInfo.getRootClass().getName(), rootInfo.getConfigPhase());
                     throw new IllegalStateException(msg);
                 }
                 final FieldDescriptor fieldDescriptor = rootInfo.getFieldDescriptor();
@@ -395,12 +408,15 @@ public class ConfigurationSetup {
         runTimeInitConsumer.accept(new RuntimeReinitializedClassBuildItem(CONFIG_HELPER));
     }
 
-    private void writeParsing(final ClassCreator cc, final BytecodeCreator body, final ResultHandle config, final ConfigPatternMap<LeafConfigType> keyMap) {
+    private void writeParsing(final ClassCreator cc, final BytecodeCreator body, final ResultHandle config,
+            final ConfigPatternMap<LeafConfigType> keyMap) {
         // setup
         // Iterable iterable = config.getPropertyNames();
-        final ResultHandle iterable = body.invokeVirtualMethod(MethodDescriptor.ofMethod(SmallRyeConfig.class, "getPropertyNames", Iterable.class), config);
+        final ResultHandle iterable = body.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(SmallRyeConfig.class, "getPropertyNames", Iterable.class), config);
         // Iterator iterator = iterable.iterator();
-        final ResultHandle iterator = body.invokeInterfaceMethod(MethodDescriptor.ofMethod(Iterable.class, "iterator", Iterator.class), iterable);
+        final ResultHandle iterator = body
+                .invokeInterfaceMethod(MethodDescriptor.ofMethod(Iterable.class, "iterator", Iterator.class), iterable);
 
         // loop: {
         try (BytecodeCreator loop = body.createScope()) {
@@ -411,15 +427,18 @@ public class ConfigurationSetup {
                 // key = iterator.next();
                 final ResultHandle key = hasNext.checkCast(hasNext.invokeInterfaceMethod(ITR_NEXT, iterator), String.class);
                 // NameIterator keyIter = new NameIterator(key);
-                final ResultHandle keyIter = hasNext.newInstance(MethodDescriptor.ofConstructor(NameIterator.class, String.class), key);
+                final ResultHandle keyIter = hasNext
+                        .newInstance(MethodDescriptor.ofConstructor(NameIterator.class, String.class), key);
                 // if (! keyIter.hasNext()) continue loop;
                 hasNext.ifNonZero(hasNext.invokeVirtualMethod(NI_HAS_NEXT, keyIter)).falseBranch().continueScope(loop);
                 // if (! keyIter.nextSegmentEquals("quarkus")) continue loop;
-                hasNext.ifNonZero(hasNext.invokeVirtualMethod(NI_NEXT_EQUALS, keyIter, hasNext.load("quarkus"))).falseBranch().continueScope(loop);
+                hasNext.ifNonZero(hasNext.invokeVirtualMethod(NI_NEXT_EQUALS, keyIter, hasNext.load("quarkus"))).falseBranch()
+                        .continueScope(loop);
                 // keyIter.next(); // skip "quarkus"
                 hasNext.invokeVirtualMethod(NI_NEXT, keyIter);
                 // parse(config, keyIter);
-                hasNext.invokeStaticMethod(generateParserBody(cc, keyMap, new StringBuilder("parseKey"), new HashMap<>()), config, keyIter);
+                hasNext.invokeStaticMethod(generateParserBody(cc, keyMap, new StringBuilder("parseKey"), new HashMap<>()),
+                        config, keyIter);
                 // continue loop;
                 hasNext.continueScope(loop);
             }
@@ -429,11 +448,14 @@ public class ConfigurationSetup {
         body.returnValue(body.loadNull());
     }
 
-    private MethodDescriptor generateParserBody(final ClassCreator cc, final ConfigPatternMap<LeafConfigType> keyMap, final StringBuilder methodName, final Map<String, MethodDescriptor> parseMethodCache) {
+    private MethodDescriptor generateParserBody(final ClassCreator cc, final ConfigPatternMap<LeafConfigType> keyMap,
+            final StringBuilder methodName, final Map<String, MethodDescriptor> parseMethodCache) {
         final String methodNameStr = methodName.toString();
         final MethodDescriptor existing = parseMethodCache.get(methodNameStr);
-        if (existing != null) return existing;
-        try (MethodCreator body = cc.getMethodCreator(methodName.toString(), void.class, SmallRyeConfig.class, NameIterator.class)) {
+        if (existing != null)
+            return existing;
+        try (MethodCreator body = cc.getMethodCreator(methodName.toString(), void.class, SmallRyeConfig.class,
+                NameIterator.class)) {
             body.setModifiers(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC);
             final ResultHandle config = body.getMethodParam(0);
             final ResultHandle keyIter = body.getMethodParam(1);
@@ -458,13 +480,15 @@ public class ConfigurationSetup {
                 } else {
                     // TODO: string switch
                     // if (keyIter.nextSegmentEquals(name)) {
-                    try (BytecodeCreator nameMatched = body.ifNonZero(body.invokeVirtualMethod(NI_NEXT_EQUALS, keyIter, body.load(name))).trueBranch()) {
+                    try (BytecodeCreator nameMatched = body
+                            .ifNonZero(body.invokeVirtualMethod(NI_NEXT_EQUALS, keyIter, body.load(name))).trueBranch()) {
                         // keyIter.next();
                         nameMatched.invokeVirtualMethod(NI_NEXT, keyIter);
                         // (generated recursive)
                         final int length = methodName.length();
                         methodName.append('_').append(name);
-                        nameMatched.invokeStaticMethod(generateParserBody(cc, keyMap.getChild(name), methodName, parseMethodCache), config, keyIter);
+                        nameMatched.invokeStaticMethod(
+                                generateParserBody(cc, keyMap.getChild(name), methodName, parseMethodCache), config, keyIter);
                         methodName.setLength(length);
                         // return;
                         nameMatched.returnValue(null);

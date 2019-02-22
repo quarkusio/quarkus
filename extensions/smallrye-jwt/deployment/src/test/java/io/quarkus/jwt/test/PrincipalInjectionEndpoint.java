@@ -1,6 +1,5 @@
 package io.quarkus.jwt.test;
 
-
 import java.security.Principal;
 
 import javax.annotation.security.RolesAllowed;
@@ -43,24 +42,20 @@ public class PrincipalInjectionEndpoint {
         Principal jwtPrincipal = context.getUserPrincipal();
         if (jwtPrincipal == null) {
             msg = "SecurityContext#principal value is null, FAIL";
-        }
-        else if (jwtPrincipal instanceof JsonWebToken) {
+        } else if (jwtPrincipal instanceof JsonWebToken) {
             msg = "SecurityContext#getUserPrincipal is JsonWebToken, PASS";
             pass = true;
-        }
-        else {
+        } else {
             msg = String.format("principal: JsonWebToken != %s", jwtPrincipal.getClass().getCanonicalName());
         }
         // Validate that the injection built-in principal name matches the JsonWebToken name
-        if(pass) {
+        if (pass) {
             pass = false;
             if (principal == null) {
                 msg = "Injected principal value is null, FAIL";
-            }
-            else if (!principal.getName().equals(jwtPrincipal.getName())) {
+            } else if (!principal.getName().equals(jwtPrincipal.getName())) {
                 msg = "Injected principal#name != jwtPrincipal#name, FAIL";
-            }
-            else {
+            } else {
                 msg += "\nInjected Principal#getName matches, PASS";
                 pass = true;
             }

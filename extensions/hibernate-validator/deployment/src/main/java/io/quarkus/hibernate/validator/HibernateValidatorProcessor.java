@@ -36,6 +36,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
+
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -73,18 +74,19 @@ class HibernateValidatorProcessor {
 
         if (isResteasyInClasspath()) {
             // The CDI interceptor which will validate the methods annotated with @JaxrsEndPointValidated
-            additionalBeans.produce(new AdditionalBeanBuildItem("io.quarkus.hibernate.validator.runtime.jaxrs.JaxrsEndPointValidationInterceptor"));
+            additionalBeans.produce(new AdditionalBeanBuildItem(
+                    "io.quarkus.hibernate.validator.runtime.jaxrs.JaxrsEndPointValidationInterceptor"));
         }
     }
 
     @BuildStep
     @Record(STATIC_INIT)
     public void build(HibernateValidatorTemplate template, RecorderContext recorder,
-                      BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
-                      BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
-                      BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformers,
-                      CombinedIndexBuildItem combinedIndexBuildItem,
-                      BuildProducer<FeatureBuildItem> feature) throws Exception {
+            BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
+            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformers,
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<FeatureBuildItem> feature) throws Exception {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.HIBERNATE_VALIDATOR));
 
@@ -115,18 +117,22 @@ class HibernateValidatorProcessor {
                 if (annotation.target().kind() == AnnotationTarget.Kind.FIELD) {
                     contributeClass(classNamesToBeValidated, indexView, annotation.target().asField().declaringClass().name());
                     reflectiveFields.produce(new ReflectiveFieldBuildItem(annotation.target().asField()));
-                    contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView, consideredAnnotation, annotation.target().asField().type());
+                    contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView, consideredAnnotation,
+                            annotation.target().asField().type());
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
                     contributeClass(classNamesToBeValidated, indexView, annotation.target().asMethod().declaringClass().name());
                     // we need to register the method for reflection as it could be a getter
                     reflectiveMethods.produce(new ReflectiveMethodBuildItem(annotation.target().asMethod()));
-                    contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView, consideredAnnotation, annotation.target().asMethod().returnType());
+                    contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView, consideredAnnotation,
+                            annotation.target().asMethod().returnType());
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
-                    contributeClass(classNamesToBeValidated, indexView, annotation.target().asMethodParameter().method().declaringClass().name());
+                    contributeClass(classNamesToBeValidated, indexView,
+                            annotation.target().asMethodParameter().method().declaringClass().name());
                     // a getter does not have parameters so it's a pure method: no need for reflection in this case
                     contributeClassMarkedForCascadingValidation(classNamesToBeValidated, indexView, consideredAnnotation,
                             // FIXME this won't work in the case of synthetic parameters
-                            annotation.target().asMethodParameter().method().parameters().get(annotation.target().asMethodParameter().position()));
+                            annotation.target().asMethodParameter().method().parameters()
+                                    .get(annotation.target().asMethodParameter().position()));
                 } else if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
                     contributeClass(classNamesToBeValidated, indexView, annotation.target().asClass().name());
                     // no need for reflection in the case of a class level constraint
@@ -141,7 +147,8 @@ class HibernateValidatorProcessor {
         template.initializeValidatorFactory(classesToBeValidated);
 
         // Add the annotations transformer to add @MethodValidated annotations on the methods requiring validation
-        annotationsTransformers.produce(new AnnotationsTransformerBuildItem(new MethodValidatedAnnotationsTransformer(consideredAnnotations)));
+        annotationsTransformers
+                .produce(new AnnotationsTransformerBuildItem(new MethodValidatedAnnotationsTransformer(consideredAnnotations)));
     }
 
     @BuildStep
@@ -196,13 +203,13 @@ class HibernateValidatorProcessor {
 
     private static DotName getClassName(Type type) {
         switch (type.kind()) {
-        case CLASS:
-        case PARAMETERIZED_TYPE:
-            return type.name();
-        case ARRAY:
-            return getClassName( type.asArrayType().component() );
-        default:
-            return null;
+            case CLASS:
+            case PARAMETERIZED_TYPE:
+                return type.name();
+            case ARRAY:
+                return getClassName(type.asArrayType().component());
+            default:
+                return null;
         }
     }
 

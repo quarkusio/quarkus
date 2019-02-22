@@ -35,13 +35,13 @@ public class AccessorEntity extends GenericEntity<Integer> {
     public Object trans;
     @Transient
     public Object trans2;
-    
+
     // FIXME: those appear to be mapped by hibernate
     transient int getBCalls = 0;
     transient int setICalls = 0;
     transient int getTransCalls = 0;
     transient int setTransCalls = 0;
-    
+
     public void method() {
         // touch some fields
         @SuppressWarnings("unused")
@@ -50,20 +50,19 @@ public class AccessorEntity extends GenericEntity<Integer> {
         t = 1;
         t2 = 2;
     }
-    
+
     // explicit getter or setter
-    
+
     public byte getB() {
         getBCalls++;
         return b;
     }
-    
+
     public void setI(int i) {
         setICalls++;
         this.i = i;
     }
 
-    
     public Object getTrans() {
         getTransCalls++;
         return trans;

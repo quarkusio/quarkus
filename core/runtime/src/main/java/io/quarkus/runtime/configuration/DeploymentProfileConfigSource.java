@@ -29,7 +29,8 @@ public class DeploymentProfileConfigSource extends AbstractDelegatingConfigSourc
 
     public Set<String> getPropertyNames() {
         final NamesSet namesSet = this.namesSet;
-        if (namesSet == null) return this.namesSet = new NamesSet(getDelegate().getPropertyNames());
+        if (namesSet == null)
+            return this.namesSet = new NamesSet(getDelegate().getPropertyNames());
         return namesSet;
     }
 
@@ -40,7 +41,8 @@ public class DeploymentProfileConfigSource extends AbstractDelegatingConfigSourc
             return null;
         } else {
             final String nameWithProfile = profilePrefix + name;
-            return delegate.getPropertyNames().contains(nameWithProfile) ? delegate.getValue(nameWithProfile) : delegate.getValue(name);
+            return delegate.getPropertyNames().contains(nameWithProfile) ? delegate.getValue(nameWithProfile)
+                    : delegate.getValue(name);
         }
     }
 
@@ -62,7 +64,8 @@ public class DeploymentProfileConfigSource extends AbstractDelegatingConfigSourc
         public int size() {
             // very slow, unfortunately
             int cnt = 0;
-            for (String ignored : this) cnt++;
+            for (String ignored : this)
+                cnt++;
             return cnt;
         }
 
@@ -78,7 +81,8 @@ public class DeploymentProfileConfigSource extends AbstractDelegatingConfigSourc
                 final String profilePrefix = DeploymentProfileConfigSource.this.profilePrefix;
                 final Iterator<String> iterator = this.iterator;
                 while (next == null) {
-                    if (! iterator.hasNext()) return false;
+                    if (!iterator.hasNext())
+                        return false;
                     final String test = iterator.next();
                     if (test.startsWith("%")) {
                         final int prefixLen = profilePrefix.length();
@@ -86,7 +90,7 @@ public class DeploymentProfileConfigSource extends AbstractDelegatingConfigSourc
                             next = test.substring(prefixLen);
                             return true;
                         }
-                    } else if (! delegateSet.contains(profilePrefix + test)) {
+                    } else if (!delegateSet.contains(profilePrefix + test)) {
                         next = test;
                         return true;
                     }
@@ -95,7 +99,8 @@ public class DeploymentProfileConfigSource extends AbstractDelegatingConfigSourc
             }
 
             public String next() {
-                if (!hasNext()) throw new NoSuchElementException();
+                if (!hasNext())
+                    throw new NoSuchElementException();
                 return next;
             }
         }

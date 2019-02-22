@@ -19,6 +19,7 @@ package io.quarkus.agroal;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import org.jboss.logging.Logger;
+
 import io.quarkus.agroal.runtime.DataSourceProducer;
 import io.quarkus.agroal.runtime.DataSourceTemplate;
 import io.quarkus.agroal.runtime.DatasourceConfig;
@@ -50,14 +51,13 @@ class AgroalProcessor {
     @Record(STATIC_INIT)
     @BuildStep
     BeanContainerListenerBuildItem build(
-        BuildProducer<FeatureBuildItem> feature,
-        BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-        BuildProducer<SubstrateResourceBuildItem> resource,
-        BuildProducer<DataSourceDriverBuildItem> datasourceDriver,
-        SslNativeConfigBuildItem sslNativeConfig, BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
-        DataSourceTemplate template
-    ) throws Exception {
-        if (! datasource.url.isPresent() || ! datasource.driver.isPresent()) {
+            BuildProducer<FeatureBuildItem> feature,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<SubstrateResourceBuildItem> resource,
+            BuildProducer<DataSourceDriverBuildItem> datasourceDriver,
+            SslNativeConfigBuildItem sslNativeConfig, BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
+            DataSourceTemplate template) throws Exception {
+        if (!datasource.url.isPresent() || !datasource.driver.isPresent()) {
             log.warn("Agroal extension was included in build however no data source URL and/or driver class has been defined");
             return null;
         }
@@ -67,7 +67,8 @@ class AgroalProcessor {
         // For now, we can't push the security providers to Agroal so we need to include
         // the service file inside the image. Hopefully, we will get an entry point to
         // resolve them at build time and push them to Agroal soon.
-        resource.produce(new SubstrateResourceBuildItem("META-INF/services/" + io.agroal.api.security.AgroalSecurityProvider.class.getName()));
+        resource.produce(new SubstrateResourceBuildItem(
+                "META-INF/services/" + io.agroal.api.security.AgroalSecurityProvider.class.getName()));
 
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
                 io.agroal.pool.ConnectionHandler[].class.getName(),
@@ -77,8 +78,7 @@ class AgroalProcessor {
                 java.sql.Statement[].class.getName(),
                 java.sql.Statement.class.getName(),
                 java.sql.ResultSet.class.getName(),
-                java.sql.ResultSet[].class.getName()
-        ));
+                java.sql.ResultSet[].class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, datasource.driver.get()));
 
         datasourceDriver.produce(new DataSourceDriverBuildItem(datasource.driver.get()));

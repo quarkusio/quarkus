@@ -1,20 +1,20 @@
 package io.quarkus.vertx.tests;
 
-
-import io.vertx.core.Vertx;
-import io.vertx.core.eventbus.EventBus;
-import io.vertx.core.eventbus.MessageConsumer;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
+
+import io.vertx.core.Vertx;
+import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.eventbus.MessageConsumer;
 
 @Path("/")
 public class VertxProducerResource {
@@ -49,7 +49,7 @@ public class VertxProducerResource {
 
         CompletableFuture<String> future = new CompletableFuture<>();
         // Use the Vert.x bean.
-        vertx.eventBus().<String>send(address, "quarkus", ar -> {
+        vertx.eventBus().<String> send(address, "quarkus", ar -> {
             if (ar.failed()) {
                 future.completeExceptionally(ar.cause());
             } else {
@@ -59,6 +59,5 @@ public class VertxProducerResource {
 
         return future;
     }
-
 
 }

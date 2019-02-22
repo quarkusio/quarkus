@@ -3,8 +3,9 @@ package io.quarkus.runtime.configuration;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import io.smallrye.config.SmallRyeConfig;
 import org.eclipse.microprofile.config.spi.Converter;
+
+import io.smallrye.config.SmallRyeConfig;
 
 /**
  * A factory to acquire a converter for a given type.

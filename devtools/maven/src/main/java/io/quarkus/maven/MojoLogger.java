@@ -41,38 +41,44 @@ public class MojoLogger implements LoggerProvider {
     public Logger getLogger(final String name) {
         return new Logger(name) {
             @Override
-            protected void doLog(final Level level, final String loggerClassName, final Object message, final Object[] parameters, final Throwable thrown) {
+            protected void doLog(final Level level, final String loggerClassName, final Object message,
+                    final Object[] parameters, final Throwable thrown) {
                 final Supplier<Log> logSupplier = MojoLogger.logSupplier;
                 if (logSupplier != null) {
                     Log log = logSupplier.get();
                     String text;
                     if (parameters == null || parameters.length == 0) {
                         text = String.valueOf(message);
-                    } else try {
-                        text = MessageFormat.format(String.valueOf(message), parameters);
-                    } catch (Exception e) {
-                        text = invalidFormat(String.valueOf(message), parameters);
-                    }
+                    } else
+                        try {
+                            text = MessageFormat.format(String.valueOf(message), parameters);
+                        } catch (Exception e) {
+                            text = invalidFormat(String.valueOf(message), parameters);
+                        }
                     doActualLog(log, level, text, thrown);
                 }
             }
 
             @Override
-            protected void doLogf(final Level level, final String loggerClassName, final String format, final Object[] parameters, final Throwable thrown) {
+            protected void doLogf(final Level level, final String loggerClassName, final String format,
+                    final Object[] parameters, final Throwable thrown) {
                 final Supplier<Log> logSupplier = MojoLogger.logSupplier;
                 if (logSupplier != null) {
                     Log log = logSupplier.get();
                     String text;
-                    if (parameters == null) try {
-                        //noinspection RedundantStringFormatCall
-                        text = String.format(format);
-                    } catch (Exception e) {
-                        text = invalidFormat(format, NO_PARAMS);
-                    } else try {
-                        text = String.format(format, (Object[]) parameters);
-                    } catch (Exception e) {
-                        text = invalidFormat(format, parameters);
-                    }
+                    if (parameters == null)
+                        try {
+                            //noinspection RedundantStringFormatCall
+                            text = String.format(format);
+                        } catch (Exception e) {
+                            text = invalidFormat(format, NO_PARAMS);
+                        }
+                    else
+                        try {
+                            text = String.format(format, (Object[]) parameters);
+                        } catch (Exception e) {
+                            text = invalidFormat(format, parameters);
+                        }
                     doActualLog(log, level, text, thrown);
                 }
             }
@@ -80,14 +86,19 @@ public class MojoLogger implements LoggerProvider {
             @Override
             public boolean isEnabled(final Level level) {
                 final Supplier<Log> logSupplier = MojoLogger.logSupplier;
-                if (logSupplier == null) return false;
+                if (logSupplier == null)
+                    return false;
                 Log log = logSupplier.get();
                 switch (level) {
                     case FATAL:
-                    case ERROR: return log.isErrorEnabled();
-                    case WARN:  return log.isWarnEnabled();
-                    case INFO:  return log.isInfoEnabled();
-                    default:    return log.isDebugEnabled();
+                    case ERROR:
+                        return log.isErrorEnabled();
+                    case WARN:
+                        return log.isWarnEnabled();
+                    case INFO:
+                        return log.isInfoEnabled();
+                    default:
+                        return log.isDebugEnabled();
                 }
             }
 
@@ -98,18 +109,34 @@ public class MojoLogger implements LoggerProvider {
                 if (thrown != null) {
                     switch (level) {
                         case FATAL:
-                        case ERROR: log.error(buffer.toString(), thrown); break;
-                        case WARN:  log.warn (buffer.toString(), thrown); break;
-                        case INFO:  log.info (buffer.toString(), thrown); break;
-                        default:    log.debug(buffer.toString(), thrown); break;
+                        case ERROR:
+                            log.error(buffer.toString(), thrown);
+                            break;
+                        case WARN:
+                            log.warn(buffer.toString(), thrown);
+                            break;
+                        case INFO:
+                            log.info(buffer.toString(), thrown);
+                            break;
+                        default:
+                            log.debug(buffer.toString(), thrown);
+                            break;
                     }
                 } else {
                     switch (level) {
                         case FATAL:
-                        case ERROR: log.error(buffer.toString()); break;
-                        case WARN:  log.warn (buffer.toString()); break;
-                        case INFO:  log.info (buffer.toString()); break;
-                        default:    log.debug(buffer.toString()); break;
+                        case ERROR:
+                            log.error(buffer.toString());
+                            break;
+                        case WARN:
+                            log.warn(buffer.toString());
+                            break;
+                        case INFO:
+                            log.info(buffer.toString());
+                            break;
+                        default:
+                            log.debug(buffer.toString());
+                            break;
                     }
                 }
             }
@@ -120,7 +147,7 @@ public class MojoLogger implements LoggerProvider {
         final StringBuilder b = new StringBuilder("** invalid format \'" + format + "\'");
         if (parameters != null && parameters.length > 0) {
             b.append(" [").append(parameters[0]);
-            for (int i = 1; i < parameters.length; i ++) {
+            for (int i = 1; i < parameters.length; i++) {
                 b.append(',').append(parameters[i]);
             }
             b.append("]");

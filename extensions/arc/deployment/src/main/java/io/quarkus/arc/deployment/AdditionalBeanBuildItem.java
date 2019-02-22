@@ -26,17 +26,18 @@ import org.jboss.builder.item.MultiBuildItem;
 /**
  * This build item is used to specify additional bean classes to be analyzed.
  * <p>
- * By default, the resulting beans may be removed if they are considered unused and {@link ArcConfig#removeUnusedBeans} is enabled. 
+ * By default, the resulting beans may be removed if they are considered unused and {@link ArcConfig#removeUnusedBeans} is
+ * enabled.
  */
 public final class AdditionalBeanBuildItem extends MultiBuildItem {
 
     private final List<String> beanClasses;
     private final boolean removable;
-    
+
     public AdditionalBeanBuildItem(String... beanClasses) {
         this(true, beanClasses);
     }
-    
+
     public AdditionalBeanBuildItem(boolean removable, String... beanClasses) {
         this(Arrays.asList(beanClasses), removable);
     }
@@ -44,11 +45,11 @@ public final class AdditionalBeanBuildItem extends MultiBuildItem {
     public AdditionalBeanBuildItem(Class<?>... beanClasses) {
         this(true, beanClasses);
     }
-    
+
     public AdditionalBeanBuildItem(boolean removable, Class<?>... beanClasses) {
         this(Arrays.stream(beanClasses).map(Class::getName).collect(Collectors.toList()), removable);
     }
-    
+
     AdditionalBeanBuildItem(List<String> beanClasses, boolean removable) {
         this.beanClasses = beanClasses;
         this.removable = removable;
@@ -61,5 +62,5 @@ public final class AdditionalBeanBuildItem extends MultiBuildItem {
     public boolean isRemovable() {
         return removable;
     }
-    
+
 }

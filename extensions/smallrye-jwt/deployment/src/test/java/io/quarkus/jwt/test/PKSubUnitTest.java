@@ -2,12 +2,12 @@ package io.quarkus.jwt.test;
 
 import java.security.interfaces.RSAPublicKey;
 
-import io.smallrye.jwt.KeyUtils;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import io.quarkus.smallrye.jwt.runtime.auth.PublicKeyProxy;
 import io.quarkus.smallrye.jwt.runtime.auth.PublicKeySubstitution;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import io.smallrye.jwt.KeyUtils;
 
 public class PKSubUnitTest {
     @Test

@@ -17,6 +17,7 @@
 package io.quarkus.deployment.builditem;
 
 import org.jboss.builder.item.MultiBuildItem;
+
 import io.quarkus.deployment.Capabilities;
 
 /**
@@ -29,7 +30,7 @@ public final class CapabilityBuildItem extends MultiBuildItem {
     private final String name;
 
     public CapabilityBuildItem(String name) {
-        if(name == null) {
+        if (name == null) {
             throw new IllegalArgumentException("name cannot be null");
         }
         this.name = name;

@@ -24,7 +24,6 @@ import javax.enterprise.context.RequestScoped;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 
-
 /**
  * Bean that is used to manage request scoped entity managers
  */

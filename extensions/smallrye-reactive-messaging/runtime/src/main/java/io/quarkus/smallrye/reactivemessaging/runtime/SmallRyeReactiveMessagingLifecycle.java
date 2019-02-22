@@ -8,7 +8,6 @@ import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
 import io.quarkus.runtime.StartupEvent;
-
 import io.smallrye.reactive.messaging.extension.MediatorManager;
 
 @Dependent

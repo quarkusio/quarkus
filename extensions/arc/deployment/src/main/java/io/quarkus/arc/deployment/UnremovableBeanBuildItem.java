@@ -11,7 +11,8 @@ import org.jboss.jandex.DotName;
 import org.jboss.quarkus.arc.processor.BeanInfo;
 
 /**
- * This build item is used to exclude beans that would be normally removed if the config property {@link ArcConfig#removeUnusedBeans} is set to true.
+ * This build item is used to exclude beans that would be normally removed if the config property
+ * {@link ArcConfig#removeUnusedBeans} is set to true.
  */
 public final class UnremovableBeanBuildItem extends MultiBuildItem {
 

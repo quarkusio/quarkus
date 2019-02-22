@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
 
 public class ReportAnalyzer {
 
-
     static Pattern PATTERN = Pattern.compile("(.*?)([^\\s(]+)\\.([^.]+\\(.*?\\):[^\\s])");
 
     /**
@@ -117,8 +116,8 @@ public class ReportAnalyzer {
             last = n;
         }
 
-        List<Node> dm = byClassMap.getOrDefault(className, new ArrayList<>()).stream().filter((s) -> s.method.startsWith(methodName + "(")).collect(Collectors.toList());
-
+        List<Node> dm = byClassMap.getOrDefault(className, new ArrayList<>()).stream()
+                .filter((s) -> s.method.startsWith(methodName + "(")).collect(Collectors.toList());
 
         Deque<Node> runQueue = new ArrayDeque<>(dm);
         Set<String> attemptedClasses = new HashSet<>();
@@ -134,11 +133,13 @@ public class ReportAnalyzer {
                 sb.append("\t" + current.className + "." + current.method + '\n');
 
                 String reason = null;
-                if(current.parent == null || current.parent.children.size() > 1) {
+                if (current.parent == null || current.parent.children.size() > 1) {
                     if (current.type.equals("is overridden by")) {
-                        reason = "This is an implementation of " + current.parent.className + " printing path to constructors of " + current.className;
+                        reason = "This is an implementation of " + current.parent.className
+                                + " printing path to constructors of " + current.className;
                     } else if (current.type.equals("is implemented by")) {
-                        reason = "This is an implementation of " + current.parent.className + " printing path to constructors of " + current.className;
+                        reason = "This is an implementation of " + current.parent.className
+                                + " printing path to constructors of " + current.className;
                     }
                 }
                 if (reason != null) {
@@ -186,4 +187,3 @@ public class ReportAnalyzer {
         }
     }
 }
-

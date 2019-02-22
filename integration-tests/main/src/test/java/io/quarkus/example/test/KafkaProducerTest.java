@@ -8,15 +8,14 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
 @QuarkusTest
 public class KafkaProducerTest {
-
 
     public static KafkaConsumer<Integer, String> createConsumer() {
         Properties props = new Properties();
@@ -31,15 +30,13 @@ public class KafkaProducerTest {
         return consumer;
     }
 
-
     @Test
     public void test() throws Exception {
         KafkaConsumer<Integer, String> consumer = createConsumer();
         RestAssured.with().body("hello").post("/kafka");
         ConsumerRecord<Integer, String> records = consumer.poll(10000).iterator().next();
-        Assertions.assertEquals(records.key(), (Integer)0);
+        Assertions.assertEquals(records.key(), (Integer) 0);
         Assertions.assertEquals(records.value(), "hello");
     }
-
 
 }

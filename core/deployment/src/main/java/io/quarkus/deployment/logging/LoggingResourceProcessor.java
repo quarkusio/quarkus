@@ -23,6 +23,7 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 import org.jboss.logmanager.EmbeddedConfigurator;
+
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -48,46 +49,44 @@ public final class LoggingResourceProcessor {
     void setupLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
         filters.produce(new LogCleanupFilterBuildItem("org.jboss.threads", "JBoss Threads version"));
     }
-    
+
     @BuildStep
     SystemPropertyBuildItem setProperty() {
         return new SystemPropertyBuildItem("java.util.logging.manager", "org.jboss.logmanager.LogManager");
     }
 
     @BuildStep
-    void setUpDefaultLevels(List<LogCategoryBuildItem> categories, Consumer<RunTimeConfigurationDefaultBuildItem> configOutput) {
+    void setUpDefaultLevels(List<LogCategoryBuildItem> categories,
+            Consumer<RunTimeConfigurationDefaultBuildItem> configOutput) {
         for (LogCategoryBuildItem category : categories) {
             configOutput.accept(
-                new RunTimeConfigurationDefaultBuildItem(
-                    "quarkus.log.categories.\"" + category.getCategory() + "\".level",
-                    category.getLevel().toString()
-                    )
-            );
+                    new RunTimeConfigurationDefaultBuildItem(
+                            "quarkus.log.categories.\"" + category.getCategory() + "\".level",
+                            category.getLevel().toString()));
         }
     }
-    
+
     @BuildStep
-    void setUpDefaultLogCleanupFilters(List<LogCleanupFilterBuildItem> logCleanupFilters, Consumer<RunTimeConfigurationDefaultBuildItem> configOutput) {
+    void setUpDefaultLogCleanupFilters(List<LogCleanupFilterBuildItem> logCleanupFilters,
+            Consumer<RunTimeConfigurationDefaultBuildItem> configOutput) {
         for (LogCleanupFilterBuildItem logCleanupFilter : logCleanupFilters) {
             configOutput.accept(
-                new RunTimeConfigurationDefaultBuildItem(
-                    "quarkus.log.filters.\"" + logCleanupFilter.getFilterElement().getLoggerName() + "\".if-starts-with",
-                    logCleanupFilter.getFilterElement().getMessageStart()
-                    )
-            );
+                    new RunTimeConfigurationDefaultBuildItem(
+                            "quarkus.log.filters.\"" + logCleanupFilter.getFilterElement().getLoggerName()
+                                    + "\".if-starts-with",
+                            logCleanupFilter.getFilterElement().getMessageStart()));
         }
     }
-    
 
     @BuildStep
     void miscSetup(
-        Consumer<RuntimeInitializedClassBuildItem> runtimeInit,
-        Consumer<SubstrateSystemPropertyBuildItem> systemProp,
-        Consumer<ServiceProviderBuildItem> provider
-    ) {
+            Consumer<RuntimeInitializedClassBuildItem> runtimeInit,
+            Consumer<SubstrateSystemPropertyBuildItem> systemProp,
+            Consumer<ServiceProviderBuildItem> provider) {
         runtimeInit.accept(new RuntimeInitializedClassBuildItem("org.jboss.logmanager.formatters.TrueColorHolder"));
         systemProp.accept(new SubstrateSystemPropertyBuildItem("java.util.logging.manager", "org.jboss.logmanager.LogManager"));
-        provider.accept(new ServiceProviderBuildItem(EmbeddedConfigurator.class.getName(), InitialConfigurator.class.getName()));
+        provider.accept(
+                new ServiceProviderBuildItem(EmbeddedConfigurator.class.getName(), InitialConfigurator.class.getName()));
     }
 
     @BuildStep
@@ -105,9 +104,8 @@ public final class LoggingResourceProcessor {
     @BuildStep
     ConfigurationCustomConverterBuildItem setUpLevelConverter() {
         return new ConfigurationCustomConverterBuildItem(
-            200,
-            Level.class,
-            LevelConverter.class
-        );
+                200,
+                Level.class,
+                LevelConverter.class);
     }
 }

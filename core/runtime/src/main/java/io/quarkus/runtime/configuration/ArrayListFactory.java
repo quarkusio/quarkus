@@ -9,7 +9,8 @@ import java.util.function.IntFunction;
 public final class ArrayListFactory<T> implements IntFunction<ArrayList<T>> {
     private static final ArrayListFactory<?> INSTANCE = new ArrayListFactory<>();
 
-    private ArrayListFactory() {}
+    private ArrayListFactory() {
+    }
 
     public ArrayList<T> apply(final int value) {
         return new ArrayList<>(value);

@@ -10,25 +10,25 @@ import org.jboss.jandex.Type;
 import org.jboss.quarkus.arc.processor.BeanDeploymentValidator;
 import org.jboss.quarkus.arc.processor.DotNames;
 import org.jboss.quarkus.arc.processor.InjectionPointInfo;
-import io.quarkus.deployment.annotations.BuildStep;
 
+import io.quarkus.deployment.annotations.BuildStep;
 import io.smallrye.config.inject.ConfigProducer;
 
 /**
  * 
  */
 public class ConfigBuildStep {
-    
+
     @BuildStep
     AdditionalBeanBuildItem bean() {
         return new AdditionalBeanBuildItem(ConfigProducer.class.getName());
     }
-    
+
     @BuildStep
     BeanDeploymentValidatorBuildItem beanDeploymentValidator() {
         return new BeanDeploymentValidatorBuildItem(new ConfigBeanDeploymentValidator());
     }
-    
+
     static class ConfigBeanDeploymentValidator implements BeanDeploymentValidator {
 
         private static final DotName CONFIG_PROPERTY_NAME = DotName.createSimple(ConfigProperty.class.getName());
@@ -38,7 +38,7 @@ public class ConfigBuildStep {
 
             Config config = ConfigProvider.getConfig();
             ClassLoader tccl = Thread.currentThread().getContextClassLoader();
-            
+
             for (InjectionPointInfo injectionPoint : validationContext.get(Key.INJECTION_POINTS)) {
                 if (injectionPoint.hasDefaultedQualifier()) {
                     continue;
@@ -59,16 +59,33 @@ public class ConfigBuildStep {
                     try {
                         if (injectionPoint.getRequiredType().kind() == Type.Kind.PRIMITIVE) {
                             switch (injectionPoint.getRequiredType().asPrimitiveType().primitive()) {
-                                case BOOLEAN: type = Boolean.TYPE; break;
-                                case BYTE: type = Byte.TYPE; break;
-                                case CHAR: type = Character.TYPE; break;
-                                case DOUBLE: type = Double.TYPE; break;
-                                case INT: type = Integer.TYPE; break;
-                                case FLOAT: type = Float.TYPE; break;
-                                case LONG: type = Long.TYPE; break;
-                                case SHORT: type = Short.TYPE; break;
-                                default: throw new IllegalArgumentException("Not a supported primitive type: "
-                                        + injectionPoint.getRequiredType().asPrimitiveType().primitive());
+                                case BOOLEAN:
+                                    type = Boolean.TYPE;
+                                    break;
+                                case BYTE:
+                                    type = Byte.TYPE;
+                                    break;
+                                case CHAR:
+                                    type = Character.TYPE;
+                                    break;
+                                case DOUBLE:
+                                    type = Double.TYPE;
+                                    break;
+                                case INT:
+                                    type = Integer.TYPE;
+                                    break;
+                                case FLOAT:
+                                    type = Float.TYPE;
+                                    break;
+                                case LONG:
+                                    type = Long.TYPE;
+                                    break;
+                                case SHORT:
+                                    type = Short.TYPE;
+                                    break;
+                                default:
+                                    throw new IllegalArgumentException("Not a supported primitive type: "
+                                            + injectionPoint.getRequiredType().asPrimitiveType().primitive());
                             }
 
                         } else {
@@ -77,7 +94,8 @@ public class ConfigBuildStep {
                         if (!config.getOptionalValue(key, type).isPresent()) {
                             AnnotationValue defaultValue = configProperty.value("defaultValue");
                             if (defaultValue == null || ConfigProperty.UNCONFIGURED_VALUE.equals(defaultValue.asString())) {
-                                validationContext.addDeploymentProblem(new IllegalStateException("No config value exists for: " + key));
+                                validationContext
+                                        .addDeploymentProblem(new IllegalStateException("No config value exists for: " + key));
                             }
                         }
                     } catch (ClassNotFoundException e) {

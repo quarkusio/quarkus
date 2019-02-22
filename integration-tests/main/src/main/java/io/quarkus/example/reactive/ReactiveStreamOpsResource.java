@@ -16,11 +16,12 @@
 
 package io.quarkus.example.reactive;
 
-import io.reactivex.Flowable;
-import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
-
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+
+import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
+
+import io.reactivex.Flowable;
 
 @Path("/reactive")
 public class ReactiveStreamOpsResource {

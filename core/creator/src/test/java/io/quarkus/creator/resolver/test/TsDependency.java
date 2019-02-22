@@ -61,7 +61,7 @@ public class TsDependency {
     }
 
     public TsDependency exclude(TsArtifact artifact) {
-        if(excluded.isEmpty()) {
+        if (excluded.isEmpty()) {
             excluded = new ArrayList<>();
         }
         excluded.add(artifact);
@@ -78,14 +78,14 @@ public class TsDependency {
         }
         dep.setType(artifact.type);
         dep.setVersion(artifact.version);
-        if(scope != null) {
+        if (scope != null) {
             dep.setScope(scope);
         }
-        if(optional) {
+        if (optional) {
             dep.setOptional(optional);
         }
-        if(!excluded.isEmpty()) {
-            for(TsArtifact excluded : excluded) {
+        if (!excluded.isEmpty()) {
+            for (TsArtifact excluded : excluded) {
                 final Exclusion exclusion = new Exclusion();
                 exclusion.setGroupId(excluded.groupId);
                 exclusion.setArtifactId(excluded.artifactId);

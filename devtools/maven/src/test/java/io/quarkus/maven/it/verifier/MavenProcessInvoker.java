@@ -1,12 +1,12 @@
 package io.quarkus.maven.it.verifier;
 
+import java.io.File;
+
 import org.apache.maven.shared.invoker.*;
 import org.apache.maven.shared.utils.cli.CommandLineException;
 import org.apache.maven.shared.utils.cli.Commandline;
 import org.apache.maven.shared.utils.cli.StreamConsumer;
 import org.apache.maven.shared.utils.cli.StreamPumper;
-
-import java.io.File;
 
 /**
  * An implementation of {@link DefaultInvoker} launching Maven, but does not wait for the termination of the process.
@@ -78,7 +78,6 @@ public class MavenProcessInvoker extends DefaultInvoker {
         InvocationOutputHandler errorHandler = request.getErrorHandler(this.errorHandler);
         return executeCommandLine(cli, outputHandler, errorHandler);
     }
-
 
     private static Process executeCommandLine(Commandline cl, StreamConsumer systemOut, StreamConsumer systemErr)
             throws CommandLineException {

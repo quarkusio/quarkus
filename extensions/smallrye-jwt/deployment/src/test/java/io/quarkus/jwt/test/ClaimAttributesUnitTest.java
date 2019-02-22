@@ -7,11 +7,12 @@ import java.util.HashSet;
 import javax.json.Json;
 import javax.json.JsonObject;
 
-import io.quarkus.smallrye.jwt.runtime.auth.ClaimAttributes;
 import org.jose4j.jwt.JwtClaims;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.wildfly.security.authz.Attributes;
+
+import io.quarkus.smallrye.jwt.runtime.auth.ClaimAttributes;
 
 public class ClaimAttributesUnitTest {
     @Test
@@ -22,12 +23,12 @@ public class ClaimAttributesUnitTest {
         ClaimAttributes claimAttributes = new ClaimAttributes(jwtClaims);
         Attributes.Entry groups = claimAttributes.get("groups");
         Assertions.assertNotNull(groups);
-        Assertions.assertEquals(4,  groups.size());
+        Assertions.assertEquals(4, groups.size());
         HashSet<String> groupsSet = new HashSet<>(groups);
-        String[] expectedGroups = {"Echoer",
+        String[] expectedGroups = { "Echoer",
                 "Tester",
                 "group1",
-                "group2"};
+                "group2" };
         Assertions.assertEquals(new HashSet<String>(Arrays.asList(expectedGroups)), groupsSet);
     }
 
@@ -39,43 +40,43 @@ public class ClaimAttributesUnitTest {
         ClaimAttributes claimAttributes = new ClaimAttributes(jwtClaims);
         Attributes.Entry groups = claimAttributes.get("groups");
         Assertions.assertNotNull(groups);
-        Assertions.assertEquals(4,  groups.size());
+        Assertions.assertEquals(4, groups.size());
         HashSet<String> groupsSet = new HashSet<>(groups);
-        String[] expectedGroups = {"Echoer",
+        String[] expectedGroups = { "Echoer",
                 "Tester",
                 "group1",
-                "group2"};
+                "group2" };
         Assertions.assertEquals(new HashSet<String>(Arrays.asList(expectedGroups)), groupsSet);
 
         String upn = claimAttributes.getFirst("upn");
-        Assertions.assertEquals("jdoe@example.com",  upn);
+        Assertions.assertEquals("jdoe@example.com", upn);
         String sub = claimAttributes.getLast("sub");
-        Assertions.assertEquals("24400320",  sub);
+        Assertions.assertEquals("24400320", sub);
         String preferred_username = claimAttributes.getFirst("preferred_username");
-        Assertions.assertEquals("jdoe",  preferred_username);
+        Assertions.assertEquals("jdoe", preferred_username);
 
         String iss = claimAttributes.getFirst("iss");
-        Assertions.assertEquals("https://server.example.com",  iss);
+        Assertions.assertEquals("https://server.example.com", iss);
         String jti = claimAttributes.getFirst("jti");
-        Assertions.assertEquals("a-123",  jti);
+        Assertions.assertEquals("a-123", jti);
         String aud = claimAttributes.getFirst("aud");
-        Assertions.assertEquals("s6BhdRkqt3",  aud);
+        Assertions.assertEquals("s6BhdRkqt3", aud);
         String exp = claimAttributes.getFirst("exp");
-        Assertions.assertEquals("1311281970",  exp);
+        Assertions.assertEquals("1311281970", exp);
         String iat = claimAttributes.getFirst("iat");
-        Assertions.assertEquals("1311280970",  iat);
+        Assertions.assertEquals("1311280970", iat);
         String auth_time = claimAttributes.getFirst("auth_time");
-        Assertions.assertEquals("1311280969",  auth_time);
+        Assertions.assertEquals("1311280969", auth_time);
 
         String customString = claimAttributes.getFirst("customString");
-        Assertions.assertEquals("customStringValue",  customString);
+        Assertions.assertEquals("customStringValue", customString);
         String customInteger = claimAttributes.getFirst("customInteger");
-        Assertions.assertEquals("123456789",  customInteger);
+        Assertions.assertEquals("123456789", customInteger);
         String customDouble = claimAttributes.getFirst("customDouble");
-        Assertions.assertEquals("3.141592653589793",  customDouble);
+        Assertions.assertEquals("3.141592653589793", customDouble);
 
         /*
-            "customDoubleArray": [0.1, 1.1, 2.2, 3.3, 4.4],
+         * "customDoubleArray": [0.1, 1.1, 2.2, 3.3, 4.4],
          */
         Assertions.assertEquals(5, claimAttributes.size("customDoubleArray"));
         Attributes.Entry customDoubleArray = claimAttributes.get("customDoubleArray");

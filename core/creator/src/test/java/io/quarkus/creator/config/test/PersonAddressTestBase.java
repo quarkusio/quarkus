@@ -26,11 +26,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import org.junit.Test;
+
 import io.quarkus.creator.config.reader.PropertiesConfigReader;
 import io.quarkus.creator.config.reader.PropertiesHandler;
 import io.quarkus.creator.config.reader.PropertyLine;
 import io.quarkus.creator.util.IoUtils;
-import org.junit.Test;
 
 /**
  *
@@ -76,7 +77,7 @@ public abstract class PersonAddressTestBase {
              * Store properties in a file
              */
             final Path propsFile = tmpDir.resolve("example.properties");
-            try(OutputStream out = Files.newOutputStream(propsFile)) {
+            try (OutputStream out = Files.newOutputStream(propsFile)) {
                 props.store(out, "");
             }
 
@@ -86,7 +87,7 @@ public abstract class PersonAddressTestBase {
             loaded = PropertiesConfigReader.getInstance(
                     getPropertiesHandler(), // properties handler
                     (PropertyLine line) -> loadedNotMapped.put(line.getName(), line.getValue()) // what to do with the props not recognized by the handler
-                    )
+            )
                     .read(propsFile);
         } finally {
             IoUtils.recursiveDelete(tmpDir);

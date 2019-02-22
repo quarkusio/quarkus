@@ -21,6 +21,7 @@ import java.util.Map;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
+
 import io.quarkus.hibernate.orm.runtime.recording.RecordingDialectFactory;
 
 /**

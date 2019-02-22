@@ -22,8 +22,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import io.quarkus.creator.AppDependency;
 import org.junit.Test;
+
+import io.quarkus.creator.AppDependency;
 
 /**
  *
@@ -52,7 +53,7 @@ public abstract class CollectDependenciesBase extends ResolverSetupCleanup {
 
     protected void install(TsArtifact dep, boolean collected) {
         install(dep);
-        if(collected) {
+        if (collected) {
             addCollectedDep(dep);
         }
     }
@@ -73,7 +74,7 @@ public abstract class CollectDependenciesBase extends ResolverSetupCleanup {
         final TsArtifact artifact = dep.artifact;
         install(artifact);
         root.addDependency(dep);
-        if(!collected) {
+        if (!collected) {
             return;
         }
         addCollectedDep(artifact, dep.scope == null ? "compile" : dep.scope);
@@ -84,7 +85,7 @@ public abstract class CollectDependenciesBase extends ResolverSetupCleanup {
     }
 
     protected void addCollectedDep(final TsArtifact artifact, final String scope) {
-        if(expectedResult.isEmpty()) {
+        if (expectedResult.isEmpty()) {
             expectedResult = new ArrayList<>();
         }
         expectedResult.add(new AppDependency(artifact.toAppArtifact(), scope));

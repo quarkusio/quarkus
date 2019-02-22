@@ -1,6 +1,5 @@
 package io.quarkus.smallrye.jwt.runtime;
 
-
 import java.util.Optional;
 
 import javax.enterprise.inject.Produces;
@@ -53,6 +52,7 @@ public class JsonValueProducer {
     public JsonArray getJsonArray(InjectionPoint ip) {
         return getValue(ip);
     }
+
     @Produces
     @Claim("")
     public Optional<JsonArray> getOptionalJsonArray(InjectionPoint ip) {
@@ -64,6 +64,7 @@ public class JsonValueProducer {
     public JsonObject getJsonObject(InjectionPoint ip) {
         return getValue(ip);
     }
+
     @Produces
     @Claim("")
     public Optional<JsonObject> getOptionalJsonObject(InjectionPoint ip) {

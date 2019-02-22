@@ -19,12 +19,13 @@ package io.quarkus.test.junit4;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.quarkus.test.common.RestAssuredURLManager;
-import io.quarkus.test.common.TestResourceManager;
 import org.junit.runner.Description;
 import org.junit.runner.Result;
 import org.junit.runner.notification.RunListener;
 import org.junit.runner.notification.RunNotifier;
+
+import io.quarkus.test.common.RestAssuredURLManager;
+import io.quarkus.test.common.TestResourceManager;
 
 abstract class AbstractQuarkusRunListener extends RunListener {
 
@@ -94,8 +95,6 @@ abstract class AbstractQuarkusRunListener extends RunListener {
         super.testFinished(description);
         RestAssuredURLManager.clearURL();
     }
-
-
 
     protected abstract void startQuarkus() throws Exception;
 

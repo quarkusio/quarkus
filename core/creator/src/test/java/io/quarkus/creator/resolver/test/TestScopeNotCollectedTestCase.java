@@ -30,17 +30,16 @@ public class TestScopeNotCollectedTestCase extends CollectDependenciesBase {
         installAsDep(
                 new TsDependency(
                         new TsArtifact("test-dep")
-                        .addDependency(new TsArtifact("common", "1")),
+                                .addDependency(new TsArtifact("common", "1")),
                         "test"),
                 false);
-
 
         final TsArtifact common2 = new TsArtifact("common", "2");
         install(common2, true);
 
         installAsDep(
                 new TsArtifact("required-dep-c")
-                .addDependency(common2),
+                        .addDependency(common2),
                 true);
     }
 }

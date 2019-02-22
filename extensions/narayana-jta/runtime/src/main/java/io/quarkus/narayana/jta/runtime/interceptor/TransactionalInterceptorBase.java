@@ -16,7 +16,6 @@
 
 package io.quarkus.narayana.jta.runtime.interceptor;
 
-
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.util.Set;
@@ -28,10 +27,11 @@ import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.Transactional;
 
-import io.quarkus.arc.runtime.InterceptorBindings;
 import org.jboss.tm.usertx.client.ServerVMClientUserTransaction;
 
 import com.arjuna.ats.jta.logging.jtaLogger;
+
+import io.quarkus.arc.runtime.InterceptorBindings;
 
 /**
  * @author paul.robinson@redhat.com 02/05/2013

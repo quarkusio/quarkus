@@ -15,13 +15,10 @@
  */
 package io.quarkus.smallrye.restclient.runtime;
 
-import io.smallrye.restclient.header.ClientHeaderProvider;
-import io.smallrye.restclient.header.ClientHeaderProviders;
-import io.smallrye.restclient.header.HttpHeadersContextProvider;
-import io.smallrye.restclient.header.IncomingHeadersProvider;
-import io.smallrye.restclient.utils.ClientRequestContextUtils;
-import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
-import org.jboss.resteasy.core.ResteasyContext;
+import static io.smallrye.restclient.utils.ListCastUtils.castToListOfStrings;
+
+import java.lang.reflect.Method;
+import java.util.*;
 
 import javax.annotation.Priority;
 import javax.ws.rs.client.ClientRequestContext;
@@ -29,10 +26,15 @@ import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedHashMap;
 import javax.ws.rs.core.MultivaluedMap;
-import java.lang.reflect.Method;
-import java.util.*;
 
-import static io.smallrye.restclient.utils.ListCastUtils.castToListOfStrings;
+import org.eclipse.microprofile.rest.client.ext.ClientHeadersFactory;
+import org.jboss.resteasy.core.ResteasyContext;
+
+import io.smallrye.restclient.header.ClientHeaderProvider;
+import io.smallrye.restclient.header.ClientHeaderProviders;
+import io.smallrye.restclient.header.HttpHeadersContextProvider;
+import io.smallrye.restclient.header.IncomingHeadersProvider;
+import io.smallrye.restclient.utils.ClientRequestContextUtils;
 
 /**
  * First the headers from `@ClientHeaderParam` annotations are applied,
@@ -42,8 +44,8 @@ import static io.smallrye.restclient.utils.ListCastUtils.castToListOfStrings;
  * are passed to it and it can overwrite them.
  *
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- * <br>
- * Date: 1/12/19
+ *         <br>
+ *         Date: 1/12/19
  */
 @Priority(Integer.MIN_VALUE)
 public class ClientHeadersRequestFilter implements ClientRequestFilter {
@@ -57,8 +59,7 @@ public class ClientHeadersRequestFilter implements ClientRequestFilter {
     }
 
     private static IncomingHeadersProvider initializeProvider() {
-        ServiceLoader<IncomingHeadersProvider> providerLoader =
-                ServiceLoader.load(IncomingHeadersProvider.class);
+        ServiceLoader<IncomingHeadersProvider> providerLoader = ServiceLoader.load(IncomingHeadersProvider.class);
 
         Iterator<IncomingHeadersProvider> providers = providerLoader.iterator();
 
@@ -87,14 +88,12 @@ public class ClientHeadersRequestFilter implements ClientRequestFilter {
         Optional<ClientHeadersFactory> factory = ClientHeaderProviders.getFactory(method.getDeclaringClass());
 
         requestContext.getHeaders().forEach(
-                (key, values) -> headers.put(key, castToListOfStrings(values))
-        );
+                (key, values) -> headers.put(key, castToListOfStrings(values)));
 
         factory.map(f -> updateHeaders(headers, f))
                 .orElse(headers)
                 .forEach(
-                        (key, values) -> requestContext.getHeaders().put(key, castToListOfObjects(values))
-                );
+                        (key, values) -> requestContext.getHeaders().put(key, castToListOfObjects(values)));
 
         ResteasyContext.getContextDataMap().put(HttpHeaders.class, new HttpHeadersContextProvider(requestContext));
     }

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 package io.quarkus.hibernate.validator.runtime;
 
 import javax.validation.Validator;

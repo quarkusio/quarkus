@@ -1,6 +1,5 @@
 package io.quarkus.panache.jpa;
 
-
 public class EntityField {
 
     final String name;

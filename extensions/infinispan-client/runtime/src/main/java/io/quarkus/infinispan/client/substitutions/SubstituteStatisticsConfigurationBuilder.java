@@ -7,12 +7,13 @@ import com.oracle.svm.core.annotate.TargetClass;
 
 /**
  * Don't allow the user to enable jmx in substrate
+ * 
  * @author William Burns
  */
 @TargetClass(StatisticsConfigurationBuilder.class)
 public final class SubstituteStatisticsConfigurationBuilder {
-   @Substitute
-   public StatisticsConfigurationBuilder jmxEnabled(boolean enabled) {
-      throw new UnsupportedOperationException("JMX is not available in Substrate");
-   }
+    @Substitute
+    public StatisticsConfigurationBuilder jmxEnabled(boolean enabled) {
+        throw new UnsupportedOperationException("JMX is not available in Substrate");
+    }
 }

@@ -16,11 +16,11 @@
 
 package io.quarkus.runtime.graal;
 
-import io.quarkus.runtime.Quarkus;
-
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
+
+import io.quarkus.runtime.Quarkus;
 
 /**
  * class that avoids the use of reflection in Quarkus when actually running
@@ -35,7 +35,6 @@ final class QuarkusReplacement {
     public static void main(String... args) throws Exception {
         GenMain.main(args);
     }
-
 
     @TargetClass(className = "io.quarkus.runner.GeneratedMain")
     static final class GenMain {

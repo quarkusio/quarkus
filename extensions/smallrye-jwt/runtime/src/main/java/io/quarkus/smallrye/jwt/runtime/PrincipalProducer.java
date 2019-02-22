@@ -6,6 +6,7 @@ import javax.enterprise.inject.Alternative;
 import javax.enterprise.inject.Produces;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
+
 import io.quarkus.smallrye.jwt.runtime.auth.JWTAccount;
 
 /**

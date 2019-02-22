@@ -2,10 +2,11 @@ package io.quarkus.security;
 
 import java.util.List;
 
-import io.undertow.security.idm.IdentityManager;
 import org.jboss.builder.item.MultiBuildItem;
+
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.runtime.RuntimeValue;
+import io.undertow.security.idm.IdentityManager;
 
 /**
  * Used to identify which {@linkplain IdentityManager} to install in the deployment. Even though this is a MultiBuildItem,

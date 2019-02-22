@@ -17,6 +17,7 @@
 package io.quarkus.hibernate.orm;
 
 import org.hibernate.type.EnumType;
+
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
@@ -27,7 +28,7 @@ import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
  * FIXME Find a reliable way to identify these and maintain the list accurate: the current list
  * is likely not complete as it was identified via a dumb "trial&error" strategy.
  *
- * @author Sanne Grinovero  <sanne@hibernate.org>
+ * @author Sanne Grinovero <sanne@hibernate.org>
  */
 public final class HibernateOrmReflections {
 
@@ -39,13 +40,16 @@ public final class HibernateOrmReflections {
         allConstructors(reflectiveClass, org.hibernate.persister.collection.OneToManyPersister.class);
         allConstructors(reflectiveClass, org.hibernate.persister.collection.BasicCollectionPersister.class);
         simpleConstructor(reflectiveClass, org.hibernate.persister.entity.SingleTableEntityPersister.class);
-        simpleConstructor(reflectiveClass, org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorBuilderImpl.class);
+        simpleConstructor(reflectiveClass,
+                org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorBuilderImpl.class);
         simpleConstructor(reflectiveClass, org.hibernate.id.enhanced.SequenceStyleGenerator.class);
         simpleConstructor(reflectiveClass, org.hibernate.boot.model.naming.ImplicitNamingStrategyJpaCompliantImpl.class);
-        simpleConstructor(reflectiveClass, org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorBuilderImpl.class);
+        simpleConstructor(reflectiveClass,
+                org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorBuilderImpl.class);
         simpleConstructor(reflectiveClass, EnumType.class);
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, com.arjuna.ats.jta.UserTransaction.class.getName()));
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, com.arjuna.ats.jta.TransactionManager.class.getName()));
+        reflectiveClass
+                .produce(new ReflectiveClassBuildItem(true, false, com.arjuna.ats.jta.TransactionManager.class.getName()));
 
         simpleConstructor(reflectiveClass, org.hibernate.hql.internal.ast.HqlToken.class);
         simpleConstructor(reflectiveClass, org.hibernate.hql.internal.ast.tree.Node.class);

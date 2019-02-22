@@ -16,7 +16,6 @@
  */
 package io.quarkus.creator.phase.curate;
 
-
 /**
  * Indicates which update policy should be applied.
  *
@@ -24,21 +23,18 @@ package io.quarkus.creator.phase.curate;
  */
 public enum VersionUpdate {
 
-    LATEST("latest"),
-    NEXT("next"),
-    NONE("none"),
-    UNKNOWN(null);
+    LATEST("latest"), NEXT("next"), NONE("none"), UNKNOWN(null);
 
     private final String name;
 
     static VersionUpdate of(String name) {
-        if(LATEST.name.equals(name)) {
+        if (LATEST.name.equals(name)) {
             return LATEST;
         }
-        if(NEXT.name.equals(name)) {
+        if (NEXT.name.equals(name)) {
             return NEXT;
         }
-        if(NONE.name.equals(name)) {
+        if (NONE.name.equals(name)) {
             return NONE;
         }
         return UNKNOWN;

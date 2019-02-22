@@ -17,6 +17,5 @@
 package io.quarkus.example.jpa;
 
 public enum Status {
-    LIVING,
-    DECEASED
+    LIVING, DECEASED
 }

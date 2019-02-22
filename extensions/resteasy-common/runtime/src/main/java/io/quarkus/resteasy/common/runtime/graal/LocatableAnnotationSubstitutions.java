@@ -26,7 +26,7 @@ import com.oracle.svm.core.annotate.TargetClass;
 final class LocatableAnnotationSubstitutions {
 
     @Substitute
-    public static <A extends Annotation> A create(A annotation, Locatable parentSourcePos ) {
+    public static <A extends Annotation> A create(A annotation, Locatable parentSourcePos) {
         return annotation;
     }
 

@@ -29,7 +29,8 @@ public class DataSourceTemplate {
             public void created(BeanContainer beanContainer) {
                 DataSourceProducer producer = beanContainer.instance(DataSourceProducer.class);
                 try {
-                    producer.setDriver(Class.forName(config.driver.get(), true, Thread.currentThread().getContextClassLoader()));
+                    producer.setDriver(
+                            Class.forName(config.driver.get(), true, Thread.currentThread().getContextClassLoader()));
                 } catch (ClassNotFoundException e) {
                     throw new RuntimeException(e);
                 }

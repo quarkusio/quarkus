@@ -22,8 +22,8 @@ final class Target_org_wildfly_security_password_interfaces_ClearPassword {
         System.arraycopy(password, 0, clone, 0, password.length);
 
         // Cast the RawClearPassword replacement to ClearPassword and return it
-        ClearPassword pass = (ClearPassword) (Object)
-             new Target_org_wildfly_security_password_interfaces_RawClearPassword(algorithm, clone);
+        ClearPassword pass = (ClearPassword) (Object) new Target_org_wildfly_security_password_interfaces_RawClearPassword(
+                algorithm, clone);
         return pass;
     }
 }

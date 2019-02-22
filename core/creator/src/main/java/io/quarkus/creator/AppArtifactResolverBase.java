@@ -14,7 +14,7 @@ public abstract class AppArtifactResolverBase implements AppArtifactResolver {
     @Override
     public Path resolve(AppArtifact artifact) throws AppCreatorException {
         Path path = artifact.getPath();
-        if(path != null) {
+        if (path != null) {
             return path;
         }
         doResolve(artifact);

@@ -45,12 +45,6 @@ import org.jboss.builder.BuildStep;
 import org.jboss.builder.item.BuildItem;
 import org.jboss.invocation.proxy.ProxyConfiguration;
 import org.jboss.invocation.proxy.ProxyFactory;
-import io.quarkus.runner.RuntimeRunner;
-import io.quarkus.runtime.LaunchMode;
-import io.quarkus.test.common.PathTestHelper;
-import io.quarkus.test.common.RestAssuredURLManager;
-import io.quarkus.test.common.TestResourceManager;
-import io.quarkus.test.common.http.TestHttpResourceManager;
 import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -63,10 +57,18 @@ import org.junit.jupiter.api.extension.TestInstanceFactory;
 import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 
+import io.quarkus.runner.RuntimeRunner;
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.test.common.PathTestHelper;
+import io.quarkus.test.common.RestAssuredURLManager;
+import io.quarkus.test.common.TestResourceManager;
+import io.quarkus.test.common.http.TestHttpResourceManager;
+
 /**
  * A test extension for testing Quarkus internals, not intended for end user consumption
  */
-public class QuarkusUnitTest implements BeforeAllCallback, AfterAllCallback, TestInstanceFactory, BeforeEachCallback, AfterEachCallback {
+public class QuarkusUnitTest
+        implements BeforeAllCallback, AfterAllCallback, TestInstanceFactory, BeforeEachCallback, AfterEachCallback {
 
     static {
         System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
@@ -98,7 +100,8 @@ public class QuarkusUnitTest implements BeforeAllCallback, AfterAllCallback, Tes
         return this;
     }
 
-    public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext) throws TestInstantiationException {
+    public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext)
+            throws TestInstantiationException {
         try {
             Class testClass = extensionContext.getRequiredTestClass();
             ProxyFactory<?> factory = new ProxyFactory<>(new ProxyConfiguration<>()
@@ -107,7 +110,7 @@ public class QuarkusUnitTest implements BeforeAllCallback, AfterAllCallback, Tes
                     .setSuperClass(testClass));
 
             Object actualTestInstance = extensionContext.getStore(ExtensionContext.Namespace.GLOBAL).get(testClass.getName());
-            if(actualTestInstance != null) { //happens if a deployment exception is expected
+            if (actualTestInstance != null) { //happens if a deployment exception is expected
                 TestHttpResourceManager.inject(actualTestInstance);
             }
             return factory.newInstance(new InvocationHandler() {
@@ -124,7 +127,6 @@ public class QuarkusUnitTest implements BeforeAllCallback, AfterAllCallback, Tes
             throw new TestInstantiationException("Unable to create test proxy", e);
         }
     }
-
 
     private void exportArchive(Path deploymentDir, Class<?> testClass) {
         try {
@@ -182,7 +184,8 @@ public class QuarkusUnitTest implements BeforeAllCallback, AfterAllCallback, Tes
             try {
                 //this is a bit of a hack to avoid requiring a dep on the arc extension,
                 //as this would mean we cannot use this to test the extension
-                Class<? extends BuildItem> buildItem = (Class<? extends BuildItem>) Class.forName("io.quarkus.arc.deployment.AdditionalBeanBuildItem");
+                Class<? extends BuildItem> buildItem = (Class<? extends BuildItem>) Class
+                        .forName("io.quarkus.arc.deployment.AdditionalBeanBuildItem");
                 customiers.add(new Consumer<BuildChainBuilder>() {
                     @Override
                     public void accept(BuildChainBuilder buildChainBuilder) {
@@ -190,8 +193,9 @@ public class QuarkusUnitTest implements BeforeAllCallback, AfterAllCallback, Tes
                             @Override
                             public void execute(BuildContext context) {
                                 try {
-                                    Constructor<? extends BuildItem> ctor = buildItem.getConstructor(boolean.class, String[].class);
-                                    context.produce(ctor.newInstance(false, new String[]{testClass.getName()}));
+                                    Constructor<? extends BuildItem> ctor = buildItem.getConstructor(boolean.class,
+                                            String[].class);
+                                    context.produce(ctor.newInstance(false, new String[] { testClass.getName() }));
                                 } catch (Exception e) {
                                     throw new RuntimeException(e);
                                 }
@@ -220,7 +224,8 @@ public class QuarkusUnitTest implements BeforeAllCallback, AfterAllCallback, Tes
                 started = true;
                 Instance<?> factory;
                 try {
-                    factory = CDI.current().select(Class.forName(testClass.getName(), true, Thread.currentThread().getContextClassLoader()));
+                    factory = CDI.current()
+                            .select(Class.forName(testClass.getName(), true, Thread.currentThread().getContextClassLoader()));
                 } catch (Exception e) {
                     throw new TestInstantiationException("Failed to create test instance", e);
                 }
@@ -259,7 +264,7 @@ public class QuarkusUnitTest implements BeforeAllCallback, AfterAllCallback, Tes
             if (runtimeRunner != null) {
                 runtimeRunner.close();
             }
-            if(afterUndeployListener != null) {
+            if (afterUndeployListener != null) {
                 afterUndeployListener.run();
             }
         } finally {
@@ -301,6 +306,7 @@ public class QuarkusUnitTest implements BeforeAllCallback, AfterAllCallback, Tes
     public void beforeEach(ExtensionContext context) throws Exception {
         RestAssuredURLManager.setURL();
     }
+
     public Runnable getAfterUndeployListener() {
         return afterUndeployListener;
     }

@@ -17,6 +17,5 @@
 package io.quarkus.example.panache;
 
 public enum Status {
-    LIVING,
-    DECEASED
+    LIVING, DECEASED
 }

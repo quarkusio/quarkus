@@ -1,24 +1,26 @@
 package io.quarkus.example.test;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.persistence.EntityManagerFactory;
+
 import org.hibernate.SessionFactory;
-import io.quarkus.example.infinispancachejpa.correctness.Family;
-import io.quarkus.example.infinispancachejpa.correctness.Member;
-import io.quarkus.example.infinispancachejpa.correctness.readwrite.FamilyRW;
-import io.quarkus.example.infinispancachejpa.correctness.readwrite.MemberRW;
-import io.quarkus.test.QuarkusUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.persistence.EntityManagerFactory;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import io.quarkus.example.infinispancachejpa.correctness.Family;
+import io.quarkus.example.infinispancachejpa.correctness.Member;
+import io.quarkus.example.infinispancachejpa.correctness.readwrite.FamilyRW;
+import io.quarkus.example.infinispancachejpa.correctness.readwrite.MemberRW;
+import io.quarkus.test.QuarkusUnitTest;
 
 /**
  * For logging, run with: -Dorg.jboss.logging.provider=log4j2
@@ -55,11 +57,10 @@ public class InfinispanCacheJPANonStrictCorrectnessTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() ->
-                    ShrinkWrap.create(JavaArchive.class)
-                        .addAsManifestResource("META-INF/nonstrict-persistence.xml", "persistence.xml")
-                        .addAsManifestResource("META-INF/nonstrict-microprofile-config.properties", "microprofile-config.properties")
-            );
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addAsManifestResource("META-INF/nonstrict-persistence.xml", "persistence.xml")
+                    .addAsManifestResource("META-INF/nonstrict-microprofile-config.properties",
+                            "microprofile-config.properties"));
 
     @Test
     public void test() throws Exception {

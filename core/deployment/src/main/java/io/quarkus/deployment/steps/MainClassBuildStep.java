@@ -33,9 +33,10 @@ import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
 import org.jboss.protean.gizmo.TryBlock;
+
+import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
 import io.quarkus.deployment.builditem.ClassOutputBuildItem;
@@ -62,20 +63,21 @@ class MainClassBuildStep {
 
     @BuildStep
     MainClassBuildItem build(List<StaticBytecodeRecorderBuildItem> staticInitTasks,
-                             List<ObjectSubstitutionBuildItem> substitutions,
-                             List<MainBytecodeRecorderBuildItem> mainMethod,
-                             List<SystemPropertyBuildItem> properties,
-                             Optional<HttpServerBuildItem> httpServer,
-                             List<FeatureBuildItem> features,
-                             BuildProducer<ApplicationClassNameBuildItem> appClassNameProducer,
-                             List<BytecodeRecorderObjectLoaderBuildItem> loaders,
-                             ClassOutputBuildItem classOutput) {
+            List<ObjectSubstitutionBuildItem> substitutions,
+            List<MainBytecodeRecorderBuildItem> mainMethod,
+            List<SystemPropertyBuildItem> properties,
+            Optional<HttpServerBuildItem> httpServer,
+            List<FeatureBuildItem> features,
+            BuildProducer<ApplicationClassNameBuildItem> appClassNameProducer,
+            List<BytecodeRecorderObjectLoaderBuildItem> loaders,
+            ClassOutputBuildItem classOutput) {
 
         String appClassName = APP_CLASS + COUNT.incrementAndGet();
         appClassNameProducer.produce(new ApplicationClassNameBuildItem(appClassName));
 
         // Application class
-        ClassCreator file = new ClassCreator(ClassOutput.gizmoAdaptor(classOutput.getClassOutput(), true), appClassName, null, Application.class.getName());
+        ClassCreator file = new ClassCreator(ClassOutput.gizmoAdaptor(classOutput.getClassOutput(), true), appClassName, null,
+                Application.class.getName());
 
         // Application class: static init
 
@@ -87,7 +89,8 @@ class MainClassBuildStep {
 
         //very first thing is to set system props (for build time)
         for (SystemPropertyBuildItem i : properties) {
-            mv.invokeStaticMethod(ofMethod(System.class, "setProperty", String.class, String.class, String.class), mv.load(i.getKey()), mv.load(i.getValue()));
+            mv.invokeStaticMethod(ofMethod(System.class, "setProperty", String.class, String.class, String.class),
+                    mv.load(i.getKey()), mv.load(i.getValue()));
         }
 
         mv.invokeStaticMethod(MethodDescriptor.ofMethod(Timing.class, "staticInitStarted", void.class));
@@ -96,7 +99,7 @@ class MainClassBuildStep {
         TryBlock tryBlock = mv.tryBlock();
         for (StaticBytecodeRecorderBuildItem holder : staticInitTasks) {
             final BytecodeRecorderImpl recorder = holder.getBytecodeRecorder();
-            if (! recorder.isEmpty()) {
+            if (!recorder.isEmpty()) {
                 // Register substitutions in all recorders
                 for (ObjectSubstitutionBuildItem sub : substitutions) {
                     ObjectSubstitutionBuildItem.Holder holder1 = sub.holder;
@@ -108,7 +111,8 @@ class MainClassBuildStep {
                 recorder.writeBytecode(classOutput.getClassOutput());
 
                 ResultHandle dup = tryBlock.newInstance(ofConstructor(recorder.getClassName()));
-                tryBlock.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup, startupContext);
+                tryBlock.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup,
+                        startupContext);
             }
         }
         tryBlock.returnValue(null);
@@ -125,7 +129,8 @@ class MainClassBuildStep {
         // very first thing is to set system props (for run time, which use substitutions for a different
         // storage from build-time)
         for (SystemPropertyBuildItem i : properties) {
-            mv.invokeStaticMethod(ofMethod(System.class, "setProperty", String.class, String.class, String.class), mv.load(i.getKey()), mv.load(i.getValue()));
+            mv.invokeStaticMethod(ofMethod(System.class, "setProperty", String.class, String.class, String.class),
+                    mv.load(i.getKey()), mv.load(i.getValue()));
         }
 
         mv.invokeStaticMethod(ofMethod(Timing.class, "mainStarted", void.class));
@@ -133,13 +138,14 @@ class MainClassBuildStep {
         tryBlock = mv.tryBlock();
         for (MainBytecodeRecorderBuildItem holder : mainMethod) {
             final BytecodeRecorderImpl recorder = holder.getBytecodeRecorder();
-            if (! recorder.isEmpty()) {
+            if (!recorder.isEmpty()) {
                 for (BytecodeRecorderObjectLoaderBuildItem item : loaders) {
                     recorder.registerObjectLoader(item.getObjectLoader());
                 }
                 recorder.writeBytecode(classOutput.getClassOutput());
                 ResultHandle dup = tryBlock.newInstance(ofConstructor(recorder.getClassName()));
-                tryBlock.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup, startupContext);
+                tryBlock.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup,
+                        startupContext);
             }
         }
 
@@ -150,7 +156,8 @@ class MainClassBuildStep {
                 .collect(Collectors.joining(", ")));
         ResultHandle serverHandle = httpServer.isPresent() ? tryBlock.load("Listening on: http://" + httpServer.get()
                 .getHost() + ":" + httpServer.get().getPort()) : tryBlock.load("");
-        tryBlock.invokeStaticMethod(ofMethod(Timing.class, "printStartupTime", void.class, String.class, String.class, String.class),
+        tryBlock.invokeStaticMethod(
+                ofMethod(Timing.class, "printStartupTime", void.class, String.class, String.class, String.class),
                 tryBlock.load(Version.getVersion()), featuresHandle, serverHandle);
 
         cb = tryBlock.addCatch(Throwable.class);
@@ -172,14 +179,16 @@ class MainClassBuildStep {
 
         // Main class
 
-        file = new ClassCreator(ClassOutput.gizmoAdaptor(classOutput.getClassOutput(), true), MAIN_CLASS, null, Object.class.getName());
+        file = new ClassCreator(ClassOutput.gizmoAdaptor(classOutput.getClassOutput(), true), MAIN_CLASS, null,
+                Object.class.getName());
 
         mv = file.getMethodCreator("main", void.class, String[].class);
         mv.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
 
         final ResultHandle appClassInstance = mv.newInstance(ofConstructor(appClassName));
         // run the app
-        mv.invokeVirtualMethod(ofMethod(Application.class, "run", void.class, String[].class), appClassInstance, mv.getMethodParam(0));
+        mv.invokeVirtualMethod(ofMethod(Application.class, "run", void.class, String[].class), appClassInstance,
+                mv.getMethodParam(0));
 
         mv.returnValue(null);
 
@@ -188,4 +197,3 @@ class MainClassBuildStep {
     }
 
 }
-

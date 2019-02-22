@@ -14,11 +14,11 @@ public class Dog extends PanacheEntityBase {
     @Id
     @GeneratedValue
     public Integer id;
-    
+
     public String name;
-    
+
     public String race;
-    
+
     @ManyToOne
     public Person owner;
 

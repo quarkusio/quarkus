@@ -1,9 +1,10 @@
 package io.quarkus.deployment.configuration;
 
-import io.smallrye.config.SmallRyeConfig;
 import org.jboss.protean.gizmo.BytecodeCreator;
 import org.jboss.protean.gizmo.ResultHandle;
+
 import io.quarkus.runtime.configuration.NameIterator;
+import io.smallrye.config.SmallRyeConfig;
 
 /**
  * A node which contains other nodes.
@@ -24,7 +25,8 @@ public abstract class CompoundConfigType extends ConfigType {
      */
     abstract Object getChildObject(NameIterator name, SmallRyeConfig config, Object self, String childName);
 
-    abstract ResultHandle generateGetChildObject(BytecodeCreator body, ResultHandle name, ResultHandle config, ResultHandle self, String childName);
+    abstract ResultHandle generateGetChildObject(BytecodeCreator body, ResultHandle name, ResultHandle config,
+            ResultHandle self, String childName);
 
     /**
      * Set a child object on the given instance.
@@ -36,7 +38,8 @@ public abstract class CompoundConfigType extends ConfigType {
      */
     abstract void setChildObject(NameIterator name, Object self, String containingName, Object value);
 
-    abstract void generateSetChildObject(BytecodeCreator body, ResultHandle name, ResultHandle self, String containingName, ResultHandle value);
+    abstract void generateSetChildObject(BytecodeCreator body, ResultHandle name, ResultHandle self, String containingName,
+            ResultHandle value);
 
     /**
      * Get or create the instance of this root, recursively adding it to its parent if necessary.
@@ -51,5 +54,6 @@ public abstract class CompoundConfigType extends ConfigType {
 
     abstract void acceptConfigurationValueIntoLeaf(LeafConfigType leafType, NameIterator name, SmallRyeConfig config);
 
-    abstract void generateAcceptConfigurationValueIntoLeaf(BytecodeCreator body, LeafConfigType leafType, ResultHandle name, ResultHandle config);
+    abstract void generateAcceptConfigurationValueIntoLeaf(BytecodeCreator body, LeafConfigType leafType, ResultHandle name,
+            ResultHandle config);
 }

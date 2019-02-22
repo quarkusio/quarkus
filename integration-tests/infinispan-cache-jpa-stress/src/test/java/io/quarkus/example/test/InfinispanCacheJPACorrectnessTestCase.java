@@ -1,20 +1,5 @@
 package io.quarkus.example.test;
 
-import org.hibernate.*;
-import org.hibernate.cache.spi.Region;
-import org.hibernate.criterion.Restrictions;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.exception.ConstraintViolationException;
-import org.hibernate.exception.LockAcquisitionException;
-import org.hibernate.resource.transaction.spi.TransactionStatus;
-import org.infinispan.quarkus.hibernate.cache.PutFromLoadValidator;
-import org.jboss.logging.Logger;
-import io.quarkus.example.infinispancachejpa.correctness.Family;
-import io.quarkus.example.infinispancachejpa.correctness.Member;
-
-import javax.persistence.EntityNotFoundException;
-import javax.persistence.PersistenceException;
-import javax.transaction.RollbackException;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -32,6 +17,23 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import javax.persistence.EntityNotFoundException;
+import javax.persistence.PersistenceException;
+import javax.transaction.RollbackException;
+
+import org.hibernate.*;
+import org.hibernate.cache.spi.Region;
+import org.hibernate.criterion.Restrictions;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.exception.ConstraintViolationException;
+import org.hibernate.exception.LockAcquisitionException;
+import org.hibernate.resource.transaction.spi.TransactionStatus;
+import org.infinispan.quarkus.hibernate.cache.PutFromLoadValidator;
+import org.jboss.logging.Logger;
+
+import io.quarkus.example.infinispancachejpa.correctness.Family;
+import io.quarkus.example.infinispancachejpa.correctness.Member;
 
 public class InfinispanCacheJPACorrectnessTestCase {
     private static final Logger log = Logger.getLogger(InfinispanCacheJPACorrectnessTestCase.class);
@@ -55,17 +57,21 @@ public class InfinispanCacheJPACorrectnessTestCase {
     private BlockingDeque<Exception> exceptions = new LinkedBlockingDeque<>();
 
     private final static Class[][] EXPECTED = {
-            { javax.persistence.RollbackException.class, PersistenceException.class, TransactionException.class, RollbackException.class, StaleObjectStateException.class },
-            { javax.persistence.RollbackException.class, PersistenceException.class, TransactionException.class, RollbackException.class, PessimisticLockException.class },
+            { javax.persistence.RollbackException.class, PersistenceException.class, TransactionException.class,
+                    RollbackException.class, StaleObjectStateException.class },
+            { javax.persistence.RollbackException.class, PersistenceException.class, TransactionException.class,
+                    RollbackException.class, PessimisticLockException.class },
             { TransactionException.class, RollbackException.class, LockAcquisitionException.class },
-            { StaleStateException.class, PessimisticLockException.class},
-            { StaleStateException.class, ObjectNotFoundException.class},
-            { StaleStateException.class, ConstraintViolationException.class},
-            { StaleStateException.class, LockAcquisitionException.class},
+            { StaleStateException.class, PessimisticLockException.class },
+            { StaleStateException.class, ObjectNotFoundException.class },
+            { StaleStateException.class, ConstraintViolationException.class },
+            { StaleStateException.class, LockAcquisitionException.class },
             { javax.persistence.RollbackException.class, PersistenceException.class, ConstraintViolationException.class },
             { PersistenceException.class, LockAcquisitionException.class },
-            { javax.persistence.RollbackException.class, javax.persistence.PessimisticLockException.class, PessimisticLockException.class },
-            { javax.persistence.RollbackException.class, javax.persistence.OptimisticLockException.class, StaleStateException.class },
+            { javax.persistence.RollbackException.class, javax.persistence.PessimisticLockException.class,
+                    PessimisticLockException.class },
+            { javax.persistence.RollbackException.class, javax.persistence.OptimisticLockException.class,
+                    StaleStateException.class },
             { PessimisticLockException.class },
             { StaleObjectStateException.class },
             { EntityNotFoundException.class },
@@ -78,11 +84,8 @@ public class InfinispanCacheJPACorrectnessTestCase {
     private final Supplier<Family> familyCtor;
 
     public InfinispanCacheJPACorrectnessTestCase(
-            SessionFactory sessionFactory
-            , Class<? extends Family> familyClass
-            , Function<Family, ? extends Member> memberCtor
-            , Supplier<Family> familyCtor
-    ) {
+            SessionFactory sessionFactory, Class<? extends Family> familyClass, Function<Family, ? extends Member> memberCtor,
+            Supplier<Family> familyCtor) {
         this.sessionFactory = sessionFactory;
         this.familyClass = familyClass;
         this.memberCtor = memberCtor;
@@ -100,7 +103,7 @@ public class InfinispanCacheJPACorrectnessTestCase {
         for (int i = 0; i < NUM_THREADS; ++i) {
             final int I = i;
             futures.add(exec.submit(() -> {
-                Thread.currentThread().setName("Node" + (char)('A') + "-thread-" + I);
+                Thread.currentThread().setName("Node" + (char) ('A') + "-thread-" + I);
                 while (running) {
                     Operation operation;
                     if (familyIds.size() < NUM_FAMILIES) {
@@ -124,12 +127,14 @@ public class InfinispanCacheJPACorrectnessTestCase {
                 synchronized (allFamilyNames) {
                     for (Map.Entry<Integer, List<Log<String>>> entry : familyNames.get().entrySet()) {
                         List<Log<String>> list = allFamilyNames.get(entry.getKey());
-                        if (list == null) allFamilyNames.put(entry.getKey(), list = new ArrayList<>());
+                        if (list == null)
+                            allFamilyNames.put(entry.getKey(), list = new ArrayList<>());
                         list.addAll(entry.getValue());
                     }
                     for (Map.Entry<Integer, List<Log<Set<String>>>> entry : familyMembers.get().entrySet()) {
                         List<Log<Set<String>>> list = allFamilyMembers.get(entry.getKey());
-                        if (list == null) allFamilyMembers.put(entry.getKey(), list = new ArrayList<>());
+                        if (list == null)
+                            allFamilyMembers.put(entry.getKey(), list = new ArrayList<>());
                         list.addAll(entry.getValue());
                     }
                 }
@@ -138,10 +143,12 @@ public class InfinispanCacheJPACorrectnessTestCase {
         }
 
         Exception failure = exceptions.poll(EXECUTION_TIME, TimeUnit.MILLISECONDS);
-        if (failure != null) exceptions.addFirst(failure);
+        if (failure != null)
+            exceptions.addFirst(failure);
         running = false;
         exec.shutdown();
-        if (!exec.awaitTermination(1000, TimeUnit.SECONDS)) throw new IllegalStateException();
+        if (!exec.awaitTermination(1000, TimeUnit.SECONDS))
+            throw new IllegalStateException();
         for (Future<Void> f : futures) {
             f.get(); // check for exceptions
         }
@@ -215,7 +222,7 @@ public class InfinispanCacheJPACorrectnessTestCase {
                 continue;
             }
             ConcurrentMap<Object, Object> map = ((com.github.benmanes.caffeine.cache.Cache) pp.get(validator)).asMap();
-            for (Iterator<Map.Entry<Object, Object>> iterator = map.entrySet().iterator(); iterator.hasNext(); ) {
+            for (Iterator<Map.Entry<Object, Object>> iterator = map.entrySet().iterator(); iterator.hasNext();) {
                 Map.Entry entry = iterator.next();
                 if (getInvalidators == null) {
                     getInvalidators = entry.getValue().getClass().getMethod("getInvalidators");
@@ -231,7 +238,8 @@ public class InfinispanCacheJPACorrectnessTestCase {
         // poll until all invalidations come
         long deadline = System.currentTimeMillis() + 30000;
         while (System.currentTimeMillis() < deadline) {
-            iterateInvalidators(delayed, getInvalidators, (k, i) -> {});
+            iterateInvalidators(delayed, getInvalidators, (k, i) -> {
+            });
             if (delayed.isEmpty()) {
                 break;
             }
@@ -243,14 +251,15 @@ public class InfinispanCacheJPACorrectnessTestCase {
         }
     }
 
-    private void iterateInvalidators(List<DelayedInvalidators> delayed, Method getInvalidators, BiConsumer<Object, java.util.Collection> invalidatorConsumer) throws IllegalAccessException, InvocationTargetException {
-        for (Iterator<DelayedInvalidators> iterator = delayed.iterator(); iterator.hasNext(); ) {
+    private void iterateInvalidators(List<DelayedInvalidators> delayed, Method getInvalidators,
+            BiConsumer<Object, java.util.Collection> invalidatorConsumer)
+            throws IllegalAccessException, InvocationTargetException {
+        for (Iterator<DelayedInvalidators> iterator = delayed.iterator(); iterator.hasNext();) {
             DelayedInvalidators entry = iterator.next();
             Object pendingPutMap = entry.getPendingPutMap();
             if (pendingPutMap == null) {
                 iterator.remove();
-            }
-            else {
+            } else {
                 java.util.Collection invalidators = (java.util.Collection) getInvalidators.invoke(pendingPutMap);
                 if (invalidators == null || invalidators.isEmpty()) {
                     iterator.remove();
@@ -260,7 +269,8 @@ public class InfinispanCacheJPACorrectnessTestCase {
         }
     }
 
-    private PutFromLoadValidator getPutFromLoadValidator(SessionFactoryImplementor sfi, String regionName) throws NoSuchFieldException, IllegalAccessException {
+    private PutFromLoadValidator getPutFromLoadValidator(SessionFactoryImplementor sfi, String regionName)
+            throws NoSuchFieldException, IllegalAccessException {
         Region region = sfi.getCache().getRegion(regionName);
         if (region == null) {
             return null;
@@ -296,10 +306,13 @@ public class InfinispanCacheJPACorrectnessTestCase {
     }
 
     private boolean hasCause(Throwable throwable, Class<? extends Throwable> clazz) {
-        if (throwable == null) return false;
+        if (throwable == null)
+            return false;
         Throwable cause = throwable.getCause();
-        if (throwable == cause) return false;
-        if (clazz.isInstance(cause)) return true;
+        if (throwable == cause)
+            return false;
+        if (clazz.isInstance(cause))
+            return true;
         return hasCause(cause, clazz);
     }
 
@@ -316,7 +329,8 @@ public class InfinispanCacheJPACorrectnessTestCase {
     private <T> NavigableMap<Integer, List<Log<T>>> getWritesAtTime(List<Log<T>> list) {
         NavigableMap<Integer, List<Log<T>>> writes = new TreeMap<>();
         for (Log log : list) {
-            if (log.type != LogType.WRITE) continue;
+            if (log.type != LogType.WRITE)
+                continue;
             for (int time = log.before; time <= log.after; ++time) {
                 List<Log<T>> onTime = writes.get(time);
                 if (onTime == null) {
@@ -336,20 +350,24 @@ public class InfinispanCacheJPACorrectnessTestCase {
                 writes++;
                 continue;
             }
-            if (read.getValue() == null || isEmptyCollection(read)) nullReads++;
-            else reads++;
+            if (read.getValue() == null || isEmptyCollection(read))
+                nullReads++;
+            else
+                reads++;
 
             Map<T, Log<T>> possibleValues = new HashMap<>();
             for (List<Log<T>> list : writesByTime.subMap(read.before, true, read.after, true).values()) {
                 for (Log<T> write : list) {
-                    if (read.precedes(write)) continue;
+                    if (read.precedes(write))
+                        continue;
                     possibleValues.put(write.getValue(), write);
                 }
             }
             int startOfLastWriteBeforeRead = 0;
             for (Map.Entry<Integer, List<Log<T>>> entry : writesByTime.headMap(read.before, false).descendingMap().entrySet()) {
                 int time = entry.getKey();
-                if (time < startOfLastWriteBeforeRead) break;
+                if (time < startOfLastWriteBeforeRead)
+                    break;
                 for (Log<T> write : entry.getValue()) {
                     if (write.after < read.before && write.before > startOfLastWriteBeforeRead) {
                         startOfLastWriteBeforeRead = write.before;
@@ -364,9 +382,11 @@ public class InfinispanCacheJPACorrectnessTestCase {
             }
             if (!possibleValues.containsKey(read.getValue())) {
                 dumpLogs(dumpPrefix, logs);
-                exceptions.add(new IllegalStateException(String.format("R %s: %d .. %d (%s, %s) -> %s not in %s (%d+)", dumpPrefix,
-                        read.before, read.after, read.threadName, new SimpleDateFormat("HH:mm:ss,SSS").format(new Date(read.wallClockTime)),
-                        read.getValue(), possibleValues.values(), startOfLastWriteBeforeRead)));
+                exceptions.add(
+                        new IllegalStateException(String.format("R %s: %d .. %d (%s, %s) -> %s not in %s (%d+)", dumpPrefix,
+                                read.before, read.after, read.threadName,
+                                new SimpleDateFormat("HH:mm:ss,SSS").format(new Date(read.wallClockTime)),
+                                read.getValue(), possibleValues.values(), startOfLastWriteBeforeRead)));
                 break;
             }
         }
@@ -379,7 +399,7 @@ public class InfinispanCacheJPACorrectnessTestCase {
 
     private <T> void dumpLogs(String prefix, List<Log<T>> logs) {
         try {
-            File f = File.createTempFile(prefix,  ".log");
+            File f = File.createTempFile(prefix, ".log");
             log.info("Dumping logs into " + f.getAbsolutePath());
             try (BufferedWriter writer = Files.newBufferedWriter(f.toPath())) {
                 for (Log<T> log : logs) {
@@ -396,13 +416,20 @@ public class InfinispanCacheJPACorrectnessTestCase {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         Operation operation;
         int r = random.nextInt(100);
-        if (r == 0 && INVALIDATE_REGION) operation = new InvalidateCache();
-        else if (r < 5) operation = new QueryFamilies();
-        else if (r < 10) operation = new RemoveFamily(r < 6);
-        else if (r < 20) operation = new UpdateFamily(r < 12, random.nextInt(1, 3));
-        else if (r < 35) operation = new AddMember(r < 25);
-        else if (r < 50) operation = new RemoveMember(r < 40);
-        else operation = new ReadFamily(r < 75);
+        if (r == 0 && INVALIDATE_REGION)
+            operation = new InvalidateCache();
+        else if (r < 5)
+            operation = new QueryFamilies();
+        else if (r < 10)
+            operation = new RemoveFamily(r < 6);
+        else if (r < 20)
+            operation = new UpdateFamily(r < 12, random.nextInt(1, 3));
+        else if (r < 35)
+            operation = new AddMember(r < 25);
+        else if (r < 50)
+            operation = new RemoveMember(r < 40);
+        else
+            operation = new ReadFamily(r < 75);
         return operation;
     }
 
@@ -573,7 +600,8 @@ public class InfinispanCacheJPACorrectnessTestCase {
             int after = timestampGenerator.getAndIncrement();
             log.tracef("Finished QueryFamilies at %d", after);
             for (int index = 0; index < MAX_RESULTS; ++index) {
-                if (names[index] == null) break;
+                if (names[index] == null)
+                    break;
                 getRecordList(familyNames, ids[index]).add(new Log<>(before, after, names[index], LogType.READ));
                 getRecordList(familyMembers, ids[index]).add(new Log<>(before, after, members[index], LogType.READ));
             }
@@ -622,7 +650,8 @@ public class InfinispanCacheJPACorrectnessTestCase {
             }
         }
 
-        protected void withRandomFamily(BiConsumer<Session, Family> consumer, Ref<String> familyNameUpdate, Ref<Set<String>> familyMembersUpdate, LockMode lockMode) throws Exception {
+        protected void withRandomFamily(BiConsumer<Session, Family> consumer, Ref<String> familyNameUpdate,
+                Ref<Set<String>> familyMembersUpdate, LockMode lockMode) throws Exception {
             int id = randomFamilyId(ThreadLocalRandom.current());
             int before = timestampGenerator.getAndIncrement();
             log.tracef("Started %s(%d, %s) at %d", getClass().getSimpleName(), id, rolledBack, before);
@@ -648,11 +677,13 @@ public class InfinispanCacheJPACorrectnessTestCase {
                 throw e;
             } finally {
                 int after = timestampGenerator.getAndIncrement();
-                recordReadWrite(id, before, after, failure, familyNameUpdate, familyMembersUpdate, familyNameLog, familyMembersLog);
+                recordReadWrite(id, before, after, failure, familyNameUpdate, familyMembersUpdate, familyNameLog,
+                        familyMembersLog);
             }
         }
 
-        protected void withRandomFamilies(int numFamilies, BiConsumer<Session, Family[]> consumer, String[] familyNameUpdates, Set<String>[] familyMembersUpdates, LockMode lockMode) throws Exception {
+        protected void withRandomFamilies(int numFamilies, BiConsumer<Session, Family[]> consumer, String[] familyNameUpdates,
+                Set<String>[] familyMembersUpdates, LockMode lockMode) throws Exception {
             int ids[] = new int[numFamilies];
             Log<String>[] familyNameLogs = new Log[numFamilies];
             Log<Set<String>>[] familyMembersLogs = new Log[numFamilies];
@@ -696,7 +727,8 @@ public class InfinispanCacheJPACorrectnessTestCase {
             }
         }
 
-        private void recordReadWrite(int id, int before, int after, boolean failure, Ref<String> familyNameUpdate, Ref<Set<String>> familyMembersUpdate, Log<String> familyNameLog, Log<Set<String>> familyMembersLog) {
+        private void recordReadWrite(int id, int before, int after, boolean failure, Ref<String> familyNameUpdate,
+                Ref<Set<String>> familyMembersUpdate, Log<String> familyNameLog, Log<Set<String>> familyMembersLog) {
             log.tracef("Finished %s at %d", getClass().getSimpleName(), after);
 
             LogType readType, writeType;
@@ -714,13 +746,14 @@ public class InfinispanCacheJPACorrectnessTestCase {
             getRecordList(familyNames, id).add(familyNameLog);
             getRecordList(familyMembers, id).add(familyMembersLog);
 
-
             if (familyNameLog.getValue() != null) {
                 if (familyNameUpdate.isSet()) {
-                    getRecordList(familyNames, id).add(new Log<>(before, after, familyNameUpdate.get(), writeType, familyNameLog));
+                    getRecordList(familyNames, id)
+                            .add(new Log<>(before, after, familyNameUpdate.get(), writeType, familyNameLog));
                 }
                 if (familyMembersUpdate.isSet()) {
-                    getRecordList(familyMembers, id).add(new Log<>(before, after, familyMembersUpdate.get(), writeType, familyMembersLog));
+                    getRecordList(familyMembers, id)
+                            .add(new Log<>(before, after, familyMembersUpdate.get(), writeType, familyMembersLog));
                 }
             }
         }
@@ -748,14 +781,16 @@ public class InfinispanCacheJPACorrectnessTestCase {
                 familyIds.put(family.getId(), new AtomicInteger(NUM_ACCESS_AFTER_REMOVAL));
                 LogType type = failure || rolledBack ? LogType.WRITE_FAILURE : LogType.WRITE;
                 getRecordList(familyNames, family.getId()).add(new Log<>(before, after, family.getName(), type));
-                getRecordList(familyMembers, family.getId()).add(new Log<>(before, after, membersToNames(family.getMembers()), type));
+                getRecordList(familyMembers, family.getId())
+                        .add(new Log<>(before, after, membersToNames(family.getMembers()), type));
             }
         }
     }
 
     private void familyNotFound(int id) {
         AtomicInteger access = familyIds.get(id);
-        if (access == null) return;
+        if (access == null)
+            return;
         if (access.decrementAndGet() == 0) {
             familyIds.remove(id);
         }
@@ -768,14 +803,16 @@ public class InfinispanCacheJPACorrectnessTestCase {
     private static <T> List<T> getRecordList(ThreadLocal<Map<Integer, List<T>>> tlListMap, int id) {
         Map<Integer, List<T>> map = tlListMap.get();
         List<T> list = map.get(id);
-        if (list == null) map.put(id, list = new ArrayList<>());
+        if (list == null)
+            map.put(id, list = new ArrayList<>());
         return list;
     }
 
     private int randomFamilyId(ThreadLocalRandom random) {
         Map.Entry<Integer, AtomicInteger> first = familyIds.firstEntry();
         Map.Entry<Integer, AtomicInteger> last = familyIds.lastEntry();
-        if (first == null || last == null) return 0;
+        if (first == null || last == null)
+            return 0;
         Map.Entry<Integer, AtomicInteger> ceiling = familyIds.ceilingEntry(random.nextInt(first.getKey(), last.getKey() + 1));
         return ceiling == null ? 0 : ceiling.getKey();
     }
@@ -846,9 +883,11 @@ public class InfinispanCacheJPACorrectnessTestCase {
         }
 
         public boolean precedes(Log<T> write) {
-            if (write.preceding == null) return false;
+            if (write.preceding == null)
+                return false;
             for (Log<T> l : write.preceding) {
-                if (l == this) return true;
+                if (l == this)
+                    return true;
             }
             return false;
         }

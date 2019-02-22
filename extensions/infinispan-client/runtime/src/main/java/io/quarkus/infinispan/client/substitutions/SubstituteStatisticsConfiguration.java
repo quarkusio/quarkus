@@ -7,12 +7,13 @@ import com.oracle.svm.core.annotate.TargetClass;
 
 /**
  * JMX is always disabled in substrate
+ * 
  * @author William Burns
  */
 @TargetClass(StatisticsConfiguration.class)
 public final class SubstituteStatisticsConfiguration {
-   @Substitute
-   public boolean jmxEnabled() {
-      return false;
-   }
+    @Substitute
+    public boolean jmxEnabled() {
+        return false;
+    }
 }

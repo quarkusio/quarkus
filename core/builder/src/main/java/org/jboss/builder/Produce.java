@@ -39,7 +39,7 @@ final class Produce {
         } else {
             outputConstraint = Constraint.ORDER_ONLY;
         }
-        if (! flags.contains(ProduceFlag.WEAK) || ! this.flags.contains(ProduceFlag.WEAK)) {
+        if (!flags.contains(ProduceFlag.WEAK) || !this.flags.contains(ProduceFlag.WEAK)) {
             outputFlags = flags.with(this.flags).without(ProduceFlag.WEAK);
         } else {
             outputFlags = flags.with(this.flags);

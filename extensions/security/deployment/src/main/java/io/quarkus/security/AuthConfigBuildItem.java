@@ -3,6 +3,7 @@ package io.quarkus.security;
 import java.util.List;
 
 import org.jboss.builder.item.MultiBuildItem;
+
 import io.quarkus.runtime.RuntimeValue;
 
 /**

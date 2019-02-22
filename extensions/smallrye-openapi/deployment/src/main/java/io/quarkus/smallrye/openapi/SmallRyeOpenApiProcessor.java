@@ -16,6 +16,8 @@
 
 package io.quarkus.smallrye.openapi;
 
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -26,15 +28,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import io.smallrye.openapi.api.OpenApiConfig;
-import io.smallrye.openapi.api.OpenApiConfigImpl;
-import io.smallrye.openapi.runtime.OpenApiStaticFile;
-import io.smallrye.openapi.runtime.io.OpenApiSerializer;
-import io.smallrye.openapi.runtime.scanner.OpenApiAnnotationScanner;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.jboss.jandex.IndexView;
+
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -51,8 +49,11 @@ import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentProducer;
 import io.quarkus.smallrye.openapi.runtime.OpenApiServlet;
 import io.quarkus.smallrye.openapi.runtime.SmallRyeOpenApiTemplate;
 import io.quarkus.undertow.ServletBuildItem;
-
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import io.smallrye.openapi.api.OpenApiConfig;
+import io.smallrye.openapi.api.OpenApiConfigImpl;
+import io.smallrye.openapi.runtime.OpenApiStaticFile;
+import io.smallrye.openapi.runtime.io.OpenApiSerializer;
+import io.smallrye.openapi.runtime.scanner.OpenApiAnnotationScanner;
 
 /**
  * @author Ken Finnigan
@@ -80,7 +81,8 @@ public class SmallRyeOpenApiProcessor {
     List<HotDeploymentConfigFileBuildItem> configFiles() {
         return Stream.of(META_INF_OPENAPI_YAML, WEB_INF_CLASSES_META_INF_OPENAPI_YAML,
                 META_INF_OPENAPI_YML, WEB_INF_CLASSES_META_INF_OPENAPI_YML,
-                META_INF_OPENAPI_JSON, WEB_INF_CLASSES_META_INF_OPENAPI_JSON).map(HotDeploymentConfigFileBuildItem::new).collect(Collectors.toList());
+                META_INF_OPENAPI_JSON, WEB_INF_CLASSES_META_INF_OPENAPI_JSON).map(HotDeploymentConfigFileBuildItem::new)
+                .collect(Collectors.toList());
     }
 
     @BuildStep
@@ -98,21 +100,21 @@ public class SmallRyeOpenApiProcessor {
 
     @BuildStep
     @Record(STATIC_INIT)
-    public BeanContainerListenerBuildItem build(SmallRyeOpenApiTemplate template, ApplicationArchivesBuildItem archivesBuildItem,
+    public BeanContainerListenerBuildItem build(SmallRyeOpenApiTemplate template,
+            ApplicationArchivesBuildItem archivesBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem, BuildProducer<FeatureBuildItem> feature,
-	    ResteasyJaxrsConfig jaxrsConfig) throws Exception {
+            ResteasyJaxrsConfig jaxrsConfig) throws Exception {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_OPENAPI));
         OpenAPI sm = generateStaticModel(archivesBuildItem);
         OpenAPI am = generateAnnotationModel(combinedIndexBuildItem.getIndex(), jaxrsConfig);
         return new BeanContainerListenerBuildItem(template.setupModel(sm, am));
     }
 
-
     private OpenAPI generateStaticModel(ApplicationArchivesBuildItem archivesBuildItem) throws IOException {
         Result result = findStaticModel(archivesBuildItem);
         if (result != null) {
             try (InputStream is = Files.newInputStream(result.path);
-                 OpenApiStaticFile staticFile = new OpenApiStaticFile(is, result.format)) {
+                    OpenApiStaticFile staticFile = new OpenApiStaticFile(is, result.format)) {
                 return io.smallrye.openapi.runtime.OpenApiProcessor.modelFromStaticFile(staticFile);
             }
         }
@@ -122,7 +124,8 @@ public class SmallRyeOpenApiProcessor {
     private OpenAPI generateAnnotationModel(IndexView indexView, ResteasyJaxrsConfig jaxrsConfig) {
         Config config = ConfigProvider.getConfig();
         OpenApiConfig openApiConfig = new OpenApiConfigImpl(config);
-        return new OpenApiAnnotationScanner(openApiConfig, indexView, Collections.singletonList(new RESTEasyExtension(jaxrsConfig, indexView))).scan();
+        return new OpenApiAnnotationScanner(openApiConfig, indexView,
+                Collections.singletonList(new RESTEasyExtension(jaxrsConfig, indexView))).scan();
     }
 
     private Result findStaticModel(ApplicationArchivesBuildItem archivesBuildItem) {

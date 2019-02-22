@@ -3,10 +3,11 @@ package io.quarkus.runtime.configuration;
 import java.util.Map;
 import java.util.Set;
 
-import io.smallrye.config.ConfigSourceMap;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.wildfly.common.Assert;
 import org.wildfly.common.annotation.NotNull;
+
+import io.smallrye.config.ConfigSourceMap;
 
 /**
  * A base class for configuration sources which delegate to other configuration sources.

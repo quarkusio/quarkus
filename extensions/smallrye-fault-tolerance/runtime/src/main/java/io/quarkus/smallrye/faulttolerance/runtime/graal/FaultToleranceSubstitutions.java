@@ -51,8 +51,10 @@ final class Target_io_smallrye_faulttolerance_DefaultMethodFallbackProvider {
     }
 
     @Substitute
-    static Object getFallback(Method fallbackMethod, Target_io_smallrye_faulttolerance_ExecutionContextWithInvocationContext ctx)
-            throws IllegalAccessException, InstantiationException, IllegalArgumentException, InvocationTargetException, Throwable {
+    static Object getFallback(Method fallbackMethod,
+            Target_io_smallrye_faulttolerance_ExecutionContextWithInvocationContext ctx)
+            throws IllegalAccessException, InstantiationException, IllegalArgumentException, InvocationTargetException,
+            Throwable {
         throw new RuntimeException("Not implemented in substrate");
     }
 }

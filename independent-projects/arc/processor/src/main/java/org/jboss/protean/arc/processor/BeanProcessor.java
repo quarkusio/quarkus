@@ -592,11 +592,11 @@ public class BeanProcessor {
                 if (appDescriptions.size() > limit) {
                     info += "\n\t- and " + (appDescriptions.size() - limit) + " more - please enable debug logging to see the full list";
                 }
-                LOGGER.infof("Found unrecommended usage of private members in application beans:\n%s", info);
+                LOGGER.infof("Found unrecommended usage of private members (use package-private instead) in application beans:%n%s", info);
             }
             // Log fwk problems
             if (fwkDescriptions != null && !fwkDescriptions.isEmpty()) {
-                LOGGER.debugf("Found unrecommended usage of private members in framework beans:\n%s",
+                LOGGER.debugf("Found unrecommended usage of private members (use package-private instead) in framework beans:%n%s",
                         fwkDescriptions.stream().map(d -> "\t- " + d).collect(Collectors.joining(",\n")));
             }
         }

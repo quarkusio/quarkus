@@ -45,15 +45,15 @@ import org.jboss.protean.arc.processor.BeanProcessor;
 import org.jboss.protean.arc.processor.BeanProcessor.Builder;
 import org.jboss.protean.arc.processor.ReflectionRegistration;
 import org.jboss.protean.arc.processor.ResourceOutput;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.arc.deployment.UnremovableBeanBuildItem.BeanClassNameExclusion;
 import org.jboss.shamrock.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
+import org.jboss.shamrock.arc.deployment.UnremovableBeanBuildItem.BeanClassNameExclusion;
 import org.jboss.shamrock.arc.runtime.ArcDeploymentTemplate;
 import org.jboss.shamrock.arc.runtime.BeanContainer;
 import org.jboss.shamrock.arc.runtime.LifecycleEventRunner;
 import org.jboss.shamrock.deployment.Capabilities;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
@@ -100,7 +100,7 @@ public class ArcAnnotationProcessor {
 
     @Inject
     List<BeanDefiningAnnotationBuildItem> additionalBeanDefiningAnnotations;
-    
+
     @Inject
     List<UnremovableBeanBuildItem> removalExclusions;
 
@@ -108,13 +108,15 @@ public class ArcAnnotationProcessor {
      * The configuration for ArC, the CDI-based injection facility.
      */
     ArcConfig arc;
-    
+
     @BuildStep(providesCapabilities = Capabilities.CDI_ARC, applicationArchiveMarkers = { "META-INF/beans.xml",
             "META-INF/services/javax.enterprise.inject.spi.Extension" })
     @Record(STATIC_INIT)
-    public BeanContainerBuildItem build(ArcDeploymentTemplate arcTemplate, List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems,
+    public BeanContainerBuildItem build(ArcDeploymentTemplate arcTemplate,
+            List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems,
             ApplicationArchivesBuildItem applicationArchivesBuildItem, List<GeneratedBeanBuildItem> generatedBeans,
-            List<AnnotationsTransformerBuildItem> annotationTransformers, ShutdownContextBuildItem shutdown, BuildProducer<FeatureBuildItem> feature)
+            List<AnnotationsTransformerBuildItem> annotationTransformers, ShutdownContextBuildItem shutdown,
+            BuildProducer<FeatureBuildItem> feature)
             throws Exception {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.CDI));
@@ -131,13 +133,13 @@ public class ArcAnnotationProcessor {
         Indexer indexer = new Indexer();
         Set<DotName> additionalIndex = new HashSet<>();
         for (String beanClass : additionalBeans) {
-            IndexingUtil.indexClass(beanClass, indexer, beanArchiveIndex.getIndex(), additionalIndex, 
-                                    ArcAnnotationProcessor.class.getClassLoader());
+            IndexingUtil.indexClass(beanClass, indexer, beanArchiveIndex.getIndex(), additionalIndex,
+                    ArcAnnotationProcessor.class.getClassLoader());
         }
         Set<DotName> generatedClassNames = new HashSet<>();
         for (GeneratedBeanBuildItem beanClass : generatedBeans) {
-            IndexingUtil.indexClass(beanClass.getName(), indexer, beanArchiveIndex.getIndex(), additionalIndex, 
-                                    ArcAnnotationProcessor.class.getClassLoader(), beanClass.getData());
+            IndexingUtil.indexClass(beanClass.getName(), indexer, beanArchiveIndex.getIndex(), additionalIndex,
+                    ArcAnnotationProcessor.class.getClassLoader(), beanClass.getData());
             generatedClassNames.add(DotName.createSimple(beanClass.getName().replace('/', '.')));
             generatedClass.produce(new GeneratedClassBuildItem(true, beanClass.getName(), beanClass.getData()));
         }
@@ -147,10 +149,10 @@ public class ArcAnnotationProcessor {
         builder.setApplicationClassPredicate(new Predicate<DotName>() {
             @Override
             public boolean test(DotName dotName) {
-                if(applicationArchivesBuildItem.getRootArchive().getIndex().getClassByName(dotName) != null) {
+                if (applicationArchivesBuildItem.getRootArchive().getIndex().getClassByName(dotName) != null) {
                     return true;
                 }
-                if(generatedClassNames.contains(dotName)) {
+                if (generatedClassNames.contains(dotName)) {
                     return true;
                 }
                 return false;
@@ -162,6 +164,7 @@ public class ArcAnnotationProcessor {
             public boolean appliesTo(AnnotationTarget.Kind kind) {
                 return AnnotationTarget.Kind.CLASS == kind;
             }
+
             @Override
             public void transform(TransformationContext transformationContext) {
                 if (additionalBeans.contains(transformationContext.getTarget().asClass().name().toString())) {
@@ -198,11 +201,14 @@ public class ArcAnnotationProcessor {
             public void writeResource(Resource resource) throws IOException {
                 switch (resource.getType()) {
                     case JAVA_CLASS:
-                        log.debugf("Add %s class: %s", (resource.isApplicationClass() ? "APP" : "FWK"), resource.getFullyQualifiedName());
-                        generatedClass.produce(new GeneratedClassBuildItem(resource.isApplicationClass(), resource.getName(), resource.getData()));
+                        log.debugf("Add %s class: %s", (resource.isApplicationClass() ? "APP" : "FWK"),
+                                resource.getFullyQualifiedName());
+                        generatedClass.produce(new GeneratedClassBuildItem(resource.isApplicationClass(), resource.getName(),
+                                resource.getData()));
                         break;
                     case SERVICE_PROVIDER:
-                        generatedResource.produce(new GeneratedResourceBuildItem("META-INF/services/" + resource.getName(), resource.getData()));
+                        generatedResource.produce(
+                                new GeneratedResourceBuildItem("META-INF/services/" + resource.getName(), resource.getData()));
                     default:
                         break;
                 }
@@ -234,21 +240,20 @@ public class ArcAnnotationProcessor {
 
         BeanProcessor beanProcessor = builder.build();
         BeanDeployment beanDeployment = beanProcessor.process();
-    
+
         ArcContainer container = arcTemplate.getContainer(shutdown);
-        BeanContainer beanContainer =
-            arcTemplate.initBeanContainer(
+        BeanContainer beanContainer = arcTemplate.initBeanContainer(
                 container,
                 beanContainerListenerBuildItems
-                    .stream()
-                    .map(BeanContainerListenerBuildItem::getBeanContainerListener)
-                    .collect(Collectors.toList()),
+                        .stream()
+                        .map(BeanContainerListenerBuildItem::getBeanContainerListener)
+                        .collect(Collectors.toList()),
                 beanDeployment
-                    .getRemovedBeans()
-                    .stream()
-                    .flatMap(b -> b.getTypes().stream())
-                    .map(t -> t.name().toString())
-                    .collect(Collectors.toSet()));
+                        .getRemovedBeans()
+                        .stream()
+                        .flatMap(b -> b.getTypes().stream())
+                        .map(t -> t.name().toString())
+                        .collect(Collectors.toSet()));
 
         return new BeanContainerBuildItem(beanContainer);
     }

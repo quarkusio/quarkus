@@ -4,7 +4,7 @@ import org.jboss.protean.gizmo.BytecodeCreator;
 import org.jboss.protean.gizmo.ResultHandle;
 
 /**
- * A segment of code generation which produces the necessary instructions to load the given object.  The result handle
+ * A segment of code generation which produces the necessary instructions to load the given object. The result handle
  * is cached for reuse.
  */
 public interface ObjectLoader {

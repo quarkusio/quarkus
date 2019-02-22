@@ -47,14 +47,20 @@ public final class ChannelsSubstitution {
         int ires;
         ByteBuffer buffer = ByteBuffer.allocate(1024);
         for (;;) {
-            if (count == 0L) return total;
-            if ((long) buffer.limit() > count) buffer.limit((int) count);
+            if (count == 0L)
+                return total;
+            if ((long) buffer.limit() > count)
+                buffer.limit((int) count);
             ires = channel.read(buffer);
             buffer.clear();
             switch (ires) {
-                case -1: return total == 0L ? -1L : total;
-                case 0: return total;
-                default: total += (long) ires; count -= (long) ires;
+                case -1:
+                    return total == 0L ? -1L : total;
+                case 0:
+                    return total;
+                default:
+                    total += (long) ires;
+                    count -= (long) ires;
             }
         }
     }
@@ -76,21 +82,27 @@ public final class ChannelsSubstitution {
             int ires;
             ByteBuffer buffer = ByteBuffer.allocate(1024);
             for (;;) {
-                if (count == 0L) return total;
-                if ((long) buffer.limit() > count) buffer.limit((int) count);
+                if (count == 0L)
+                    return total;
+                if ((long) buffer.limit() > count)
+                    buffer.limit((int) count);
                 ires = channel.read(buffer);
                 buffer.clear();
                 switch (ires) {
-                    case -1: return total == 0L ? -1L : total;
-                    case 0: return total;
-                    default: total += (long) ires; count -= (long) ires;
+                    case -1:
+                        return total == 0L ? -1L : total;
+                    case 0:
+                        return total;
+                    default:
+                        total += (long) ires;
+                        count -= (long) ires;
                 }
             }
         }
     }
 
     /**
-     * Attempt to drain the given number of bytes from the file channel.  This does nothing more than force a
+     * Attempt to drain the given number of bytes from the file channel. This does nothing more than force a
      * read of bytes in the file.
      *
      * @param channel the channel to drain
@@ -108,14 +120,19 @@ public final class ChannelsSubstitution {
             int ires;
             ByteBuffer buffer = ByteBuffer.allocate(1024);
             for (;;) {
-                if (count == 0L) return total;
-                if ((long) buffer.limit() > count) buffer.limit((int) count);
+                if (count == 0L)
+                    return total;
+                if ((long) buffer.limit() > count)
+                    buffer.limit((int) count);
                 ires = channel.read(buffer);
                 buffer.clear();
                 switch (ires) {
-                    case -1: return total == 0L ? -1L : total;
-                    case 0: return total;
-                    default: total += (long) ires;
+                    case -1:
+                        return total == 0L ? -1L : total;
+                    case 0:
+                        return total;
+                    default:
+                        total += (long) ires;
                 }
             }
         }

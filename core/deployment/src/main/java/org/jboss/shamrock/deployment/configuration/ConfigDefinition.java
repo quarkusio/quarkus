@@ -28,7 +28,6 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.TreeMap;
 
-import io.smallrye.config.SmallRyeConfig;
 import org.jboss.protean.gizmo.BytecodeCreator;
 import org.jboss.protean.gizmo.ClassCreator;
 import org.jboss.protean.gizmo.ClassOutput;
@@ -45,8 +44,10 @@ import org.jboss.shamrock.runtime.configuration.NameIterator;
 import org.objectweb.asm.Opcodes;
 import org.wildfly.common.Assert;
 
+import io.smallrye.config.SmallRyeConfig;
+
 /**
- * A configuration definition.  This class represents the configuration space as trees of nodes, where each tree
+ * A configuration definition. This class represents the configuration space as trees of nodes, where each tree
  * has a root which recursively contains all of the elements within the configuration.
  */
 public class ConfigDefinition extends CompoundConfigType {
@@ -68,7 +69,8 @@ public class ConfigDefinition extends CompoundConfigType {
         throw Assert.unsupported();
     }
 
-    void generateAcceptConfigurationValueIntoLeaf(final BytecodeCreator body, final LeafConfigType leafType, final ResultHandle name, final ResultHandle config) {
+    void generateAcceptConfigurationValueIntoLeaf(final BytecodeCreator body, final LeafConfigType leafType,
+            final ResultHandle name, final ResultHandle config) {
         // primitive/leaf values without a config group
         throw Assert.unsupported();
     }
@@ -77,7 +79,8 @@ public class ConfigDefinition extends CompoundConfigType {
         return rootObjectsByContainingName.get(childName);
     }
 
-    ResultHandle generateGetChildObject(final BytecodeCreator body, final ResultHandle name, final ResultHandle config, final ResultHandle self, final String childName) {
+    ResultHandle generateGetChildObject(final BytecodeCreator body, final ResultHandle name, final ResultHandle config,
+            final ResultHandle self, final String childName) {
         return body.readInstanceField(rootTypesByContainingName.get(childName).getFieldDescriptor(), self);
     }
 
@@ -90,16 +93,18 @@ public class ConfigDefinition extends CompoundConfigType {
     }
 
     void setChildObject(final NameIterator name, final Object self, final String childName, final Object value) {
-        if (self != rootObjectsByContainingName) throw new IllegalStateException("Wrong self pointer: " + self);
+        if (self != rootObjectsByContainingName)
+            throw new IllegalStateException("Wrong self pointer: " + self);
         final RootInfo rootInfo = rootTypesByContainingName.get(childName);
         assert rootInfo != null : "Unknown child: " + childName;
-        assert ! rootObjectsByContainingName.containsKey(childName) : "Child added twice: " + childName;
+        assert !rootObjectsByContainingName.containsKey(childName) : "Child added twice: " + childName;
         rootObjectsByContainingName.put(childName, value);
         rootObjectsByClass.put(rootInfo.getRootClass(), value);
         realizedInstances.put(value, new ValueInfo(childName, rootInfo));
     }
 
-    void generateSetChildObject(final BytecodeCreator body, final ResultHandle name, final ResultHandle self, final String containingName, final ResultHandle value) {
+    void generateSetChildObject(final BytecodeCreator body, final ResultHandle name, final ResultHandle self,
+            final String containingName, final ResultHandle value) {
         // objects should always be pre-initialized
         throw Assert.unsupported();
     }
@@ -108,11 +113,13 @@ public class ConfigDefinition extends CompoundConfigType {
         throw Assert.unsupported();
     }
 
-    void generateGetDefaultValueIntoEnclosingGroup(final BytecodeCreator body, final ResultHandle enclosing, final MethodDescriptor setter, final ResultHandle config) {
+    void generateGetDefaultValueIntoEnclosingGroup(final BytecodeCreator body, final ResultHandle enclosing,
+            final MethodDescriptor setter, final ResultHandle config) {
         throw Assert.unsupported();
     }
 
-    public ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorFinder, final ResultHandle smallRyeConfig) {
+    public ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorFinder,
+            final ResultHandle smallRyeConfig) {
         throw Assert.unsupported();
     }
 
@@ -134,7 +141,8 @@ public class ConfigDefinition extends CompoundConfigType {
         if (configRoot.isAnnotationPresent(ConfigGroup.class)) {
             throw reportError(configRoot, "Roots cannot have a @ConfigGroup annotation");
         }
-        final String containingName = join(withoutSuffix(lowerCaseFirst(camelHumpsIterator(configRoot.getSimpleName())), "Config", "Configuration"));
+        final String containingName = join(
+                withoutSuffix(lowerCaseFirst(camelHumpsIterator(configRoot.getSimpleName())), "Config", "Configuration"));
         final String name = configRootAnnotation.name();
         final String rootName;
         if (name.equals(ConfigItem.PARENT)) {
@@ -142,19 +150,25 @@ public class ConfigDefinition extends CompoundConfigType {
         } else if (name.equals(ConfigItem.ELEMENT_NAME)) {
             rootName = containingName;
         } else if (name.equals(ConfigItem.HYPHENATED_ELEMENT_NAME)) {
-            rootName = join("-", withoutSuffix(lowerCase(camelHumpsIterator(configRoot.getSimpleName())), "config", "configuration"));
+            rootName = join("-",
+                    withoutSuffix(lowerCase(camelHumpsIterator(configRoot.getSimpleName())), "config", "configuration"));
         } else {
             rootName = name;
         }
         final ConfigPhase configPhase = configRootAnnotation.phase();
-        if (rootTypesByContainingName.containsKey(containingName)) throw reportError(configRoot, "Duplicate configuration root name \"" + containingName + "\"");
-        final GroupConfigType configGroup = processConfigGroup(containingName, this, true, rootName, configRoot, accessorFinder);
-        final RootInfo rootInfo = new RootInfo(configRoot, configGroup, FieldDescriptor.of(CONFIG_ROOT, containingName, Object.class), configPhase);
+        if (rootTypesByContainingName.containsKey(containingName))
+            throw reportError(configRoot, "Duplicate configuration root name \"" + containingName + "\"");
+        final GroupConfigType configGroup = processConfigGroup(containingName, this, true, rootName, configRoot,
+                accessorFinder);
+        final RootInfo rootInfo = new RootInfo(configRoot, configGroup,
+                FieldDescriptor.of(CONFIG_ROOT, containingName, Object.class), configPhase);
         rootTypesByContainingName.put(containingName, rootInfo);
         rootTypesByKey.put(rootName, rootInfo);
     }
 
-    private GroupConfigType processConfigGroup(final String containingName, final CompoundConfigType container, final boolean consumeSegment, final String baseKey, final Class<?> configGroupClass, final AccessorFinder accessorFinder) {
+    private GroupConfigType processConfigGroup(final String containingName, final CompoundConfigType container,
+            final boolean consumeSegment, final String baseKey, final Class<?> configGroupClass,
+            final AccessorFinder accessorFinder) {
         GroupConfigType gct = new GroupConfigType(containingName, container, consumeSegment, configGroupClass, accessorFinder);
         final Field[] fields = configGroupClass.getDeclaredFields();
         for (Field field : fields) {
@@ -175,26 +189,32 @@ public class ConfigDefinition extends CompoundConfigType {
                 subKey = baseKey + "." + name;
                 consume = true;
             }
-            final String defaultValue = configItemAnnotation == null ? ConfigItem.NO_DEFAULT : configItemAnnotation.defaultValue();
+            final String defaultValue = configItemAnnotation == null ? ConfigItem.NO_DEFAULT
+                    : configItemAnnotation.defaultValue();
             final Type fieldType = field.getGenericType();
             final Class<?> fieldClass = field.getType();
             if (fieldClass.isAnnotationPresent(ConfigGroup.class)) {
-                if (! defaultValue.equals(ConfigItem.NO_DEFAULT)) {
+                if (!defaultValue.equals(ConfigItem.NO_DEFAULT)) {
                     throw reportError(field, "Unsupported default value");
                 }
                 gct.addField(processConfigGroup(field.getName(), gct, consume, subKey, fieldClass, accessorFinder));
             } else if (fieldClass.isPrimitive()) {
                 final LeafConfigType leaf;
                 if (fieldClass == boolean.class) {
-                    gct.addField(leaf = new BooleanConfigType(field.getName(), gct, consume, defaultValue.equals(ConfigItem.NO_DEFAULT) ? "false" : defaultValue));
+                    gct.addField(leaf = new BooleanConfigType(field.getName(), gct, consume,
+                            defaultValue.equals(ConfigItem.NO_DEFAULT) ? "false" : defaultValue));
                 } else if (fieldClass == int.class) {
-                    gct.addField(leaf = new IntConfigType(field.getName(), gct, consume, defaultValue.equals(ConfigItem.NO_DEFAULT) ? "0" : defaultValue));
+                    gct.addField(leaf = new IntConfigType(field.getName(), gct, consume,
+                            defaultValue.equals(ConfigItem.NO_DEFAULT) ? "0" : defaultValue));
                 } else if (fieldClass == long.class) {
-                    gct.addField(leaf = new LongConfigType(field.getName(), gct, consume, defaultValue.equals(ConfigItem.NO_DEFAULT) ? "0" : defaultValue));
+                    gct.addField(leaf = new LongConfigType(field.getName(), gct, consume,
+                            defaultValue.equals(ConfigItem.NO_DEFAULT) ? "0" : defaultValue));
                 } else if (fieldClass == double.class) {
-                    gct.addField(leaf = new DoubleConfigType(field.getName(), gct, consume, defaultValue.equals(ConfigItem.NO_DEFAULT) ? "0" : defaultValue));
+                    gct.addField(leaf = new DoubleConfigType(field.getName(), gct, consume,
+                            defaultValue.equals(ConfigItem.NO_DEFAULT) ? "0" : defaultValue));
                 } else if (fieldClass == float.class) {
-                    gct.addField(leaf = new FloatConfigType(field.getName(), gct, consume, defaultValue.equals(ConfigItem.NO_DEFAULT) ? "0" : defaultValue));
+                    gct.addField(leaf = new FloatConfigType(field.getName(), gct, consume,
+                            defaultValue.equals(ConfigItem.NO_DEFAULT) ? "0" : defaultValue));
                 } else {
                     throw reportError(field, "Unsupported primitive field type");
                 }
@@ -203,41 +223,51 @@ public class ConfigDefinition extends CompoundConfigType {
                 if (rawTypeOfParameter(fieldType, 0) != String.class) {
                     throw reportError(field, "Map key must be " + String.class);
                 }
-                gct.addField(processMap(field.getName(), gct, field, consume, subKey, typeOfParameter(fieldType, 1), accessorFinder));
+                gct.addField(processMap(field.getName(), gct, field, consume, subKey, typeOfParameter(fieldType, 1),
+                        accessorFinder));
             } else if (fieldClass == List.class) {
                 // list leaf class
                 final LeafConfigType leaf;
                 final Class<?> listType = rawTypeOfParameter(fieldType, 0);
-                gct.addField(leaf = new ObjectListConfigType(field.getName(), gct, consume, mapDefaultValue(defaultValue, listType), listType));
+                gct.addField(leaf = new ObjectListConfigType(field.getName(), gct, consume,
+                        mapDefaultValue(defaultValue, listType), listType));
                 container.getConfigDefinition().getLeafPatterns().addPattern(subKey, leaf);
             } else if (fieldClass == Optional.class) {
                 final LeafConfigType leaf;
                 // optional config property
-                gct.addField(leaf = new OptionalObjectConfigType(field.getName(), gct, consume, defaultValue.equals(ConfigItem.NO_DEFAULT) ? "" : defaultValue, rawTypeOfParameter(fieldType, 0)));
+                gct.addField(leaf = new OptionalObjectConfigType(field.getName(), gct, consume,
+                        defaultValue.equals(ConfigItem.NO_DEFAULT) ? "" : defaultValue, rawTypeOfParameter(fieldType, 0)));
                 container.getConfigDefinition().getLeafPatterns().addPattern(subKey, leaf);
             } else {
                 final LeafConfigType leaf;
                 // it's a plain config property
-                gct.addField(leaf = new ObjectConfigType(field.getName(), gct, consume, mapDefaultValue(defaultValue, fieldClass), fieldClass));
+                gct.addField(leaf = new ObjectConfigType(field.getName(), gct, consume,
+                        mapDefaultValue(defaultValue, fieldClass), fieldClass));
                 container.getConfigDefinition().getLeafPatterns().addPattern(subKey, leaf);
             }
         }
         return gct;
     }
 
-    private MapConfigType processMap(final String containingName, final CompoundConfigType container, final AnnotatedElement containingElement, final boolean consumeSegment, final String baseKey, final Type mapValueType, final AccessorFinder accessorFinder) {
+    private MapConfigType processMap(final String containingName, final CompoundConfigType container,
+            final AnnotatedElement containingElement, final boolean consumeSegment, final String baseKey,
+            final Type mapValueType, final AccessorFinder accessorFinder) {
         MapConfigType mct = new MapConfigType(containingName, container, consumeSegment);
         final Class<?> valueClass = rawTypeOf(mapValueType);
         final String subKey = baseKey + ".{*}";
         if (valueClass == Map.class) {
-            if (! (mapValueType instanceof ParameterizedType)) throw reportError(containingElement, "Map must be parameterized");
-            processMap(NO_CONTAINING_NAME, mct, containingElement, true, subKey, typeOfParameter(mapValueType, 1), accessorFinder);
+            if (!(mapValueType instanceof ParameterizedType))
+                throw reportError(containingElement, "Map must be parameterized");
+            processMap(NO_CONTAINING_NAME, mct, containingElement, true, subKey, typeOfParameter(mapValueType, 1),
+                    accessorFinder);
         } else if (valueClass.isAnnotationPresent(ConfigGroup.class)) {
             processConfigGroup(NO_CONTAINING_NAME, mct, true, subKey, valueClass, accessorFinder);
         } else if (valueClass == List.class) {
-            final ObjectListConfigType leaf = new ObjectListConfigType(NO_CONTAINING_NAME, mct, consumeSegment, "", rawTypeOfParameter(typeOfParameter(mapValueType, 1), 0));
+            final ObjectListConfigType leaf = new ObjectListConfigType(NO_CONTAINING_NAME, mct, consumeSegment, "",
+                    rawTypeOfParameter(typeOfParameter(mapValueType, 1), 0));
             container.getConfigDefinition().getLeafPatterns().addPattern(subKey, leaf);
-        } else if (valueClass == Optional.class || valueClass == OptionalInt.class || valueClass == OptionalDouble.class || valueClass == OptionalLong.class) {
+        } else if (valueClass == Optional.class || valueClass == OptionalInt.class || valueClass == OptionalDouble.class
+                || valueClass == OptionalLong.class) {
             throw reportError(containingElement, "Optionals are not allowed as a map value type");
         } else {
             // treat as a plain object, hope for the best
@@ -251,7 +281,7 @@ public class ConfigDefinition extends CompoundConfigType {
     private String mapDefaultValue(String defaultValue, Class<?> fieldClass) {
         String mappedDefault = defaultValue;
         if (defaultValue.equals(ConfigItem.NO_DEFAULT)) {
-            if(Number.class.isAssignableFrom(fieldClass)) {
+            if (Number.class.isAssignableFrom(fieldClass)) {
                 mappedDefault = "0";
             } else {
                 mappedDefault = "";
@@ -264,14 +294,16 @@ public class ConfigDefinition extends CompoundConfigType {
         if (e instanceof Member) {
             return new IllegalArgumentException(msg + " at " + e + " of " + ((Member) e).getDeclaringClass());
         } else if (e instanceof Parameter) {
-            return new IllegalArgumentException(msg + " at " + e + " of " + ((Parameter) e).getDeclaringExecutable() + " of " + ((Parameter) e).getDeclaringExecutable().getDeclaringClass());
+            return new IllegalArgumentException(msg + " at " + e + " of " + ((Parameter) e).getDeclaringExecutable() + " of "
+                    + ((Parameter) e).getDeclaringExecutable().getDeclaringClass());
         } else {
             return new IllegalArgumentException(msg + " at " + e);
         }
     }
 
     public void generateConfigRootClass(ClassOutput classOutput, AccessorFinder accessorFinder) {
-        try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput).className(CONFIG_ROOT).superClass(Object.class).build()) {
+        try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput).className(CONFIG_ROOT).superClass(Object.class)
+                .build()) {
             try (MethodCreator ctor = cc.getMethodCreator("<init>", void.class, SmallRyeConfig.class)) {
                 ctor.setModifiers(Opcodes.ACC_PUBLIC);
                 final ResultHandle self = ctor.getThis();
@@ -284,8 +316,10 @@ public class ConfigDefinition extends CompoundConfigType {
                     if (value.getConfigPhase().isAvailableAtRun()) {
                         final CompoundConfigType rootType = value.getRootType();
                         final String containingName = rootType.getContainingName();
-                        final FieldDescriptor fieldDescriptor = cc.getFieldCreator(containingName, Object.class).setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL).getFieldDescriptor();
-                        ctor.writeInstanceField(fieldDescriptor, self, rootType.writeInitialization(ctor, accessorFinder, config));
+                        final FieldDescriptor fieldDescriptor = cc.getFieldCreator(containingName, Object.class)
+                                .setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL).getFieldDescriptor();
+                        ctor.writeInstanceField(fieldDescriptor, self,
+                                rootType.writeInitialization(ctor, accessorFinder, config));
                     }
                 }
                 ctor.returnValue(null);
@@ -336,7 +370,8 @@ public class ConfigDefinition extends CompoundConfigType {
 
     public ConfigPhase getPhaseByKey(final String key) {
         final RootInfo rootInfo = rootTypesByKey.get(key);
-        if (rootInfo == null) throw new IllegalArgumentException("Unknown root key: " + key);
+        if (rootInfo == null)
+            throw new IllegalArgumentException("Unknown root key: " + key);
         return rootInfo.getConfigPhase();
     }
 
@@ -350,7 +385,8 @@ public class ConfigDefinition extends CompoundConfigType {
 
     public RootInfo getInstanceInfo(final Object obj) {
         final ValueInfo valueInfo = realizedInstances.get(obj);
-        if (valueInfo == null) return null;
+        if (valueInfo == null)
+            return null;
         return valueInfo.getRootInfo();
     }
 
@@ -360,7 +396,8 @@ public class ConfigDefinition extends CompoundConfigType {
         private final FieldDescriptor fieldDescriptor;
         private final ConfigPhase configPhase;
 
-        RootInfo(final Class<?> rootClass, final GroupConfigType rootType, final FieldDescriptor fieldDescriptor, final ConfigPhase configPhase) {
+        RootInfo(final Class<?> rootClass, final GroupConfigType rootType, final FieldDescriptor fieldDescriptor,
+                final ConfigPhase configPhase) {
             this.rootClass = rootClass;
             this.rootType = rootType;
             this.fieldDescriptor = fieldDescriptor;

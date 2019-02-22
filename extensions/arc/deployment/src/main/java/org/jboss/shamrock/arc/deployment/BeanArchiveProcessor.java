@@ -33,9 +33,9 @@ import org.jboss.jandex.IndexView;
 import org.jboss.protean.arc.processor.BeanDefiningAnnotation;
 import org.jboss.protean.arc.processor.BeanDeployment;
 import org.jboss.protean.arc.processor.DotNames;
+import org.jboss.shamrock.deployment.ApplicationArchive;
 import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.ApplicationArchive;
 import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
 
 public class BeanArchiveProcessor {
@@ -67,8 +67,10 @@ public class BeanArchiveProcessor {
             }
         }
 
-        Collection<DotName> beanDefiningAnnotations = BeanDeployment.initBeanDefiningAnnotations(additionalBeanDefiningAnnotations.stream()
-                .map(bda -> new BeanDefiningAnnotation(bda.getName(), bda.getDefaultScope())).collect(Collectors.toList()), stereotypes);
+        Collection<DotName> beanDefiningAnnotations = BeanDeployment
+                .initBeanDefiningAnnotations(additionalBeanDefiningAnnotations.stream()
+                        .map(bda -> new BeanDefiningAnnotation(bda.getName(), bda.getDefaultScope()))
+                        .collect(Collectors.toList()), stereotypes);
         // Also include archives that are not bean archives but contain qualifiers or interceptor bindings
         beanDefiningAnnotations.add(DotNames.QUALIFIER);
         beanDefiningAnnotations.add(DotNames.INTERCEPTOR_BINDING);
@@ -79,7 +81,8 @@ public class BeanArchiveProcessor {
             IndexView index = archive.getIndex();
             // NOTE: Implicit bean archive without beans.xml contains one or more bean classes with a bean defining annotation and no extension
             if (archive.getChildPath("META-INF/beans.xml") != null || archive.getChildPath("WEB-INF/beans.xml") != null
-                    || (index.getAllKnownImplementors(DotNames.EXTENSION).isEmpty() && containsBeanDefiningAnnotation(index, beanDefiningAnnotations))) {
+                    || (index.getAllKnownImplementors(DotNames.EXTENSION).isEmpty()
+                            && containsBeanDefiningAnnotation(index, beanDefiningAnnotations))) {
                 indexes.add(index);
             }
         }

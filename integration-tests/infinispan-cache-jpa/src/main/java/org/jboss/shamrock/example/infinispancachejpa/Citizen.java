@@ -8,10 +8,10 @@
 //$Id$
 package org.jboss.shamrock.example.infinispancachejpa;
 
+import javax.persistence.*;
+
 import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.NaturalIdCache;
-
-import javax.persistence.*;
 
 @Entity
 @Cacheable

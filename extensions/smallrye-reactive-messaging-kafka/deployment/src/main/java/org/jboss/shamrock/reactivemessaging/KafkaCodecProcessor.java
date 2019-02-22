@@ -19,7 +19,6 @@ public class KafkaCodecProcessor {
             BufferSerializer.class,
             JsonArraySerializer.class,
 
-
             JsonObjectDeserializer.class,
             BufferDeserializer.class,
             JsonArrayDeserializer.class,

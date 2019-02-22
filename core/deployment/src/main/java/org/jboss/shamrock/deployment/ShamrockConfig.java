@@ -138,13 +138,11 @@ public final class ShamrockConfig extends SimpleBuildItem {
         final String cleanValue = cleanupValue(val);
         if ("true".equals(cleanValue)) {
             return true;
-        }
-        else if ("false".equals(cleanValue)) {
+        } else if ("false".equals(cleanValue)) {
             return false;
-        }
-        else {
+        } else {
             throw new ConfigurationError("Configuration value for property '" + configKey + "' was set to '" + val + "'. " +
-                  "A boolean value is expected; set this property to either 'true' or 'false'.");
+                    "A boolean value is expected; set this property to either 'true' or 'false'.");
         }
     }
 
@@ -152,10 +150,9 @@ public final class ShamrockConfig extends SimpleBuildItem {
         final String cleanValue = cleanupValue(val);
         try {
             return Integer.parseInt(cleanValue);
-        }
-        catch (NumberFormatException nfe) {
+        } catch (NumberFormatException nfe) {
             throw new ConfigurationError("Configuration value for property '" + configKey + "' was set to '" + val + "'. " +
-                  "An integer value is expected; set this property to a decimal integer.");
+                    "An integer value is expected; set this property to a decimal integer.");
         }
     }
 

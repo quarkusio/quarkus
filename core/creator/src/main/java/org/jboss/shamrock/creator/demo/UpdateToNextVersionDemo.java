@@ -34,22 +34,25 @@ public class UpdateToNextVersionDemo extends ConfigDemoBase {
     public static void main(String[] args) throws Exception {
         new UpdateToNextVersionDemo().run();
     }
-/*
-    @Override
-    protected Path initAppJar() {
-        final Path shamrockRoot = Paths.get("").toAbsolutePath().getParent().getParent();
-        final Path quickstartsRoot = shamrockRoot.getParent().resolve("protean-quickstarts");
-        if(!Files.exists(quickstartsRoot)) {
-            throw new IllegalStateException("Failed to locate protean-quickstarts repo at " + quickstartsRoot);
-        }
-        final Path appDir = quickstartsRoot.resolve("input-validation").resolve("target");
-        return appDir.resolve("input-validation-1.0-SNAPSHOT.jar");
-    }
-*/
+
+    /*
+     * @Override
+     * protected Path initAppJar() {
+     * final Path shamrockRoot = Paths.get("").toAbsolutePath().getParent().getParent();
+     * final Path quickstartsRoot = shamrockRoot.getParent().resolve("protean-quickstarts");
+     * if(!Files.exists(quickstartsRoot)) {
+     * throw new IllegalStateException("Failed to locate protean-quickstarts repo at " + quickstartsRoot);
+     * }
+     * final Path appDir = quickstartsRoot.resolve("input-validation").resolve("target");
+     * return appDir.resolve("input-validation-1.0-SNAPSHOT.jar");
+     * }
+     */
     @Override
     protected void initProps(Properties props) {
-        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_VERSION_UPDATE), VersionUpdate.NEXT.getName());
-        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_VERSION_UPDATE_NUMBER), VersionUpdateNumber.MINOR.getName());
+        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_VERSION_UPDATE),
+                VersionUpdate.NEXT.getName());
+        props.setProperty(CuratePhase.completePropertyName(CuratePhase.CONFIG_PROP_VERSION_UPDATE_NUMBER),
+                VersionUpdateNumber.MINOR.getName());
     }
 
     @Override

@@ -43,7 +43,8 @@ public class HibernateOrmTemplate {
     }
 
     public void enlistPersistenceUnit() {
-        Logger.getLogger("org.jboss.shamrock.hibernate.orm").debugf("List of entities found by Shamrock deployment:%n%s", entities);
+        Logger.getLogger("org.jboss.shamrock.hibernate.orm").debugf("List of entities found by Shamrock deployment:%n%s",
+                entities);
     }
 
     public void callHibernateFeatureInit() {
@@ -77,7 +78,8 @@ public class HibernateOrmTemplate {
         };
     }
 
-    public BeanContainerListener initMetadata(List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors, Scanner scanner) {
+    public BeanContainerListener initMetadata(List<ParsedPersistenceXmlDescriptor> parsedPersistenceXmlDescriptors,
+            Scanner scanner) {
         return new BeanContainerListener() {
             @Override
             public void created(BeanContainer beanContainer) {

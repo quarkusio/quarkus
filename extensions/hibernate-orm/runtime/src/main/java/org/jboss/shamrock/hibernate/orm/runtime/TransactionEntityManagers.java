@@ -49,7 +49,8 @@ public class TransactionEntityManagers {
 
     public EntityManager getEntityManager(String unitName) {
         return managers.computeIfAbsent(unitName,
-                un -> new TransactionScopedEntityManager(tm, tsr, jpaConfig.getEntityManagerFactory(un), unitName, requestScopedEntityManagers));
+                un -> new TransactionScopedEntityManager(tm, tsr, jpaConfig.getEntityManagerFactory(un), unitName,
+                        requestScopedEntityManagers));
     }
 
 }

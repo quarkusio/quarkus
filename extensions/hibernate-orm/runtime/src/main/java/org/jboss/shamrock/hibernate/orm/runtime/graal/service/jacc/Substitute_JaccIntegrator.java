@@ -17,6 +17,6 @@ public final class Substitute_JaccIntegrator {
 
     @Substitute
     public void prepareServices(StandardServiceRegistryBuilder serviceRegistryBuilder) {
-        serviceRegistryBuilder.addService( JaccService.class, new DisabledJaccServiceImpl() );
+        serviceRegistryBuilder.addService(JaccService.class, new DisabledJaccServiceImpl());
     }
 }

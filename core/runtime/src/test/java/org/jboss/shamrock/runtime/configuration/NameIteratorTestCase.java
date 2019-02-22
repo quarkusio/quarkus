@@ -22,12 +22,14 @@ public class NameIteratorTestCase {
         try {
             ni.getPreviousStart();
             fail("Expected exception");
-        } catch (NoSuchElementException ok) {}
+        } catch (NoSuchElementException ok) {
+        }
         assertEquals(string, ni.getNextSegment());
         try {
             ni.getPreviousSegment();
             fail("Expected exception");
-        } catch (NoSuchElementException ok) {}
+        } catch (NoSuchElementException ok) {
+        }
 
         ni = new NameIterator(string, true);
         assertEquals(length, ni.getPosition());
@@ -35,7 +37,8 @@ public class NameIteratorTestCase {
         try {
             ni.getNextEnd();
             fail("Expected exception");
-        } catch (NoSuchElementException ok) {}
+        } catch (NoSuchElementException ok) {
+        }
     }
 
     @SafeVarargs
@@ -45,7 +48,8 @@ public class NameIteratorTestCase {
 
     private static String join(String[] str) {
         final int length = str.length;
-        if (length == 0) return "";
+        if (length == 0)
+            return "";
         StringBuilder b = new StringBuilder(40);
         b.append(str[0]);
         int i = 1;
@@ -67,7 +71,7 @@ public class NameIteratorTestCase {
         assertTrue(ni.nextSegmentEquals(items[0]));
         assertFalse(ni.hasPrevious());
 
-        for (int i = 1; i < length; i ++) {
+        for (int i = 1; i < length; i++) {
             ni.next();
             assertTrue(ni.hasNext());
             assertEquals(items[i], ni.getNextSegment());
@@ -84,7 +88,7 @@ public class NameIteratorTestCase {
         assertTrue(ni.previousSegmentEquals(items[length - 1]));
         ni.previous();
 
-        for (int i = length - 1; i >= 1; i --) {
+        for (int i = length - 1; i >= 1; i--) {
             assertTrue(ni.hasNext());
             assertEquals(items[i], ni.getNextSegment());
             assertTrue(ni.nextSegmentEquals(items[i]));
@@ -114,7 +118,7 @@ public class NameIteratorTestCase {
         assertTrue(ni.nextSegmentEquals(items[0]));
         assertFalse(ni.hasPrevious());
 
-        for (int i = 1; i < length; i ++) {
+        for (int i = 1; i < length; i++) {
             ni.next();
             assertTrue(ni.hasNext());
             assertEquals(items[i], ni.getNextSegment());
@@ -131,7 +135,7 @@ public class NameIteratorTestCase {
         assertTrue(ni.previousSegmentEquals(items[length - 1]));
         ni.previous();
 
-        for (int i = length - 1; i >= 1; i --) {
+        for (int i = length - 1; i >= 1; i--) {
             assertTrue(ni.hasNext());
             assertEquals(items[i], ni.getNextSegment());
             assertTrue(ni.nextSegmentEquals(items[i]));

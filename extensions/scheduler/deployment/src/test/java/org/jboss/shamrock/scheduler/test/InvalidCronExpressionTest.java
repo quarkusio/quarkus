@@ -26,7 +26,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class InvalidCronExpressionTest {
 
-
     @RegisterExtension
     static final ShamrockUnitTest test = new ShamrockUnitTest()
             .setExpectedException(DeploymentException.class)
@@ -38,7 +37,6 @@ public class InvalidCronExpressionTest {
     }
 
     static class InvalidBean {
-
 
         @Scheduled(cron = "0 0 0 ????")
         void wrong() {

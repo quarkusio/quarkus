@@ -41,10 +41,8 @@ import org.apache.maven.project.MavenProject;
 @Mojo(name = "create-example-config", defaultPhase = LifecyclePhase.NONE, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
 public class ExampleConfigMojo extends AbstractMojo {
 
-
     @Parameter(defaultValue = "${project}", readonly = true, required = true)
     protected MavenProject project;
-
 
     public ExampleConfigMojo() {
         MojoLogger.logSupplier = this::getLog;
@@ -72,7 +70,7 @@ public class ExampleConfigMojo extends AbstractMojo {
                 }
             }
             StringBuilder sb = new StringBuilder("Example shamrock config\n\n");
-            for(Map.Entry<Object, Object> e : new TreeMap<Object, Object>( properties).entrySet()) {
+            for (Map.Entry<Object, Object> e : new TreeMap<Object, Object>(properties).entrySet()) {
                 sb.append("# ")
                         .append(e.getValue().toString().replace("\n", " "))
                         .append("\n#")
@@ -80,13 +78,12 @@ public class ExampleConfigMojo extends AbstractMojo {
                         .append("=\n\n");
             }
             getLog().error("Creating example File at " + out);
-            try(FileOutputStream f = new FileOutputStream(out)) {
+            try (FileOutputStream f = new FileOutputStream(out)) {
                 f.write(sb.toString().getBytes(StandardCharsets.UTF_8));
             }
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to generate config", e);
         }
-
 
     }
 

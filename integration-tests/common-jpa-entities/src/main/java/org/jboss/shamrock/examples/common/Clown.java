@@ -28,7 +28,8 @@ public class Clown {
     private Long id;
     private String name;
 
-    @Id @GeneratedValue
+    @Id
+    @GeneratedValue
     public Long getId() {
         return id;
     }

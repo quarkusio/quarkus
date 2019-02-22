@@ -31,7 +31,6 @@ public class ServletSecurityInfoProxy {
     private final Set<String> rolesAllowed = new HashSet<>();
     private volatile TransportGuaranteeType transportGuaranteeType = TransportGuaranteeType.NONE;
 
-
     public List<ServletSecurityInfoProxy> getHttpMethodSecurityInfo() {
         return httpMethodSecurityInfo;
     }

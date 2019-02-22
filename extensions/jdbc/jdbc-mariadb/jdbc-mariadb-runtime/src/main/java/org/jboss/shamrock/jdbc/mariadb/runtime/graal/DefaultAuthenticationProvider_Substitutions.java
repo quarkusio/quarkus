@@ -27,31 +27,32 @@ public final class DefaultAuthenticationProvider_Substitutions {
 
     @Substitute
     public static InterfaceAuthSwitchSendResponsePacket processAuthPlugin(PacketInputStream reader,
-                                                                          String plugin, String password,
-                                                                          byte[] authData, int seqNo, String passwordCharacterEncoding)
-          throws SQLException {
+            String plugin, String password,
+            byte[] authData, int seqNo, String passwordCharacterEncoding)
+            throws SQLException {
         switch (plugin) {
             case MYSQL_NATIVE_PASSWORD:
                 return new SendNativePasswordAuthPacket(password, authData, seqNo,
-                      passwordCharacterEncoding);
+                        passwordCharacterEncoding);
             case MYSQL_OLD_PASSWORD:
                 return new SendOldPasswordAuthPacket(password, authData, seqNo, passwordCharacterEncoding);
             case MYSQL_CLEAR_PASSWORD:
                 return new SendClearPasswordAuthPacket(password, authData, seqNo,
-                      passwordCharacterEncoding);
+                        passwordCharacterEncoding);
             case DIALOG:
                 throw new UnsupportedOperationException("Authentication strategy 'dialog' is not supported in GraalVM");
             case GSSAPI_CLIENT:
                 return new SendGssApiAuthPacket(reader, password, authData, seqNo,
-                      passwordCharacterEncoding);
+                        passwordCharacterEncoding);
             case MYSQL_ED25519_PASSWORD:
                 return new SendEd25519PasswordAuthPacket(password, authData, seqNo,
-                      passwordCharacterEncoding);
+                        passwordCharacterEncoding);
 
             default:
                 throw new SQLException(
-                      "Client does not support authentication protocol requested by server. "
-                            + "Consider upgrading MariaDB client. plugin was = " + plugin, "08004", 1251);
+                        "Client does not support authentication protocol requested by server. "
+                                + "Consider upgrading MariaDB client. plugin was = " + plugin,
+                        "08004", 1251);
         }
     }
 

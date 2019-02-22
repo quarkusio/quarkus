@@ -1,11 +1,11 @@
 package org.jboss.shamrock.vertx.runtime;
 
-import org.jboss.shamrock.runtime.annotations.ConfigGroup;
-import org.jboss.shamrock.runtime.annotations.ConfigItem;
-
 import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalInt;
+
+import org.jboss.shamrock.runtime.annotations.ConfigGroup;
+import org.jboss.shamrock.runtime.annotations.ConfigItem;
 
 @ConfigGroup
 public class ClusterConfiguration {

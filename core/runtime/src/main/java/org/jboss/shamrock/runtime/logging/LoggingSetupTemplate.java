@@ -9,7 +9,6 @@ import java.util.logging.ErrorManager;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 
-import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.logmanager.EmbeddedConfigurator;
 import org.jboss.logmanager.LogContext;
@@ -21,12 +20,15 @@ import org.jboss.logmanager.handlers.ConsoleHandler;
 import org.jboss.logmanager.handlers.FileHandler;
 import org.jboss.shamrock.runtime.annotations.Template;
 
+import com.oracle.svm.core.annotate.RecomputeFieldValue;
+
 /**
  *
  */
 @Template
 public class LoggingSetupTemplate {
-    public LoggingSetupTemplate() {}
+    public LoggingSetupTemplate() {
+    }
 
     @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.Reset)
     private static volatile boolean initialized;

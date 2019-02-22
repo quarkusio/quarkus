@@ -54,4 +54,5 @@ final class Target_org_jboss_shamrock_runtime_logging_InitialConfigurator {
     public static DelayedHandler DELAYED_HANDLER = new DelayedHandler();
 }
 
-final class LoggingSubstitutions {}
+final class LoggingSubstitutions {
+}

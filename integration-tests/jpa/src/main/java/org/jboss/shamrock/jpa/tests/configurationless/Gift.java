@@ -13,7 +13,8 @@ public class Gift {
     private Long id;
     private String name;
 
-    @Id @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="personSeq")
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "personSeq")
     public Long getId() {
         return id;
     }

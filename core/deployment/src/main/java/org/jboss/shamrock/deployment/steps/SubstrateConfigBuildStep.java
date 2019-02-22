@@ -44,15 +44,14 @@ class SubstrateConfigBuildStep {
 
     @BuildStep
     void build(List<SubstrateConfigBuildItem> substrateConfigBuildItems,
-               SslNativeConfigBuildItem sslNativeConfig,
-               List<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport,
-               BuildProducer<SubstrateProxyDefinitionBuildItem> proxy,
-               BuildProducer<SubstrateResourceBundleBuildItem> resourceBundle,
-               BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit,
-               BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReinit,
-               BuildProducer<SubstrateSystemPropertyBuildItem> nativeImage,
-               BuildProducer<SystemPropertyBuildItem> systemProperty
-               ) {
+            SslNativeConfigBuildItem sslNativeConfig,
+            List<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport,
+            BuildProducer<SubstrateProxyDefinitionBuildItem> proxy,
+            BuildProducer<SubstrateResourceBundleBuildItem> resourceBundle,
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit,
+            BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReinit,
+            BuildProducer<SubstrateSystemPropertyBuildItem> nativeImage,
+            BuildProducer<SystemPropertyBuildItem> systemProperty) {
         for (SubstrateConfigBuildItem substrateConfigBuildItem : substrateConfigBuildItems) {
             for (String i : substrateConfigBuildItem.getRuntimeInitializedClasses()) {
                 runtimeInit.produce(new RuntimeInitializedClassBuildItem(i));
@@ -94,19 +93,21 @@ class SubstrateConfigBuildStep {
                     systemProperty.produce(new SystemPropertyBuildItem("java.library.path", graalVmLibDirectory.toString()));
                 }
                 systemProperty.produce(
-                        new SystemPropertyBuildItem("javax.net.ssl.trustStore", graalVmLibDirectory.resolve(Paths.get("security", "cacerts")).toString()));
+                        new SystemPropertyBuildItem("javax.net.ssl.trustStore",
+                                graalVmLibDirectory.resolve(Paths.get("security", "cacerts")).toString()));
             } else {
                 // only warn if we're building a native image
-                if(ImageInfo.inImageBuildtimeCode())
+                if (ImageInfo.inImageBuildtimeCode())
                     log.warn(
-                        "SSL is enabled but the GRAALVM_HOME environment variable is not set. The java.library.path property has not been set and will need to be set manually.");
+                            "SSL is enabled but the GRAALVM_HOME environment variable is not set. The java.library.path property has not been set and will need to be set manually.");
             }
         }
 
         nativeImage.produce(new SubstrateSystemPropertyBuildItem("shamrock.ssl.native", sslNativeEnabled.toString()));
     }
 
-    private Boolean isSslNativeEnabled(SslNativeConfigBuildItem sslNativeConfig, List<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport) {
+    private Boolean isSslNativeEnabled(SslNativeConfigBuildItem sslNativeConfig,
+            List<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport) {
         if (sslNativeConfig.isEnabled()) {
             return Boolean.TRUE;
         } else if (!sslNativeConfig.isExplicitlyDisabled() && !extensionSslNativeSupport.isEmpty()) {

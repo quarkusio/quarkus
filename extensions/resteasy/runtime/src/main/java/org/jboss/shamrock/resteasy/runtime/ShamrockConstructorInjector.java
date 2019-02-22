@@ -53,10 +53,10 @@ public class ShamrockConstructorInjector implements ConstructorInjector {
         if (ShamrockInjectorFactory.CONTAINER == null) {
             return delegate.construct(request, response, unwrapAsync);
         }
-        if(factory == null) {
+        if (factory == null) {
             factory = ShamrockInjectorFactory.CONTAINER.instanceFactory(this.ctor.getDeclaringClass());
         }
-        if(factory == null) {
+        if (factory == null) {
             return delegate.construct(request, response, unwrapAsync);
         }
         return CompletableFuture.completedFuture(factory.create().get());

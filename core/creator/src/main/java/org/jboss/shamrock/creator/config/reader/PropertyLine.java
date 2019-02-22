@@ -59,22 +59,23 @@ public class PropertyLine implements Comparable<PropertyLine> {
 
     public String getRelativeName(int nameElementIndex) {
         final int lastIndex = nameElements.length - 1;
-        if(nameElementIndex == lastIndex) {
+        if (nameElementIndex == lastIndex) {
             return nameElements[lastIndex];
         }
-        if(nameElementIndex < 0 || nameElementIndex > lastIndex) {
-            throw new IndexOutOfBoundsException("Name element index has to be in range from 0 to " + lastIndex + " but was " + nameElementIndex);
+        if (nameElementIndex < 0 || nameElementIndex > lastIndex) {
+            throw new IndexOutOfBoundsException(
+                    "Name element index has to be in range from 0 to " + lastIndex + " but was " + nameElementIndex);
         }
         return getNamePart(nameElementIndex, lastIndex);
     }
 
     protected String getNamePart(int startI, int endI) {
-        if(startI == endI) {
+        if (startI == endI) {
             return nameElements[startI];
         }
         final StringBuilder buf = new StringBuilder();
         buf.append(nameElements[startI++]);
-        while(startI <= endI) {
+        while (startI <= endI) {
             buf.append('.').append(nameElements[startI++]);
         }
         return buf.toString();
@@ -90,10 +91,10 @@ public class PropertyLine implements Comparable<PropertyLine> {
 
     @Override
     public String toString() {
-        if(index < 0) {
+        if (index < 0) {
             return name + '=' + value;
         }
-        return index +") " + line;
+        return index + ") " + line;
     }
 
     @Override

@@ -27,10 +27,10 @@ import io.vertx.core.spi.resolver.ResolverProvider;
 
 @TargetClass(className = "io.vertx.core.net.impl.transport.Transport")
 final class Target_io_vertx_core_net_impl_transport_Transport {
-	@Substitute
-	public static Transport nativeTransport() {
-		return Transport.JDK;
-	}
+    @Substitute
+    public static Transport nativeTransport() {
+        return Transport.JDK;
+    }
 }
 
 /**
@@ -39,10 +39,10 @@ final class Target_io_vertx_core_net_impl_transport_Transport {
 @TargetClass(className = "io.vertx.core.spi.resolver.ResolverProvider")
 final class TargetResolverProvider {
 
-	@Substitute
-	public static ResolverProvider factory(Vertx vertx, AddressResolverOptions options) {
-		return new DefaultResolverProvider();
-	}
+    @Substitute
+    public static ResolverProvider factory(Vertx vertx, AddressResolverOptions options) {
+        return new DefaultResolverProvider();
+    }
 }
 
 @TargetClass(className = "io.vertx.core.net.OpenSSLEngineOptions")
@@ -50,12 +50,12 @@ final class Target_io_vertx_core_net_OpenSSLEngineOptions {
 
     @Substitute
     public static boolean isAvailable() {
-      return false;
+        return false;
     }
 
     @Substitute
     public static boolean isAlpnAvailable() {
-      return false;
+        return false;
     }
 }
 

@@ -51,9 +51,9 @@ public class TransactionScopedEntityManager implements EntityManager {
     private final Instance<RequestScopedEntityManagerHolder> requestScopedEms;
 
     public TransactionScopedEntityManager(TransactionManager transactionManager,
-                                          TransactionSynchronizationRegistry tsr,
-                                          EntityManagerFactory emf,
-                                          String unitName, Instance<RequestScopedEntityManagerHolder> requestScopedEms) {
+            TransactionSynchronizationRegistry tsr,
+            EntityManagerFactory emf,
+            String unitName, Instance<RequestScopedEntityManagerHolder> requestScopedEms) {
         this.transactionManager = transactionManager;
         this.tsr = tsr;
         this.emf = emf;

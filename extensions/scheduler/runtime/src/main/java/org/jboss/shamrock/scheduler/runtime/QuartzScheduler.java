@@ -109,7 +109,8 @@ public class QuartzScheduler implements Scheduler {
             // Impl note: we can only store primitives in JobDataMap
             JobDetail job = JobBuilder.newJob(TimerJob.class).withIdentity(name, Scheduler.class.getName()).build();
             org.quartz.Trigger trigger = TriggerBuilder.newTrigger().withIdentity(name + "_trigger", Scheduler.class.getName())
-                    .startAt(new Date(Instant.now().plusMillis(delay).toEpochMilli())).withSchedule(SimpleScheduleBuilder.simpleSchedule()).build();
+                    .startAt(new Date(Instant.now().plusMillis(delay).toEpochMilli()))
+                    .withSchedule(SimpleScheduleBuilder.simpleSchedule()).build();
 
             try {
                 scheduler.scheduleJob(job, trigger);
@@ -167,7 +168,8 @@ public class QuartzScheduler implements Scheduler {
 
                         // Job name: 1_MyService_Invoker
                         String name = idx++ + "_" + entry.getKey();
-                        JobBuilder jobBuilder = JobBuilder.newJob(InvokerJob.class).withIdentity(name, Scheduler.class.getName())
+                        JobBuilder jobBuilder = JobBuilder.newJob(InvokerJob.class)
+                                .withIdentity(name, Scheduler.class.getName())
                                 .usingJobData(SchedulerDeploymentTemplate.INVOKER_KEY, entry.getKey());
                         ScheduleBuilder<?> scheduleBuilder;
 
@@ -197,18 +199,22 @@ public class QuartzScheduler implements Scheduler {
                                 // This should only happen for config-based expressions
                                 throw new IllegalStateException("Invalid every() expression on: " + scheduled, e);
                             }
-                            scheduleBuilder = SimpleScheduleBuilder.simpleSchedule().withIntervalInMilliseconds(duration.toMillis()).repeatForever();
+                            scheduleBuilder = SimpleScheduleBuilder.simpleSchedule()
+                                    .withIntervalInMilliseconds(duration.toMillis()).repeatForever();
                         } else {
                             throw new IllegalArgumentException("Invalid schedule configuration: " + scheduled);
                         }
 
-                        TriggerBuilder<?> triggerBuilder = TriggerBuilder.newTrigger().withIdentity(name + "_trigger", Scheduler.class.getName())
+                        TriggerBuilder<?> triggerBuilder = TriggerBuilder.newTrigger()
+                                .withIdentity(name + "_trigger", Scheduler.class.getName())
                                 .withSchedule(scheduleBuilder);
                         if (scheduled.delay() > 0) {
-                            triggerBuilder.startAt(new Date(Instant.now().plusMillis(scheduled.delayUnit().toMillis(scheduled.delay())).toEpochMilli()));
+                            triggerBuilder.startAt(new Date(Instant.now()
+                                    .plusMillis(scheduled.delayUnit().toMillis(scheduled.delay())).toEpochMilli()));
                         }
                         scheduler.scheduleJob(jobBuilder.build(), triggerBuilder.build());
-                        LOGGER.debugf("Scheduled business method %s with config %s", schedulerConfig.getDescription(entry.getKey()), scheduled);
+                        LOGGER.debugf("Scheduled business method %s with config %s",
+                                schedulerConfig.getDescription(entry.getKey()), scheduled);
                     }
                 }
 

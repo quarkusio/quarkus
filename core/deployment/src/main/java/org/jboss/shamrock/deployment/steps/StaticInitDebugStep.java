@@ -43,16 +43,19 @@ public class StaticInitDebugStep {
         public ClassVisitor apply(final String className, final ClassVisitor classVisitor) {
             return new ClassVisitor(Opcodes.ASM6, classVisitor) {
                 @Override
-                public MethodVisitor visitMethod(final int access, final String name, final String descriptor, final String signature, final String[] exceptions) {
+                public MethodVisitor visitMethod(final int access, final String name, final String descriptor,
+                        final String signature, final String[] exceptions) {
                     final MethodVisitor outer = super.visitMethod(access, name, descriptor, signature, exceptions);
                     if (name.equals("<clinit>")) {
-                        outer.visitMethodInsn(Opcodes.INVOKESTATIC, ImageInfo.class.getName(), "inImageBuildtimeCode", "()Z", false);
+                        outer.visitMethodInsn(Opcodes.INVOKESTATIC, ImageInfo.class.getName(), "inImageBuildtimeCode", "()Z",
+                                false);
                         Label ok = new Label();
                         outer.visitJumpInsn(Opcodes.IFEQ, ok);
                         // construct an error - todo this could go on some core runtime class to save a few bytes of repeated string
                         outer.visitTypeInsn(Opcodes.NEW, "java/lang/Error");
                         outer.visitLdcInsn("Class initialized during build");
-                        outer.visitMethodInsn(Opcodes.INVOKESPECIAL, Error.class.getName(), "<init>", "(Ljava/lang/String;)V", false);
+                        outer.visitMethodInsn(Opcodes.INVOKESPECIAL, Error.class.getName(), "<init>", "(Ljava/lang/String;)V",
+                                false);
                         outer.visitInsn(Opcodes.ATHROW);
                     }
                     return outer;

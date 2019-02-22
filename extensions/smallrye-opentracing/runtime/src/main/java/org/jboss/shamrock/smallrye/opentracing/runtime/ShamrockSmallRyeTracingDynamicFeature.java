@@ -16,7 +16,6 @@
 
 package org.jboss.shamrock.smallrye.opentracing.runtime;
 
-
 import java.util.Optional;
 import java.util.logging.Logger;
 
@@ -25,24 +24,26 @@ import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.FeatureContext;
 import javax.ws.rs.ext.Provider;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
+
 import io.opentracing.contrib.jaxrs2.server.OperationNameProvider;
 import io.opentracing.contrib.jaxrs2.server.ServerTracingDynamicFeature;
 import io.opentracing.util.GlobalTracer;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
-
 @Provider
 public class ShamrockSmallRyeTracingDynamicFeature implements DynamicFeature {
 
-    private static final Logger logger = Logger.getLogger(io.smallrye.opentracing.SmallRyeTracingDynamicFeature.class.getName());
+    private static final Logger logger = Logger
+            .getLogger(io.smallrye.opentracing.SmallRyeTracingDynamicFeature.class.getName());
 
     private final ServerTracingDynamicFeature delegate;
 
     public ShamrockSmallRyeTracingDynamicFeature() {
         Config config = ConfigProvider.getConfig();
         Optional<String> skipPattern = config.getOptionalValue("mp.opentracing.server.skip-pattern", String.class);
-        Optional<String> operationNameProvider = config.getOptionalValue("mp.opentracing.server.operation-name-provider", String.class);
+        Optional<String> operationNameProvider = config.getOptionalValue("mp.opentracing.server.operation-name-provider",
+                String.class);
 
         ServerTracingDynamicFeature.Builder builder = new ServerTracingDynamicFeature.Builder(GlobalTracer.get())
                 .withOperationNameProvider(OperationNameProvider.ClassNameOperationName.newBuilder())

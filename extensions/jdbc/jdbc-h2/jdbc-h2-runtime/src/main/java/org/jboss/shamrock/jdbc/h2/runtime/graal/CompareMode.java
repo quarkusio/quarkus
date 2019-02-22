@@ -12,19 +12,19 @@ public final class CompareMode {
     @Alias
     private static volatile CompareMode lastUsed;
 
-//    @Inject
-//    private static final org.h2.value.CompareMode SINGLE_CHOICE = org.h2.value.CompareMode.getInstance(null, 0, SysProperties.SORT_BINARY_UNSIGNED);
+    //    @Inject
+    //    private static final org.h2.value.CompareMode SINGLE_CHOICE = org.h2.value.CompareMode.getInstance(null, 0, SysProperties.SORT_BINARY_UNSIGNED);
 
     @Substitute
     public static CompareMode getInstance(String name, int strength, boolean binaryUnsigned) {
         if (name != null || strength != 0 || binaryUnsigned != SysProperties.SORT_BINARY_UNSIGNED) {
-            throw new UnsupportedOperationException("Only the default Collator can be currently used in SubstrateVM; see https://github.com/oracle/graal/issues/839");
+            throw new UnsupportedOperationException(
+                    "Only the default Collator can be currently used in SubstrateVM; see https://github.com/oracle/graal/issues/839");
         }
         CompareMode var3 = lastUsed;
-        if ( var3 != null ) {
+        if (var3 != null) {
             return var3;
-        }
-        else {
+        } else {
             var3 = new CompareMode(name, strength, binaryUnsigned);
             lastUsed = var3;
             return var3;

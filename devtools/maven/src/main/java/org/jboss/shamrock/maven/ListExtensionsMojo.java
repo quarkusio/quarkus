@@ -12,8 +12,9 @@ public class ListExtensionsMojo extends AbstractMojo {
     public void execute() {
         getLog().info("Available extensions:");
         MojoUtils.loadExtensions().stream()
-                     .sorted((o1, o2) -> o1.getName().compareToIgnoreCase(o2.getName()))
-                     .forEach(ext -> getLog().info("\t * " + ext.getName() + " (" + ext.getGroupId() + ":" + ext.getArtifactId() + ")"));
+                .sorted((o1, o2) -> o1.getName().compareToIgnoreCase(o2.getName()))
+                .forEach(ext -> getLog()
+                        .info("\t * " + ext.getName() + " (" + ext.getGroupId() + ":" + ext.getArtifactId() + ")"));
 
         getLog().info("\nAdd an extension to your project by adding the dependency to your " +
                 "project or use `mvn shamrock:add-extension -Dextensions=\"name\"`");

@@ -50,7 +50,7 @@ public final class CopyUtils {
             byte[] buf = new byte[reasonableBufferSize];
             int r;
             while ((r = in.read(buf)) > 0) {
-               out.write(buf, 0, r);
+                out.write(buf, 0, r);
             }
             return out.toByteArray();
         }

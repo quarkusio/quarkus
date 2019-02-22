@@ -142,5 +142,4 @@ public class EventBusConfiguration {
     @ConfigItem
     public boolean trustAll;
 
-
 }

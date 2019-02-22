@@ -38,9 +38,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.ext.ParamConverterProvider;
 
-import io.smallrye.restclient.*;
-import io.smallrye.restclient.async.AsyncInvocationInterceptorHandler;
-import io.smallrye.restclient.header.ClientHeaderProviders;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
@@ -53,6 +50,9 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.engines.URLConnectionEngine;
 import org.jboss.resteasy.spi.ResteasyUriBuilder;
 
+import io.smallrye.restclient.*;
+import io.smallrye.restclient.async.AsyncInvocationInterceptorHandler;
+import io.smallrye.restclient.header.ClientHeaderProviders;
 
 /**
  * Created by hbraun on 15.01.18.
@@ -170,7 +170,8 @@ public class RestClientBuilderImpl implements RestClientBuilder {
             resteasyClientBuilder = builderDelegate;
         }
         // this is rest easy default
-        ExecutorService executorService = this.executorService != null ? this.executorService : Executors.newFixedThreadPool(10);
+        ExecutorService executorService = this.executorService != null ? this.executorService
+                : Executors.newFixedThreadPool(10);
 
         ExecutorService executor = AsyncInvocationInterceptorHandler.wrapExecutorService(executorService);
         resteasyClientBuilder.executorService(executor);
@@ -202,7 +203,8 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         interfaces[0] = aClass;
         interfaces[1] = RestClientProxy.class;
 
-        T proxy = (T) Proxy.newProxyInstance(classLoader, interfaces, new ProxyInvocationHandler(aClass, actualClient, getLocalProviderInstances(), client, asyncInterceptorFactories));
+        T proxy = (T) Proxy.newProxyInstance(classLoader, interfaces, new ProxyInvocationHandler(aClass, actualClient,
+                getLocalProviderInstances(), client, asyncInterceptorFactories));
         ClientHeaderProviders.registerForClass(aClass, proxy);
         return proxy;
     }
@@ -282,13 +284,15 @@ public class RestClientBuilderImpl implements RestClientBuilder {
             }
 
             if (allVariables.size() != paramMap.size()) {
-                throw new RestClientDefinitionException("Parameters and variables don't match on " + typeDef + "::" + method.getName());
+                throw new RestClientDefinitionException(
+                        "Parameters and variables don't match on " + typeDef + "::" + method.getName());
             }
 
             try {
                 template.resolveTemplates(paramMap, false).build();
             } catch (IllegalArgumentException ex) {
-                throw new RestClientDefinitionException("Parameter names don't match variable names on " + typeDef + "::" + method.getName(), ex);
+                throw new RestClientDefinitionException(
+                        "Parameter names don't match variable names on " + typeDef + "::" + method.getName(), ex);
             }
 
         }
@@ -316,7 +320,9 @@ public class RestClientBuilderImpl implements RestClientBuilder {
                 if (value instanceof List) {
                     arguments = ((List<?>) value).toArray();
                 } else {
-                    throw new IllegalArgumentException("Value must be an instance of List<> for ResteasyClientBuilder setter method: " + builderMethodName);
+                    throw new IllegalArgumentException(
+                            "Value must be an instance of List<> for ResteasyClientBuilder setter method: "
+                                    + builderMethodName);
                 }
             } else {
                 arguments = new Object[] { value };

@@ -52,7 +52,7 @@ public class FlatClassLoaderService implements ClassLoaderService {
         try {
             return (Class<T>) Class.forName(className, false, getClassLoader());
         } catch (Exception | LinkageError e) {
-            throw new ClassLoadingException( "Unable to load class [" + className + "]", e );
+            throw new ClassLoadingException("Unable to load class [" + className + "]", e);
         }
     }
 

@@ -68,7 +68,6 @@ public class OpenApiTestCase {
         Assertions.assertEquals(1, keys.size());
         Assertions.assertEquals("get", keys.iterator().next());
 
-
         JsonObject injectionObj = paths.getJsonObject("/test/rx");
         Assertions.assertNotNull(injectionObj);
         keys = injectionObj.keySet();

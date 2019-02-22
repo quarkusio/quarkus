@@ -86,8 +86,6 @@ public class DatasourceResource {
         }
     }
 
-
-
     @GET
     @Path("/txninterceptor0")
     @Transactional(value = Transactional.TxType.REQUIRED)
@@ -117,7 +115,6 @@ public class DatasourceResource {
         }
         throw new RuntimeException("ROLLBACK");
     }
-
 
     @GET
     @Path("/txninterceptor2")

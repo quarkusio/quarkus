@@ -31,19 +31,19 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
 import org.jboss.shamrock.arc.deployment.BeanArchiveIndexBuildItem;
 import org.jboss.shamrock.arc.deployment.BeanContainerBuildItem;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.ShutdownContextBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.runtime.annotations.ConfigItem;
 import org.jboss.shamrock.runtime.annotations.ConfigRoot;
-import org.jboss.shamrock.smallrye.metrics.runtime.SmallRyeMetricsTemplate;
 import org.jboss.shamrock.smallrye.metrics.runtime.SmallRyeMetricsServlet;
+import org.jboss.shamrock.smallrye.metrics.runtime.SmallRyeMetricsTemplate;
 import org.jboss.shamrock.undertow.ServletBuildItem;
 
 import io.smallrye.metrics.MetricProducer;
@@ -78,7 +78,7 @@ public class SmallRyeMetricsProcessor {
     }
 
     @BuildStep
-    void beans( BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+    void beans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         additionalBeans.produce(new AdditionalBeanBuildItem(MetricProducer.class,
                 MetricNameFactory.class,
                 MetricRegistries.class,
@@ -93,11 +93,11 @@ public class SmallRyeMetricsProcessor {
     @BuildStep
     @Record(STATIC_INIT)
     public void build(BeanContainerBuildItem beanContainerBuildItem,
-                      SmallRyeMetricsTemplate metrics,
-                      ShutdownContextBuildItem shutdown,
-                      BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
-                      BeanArchiveIndexBuildItem beanArchiveIndex,
-                      BuildProducer<FeatureBuildItem> feature) throws Exception {
+            SmallRyeMetricsTemplate metrics,
+            ShutdownContextBuildItem shutdown,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BeanArchiveIndexBuildItem beanArchiveIndex,
+            BuildProducer<FeatureBuildItem> feature) throws Exception {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_METRICS));
 
@@ -114,7 +114,8 @@ public class SmallRyeMetricsProcessor {
 
             // We need to exclude metrics interceptors
             if (Kind.CLASS.equals(target.kind())
-                    && target.asClass().classAnnotations().stream().anyMatch(a -> a.name().equals(DotName.createSimple(Interceptor.class.getName())))) {
+                    && target.asClass().classAnnotations().stream()
+                            .anyMatch(a -> a.name().equals(DotName.createSimple(Interceptor.class.getName())))) {
                 continue;
             }
 

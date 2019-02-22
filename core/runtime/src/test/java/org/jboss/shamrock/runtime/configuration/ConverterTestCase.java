@@ -25,9 +25,12 @@ public class ConverterTestCase {
         assertEquals(new InetSocketAddress(Inet.parseInet4Address("127.0.0.1"), 1234), converter.convert("[127.0.0.1]:1234"));
         assertEquals(new InetSocketAddress(Inet.parseInet6Address("::"), 1234), converter.convert("[::]:1234"));
         assertEquals(new InetSocketAddress(Inet.parseInet6Address("::"), 1234), converter.convert("[[::]]:1234"));
-        assertEquals(InetSocketAddress.createUnresolved("some-host-name.foo", 1234), converter.convert("some-host-name.foo:1234"));
-        assertEquals(InetSocketAddress.createUnresolved("some-host-name.foo", 1234), converter.convert("[some-host-name.foo]:1234"));
-        assertEquals(InetSocketAddress.createUnresolved("some-host-name.foo", 1234), converter.convert("[[some-host-name.foo]]:1234"));
+        assertEquals(InetSocketAddress.createUnresolved("some-host-name.foo", 1234),
+                converter.convert("some-host-name.foo:1234"));
+        assertEquals(InetSocketAddress.createUnresolved("some-host-name.foo", 1234),
+                converter.convert("[some-host-name.foo]:1234"));
+        assertEquals(InetSocketAddress.createUnresolved("some-host-name.foo", 1234),
+                converter.convert("[[some-host-name.foo]]:1234"));
     }
 
     @Test

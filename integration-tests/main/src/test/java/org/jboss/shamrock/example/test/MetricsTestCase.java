@@ -27,7 +27,6 @@ import io.restassured.RestAssured;
 @ShamrockTest
 public class MetricsTestCase {
 
-
     @Test
     public void testMetrics() {
         testCounted("0.0");
@@ -53,7 +52,8 @@ public class MetricsTestCase {
 
     private void testCounted(String val) {
         RestAssured.when().get("/metrics").then()
-                .body(containsString("application:org_jboss_shamrock_example_metrics_metrics_resource_a_counted_resource " + val));
+                .body(containsString(
+                        "application:org_jboss_shamrock_example_metrics_metrics_resource_a_counted_resource " + val));
     }
 
     public void invokeResource() {

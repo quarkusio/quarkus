@@ -16,19 +16,20 @@
 
 package org.jboss.shamrock.undertow;
 
+import org.jboss.shamrock.arc.deployment.BeanContainerBuildItem;
+import org.jboss.shamrock.arc.deployment.BeanDefiningAnnotationBuildItem;
 import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.annotations.ExecutionTime;
 import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.arc.deployment.BeanContainerBuildItem;
-import org.jboss.shamrock.arc.deployment.BeanDefiningAnnotationBuildItem;
 import org.jboss.shamrock.undertow.runtime.UndertowDeploymentTemplate;
 
 public class UndertowArcIntegrationBuildStep {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    ServletExtensionBuildItem integrateRequestContext(BeanContainerBuildItem beanContainerBuildItem, UndertowDeploymentTemplate template) {
+    ServletExtensionBuildItem integrateRequestContext(BeanContainerBuildItem beanContainerBuildItem,
+            UndertowDeploymentTemplate template) {
         return new ServletExtensionBuildItem(template.setupRequestScope(beanContainerBuildItem.getValue()));
     }
 

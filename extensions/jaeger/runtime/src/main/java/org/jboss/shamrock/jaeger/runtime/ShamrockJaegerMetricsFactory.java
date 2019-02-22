@@ -34,66 +34,63 @@ import io.smallrye.metrics.MetricRegistries;
 public class ShamrockJaegerMetricsFactory implements MetricsFactory {
 
     MetricRegistry registry = MetricRegistries.get(MetricRegistry.Type.BASE);
-    
+
     @Override
     public Counter createCounter(final String name, final Map<String, String> tags) {
-      org.eclipse.microprofile.metrics.Counter counter=
-            registry.counter(meta(name, tags, MetricType.COUNTER));
+        org.eclipse.microprofile.metrics.Counter counter = registry.counter(meta(name, tags, MetricType.COUNTER));
 
-      return new Counter() {
-        @Override
-        public void inc(long delta) {
-          counter.inc(delta);
-        }
-      };
+        return new Counter() {
+            @Override
+            public void inc(long delta) {
+                counter.inc(delta);
+            }
+        };
     }
-  
+
     @Override
     public Timer createTimer(final String name, final Map<String, String> tags) {
-      org.eclipse.microprofile.metrics.Timer timer=
-            registry.timer(meta(name, tags, MetricType.TIMER));
+        org.eclipse.microprofile.metrics.Timer timer = registry.timer(meta(name, tags, MetricType.TIMER));
 
-      return new Timer() {
-        @Override
-        public void durationMicros(long time) {
-          timer.update(time, TimeUnit.MICROSECONDS);
-        }
-      };
+        return new Timer() {
+            @Override
+            public void durationMicros(long time) {
+                timer.update(time, TimeUnit.MICROSECONDS);
+            }
+        };
     }
-  
+
     @Override
     public Gauge createGauge(final String name, final Map<String, String> tags) {
-      JaegerGauge gauge=registry.register(meta(name, tags, MetricType.GAUGE), new JaegerGauge());
+        JaegerGauge gauge = registry.register(meta(name, tags, MetricType.GAUGE), new JaegerGauge());
 
-      return new Gauge() {
-        @Override
-        public void update(long amount) {
-          gauge.update(amount);
-        }
-      };
+        return new Gauge() {
+            @Override
+            public void update(long amount) {
+                gauge.update(amount);
+            }
+        };
     }
 
     static Metadata meta(String name, final Map<String, String> tags, MetricType type) {
-      Metadata meta = new Metadata(name, type);
-      meta.setDisplayName(name);
-      meta.setUnit("none");
-      meta.setDescription(name);
-      meta.setTags(new HashMap<String,String>(tags));
-      meta.setReusable(true);
-      return meta;
+        Metadata meta = new Metadata(name, type);
+        meta.setDisplayName(name);
+        meta.setUnit("none");
+        meta.setDescription(name);
+        meta.setTags(new HashMap<String, String>(tags));
+        meta.setReusable(true);
+        return meta;
     }
-  
-    static class JaegerGauge implements org.eclipse.microprofile.metrics.Gauge<Long> {
-      private AtomicLong value=new AtomicLong();
-  
-      public void update(long value) {
-        this.value.set(value);
-      }
 
-      @Override
-      public Long getValue() {
-        return value.get();
-      }
+    static class JaegerGauge implements org.eclipse.microprofile.metrics.Gauge<Long> {
+        private AtomicLong value = new AtomicLong();
+
+        public void update(long value) {
+            this.value.set(value);
+        }
+
+        @Override
+        public Long getValue() {
+            return value.get();
+        }
     }
 }
-

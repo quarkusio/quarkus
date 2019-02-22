@@ -38,16 +38,18 @@ public class SinglePhaseTestCase {
 
         final TestResult outcome = new TestResult("handler");
 
-        final OutcomeResolver<OutcomeMap> router = OutcomeResolverFactory.<OutcomeMap>getInstance()
+        final OutcomeResolver<OutcomeMap> router = OutcomeResolverFactory.<OutcomeMap> getInstance()
                 .addProvider(new OutcomeProvider<OutcomeMap>() {
                     @Override
                     public void register(OutcomeProviderRegistration registration) throws AppCreatorException {
                         registration.provides(TestResult.class);
                     }
+
                     @Override
                     public void provideOutcome(OutcomeMap ctx) throws AppCreatorException {
                         ctx.pushOutcome(outcome);
-                    }})
+                    }
+                })
                 .build();
 
         final OutcomeMap resolver = new OutcomeMap(router);

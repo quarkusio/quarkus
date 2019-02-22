@@ -30,11 +30,11 @@ public class MPRealmConfig {
     @ConfigItem
     public boolean enabled;
 
-    /** The realm users user1=password\nuser2=password2... mapping*/
+    /** The realm users user1=password\nuser2=password2... mapping */
     @ConfigItem
     Map<String, String> users;
 
-    /** The realm roles user1=role1,role2,...\nuser2=role1,role2,... mapping*/
+    /** The realm roles user1=role1,role2,...\nuser2=role1,role2,... mapping */
     @ConfigItem
     Map<String, String> roles;
 
@@ -81,6 +81,7 @@ public class MPRealmConfig {
     /**
      * Used to access what should be a parent class, but parsing of the MP config properties is not working
      * from parent to child
+     * 
      * @return AuthConfig information
      */
     public AuthConfig getAuthConfig() {

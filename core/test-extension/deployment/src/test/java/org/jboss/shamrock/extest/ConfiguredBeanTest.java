@@ -18,8 +18,7 @@ public class ConfiguredBeanTest {
     static final ShamrockUnitTest config = new ShamrockUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(ConfiguredBean.class)
-                    .addAsManifestResource("microprofile-config.properties")
-            );
+                    .addAsManifestResource("microprofile-config.properties"));
 
     @Inject
     ConfiguredBean configuredBean;
@@ -44,47 +43,56 @@ public class ConfiguredBeanTest {
     public void validateBuildTimeConfig() {
         TestBuildAndRunTimeConfig buildTimeConfig = configuredBean.getBuildTimeConfig();
         Assertions.assertEquals("StringBasedValue", buildTimeConfig.btSBV.getValue(),
-                                "buildTimeConfig.btSBV != StringBasedValue; "+buildTimeConfig.btSBV.getValue());
+                "buildTimeConfig.btSBV != StringBasedValue; " + buildTimeConfig.btSBV.getValue());
         Assertions.assertEquals("btSBVWithDefaultValue", buildTimeConfig.btSBVWithDefault.getValue(),
-                                "buildTimeConfig.btSBVWithDefault != btSBVWithDefaultValue; "+buildTimeConfig.btSBVWithDefault.getValue());
+                "buildTimeConfig.btSBVWithDefault != btSBVWithDefaultValue; " + buildTimeConfig.btSBVWithDefault.getValue());
         Assertions.assertEquals("btStringOptValue", buildTimeConfig.btStringOpt,
-                                "buildTimeConfig.btStringOpt != btStringOptValue; "+buildTimeConfig.btStringOpt);
+                "buildTimeConfig.btStringOpt != btStringOptValue; " + buildTimeConfig.btStringOpt);
 
         // shamrock.btrt.all-values.double-primitive=3.1415926535897932384
         Assertions.assertEquals(3.1415926535897932384, buildTimeConfig.allValues.doublePrimitive, 0.00000001);
         // shamrock.btrt.all-values.opt-double-value=3.1415926535897932384
-        Assertions.assertTrue(buildTimeConfig.allValues.optDoubleValue.isPresent(), "runTimeConfig.allValues.optDoubleValue.isPresent");
+        Assertions.assertTrue(buildTimeConfig.allValues.optDoubleValue.isPresent(),
+                "runTimeConfig.allValues.optDoubleValue.isPresent");
         Assertions.assertEquals(3.1415926535897932384, buildTimeConfig.allValues.optDoubleValue.getAsDouble(), 0.00000001);
 
-        if(!buildTimeConfig.btStringOptWithDefault.equals("btStringOptWithDefaultValue")) {
-            throw new IllegalStateException("buildTimeConfig.btStringOptWithDefault != btStringOptWithDefaultValue; "+buildTimeConfig.btStringOptWithDefault);
+        if (!buildTimeConfig.btStringOptWithDefault.equals("btStringOptWithDefaultValue")) {
+            throw new IllegalStateException("buildTimeConfig.btStringOptWithDefault != btStringOptWithDefaultValue; "
+                    + buildTimeConfig.btStringOptWithDefault);
         }
-        if(!buildTimeConfig.allValues.oov.equals(new ObjectOfValue("configPart1", "configPart2"))) {
-            throw new IllegalStateException("buildTimeConfig.oov != configPart1+onfigPart2; "+buildTimeConfig.allValues.oov);
+        if (!buildTimeConfig.allValues.oov.equals(new ObjectOfValue("configPart1", "configPart2"))) {
+            throw new IllegalStateException("buildTimeConfig.oov != configPart1+onfigPart2; " + buildTimeConfig.allValues.oov);
         }
-        if(!buildTimeConfig.allValues.oovWithDefault.equals(new ObjectOfValue("defaultPart1", "defaultPart2"))) {
-            throw new IllegalStateException("buildTimeConfig.oovWithDefault != defaultPart1+defaultPart2; "+buildTimeConfig.allValues.oovWithDefault);
+        if (!buildTimeConfig.allValues.oovWithDefault.equals(new ObjectOfValue("defaultPart1", "defaultPart2"))) {
+            throw new IllegalStateException(
+                    "buildTimeConfig.oovWithDefault != defaultPart1+defaultPart2; " + buildTimeConfig.allValues.oovWithDefault);
         }
-        if(!buildTimeConfig.allValues.ovo.equals(new ObjectValueOf("configPart1", "configPart2"))) {
-            throw new IllegalStateException("buildTimeConfig.oov != configPart1+onfigPart2; "+buildTimeConfig.allValues.oov);
+        if (!buildTimeConfig.allValues.ovo.equals(new ObjectValueOf("configPart1", "configPart2"))) {
+            throw new IllegalStateException("buildTimeConfig.oov != configPart1+onfigPart2; " + buildTimeConfig.allValues.oov);
         }
-        if(!buildTimeConfig.allValues.ovoWithDefault.equals(new ObjectValueOf("defaultPart1", "defaultPart2"))) {
-            throw new IllegalStateException("buildTimeConfig.oovWithDefault != defaultPart1+defaultPart2; "+buildTimeConfig.allValues.oovWithDefault);
+        if (!buildTimeConfig.allValues.ovoWithDefault.equals(new ObjectValueOf("defaultPart1", "defaultPart2"))) {
+            throw new IllegalStateException(
+                    "buildTimeConfig.oovWithDefault != defaultPart1+defaultPart2; " + buildTimeConfig.allValues.oovWithDefault);
         }
-        if(buildTimeConfig.allValues.longPrimitive != 1234567891L) {
-            throw new IllegalStateException("buildTimeConfig.allValues.longPrimitive != 1234567891L; "+buildTimeConfig.allValues.longPrimitive);
+        if (buildTimeConfig.allValues.longPrimitive != 1234567891L) {
+            throw new IllegalStateException(
+                    "buildTimeConfig.allValues.longPrimitive != 1234567891L; " + buildTimeConfig.allValues.longPrimitive);
         }
-        if(buildTimeConfig.allValues.longValue != 1234567892L) {
-            throw new IllegalStateException("buildTimeConfig.allValues.longValue != 1234567892L; "+buildTimeConfig.allValues.longValue);
+        if (buildTimeConfig.allValues.longValue != 1234567892L) {
+            throw new IllegalStateException(
+                    "buildTimeConfig.allValues.longValue != 1234567892L; " + buildTimeConfig.allValues.longValue);
         }
-        if(buildTimeConfig.allValues.optLongValue.getAsLong() != 1234567893L) {
-            throw new IllegalStateException("buildTimeConfig.optLongValue != 1234567893L; "+buildTimeConfig.allValues.optLongValue.getAsLong());
+        if (buildTimeConfig.allValues.optLongValue.getAsLong() != 1234567893L) {
+            throw new IllegalStateException(
+                    "buildTimeConfig.optLongValue != 1234567893L; " + buildTimeConfig.allValues.optLongValue.getAsLong());
         }
-        if(buildTimeConfig.allValues.optionalLongValue.get() != 1234567894L) {
-            throw new IllegalStateException("buildTimeConfig.allValues.optionalLongValue != 1234567894L; "+buildTimeConfig.allValues.optionalLongValue.get());
+        if (buildTimeConfig.allValues.optionalLongValue.get() != 1234567894L) {
+            throw new IllegalStateException("buildTimeConfig.allValues.optionalLongValue != 1234567894L; "
+                    + buildTimeConfig.allValues.optionalLongValue.get());
         }
-        if(buildTimeConfig.allValues.nestedConfigMap.size() != 2) {
-            throw new IllegalStateException("buildTimeConfig.allValues.simpleMap.size != 2; "+buildTimeConfig.allValues.nestedConfigMap.size());
+        if (buildTimeConfig.allValues.nestedConfigMap.size() != 2) {
+            throw new IllegalStateException(
+                    "buildTimeConfig.allValues.simpleMap.size != 2; " + buildTimeConfig.allValues.nestedConfigMap.size());
         }
     }
 
@@ -100,23 +108,26 @@ public class ConfiguredBeanTest {
         Assertions.assertEquals("rtStringOptWithDefaultValue", runTimeConfig.rtStringOptWithDefault);
 
         //shamrock.rt.all-values.oov=configPart1+configPart2
-        Assertions.assertEquals(new ObjectOfValue("configPart1","configPart2"), runTimeConfig.allValues.oov);
+        Assertions.assertEquals(new ObjectOfValue("configPart1", "configPart2"), runTimeConfig.allValues.oov);
         //shamrock.rt.all-values.ovo=configPart1+configPart2
-        Assertions.assertEquals(new ObjectValueOf("configPart1","configPart2"), runTimeConfig.allValues.ovo);
+        Assertions.assertEquals(new ObjectValueOf("configPart1", "configPart2"), runTimeConfig.allValues.ovo);
         // shamrock.rt.all-values.long-primitive=12345678911
         Assertions.assertEquals(12345678911l, runTimeConfig.allValues.longPrimitive);
         // shamrock.rt.all-values.long-value=12345678921
         Assertions.assertEquals(12345678921l, runTimeConfig.allValues.longValue.longValue());
         // shamrock.rt.all-values.opt-long-value=12345678931
-        Assertions.assertTrue(runTimeConfig.allValues.optLongValue.isPresent(), "runTimeConfig.allValues.optLongValue.isPresent");
+        Assertions.assertTrue(runTimeConfig.allValues.optLongValue.isPresent(),
+                "runTimeConfig.allValues.optLongValue.isPresent");
         Assertions.assertEquals(12345678931l, runTimeConfig.allValues.optLongValue.getAsLong());
         // shamrock.rt.all-values.optional-long-value=12345678941
-        Assertions.assertTrue(runTimeConfig.allValues.optionalLongValue.isPresent(), "runTimeConfig.allValues.optionalLongValue.isPresent");
+        Assertions.assertTrue(runTimeConfig.allValues.optionalLongValue.isPresent(),
+                "runTimeConfig.allValues.optionalLongValue.isPresent");
         Assertions.assertEquals(12345678941l, runTimeConfig.allValues.optionalLongValue.get().longValue());
         // shamrock.btrt.all-values.double-primitive=3.1415926535897932384
         Assertions.assertEquals(3.1415926535897932384, runTimeConfig.allValues.doublePrimitive, 0.00000001);
         // shamrock.btrt.all-values.opt-double-value=3.1415926535897932384
-        Assertions.assertTrue(runTimeConfig.allValues.optDoubleValue.isPresent(), "runTimeConfig.allValues.optDoubleValue.isPresent");
+        Assertions.assertTrue(runTimeConfig.allValues.optDoubleValue.isPresent(),
+                "runTimeConfig.allValues.optDoubleValue.isPresent");
         Assertions.assertEquals(3.1415926535897932384, runTimeConfig.allValues.optDoubleValue.getAsDouble(), 0.00000001);
         // shamrock.rt.all-values.string-list=value1,value2
         Assertions.assertEquals(2, runTimeConfig.allValues.stringList.size());

@@ -23,11 +23,11 @@ import java.util.Properties;
 
 import javax.inject.Inject;
 
+import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
+import org.jboss.shamrock.deployment.Capabilities;
 import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.annotations.Record;
-import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
-import org.jboss.shamrock.deployment.Capabilities;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
@@ -70,7 +70,8 @@ class NarayanaJtaProcessor {
     public void build(NarayanaJtaTemplate tt, BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.NARAYANA_JTA));
         additionalBeans.produce(new AdditionalBeanBuildItem(NarayanaJtaProducers.class));
-        runtimeInit.produce(new RuntimeInitializedClassBuildItem("com.arjuna.ats.internal.jta.resources.arjunacore.CommitMarkableResourceRecord"));
+        runtimeInit.produce(new RuntimeInitializedClassBuildItem(
+                "com.arjuna.ats.internal.jta.resources.arjunacore.CommitMarkableResourceRecord"));
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, JTAEnvironmentBean.class.getName(),
                 UserTransactionImple.class.getName(),
                 CheckedActionFactoryImple.class.getName(),
@@ -90,7 +91,7 @@ class NarayanaJtaProcessor {
         tt.setNodeName(transactions);
 
     }
-    
+
     @BuildStep
     void setupLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
         filters.produce(new LogCleanupFilterBuildItem("com.arjuna.ats.arjuna", "ARJUNA012170"));

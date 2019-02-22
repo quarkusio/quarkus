@@ -23,27 +23,27 @@ public class ConstraintTypeUtil20 implements ConstraintTypeUtil {
         Node firstNode = nodes.next();
 
         switch (firstNode.getKind()) {
-        case BEAN:
-            return ConstraintType.Type.CLASS;
-        case CONSTRUCTOR:
-        case METHOD:
-            Node secondNode = nodes.next();
+            case BEAN:
+                return ConstraintType.Type.CLASS;
+            case CONSTRUCTOR:
+            case METHOD:
+                Node secondNode = nodes.next();
 
-            if (secondNode.getKind() == ElementKind.PARAMETER || secondNode.getKind() == ElementKind.CROSS_PARAMETER) {
-                return ConstraintType.Type.PARAMETER;
-            } else if (secondNode.getKind() == ElementKind.RETURN_VALUE) {
-                return ConstraintType.Type.RETURN_VALUE;
-            } else {
-                throw new RuntimeException(Messages.MESSAGES.unexpectedPathNodeViolation(secondNode.getKind()));
-            }
-        case PROPERTY:
-            return ConstraintType.Type.PROPERTY;
-        case CROSS_PARAMETER:
-        case PARAMETER:
-        case RETURN_VALUE:
-        case CONTAINER_ELEMENT: // we shouldn't encounter these element types at the root
-        default:
-            throw new RuntimeException(Messages.MESSAGES.unexpectedPathNode(firstNode.getKind()));
+                if (secondNode.getKind() == ElementKind.PARAMETER || secondNode.getKind() == ElementKind.CROSS_PARAMETER) {
+                    return ConstraintType.Type.PARAMETER;
+                } else if (secondNode.getKind() == ElementKind.RETURN_VALUE) {
+                    return ConstraintType.Type.RETURN_VALUE;
+                } else {
+                    throw new RuntimeException(Messages.MESSAGES.unexpectedPathNodeViolation(secondNode.getKind()));
+                }
+            case PROPERTY:
+                return ConstraintType.Type.PROPERTY;
+            case CROSS_PARAMETER:
+            case PARAMETER:
+            case RETURN_VALUE:
+            case CONTAINER_ELEMENT: // we shouldn't encounter these element types at the root
+            default:
+                throw new RuntimeException(Messages.MESSAGES.unexpectedPathNode(firstNode.getKind()));
         }
     }
 }

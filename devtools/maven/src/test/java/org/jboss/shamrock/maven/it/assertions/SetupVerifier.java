@@ -70,7 +70,6 @@ public class SetupVerifier {
             assertThat(execution.getConfiguration()).isNull();
         });
 
-
         // Check profile
         assertThat(model.getProfiles()).hasSize(1);
         Profile profile = model.getProfiles().get(0);

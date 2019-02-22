@@ -9,10 +9,12 @@ import org.jboss.logmanager.LogContext;
  * A simple converter for logging levels.
  */
 public final class LevelConverter implements Converter<Level> {
-    public LevelConverter() {}
+    public LevelConverter() {
+    }
 
     public Level convert(final String value) {
-        if (value == null || value.isEmpty()) return null;
+        if (value == null || value.isEmpty())
+            return null;
         return LogContext.getLogContext().getLevelForName(value);
     }
 }

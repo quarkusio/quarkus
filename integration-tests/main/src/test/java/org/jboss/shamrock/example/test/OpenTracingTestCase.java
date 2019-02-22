@@ -26,7 +26,6 @@ import io.restassured.RestAssured;
 @ShamrockTest
 public class OpenTracingTestCase {
 
-
     @Test
     public void testOpenTracing() {
         invokeResource();

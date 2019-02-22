@@ -57,14 +57,15 @@ public class AppCreator implements AutoCloseable {
          * In the current implementation the phases are processed in the order
          * they are added.
          *
-         * <p/>NOTE: if user does not provide any phases, Java ServiceLoader mechanism
+         * <p/>
+         * NOTE: if user does not provide any phases, Java ServiceLoader mechanism
          * will be used to load phases from the classpath.
          *
-         * @param phase  application creation phase
-         * @return  this builder instance
+         * @param phase application creation phase
+         * @return this builder instance
          */
         public Builder addPhase(AppCreationPhase<?> provider) {
-            switch(phases.size()) {
+            switch (phases.size()) {
                 case 0:
                     phases = Collections.singletonList(provider);
                     break;
@@ -84,8 +85,8 @@ public class AppCreator implements AutoCloseable {
          * which will be automatically removed after the application have passed
          * through all the phases necessary to produce the requested outcome.
          *
-         * @param p  work directory
-         * @return  this AppCreator instance
+         * @param p work directory
+         * @return this AppCreator instance
          */
         public Builder setWorkDir(Path dir) {
             this.workDir = dir;
@@ -98,7 +99,7 @@ public class AppCreator implements AutoCloseable {
          * If artifact resolver is not set by the user, the default one will be
          * created based on the user Maven settings.xml file.
          *
-         * @param resolver  artifact resolver
+         * @param resolver artifact resolver
          */
         public Builder setArtifactResolver(AppArtifactResolver resolver) {
             this.artifactResolver = resolver;
@@ -107,7 +108,7 @@ public class AppCreator implements AutoCloseable {
 
         /**
          *
-         * @param appJar  application JAR
+         * @param appJar application JAR
          * @throws AppCreatorException
          */
         public Builder setAppJar(Path appJar) throws AppCreatorException {
@@ -118,8 +119,8 @@ public class AppCreator implements AutoCloseable {
         /**
          * Builds an instance of an application creator.
          *
-         * @return  an instance of an application creator
-         * @throws AppCreatorException  in case of a failure
+         * @return an instance of an application creator
+         * @throws AppCreatorException in case of a failure
          */
         public AppCreator build() throws AppCreatorException {
             final AppCreator target = initAppCreator();
@@ -138,8 +139,8 @@ public class AppCreator implements AutoCloseable {
          * The properties handler is assumed to be used to for reading a properties file which includes application creator
          * and various phases configurations.
          *
-         * @return  properties handler
-         * @throws AppCreatorException  in case of a failure
+         * @return properties handler
+         * @throws AppCreatorException in case of a failure
          */
         public PropertiesHandler<AppCreator> getPropertiesHandler() throws AppCreatorException {
 
@@ -147,22 +148,26 @@ public class AppCreator implements AutoCloseable {
 
             @SuppressWarnings("rawtypes")
             final Iterable<AppCreationPhase> i = phases.isEmpty() ? ServiceLoader.load(AppCreationPhase.class) : phases;
-            final MappedPropertiesHandler<AppCreator>  propsHandler = new MappedPropertiesHandler<AppCreator>() {
+            final MappedPropertiesHandler<AppCreator> propsHandler = new MappedPropertiesHandler<AppCreator>() {
                 @Override
                 public AppCreator getTarget() throws PropertiesConfigReaderException {
-                    final OutcomeResolverFactory<AppCreator> resolverFactory = OutcomeResolverFactory.<AppCreator> getInstance();
-                    for(AppCreationPhase<?> provider : i) {
+                    final OutcomeResolverFactory<AppCreator> resolverFactory = OutcomeResolverFactory
+                            .<AppCreator> getInstance();
+                    for (AppCreationPhase<?> provider : i) {
                         try {
                             resolverFactory.addProvider(provider);
                         } catch (AppCreatorException e) {
                             throw new PropertiesConfigReaderException("Failed to initialize outcome resolver", e);
                         }
-                        map(provider.getConfigPropertyName(), provider.getPropertiesHandler(), (flow, nested) -> {});
+                        map(provider.getConfigPropertyName(), provider.getPropertiesHandler(), (flow, nested) -> {
+                        });
                     }
                     target.outcomeResolver = resolverFactory.build();
                     return target;
                 }
-            }.map("output", (t, value) -> { t.setWorkDir(Paths.get(value)); });
+            }.map("output", (t, value) -> {
+                t.setWorkDir(Paths.get(value));
+            });
 
             return propsHandler;
         }
@@ -179,7 +184,7 @@ public class AppCreator implements AutoCloseable {
     /**
      * Returns an instance of a builder that can be used to initialize an application creator.
      *
-     * @return  application creator builder
+     * @return application creator builder
      */
     public static Builder builder() {
         return new Builder();
@@ -196,7 +201,7 @@ public class AppCreator implements AutoCloseable {
     }
 
     private void setWorkDir(Path workDir) {
-        if(workDir != null) {
+        if (workDir != null) {
             deleteTmpDir = false;
             this.workDir = workDir;
         } else {
@@ -208,7 +213,7 @@ public class AppCreator implements AutoCloseable {
     /**
      * Work directory used by the phases to store various data.
      *
-     * @return  work dir
+     * @return work dir
      */
     public Path getWorkDir() {
         return workDir;
@@ -217,7 +222,7 @@ public class AppCreator implements AutoCloseable {
     /**
      * Artifact resolver which can be used to resolve application dependencies.
      *
-     * @return  artifact resolver for application dependencies
+     * @return artifact resolver for application dependencies
      */
     public AppArtifactResolver getArtifactResolver() {
         return artifactResolver;
@@ -226,7 +231,7 @@ public class AppCreator implements AutoCloseable {
     /**
      * User application JAR file
      *
-     * @return  user application JAR file
+     * @return user application JAR file
      * @throws AppCreatorException
      */
     public Path getAppJar() throws AppCreatorException {
@@ -237,19 +242,19 @@ public class AppCreator implements AutoCloseable {
      * Resolve a phase outcome of a specific type. The creator will figure out
      * which phases need to be processed to deliver the result.
      *
-     * @param outcomeType  type of the outcome to deliver
-     * @return  resolved phase outcome
-     * @throws AppCreatorException  in case of a failure
+     * @param outcomeType type of the outcome to deliver
+     * @return resolved phase outcome
+     * @throws AppCreatorException in case of a failure
      */
     @SuppressWarnings("unchecked")
     public <T> T resolveOutcome(Class<T> outcomeType) throws AppCreatorException {
         Object o = outcomes.get(outcomeType);
-        if(o != null || outcomes.containsKey(outcomeType)) {
+        if (o != null || outcomes.containsKey(outcomeType)) {
             return (T) o;
         }
         outcomeResolver.resolve(this, outcomeType);
         o = outcomes.get(outcomeType);
-        if(o != null || outcomes.containsKey(outcomeType)) {
+        if (o != null || outcomes.containsKey(outcomeType)) {
             return (T) o;
         }
         throw new AppCreatorException("Outcome of type " + outcomeType + " has not been provided");
@@ -260,8 +265,8 @@ public class AppCreator implements AutoCloseable {
      * whether it has already been resolved using this instance of the creator
      * or pushed by the user.
      *
-     * @param outcomeType  type of the outcome
-     * @return  true if the outcome is already available
+     * @param outcomeType type of the outcome
+     * @return true if the outcome is already available
      */
     public boolean isAvailable(Class<?> outcomeType) {
         return outcomes.containsKey(outcomeType);
@@ -270,7 +275,7 @@ public class AppCreator implements AutoCloseable {
     /**
      * Returns an already resolved outcome or null in case the outcome is not available yet.
      *
-     * @param outcomeType  type of the outcome
+     * @param outcomeType type of the outcome
      * @return
      */
     @SuppressWarnings("unchecked")
@@ -281,26 +286,26 @@ public class AppCreator implements AutoCloseable {
     /**
      * This method simply calls {@link #pushOutcome(Class, Object) pushOutcome(outcome.getClass(), outcome)}
      *
-     * @param outcome  outcome instance
-     * @return  this application creator instance
-     * @throws AppCreatorException  in case an outcome of this type is already available
+     * @param outcome outcome instance
+     * @return this application creator instance
+     * @throws AppCreatorException in case an outcome of this type is already available
      */
     @SuppressWarnings("unchecked")
     public <T> AppCreator pushOutcome(T outcome) throws AppCreatorException {
-        pushOutcome((Class<T>)outcome.getClass(), outcome);
+        pushOutcome((Class<T>) outcome.getClass(), outcome);
         return this;
     }
 
     /**
      * Pushes an outcome of a specific type which can be used by phases that depend on it.
      *
-     * @param type  type of the outcome
-     * @param value  outcome instance
-     * @return  this application creator instance
-     * @throws AppCreatorException  in case an outcome of this type is already available
+     * @param type type of the outcome
+     * @param value outcome instance
+     * @return this application creator instance
+     * @throws AppCreatorException in case an outcome of this type is already available
      */
     public <T> AppCreator pushOutcome(Class<T> type, T value) throws AppCreatorException {
-        if(outcomes.containsKey(type)) {
+        if (outcomes.containsKey(type)) {
             throw new AppCreatorException("Outcome of type " + type.getName() + " has already been provided");
         }
         outcomes.put(type, value);
@@ -310,9 +315,9 @@ public class AppCreator implements AutoCloseable {
     /**
      * Creates a directory from a path relative to the creator's work directory.
      *
-     * @param names  represents a path relative to the creator's work directory
-     * @return  created directory
-     * @throws AppCreatorException  in case the directory could not be created
+     * @param names represents a path relative to the creator's work directory
+     * @return created directory
+     * @throws AppCreatorException in case the directory could not be created
      */
     public Path createWorkDir(String... names) throws AppCreatorException {
         final Path p = getWorkPath(names);
@@ -327,18 +332,18 @@ public class AppCreator implements AutoCloseable {
     /**
      * Creates a path object from path relative to the creator's work directory.
      *
-     * @param names  represents a path relative to the creator's work directory
-     * @return  path object
+     * @param names represents a path relative to the creator's work directory
+     * @return path object
      */
     public Path getWorkPath(String... names) {
-        if(workDir == null) {
+        if (workDir == null) {
             workDir = IoUtils.createRandomTmpDir();
         }
-        if(names.length == 0) {
+        if (names.length == 0) {
             return workDir;
         }
         Path p = workDir;
-        for(String name : names) {
+        for (String name : names) {
             p = p.resolve(name);
         }
         return p;
@@ -346,7 +351,7 @@ public class AppCreator implements AutoCloseable {
 
     @Override
     public void close() {
-        if(deleteTmpDir) {
+        if (deleteTmpDir) {
             IoUtils.recursiveDelete(workDir);
         }
     }

@@ -30,7 +30,7 @@ public class OptionalDepsNotCollectedTestCase extends CollectDependenciesBase {
         installAsDep(
                 new TsDependency(
                         new TsArtifact("optional-dep")
-                        .addDependency(new TsArtifact("common", "1")),
+                                .addDependency(new TsArtifact("common", "1")),
                         true),
                 false);
 

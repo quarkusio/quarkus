@@ -35,7 +35,6 @@ import javax.imageio.stream.ImageOutputStream;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
-
 @TargetClass(className = "javax.imageio.ImageIO")
 final class ImageIOSubstitutions {
 
@@ -54,7 +53,6 @@ final class ImageIOSubstitutions {
             throws IOException {
         throw new IOException("Not Implemented yet on substrate");
     }
-
 
     @Substitute
     public static String[] getReaderFormatNames() {
@@ -77,21 +75,17 @@ final class ImageIOSubstitutions {
     }
 
     @Substitute
-    public static Iterator<ImageReader>
-    getImageReadersByFormatName(String formatName) {
+    public static Iterator<ImageReader> getImageReadersByFormatName(String formatName) {
         throw new RuntimeException("Not Implemented yet on substrate");
     }
 
     @Substitute
-    public static Iterator<ImageReader>
-    getImageReadersBySuffix(String fileSuffix) {
+    public static Iterator<ImageReader> getImageReadersBySuffix(String fileSuffix) {
         throw new RuntimeException("Not Implemented yet on substrate");
     }
 
-
     @Substitute
-    public static Iterator<ImageReader>
-    getImageReadersByMIMEType(String MIMEType) {
+    public static Iterator<ImageReader> getImageReadersByMIMEType(String MIMEType) {
         throw new RuntimeException("Not Implemented yet on substrate");
     }
 
@@ -127,20 +121,17 @@ final class ImageIOSubstitutions {
     }
 
     @Substitute
-    public static Iterator<ImageWriter>
-    getImageWritersByFormatName(String formatName) {
+    public static Iterator<ImageWriter> getImageWritersByFormatName(String formatName) {
         throw new RuntimeException("Not Implemented yet on substrate");
     }
 
     @Substitute
-    public static Iterator<ImageWriter>
-    getImageWritersBySuffix(String fileSuffix) {
+    public static Iterator<ImageWriter> getImageWritersBySuffix(String fileSuffix) {
         throw new RuntimeException("Not Implemented yet on substrate");
     }
 
     @Substitute
-    public static Iterator<ImageWriter>
-    getImageWritersByMIMEType(String MIMEType) {
+    public static Iterator<ImageWriter> getImageWritersByMIMEType(String MIMEType) {
         throw new RuntimeException("Not Implemented yet on substrate");
     }
 
@@ -155,14 +146,12 @@ final class ImageIOSubstitutions {
     }
 
     @Substitute
-    public static Iterator<ImageWriter>
-    getImageWriters(ImageTypeSpecifier type, String formatName) {
+    public static Iterator<ImageWriter> getImageWriters(ImageTypeSpecifier type, String formatName) {
         throw new RuntimeException("Not Implemented yet on substrate");
     }
 
     @Substitute
-    public static Iterator<ImageTranscoder>
-    getImageTranscoders(ImageReader reader, ImageWriter writer) {
+    public static Iterator<ImageTranscoder> getImageTranscoders(ImageReader reader, ImageWriter writer) {
         throw new RuntimeException("Not Implemented yet on substrate");
     }
 
@@ -189,22 +178,22 @@ final class ImageIOSubstitutions {
 
     @Substitute
     public static boolean write(RenderedImage im,
-                                String formatName,
-                                ImageOutputStream output) throws IOException {
+            String formatName,
+            ImageOutputStream output) throws IOException {
         throw new IOException("Not Implemented yet on substrate");
     }
 
     @Substitute
     public static boolean write(RenderedImage im,
-                                String formatName,
-                                File output) throws IOException {
+            String formatName,
+            File output) throws IOException {
         throw new IOException("Not Implemented yet on substrate");
     }
 
     @Substitute
     public static boolean write(RenderedImage im,
-                                String formatName,
-                                OutputStream output) throws IOException {
+            String formatName,
+            OutputStream output) throws IOException {
         throw new IOException("Not Implemented yet on substrate");
     }
 }

@@ -66,7 +66,8 @@ import org.junit.jupiter.api.extension.TestInstantiationException;
 /**
  * A test extension for testing Shamrock internals, not intended for end user consumption
  */
-public class ShamrockUnitTest implements BeforeAllCallback, AfterAllCallback, TestInstanceFactory, BeforeEachCallback, AfterEachCallback {
+public class ShamrockUnitTest
+        implements BeforeAllCallback, AfterAllCallback, TestInstanceFactory, BeforeEachCallback, AfterEachCallback {
 
     static {
         System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
@@ -98,7 +99,8 @@ public class ShamrockUnitTest implements BeforeAllCallback, AfterAllCallback, Te
         return this;
     }
 
-    public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext) throws TestInstantiationException {
+    public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext)
+            throws TestInstantiationException {
         try {
             Class testClass = extensionContext.getRequiredTestClass();
             ProxyFactory<?> factory = new ProxyFactory<>(new ProxyConfiguration<>()
@@ -107,7 +109,7 @@ public class ShamrockUnitTest implements BeforeAllCallback, AfterAllCallback, Te
                     .setSuperClass(testClass));
 
             Object actualTestInstance = extensionContext.getStore(ExtensionContext.Namespace.GLOBAL).get(testClass.getName());
-            if(actualTestInstance != null) { //happens if a deployment exception is expected
+            if (actualTestInstance != null) { //happens if a deployment exception is expected
                 TestHttpResourceManager.inject(actualTestInstance);
             }
             return factory.newInstance(new InvocationHandler() {
@@ -124,7 +126,6 @@ public class ShamrockUnitTest implements BeforeAllCallback, AfterAllCallback, Te
             throw new TestInstantiationException("Unable to create test proxy", e);
         }
     }
-
 
     private void exportArchive(Path deploymentDir, Class<?> testClass) {
         try {
@@ -182,7 +183,8 @@ public class ShamrockUnitTest implements BeforeAllCallback, AfterAllCallback, Te
             try {
                 //this is a bit of a hack to avoid requiring a dep on the arc extension,
                 //as this would mean we cannot use this to test the extension
-                Class<? extends BuildItem> buildItem = (Class<? extends BuildItem>) Class.forName("org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem");
+                Class<? extends BuildItem> buildItem = (Class<? extends BuildItem>) Class
+                        .forName("org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem");
                 customiers.add(new Consumer<BuildChainBuilder>() {
                     @Override
                     public void accept(BuildChainBuilder buildChainBuilder) {
@@ -190,8 +192,9 @@ public class ShamrockUnitTest implements BeforeAllCallback, AfterAllCallback, Te
                             @Override
                             public void execute(BuildContext context) {
                                 try {
-                                    Constructor<? extends BuildItem> ctor = buildItem.getConstructor(boolean.class, String[].class);
-                                    context.produce(ctor.newInstance(false, new String[]{testClass.getName()}));
+                                    Constructor<? extends BuildItem> ctor = buildItem.getConstructor(boolean.class,
+                                            String[].class);
+                                    context.produce(ctor.newInstance(false, new String[] { testClass.getName() }));
                                 } catch (Exception e) {
                                     throw new RuntimeException(e);
                                 }
@@ -220,7 +223,8 @@ public class ShamrockUnitTest implements BeforeAllCallback, AfterAllCallback, Te
                 started = true;
                 Instance<?> factory;
                 try {
-                    factory = CDI.current().select(Class.forName(testClass.getName(), true, Thread.currentThread().getContextClassLoader()));
+                    factory = CDI.current()
+                            .select(Class.forName(testClass.getName(), true, Thread.currentThread().getContextClassLoader()));
                 } catch (Exception e) {
                     throw new TestInstantiationException("Failed to create test instance", e);
                 }
@@ -259,7 +263,7 @@ public class ShamrockUnitTest implements BeforeAllCallback, AfterAllCallback, Te
             if (runtimeRunner != null) {
                 runtimeRunner.close();
             }
-            if(afterUndeployListener != null) {
+            if (afterUndeployListener != null) {
                 afterUndeployListener.run();
             }
         } finally {
@@ -301,6 +305,7 @@ public class ShamrockUnitTest implements BeforeAllCallback, AfterAllCallback, Te
     public void beforeEach(ExtensionContext context) throws Exception {
         RestAssuredURLManager.setURL();
     }
+
     public Runnable getAfterUndeployListener() {
         return afterUndeployListener;
     }

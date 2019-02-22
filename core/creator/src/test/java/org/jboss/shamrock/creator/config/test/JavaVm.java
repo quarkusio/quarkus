@@ -22,7 +22,6 @@ public class JavaVm {
         this.name = name;
     }
 
-
     public String getInfo() {
         return info;
     }

@@ -116,7 +116,8 @@ class VertxProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void build(VertxTemplate template, BeanContainerBuildItem beanContainer, BuildProducer<FeatureBuildItem> feature,
-            List<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods, BuildProducer<GeneratedClassBuildItem> generatedClass,
+            List<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods,
+            BuildProducer<GeneratedClassBuildItem> generatedClass,
             AnnotationProxyBuildItem annotationProxy) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.VERTX));
         Map<String, ConsumeEvent> messageConsumerConfigurations = new HashMap<>();
@@ -128,8 +129,9 @@ class VertxProcessor {
         };
         for (EventConsumerBusinessMethodItem businessMethod : messageConsumerBusinessMethods) {
             String invokerClass = generateInvoker(businessMethod.getBean(), businessMethod.getMethod(), classOutput);
-            messageConsumerConfigurations.put(invokerClass, annotationProxy.builder(businessMethod.getConsumeEvent(), ConsumeEvent.class)
-                    .withDefaultValue("value", businessMethod.getBean().getBeanClass().toString()).build());
+            messageConsumerConfigurations.put(invokerClass,
+                    annotationProxy.builder(businessMethod.getConsumeEvent(), ConsumeEvent.class)
+                            .withDefaultValue("value", businessMethod.getBean().getBeanClass().toString()).build());
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, invokerClass));
         }
         template.configureVertx(beanContainer.getValue(), vertx, messageConsumerConfigurations);
@@ -141,7 +143,8 @@ class VertxProcessor {
     }
 
     @BuildStep
-    BeanDeploymentValidatorBuildItem beanDeploymentValidator(BuildProducer<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods) {
+    BeanDeploymentValidatorBuildItem beanDeploymentValidator(
+            BuildProducer<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods) {
 
         return new BeanDeploymentValidatorBuildItem(new BeanDeploymentValidator() {
 
@@ -158,9 +161,12 @@ class VertxProcessor {
                                 // Validate method params and return type
                                 List<Type> params = method.parameters();
                                 if (params.size() != 1) {
-                                    throw new IllegalStateException(String.format("Event consumer business method must accept exactly one parameter: %s [method: %s, bean:%s", params, method, bean));
+                                    throw new IllegalStateException(String.format(
+                                            "Event consumer business method must accept exactly one parameter: %s [method: %s, bean:%s",
+                                            params, method, bean));
                                 }
-                                messageConsumerBusinessMethods.produce(new EventConsumerBusinessMethodItem(bean, method, consumeEvent));
+                                messageConsumerBusinessMethods
+                                        .produce(new EventConsumerBusinessMethodItem(bean, method, consumeEvent));
                                 LOGGER.debugf("Found event consumer business method %s declared on %s", method, bean);
                             }
                         }
@@ -184,7 +190,9 @@ class VertxProcessor {
                 if (context.getAnnotations().isEmpty()) {
                     // Class with no annotations but with a method annotated with @ConsumeMessage
                     if (context.getTarget().asClass().annotations().containsKey(CONSUME_EVENT)) {
-                        LOGGER.debugf("Found event consumer business methods on a class %s with no scope annotation - adding @Singleton", context.getTarget());
+                        LOGGER.debugf(
+                                "Found event consumer business methods on a class %s with no scope annotation - adding @Singleton",
+                                context.getTarget());
                         context.transform().add(Singleton.class).done();
                     }
                 }
@@ -196,7 +204,8 @@ class VertxProcessor {
 
         String baseName;
         if (bean.getImplClazz().enclosingClass() != null) {
-            baseName = DotNames.simpleName(bean.getImplClazz().enclosingClass()) + "_" + DotNames.simpleName(bean.getImplClazz());
+            baseName = DotNames.simpleName(bean.getImplClazz().enclosingClass()) + "_"
+                    + DotNames.simpleName(bean.getImplClazz());
         } else {
             baseName = DotNames.simpleName(bean.getImplClazz().name());
         }
@@ -207,45 +216,60 @@ class VertxProcessor {
         for (Type i : method.parameters()) {
             sigBuilder.append(i.name().toString());
         }
-        String generatedName = targetPackage.replace('.', '/') + "/" + baseName + INVOKER_SUFFIX + "_" + method.name() + "_" + HashUtil.sha1(sigBuilder.toString());
+        String generatedName = targetPackage.replace('.', '/') + "/" + baseName + INVOKER_SUFFIX + "_" + method.name() + "_"
+                + HashUtil.sha1(sigBuilder.toString());
 
-        ClassCreator invokerCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName).interfaces(EventConsumerInvoker.class).build();
+        ClassCreator invokerCreator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
+                .interfaces(EventConsumerInvoker.class).build();
 
         MethodCreator invoke = invokerCreator.getMethodCreator("invoke", void.class, Message.class);
         // InjectableBean<Foo: bean = Arc.container().bean("1");
         // InstanceHandle<Foo> handle = Arc.container().instance(bean);
         // handle.get().foo(message);
-        ResultHandle containerHandle = invoke.invokeStaticMethod(MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
-        ResultHandle beanHandle = invoke.invokeInterfaceMethod(MethodDescriptor.ofMethod(ArcContainer.class, "bean", InjectableBean.class, String.class),
+        ResultHandle containerHandle = invoke
+                .invokeStaticMethod(MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
+        ResultHandle beanHandle = invoke.invokeInterfaceMethod(
+                MethodDescriptor.ofMethod(ArcContainer.class, "bean", InjectableBean.class, String.class),
                 containerHandle, invoke.load(bean.getIdentifier()));
         ResultHandle instanceHandle = invoke.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, InjectableBean.class), containerHandle, beanHandle);
-        ResultHandle beanInstanceHandle = invoke.invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class), instanceHandle);
+                MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, InjectableBean.class),
+                containerHandle, beanHandle);
+        ResultHandle beanInstanceHandle = invoke
+                .invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class), instanceHandle);
 
         Type paramType = method.parameters().get(0);
         if (paramType.name().equals(MESSAGE)) {
             // Parameter is io.vertx.core.eventbus.Message
-            invoke.invokeVirtualMethod(MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(), void.class, Message.class),
+            invoke.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(), void.class, Message.class),
                     beanInstanceHandle, invoke.getMethodParam(0));
         } else {
             // Parameter is payload
-            ResultHandle payloadHandle = invoke.invokeInterfaceMethod(MethodDescriptor.ofMethod(Message.class, "body", Object.class), invoke.getMethodParam(0));
-            ResultHandle replyHandle = invoke.invokeVirtualMethod(MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(),
-                    method.returnType().name().toString(), paramType.name().toString()), beanInstanceHandle, payloadHandle);
+            ResultHandle payloadHandle = invoke.invokeInterfaceMethod(
+                    MethodDescriptor.ofMethod(Message.class, "body", Object.class), invoke.getMethodParam(0));
+            ResultHandle replyHandle = invoke.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(), method.name(),
+                            method.returnType().name().toString(), paramType.name().toString()),
+                    beanInstanceHandle, payloadHandle);
             if (replyHandle != null) {
                 if (method.returnType().name().equals(COMPLETION_STAGE)) {
                     // If the return type is CompletionStage use thenAccept()
                     FunctionCreator func = invoke.createFunction(Consumer.class);
                     BytecodeCreator funcBytecode = func.getBytecode();
-                    funcBytecode.invokeInterfaceMethod(MethodDescriptor.ofMethod(Message.class, "reply", void.class, Object.class), invoke.getMethodParam(0),
+                    funcBytecode.invokeInterfaceMethod(
+                            MethodDescriptor.ofMethod(Message.class, "reply", void.class, Object.class),
+                            invoke.getMethodParam(0),
                             funcBytecode.getMethodParam(0));
                     funcBytecode.returnValue(null);
                     // returnValue.thenAccept(reply -> Message.reply(reply))
-                    invoke.invokeInterfaceMethod(MethodDescriptor.ofMethod(CompletionStage.class, "thenAccept", CompletionStage.class, Consumer.class),
+                    invoke.invokeInterfaceMethod(
+                            MethodDescriptor.ofMethod(CompletionStage.class, "thenAccept", CompletionStage.class,
+                                    Consumer.class),
                             replyHandle, func.getInstance());
                 } else {
                     // Message.reply(returnValue)
-                    invoke.invokeInterfaceMethod(MethodDescriptor.ofMethod(Message.class, "reply", void.class, Object.class), invoke.getMethodParam(0),
+                    invoke.invokeInterfaceMethod(MethodDescriptor.ofMethod(Message.class, "reply", void.class, Object.class),
+                            invoke.getMethodParam(0),
                             replyHandle);
                 }
             }
@@ -253,7 +277,8 @@ class VertxProcessor {
 
         // handle.destroy() - destroy dependent instance afterwards
         if (bean.getScope() == ScopeInfo.DEPENDENT) {
-            invoke.invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "destroy", void.class), instanceHandle);
+            invoke.invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "destroy", void.class),
+                    instanceHandle);
         }
         invoke.returnValue(null);
 

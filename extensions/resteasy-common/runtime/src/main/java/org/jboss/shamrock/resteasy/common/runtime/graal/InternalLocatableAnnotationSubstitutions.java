@@ -27,7 +27,7 @@ import com.oracle.svm.core.annotate.TargetClass;
 final class InternalLocatableAnnotationSubstitutions {
 
     @Substitute
-    public static <A extends Annotation> A create(A annotation, Locatable parentSourcePos ) {
+    public static <A extends Annotation> A create(A annotation, Locatable parentSourcePos) {
         return annotation;
     }
 
@@ -35,7 +35,6 @@ final class InternalLocatableAnnotationSubstitutions {
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         throw new RuntimeException("Not implemented");
     }
-
 
     @TargetClass(className = "com.sun.xml.internal.bind.v2.model.annotation.Locatable", onlyWith = InternalLocatableAnnotationSubstitutions.Selector.class)
     static final class Locatable {

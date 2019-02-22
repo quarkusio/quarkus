@@ -38,7 +38,6 @@ import org.junit.jupiter.api.extension.TestInstantiationException;
 
 public class ShamrockTestExtension implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback, TestInstanceFactory {
 
-
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
         ExtensionContext root = context.getRoot();
@@ -59,7 +58,8 @@ public class ShamrockTestExtension implements BeforeAllCallback, BeforeEachCallb
             store.put(ExtensionState.class.getName(), state);
         } else {
             if (substrateTest != state.isSubstrate()) {
-                throw new RuntimeException("Attempted to mix @SubstrateTest and JVM mode tests in the same test run. This is not allowed.");
+                throw new RuntimeException(
+                        "Attempted to mix @SubstrateTest and JVM mode tests in the same test run. This is not allowed.");
             }
         }
     }
@@ -86,7 +86,8 @@ public class ShamrockTestExtension implements BeforeAllCallback, BeforeEachCallb
     }
 
     @Override
-    public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext) throws TestInstantiationException {
+    public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext)
+            throws TestInstantiationException {
         try {
             Object instance = factoryContext.getTestClass().newInstance();
             TestHttpResourceManager.inject(instance);
@@ -95,7 +96,6 @@ public class ShamrockTestExtension implements BeforeAllCallback, BeforeEachCallb
             throw new TestInstantiationException("Failed to create test instance", e);
         }
     }
-
 
     static class ExtensionState implements ExtensionContext.Store.CloseableResource {
 

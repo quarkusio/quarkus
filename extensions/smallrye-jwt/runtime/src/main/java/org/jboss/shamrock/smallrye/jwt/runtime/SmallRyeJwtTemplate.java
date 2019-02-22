@@ -25,6 +25,7 @@ public class SmallRyeJwtTemplate {
 
     /**
      * Create the JwtIdentityManager
+     * 
      * @param securityDomain - the SecurityDomain to use for auth decisions
      * @return - the IdentityManager instance to register
      */
@@ -34,6 +35,7 @@ public class SmallRyeJwtTemplate {
 
     /**
      * Create the JWTAuthMethodExtension servlet extension
+     * 
      * @param authMechanism - name to use for MP-JWT auth mechanism
      * @param container - bean container to create JWTAuthMethodExtension bean
      * @return JWTAuthMethodExtension
@@ -46,6 +48,7 @@ public class SmallRyeJwtTemplate {
 
     /**
      * Create the TokenSecurityRealm
+     * 
      * @return runtime wrapped TokenSecurityRealm
      */
     public RuntimeValue<SecurityRealm> createTokenRealm(BeanContainer container) {
@@ -59,6 +62,7 @@ public class SmallRyeJwtTemplate {
 
     /**
      * MP-JWT logic for determining the name to use for the principal
+     * 
      * @param claims - token claims
      * @return JWTCallerPrincipal implementation
      */

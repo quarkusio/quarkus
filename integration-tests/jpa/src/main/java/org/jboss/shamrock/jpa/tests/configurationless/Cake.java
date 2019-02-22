@@ -14,7 +14,8 @@ public class Cake {
     private Long id;
     private String type;
 
-    @Id @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="cakeSeq")
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "cakeSeq")
     public Long getId() {
         return id;
     }
@@ -22,7 +23,6 @@ public class Cake {
     public void setId(Long id) {
         this.id = id;
     }
-
 
     public String getType() {
         return type;

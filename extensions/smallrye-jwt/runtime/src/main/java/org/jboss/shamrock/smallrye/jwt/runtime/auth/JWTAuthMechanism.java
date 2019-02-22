@@ -1,9 +1,15 @@
 package org.jboss.shamrock.smallrye.jwt.runtime.auth;
 
+import static io.undertow.util.Headers.AUTHORIZATION;
+import static io.undertow.util.Headers.WWW_AUTHENTICATE;
+import static io.undertow.util.StatusCodes.UNAUTHORIZED;
+
 import java.util.List;
 import java.util.Locale;
 
 import javax.inject.Inject;
+
+import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.undertow.UndertowLogger;
@@ -12,11 +18,6 @@ import io.undertow.security.api.SecurityContext;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpServerExchange;
-import org.eclipse.microprofile.jwt.JsonWebToken;
-
-import static io.undertow.util.Headers.AUTHORIZATION;
-import static io.undertow.util.Headers.WWW_AUTHENTICATE;
-import static io.undertow.util.StatusCodes.UNAUTHORIZED;
 
 /**
  * An AuthenticationMechanism that validates a caller based on a MicroProfile JWT bearer token
@@ -31,6 +32,7 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
         this.authContextInfo = authContextInfo;
         this.identityManager = identityManager;
     }
+
     public JWTAuthMechanism(IdentityManager identityManager) {
         this.identityManager = identityManager;
     }
@@ -40,7 +42,7 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
      * builds the org.jboss.security.SecurityContext authenticated Subject that drives the container APIs as well as
      * the authorization layers.
      *
-     * @param exchange        - the http request exchange object
+     * @param exchange - the http request exchange object
      * @param securityContext - the current security context that
      * @return one of AUTHENTICATED, NOT_AUTHENTICATED or NOT_ATTEMPTED depending on the header and authentication outcome.
      */
@@ -69,16 +71,16 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
                             JWTAccount jwtAccount = new JWTAccount(jwtPrincipal, account);
                             securityContext.authenticationComplete(jwtAccount, "MP-JWT", false);
                             /*
-                            // Workaround authenticated JsonWebToken not being installed as user principal
-                            // https://issues.jboss.org/browse/WFLY-9212
-                            org.jboss.security.SecurityContext jbSC = SecurityContextAssociation.getSecurityContext();
-                            Subject subject = jbSC.getUtil().getSubject();
-                            jbSC.getUtil().createSubjectInfo(jwtPrincipal, bearerToken, subject);
-                            RoleGroup roles = extract(subject);
-                            jbSC.getUtil().setRoles(roles);
-                            */
+                             * // Workaround authenticated JsonWebToken not being installed as user principal
+                             * // https://issues.jboss.org/browse/WFLY-9212
+                             * org.jboss.security.SecurityContext jbSC = SecurityContextAssociation.getSecurityContext();
+                             * Subject subject = jbSC.getUtil().getSubject();
+                             * jbSC.getUtil().createSubjectInfo(jwtPrincipal, bearerToken, subject);
+                             * RoleGroup roles = extract(subject);
+                             * jbSC.getUtil().setRoles(roles);
+                             */
                             UndertowLogger.SECURITY_LOGGER.debugf("Authenticated caller(%s) for path(%s) with roles: %s",
-                                                                  credential.getName(), exchange.getRequestPath(), account.getRoles());
+                                    credential.getName(), exchange.getRequestPath(), account.getRoles());
                             return AuthenticationMechanismOutcome.AUTHENTICATED;
                         } else {
                             UndertowLogger.SECURITY_LOGGER.info("Failed to authenticate JWT bearer token");
@@ -108,14 +110,14 @@ public class JWTAuthMechanism implements AuthenticationMechanism {
      *
      * @param subject authenticated subject
      * @return RoleGroup from "Roles"
-    protected RoleGroup extract(Subject subject) {
-        Optional<Principal> match = subject.getPrincipals()
-                .stream()
-                .filter(g -> g.getName().equals(SecurityConstants.ROLES_IDENTIFIER))
-                .findFirst();
-        Group rolesGroup = (Group) match.get();
-        RoleGroup roles = new SimpleRoleGroup(rolesGroup);
-        return roles;
-    }
-    */
+     *         protected RoleGroup extract(Subject subject) {
+     *         Optional<Principal> match = subject.getPrincipals()
+     *         .stream()
+     *         .filter(g -> g.getName().equals(SecurityConstants.ROLES_IDENTIFIER))
+     *         .findFirst();
+     *         Group rolesGroup = (Group) match.get();
+     *         RoleGroup roles = new SimpleRoleGroup(rolesGroup);
+     *         return roles;
+     *         }
+     */
 }

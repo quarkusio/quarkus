@@ -41,7 +41,8 @@ public class RegisterForReflectionBuildStep {
 
     @BuildStep
     public void build() throws Exception {
-        for (AnnotationInstance i : combinedIndexBuildItem.getIndex().getAnnotations(DotName.createSimple(RegisterForReflection.class.getName()))) {
+        for (AnnotationInstance i : combinedIndexBuildItem.getIndex()
+                .getAnnotations(DotName.createSimple(RegisterForReflection.class.getName()))) {
             ClassInfo target = i.target().asClass();
             boolean methods = i.value("methods") == null || i.value("methods").asBoolean();
             boolean fields = i.value("fields") == null || i.value("fields").asBoolean();

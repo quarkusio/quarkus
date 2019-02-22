@@ -30,7 +30,7 @@ import org.eclipse.microprofile.health.HealthCheckResponse;
 @Health
 public class FailingHealthCheck implements HealthCheck {
 
-	@Override
+    @Override
     public HealthCheckResponse call() {
         return new HealthCheckResponse() {
             @Override

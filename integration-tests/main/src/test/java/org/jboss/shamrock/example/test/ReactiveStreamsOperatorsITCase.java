@@ -21,5 +21,4 @@ import org.jboss.shamrock.test.junit.SubstrateTest;
 @SubstrateTest
 public class ReactiveStreamsOperatorsITCase extends ReactiveStreamsOperatorsTestCase {
 
-
 }

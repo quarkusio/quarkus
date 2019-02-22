@@ -23,7 +23,8 @@ import org.jboss.logging.Logger;
 /**
  * Class that is responsible for printing out timing results.
  * <p>
- * It is modified on substrate by {@link org.jboss.shamrock.runtime.graal.TimingReplacement}, in that mainStarted it rewritten to
+ * It is modified on substrate by {@link org.jboss.shamrock.runtime.graal.TimingReplacement}, in that mainStarted it rewritten
+ * to
  * actually update the start time.
  */
 public class Timing {
@@ -70,10 +71,10 @@ public class Timing {
         logger.infof("Shamrock stopped in %ss", secondsRepresentation);
     }
 
-    private static BigDecimal convertToBigDecimalSeconds (final long timeNanoSeconds) {
-        final BigDecimal secondsRepresentation = BigDecimal.valueOf(timeNanoSeconds) // As nanoseconds
-              .divide(BigDecimal.valueOf(1_000_000), BigDecimal.ROUND_HALF_UP) // Convert to milliseconds, discard remaining digits while rounding
-              .divide(BigDecimal.valueOf(1_000), 3, BigDecimal.ROUND_HALF_UP); // Convert to seconds, while preserving 3 digits
+    private static BigDecimal convertToBigDecimalSeconds(final long timeNanoSeconds) {
+        final BigDecimal secondsRepresentation=BigDecimal.valueOf(timeNanoSeconds) // As nanoseconds
+        .divide(BigDecimal.valueOf(1_000_000),BigDecimal.ROUND_HALF_UP) // Convert to milliseconds, discard remaining digits while rounding
+        .divide(BigDecimal.valueOf(1_000),3,BigDecimal.ROUND_HALF_UP); // Convert to seconds, while preserving 3 digits
         return secondsRepresentation;
     }
 

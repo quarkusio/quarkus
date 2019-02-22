@@ -40,8 +40,10 @@ public class NonSerializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         NonSerializable that = (NonSerializable) o;
         return count == that.count &&
                 Objects.equals(message, that.message);

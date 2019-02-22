@@ -36,7 +36,6 @@ public class ConfigPropertyInjectionValidationTest {
                     .addClasses(Configured.class))
             .setExpectedException(DeploymentException.class);
 
-
     @Test
     public void testValidationFailed() {
         // This method should not be invoked

@@ -87,7 +87,8 @@ public class UndertowDeploymentTemplate {
     private static volatile Undertow undertow;
     private static volatile HttpHandler currentRoot = ResponseCodeHandler.HANDLE_404;
 
-    public RuntimeValue<DeploymentInfo> createDeployment(String name, Set<String> knownFile, Set<String> knownDirectories, LaunchMode launchMode, ShutdownContext context) {
+    public RuntimeValue<DeploymentInfo> createDeployment(String name, Set<String> knownFile, Set<String> knownDirectories,
+            LaunchMode launchMode, ShutdownContext context) {
         DeploymentInfo d = new DeploymentInfo();
         d.setSessionIdGenerator(new ShamrockSessionIdGenerator());
         d.setClassLoader(getClass().getClassLoader());
@@ -104,23 +105,23 @@ public class UndertowDeploymentTemplate {
         String resourcesDir = System.getProperty(RESOURCES_PROP);
         ResourceManager resourceManager;
         if (resourcesDir == null) {
-            resourceManager = new KnownPathResourceManager(knownFile, knownDirectories, new ClassPathResourceManager(d.getClassLoader(), "META-INF/resources"));
+            resourceManager = new KnownPathResourceManager(knownFile, knownDirectories,
+                    new ClassPathResourceManager(d.getClassLoader(), "META-INF/resources"));
         } else {
             resourceManager = new PathResourceManager(Paths.get(resourcesDir));
         }
-        if(launchMode == LaunchMode.NORMAL) {
+        if (launchMode == LaunchMode.NORMAL) {
             //todo: cache configuration
             resourceManager = new CachingResourceManager(1000, 0, null, resourceManager, 2000);
         }
         d.setResourceManager(resourceManager);
 
-        if(launchMode == LaunchMode.DEVELOPMENT) {
+        if (launchMode == LaunchMode.DEVELOPMENT) {
             d.setServletStackTraces(ServletStackTraces.LOCAL_ONLY);
         } else {
             d.setServletStackTraces(ServletStackTraces.NONE);
         }
         d.addWelcomePages("index.html", "index.htm");
-
 
         d.addServlet(new ServletInfo(ServletPathMatches.DEFAULT_SERVLET_NAME, DefaultServlet.class).setAsyncSupported(true));
 
@@ -147,12 +148,13 @@ public class UndertowDeploymentTemplate {
     }
 
     public RuntimeValue<ServletInfo> registerServlet(RuntimeValue<DeploymentInfo> deploymentInfo,
-                                                     String name,
-                                                     Class<?> servletClass,
-                                                     boolean asyncSupported,
-                                                     int loadOnStartup,
-                                                     BeanContainer beanContainer) throws Exception {
-        ServletInfo servletInfo = new ServletInfo(name, (Class<? extends Servlet>) servletClass, new ShamrockInstanceFactory(beanContainer.instanceFactory(servletClass)));
+            String name,
+            Class<?> servletClass,
+            boolean asyncSupported,
+            int loadOnStartup,
+            BeanContainer beanContainer) throws Exception {
+        ServletInfo servletInfo = new ServletInfo(name, (Class<? extends Servlet>) servletClass,
+                new ShamrockInstanceFactory(beanContainer.instanceFactory(servletClass)));
         deploymentInfo.getValue().addServlet(servletInfo);
         servletInfo.setAsyncSupported(asyncSupported);
         if (loadOnStartup > 0) {
@@ -170,7 +172,8 @@ public class UndertowDeploymentTemplate {
         sv.addMapping(mapping);
     }
 
-    public void setMultipartConfig(RuntimeValue<ServletInfo> sref, String location, long fileSize, long maxRequestSize, int fileSizeThreshold) {
+    public void setMultipartConfig(RuntimeValue<ServletInfo> sref, String location, long fileSize, long maxRequestSize,
+            int fileSizeThreshold) {
         MultipartConfigElement mp = new MultipartConfigElement(location, fileSize, maxRequestSize, fileSizeThreshold);
         sref.getValue().setMultipartConfig(mp);
     }
@@ -193,10 +196,11 @@ public class UndertowDeploymentTemplate {
     }
 
     public RuntimeValue<FilterInfo> registerFilter(RuntimeValue<DeploymentInfo> info,
-                                                   String name, Class<?> filterClass,
-                                                   boolean asyncSupported,
-                                                   BeanContainer beanContainer) throws Exception {
-        FilterInfo filterInfo = new FilterInfo(name, (Class<? extends Filter>) filterClass, new ShamrockInstanceFactory(beanContainer.instanceFactory(filterClass)));
+            String name, Class<?> filterClass,
+            boolean asyncSupported,
+            BeanContainer beanContainer) throws Exception {
+        FilterInfo filterInfo = new FilterInfo(name, (Class<? extends Filter>) filterClass,
+                new ShamrockInstanceFactory(beanContainer.instanceFactory(filterClass)));
         info.getValue().addFilter(filterInfo);
         filterInfo.setAsyncSupported(asyncSupported);
         return new RuntimeValue<>(filterInfo);
@@ -206,23 +210,29 @@ public class UndertowDeploymentTemplate {
         info.getValue().addInitParam(name, value);
     }
 
-    public void addFilterURLMapping(RuntimeValue<DeploymentInfo> info, String name, String mapping, DispatcherType dispatcherType) throws Exception {
+    public void addFilterURLMapping(RuntimeValue<DeploymentInfo> info, String name, String mapping,
+            DispatcherType dispatcherType) throws Exception {
         info.getValue().addFilterUrlMapping(name, mapping, dispatcherType);
     }
 
-    public void addFilterServletNameMapping(RuntimeValue<DeploymentInfo> info, String name, String mapping, DispatcherType dispatcherType) throws Exception {
+    public void addFilterServletNameMapping(RuntimeValue<DeploymentInfo> info, String name, String mapping,
+            DispatcherType dispatcherType) throws Exception {
         info.getValue().addFilterServletNameMapping(name, mapping, dispatcherType);
     }
 
     public void registerListener(RuntimeValue<DeploymentInfo> info, Class<?> listenerClass, BeanContainer factory) {
-        info.getValue().addListener(new ListenerInfo((Class<? extends EventListener>) listenerClass, (InstanceFactory<? extends EventListener>) new ShamrockInstanceFactory<>(factory.instanceFactory(listenerClass))));
+        info.getValue()
+                .addListener(new ListenerInfo((Class<? extends EventListener>) listenerClass,
+                        (InstanceFactory<? extends EventListener>) new ShamrockInstanceFactory<>(
+                                factory.instanceFactory(listenerClass))));
     }
 
     public void addServltInitParameter(RuntimeValue<DeploymentInfo> info, String name, String value) {
         info.getValue().addInitParameter(name, value);
     }
 
-    public RuntimeValue<Undertow> startUndertow(ShutdownContext shutdown, DeploymentManager manager, HttpConfig config, List<HandlerWrapper> wrappers, LaunchMode launchMode) throws ServletException {
+    public RuntimeValue<Undertow> startUndertow(ShutdownContext shutdown, DeploymentManager manager, HttpConfig config,
+            List<HandlerWrapper> wrappers, LaunchMode launchMode) throws ServletException {
 
         if (undertow == null) {
             startUndertowEagerly(config, null, launchMode);
@@ -255,7 +265,6 @@ public class UndertowDeploymentTemplate {
         return new RuntimeValue<>(undertow);
     }
 
-
     /**
      * Used for shamrock:run, where we want undertow to start very early in the process.
      * <p>
@@ -263,7 +272,8 @@ public class UndertowDeploymentTemplate {
      * be no chance to use hot deployment to fix the error. In development mode we start Undertow early, so any error
      * on boot can be corrected via the hot deployment handler
      */
-    public static void startUndertowEagerly(HttpConfig config, HandlerWrapper hotDeploymentWrapper, LaunchMode launchMode) throws ServletException {
+    public static void startUndertowEagerly(HttpConfig config, HandlerWrapper hotDeploymentWrapper, LaunchMode launchMode)
+            throws ServletException {
         if (undertow == null) {
             int port = config.determinePort(launchMode);
             log.debugf("Starting Undertow on port %d", port);
@@ -277,13 +287,13 @@ public class UndertowDeploymentTemplate {
                     .setHandler(rootHandler);
             if (config.ioThreads.isPresent()) {
                 builder.setIoThreads(config.ioThreads.getAsInt());
-            } else if(launchMode.isDevOrTest()) {
+            } else if (launchMode.isDevOrTest()) {
                 //we limit the number of IO and worker threads in development and testing mode
                 builder.setIoThreads(2);
             }
             if (config.workerThreads.isPresent()) {
                 builder.setWorkerThreads(config.workerThreads.getAsInt());
-            } else if(launchMode.isDevOrTest()) {
+            } else if (launchMode.isDevOrTest()) {
                 builder.setWorkerThreads(6);
             }
             undertow = builder
@@ -382,9 +392,11 @@ public class UndertowDeploymentTemplate {
         private static final String ALPHABET_PROPERTY = "io.undertow.server.session.SecureRandomSessionIdGenerator.ALPHABET";
 
         static {
-            String alphabet = System.getProperty(ALPHABET_PROPERTY, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_");
+            String alphabet = System.getProperty(ALPHABET_PROPERTY,
+                    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_");
             if (alphabet.length() != 64) {
-                throw new RuntimeException("io.undertow.server.session.SecureRandomSessionIdGenerator must be exactly 64 characters long");
+                throw new RuntimeException(
+                        "io.undertow.server.session.SecureRandomSessionIdGenerator must be exactly 64 characters long");
             }
             SESSION_ID_ALPHABET = alphabet.toCharArray();
         }
@@ -398,7 +410,6 @@ public class UndertowDeploymentTemplate {
             random.nextBytes(bytes);
             return new String(encode(bytes));
         }
-
 
         public int getLength() {
             return length;

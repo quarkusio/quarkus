@@ -56,7 +56,7 @@ public class RolesEndpoint {
     @RolesAllowed("Echoer")
     public String echoInput(@Context SecurityContext sec, @QueryParam("input") String input) {
         Principal user = sec.getUserPrincipal();
-        return input + ", user="+user.getName();
+        return input + ", user=" + user.getName();
     }
 
     @GET
@@ -65,7 +65,7 @@ public class RolesEndpoint {
     public String echoInput2(@Context SecurityContext sec, @QueryParam("input") String input) {
         Principal user = sec.getUserPrincipal();
         String name = user != null ? user.getName() : "<null>";
-        return input + ", user="+name;
+        return input + ", user=" + name;
     }
 
     @GET
@@ -73,11 +73,12 @@ public class RolesEndpoint {
     @RolesAllowed("Token2Role")
     public String echoNeedsToken2Role(@Context SecurityContext sec, @QueryParam("input") String input) {
         Principal user = sec.getUserPrincipal();
-        return input + ", user="+user.getName();
+        return input + ", user=" + user.getName();
     }
 
     /**
-     * Validate that the  SecurityContext#getUserPrincipal is a JsonWebToken
+     * Validate that the SecurityContext#getUserPrincipal is a JsonWebToken
+     * 
      * @param sec
      * @return
      */
@@ -87,11 +88,12 @@ public class RolesEndpoint {
     public String getPrincipalClass(@Context SecurityContext sec) {
         Principal user = sec.getUserPrincipal();
         boolean isJsonWebToken = user instanceof JsonWebToken;
-        return "isJsonWebToken:"+isJsonWebToken;
+        return "isJsonWebToken:" + isJsonWebToken;
     }
 
     /**
      * This endpoint requires a role that is mapped to the group1 role
+     * 
      * @return principal name
      */
     @GET
@@ -115,7 +117,7 @@ public class RolesEndpoint {
     public Response checkIsUserInRole(@Context SecurityContext sec) {
         Principal user = sec.getUserPrincipal();
         Response response;
-        if(!sec.isUserInRole("Echoer")) {
+        if (!sec.isUserInRole("Echoer")) {
             response = Response.status(new Response.StatusType() {
                 @Override
                 public int getStatusCode() {
@@ -132,8 +134,7 @@ public class RolesEndpoint {
                     return "SecurityContext.isUserInRole(Echoer) was false";
                 }
             }).build();
-        }
-        else {
+        } else {
             response = Response.ok(user.getName(), MediaType.TEXT_PLAIN).build();
         }
         return response;
@@ -144,13 +145,13 @@ public class RolesEndpoint {
     @RolesAllowed("Tester")
     public String getInjectedPrincipal(@Context SecurityContext sec) {
         boolean isJsonWebToken = this.jwtPrincipal instanceof JsonWebToken;
-        return "isJsonWebToken:"+isJsonWebToken;
+        return "isJsonWebToken:" + isJsonWebToken;
     }
 
     @GET
     @Path("/heartbeat")
     @PermitAll
     public String heartbeat() {
-        return "Heartbeat: "+ new Date(System.currentTimeMillis()).toString();
+        return "Heartbeat: " + new Date(System.currentTimeMillis()).toString();
     }
 }

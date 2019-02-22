@@ -44,7 +44,6 @@ final class LCMSSubstitutions {
         throw new RuntimeException("Not Implemented");
     }
 
-
     /**
      * Writes supplied data as a tag into the profile.
      * Destroys old profile, if new one was successfully
@@ -57,7 +56,7 @@ final class LCMSSubstitutions {
      */
     @Substitute
     private void setTagDataNative(long ptr, int tagSignature,
-                                  byte[] data) {
+            byte[] data) {
         throw new RuntimeException("Not Implemented");
     }
 
@@ -82,8 +81,8 @@ final class LCMSSubstitutions {
 
     @Substitute
     public static void colorConvert(LCMSTransform trans,
-                                    LCMSImageLayout src,
-                                    LCMSImageLayout dest) {
+            LCMSImageLayout src,
+            LCMSImageLayout dest) {
         throw new RuntimeException("Not Implemented");
     }
 

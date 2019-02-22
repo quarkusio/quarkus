@@ -59,7 +59,7 @@ public class ServletTestCase {
     }
 
     // Basic @ServletSecurity test
-   @Test()
+    @Test()
     public void testSecureAccessSuccess() {
         RestAssured.given().auth().preemptive().basic("stuart", "test")
                 .when().get("/secure-test").then()

@@ -32,8 +32,8 @@ public interface OutcomeProviderRegistration {
      * Invoked by a phase handler to declare it provides an outcome
      * of a specific type.
      *
-     * @param outcomeType  outcome type the handler provides
-     * @throws AppCreatorException  in case of a failure
+     * @param outcomeType outcome type the handler provides
+     * @throws AppCreatorException in case of a failure
      */
     void provides(Class<?> outcomeType) throws AppCreatorException;
 }

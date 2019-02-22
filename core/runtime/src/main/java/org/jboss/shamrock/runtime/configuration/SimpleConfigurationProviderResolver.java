@@ -1,9 +1,10 @@
 package org.jboss.shamrock.runtime.configuration;
 
-import io.smallrye.config.SmallRyeConfigBuilder;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigBuilder;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
+
+import io.smallrye.config.SmallRyeConfigBuilder;
 
 /**
  * A simple configuration provider.

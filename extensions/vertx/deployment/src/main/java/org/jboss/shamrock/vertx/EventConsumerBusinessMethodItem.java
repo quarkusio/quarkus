@@ -29,5 +29,4 @@ public final class EventConsumerBusinessMethodItem extends MultiBuildItem {
         return consumeEvent;
     }
 
-    
 }

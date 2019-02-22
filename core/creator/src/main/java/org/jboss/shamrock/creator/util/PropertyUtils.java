@@ -22,9 +22,9 @@ import java.security.PrivilegedAction;
 import java.util.Locale;
 
 /**
-*
-* @author Alexey Loubyansky
-*/
+ *
+ * @author Alexey Loubyansky
+ */
 public class PropertyUtils {
 
     private static final String OS_NAME = "os.name";
@@ -34,30 +34,31 @@ public class PropertyUtils {
     private PropertyUtils() {
     }
 
-   public static boolean isWindows() {
-       return getProperty(OS_NAME).toLowerCase(Locale.ENGLISH).indexOf(WINDOWS) >= 0;
-   }
+    public static boolean isWindows() {
+        return getProperty(OS_NAME).toLowerCase(Locale.ENGLISH).indexOf(WINDOWS) >= 0;
+    }
 
-   public static String getUserHome() {
-       return getProperty(USER_HOME);
-   }
+    public static String getUserHome() {
+        return getProperty(USER_HOME);
+    }
 
-   public static String getProperty(final String name, String defValue) {
-       final String value = getProperty(name);
-       return value == null ? defValue : value;
-   }
+    public static String getProperty(final String name, String defValue) {
+        final String value = getProperty(name);
+        return value == null ? defValue : value;
+    }
 
-   public static String getProperty(final String name) {
-       assert name != null : "name is null";
-       final SecurityManager sm = System.getSecurityManager();
-       if(sm != null) {
-           return AccessController.doPrivileged(new PrivilegedAction<String>(){
-               @Override
-               public String run() {
-                   return System.getProperty(name);
-               }});
-       } else {
-           return System.getProperty(name);
-       }
-   }
+    public static String getProperty(final String name) {
+        assert name != null : "name is null";
+        final SecurityManager sm = System.getSecurityManager();
+        if (sm != null) {
+            return AccessController.doPrivileged(new PrivilegedAction<String>() {
+                @Override
+                public String run() {
+                    return System.getProperty(name);
+                }
+            });
+        } else {
+            return System.getProperty(name);
+        }
+    }
 }

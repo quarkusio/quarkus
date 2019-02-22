@@ -38,7 +38,6 @@ public class InvalidEveryExpressionTest {
 
     static class InvalidBean {
 
-
         @Scheduled(every = "call me every other day")
         void wrong() {
         }

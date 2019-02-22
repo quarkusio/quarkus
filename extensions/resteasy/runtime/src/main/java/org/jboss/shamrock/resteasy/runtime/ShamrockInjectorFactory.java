@@ -51,7 +51,8 @@ public class ShamrockInjectorFactory extends InjectorFactoryImpl {
     @Override
     public ConstructorInjector createConstructor(ResourceConstructor constructor, ResteasyProviderFactory providerFactory) {
         log.debugf("Create resource constructor: %s", constructor.getConstructor());
-        return new ShamrockConstructorInjector(constructor.getConstructor(), super.createConstructor(constructor, providerFactory));
+        return new ShamrockConstructorInjector(constructor.getConstructor(),
+                super.createConstructor(constructor, providerFactory));
     }
 
     @SuppressWarnings("rawtypes")
@@ -80,7 +81,8 @@ public class ShamrockInjectorFactory extends InjectorFactoryImpl {
         }
 
         @Override
-        public CompletionStage<Void> inject(HttpRequest request, HttpResponse response, Object target, boolean unwrapAsync) throws Failure, WebApplicationException, ApplicationException {
+        public CompletionStage<Void> inject(HttpRequest request, HttpResponse response, Object target, boolean unwrapAsync)
+                throws Failure, WebApplicationException, ApplicationException {
             return delegate.inject(request, response, PROXY_UNWRAPPER.apply(target), unwrapAsync);
         }
     }

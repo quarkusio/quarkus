@@ -43,14 +43,14 @@ public class JwtCallerPrincipalUnitTest {
         String sub = principal.getSubject();
         Assertions.assertEquals("24400320", sub);
         Set<String> groups = principal.getGroups();
-        String[] expectedGroups = {"Echoer",
+        String[] expectedGroups = { "Echoer",
                 "Tester",
                 "group1",
-                "group2"};
+                "group2" };
         Assertions.assertEquals(new HashSet<String>(Arrays.asList(expectedGroups)), groups);
 
         /*
-            "customDoubleArray": [0.1, 1.1, 2.2, 3.3, 4.4],
+         * "customDoubleArray": [0.1, 1.1, 2.2, 3.3, 4.4],
          */
         JsonArray customDoubleArray = principal.getClaim("customDoubleArray");
         Assertions.assertEquals(5, customDoubleArray.size());
@@ -71,7 +71,7 @@ public class JwtCallerPrincipalUnitTest {
         Assertions.assertEquals(Json.createValue(3.141592653589793), customDouble);
 
         /*
-                "customStringArray": ["value0", "value1", "value2" ],
+         * "customStringArray": ["value0", "value1", "value2" ],
          */
         JsonArray customStringArray = principal.getClaim("customStringArray");
         Assertions.assertEquals(3, customStringArray.size());
@@ -87,31 +87,31 @@ public class JwtCallerPrincipalUnitTest {
         Assertions.assertEquals(Json.createValue(3), customIntegerArray.getJsonNumber(3));
 
         /*
-        "customObject": {
-            "my-service": {
-                "groups": [
-                "group1",
-                        "group2"
-            ],
-                "roles": [
-                "role-in-my-service"
-            ]
-            },
-            "service-B": {
-                "roles": [
-                "role-in-B"
-            ]
-            },
-            "service-C": {
-                "groups": [
-                "groupC",
-                        "web-tier"
-            ]
-            }
-        }
-        */
+         * "customObject": {
+         * "my-service": {
+         * "groups": [
+         * "group1",
+         * "group2"
+         * ],
+         * "roles": [
+         * "role-in-my-service"
+         * ]
+         * },
+         * "service-B": {
+         * "roles": [
+         * "role-in-B"
+         * ]
+         * },
+         * "service-C": {
+         * "groups": [
+         * "groupC",
+         * "web-tier"
+         * ]
+         * }
+         * }
+         */
         JsonObject customObject = principal.getClaim("customObject");
-        String[] keys = {"my-service", "service-B", "service-C"};
+        String[] keys = { "my-service", "service-B", "service-C" };
         Assertions.assertEquals(new HashSet<>(Arrays.asList(keys)), customObject.keySet());
     }
 }

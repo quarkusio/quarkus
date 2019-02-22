@@ -10,7 +10,7 @@ public enum ConfigPhase {
      */
     BUILD_AND_RUN_TIME_FIXED(true, true, false, false),
     /**
-     * Values are read and available for usage at run time during static initialization.  In a JVM image, they will
+     * Values are read and available for usage at run time during static initialization. In a JVM image, they will
      * be read on every execution; in a native image, they will only be read during the building of the image.
      *
      * @deprecated We are removing static init time configuration processing.
@@ -28,7 +28,8 @@ public enum ConfigPhase {
     private final boolean readAtStaticInit;
     private final boolean readAtMain;
 
-    ConfigPhase(final boolean availableAtBuild, final boolean availableAtRun, final boolean readAtStaticInit, final boolean readAtMain) {
+    ConfigPhase(final boolean availableAtBuild, final boolean availableAtRun, final boolean readAtStaticInit,
+            final boolean readAtMain) {
         this.availableAtBuild = availableAtBuild;
         this.availableAtRun = availableAtRun;
         this.readAtStaticInit = readAtStaticInit;

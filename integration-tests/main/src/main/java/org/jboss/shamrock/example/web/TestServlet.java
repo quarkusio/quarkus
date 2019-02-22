@@ -27,7 +27,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-@WebServlet(name = "MyServlet", urlPatterns = "/testservlet", initParams = {@WebInitParam(name = "message", value = "A message")})
+@WebServlet(name = "MyServlet", urlPatterns = "/testservlet", initParams = {
+        @WebInitParam(name = "message", value = "A message") })
 public class TestServlet extends HttpServlet {
 
     @Inject

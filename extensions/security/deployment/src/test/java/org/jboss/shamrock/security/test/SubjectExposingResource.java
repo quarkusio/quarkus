@@ -12,8 +12,8 @@ import javax.ws.rs.core.SecurityContext;
 
 /**
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- * <br>
- * Date: 8/8/18
+ *         <br>
+ *         Date: 8/8/18
  */
 @Path("subject")
 public class SubjectExposingResource {

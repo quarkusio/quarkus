@@ -96,7 +96,8 @@ public class NativeImageLauncher implements Closeable {
     }
 
     private static void logGuessedPath(String guessedPath) {
-        String errorString = "\n=native.image.path was not set, making a guess that  " + guessedPath + " is the correct native image=";
+        String errorString = "\n=native.image.path was not set, making a guess that  " + guessedPath
+                + " is the correct native image=";
         for (int i = 0; i < errorString.length(); ++i) {
             System.err.print("=");
         }

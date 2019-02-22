@@ -26,7 +26,8 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
     final String classToTransform;
     final BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction;
 
-    public BytecodeTransformerBuildItem(String classToTransform, BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction) {
+    public BytecodeTransformerBuildItem(String classToTransform,
+            BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction) {
         this.classToTransform = classToTransform;
         this.visitorFunction = visitorFunction;
     }

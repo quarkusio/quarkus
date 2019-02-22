@@ -35,7 +35,7 @@ public class ManuallyProvidedOutcomeTestCase {
 
     @Test
     public void testNoHandler() throws Exception {
-        final OutcomeResolver<OutcomeMap> router = OutcomeResolverFactory.<OutcomeMap>getInstance().build();
+        final OutcomeResolver<OutcomeMap> router = OutcomeResolverFactory.<OutcomeMap> getInstance().build();
         final OutcomeMap resolver = new OutcomeMap(router);
         final TestResult outcome = new TestResult("manual");
         resolver.pushOutcome(outcome);
@@ -44,16 +44,18 @@ public class ManuallyProvidedOutcomeTestCase {
 
     @Test
     public void testSkippedHandler() throws Exception {
-        final OutcomeResolver<OutcomeMap> router = OutcomeResolverFactory.<OutcomeMap>getInstance()
+        final OutcomeResolver<OutcomeMap> router = OutcomeResolverFactory.<OutcomeMap> getInstance()
                 .addProvider(new OutcomeProvider<OutcomeMap>() {
                     @Override
                     public void register(OutcomeProviderRegistration registration) throws AppCreatorException {
                         registration.provides(TestResult.class);
                     }
+
                     @Override
                     public void provideOutcome(OutcomeMap ctx) throws AppCreatorException {
                         throw new UnsupportedOperationException();
-                    }})
+                    }
+                })
                 .build();
 
         final OutcomeMap resolver = new OutcomeMap(router);

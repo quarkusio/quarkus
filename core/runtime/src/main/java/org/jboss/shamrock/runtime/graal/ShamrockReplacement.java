@@ -36,7 +36,6 @@ final class ShamrockReplacement {
         GenMain.main(args);
     }
 
-
     @TargetClass(className = "org.jboss.shamrock.runner.GeneratedMain")
     static final class GenMain {
 

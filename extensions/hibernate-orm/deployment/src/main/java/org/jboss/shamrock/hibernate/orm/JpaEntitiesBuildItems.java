@@ -30,7 +30,7 @@ import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildIte
 public final class JpaEntitiesBuildItems extends SimpleBuildItem {
 
     private final Set<String> classNames = new HashSet<String>();
-    
+
     void addEntity(final String className) {
         classNames.add(className);
     }

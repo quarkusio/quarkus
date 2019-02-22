@@ -10,7 +10,8 @@ import org.jboss.shamrock.deployment.builditem.GeneratedClassBuildItem;
 public class AnnotationProxyBuildStep {
 
     @BuildStep
-    public AnnotationProxyBuildItem build(BuildProducer<GeneratedClassBuildItem> generatedClass, ApplicationIndexBuildItem applicationIndex) {
+    public AnnotationProxyBuildItem build(BuildProducer<GeneratedClassBuildItem> generatedClass,
+            ApplicationIndexBuildItem applicationIndex) {
         return new AnnotationProxyBuildItem(new AnnotationProxyProvider(new ClassOutput() {
             @Override
             public void write(String name, byte[] data) {

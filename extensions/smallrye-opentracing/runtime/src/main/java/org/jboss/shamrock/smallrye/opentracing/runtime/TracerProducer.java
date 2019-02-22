@@ -19,8 +19,10 @@ package org.jboss.shamrock.smallrye.opentracing.runtime;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.InjectionPoint;
+
 import io.opentracing.Tracer;
 import io.opentracing.util.GlobalTracer;
+
 /**
  * Created by bob on 8/6/18.
  */
@@ -30,7 +32,7 @@ public class TracerProducer {
     @Dependent
     Tracer tracer(InjectionPoint ip) {
         Tracer tracer = GlobalTracer.get();
-        System.err.println( "producing tracer: " + tracer + " for " + ip);
+        System.err.println("producing tracer: " + tracer + " for " + ip);
         return tracer;
     }
 }

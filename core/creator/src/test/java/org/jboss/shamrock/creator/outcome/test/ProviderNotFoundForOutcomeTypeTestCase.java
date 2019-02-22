@@ -38,14 +38,16 @@ public class ProviderNotFoundForOutcomeTypeTestCase {
     @Test
     public void testMain() throws Exception {
 
-        final OutcomeResolver<OutcomeMap> router = OutcomeResolverFactory.<OutcomeMap>getInstance()
+        final OutcomeResolver<OutcomeMap> router = OutcomeResolverFactory.<OutcomeMap> getInstance()
                 .addProvider(new OutcomeProvider<OutcomeMap>() {
                     @Override
                     public void register(OutcomeProviderRegistration registration) throws AppCreatorException {
                     }
+
                     @Override
                     public void provideOutcome(OutcomeMap ctx) throws AppCreatorException {
-                    }})
+                    }
+                })
                 .build();
 
         final OutcomeMap resolver = new OutcomeMap(router);

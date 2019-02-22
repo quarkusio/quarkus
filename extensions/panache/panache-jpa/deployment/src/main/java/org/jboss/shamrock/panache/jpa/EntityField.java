@@ -1,6 +1,5 @@
 package org.jboss.shamrock.panache.jpa;
 
-
 public class EntityField {
 
     final String name;

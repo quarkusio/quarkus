@@ -50,7 +50,7 @@ import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildIte
  * TODO some of these are going to be redundant?
  *
  * @author Emmanuel Bernard emmanuel@hibernate.org
- * @author Sanne Grinovero  <sanne@hibernate.org>
+ * @author Sanne Grinovero <sanne@hibernate.org>
  */
 final class JpaJandexScavenger {
 
@@ -68,9 +68,9 @@ final class JpaJandexScavenger {
     private final Set<String> nonJpaModelClasses;
 
     JpaJandexScavenger(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-                       List<ParsedPersistenceXmlDescriptor> descriptors,
-                       IndexView indexView,
-                       Set<String> nonJpaModelClasses) {
+            List<ParsedPersistenceXmlDescriptor> descriptors,
+            IndexView indexView,
+            Set<String> nonJpaModelClasses) {
         this.reflectiveClass = reflectiveClass;
         this.descriptors = descriptors;
         this.indexView = indexView;
@@ -104,7 +104,8 @@ final class JpaJandexScavenger {
         return domainObjectCollector;
     }
 
-    private static void enlistExplicitClasses(IndexView index, JpaEntitiesBuildItems domainObjectCollector, Set<String> enumTypeCollector, List<String> managedClassNames) {
+    private static void enlistExplicitClasses(IndexView index, JpaEntitiesBuildItems domainObjectCollector,
+            Set<String> enumTypeCollector, List<String> managedClassNames) {
         for (String className : managedClassNames) {
             DotName dotName = DotName.createSimple(className);
             boolean isInIndex = index.getClassByName(dotName) != null;
@@ -113,13 +114,16 @@ final class JpaJandexScavenger {
             } else {
                 // We do lipstick service by manually adding explicitly the <class> reference but not navigating the hierarchy
                 // so a class with a complex hierarchy will fail.
-                log.warnf("Did not find `%s` in the indexed jars. You likely forgot to tell Shamrock to index your dependency jar. See https://github.com/protean-project/shamrock/#indexing-and-application-classes for more info.", className);
+                log.warnf(
+                        "Did not find `%s` in the indexed jars. You likely forgot to tell Shamrock to index your dependency jar. See https://github.com/protean-project/shamrock/#indexing-and-application-classes for more info.",
+                        className);
                 domainObjectCollector.addEntity(className);
             }
         }
     }
 
-    private static void enlistReturnType(IndexView index, JpaEntitiesBuildItems domainObjectCollector, Set<String> enumTypeCollector) {
+    private static void enlistReturnType(IndexView index, JpaEntitiesBuildItems domainObjectCollector,
+            Set<String> enumTypeCollector) {
         Collection<AnnotationInstance> annotations = index.getAnnotations(EMBEDDED);
         if (annotations != null && annotations.size() > 0) {
             for (AnnotationInstance annotation : annotations) {
@@ -142,14 +146,15 @@ final class JpaJandexScavenger {
         }
     }
 
-    private void enlistJPAModelClasses(IndexView index, JpaEntitiesBuildItems domainObjectCollector, Set<String> enumTypeCollector, DotName dotName) {
+    private void enlistJPAModelClasses(IndexView index, JpaEntitiesBuildItems domainObjectCollector,
+            Set<String> enumTypeCollector, DotName dotName) {
         Collection<AnnotationInstance> jpaAnnotations = index.getAnnotations(dotName);
         if (jpaAnnotations != null && jpaAnnotations.size() > 0) {
             for (AnnotationInstance annotation : jpaAnnotations) {
                 ClassInfo klass = annotation.target().asClass();
                 DotName targetDotName = klass.name();
                 // ignore non-jpa model classes that we think belong to JPA
-                if(nonJpaModelClasses.contains(targetDotName.toString())) {
+                if (nonJpaModelClasses.contains(targetDotName.toString())) {
                     continue;
                 }
                 addClassHierarchyToReflectiveList(index, domainObjectCollector, enumTypeCollector, targetDotName);
@@ -165,7 +170,8 @@ final class JpaJandexScavenger {
      * TODO this approach fails if the Jandex index is not complete (e.g. misses somes interface or super types)
      * TODO should we also return the return types of all methods and fields? It could container Enums for example.
      */
-    private static void addClassHierarchyToReflectiveList(IndexView index, JpaEntitiesBuildItems domainObjectCollector, Set<String> enumTypeCollector, DotName className) {
+    private static void addClassHierarchyToReflectiveList(IndexView index, JpaEntitiesBuildItems domainObjectCollector,
+            Set<String> enumTypeCollector, DotName className) {
         // If type is not Object
         // recursively add superclass and interfaces
         if (className == null) {

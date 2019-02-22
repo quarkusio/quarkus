@@ -121,13 +121,13 @@ public class PreconfiguredServiceRegistryBuilder {
         destroyedRegistry.resetAndReactivate(bootstrapServiceRegistry, initiators, providedServices, settingsCopy);
         return destroyedRegistry;
 
-//		return new StandardServiceRegistryImpl(
-//				true,
-//				bootstrapServiceRegistry,
-//				initiators,
-//				providedServices,
-//				settingsCopy
-//		);
+        //		return new StandardServiceRegistryImpl(
+        //				true,
+        //				bootstrapServiceRegistry,
+        //				initiators,
+        //				providedServices,
+        //				settingsCopy
+        //		);
     }
 
     private BootstrapServiceRegistry buildEmptyBootstrapServiceRegistry() {

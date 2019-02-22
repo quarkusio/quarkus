@@ -12,11 +12,11 @@ import org.jboss.shamrock.runtime.logging.LogCleanupFilterElement;
 public final class LogCleanupFilterBuildItem extends MultiBuildItem {
 
     private LogCleanupFilterElement filterElement;
-    
+
     public LogCleanupFilterBuildItem(String loggerName, String messageStart) {
         this.filterElement = new LogCleanupFilterElement(loggerName, messageStart);
     }
-    
+
     public LogCleanupFilterElement getFilterElement() {
         return filterElement;
     }

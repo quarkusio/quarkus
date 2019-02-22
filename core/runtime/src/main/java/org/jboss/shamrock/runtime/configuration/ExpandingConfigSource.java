@@ -4,9 +4,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.UnaryOperator;
 
-import io.smallrye.config.SmallRyeConfigBuilder;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.wildfly.common.expression.Expression;
+
+import io.smallrye.config.SmallRyeConfigBuilder;
 
 /**
  * A value-expanding configuration source, which allows (limited) recursive expansion.
@@ -38,8 +39,10 @@ public class ExpandingConfigSource extends AbstractDelegatingConfigSource {
     }
 
     String expand(final String value) {
-        if (value == null) return null;
-        final Expression compiled = exprCache.computeIfAbsent(value, str -> Expression.compile(str, Expression.Flag.ESCAPES, Expression.Flag.LENIENT_SYNTAX));
+        if (value == null)
+            return null;
+        final Expression compiled = exprCache.computeIfAbsent(value,
+                str -> Expression.compile(str, Expression.Flag.ESCAPES, Expression.Flag.LENIENT_SYNTAX));
         return compiled.evaluate(ConfigExpander.INSTANCE);
     }
 

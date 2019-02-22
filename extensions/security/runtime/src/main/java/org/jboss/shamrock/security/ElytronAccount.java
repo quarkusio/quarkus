@@ -43,7 +43,7 @@ public class ElytronAccount implements Account {
     @Override
     public Set<String> getRoles() {
         Set<String> roles = new HashSet<>();
-        for(String i : securityIdentity.getRoles()) {
+        for (String i : securityIdentity.getRoles()) {
             roles.add(i);
         }
         return roles;

@@ -30,9 +30,8 @@ public class AnnotationServletTestCase {
 
     @RegisterExtension
     static ShamrockUnitTest runner = new ShamrockUnitTest()
-            .setArchiveProducer(() ->
-                    ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(TestServlet.class));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(TestServlet.class));
 
     @Test
     public void testServlet() {

@@ -35,10 +35,10 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.protean.arc.processor.AnnotationsTransformer;
-import org.jboss.shamrock.deployment.annotations.BuildProducer;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
 import org.jboss.shamrock.arc.deployment.AnnotationsTransformerBuildItem;
+import org.jboss.shamrock.deployment.annotations.BuildProducer;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
@@ -57,8 +57,10 @@ import io.smallrye.faulttolerance.MetricsCollectorFactory;
 
 public class SmallRyeFaultToleranceProcessor {
 
-    private static final DotName[] FT_ANNOTATIONS = { DotName.createSimple(Asynchronous.class.getName()), DotName.createSimple(Bulkhead.class.getName()),
-            DotName.createSimple(CircuitBreaker.class.getName()), DotName.createSimple(Fallback.class.getName()), DotName.createSimple(Retry.class.getName()),
+    private static final DotName[] FT_ANNOTATIONS = { DotName.createSimple(Asynchronous.class.getName()),
+            DotName.createSimple(Bulkhead.class.getName()),
+            DotName.createSimple(CircuitBreaker.class.getName()), DotName.createSimple(Fallback.class.getName()),
+            DotName.createSimple(Retry.class.getName()),
             DotName.createSimple(Timeout.class.getName()) };
 
     @Inject
@@ -78,17 +80,19 @@ public class SmallRyeFaultToleranceProcessor {
     }
 
     @BuildStep
-    public void build(BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer, BuildProducer<FeatureBuildItem> feature) throws Exception {
+    public void build(BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer,
+            BuildProducer<FeatureBuildItem> feature) throws Exception {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_FAULT_TOLERANCE));
-        
+
         IndexView index = combinedIndexBuildItem.getIndex();
 
         // Make sure rx.internal.util.unsafe.UnsafeAccess.DISABLED_BY_USER is set.
         nativeImageSystemProperty.produce(new SubstrateSystemPropertyBuildItem("rx.unsafe-disable", "true"));
 
         // Add reflective acccess to fallback handlers
-        Collection<ClassInfo> fallbackHandlers = index.getAllKnownImplementors(DotName.createSimple(FallbackHandler.class.getName()));
+        Collection<ClassInfo> fallbackHandlers = index
+                .getAllKnownImplementors(DotName.createSimple(FallbackHandler.class.getName()));
         for (ClassInfo fallbackHandler : fallbackHandlers) {
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, fallbackHandler.name().toString()));
         }
@@ -125,8 +129,10 @@ public class SmallRyeFaultToleranceProcessor {
             }));
         }
         // Register bean classes
-        additionalBean.produce(new AdditionalBeanBuildItem(HystrixCommandInterceptor.class, HystrixInitializer.class, DefaultHystrixConcurrencyStrategy.class,
-                ShamrockFaultToleranceOperationProvider.class, ShamrockFallbackHandlerProvider.class, DefaultCommandListenersProvider.class,
+        additionalBean.produce(new AdditionalBeanBuildItem(HystrixCommandInterceptor.class, HystrixInitializer.class,
+                DefaultHystrixConcurrencyStrategy.class,
+                ShamrockFaultToleranceOperationProvider.class, ShamrockFallbackHandlerProvider.class,
+                DefaultCommandListenersProvider.class,
                 MetricsCollectorFactory.class));
     }
 

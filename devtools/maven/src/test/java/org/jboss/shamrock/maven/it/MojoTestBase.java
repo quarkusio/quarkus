@@ -1,12 +1,7 @@
 package org.jboss.shamrock.maven.it;
 
-
-import com.google.common.collect.ImmutableMap;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.maven.shared.utils.StringUtils;
-import org.jboss.shamrock.maven.utilities.MojoUtils;
-import org.junit.jupiter.api.BeforeAll;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,8 +15,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.maven.shared.utils.StringUtils;
+import org.jboss.shamrock.maven.utilities.MojoUtils;
+import org.junit.jupiter.api.BeforeAll;
+
+import com.google.common.collect.ImmutableMap;
 
 public class MojoTestBase {
     private static ImmutableMap<String, String> VARIABLES;
@@ -85,7 +85,7 @@ public class MojoTestBase {
 
     public static void installPluginToLocalRepository(File local) {
         File repo = new File(local, MojoUtils.getPluginGroupId().replace(".", "/") + "/"
-                                    + MojoUtils.getPluginArtifactId() + "/" + MojoUtils.getPluginVersion());
+                + MojoUtils.getPluginArtifactId() + "/" + MojoUtils.getPluginVersion());
         if (!repo.isDirectory()) {
             boolean mkdirs = repo.mkdirs();
             Logger.getLogger(MojoTestBase.class.getName())
@@ -146,14 +146,14 @@ public class MojoTestBase {
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> {
-            try {
-                String content = get();
-                resp.set(content);
-                return true;
-            } catch (Exception e) {
-                return false;
-            }
-        });
+                    try {
+                        String content = get();
+                        resp.set(content);
+                        return true;
+                    } catch (Exception e) {
+                        return false;
+                    }
+                });
         return resp.get();
     }
 
@@ -162,15 +162,15 @@ public class MojoTestBase {
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> {
-            try {
-                URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
-                String content = IOUtils.toString(url, "UTF-8");
-                resp.set(content);
-                return true;
-            } catch (Exception e) {
-                return false;
-            }
-        });
+                    try {
+                        URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
+                        String content = IOUtils.toString(url, "UTF-8");
+                        resp.set(content);
+                        return true;
+                    } catch (Exception e) {
+                        return false;
+                    }
+                });
         return resp.get();
     }
 
@@ -179,18 +179,18 @@ public class MojoTestBase {
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .atMost(5, TimeUnit.MINUTES).until(() -> {
-            try {
-                URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
-                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                if (connection.getResponseCode() == expectedStatus) {
-                    code.set(true);
-                    return true;
-                }
-                return false;
-            } catch (Exception e) {
-                return false;
-            }
-        });
+                    try {
+                        URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
+                        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                        if (connection.getResponseCode() == expectedStatus) {
+                            code.set(true);
+                            return true;
+                        }
+                        return false;
+                    } catch (Exception e) {
+                        return false;
+                    }
+                });
         return code.get();
     }
 

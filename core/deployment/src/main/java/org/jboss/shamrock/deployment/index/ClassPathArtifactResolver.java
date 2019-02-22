@@ -47,7 +47,8 @@ public class ClassPathArtifactResolver implements ArtifactResolver {
                 URL jarUrl = res.nextElement();
                 String path = jarUrl.getPath();
                 if (path.startsWith("file:")) {
-                    pathList.add(new StoredUrl(Paths.get(new URI(path.substring(0, path.length() - META_INF_MANIFEST_MF.length() - 2)))));
+                    pathList.add(new StoredUrl(
+                            Paths.get(new URI(path.substring(0, path.length() - META_INF_MANIFEST_MF.length() - 2)))));
                 }
             }
         } catch (IOException | URISyntaxException e) {
@@ -73,7 +74,7 @@ public class ClassPathArtifactResolver implements ArtifactResolver {
 
                 boolean matches = true;
                 for (int i = 0; i < groupParts.length; ++i) {
-                    String up = url.path.getName(url.path.getNameCount() - groupParts.length -3 + i).toString();
+                    String up = url.path.getName(url.path.getNameCount() - groupParts.length - 3 + i).toString();
                     if (!up.equals(groupParts[i])) {
                         matches = false;
                         break;
@@ -89,7 +90,8 @@ public class ClassPathArtifactResolver implements ArtifactResolver {
                 }
             }
         }
-        throw new RuntimeException("Could not resolve artifact " + groupId + ":" + artifactId + ":" + classifier + ". Please make sure it is present and contains a META-INF/MANIFEST.MF file. Note that artifacts that are part of the same project may not always be resolvable, in this case you should generate a META-INF/jandex.idx file instead using the Jandex Maven plugin.");
+        throw new RuntimeException("Could not resolve artifact " + groupId + ":" + artifactId + ":" + classifier
+                + ". Please make sure it is present and contains a META-INF/MANIFEST.MF file. Note that artifacts that are part of the same project may not always be resolvable, in this case you should generate a META-INF/jandex.idx file instead using the Jandex Maven plugin.");
     }
 
     static class StoredUrl {

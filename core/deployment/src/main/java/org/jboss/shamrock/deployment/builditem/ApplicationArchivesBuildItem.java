@@ -35,7 +35,6 @@ public final class ApplicationArchivesBuildItem extends SimpleBuildItem {
         this.applicationArchives = applicationArchives;
     }
 
-
     /**
      * Returns an {@link ApplicationArchive} that represents the classes and resources that are part of the current
      * project

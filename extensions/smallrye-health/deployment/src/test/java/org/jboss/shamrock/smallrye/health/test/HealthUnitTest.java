@@ -13,16 +13,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.restassured.RestAssured;
 import io.restassured.parsing.Parser;
 
-
 public class HealthUnitTest {
 
     @RegisterExtension
     static final ShamrockUnitTest config = new ShamrockUnitTest()
-            .setArchiveProducer(() ->
-                    ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(BasicHealthCheck.class)
-                            .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml")
-            );
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(BasicHealthCheck.class)
+                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
     public void testHealth() {

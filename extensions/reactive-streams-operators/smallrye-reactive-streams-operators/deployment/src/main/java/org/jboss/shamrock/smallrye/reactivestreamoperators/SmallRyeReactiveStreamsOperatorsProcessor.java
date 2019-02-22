@@ -32,7 +32,8 @@ public class SmallRyeReactiveStreamsOperatorsProcessor {
     public void build(BuildProducer<ServiceProviderBuildItem> serviceProvider, BuildProducer<FeatureBuildItem> feature) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_REACTIVE_STREAMS_OPERATORS));
         serviceProvider.produce(new ServiceProviderBuildItem(ReactiveStreamsEngine.class.getName(), Engine.class.getName()));
-        serviceProvider.produce(new ServiceProviderBuildItem(ReactiveStreamsFactory.class.getName(), ReactiveStreamsFactoryImpl.class.getName()));
+        serviceProvider.produce(new ServiceProviderBuildItem(ReactiveStreamsFactory.class.getName(),
+                ReactiveStreamsFactoryImpl.class.getName()));
     }
 
 }

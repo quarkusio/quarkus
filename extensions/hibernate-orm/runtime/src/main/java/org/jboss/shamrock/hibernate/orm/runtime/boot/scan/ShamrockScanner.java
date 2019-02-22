@@ -75,7 +75,6 @@ public class ShamrockScanner implements Scanner {
 
     public static class ClassDescriptorImpl implements ClassDescriptor {
 
-
         private String name;
         private Categorization categorization;
 
@@ -107,7 +106,8 @@ public class ShamrockScanner implements Scanner {
 
         @Override
         public InputStreamAccess getStreamAccess() {
-            return new UrlInputStreamAccess(Thread.currentThread().getContextClassLoader().getResource(name.replace('.', '/') + ".class"));
+            return new UrlInputStreamAccess(
+                    Thread.currentThread().getContextClassLoader().getResource(name.replace('.', '/') + ".class"));
         }
     }
 }

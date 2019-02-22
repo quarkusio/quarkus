@@ -13,8 +13,10 @@ import io.vertx.core.eventbus.Message;
 /**
  * Marks a business method to be automatically registered as a Vertx message consumer.
  * <p>
- * The method must accept exactly one parameter. If it accepts {@link Message} then the return type must be void. For any other type the {@link Message#body()}
- * is passed as the parameter value and the method may return an object that is passed to {@link Message#reply(Object)}, either directly or via
+ * The method must accept exactly one parameter. If it accepts {@link Message} then the return type must be void. For any other
+ * type the {@link Message#body()}
+ * is passed as the parameter value and the method may return an object that is passed to {@link Message#reply(Object)}, either
+ * directly or via
  * {@link CompletionStage#thenAccept(java.util.function.Consumer)} in case of the method returns a completion stage.
  * 
  * <pre>
@@ -40,7 +42,8 @@ import io.vertx.core.eventbus.Message;
 public @interface ConsumeEvent {
 
     /**
-     * The address a consumer will be registered to. By default, the fully qualified name of the declaring bean class is assumed.
+     * The address a consumer will be registered to. By default, the fully qualified name of the declaring bean class is
+     * assumed.
      *
      * @return the address
      */

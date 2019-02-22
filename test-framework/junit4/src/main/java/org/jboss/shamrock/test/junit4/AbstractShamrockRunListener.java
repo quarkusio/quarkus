@@ -95,8 +95,6 @@ abstract class AbstractShamrockRunListener extends RunListener {
         RestAssuredURLManager.clearURL();
     }
 
-
-
     protected abstract void startShamrock() throws Exception;
 
     protected abstract void stopShamrock() throws Exception;

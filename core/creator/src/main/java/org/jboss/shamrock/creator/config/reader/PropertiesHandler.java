@@ -26,7 +26,7 @@ public interface PropertiesHandler<T> {
     /**
      * An instance that will receive configuration.
      *
-     * @return  instance that will receive configuration
+     * @return instance that will receive configuration
      */
     T getTarget() throws PropertiesConfigReaderException;
 
@@ -42,7 +42,6 @@ public interface PropertiesHandler<T> {
     default PropertiesHandler<?> getNestedHandler(String name) throws PropertiesConfigReaderException {
         return null;
     }
-
 
     @SuppressWarnings("unchecked")
     default void setNestedOnObject(Object o, String name, Object child) throws PropertiesConfigReaderException {

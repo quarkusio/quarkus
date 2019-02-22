@@ -10,8 +10,6 @@ import javax.inject.Inject;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 
-import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
-import io.smallrye.jwt.auth.principal.KeyLocationResolver;
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
 import org.jose4j.jwa.AlgorithmConstraints;
@@ -29,6 +27,9 @@ import org.wildfly.security.auth.server.RealmUnavailableException;
 import org.wildfly.security.authz.Attributes;
 import org.wildfly.security.evidence.BearerTokenEvidence;
 
+import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
+import io.smallrye.jwt.auth.principal.KeyLocationResolver;
+
 /**
  * Validates a bearer token according to the MP-JWT rules
  */
@@ -41,6 +42,7 @@ public class MpJwtValidator implements TokenValidator {
 
     public MpJwtValidator() {
     }
+
     public MpJwtValidator(JWTAuthContextInfo authContextInfo) {
         this.authContextInfo = authContextInfo;
     }
@@ -56,7 +58,7 @@ public class MpJwtValidator implements TokenValidator {
                     .setSkipDefaultAudienceValidation()
                     .setJwsAlgorithmConstraints(
                             new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.WHITELIST,
-                                                     AlgorithmIdentifiers.RSA_USING_SHA256));
+                                    AlgorithmIdentifiers.RSA_USING_SHA256));
 
             if (authContextInfo.isRequireIssuer()) {
                 builder.setExpectedIssuer(true, authContextInfo.getIssuedBy());
@@ -86,14 +88,14 @@ public class MpJwtValidator implements TokenValidator {
             claimsSet = jwtContext.getJwtClaims();
 
             // Process the rolesMapping claim
-            if(claimsSet.hasClaim(ROLE_MAPPINGS)) {
+            if (claimsSet.hasClaim(ROLE_MAPPINGS)) {
                 try {
                     Map<String, String> rolesMapping = claimsSet.getClaimValue(ROLE_MAPPINGS, Map.class);
                     List<String> groups = claimsSet.getStringListClaimValue(Claims.groups.name());
                     List<String> allGroups = new ArrayList<>(groups);
-                    for(String key : rolesMapping.keySet()) {
+                    for (String key : rolesMapping.keySet()) {
                         // If the key group is in groups list, add the mapped role
-                        if(groups.contains(key)) {
+                        if (groups.contains(key)) {
                             String toRole = rolesMapping.get(key);
                             allGroups.add(toRole);
                         }

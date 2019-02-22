@@ -31,5 +31,4 @@ public final class MainBytecodeRecorderBuildItem extends MultiBuildItem {
         return bytecodeRecorder;
     }
 
-
 }

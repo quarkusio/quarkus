@@ -25,13 +25,14 @@ public class MpJwtPrincipalHandler implements HttpHandler {
 
     /**
      * If there is a JWTAccount installed in the exchange security context, create
+     * 
      * @param exchange - the request/response exchange
      * @throws Exception on failure
      */
     @Override
     public void handleRequest(HttpServerExchange exchange) throws Exception {
         Account account = exchange.getSecurityContext().getAuthenticatedAccount();
-        if(account instanceof JWTAccount) {
+        if (account instanceof JWTAccount) {
             JWTAccount jwtAccount = (JWTAccount) account;
             PrincipalProducer myInstance = CDI.current().select(PrincipalProducer.class).get();
             myInstance.setAccount(jwtAccount);

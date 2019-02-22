@@ -41,6 +41,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+
 import org.jboss.logging.Logger;
 import org.jboss.shamrock.creator.AppArtifact;
 import org.jboss.shamrock.creator.AppArtifactResolver;
@@ -84,8 +85,8 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
      * If not set by the user the work directory of the creator
      * will be used instead.
      *
-     * @param outputDir  output directory for this phase
-     * @return  this phase instance
+     * @param outputDir output directory for this phase
+     * @return this phase instance
      */
     public RunnerJarPhase setOutputDir(Path outputDir) {
         this.outputDir = outputDir;
@@ -96,8 +97,8 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
      * Directory for application dependencies. If none set by the user
      * lib directory will be created in the output directory of the phase.
      *
-     * @param libDir  directory for project dependencies
-     * @return  this phase instance
+     * @param libDir directory for project dependencies
+     * @return this phase instance
      */
     public RunnerJarPhase setLibDir(Path libDir) {
         this.libDir = libDir;
@@ -108,8 +109,8 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
      * Name for the runnable JAR. If none is provided by the user
      * the name will derived from the user application JAR filename.
      *
-     * @param finalName  runnable JAR name
-     * @return  this phase instance
+     * @param finalName runnable JAR name
+     * @return this phase instance
      */
     public RunnerJarPhase setFinalName(String finalName) {
         this.finalName = finalName;
@@ -120,7 +121,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
      * Main class name fir the runnable JAR. If none is set by the user
      * org.jboss.shamrock.runner.GeneratedMain will be use by default.
      *
-     * @param mainClass  main class name for the runnable JAR
+     * @param mainClass main class name for the runnable JAR
      * @return
      */
     public RunnerJarPhase setMainClass(String mainClass) {
@@ -131,8 +132,8 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
     /**
      * Whether to build an uber JAR. The default is false.
      *
-     * @param uberJar  whether to build an uber JAR
-     * @return  this phase instance
+     * @param uberJar whether to build an uber JAR
+     * @return this phase instance
      */
     public RunnerJarPhase setUberJar(boolean uberJar) {
         this.uberJar = uberJar;
@@ -211,30 +212,33 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
             }
             final Path resolvedDep = depResolver.resolve(depArtifact);
             if (uberJar) {
-                try(FileSystem artifactFs = ZipUtils.newFileSystem(resolvedDep)) {
-                    for(final Path root : artifactFs.getRootDirectories()) {
+                try (FileSystem artifactFs = ZipUtils.newFileSystem(resolvedDep)) {
+                    for (final Path root : artifactFs.getRootDirectories()) {
                         Files.walkFileTree(root, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
                                 new SimpleFileVisitor<Path>() {
                                     @Override
                                     public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-                                        throws IOException {
+                                            throws IOException {
                                         final String relativePath = root.relativize(dir).toString();
                                         if (!relativePath.isEmpty()) {
                                             addDir(runnerZipFs, dir, relativePath);
                                         }
                                         return FileVisitResult.CONTINUE;
                                     }
+
                                     @Override
                                     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-                                        throws IOException {
+                                            throws IOException {
                                         final String relativePath = root.relativize(file).toString();
                                         if (relativePath.startsWith("META-INF/services/") && relativePath.length() > 18) {
                                             services.computeIfAbsent(relativePath, (u) -> new ArrayList<>()).add(read(file));
                                         } else if (!relativePath.equals("META-INF/MANIFEST.MF")) {
                                             if (seen.add(relativePath)) {
-                                                Files.copy(file, runnerZipFs.getPath(relativePath), StandardCopyOption.REPLACE_EXISTING);
+                                                Files.copy(file, runnerZipFs.getPath(relativePath),
+                                                        StandardCopyOption.REPLACE_EXISTING);
                                             } else {
-                                                log.warn("Duplicate entry " + relativePath + " entry from " + appDep + " will be ignored");
+                                                log.warn("Duplicate entry " + relativePath + " entry from " + appDep
+                                                        + " will be ignored");
                                             }
                                         }
                                         return FileVisitResult.CONTINUE;
@@ -282,7 +286,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
         manifest.getMainAttributes().put(Attributes.Name.CLASS_PATH, classPath.toString());
         manifest.getMainAttributes().put(Attributes.Name.MAIN_CLASS, mainClass);
-        try(OutputStream os = Files.newOutputStream(runnerZipFs.getPath("META-INF", "MANIFEST.MF"))) {
+        try (OutputStream os = Files.newOutputStream(runnerZipFs.getPath("META-INF", "MANIFEST.MF"))) {
             manifest.write(os);
         }
 
@@ -290,7 +294,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         copyFiles(augmentOutcome.getTransformedClassesDir(), runnerZipFs);
 
         for (Map.Entry<String, List<byte[]>> entry : services.entrySet()) {
-            try(OutputStream os = Files.newOutputStream(runnerZipFs.getPath(entry.getKey()))) {
+            try (OutputStream os = Files.newOutputStream(runnerZipFs.getPath(entry.getKey()))) {
                 for (byte[] i : entry.getValue()) {
                     os.write(i);
                     os.write('\n');
@@ -304,7 +308,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
             @Override
             public void accept(Path path) {
                 final String relativePath = dir.relativize(path).toString();
-                if(relativePath.isEmpty()) {
+                if (relativePath.isEmpty()) {
                     return;
                 }
                 try {
@@ -326,9 +330,9 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         try {
             Files.copy(dir, targetDir);
         } catch (FileAlreadyExistsException e) {
-             if (!Files.isDirectory(targetDir)) {
-                 throw e;
-             }
+            if (!Files.isDirectory(targetDir)) {
+                throw e;
+            }
         }
     }
 
@@ -357,10 +361,10 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
                 return RunnerJarPhase.this;
             }
         }
-        .map("output", (RunnerJarPhase t, String value) -> t.setOutputDir(Paths.get(value)))
-        .map("lib", (RunnerJarPhase t, String value) -> t.setLibDir(Paths.get(value)))
-        .map("final-name", RunnerJarPhase::setFinalName)
-        .map("main-class", RunnerJarPhase::setMainClass)
-        .map("uber-jar", (RunnerJarPhase t, String value) -> t.setUberJar(Boolean.parseBoolean(value)));
+                .map("output", (RunnerJarPhase t, String value) -> t.setOutputDir(Paths.get(value)))
+                .map("lib", (RunnerJarPhase t, String value) -> t.setLibDir(Paths.get(value)))
+                .map("final-name", RunnerJarPhase::setFinalName)
+                .map("main-class", RunnerJarPhase::setMainClass)
+                .map("uber-jar", (RunnerJarPhase t, String value) -> t.setUberJar(Boolean.parseBoolean(value)));
     }
 }

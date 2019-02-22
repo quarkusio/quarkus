@@ -35,9 +35,8 @@ public class ServletDestroyTestCase {
 
     @RegisterExtension
     static ShamrockUnitTest runner = new ShamrockUnitTest()
-            .setArchiveProducer(() ->
-                    ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(PreDestroyServlet.class))
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(PreDestroyServlet.class))
             .setAfterUndeployListener(() -> {
                 try {
                     Assertions.assertEquals("Servlet Destroyed", Messages.MESSAGES.poll(2, TimeUnit.SECONDS));

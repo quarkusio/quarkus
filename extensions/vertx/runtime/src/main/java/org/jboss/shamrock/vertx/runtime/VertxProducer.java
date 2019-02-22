@@ -1,5 +1,20 @@
 package org.jboss.shamrock.vertx.runtime;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import javax.annotation.PreDestroy;
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.inject.Produces;
+import javax.inject.Singleton;
+
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.eventbus.EventBus;
@@ -11,21 +26,6 @@ import io.vertx.core.net.JksOptions;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.PemTrustOptions;
 import io.vertx.core.net.PfxOptions;
-
-import javax.annotation.PreDestroy;
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
-import javax.inject.Singleton;
-
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * Produces a configured Vert.x instance.
@@ -138,7 +138,9 @@ public class VertxProducer {
         opts.setClientAuth(ClientAuth.valueOf(eb.clientAuth.toUpperCase()));
         opts.setConnectTimeout((int) (Math.min(Integer.MAX_VALUE, eb.connectTimeout.toMillis())));
         // todo: use timeUnit cleverly
-        opts.setIdleTimeout(eb.idleTimeout.isPresent() ? (int) Math.max(1, Math.min(Integer.MAX_VALUE, eb.idleTimeout.get().getSeconds())) : 0);
+        opts.setIdleTimeout(
+                eb.idleTimeout.isPresent() ? (int) Math.max(1, Math.min(Integer.MAX_VALUE, eb.idleTimeout.get().getSeconds()))
+                        : 0);
         opts.setSendBufferSize(eb.sendBufferSize.orElse(-1));
         opts.setSoLinger(eb.soLinger.orElse(-1));
         opts.setSsl(eb.ssl);
@@ -156,12 +158,10 @@ public class VertxProducer {
         if (eb.keyCertificatePem != null) {
             List<String> certs = new ArrayList<>();
             List<String> keys = new ArrayList<>();
-            eb.keyCertificatePem.certs.ifPresent(s ->
-                    certs.addAll(Pattern.compile(",").splitAsStream(s).map(String::trim).collect(Collectors.toList()))
-            );
-            eb.keyCertificatePem.keys.ifPresent(s ->
-                    keys.addAll(Pattern.compile(",").splitAsStream(s).map(String::trim).collect(Collectors.toList()))
-            );
+            eb.keyCertificatePem.certs.ifPresent(
+                    s -> certs.addAll(Pattern.compile(",").splitAsStream(s).map(String::trim).collect(Collectors.toList())));
+            eb.keyCertificatePem.keys.ifPresent(
+                    s -> keys.addAll(Pattern.compile(",").splitAsStream(s).map(String::trim).collect(Collectors.toList())));
             PemKeyCertOptions o = new PemKeyCertOptions()
                     .setCertPaths(certs)
                     .setKeyPaths(keys);
@@ -285,9 +285,11 @@ public class VertxProducer {
             if (cl == null) {
                 cl = VertxProducer.class.getClassLoader();
             }
-            Class<? extends EventConsumerInvoker> invokerClazz = (Class<? extends EventConsumerInvoker>) cl.loadClass(invokerClassName);
+            Class<? extends EventConsumerInvoker> invokerClazz = (Class<? extends EventConsumerInvoker>) cl
+                    .loadClass(invokerClassName);
             return invokerClazz.getDeclaredConstructor().newInstance();
-        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | NoSuchMethodException | InvocationTargetException e) {
+        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | NoSuchMethodException
+                | InvocationTargetException e) {
             throw new IllegalStateException("Unable to create invoker: " + invokerClassName, e);
         }
     }

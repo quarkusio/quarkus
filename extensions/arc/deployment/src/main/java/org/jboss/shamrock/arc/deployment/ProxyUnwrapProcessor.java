@@ -16,8 +16,8 @@
 
 package org.jboss.shamrock.arc.deployment;
 
-import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.arc.runtime.ClientProxyUnwrapper;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.builditem.ProxyUnwrapperBuildItem;
 
 public class ProxyUnwrapProcessor {

@@ -86,11 +86,11 @@ public final class FilterBuildItem extends MultiBuildItem {
         return this;
     }
 
-    public FilterBuildItem insertFilterServletNameMapping(final int pos, final String filterName, final String mapping, DispatcherType dispatcher) {
+    public FilterBuildItem insertFilterServletNameMapping(final int pos, final String filterName, final String mapping,
+            DispatcherType dispatcher) {
         mappings.add(pos, new FilterMappingInfo(FilterMappingInfo.MappingType.SERVLET, mapping, dispatcher));
         return this;
     }
-
 
     public static class FilterMappingInfo {
 
@@ -129,8 +129,7 @@ public final class FilterBuildItem extends MultiBuildItem {
         }
 
         public enum MappingType {
-            URL,
-            SERVLET;
+            URL, SERVLET;
         }
 
     }

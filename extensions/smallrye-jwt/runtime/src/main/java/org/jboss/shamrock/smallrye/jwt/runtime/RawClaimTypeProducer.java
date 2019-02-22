@@ -41,9 +41,9 @@ public class RawClaimTypeProducer {
         String name = getName(ip);
         Optional<Object> optValue = currentToken.claim(name);
         String returnValue = null;
-        if(optValue.isPresent()) {
+        if (optValue.isPresent()) {
             Object value = optValue.get();
-            if(value instanceof JsonString) {
+            if (value instanceof JsonString) {
                 JsonString jsonValue = (JsonString) value;
                 returnValue = jsonValue.getString();
             } else {
@@ -60,9 +60,9 @@ public class RawClaimTypeProducer {
         String name = getName(ip);
         Optional<Object> optValue = currentToken.claim(name);
         Long returnValue = null;
-        if(optValue.isPresent()) {
+        if (optValue.isPresent()) {
             Object value = optValue.get();
-            if(value instanceof JsonNumber) {
+            if (value instanceof JsonNumber) {
                 JsonNumber jsonValue = (JsonNumber) value;
                 returnValue = jsonValue.longValue();
             } else {
@@ -79,9 +79,9 @@ public class RawClaimTypeProducer {
         String name = getName(ip);
         Optional<Object> optValue = currentToken.claim(name);
         Double returnValue = null;
-        if(optValue.isPresent()) {
+        if (optValue.isPresent()) {
             Object value = optValue.get();
-            if(value instanceof JsonNumber) {
+            if (value instanceof JsonNumber) {
                 JsonNumber jsonValue = (JsonNumber) value;
                 returnValue = jsonValue.doubleValue();
             } else {

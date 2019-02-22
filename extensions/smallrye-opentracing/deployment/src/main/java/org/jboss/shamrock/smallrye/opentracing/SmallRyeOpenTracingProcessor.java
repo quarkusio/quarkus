@@ -23,10 +23,10 @@ import java.util.List;
 import javax.enterprise.inject.spi.ObserverMethod;
 import javax.servlet.DispatcherType;
 
+import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
-import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveMethodBuildItem;
 import org.jboss.shamrock.resteasy.ResteasyJaxrsProviderBuildItem;
 import org.jboss.shamrock.smallrye.opentracing.runtime.ShamrockSmallRyeTracingDynamicFeature;
@@ -50,9 +50,9 @@ public class SmallRyeOpenTracingProcessor {
     }
 
     @BuildStep
-            void setupFilter(BuildProducer<ResteasyJaxrsProviderBuildItem> providers,
-                     BuildProducer<FilterBuildItem> filterProducer,
-                     BuildProducer<FeatureBuildItem> feature) {
+    void setupFilter(BuildProducer<ResteasyJaxrsProviderBuildItem> providers,
+            BuildProducer<FilterBuildItem> filterProducer,
+            BuildProducer<FeatureBuildItem> feature) {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_OPENTRACING));
 

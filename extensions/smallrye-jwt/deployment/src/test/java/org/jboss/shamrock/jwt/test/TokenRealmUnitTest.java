@@ -1,5 +1,8 @@
 package org.jboss.shamrock.jwt.test;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.Permission;
@@ -11,14 +14,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
-
 import org.jboss.shamrock.smallrye.jwt.runtime.auth.MpJwtValidator;
 import org.junit.jupiter.api.Test;
-
 import org.wildfly.security.auth.principal.NamePrincipal;
 import org.wildfly.security.auth.realm.token.TokenSecurityRealm;
 import org.wildfly.security.auth.server.RealmIdentity;
@@ -34,6 +31,7 @@ import org.wildfly.security.authz.SimpleAttributesEntry;
 import org.wildfly.security.evidence.BearerTokenEvidence;
 import org.wildfly.security.permission.PermissionVerifier;
 
+import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 
 /**
  * Validate usage of the bearer token based realm
@@ -85,7 +83,8 @@ public class TokenRealmUnitTest {
                 .setRoleDecoder(new RoleDecoder() {
                     @Override
                     public Roles decodeRoles(AuthorizationIdentity authorizationIdentity) {
-                        SimpleAttributesEntry groups = (SimpleAttributesEntry) authorizationIdentity.getAttributes().get("groups");
+                        SimpleAttributesEntry groups = (SimpleAttributesEntry) authorizationIdentity.getAttributes()
+                                .get("groups");
                         Set<String> roles = new HashSet<>(groups);
                         return new Roles() {
                             @Override

@@ -60,7 +60,6 @@ public class ValidatorTestCase {
         Assertions.assertEquals("failed:email", new String(out.toByteArray(), "UTF-8"));
     }
 
-
     @Test
     public void testManualValidationPassed() throws Exception {
         URLConnection connection = uri.openConnection();

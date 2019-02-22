@@ -53,7 +53,6 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
         this.compiler = compiler;
     }
 
-
     @Override
     public Path getClassesDir() {
         return classesDir;
@@ -77,7 +76,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
     public void doScan() throws IOException {
         final long start = System.currentTimeMillis();
         final ConcurrentMap<String, byte[]> changedClasses = scanForChangedClasses();
-        if (changedClasses == null) return;
+        if (changedClasses == null)
+            return;
 
         DevModeMain.restartApp();
         log.info("Hot replace total time: " + (System.currentTimeMillis() - start) + "ms");
@@ -117,8 +117,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
                     .filter(p -> wasRecentlyModified(p))
                     .collect(Collectors.toConcurrentMap(
                             p -> pathToClassName(p),
-                            p -> CopyUtils.readFileContentNoIOExceptions(p))
-                    );
+                            p -> CopyUtils.readFileContentNoIOExceptions(p)));
         }
         if (changedClasses.isEmpty() && !checkForConfigFileChange()) {
             return null;

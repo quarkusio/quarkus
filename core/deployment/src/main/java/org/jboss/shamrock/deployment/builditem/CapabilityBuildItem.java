@@ -29,7 +29,7 @@ public final class CapabilityBuildItem extends MultiBuildItem {
     private final String name;
 
     public CapabilityBuildItem(String name) {
-        if(name == null) {
+        if (name == null) {
             throw new IllegalArgumentException("name cannot be null");
         }
         this.name = name;

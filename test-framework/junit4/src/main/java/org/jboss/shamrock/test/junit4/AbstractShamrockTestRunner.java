@@ -31,7 +31,9 @@ abstract class AbstractShamrockTestRunner extends BlockJUnit4ClassRunner {
 
     private final BiFunction<Class<?>, RunNotifier, AbstractShamrockRunListener> shamrockRunListenerSupplier;
 
-    public AbstractShamrockTestRunner(Class<?> klass, BiFunction<Class<?>, RunNotifier, AbstractShamrockRunListener> shamrockRunListenerSupplier) throws InitializationError {
+    public AbstractShamrockTestRunner(Class<?> klass,
+            BiFunction<Class<?>, RunNotifier, AbstractShamrockRunListener> shamrockRunListenerSupplier)
+            throws InitializationError {
         super(klass);
         this.shamrockRunListenerSupplier = shamrockRunListenerSupplier;
     }

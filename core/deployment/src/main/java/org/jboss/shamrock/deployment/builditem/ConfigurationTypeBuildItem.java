@@ -4,7 +4,7 @@ import org.jboss.builder.item.MultiBuildItem;
 import org.wildfly.common.Assert;
 
 /**
- * The configuration type build item.  Every configuration type should be registered using this build item
+ * The configuration type build item. Every configuration type should be registered using this build item
  * to ensure that the converter is properly loaded in the native image case.
  */
 public final class ConfigurationTypeBuildItem extends MultiBuildItem {

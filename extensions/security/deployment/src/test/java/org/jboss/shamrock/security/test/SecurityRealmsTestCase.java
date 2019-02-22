@@ -42,7 +42,7 @@ public class SecurityRealmsTestCase {
                 .setProviders(new Supplier<Provider[]>() {
                     @Override
                     public Provider[] get() {
-                        return new Provider[]{new WildFlyElytronProvider()};
+                        return new Provider[] { new WildFlyElytronProvider() };
                     }
                 })
                 .build();

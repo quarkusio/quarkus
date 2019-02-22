@@ -35,16 +35,17 @@ public class TestHttpResourceManager {
     public static void inject(Object testCase) {
         Class<?> c = testCase.getClass();
         while (c != Object.class) {
-            for(Field f : c.getDeclaredFields()) {
+            for (Field f : c.getDeclaredFields()) {
                 TestHTTPResource resource = f.getAnnotation(TestHTTPResource.class);
-                if(resource != null) {
+                if (resource != null) {
                     TestHTTPResourceProvider provider = providers.get(f.getType());
-                    if(provider == null) {
-                        throw new RuntimeException("Unable to inject TestHTTPResource field " + f + " as no provider exists for the type");
+                    if (provider == null) {
+                        throw new RuntimeException(
+                                "Unable to inject TestHTTPResource field " + f + " as no provider exists for the type");
                     }
                     String path = resource.value();
                     String val;
-                    if(path.startsWith("/")) {
+                    if (path.startsWith("/")) {
                         val = uri + path;
                     } else {
                         val = uri + "/" + path;

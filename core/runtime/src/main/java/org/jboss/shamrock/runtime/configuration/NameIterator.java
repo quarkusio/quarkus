@@ -28,10 +28,12 @@ public final class NameIterator {
 
     public NameIterator(final String name, final int pos) {
         Assert.checkNotNullParam("name", name);
-        if (name.length() > MAX_LENGTH) throw new IllegalArgumentException("Name is too long");
+        if (name.length() > MAX_LENGTH)
+            throw new IllegalArgumentException("Name is too long");
         Assert.checkMinimumParameter("pos", -1, pos);
         Assert.checkMaximumParameter("pos", name.length(), pos);
-        if (pos != -1 && pos != name.length() && name.charAt(pos) != '.') throw new IllegalArgumentException("Position is not located at a delimiter");
+        if (pos != -1 && pos != name.length() && name.charAt(pos) != '.')
+            throw new IllegalArgumentException("Position is not located at a delimiter");
         this.name = name;
         this.pos = pos;
     }
@@ -45,7 +47,7 @@ public final class NameIterator {
     }
 
     /**
-     * Get the cursor position.  It will be {@code -1} if the cursor is at the beginning of the string, or {@code name.length()}
+     * Get the cursor position. It will be {@code -1} if the cursor is at the beginning of the string, or {@code name.length()}
      * if it is at the end.
      *
      * @return the cursor position
@@ -57,13 +59,13 @@ public final class NameIterator {
     /*
      * next-iteration DFA
      * <any> → <end> ## on EOI
-     * I → <end>     ## on '.'
-     * I → Q         ## on '"'
-     * Q → I         ## on '"'
-     * Q → QBS       ## on '\'
-     * QBS → Q       ## on any
-     * I → BS        ## on '\'
-     * BS → I        ## on any
+     * I → <end> ## on '.'
+     * I → Q ## on '"'
+     * Q → I ## on '"'
+     * Q → QBS ## on '\'
+     * QBS → Q ## on any
+     * I → BS ## on '\'
+     * BS → I ## on any
      */
     private static final int FS_INITIAL = 0;
     private static final int FS_QUOTE = 1;
@@ -73,11 +75,11 @@ public final class NameIterator {
     /*
      * Iteration cookie format
      *
-     * Bit:  14...12 11   ...   0
-     *      ┌───────┬────────────┐
-     *      │ state │  position  │
-     *      │       │  (signed)  │
-     *      └───────┴────────────┘
+     * Bit: 14...12 11 ... 0
+     * ┌───────┬────────────┐
+     * │ state │ position │
+     * │ │ (signed) │
+     * └───────┴────────────┘
      */
 
     /**
@@ -115,7 +117,7 @@ public final class NameIterator {
         int state = getState(cookie);
         int ch;
         for (;;) {
-            pos ++;
+            pos++;
             if (pos == name.length()) {
                 return cookieOf(state, pos);
             }
@@ -157,7 +159,7 @@ public final class NameIterator {
         int state = getState(cookie);
         int ch;
         for (;;) {
-            pos --;
+            pos--;
             if (pos == -1) {
                 return cookieOf(state, pos);
             }
@@ -213,7 +215,7 @@ public final class NameIterator {
         int cookie = initIteration();
         do {
             cookie = prevPos(cookie);
-        } while (! isSegmentDelimiter(cookie));
+        } while (!isSegmentDelimiter(cookie));
         return getPosition(cookie) + 1;
     }
 
@@ -221,7 +223,7 @@ public final class NameIterator {
         int cookie = initIteration();
         do {
             cookie = nextPos(cookie);
-        } while (! isSegmentDelimiter(cookie));
+        } while (!isSegmentDelimiter(cookie));
         return getPosition(cookie);
     }
 

@@ -17,6 +17,7 @@
 package org.jboss.shamrock.hibernate.orm.runtime.graal;
 
 import java.util.Map;
+
 import javax.management.ObjectName;
 
 import org.hibernate.jmx.spi.JmxService;

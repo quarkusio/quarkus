@@ -28,7 +28,8 @@ public class Address {
         protected String zip;
         protected String city;
 
-        private Builder() {}
+        private Builder() {
+        }
 
         public Builder setStreet(String street) {
             this.street = street;

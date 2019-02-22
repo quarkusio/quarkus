@@ -49,7 +49,7 @@ public class ResolverSetupCleanup {
 
     @After
     public void cleanup() {
-        if(workDir != null) {
+        if (workDir != null) {
             IoUtils.recursiveDelete(workDir);
         }
     }

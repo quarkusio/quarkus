@@ -17,7 +17,8 @@ public final class RemoteOnly {
     @AlwaysInline("Method org.h2.engine.SessionRemote.connectEmbeddedOrServer must be able to realize it's only ever going remote")
     public boolean isRemote() {
         if (this.remote == false) {
-            throw new UnsupportedOperationException("H2 database compiled into a native-image is only functional as a client: can't create an Embedded Database Session");
+            throw new UnsupportedOperationException(
+                    "H2 database compiled into a native-image is only functional as a client: can't create an Embedded Database Session");
         }
         return true;
     }

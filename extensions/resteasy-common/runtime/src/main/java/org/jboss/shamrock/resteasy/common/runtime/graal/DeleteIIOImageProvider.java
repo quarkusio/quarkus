@@ -39,7 +39,8 @@ final class DeleteIIOImageProvider {
     }
 
     @Substitute
-    public IIOImage readFrom(Class<IIOImage> type, Type genericType, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
+    public IIOImage readFrom(Class<IIOImage> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+            MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
         return null;
     }
 
@@ -49,7 +50,8 @@ final class DeleteIIOImageProvider {
     }
 
     @Substitute
-    public void writeTo(IIOImage iioImage, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+    public void writeTo(IIOImage iioImage, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
 
     }
 }

@@ -17,7 +17,6 @@ import io.restassured.RestAssured;
 @ShamrockTest
 public class KafkaProducerTest {
 
-
     public static KafkaConsumer<Integer, String> createConsumer() {
         Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19092");
@@ -31,15 +30,13 @@ public class KafkaProducerTest {
         return consumer;
     }
 
-
     @Test
     public void test() throws Exception {
         KafkaConsumer<Integer, String> consumer = createConsumer();
         RestAssured.with().body("hello").post("/kafka");
         ConsumerRecord<Integer, String> records = consumer.poll(10000).iterator().next();
-        Assertions.assertEquals(records.key(), (Integer)0);
+        Assertions.assertEquals(records.key(), (Integer) 0);
         Assertions.assertEquals(records.value(), "hello");
     }
-
 
 }

@@ -16,9 +16,12 @@
 
 package org.jboss.shamrock.maven.extensionlist;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.Set;
+
 import org.apache.maven.artifact.DefaultArtifact;
 import org.apache.maven.artifact.handler.DefaultArtifactHandler;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -30,21 +33,14 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.jboss.shamrock.dependencies.Extension;
 import org.jboss.shamrock.maven.AbstractExtensionMojo;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.Set;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 
 /**
  * @author <a href="http://kenfinnigan.me">Ken Finnigan</a>
  */
-@Mojo(
-        name = "extension-list",
-        defaultPhase = LifecyclePhase.GENERATE_RESOURCES,
-        requiresDependencyCollection = ResolutionScope.COMPILE,
-        requiresDependencyResolution = ResolutionScope.COMPILE
-)
+@Mojo(name = "extension-list", defaultPhase = LifecyclePhase.GENERATE_RESOURCES, requiresDependencyCollection = ResolutionScope.COMPILE, requiresDependencyResolution = ResolutionScope.COMPILE)
 public class ExtensionListMojo extends AbstractExtensionMojo {
 
     //TODO Change file name when we replace the current hand coded file
@@ -104,8 +100,7 @@ public class ExtensionListMojo extends AbstractExtensionMojo {
                 "compile",
                 type,
                 "",
-                new DefaultArtifactHandler(type)
-        );
+                new DefaultArtifactHandler(type));
 
         artifact.setFile(file);
         this.project.addAttachedArtifact(artifact);

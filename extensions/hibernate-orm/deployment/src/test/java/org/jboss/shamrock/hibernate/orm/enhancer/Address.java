@@ -34,7 +34,8 @@ public class Address {
         this.street = street;
     }
 
-    @Id @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="addressSeq")
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "addressSeq")
     public long getId() {
         return id;
     }
@@ -52,6 +53,6 @@ public class Address {
     }
 
     public void describeFully(StringBuilder sb) {
-        sb.append( "Address with id=" ).append( id ).append( ", street='" ).append( street ).append( "'" );
+        sb.append("Address with id=").append(id).append(", street='").append(street).append("'");
     }
 }

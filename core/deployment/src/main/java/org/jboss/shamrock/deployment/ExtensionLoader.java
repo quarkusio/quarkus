@@ -63,7 +63,8 @@ import org.wildfly.common.function.Functions;
  * Utility class to load build steps, runtime templates, and configuration roots from a given extension class.
  */
 public final class ExtensionLoader {
-    private ExtensionLoader() {}
+    private ExtensionLoader() {
+    }
 
     private static boolean isTemplate(AnnotatedElement element) {
         return element.isAnnotationPresent(Template.class);
@@ -77,7 +78,8 @@ public final class ExtensionLoader {
      * @throws IOException if the class loader could not load a resource
      * @throws ClassNotFoundException if a build step class is not found
      */
-    public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader) throws IOException, ClassNotFoundException {
+    public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader)
+            throws IOException, ClassNotFoundException {
         Consumer<BuildChainBuilder> result = Functions.discardingConsumer();
         for (Class<?> clazz : ServiceUtil.classesNamedIn(classLoader, "META-INF/shamrock-build-steps.list")) {
             result = result.andThen(ExtensionLoader.loadStepsFrom(clazz));
@@ -107,7 +109,8 @@ public final class ExtensionLoader {
         boolean consumingConfig = false;
 
         final Constructor<?> constructor = constructors[0];
-        if (! (Modifier.isPublic(constructor.getModifiers()))) constructor.setAccessible(true);
+        if (!(Modifier.isPublic(constructor.getModifiers())))
+            constructor.setAccessible(true);
         final Parameter[] ctorParameters = constructor.getParameters();
         final List<Function<BuildContext, Object>> ctorParamFns;
         if (ctorParameters.length == 0) {
@@ -118,38 +121,47 @@ public final class ExtensionLoader {
                 Type parameterType = parameter.getParameterizedType();
                 final Class<?> parameterClass = parameter.getType();
                 if (rawTypeExtends(parameterType, SimpleBuildItem.class)) {
-                    final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOf(parameterType).asSubclass(SimpleBuildItem.class);
+                    final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOf(parameterType)
+                            .asSubclass(SimpleBuildItem.class);
                     stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass));
                     ctorParamFns.add(bc -> bc.consume(buildItemClass));
                 } else if (isListOf(parameterType, MultiBuildItem.class)) {
-                    final Class<? extends MultiBuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0).asSubclass(MultiBuildItem.class);
+                    final Class<? extends MultiBuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
+                            .asSubclass(MultiBuildItem.class);
                     stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass));
                     ctorParamFns.add(bc -> bc.consumeMulti(buildItemClass));
                 } else if (isConsumerOf(parameterType, BuildItem.class)) {
-                    final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0).asSubclass(BuildItem.class);
+                    final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
+                            .asSubclass(BuildItem.class);
                     stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass));
                     ctorParamFns.add(bc -> (Consumer<? extends BuildItem>) bc::produce);
                 } else if (isBuildProducerOf(parameterType, BuildItem.class)) {
-                    final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0).asSubclass(BuildItem.class);
+                    final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
+                            .asSubclass(BuildItem.class);
                     stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass));
                     ctorParamFns.add(bc -> (BuildProducer<? extends BuildItem>) bc::produce);
                 } else if (isOptionalOf(parameterType, SimpleBuildItem.class)) {
-                    final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0).asSubclass(SimpleBuildItem.class);
+                    final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
+                            .asSubclass(SimpleBuildItem.class);
                     stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass, ConsumeFlags.of(ConsumeFlag.OPTIONAL)));
                     ctorParamFns.add(bc -> Optional.ofNullable(bc.consume(buildItemClass)));
                 } else if (isSupplierOf(parameterType, SimpleBuildItem.class)) {
-                    final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0).asSubclass(SimpleBuildItem.class);
+                    final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
+                            .asSubclass(SimpleBuildItem.class);
                     stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass));
                     ctorParamFns.add(bc -> (Supplier<? extends SimpleBuildItem>) () -> bc.consume(buildItemClass));
                 } else if (isSupplierOfOptionalOf(parameterType, SimpleBuildItem.class)) {
-                    final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(rawTypeOfParameter(parameterType, 0), 0).asSubclass(SimpleBuildItem.class);
+                    final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(
+                            rawTypeOfParameter(parameterType, 0), 0).asSubclass(SimpleBuildItem.class);
                     stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass, ConsumeFlags.of(ConsumeFlag.OPTIONAL)));
-                    ctorParamFns.add(bc -> (Supplier<Optional<? extends SimpleBuildItem>>) () -> Optional.ofNullable(bc.consume(buildItemClass)));
+                    ctorParamFns.add(bc -> (Supplier<Optional<? extends SimpleBuildItem>>) () -> Optional
+                            .ofNullable(bc.consume(buildItemClass)));
                 } else if (rawTypeOf(parameterType) == Executor.class) {
                     ctorParamFns.add(BuildContext::getExecutor);
                 } else if (parameterClass.isAnnotationPresent(ConfigRoot.class)) {
                     consumingConfig = true;
-                    ctorParamFns.add(bc -> bc.consume(ConfigurationBuildItem.class).getConfigDefinition().getRealizedInstance(parameterClass));
+                    ctorParamFns.add(bc -> bc.consume(ConfigurationBuildItem.class).getConfigDefinition()
+                            .getRealizedInstance(parameterClass));
                 } else if (isTemplate(parameterClass)) {
                     throw reportError(parameter, "Bytecode recording templates disallowed on constructor parameters");
                 } else {
@@ -170,7 +182,7 @@ public final class ExtensionLoader {
                 // ignore final fields
                 continue;
             }
-            if (! Modifier.isPublic(mods) || ! Modifier.isPublic(field.getDeclaringClass().getModifiers())) {
+            if (!Modifier.isPublic(mods) || !Modifier.isPublic(field.getDeclaringClass().getModifiers())) {
                 field.setAccessible(true);
             }
             // next, determine the type
@@ -179,38 +191,50 @@ public final class ExtensionLoader {
             if (rawTypeExtends(fieldType, SimpleBuildItem.class)) {
                 final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOf(fieldType).asSubclass(SimpleBuildItem.class);
                 stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass));
-                stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, bc.consume(buildItemClass)));
+                stepInstanceSetup = stepInstanceSetup
+                        .andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, bc.consume(buildItemClass)));
             } else if (isListOf(fieldType, MultiBuildItem.class)) {
-                final Class<? extends MultiBuildItem> buildItemClass = rawTypeOfParameter(fieldType, 0).asSubclass(MultiBuildItem.class);
+                final Class<? extends MultiBuildItem> buildItemClass = rawTypeOfParameter(fieldType, 0)
+                        .asSubclass(MultiBuildItem.class);
                 stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass));
-                stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, bc.consumeMulti(buildItemClass)));
+                stepInstanceSetup = stepInstanceSetup
+                        .andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, bc.consumeMulti(buildItemClass)));
             } else if (isConsumerOf(fieldType, BuildItem.class)) {
                 final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(fieldType, 0).asSubclass(BuildItem.class);
                 stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass));
-                stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, (Consumer<? extends BuildItem>) bc::produce));
+                stepInstanceSetup = stepInstanceSetup
+                        .andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, (Consumer<? extends BuildItem>) bc::produce));
             } else if (isBuildProducerOf(fieldType, BuildItem.class)) {
                 final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(fieldType, 0).asSubclass(BuildItem.class);
                 stepConfig = stepConfig.andThen(bsb -> bsb.produces(buildItemClass));
-                stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, (BuildProducer<? extends BuildItem>) bc::produce));
+                stepInstanceSetup = stepInstanceSetup.andThen(
+                        (bc, o) -> ReflectUtil.setFieldVal(field, o, (BuildProducer<? extends BuildItem>) bc::produce));
             } else if (isOptionalOf(fieldType, SimpleBuildItem.class)) {
-                final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(fieldType, 0).asSubclass(SimpleBuildItem.class);
+                final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(fieldType, 0)
+                        .asSubclass(SimpleBuildItem.class);
                 stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass, ConsumeFlags.of(ConsumeFlag.OPTIONAL)));
-                stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, Optional.ofNullable(bc.consume(buildItemClass))));
+                stepInstanceSetup = stepInstanceSetup
+                        .andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, Optional.ofNullable(bc.consume(buildItemClass))));
             } else if (isSupplierOf(fieldType, SimpleBuildItem.class)) {
-                final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(fieldType, 0).asSubclass(SimpleBuildItem.class);
+                final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(fieldType, 0)
+                        .asSubclass(SimpleBuildItem.class);
                 stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass));
-                stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, (Supplier<? extends SimpleBuildItem>) () -> bc.consume(buildItemClass)));
+                stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> ReflectUtil.setFieldVal(field, o,
+                        (Supplier<? extends SimpleBuildItem>) () -> bc.consume(buildItemClass)));
             } else if (isSupplierOfOptionalOf(fieldType, SimpleBuildItem.class)) {
-                final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(rawTypeOfParameter(fieldType, 0), 0).asSubclass(SimpleBuildItem.class);
+                final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(rawTypeOfParameter(fieldType, 0), 0)
+                        .asSubclass(SimpleBuildItem.class);
                 stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass, ConsumeFlags.of(ConsumeFlag.OPTIONAL)));
-                stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, (Supplier<Optional<? extends SimpleBuildItem>>) () -> Optional.ofNullable(bc.consume(buildItemClass))));
+                stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> ReflectUtil.setFieldVal(field, o,
+                        (Supplier<Optional<? extends SimpleBuildItem>>) () -> Optional.ofNullable(bc.consume(buildItemClass))));
             } else if (fieldClass == Executor.class) {
                 stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, bc.getExecutor()));
             } else if (fieldClass.isAnnotationPresent(ConfigRoot.class)) {
                 consumingConfig = true;
                 stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> {
                     final ConfigurationBuildItem configurationBuildItem = bc.consume(ConfigurationBuildItem.class);
-                    ReflectUtil.setFieldVal(field, o, configurationBuildItem.getConfigDefinition().getRealizedInstance(fieldClass));
+                    ReflectUtil.setFieldVal(field, o,
+                            configurationBuildItem.getConfigDefinition().getRealizedInstance(fieldClass));
                 });
             } else if (isTemplate(fieldClass)) {
                 throw reportError(field, "Bytecode recording templates disallowed on fields");
@@ -226,8 +250,9 @@ public final class ExtensionLoader {
             if (Modifier.isStatic(mods)) {
                 continue;
             }
-            if (! method.isAnnotationPresent(BuildStep.class)) continue;
-            if (! Modifier.isPublic(mods) || ! Modifier.isPublic(method.getDeclaringClass().getModifiers())) {
+            if (!method.isAnnotationPresent(BuildStep.class))
+                continue;
+            if (!Modifier.isPublic(mods) || !Modifier.isPublic(method.getDeclaringClass().getModifiers())) {
                 method.setAccessible(true);
             }
             final BuildStep buildStep = method.getAnnotation(BuildStep.class);
@@ -258,9 +283,9 @@ public final class ExtensionLoader {
                 final ExecutionTime executionTime = recordAnnotation.value();
                 final boolean optional = recordAnnotation.optional();
                 methodStepConfig = methodStepConfig.andThen(bsb -> bsb.produces(
-                    executionTime == ExecutionTime.STATIC_INIT ? StaticBytecodeRecorderBuildItem.class : MainBytecodeRecorderBuildItem.class,
-                    optional ? ProduceFlags.of(ProduceFlag.WEAK) : ProduceFlags.NONE
-                ));
+                        executionTime == ExecutionTime.STATIC_INIT ? StaticBytecodeRecorderBuildItem.class
+                                : MainBytecodeRecorderBuildItem.class,
+                        optional ? ProduceFlags.of(ProduceFlag.WEAK) : ProduceFlags.NONE));
             }
             boolean methodConsumingConfig = consumingConfig;
             if (methodParameters.length == 0) {
@@ -271,33 +296,43 @@ public final class ExtensionLoader {
                     final Type parameterType = parameter.getParameterizedType();
                     final Class<?> parameterClass = parameter.getType();
                     if (rawTypeExtends(parameterType, SimpleBuildItem.class)) {
-                        final Class<? extends SimpleBuildItem> buildItemClass = parameterClass.asSubclass(SimpleBuildItem.class);
+                        final Class<? extends SimpleBuildItem> buildItemClass = parameterClass
+                                .asSubclass(SimpleBuildItem.class);
                         methodStepConfig = methodStepConfig.andThen(bsb -> bsb.consumes(buildItemClass));
                         methodParamFns.add((bc, bri) -> bc.consume(buildItemClass));
                     } else if (isListOf(parameterType, MultiBuildItem.class)) {
-                        final Class<? extends MultiBuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0).asSubclass(MultiBuildItem.class);
+                        final Class<? extends MultiBuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
+                                .asSubclass(MultiBuildItem.class);
                         methodStepConfig = methodStepConfig.andThen(bsb -> bsb.consumes(buildItemClass));
                         methodParamFns.add((bc, bri) -> bc.consumeMulti(buildItemClass));
                     } else if (isConsumerOf(parameterType, BuildItem.class)) {
-                        final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0).asSubclass(BuildItem.class);
+                        final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
+                                .asSubclass(BuildItem.class);
                         methodStepConfig = methodStepConfig.andThen(bsb -> bsb.produces(buildItemClass));
                         methodParamFns.add((bc, bri) -> (Consumer<? extends BuildItem>) bc::produce);
                     } else if (isBuildProducerOf(parameterType, BuildItem.class)) {
-                        final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0).asSubclass(BuildItem.class);
+                        final Class<? extends BuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
+                                .asSubclass(BuildItem.class);
                         methodStepConfig = methodStepConfig.andThen(bsb -> bsb.produces(buildItemClass));
                         methodParamFns.add((bc, bri) -> (BuildProducer<? extends BuildItem>) bc::produce);
                     } else if (isOptionalOf(parameterType, SimpleBuildItem.class)) {
-                        final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0).asSubclass(SimpleBuildItem.class);
-                        methodStepConfig = methodStepConfig.andThen(bsb -> bsb.consumes(buildItemClass, ConsumeFlags.of(ConsumeFlag.OPTIONAL)));
+                        final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
+                                .asSubclass(SimpleBuildItem.class);
+                        methodStepConfig = methodStepConfig
+                                .andThen(bsb -> bsb.consumes(buildItemClass, ConsumeFlags.of(ConsumeFlag.OPTIONAL)));
                         methodParamFns.add((bc, bri) -> Optional.ofNullable(bc.consume(buildItemClass)));
                     } else if (isSupplierOf(parameterType, SimpleBuildItem.class)) {
-                        final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0).asSubclass(SimpleBuildItem.class);
+                        final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
+                                .asSubclass(SimpleBuildItem.class);
                         methodStepConfig = methodStepConfig.andThen(bsb -> bsb.consumes(buildItemClass));
                         methodParamFns.add((bc, bri) -> (Supplier<? extends SimpleBuildItem>) () -> bc.consume(buildItemClass));
                     } else if (isSupplierOfOptionalOf(parameterType, SimpleBuildItem.class)) {
-                        final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(rawTypeOfParameter(parameterType, 0), 0).asSubclass(SimpleBuildItem.class);
-                        methodStepConfig = methodStepConfig.andThen(bsb -> bsb.consumes(buildItemClass, ConsumeFlags.of(ConsumeFlag.OPTIONAL)));
-                        methodParamFns.add((bc, bri) -> (Supplier<Optional<? extends SimpleBuildItem>>) () -> Optional.ofNullable(bc.consume(buildItemClass)));
+                        final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(
+                                rawTypeOfParameter(parameterType, 0), 0).asSubclass(SimpleBuildItem.class);
+                        methodStepConfig = methodStepConfig
+                                .andThen(bsb -> bsb.consumes(buildItemClass, ConsumeFlags.of(ConsumeFlag.OPTIONAL)));
+                        methodParamFns.add((bc, bri) -> (Supplier<Optional<? extends SimpleBuildItem>>) () -> Optional
+                                .ofNullable(bc.consume(buildItemClass)));
                     } else if (rawTypeOf(parameterType) == Executor.class) {
                         methodParamFns.add((bc, bri) -> bc.getExecutor());
                     } else if (parameterClass.isAnnotationPresent(ConfigRoot.class)) {
@@ -307,16 +342,19 @@ public final class ExtensionLoader {
                             return configurationBuildItem.getConfigDefinition().getRealizedInstance(parameterClass);
                         });
                     } else if (isTemplate(parameter.getType())) {
-                        if (! isRecorder) {
-                            throw reportError(parameter, "Cannot pass templates to method which is not annotated with " + Record.class);
+                        if (!isRecorder) {
+                            throw reportError(parameter,
+                                    "Cannot pass templates to method which is not annotated with " + Record.class);
                         }
                         methodParamFns.add((bc, bri) -> {
                             assert bri != null;
                             return bri.getRecordingProxy(parameterClass);
                         });
-                    } else if (parameter.getType() == RecorderContext.class || parameter.getType() == BytecodeRecorderImpl.class) {
-                        if (! isRecorder) {
-                            throw reportError(parameter, "Cannot pass recorder context to method which is not annotated with " + Record.class);
+                    } else if (parameter.getType() == RecorderContext.class
+                            || parameter.getType() == BytecodeRecorderImpl.class) {
+                        if (!isRecorder) {
+                            throw reportError(parameter,
+                                    "Cannot pass recorder context to method which is not annotated with " + Record.class);
                         }
                         methodParamFns.add((bc, bri) -> bri);
                     } else {
@@ -330,24 +368,34 @@ public final class ExtensionLoader {
             if (rawTypeIs(returnType, void.class)) {
                 resultConsumer = Functions.discardingBiConsumer();
             } else if (rawTypeExtends(returnType, BuildItem.class)) {
-                methodStepConfig = methodStepConfig.andThen(bsb -> bsb.produces(method.getReturnType().asSubclass(BuildItem.class)));
-                resultConsumer = (bc, o) -> { if (o != null) bc.produce((BuildItem) o); };
+                methodStepConfig = methodStepConfig
+                        .andThen(bsb -> bsb.produces(method.getReturnType().asSubclass(BuildItem.class)));
+                resultConsumer = (bc, o) -> {
+                    if (o != null)
+                        bc.produce((BuildItem) o);
+                };
             } else if (isOptionalOf(returnType, BuildItem.class)) {
-                methodStepConfig = methodStepConfig.andThen(bsb -> bsb.produces(rawTypeOfParameter(returnType, 0).asSubclass(BuildItem.class)));
+                methodStepConfig = methodStepConfig
+                        .andThen(bsb -> bsb.produces(rawTypeOfParameter(returnType, 0).asSubclass(BuildItem.class)));
                 resultConsumer = (bc, o) -> ((Optional<? extends BuildItem>) o).ifPresent(bc::produce);
             } else if (isListOf(returnType, MultiBuildItem.class)) {
-                methodStepConfig = methodStepConfig.andThen(bsb -> bsb.produces(rawTypeOfParameter(returnType, 0).asSubclass(MultiBuildItem.class)));
-                resultConsumer = (bc, o) -> { if (o != null) bc.produce((List<? extends MultiBuildItem>) o); };
+                methodStepConfig = methodStepConfig
+                        .andThen(bsb -> bsb.produces(rawTypeOfParameter(returnType, 0).asSubclass(MultiBuildItem.class)));
+                resultConsumer = (bc, o) -> {
+                    if (o != null)
+                        bc.produce((List<? extends MultiBuildItem>) o);
+                };
             } else {
                 throw reportError(method, "Unsupported method return type " + returnType);
             }
 
             if (methodConsumingConfig) {
                 methodStepConfig = methodStepConfig
-                    .andThen(bsb -> bsb.consumes(ConfigurationBuildItem.class));
+                        .andThen(bsb -> bsb.consumes(ConfigurationBuildItem.class));
             }
 
-            final Consumer<BuildStepBuilder> finalStepConfig = stepConfig.andThen(methodStepConfig).andThen(BuildStepBuilder::build);
+            final Consumer<BuildStepBuilder> finalStepConfig = stepConfig.andThen(methodStepConfig)
+                    .andThen(BuildStepBuilder::build);
             final BiConsumer<BuildContext, Object> finalStepInstanceSetup = stepInstanceSetup;
             final String name = clazz.getName() + "#" + method.getName();
             chainConfig = chainConfig.andThen(bcb -> finalStepConfig.accept(bcb.addBuildStep(new org.jboss.builder.BuildStep() {
@@ -374,7 +422,10 @@ public final class ExtensionLoader {
                     }
                     finalStepInstanceSetup.accept(bc, instance);
                     Object[] methodArgs = new Object[methodParamFns.size()];
-                    BytecodeRecorderImpl bri = isRecorder ? new BytecodeRecorderImpl(recordAnnotation.value() == ExecutionTime.STATIC_INIT, clazz.getSimpleName(), method.getName()) : null;
+                    BytecodeRecorderImpl bri = isRecorder
+                            ? new BytecodeRecorderImpl(recordAnnotation.value() == ExecutionTime.STATIC_INIT,
+                                    clazz.getSimpleName(), method.getName())
+                            : null;
                     for (int i = 0; i < methodArgs.length; i++) {
                         methodArgs[i] = methodParamFns.get(i).apply(bc, bri);
                     }
@@ -416,7 +467,8 @@ public final class ExtensionLoader {
         if (e instanceof Member) {
             return new IllegalArgumentException(msg + " at " + e + " of " + ((Member) e).getDeclaringClass());
         } else if (e instanceof Parameter) {
-            return new IllegalArgumentException(msg + " at " + e + " of " + ((Parameter) e).getDeclaringExecutable() + " of " + ((Parameter) e).getDeclaringExecutable().getDeclaringClass());
+            return new IllegalArgumentException(msg + " at " + e + " of " + ((Parameter) e).getDeclaringExecutable() + " of "
+                    + ((Parameter) e).getDeclaringExecutable().getDeclaringClass());
         } else {
             return new IllegalArgumentException(msg + " at " + e);
         }

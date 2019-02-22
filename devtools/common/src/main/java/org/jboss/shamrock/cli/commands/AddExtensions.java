@@ -33,14 +33,14 @@ public class AddExtensions {
 
         for (String dependency : extensions) {
             Optional<Extension> optional = MojoUtils.loadExtensions().stream()
-                                                    .filter(d -> {
-                                                               boolean hasTag = d.labels().contains(dependency.trim().toLowerCase());
-                                                               boolean machName = d.getName()
-                                                                                   .toLowerCase()
-                                                                                   .contains(dependency.trim().toLowerCase());
-                                                               return hasTag || machName;
-                                                           })
-                                                    .findAny();
+                    .filter(d -> {
+                        boolean hasTag = d.labels().contains(dependency.trim().toLowerCase());
+                        boolean machName = d.getName()
+                                .toLowerCase()
+                                .contains(dependency.trim().toLowerCase());
+                        return hasTag || machName;
+                    })
+                    .findAny();
 
             if (optional.isPresent()) {
                 final Extension extension = optional.get();
@@ -48,8 +48,8 @@ public class AddExtensions {
                 if (!MojoUtils.hasDependency(model, extension.getGroupId(), extension.getArtifactId())) {
                     System.out.println("Adding extension " + extension.managementKey());
                     model.addDependency(extension
-                                            .toDependency(containsBOM(model) &&
-                                                          isDefinedInBom(dependenciesFromBom, extension)));
+                            .toDependency(containsBOM(model) &&
+                                    isDefinedInBom(dependenciesFromBom, extension)));
                     updated = true;
                 } else {
                     System.out.println("Skipping extension " + extension.managementKey() + ": already present");
@@ -74,8 +74,8 @@ public class AddExtensions {
     private List<Dependency> getDependenciesFromBom() {
         try {
             return readPom(getClass().getResourceAsStream("/shamrock-bom/pom.xml"))
-                       .getDependencyManagement()
-                       .getDependencies();
+                    .getDependencyManagement()
+                    .getDependencies();
         } catch (IOException e) {
             throw new RuntimeException(e.getMessage(), e);
         }
@@ -87,16 +87,15 @@ public class AddExtensions {
         }
         List<Dependency> dependencies = model.getDependencyManagement().getDependencies();
         return dependencies.stream()
-                           // Find bom
-                           .filter(dependency -> "import".equalsIgnoreCase(dependency.getScope()))
-                           .filter(dependency -> "pom".equalsIgnoreCase(dependency.getType()))
-                           // Does it matches the bom artifact name
-                           .anyMatch(dependency -> dependency.getArtifactId().equalsIgnoreCase(getBomArtifactId()));
+                // Find bom
+                .filter(dependency -> "import".equalsIgnoreCase(dependency.getScope()))
+                .filter(dependency -> "pom".equalsIgnoreCase(dependency.getType()))
+                // Does it matches the bom artifact name
+                .anyMatch(dependency -> dependency.getArtifactId().equalsIgnoreCase(getBomArtifactId()));
     }
 
     private boolean isDefinedInBom(List<Dependency> dependencies, Extension extension) {
-        return dependencies.stream().anyMatch(dependency ->
-                                                  dependency.getGroupId().equalsIgnoreCase(extension.getGroupId())
-                                                  && dependency.getArtifactId().equalsIgnoreCase(extension.getArtifactId()));
+        return dependencies.stream().anyMatch(dependency -> dependency.getGroupId().equalsIgnoreCase(extension.getGroupId())
+                && dependency.getArtifactId().equalsIgnoreCase(extension.getArtifactId()));
     }
 }

@@ -24,7 +24,8 @@ final class Consume {
     private final Constraint constraint;
     private final ConsumeFlags flags;
 
-    Consume(final BuildStepBuilder buildStepBuilder, final ItemId itemId, final Constraint constraint, final ConsumeFlags flags) {
+    Consume(final BuildStepBuilder buildStepBuilder, final ItemId itemId, final Constraint constraint,
+            final ConsumeFlags flags) {
         this.buildStepBuilder = buildStepBuilder;
         this.itemId = itemId;
         this.constraint = constraint;
@@ -44,8 +45,12 @@ final class Consume {
     }
 
     Consume combine(final Constraint constraint, final ConsumeFlags flags) {
-        final Constraint outputConstraint = constraint == Constraint.REAL || this.constraint == Constraint.REAL ? Constraint.REAL : Constraint.ORDER_ONLY;
-        final ConsumeFlags outputFlags = !flags.contains(ConsumeFlag.OPTIONAL) || !this.flags.contains(ConsumeFlag.OPTIONAL) ? flags.with(this.flags).without(ConsumeFlag.OPTIONAL) : flags.with(this.flags);
+        final Constraint outputConstraint = constraint == Constraint.REAL || this.constraint == Constraint.REAL
+                ? Constraint.REAL
+                : Constraint.ORDER_ONLY;
+        final ConsumeFlags outputFlags = !flags.contains(ConsumeFlag.OPTIONAL) || !this.flags.contains(ConsumeFlag.OPTIONAL)
+                ? flags.with(this.flags).without(ConsumeFlag.OPTIONAL)
+                : flags.with(this.flags);
         return new Consume(buildStepBuilder, itemId, outputConstraint, outputFlags);
     }
 

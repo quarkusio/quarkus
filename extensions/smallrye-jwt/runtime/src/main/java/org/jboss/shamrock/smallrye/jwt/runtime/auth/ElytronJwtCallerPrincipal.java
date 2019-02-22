@@ -16,12 +16,13 @@ import javax.json.JsonStructure;
 import javax.json.JsonValue;
 import javax.security.auth.Subject;
 
-import io.smallrye.jwt.auth.principal.JWTCallerPrincipal;
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.MalformedClaimException;
 import org.wildfly.security.authz.Attributes;
+
+import io.smallrye.jwt.auth.principal.JWTCallerPrincipal;
 
 /**
  * An implementation of JWTCallerPrincipal that builds on the Elytron attributes
@@ -36,12 +37,14 @@ public class ElytronJwtCallerPrincipal extends JWTCallerPrincipal {
     public ElytronJwtCallerPrincipal(final String name, final Attributes claims) {
         super(name);
         this.claims = claims;
-        if(!(claims instanceof ClaimAttributes)) {
-            throw new IllegalStateException("ElytronJwtCallerPrincipal requires Attributes to be a: "+ClaimAttributes.class.getName());
+        if (!(claims instanceof ClaimAttributes)) {
+            throw new IllegalStateException(
+                    "ElytronJwtCallerPrincipal requires Attributes to be a: " + ClaimAttributes.class.getName());
         }
         this.claimsSet = ((ClaimAttributes) claims).getClaimsSet();
         fixJoseTypes();
     }
+
     public ElytronJwtCallerPrincipal(final String name, final JwtClaims claimsSet) {
         super(name);
         this.claimsSet = claimsSet;
@@ -86,15 +89,13 @@ public class ElytronJwtCallerPrincipal extends JWTCallerPrincipal {
         return groups;
     }
 
-
-
     @Override
     public Set<String> getClaimNames() {
         return new HashSet<>(claimsSet.getClaimNames());
     }
 
     @Override
-    public <T> T  getClaim(String claimName) {
+    public <T> T getClaim(String claimName) {
         Claims claimType = Claims.UNKNOWN;
         Object claim = null;
         try {
@@ -125,7 +126,7 @@ public class ElytronJwtCallerPrincipal extends JWTCallerPrincipal {
             case UNKNOWN:
                 // This has to be a Json type
                 claim = claimsSet.getClaimValue(claimName);
-                if(!(claim instanceof JsonStructure)) {
+                if (!(claim instanceof JsonStructure)) {
                     claim = wrapValue(claim);
                 }
                 break;
@@ -148,7 +149,7 @@ public class ElytronJwtCallerPrincipal extends JWTCallerPrincipal {
      * TODO: showAll is ignored and currently assumed true
      *
      * @param showAll - should all claims associated with the JWT be displayed or should only those defined in the
-     *                JsonWebToken interface be displayed.
+     *        JsonWebToken interface be displayed.
      * @return JWTCallerPrincipal string view
      */
     @Override

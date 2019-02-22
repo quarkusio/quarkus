@@ -16,9 +16,11 @@ import java.util.Set;
 /**
  */
 public final class ServiceUtil {
-    private ServiceUtil() {}
+    private ServiceUtil() {
+    }
 
-    public static Iterable<Class<?>> classesNamedIn(ClassLoader classLoader, String fileName) throws IOException, ClassNotFoundException {
+    public static Iterable<Class<?>> classesNamedIn(ClassLoader classLoader, String fileName)
+            throws IOException, ClassNotFoundException {
         final ArrayList<Class<?>> list = new ArrayList<>();
         for (String className : classNamesNamedIn(classLoader, fileName)) {
             list.add(Class.forName(className, true, classLoader));

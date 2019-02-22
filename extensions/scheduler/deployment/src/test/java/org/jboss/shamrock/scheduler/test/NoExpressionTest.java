@@ -26,20 +26,17 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class NoExpressionTest {
 
-
     @RegisterExtension
     static final ShamrockUnitTest test = new ShamrockUnitTest()
             .setExpectedException(DeploymentException.class)
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(InvalidBean.class));
 
-
     @Test
     public void test() throws InterruptedException {
     }
 
     static class InvalidBean {
-
 
         @Scheduled
         void wrong() {

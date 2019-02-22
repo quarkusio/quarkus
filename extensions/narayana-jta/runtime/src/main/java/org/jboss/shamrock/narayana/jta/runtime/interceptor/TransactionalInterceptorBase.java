@@ -16,7 +16,6 @@
 
 package org.jboss.shamrock.narayana.jta.runtime.interceptor;
 
-
 import java.io.Serializable;
 import java.lang.annotation.Annotation;
 import java.util.Set;

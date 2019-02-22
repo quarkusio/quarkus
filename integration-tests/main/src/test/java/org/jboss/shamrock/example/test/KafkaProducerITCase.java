@@ -5,6 +5,4 @@ import org.jboss.shamrock.test.junit.SubstrateTest;
 @SubstrateTest
 public class KafkaProducerITCase extends KafkaProducerTest {
 
-
-
 }

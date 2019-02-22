@@ -36,7 +36,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.EnumSet;
 import java.util.UUID;
 
-
 /**
  *
  * @author Alexey Loubyansky
@@ -87,9 +86,10 @@ public class IoUtils {
                     }
                     return FileVisitResult.CONTINUE;
                 }
+
                 @Override
                 public FileVisitResult postVisitDirectory(Path dir, IOException e)
-                    throws IOException {
+                        throws IOException {
                     if (e == null) {
                         try {
                             Files.delete(dir);
@@ -107,7 +107,7 @@ public class IoUtils {
     }
 
     public static Path copy(Path source, Path target) throws IOException {
-        if(Files.isDirectory(source)) {
+        if (Files.isDirectory(source)) {
             Files.createDirectories(target);
         } else {
             Files.createDirectories(target.getParent());
@@ -116,20 +116,21 @@ public class IoUtils {
                 new SimpleFileVisitor<Path>() {
                     @Override
                     public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-                        throws IOException {
+                            throws IOException {
                         final Path targetDir = target.resolve(source.relativize(dir));
                         try {
                             Files.copy(dir, targetDir);
                         } catch (FileAlreadyExistsException e) {
-                             if (!Files.isDirectory(targetDir)) {
-                                 throw e;
-                             }
+                            if (!Files.isDirectory(targetDir)) {
+                                throw e;
+                            }
                         }
                         return FileVisitResult.CONTINUE;
                     }
+
                     @Override
                     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-                        throws IOException {
+                            throws IOException {
                         Files.copy(file, target.resolve(source.relativize(file)), StandardCopyOption.REPLACE_EXISTING);
                         return FileVisitResult.CONTINUE;
                     }

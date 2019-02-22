@@ -19,7 +19,7 @@ public class SimpleTest {
     static final ShamrockUnitTest config = new ShamrockUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(SimpleBean.class, StreamConsumer.class));
-    
+
     @Inject
     StreamConsumer streamConsumer;
 
@@ -31,7 +31,7 @@ public class SimpleTest {
         assertTrue(SimpleBean.RESULT.contains("REACTIVE"));
         assertTrue(SimpleBean.RESULT.contains("MESSAGE"));
     }
-    
+
     @Test
     public void testStreamInject() {
         List<String> consumed = streamConsumer.consume();

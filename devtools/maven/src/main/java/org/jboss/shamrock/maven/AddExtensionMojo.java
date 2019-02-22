@@ -30,7 +30,7 @@ public class AddExtensionMojo extends AbstractMojo {
             Model model = project.getOriginalModel().clone();
 
             new AddExtensions(model.getPomFile())
-                .addExtensions(extensions.stream().map(String::trim).collect(Collectors.toSet()));
+                    .addExtensions(extensions.stream().map(String::trim).collect(Collectors.toSet()));
         } catch (IOException e) {
             throw new MojoExecutionException("Unable to update the pom.xml file", e);
         }

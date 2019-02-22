@@ -70,10 +70,10 @@ public class TsRepoBuilder {
 
     protected Path newTxt(TsArtifact artifact) {
         final Path tmpFile = workDir.resolve(artifact.getArtifactFileName());
-        if(Files.exists(tmpFile)) {
+        if (Files.exists(tmpFile)) {
             throw new IllegalStateException("File already exists " + tmpFile);
         }
-        try(BufferedWriter writer = Files.newBufferedWriter(tmpFile)) {
+        try (BufferedWriter writer = Files.newBufferedWriter(tmpFile)) {
             writer.write(tmpFile.getFileName().toString());
         } catch (IOException e) {
             throw new IllegalStateException("Failed to create file " + tmpFile, e);

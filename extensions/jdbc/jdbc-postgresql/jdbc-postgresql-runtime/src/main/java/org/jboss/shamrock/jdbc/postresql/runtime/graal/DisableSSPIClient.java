@@ -12,8 +12,8 @@ public final class DisableSSPIClient {
 
     @Substitute
     private ISSPIClient createSSPI(PGStream pgStream,
-                                   String spnServiceClass,
-                                   boolean enableNegotiate) {
+            String spnServiceClass,
+            boolean enableNegotiate) {
         throw new IllegalStateException("The org.postgresql.sspi.SSPIClient is not available on GraalVM");
     }
 

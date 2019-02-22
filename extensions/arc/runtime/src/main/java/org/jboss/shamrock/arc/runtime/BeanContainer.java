@@ -40,7 +40,7 @@ public interface BeanContainer {
      * 
      * @param type
      * @param qualifiers
-     * @return a bean instance factory, never {@code null} 
+     * @return a bean instance factory, never {@code null}
      */
     <T> Factory<T> instanceFactory(Class<T> type, Annotation... qualifiers);
 
@@ -65,14 +65,14 @@ public interface BeanContainer {
     ManagedContext requestContext();
 
     interface Factory<T> {
-        
+
         Factory<Object> EMPTY = new Factory<Object>() {
             @Override
             public Instance<Object> create() {
                 return null;
             }
         };
-        
+
         /**
          * 
          * @return a bean instance or {@code null} if no matching bean is found
@@ -91,6 +91,7 @@ public interface BeanContainer {
         /**
          * releases the underlying instance
          */
-        default void close() {};
+        default void close() {
+        };
     }
 }

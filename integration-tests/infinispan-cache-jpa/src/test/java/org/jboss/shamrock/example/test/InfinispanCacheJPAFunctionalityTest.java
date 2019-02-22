@@ -1,10 +1,11 @@
 package org.jboss.shamrock.example.test;
 
-import io.restassured.RestAssured;
+import static org.hamcrest.Matchers.is;
+
 import org.jboss.shamrock.test.junit.ShamrockTest;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.Matchers.is;
+import io.restassured.RestAssured;
 
 /**
  * Test connecting Hibernate ORM to H2.

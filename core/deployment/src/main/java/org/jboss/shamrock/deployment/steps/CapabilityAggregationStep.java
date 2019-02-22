@@ -22,9 +22,9 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
+import org.jboss.shamrock.deployment.Capabilities;
 import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.annotations.BuildStep;
-import org.jboss.shamrock.deployment.Capabilities;
 import org.jboss.shamrock.deployment.builditem.CapabilityBuildItem;
 
 public class CapabilityAggregationStep {

@@ -50,9 +50,9 @@ public abstract class AbstractMethodValidationInterceptor implements Serializabl
      * @return The result of the method invocation.
      *
      * @throws Exception Any exception caused by the intercepted method invocation.
-     *                   A {@link ConstraintViolationException} in case at least one
-     *                   constraint violation occurred either during parameter or
-     *                   return value validation.
+     *         A {@link ConstraintViolationException} in case at least one
+     *         constraint violation occurred either during parameter or
+     *         return value validation.
      */
     protected Object validateMethodInvocation(InvocationContext ctx) throws Exception {
         ExecutableValidator executableValidator = validator.forExecutables();
@@ -83,9 +83,9 @@ public abstract class AbstractMethodValidationInterceptor implements Serializabl
      * @param ctx The context of the intercepted constructor invocation.
      *
      * @throws Exception Any exception caused by the intercepted constructor
-     *                   invocation. A {@link ConstraintViolationException} in case
-     *                   at least one constraint violation occurred either during
-     *                   parameter or return value validation.
+     *         invocation. A {@link ConstraintViolationException} in case
+     *         at least one constraint violation occurred either during
+     *         parameter or return value validation.
      */
     protected void validateConstructorInvocation(InvocationContext ctx) throws Exception {
         ExecutableValidator executableValidator = validator.forExecutables();

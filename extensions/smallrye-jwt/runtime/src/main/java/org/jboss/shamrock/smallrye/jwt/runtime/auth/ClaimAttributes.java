@@ -32,7 +32,7 @@ public class ClaimAttributes implements Attributes {
         int size = 0;
         try {
             Object objectValue = claimsSet.getClaimValue(key);
-            if(objectValue instanceof List) {
+            if (objectValue instanceof List) {
                 size = ((List) objectValue).size();
             } else {
                 size = 1;
@@ -60,7 +60,7 @@ public class ClaimAttributes implements Attributes {
                 value = claimsSet.getClaimValue(key, String.class);
             } else {
                 Object objectValue = claimsSet.getClaimValue(key);
-                if(objectValue instanceof List) {
+                if (objectValue instanceof List) {
                     value = ((List) objectValue).get(idx).toString();
                 } else {
                     value = objectValue.toString();
@@ -86,7 +86,7 @@ public class ClaimAttributes implements Attributes {
      */
     private void populateEntries() {
         Map<String, List<Object>> claims = claimsSet.flattenClaims();
-        for(Map.Entry<String, List<Object>> entry : claims.entrySet()) {
+        for (Map.Entry<String, List<Object>> entry : claims.entrySet()) {
             String key = entry.getKey();
             SimpleAttributesEntry attributesEntry = new SimpleAttributesEntry(this, key);
             entries.put(key, attributesEntry);

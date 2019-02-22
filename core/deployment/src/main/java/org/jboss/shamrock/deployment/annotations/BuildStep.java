@@ -32,7 +32,8 @@ import org.jboss.shamrock.runtime.annotations.Template;
  * <li>{@link Consumer} of any concrete subclass of {@link BuildItem}</li>
  * <li>{@link Supplier} of any concrete subclass of {@link SimpleBuildItem}</li>
  * <li>{@link Optional} instances whose value type is a subclass of {@link SimpleBuildItem}</li>
- * <li>Recorder template classes, which are annotated with {@link Template} (method parameters only, if the method is annotated {@link Record})</li>
+ * <li>Recorder template classes, which are annotated with {@link Template} (method parameters only, if the method is annotated
+ * {@link Record})</li>
  * <li>{@link BytecodeRecorderImpl} (method parameters only, if the method is annotated {@link Record})</li>
  * </ul>
  *

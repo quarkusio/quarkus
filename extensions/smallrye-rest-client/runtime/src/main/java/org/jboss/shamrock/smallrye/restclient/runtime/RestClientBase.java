@@ -45,7 +45,8 @@ public class RestClientBase {
             throw new IllegalArgumentException("The value of URL was invalid " + baseUrl);
         } catch (Exception e) {
             if ("com.oracle.svm.core.jdk.UnsupportedFeatureError".equals(e.getClass().getCanonicalName())) {
-                throw new IllegalArgumentException(baseUrl + " requires SSL support but it is disabled. You probably have set shamrock.ssl.native to false.");
+                throw new IllegalArgumentException(baseUrl
+                        + " requires SSL support but it is disabled. You probably have set shamrock.ssl.native to false.");
             }
             throw e;
         }

@@ -11,7 +11,8 @@ public class SmallRyeHealthTemplate {
         try {
             HealthCheckResponse.setResponseProvider(providerClass.getConstructor().newInstance());
         } catch (Exception e) {
-            throw new IllegalStateException("Unable to instantiate service " + providerClass + " using the no-arg constructor.");
+            throw new IllegalStateException(
+                    "Unable to instantiate service " + providerClass + " using the no-arg constructor.");
         }
     }
 

@@ -19,7 +19,6 @@ import io.restassured.RestAssured;
 @ShamrockTest
 public class KafkaConsumerTest {
 
-
     public static Producer<Integer, String> createProducer() {
         Properties props = new Properties();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19092");
@@ -35,6 +34,5 @@ public class KafkaConsumerTest {
         consumer.send(new ProducerRecord<>("test-consumer", 1, "hi world"));
         RestAssured.when().get("/kafka").then().body(Matchers.is("hi world"));
     }
-
 
 }

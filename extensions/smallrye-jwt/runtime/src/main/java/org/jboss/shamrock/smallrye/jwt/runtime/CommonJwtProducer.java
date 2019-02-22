@@ -34,7 +34,7 @@ public class CommonJwtProducer {
      * A utility method for accessing a claim from the current JsonWebToken as a ClaimValue<Optional<T>> object.
      *
      * @param ip - injection point of the claim
-     * @param <T>  expected actual type of the claim
+     * @param <T> expected actual type of the claim
      * @return the claim value wrapper object
      */
     public <T> ClaimValue<Optional<T>> generalClaimValueProducer(InjectionPoint ip) {
@@ -83,7 +83,6 @@ public class CommonJwtProducer {
         }
         return name;
     }
-
 
     @SuppressWarnings("unchecked")
     private static JsonObject replaceMap(Map<String, Object> map) {

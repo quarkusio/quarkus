@@ -57,11 +57,11 @@ public class BytecodeRecorderTestCase {
         runTest(recorder -> {
             TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
             template.intArray(4, 5, 6);
-        }, (Object) new int[]{4, 5, 6});
+        }, (Object) new int[] { 4, 5, 6 });
         runTest(recorder -> {
             TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
             template.doubleArray(4, 5, 6);
-        }, (Object) new double[]{4, 5, 6});
+        }, (Object) new double[] { 4, 5, 6 });
     }
 
     @Test
@@ -91,7 +91,8 @@ public class BytecodeRecorderTestCase {
     @Test
     public void testSubstitution() throws Exception {
         runTest(recorder -> {
-            recorder.registerSubstitution(NonSerializable.class, NonSerializable.Serialized.class, NonSerializable.Substitution.class);
+            recorder.registerSubstitution(NonSerializable.class, NonSerializable.Serialized.class,
+                    NonSerializable.Substitution.class);
             TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
             template.bean(new NonSerializable("A string", 99));
         }, new NonSerializable("A string", 99));

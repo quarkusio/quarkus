@@ -1,13 +1,7 @@
 package org.jboss.shamrock.maven.it;
 
-import com.google.common.collect.ImmutableMap;
-import org.apache.commons.io.FileUtils;
-import org.apache.maven.shared.invoker.MavenInvocationException;
-import org.jboss.shamrock.maven.it.verifier.MavenProcessInvocationResult;
-import org.jboss.shamrock.maven.it.verifier.RunningInvoker;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -19,8 +13,15 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
+import org.apache.commons.io.FileUtils;
+import org.apache.maven.shared.invoker.MavenInvocationException;
+import org.jboss.shamrock.maven.it.verifier.MavenProcessInvocationResult;
+import org.jboss.shamrock.maven.it.verifier.RunningInvoker;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
+import com.google.common.collect.ImmutableMap;
 
 /**
  * @author <a href="http://escoffier.me">Clement Escoffier</a>
@@ -45,7 +46,8 @@ public class DevMojoIT extends MojoTestBase {
     }
 
     @Test
-    public void testThatTheApplicationIsReloadedOnJavaChange() throws MavenInvocationException, IOException, InterruptedException {
+    public void testThatTheApplicationIsReloadedOnJavaChange()
+            throws MavenInvocationException, IOException, InterruptedException {
         testDir = initProject("projects/classic", "projects/project-classic-run-java-change");
         runAndCheck();
 
@@ -73,23 +75,22 @@ public class DevMojoIT extends MojoTestBase {
         runAndCheck();
 
         File source = new File(testDir, "src/main/java/org/acme/MyNewResource.java");
-        String myNewResource =
-                "package org.acme;\n" +
-                        "\n" +
-                        "import javax.ws.rs.GET;\n" +
-                        "import javax.ws.rs.Path;\n" +
-                        "import javax.ws.rs.Produces;\n" +
-                        "import javax.ws.rs.core.MediaType;\n" +
-                        "\n" +
-                        "@Path(\"/foo\")\n" +
-                        "public class MyNewResource {\n" +
+        String myNewResource = "package org.acme;\n" +
+                "\n" +
+                "import javax.ws.rs.GET;\n" +
+                "import javax.ws.rs.Path;\n" +
+                "import javax.ws.rs.Produces;\n" +
+                "import javax.ws.rs.core.MediaType;\n" +
+                "\n" +
+                "@Path(\"/foo\")\n" +
+                "public class MyNewResource {\n" +
 
-                        "    @GET\n" +
-                        "    @Produces(MediaType.TEXT_PLAIN)\n" +
-                        "    public String foo() {\n" +
-                        "        return \"bar\";\n" +
-                        "    }\n" +
-                        "}\n";
+                "    @GET\n" +
+                "    @Produces(MediaType.TEXT_PLAIN)\n" +
+                "    public String foo() {\n" +
+                "        return \"bar\";\n" +
+                "    }\n" +
+                "}\n";
         FileUtils.write(source, myNewResource, Charset.forName("UTF-8"));
 
         // Wait until we get "bar"
@@ -105,26 +106,25 @@ public class DevMojoIT extends MojoTestBase {
         runAndCheck();
 
         File source = new File(testDir, "src/main/java/org/acme/MySimpleServlet.java");
-        String myNewServlet =
-                "package org.acme;\n" +
-                        "\n" +
-                        "import java.io.IOException;\n" +
-                        "\n" +
-                        "import javax.servlet.annotation.WebServlet;\n" +
-                        "import javax.servlet.http.HttpServlet;\n" +
-                        "import javax.servlet.http.HttpServletRequest;\n" +
-                        "import javax.servlet.http.HttpServletResponse;\n" +
-                        "\n" +
-                        "@WebServlet(name=\"MyServlet\", urlPatterns=\"/my\")\n" +
-                        "public class MySimpleServlet extends HttpServlet {\n" +
-                        "    \n" +
-                        "    @Override\n" +
-                        "    protected void doGet(HttpServletRequest request, \n" +
-                        "      HttpServletResponse response) throws IOException {\n" +
-                        "          response.setContentType(\"text/plain\");\n" +
-                        "          response.getWriter().println(\"hello from servlet\");\n" +
-                        "      }\n" +
-                        "}";
+        String myNewServlet = "package org.acme;\n" +
+                "\n" +
+                "import java.io.IOException;\n" +
+                "\n" +
+                "import javax.servlet.annotation.WebServlet;\n" +
+                "import javax.servlet.http.HttpServlet;\n" +
+                "import javax.servlet.http.HttpServletRequest;\n" +
+                "import javax.servlet.http.HttpServletResponse;\n" +
+                "\n" +
+                "@WebServlet(name=\"MyServlet\", urlPatterns=\"/my\")\n" +
+                "public class MySimpleServlet extends HttpServlet {\n" +
+                "    \n" +
+                "    @Override\n" +
+                "    protected void doGet(HttpServletRequest request, \n" +
+                "      HttpServletResponse response) throws IOException {\n" +
+                "          response.setContentType(\"text/plain\");\n" +
+                "          response.getWriter().println(\"hello from servlet\");\n" +
+                "      }\n" +
+                "}";
         FileUtils.write(source, myNewServlet, Charset.forName("UTF-8"));
 
         await()
@@ -190,7 +190,9 @@ public class DevMojoIT extends MojoTestBase {
 
         // Create a new resource
         File source = new File(testDir, "src/main/resources/META-INF/resources/lorem.txt");
-        FileUtils.write(source, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", "UTF-8");
+        FileUtils.write(source,
+                "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+                "UTF-8");
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .atMost(1, TimeUnit.MINUTES)
@@ -227,17 +229,17 @@ public class DevMojoIT extends MojoTestBase {
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> {
-            String content = getHttpResponse("/app/hello");
-            last.set(content);
-            return content.contains(uuid);
-        });
+                    String content = getHttpResponse("/app/hello");
+                    last.set(content);
+                    return content.contains(uuid);
+                });
 
         assertThat(last.get()).containsIgnoringCase("error")
                 .containsIgnoringCase("return \"" + uuid + "\"")
                 .containsIgnoringCase("compile");
 
         sleep();
-        filter(source, ImmutableMap.of("\"" +uuid + "\"", "\"carambar\";"));
+        filter(source, ImmutableMap.of("\"" + uuid + "\"", "\"carambar\";"));
 
         // Wait until we get "uuid"
         await()
@@ -285,15 +287,13 @@ public class DevMojoIT extends MojoTestBase {
                 .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains("foobarbaz"));
     }
 
-
-
     @Test
     public void testErrorMessageWhenNoJavaSources() throws IOException, MavenInvocationException {
         testDir = initProject("projects/classic", "projects/project-no-sources");
         FileUtils.deleteQuietly(new File(testDir, "src/main/java"));
         running = new RunningInvoker(testDir, false);
         MavenProcessInvocationResult result = running.execute(Arrays.asList("compile", "shamrock:dev"), Collections.emptyMap());
-        await().until(() -> result.getProcess() != null  && ! result.getProcess().isAlive());
+        await().until(() -> result.getProcess() != null && !result.getProcess().isAlive());
         assertThat(running.log()).containsIgnoringCase("BUILD FAILURE");
     }
 
@@ -302,8 +302,9 @@ public class DevMojoIT extends MojoTestBase {
         testDir = initProject("projects/classic", "projects/project-no-target");
         FileUtils.deleteQuietly(new File(testDir, "target"));
         running = new RunningInvoker(testDir, false);
-        MavenProcessInvocationResult result = running.execute(Collections.singletonList("shamrock:dev"), Collections.emptyMap());
-        await().until(() -> result.getProcess() != null  && ! result.getProcess().isAlive());
+        MavenProcessInvocationResult result = running.execute(Collections.singletonList("shamrock:dev"),
+                Collections.emptyMap());
+        await().until(() -> result.getProcess() != null && !result.getProcess().isAlive());
         assertThat(running.log()).containsIgnoringCase("BUILD FAILURE");
     }
 
@@ -315,8 +316,9 @@ public class DevMojoIT extends MojoTestBase {
         FileUtils.deleteQuietly(new File(testDir, "target/classes"));
 
         running = new RunningInvoker(testDir, false);
-        MavenProcessInvocationResult result = running.execute(Collections.singletonList("shamrock:dev"), Collections.emptyMap());
-        await().until(() -> result.getProcess() != null  && ! result.getProcess().isAlive());
+        MavenProcessInvocationResult result = running.execute(Collections.singletonList("shamrock:dev"),
+                Collections.emptyMap());
+        await().until(() -> result.getProcess() != null && !result.getProcess().isAlive());
         assertThat(running.log()).containsIgnoringCase("BUILD FAILURE");
     }
 

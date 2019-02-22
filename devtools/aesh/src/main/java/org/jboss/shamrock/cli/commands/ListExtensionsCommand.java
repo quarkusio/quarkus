@@ -15,7 +15,7 @@ import org.jboss.shamrock.maven.utilities.MojoUtils;
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
  */
 @CommandDefinition(name = "list-extensions", description = "List extensions for a project")
-public class ListExtensionsCommand implements Command <CommandInvocation>{
+public class ListExtensionsCommand implements Command<CommandInvocation> {
 
     @Option(shortName = 'h', hasValue = false)
     private boolean help;
@@ -27,19 +27,17 @@ public class ListExtensionsCommand implements Command <CommandInvocation>{
     private boolean all;
 
     public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
-        if(help) {
+        if (help) {
             commandInvocation.println(commandInvocation.getHelpInfo("protean list-extensions"));
-        }
-        else if(name) {
-            for(Extension ext : MojoUtils.loadExtensions()) {
+        } else if (name) {
+            for (Extension ext : MojoUtils.loadExtensions()) {
                 commandInvocation.println(ext.getName());
             }
 
-        }
-        else {
-            for(Extension ext : MojoUtils.loadExtensions()) {
+        } else {
+            for (Extension ext : MojoUtils.loadExtensions()) {
                 commandInvocation.println(
-                        ext.getName()+ " ("+ext.getGroupId()+":"+ext.getArtifactId()+":"+ext.getVersion()+")");
+                        ext.getName() + " (" + ext.getGroupId() + ":" + ext.getArtifactId() + ":" + ext.getVersion() + ")");
             }
         }
         return CommandResult.SUCCESS;

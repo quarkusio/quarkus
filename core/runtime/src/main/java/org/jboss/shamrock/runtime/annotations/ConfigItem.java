@@ -30,7 +30,7 @@ public @interface ConfigItem {
 
     /**
      * Constant value for {@link #name()} indicating that the parent's name for the member referencing this item's
-     * group should be used as the name of this item.  This value is only valid for members of configuration groups.
+     * group should be used as the name of this item. This value is only valid for members of configuration groups.
      */
     String PARENT = "<<parent>>";
 

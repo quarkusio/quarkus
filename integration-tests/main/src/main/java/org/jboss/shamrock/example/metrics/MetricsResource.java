@@ -30,5 +30,4 @@ public class MetricsResource {
         return "TEST";
     }
 
-
 }

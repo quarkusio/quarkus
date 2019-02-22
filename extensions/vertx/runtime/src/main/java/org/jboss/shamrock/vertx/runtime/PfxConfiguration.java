@@ -1,9 +1,9 @@
 package org.jboss.shamrock.vertx.runtime;
 
+import java.util.Optional;
+
 import org.jboss.shamrock.runtime.annotations.ConfigGroup;
 import org.jboss.shamrock.runtime.annotations.ConfigItem;
-
-import java.util.Optional;
 
 @ConfigGroup
 public class PfxConfiguration {

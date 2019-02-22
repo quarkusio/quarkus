@@ -1,11 +1,11 @@
 package org.jboss.shamrock.vertx.runtime;
 
+import java.time.Duration;
+import java.util.OptionalInt;
+
 import org.jboss.shamrock.runtime.annotations.ConfigItem;
 import org.jboss.shamrock.runtime.annotations.ConfigPhase;
 import org.jboss.shamrock.runtime.annotations.ConfigRoot;
-
-import java.time.Duration;
-import java.util.OptionalInt;
 
 @ConfigRoot(phase = ConfigPhase.RUN_TIME_STATIC)
 public class VertxConfiguration {
@@ -75,6 +75,5 @@ public class VertxConfiguration {
      */
     @ConfigItem
     public ClusterConfiguration cluster;
-
 
 }

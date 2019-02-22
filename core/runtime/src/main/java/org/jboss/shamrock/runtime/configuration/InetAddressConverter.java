@@ -12,9 +12,11 @@ import org.wildfly.common.net.Inet;
 public class InetAddressConverter implements Converter<InetAddress> {
     @Override
     public InetAddress convert(final String value) {
-        if (value.isEmpty()) return null;
+        if (value.isEmpty())
+            return null;
         final InetAddress parsed = Inet.parseInetAddress(value);
-        if (parsed != null) return parsed;
+        if (parsed != null)
+            return parsed;
         try {
             return InetAddress.getByName(value);
         } catch (UnknownHostException e) {

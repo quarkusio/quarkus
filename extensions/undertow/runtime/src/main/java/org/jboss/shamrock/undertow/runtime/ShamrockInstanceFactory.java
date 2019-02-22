@@ -29,7 +29,6 @@ public class ShamrockInstanceFactory<T> implements InstanceFactory<T> {
         this.factory = factory;
     }
 
-
     @Override
     public InstanceHandle<T> createInstance() throws InstantiationException {
         BeanContainer.Instance<T> instance = factory.create();

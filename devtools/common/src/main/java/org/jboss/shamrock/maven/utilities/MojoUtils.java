@@ -17,10 +17,15 @@
 
 package org.jboss.shamrock.maven.utilities;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URL;
+import java.util.*;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
@@ -31,14 +36,9 @@ import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.jboss.shamrock.dependencies.Extension;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.URL;
-import java.util.*;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * @author kameshs
@@ -65,7 +65,6 @@ public class MojoUtils {
         properties.stringPropertyNames().forEach(s -> all.put(s, properties.getProperty(s)));
         return all;
     }
-
 
     public static String getPluginArtifactId() {
         return get("plugin-artifactId");
@@ -101,7 +100,7 @@ public class MojoUtils {
      * Checks whether or not the given project has a plugin with the given key. The key is given using the
      * "groupId:artifactId" syntax.
      *
-     * @param project   the project
+     * @param project the project
      * @param pluginKey the plugin
      * @return an Optional completed if the plugin is found.
      */
@@ -121,8 +120,8 @@ public class MojoUtils {
     /**
      * Checks whether the project has the dependency
      *
-     * @param model    - the project to check existence of dependency
-     * @param groupId    - the dependency groupId
+     * @param model - the project to check existence of dependency
+     * @param groupId - the dependency groupId
      * @param artifactId - the dependency artifactId
      * @return true if the project has the dependency
      */
@@ -167,7 +166,7 @@ public class MojoUtils {
     /**
      * Defines the plugin without its version or extensions.
      *
-     * @param groupId    The group id
+     * @param groupId The group id
      * @param artifactId The artifact id
      * @return The plugin instance
      */
@@ -178,9 +177,9 @@ public class MojoUtils {
     /**
      * Defines a plugin without extensions.
      *
-     * @param groupId    The group id
+     * @param groupId The group id
      * @param artifactId The artifact id
-     * @param version    The plugin version
+     * @param version The plugin version
      * @return The plugin instance
      */
     public static Plugin plugin(String groupId, String artifactId, String version) {
@@ -190,9 +189,9 @@ public class MojoUtils {
     /**
      * Defines a plugin.
      *
-     * @param groupId      The group id
-     * @param artifactId   The artifact id
-     * @param version      The plugin version
+     * @param groupId The group id
+     * @param artifactId The artifact id
+     * @param version The plugin version
      * @param dependencies The plugin extensions
      * @return The plugin instance
      */
@@ -226,12 +225,13 @@ public class MojoUtils {
     public static List<Extension> loadExtensions() {
         try {
             ObjectMapper mapper = new ObjectMapper()
-                                      .enable(JsonParser.Feature.ALLOW_COMMENTS)
-                                      .enable(JsonParser.Feature.ALLOW_NUMERIC_LEADING_ZEROS);
-            List<Extension> extensions = mapper.readValue(MojoUtils.class.getClassLoader().getResourceAsStream("extensions.json"),
+                    .enable(JsonParser.Feature.ALLOW_COMMENTS)
+                    .enable(JsonParser.Feature.ALLOW_NUMERIC_LEADING_ZEROS);
+            List<Extension> extensions = mapper.readValue(
+                    MojoUtils.class.getClassLoader().getResourceAsStream("extensions.json"),
                     new TypeReference<List<Extension>>() {
-                // Do nothing.
-            });
+                        // Do nothing.
+                    });
             //TODO This is temporary until "extensions.json" is the generated version
             extensions.forEach(e -> e.setVersion(MojoUtils.SHAMROCK_VERSION_PROPERTY));
             return extensions;
@@ -283,7 +283,7 @@ public class MojoUtils {
             for (Element e : children) {
                 dom.addChild(e.toDom());
             }
-            for(Attribute attribute : attributes.attributes) {
+            for (Attribute attribute : attributes.attributes) {
                 dom.setAttribute(attribute.name, attribute.value);
             }
 
@@ -297,7 +297,7 @@ public class MojoUtils {
     public static class Attributes {
         private List<Attribute> attributes;
 
-        public Attributes(Attribute ... attributes) {
+        public Attributes(Attribute... attributes) {
             this.attributes = Arrays.asList(attributes);
         }
     }

@@ -12,16 +12,18 @@ import com.oracle.svm.core.annotate.TargetClass;
 
 /**
  * Class that has all the query substitutions necessary to remove code that is loaded when proto marshaller is in use
+ * 
  * @author William Burns
  */
-final class QuerySubstitutions { }
+final class QuerySubstitutions {
+}
 
 @TargetClass(value = MarshallerRegistration.class)
 final class SubstituteMarshallerRegistration {
-   @Substitute
-   public static void init(SerializationContext ctx) throws IOException {
-      // Skip loading the proto definition files as this was already done at compile time with
-      // HandleProtostreamMarshaller#handleQueryRequirements
-      MarshallerRegistration.registerMarshallers(ctx);
-   }
+    @Substitute
+    public static void init(SerializationContext ctx) throws IOException {
+        // Skip loading the proto definition files as this was already done at compile time with
+        // HandleProtostreamMarshaller#handleQueryRequirements
+        MarshallerRegistration.registerMarshallers(ctx);
+    }
 }

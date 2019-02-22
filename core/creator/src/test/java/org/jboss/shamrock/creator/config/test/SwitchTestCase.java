@@ -39,7 +39,7 @@ public class SwitchTestCase extends PersonAddressTestBase {
 
         @Override
         public boolean set(Person t, PropertyContext ctx) throws PropertiesConfigReaderException {
-            switch(ctx.getRelativeName()) {
+            switch (ctx.getRelativeName()) {
                 case "first-name":
                     t.setFirstName(ctx.getValue());
                     break;
@@ -54,7 +54,7 @@ public class SwitchTestCase extends PersonAddressTestBase {
 
         @Override
         public PropertiesHandler<?> getNestedHandler(String name) throws PropertiesConfigReaderException {
-            switch(name) {
+            switch (name) {
                 case "home-address":
                     return AddressPropertiesHandler.INSTANCE;
                 case "work-address":
@@ -65,8 +65,8 @@ public class SwitchTestCase extends PersonAddressTestBase {
 
         @Override
         public void setNested(Person t, String name, Object child) throws PropertiesConfigReaderException {
-            final Address address = ((Address.Builder)child).build();
-            switch(name) {
+            final Address address = ((Address.Builder) child).build();
+            switch (name) {
                 case "home-address":
                     t.setHomeAddress(address);
                     break;
@@ -81,7 +81,7 @@ public class SwitchTestCase extends PersonAddressTestBase {
      */
     static class AddressPropertiesHandler implements PropertiesHandler<Address.Builder> {
 
-        static final AddressPropertiesHandler INSTANCE =  new AddressPropertiesHandler();
+        static final AddressPropertiesHandler INSTANCE = new AddressPropertiesHandler();
 
         @Override
         public Address.Builder getTarget() {

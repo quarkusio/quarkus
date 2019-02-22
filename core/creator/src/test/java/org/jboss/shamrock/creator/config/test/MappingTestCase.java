@@ -39,9 +39,9 @@ public class MappingTestCase extends PersonAddressTestBase {
                 return Address.builder();
             }
         }
-        .map("street", (Address.Builder t, String value) -> t.setStreet(value))
-        .map("zip", (Address.Builder t, String value) -> t.setZip(value))
-        .map("city", (Address.Builder t, String value) -> t.setCity(value));
+                .map("street", (Address.Builder t, String value) -> t.setStreet(value))
+                .map("zip", (Address.Builder t, String value) -> t.setZip(value))
+                .map("city", (Address.Builder t, String value) -> t.setCity(value));
 
         /*
          * Map Person to properties
@@ -52,10 +52,10 @@ public class MappingTestCase extends PersonAddressTestBase {
                 return new Person();
             }
         }
-        .map("first-name", (Person p, String value) -> p.setFirstName(value))
-        .map("last-name", (Person p, String value) -> p.setLastName(value))
-        .map("home-address", addressHandler, (Person p, Address.Builder a) -> p.setHomeAddress(a.build()))
-        .map("work-address", addressHandler, (Person p, Address.Builder a) -> p.setWorkAddress(a.build()));
+                .map("first-name", (Person p, String value) -> p.setFirstName(value))
+                .map("last-name", (Person p, String value) -> p.setLastName(value))
+                .map("home-address", addressHandler, (Person p, Address.Builder a) -> p.setHomeAddress(a.build()))
+                .map("work-address", addressHandler, (Person p, Address.Builder a) -> p.setWorkAddress(a.build()));
 
         return personHandler;
     }

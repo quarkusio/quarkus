@@ -20,6 +20,7 @@ public final class SecurityRealmBuildItem extends MultiBuildItem {
     public RuntimeValue<SecurityRealm> getRealm() {
         return realm;
     }
+
     public AuthConfig getAuthConfig() {
         return authConfig;
     }

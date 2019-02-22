@@ -34,7 +34,8 @@ import org.jboss.resteasy.plugins.server.servlet.Filter30Dispatcher;
 public class ResteasyFilter extends Filter30Dispatcher {
 
     @Override
-    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
+    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain)
+            throws IOException, ServletException {
         HttpServletResponse response = (HttpServletResponse) servletResponse;
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         if (request.getMethod().equals("GET") || request.getMethod().equals("HEAD")) {

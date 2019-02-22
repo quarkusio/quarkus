@@ -21,8 +21,8 @@ import java.util.List;
 
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.IndexView;
-import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.ApplicationArchive;
+import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.builditem.ApplicationArchivesBuildItem;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 

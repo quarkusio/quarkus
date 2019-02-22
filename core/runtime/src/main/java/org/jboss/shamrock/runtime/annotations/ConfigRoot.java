@@ -9,7 +9,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * Indicate that the given item is a configuration root.  Instances of classes with this annotation will
+ * Indicate that the given item is a configuration root. Instances of classes with this annotation will
  * be made available to build steps or run time templates, according to the {@linkplain #phase() phase} of the
  * value.
  */

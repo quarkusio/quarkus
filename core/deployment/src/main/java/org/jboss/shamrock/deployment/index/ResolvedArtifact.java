@@ -18,7 +18,6 @@ package org.jboss.shamrock.deployment.index;
 
 import java.nio.file.Path;
 
-
 public class ResolvedArtifact {
 
     private final String groupId;

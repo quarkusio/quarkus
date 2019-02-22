@@ -40,7 +40,8 @@ public class Person {
         this.address = address;
     }
 
-    @Id @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="personSeq")
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "personSeq")
     public long getId() {
         return id;
     }
@@ -67,8 +68,8 @@ public class Person {
     }
 
     public void describeFully(StringBuilder sb) {
-        sb.append( "Person with id=" ).append( id ).append( ", name='" ).append( name ).append( "', address { " );
-        getAddress().describeFully( sb );
-        sb.append( " }" );
+        sb.append("Person with id=").append(id).append(", name='").append(name).append("', address { ");
+        getAddress().describeFully(sb);
+        sb.append(" }");
     }
 }

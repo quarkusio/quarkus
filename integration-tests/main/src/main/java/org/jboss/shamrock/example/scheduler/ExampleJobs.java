@@ -27,14 +27,16 @@ public class ExampleJobs {
     @Scheduled(cron = "{schedulerservice.cron.expr}")
     void checkCronConfig(ScheduledExecution execution) {
         System.out.println(
-                "checkCronConfig - scheduled at " + execution.getScheduledFireTime() + ", next fire time: " + execution.getTrigger().getNextFireTime());
+                "checkCronConfig - scheduled at " + execution.getScheduledFireTime() + ", next fire time: "
+                        + execution.getTrigger().getNextFireTime());
     }
 
     @Scheduled(every = "10s")
     @Scheduled(every = "20s")
     void checkEvery(ScheduledExecution execution) {
         System.out
-                .println("everyNSeconds - scheduled at " + execution.getScheduledFireTime() + ", next fire time: " + execution.getTrigger().getNextFireTime());
+                .println("everyNSeconds - scheduled at " + execution.getScheduledFireTime() + ", next fire time: "
+                        + execution.getTrigger().getNextFireTime());
     }
 
 }

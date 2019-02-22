@@ -28,7 +28,8 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 
 /**
- * Used to transform bytecode by registering to org.jboss.shamrock.deployment.ProcessorContext#addByteCodeTransformer(java.util.function.Function).
+ * Used to transform bytecode by registering to
+ * org.jboss.shamrock.deployment.ProcessorContext#addByteCodeTransformer(java.util.function.Function).
  * This function adapts the Shamrock bytecode transformer API - which uses ASM - to use the Entity Enhancement API of
  * Hibernate ORM, which exposes a simple byte array.
  *
@@ -36,7 +37,7 @@ import org.objectweb.asm.Opcodes;
  * This is not configurable, and we enforce the ORM environment to use the "noop" enhancer as we require all
  * entities to be enhanced at build time.
  *
- * @author Sanne Grinovero  <sanne@hibernate.org>
+ * @author Sanne Grinovero <sanne@hibernate.org>
  */
 public final class HibernateEntityEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
 

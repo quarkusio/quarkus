@@ -17,9 +17,9 @@ public class ProteanCli {
 
     public static void main(String[] args) throws CommandRegistryException {
         CommandRuntime runtime = AeshCommandRuntimeBuilder
-                                         .builder()
-                                         .commandRegistry(AeshCommandRegistryBuilder.builder().command(ProteanCommand.class).create())
-                                         .build();
+                .builder()
+                .commandRegistry(AeshCommandRegistryBuilder.builder().command(ProteanCommand.class).create())
+                .build();
 
         if (args.length > 0) {
             StringBuilder sb = new StringBuilder(ProteanCommand.COMMAND_NAME).append(" ");

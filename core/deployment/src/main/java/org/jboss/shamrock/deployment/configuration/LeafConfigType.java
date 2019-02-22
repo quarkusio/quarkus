@@ -2,15 +2,16 @@ package org.jboss.shamrock.deployment.configuration;
 
 import java.lang.reflect.Field;
 
-import io.smallrye.config.SmallRyeConfig;
 import org.jboss.protean.gizmo.BytecodeCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
 import org.jboss.shamrock.runtime.configuration.NameIterator;
 import org.wildfly.common.annotation.NotNull;
 
+import io.smallrye.config.SmallRyeConfig;
+
 /**
- * A node which contains a regular value.  Leaf nodes can never be directly acquired.
+ * A node which contains a regular value. Leaf nodes can never be directly acquired.
  */
 public abstract class LeafConfigType extends ConfigType {
 
@@ -22,7 +23,7 @@ public abstract class LeafConfigType extends ConfigType {
     }
 
     /**
-     * Get the class of the individual item.  This is the unwrapped type of {@code Optional}, {@code Collection}, etc.
+     * Get the class of the individual item. This is the unwrapped type of {@code Optional}, {@code Collection}, etc.
      *
      * @return the item class (must not be {@code null})
      */
@@ -30,7 +31,8 @@ public abstract class LeafConfigType extends ConfigType {
 
     /**
      * Handle a configuration key from the input file.
-     *  @param name the configuration property name
+     * 
+     * @param name the configuration property name
      * @param config the source configuration
      */
     public abstract void acceptConfigurationValue(@NotNull NameIterator name, @NotNull SmallRyeConfig config);
@@ -39,5 +41,6 @@ public abstract class LeafConfigType extends ConfigType {
 
     abstract void acceptConfigurationValueIntoGroup(Object enclosing, Field field, NameIterator name, SmallRyeConfig config);
 
-    abstract void generateAcceptConfigurationValueIntoGroup(BytecodeCreator body, ResultHandle enclosing, final MethodDescriptor setter, ResultHandle name, ResultHandle config);
+    abstract void generateAcceptConfigurationValueIntoGroup(BytecodeCreator body, ResultHandle enclosing,
+            final MethodDescriptor setter, ResultHandle name, ResultHandle config);
 }

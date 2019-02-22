@@ -38,14 +38,11 @@ import io.restassured.RestAssured;
 
 public class FailingUnitTest {
 
-
     @RegisterExtension
     static final ShamrockUnitTest config = new ShamrockUnitTest()
-            .setArchiveProducer(() ->
-                    ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(FailingHealthCheck.class)
-                            .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml")
-            );
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(FailingHealthCheck.class)
+                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
     @Inject
     @Health
     Instance<HealthCheck> checks;

@@ -32,7 +32,8 @@ import org.jboss.shamrock.runtime.annotations.Template;
 public class HibernateValidatorTemplate {
 
     public void initializeValidatorFactory(Set<Class<?>> classesToBeValidated) {
-        PredefinedScopeHibernateValidatorConfiguration configuration = Validation.byProvider(PredefinedScopeHibernateValidator.class)
+        PredefinedScopeHibernateValidatorConfiguration configuration = Validation
+                .byProvider(PredefinedScopeHibernateValidator.class)
                 .configure();
 
         Set<Locale> localesToInitialize = Collections.singleton(Locale.getDefault());

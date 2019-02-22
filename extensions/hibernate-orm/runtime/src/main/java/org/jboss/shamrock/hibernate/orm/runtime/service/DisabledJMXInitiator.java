@@ -24,7 +24,6 @@ import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.jmx.internal.DisabledJmxServiceImpl;
 import org.hibernate.jmx.spi.JmxService;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
-
 import org.jboss.logging.Logger;
 
 /**

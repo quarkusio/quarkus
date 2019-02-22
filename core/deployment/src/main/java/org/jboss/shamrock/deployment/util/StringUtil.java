@@ -8,7 +8,8 @@ import java.util.Objects;
 /**
  */
 public final class StringUtil {
-    private StringUtil() {}
+    private StringUtil() {
+    }
 
     public static Iterator<String> camelHumpsIterator(String str) {
         return new Iterator<String>() {
@@ -19,7 +20,8 @@ public final class StringUtil {
             }
 
             public String next() {
-                if (idx == str.length()) throw new NoSuchElementException();
+                if (idx == str.length())
+                    throw new NoSuchElementException();
                 // known mixed-case rule-breakers
                 if (str.startsWith("JBoss", idx)) {
                     idx += 5;
@@ -144,9 +146,10 @@ public final class StringUtil {
 
             public boolean hasNext() {
                 if (next == null) {
-                    if (! orig.hasNext()) return false;
+                    if (!orig.hasNext())
+                        return false;
                     final String next = orig.next();
-                    if (! orig.hasNext() && arrayContains(next, suffixes)) {
+                    if (!orig.hasNext() && arrayContains(next, suffixes)) {
                         return false;
                     }
                     this.next = next;
@@ -155,7 +158,8 @@ public final class StringUtil {
             }
 
             public String next() {
-                if (! hasNext()) throw new NoSuchElementException();
+                if (!hasNext())
+                    throw new NoSuchElementException();
                 final String next = this.next;
                 this.next = null;
                 return next;
@@ -166,7 +170,8 @@ public final class StringUtil {
     @SafeVarargs
     private static <T> boolean arrayContains(final T item, final T... array) {
         for (T arrayItem : array) {
-            if (Objects.equals(arrayItem, item)) return true;
+            if (Objects.equals(arrayItem, item))
+                return true;
         }
         return false;
     }

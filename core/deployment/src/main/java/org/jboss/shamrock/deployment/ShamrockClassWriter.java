@@ -27,7 +27,6 @@ import org.objectweb.asm.ClassWriter;
  */
 public class ShamrockClassWriter extends ClassWriter {
 
-
     public ShamrockClassWriter(final ClassReader classReader, final int flags) {
         super(classReader, flags);
     }
@@ -49,6 +48,5 @@ public class ShamrockClassWriter extends ClassWriter {
         }
         return Object.class.getName().replace('.', '/');
     }
-
 
 }

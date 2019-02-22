@@ -23,7 +23,8 @@ import org.jboss.shamrock.runtime.ShutdownContext;
 /**
  * A build item that can be used to register shutdown tasks in runtime templates
  */
-public final class ShutdownContextBuildItem extends SimpleBuildItem implements ShutdownContext, BytecodeRecorderImpl.ReturnedProxy {
+public final class ShutdownContextBuildItem extends SimpleBuildItem
+        implements ShutdownContext, BytecodeRecorderImpl.ReturnedProxy {
     @Override
     public String __returned$proxy$key() {
         return ShutdownContext.class.getName();

@@ -16,30 +16,30 @@
 
 package org.jboss.shamrock.hibernate.orm.runtime.boot;
 
+import static org.hibernate.cfg.AvailableSettings.CLASS_CACHE_PREFIX;
+import static org.hibernate.cfg.AvailableSettings.COLLECTION_CACHE_PREFIX;
 import static org.hibernate.cfg.AvailableSettings.DATASOURCE;
 import static org.hibernate.cfg.AvailableSettings.DRIVER;
-import static org.hibernate.cfg.AvailableSettings.JACC_PREFIX;
 import static org.hibernate.cfg.AvailableSettings.JACC_ENABLED;
+import static org.hibernate.cfg.AvailableSettings.JACC_PREFIX;
 import static org.hibernate.cfg.AvailableSettings.JPA_JDBC_DRIVER;
 import static org.hibernate.cfg.AvailableSettings.JPA_JDBC_PASSWORD;
 import static org.hibernate.cfg.AvailableSettings.JPA_JDBC_URL;
 import static org.hibernate.cfg.AvailableSettings.JPA_JDBC_USER;
 import static org.hibernate.cfg.AvailableSettings.JPA_JTA_DATASOURCE;
 import static org.hibernate.cfg.AvailableSettings.JPA_NON_JTA_DATASOURCE;
+import static org.hibernate.cfg.AvailableSettings.JPA_SHARED_CACHE_MODE;
 import static org.hibernate.cfg.AvailableSettings.JPA_TRANSACTION_TYPE;
 import static org.hibernate.cfg.AvailableSettings.PASS;
+import static org.hibernate.cfg.AvailableSettings.PERSISTENCE_UNIT_NAME;
 import static org.hibernate.cfg.AvailableSettings.TRANSACTION_COORDINATOR_STRATEGY;
 import static org.hibernate.cfg.AvailableSettings.URL;
 import static org.hibernate.cfg.AvailableSettings.USER;
-import static org.hibernate.cfg.AvailableSettings.CLASS_CACHE_PREFIX;
-import static org.hibernate.cfg.AvailableSettings.COLLECTION_CACHE_PREFIX;
-import static org.hibernate.cfg.AvailableSettings.PERSISTENCE_UNIT_NAME;
+import static org.hibernate.cfg.AvailableSettings.USE_DIRECT_REFERENCE_CACHE_ENTRIES;
+import static org.hibernate.cfg.AvailableSettings.USE_QUERY_CACHE;
+import static org.hibernate.cfg.AvailableSettings.USE_SECOND_LEVEL_CACHE;
 import static org.hibernate.cfg.AvailableSettings.WRAP_RESULT_SETS;
 import static org.hibernate.cfg.AvailableSettings.XML_MAPPING_ENABLED;
-import static org.hibernate.cfg.AvailableSettings.USE_SECOND_LEVEL_CACHE;
-import static org.hibernate.cfg.AvailableSettings.USE_QUERY_CACHE;
-import static org.hibernate.cfg.AvailableSettings.USE_DIRECT_REFERENCE_CACHE_ENTRIES;
-import static org.hibernate.cfg.AvailableSettings.JPA_SHARED_CACHE_MODE;
 import static org.hibernate.internal.HEMLogging.messageLogger;
 
 import java.util.ArrayList;
@@ -177,8 +177,8 @@ public class FastBootMetadataBuilder {
     }
 
     private void insertStateRecorders(StandardServiceRegistryBuilder ssrBuilder) {
-//        ssrBuilder.addService( DialectFactory.class, new RecordingDialectFactory() );
-//        ssrBuilder.addInitiator(  )
+        //        ssrBuilder.addService( DialectFactory.class, new RecordingDialectFactory() );
+        //        ssrBuilder.addInitiator(  )
     }
 
     private BootstrapServiceRegistry buildBootstrapServiceRegistry(ClassLoaderService providedClassLoaderService) {
@@ -272,7 +272,8 @@ public class FastBootMetadataBuilder {
             }
         }
 
-        mergedSettings.configurationValues.put( org.hibernate.cfg.AvailableSettings.CACHE_REGION_FACTORY, ProteanInfinispanRegionFactory.class.getName());
+        mergedSettings.configurationValues.put(org.hibernate.cfg.AvailableSettings.CACHE_REGION_FACTORY,
+                ProteanInfinispanRegionFactory.class.getName());
 
         return mergedSettings;
     }
@@ -302,9 +303,10 @@ public class FastBootMetadataBuilder {
     }
 
     private void destroyServiceRegistry(MetadataImplementor fullMeta) {
-        final AbstractServiceRegistryImpl serviceRegistry = (AbstractServiceRegistryImpl) metamodelBuilder.getBootstrapContext().getServiceRegistry();
+        final AbstractServiceRegistryImpl serviceRegistry = (AbstractServiceRegistryImpl) metamodelBuilder.getBootstrapContext()
+                .getServiceRegistry();
         serviceRegistry.close();
-        serviceRegistry.resetParent( null );
+        serviceRegistry.resetParent(null);
     }
 
     private MetadataImplementor trimBootstrapMetadata(MetadataImpl fullMeta) {
@@ -335,8 +337,8 @@ public class FastBootMetadataBuilder {
 
     private JtaPlatform extractJtaPlatform() {
         return new JBossStandAloneJtaPlatform();
-//        JtaPlatformResolver service = standardServiceRegistry.getService( JtaPlatformResolver.class );
-//        return service.resolveJtaPlatform( this.configurationValues, (ServiceRegistryImplementor) standardServiceRegistry );
+        //        JtaPlatformResolver service = standardServiceRegistry.getService( JtaPlatformResolver.class );
+        //        return service.resolveJtaPlatform( this.configurationValues, (ServiceRegistryImplementor) standardServiceRegistry );
     }
 
     private Dialect extractDialect() {

@@ -40,7 +40,6 @@ public class UndertowHotReplacementSetup implements HotReplacementSetup {
         }
     }
 
-
     private HandlerWrapper createHandlerWrapper() {
         return new HandlerWrapper() {
             @Override

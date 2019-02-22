@@ -38,7 +38,8 @@ public class SimpleScheduledMethodTest {
     static final ShamrockUnitTest test = new ShamrockUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(SimpleJobs.class)
-                    .addAsManifestResource(new StringAsset("simpleJobs.cron=0/1 * * * * ?\nsimpleJobs.every=1s"), "microprofile-config.properties"));
+                    .addAsManifestResource(new StringAsset("simpleJobs.cron=0/1 * * * * ?\nsimpleJobs.every=1s"),
+                            "microprofile-config.properties"));
 
     @Inject
     Scheduler scheduler;

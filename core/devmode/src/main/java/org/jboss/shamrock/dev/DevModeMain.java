@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
+
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 import org.jboss.shamrock.runner.RuntimeRunner;
@@ -51,8 +52,6 @@ public class DevModeMain {
 
         Timing.staticInitStarted();
 
-
-
         //the path that contains the compiled classes
         classesRoot = new File(args[0]);
         wiringDir = new File(args[1]);
@@ -61,7 +60,7 @@ public class DevModeMain {
         //first lets look for some config, as it is not on the current class path
         //and we need to load it to start undertow eagerly
         File config = new File(classesRoot, "META-INF/microprofile-config.properties");
-        if(config.exists()) {
+        if (config.exists()) {
             try {
                 Config built = SmallRyeConfigProviderResolver.instance().getBuilder()
                         .addDefaultSources()
@@ -75,7 +74,7 @@ public class DevModeMain {
         }
 
         runtimeUpdatesProcessor = RuntimeCompilationSetup.setup();
-        if(runtimeUpdatesProcessor != null) {
+        if (runtimeUpdatesProcessor != null) {
             runtimeUpdatesProcessor.scanForChangedClasses();
         }
         //TODO: we can't handle an exception on startup with hot replacement, as Undertow might not have started
@@ -92,10 +91,10 @@ public class DevModeMain {
                             e.printStackTrace();
                         }
                     }
-                    if(runtimeCl != null) {
+                    if (runtimeCl != null) {
                         try {
                             runtimeCl.close();
-                        } catch(IOException e) {
+                        } catch (IOException e) {
                             e.printStackTrace();
                         }
                     }
@@ -106,7 +105,7 @@ public class DevModeMain {
 
     private static synchronized void doStart() {
         try {
-            runtimeCl = new URLClassLoader(new URL[]{classesRoot.toURL()}, ClassLoader.getSystemClassLoader());
+            runtimeCl = new URLClassLoader(new URL[] { classesRoot.toURL() }, ClassLoader.getSystemClassLoader());
             currentAppClassLoader = runtimeCl;
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             //we can potentially throw away this class loader, and reload the app

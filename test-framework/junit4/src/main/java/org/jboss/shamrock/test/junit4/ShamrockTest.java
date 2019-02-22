@@ -16,8 +16,8 @@
 
 package org.jboss.shamrock.test.junit4;
 
-import static org.jboss.shamrock.test.common.PathTestHelper.getTestClassesLocation;
 import static org.jboss.shamrock.test.common.PathTestHelper.getAppClassLocation;
+import static org.jboss.shamrock.test.common.PathTestHelper.getTestClassesLocation;
 
 import java.io.IOException;
 

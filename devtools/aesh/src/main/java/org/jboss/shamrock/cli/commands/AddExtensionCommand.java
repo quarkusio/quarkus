@@ -18,8 +18,8 @@ import org.jboss.shamrock.maven.utilities.MojoUtils;
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
  */
-@CommandDefinition(name ="add-extension", description = "Adds extensions to a project")
-public class AddExtensionCommand implements Command<CommandInvocation>{
+@CommandDefinition(name = "add-extension", description = "Adds extensions to a project")
+public class AddExtensionCommand implements Command<CommandInvocation> {
 
     @Option(shortName = 'h', hasValue = false, overrideRequired = true)
     private boolean help;
@@ -32,21 +32,18 @@ public class AddExtensionCommand implements Command<CommandInvocation>{
 
     @Override
     public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
-        if(help) {
+        if (help) {
             commandInvocation.println(commandInvocation.getHelpInfo("protean add-extension"));
             return CommandResult.SUCCESS;
-        }
-        else {
-            if(!findExtension(extension)) {
+        } else {
+            if (!findExtension(extension)) {
                 commandInvocation.println("Can not find any extension named: " + extension);
                 return CommandResult.SUCCESS;
-            }
-            else if (pom.isLeaf()){
+            } else if (pom.isLeaf()) {
                 try {
                     AddExtensions project = new AddExtensions(new File(pom.getAbsolutePath()));
                     project.addExtensions(Collections.singleton(extension));
-                }
-                catch(IOException e) {
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
@@ -57,8 +54,8 @@ public class AddExtensionCommand implements Command<CommandInvocation>{
     }
 
     private boolean findExtension(String name) {
-        for(Extension ext : MojoUtils.loadExtensions()) {
-            if(ext.getName().equalsIgnoreCase(name))
+        for (Extension ext : MojoUtils.loadExtensions()) {
+            if (ext.getName().equalsIgnoreCase(name))
                 return true;
         }
         return false;

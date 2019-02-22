@@ -12,7 +12,8 @@ public final class Engine {
 
     @Substitute
     public Session createSession(ConnectionInfo ci) {
-        throw new UnsupportedOperationException("H2 database compiled into a native-image is only functional as a client: can't create an Embedded Database Session");
+        throw new UnsupportedOperationException(
+                "H2 database compiled into a native-image is only functional as a client: can't create an Embedded Database Session");
     }
 
     @Substitute

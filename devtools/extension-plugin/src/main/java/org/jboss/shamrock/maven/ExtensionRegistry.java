@@ -16,11 +16,11 @@
 
 package org.jboss.shamrock.maven;
 
-import org.apache.maven.project.MavenProject;
-import org.jboss.shamrock.dependencies.Extension;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import org.apache.maven.project.MavenProject;
+import org.jboss.shamrock.dependencies.Extension;
 
 /**
  * @author <a href="http://kenfinnigan.me">Ken Finnigan</a>

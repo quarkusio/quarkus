@@ -18,17 +18,14 @@ package org.jboss.shamrock.smallrye.jwt.deployment;
 
 import java.security.interfaces.RSAPublicKey;
 
-import io.undertow.security.idm.IdentityManager;
-import io.undertow.servlet.ServletExtension;
 import org.jboss.logging.Logger;
+import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
 import org.jboss.shamrock.arc.deployment.BeanContainerBuildItem;
 import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.annotations.BuildStep;
 import org.jboss.shamrock.deployment.annotations.ExecutionTime;
 import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
-import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
-import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 import org.jboss.shamrock.deployment.builditem.ObjectSubstitutionBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import org.jboss.shamrock.runtime.RuntimeValue;
@@ -41,9 +38,9 @@ import org.jboss.shamrock.smallrye.jwt.runtime.ClaimValueProducer;
 import org.jboss.shamrock.smallrye.jwt.runtime.CommonJwtProducer;
 import org.jboss.shamrock.smallrye.jwt.runtime.JWTAuthContextInfoGroup;
 import org.jboss.shamrock.smallrye.jwt.runtime.JsonValueProducer;
-import org.jboss.shamrock.smallrye.jwt.runtime.SmallRyeJwtTemplate;
 import org.jboss.shamrock.smallrye.jwt.runtime.PrincipalProducer;
 import org.jboss.shamrock.smallrye.jwt.runtime.RawClaimTypeProducer;
+import org.jboss.shamrock.smallrye.jwt.runtime.SmallRyeJwtTemplate;
 import org.jboss.shamrock.smallrye.jwt.runtime.auth.ClaimAttributes;
 import org.jboss.shamrock.smallrye.jwt.runtime.auth.ElytronJwtCallerPrincipal;
 import org.jboss.shamrock.smallrye.jwt.runtime.auth.JWTAuthMethodExtension;
@@ -52,6 +49,10 @@ import org.jboss.shamrock.smallrye.jwt.runtime.auth.PublicKeyProxy;
 import org.jboss.shamrock.smallrye.jwt.runtime.auth.PublicKeySubstitution;
 import org.jboss.shamrock.undertow.ServletExtensionBuildItem;
 import org.wildfly.security.auth.server.SecurityRealm;
+
+import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
+import io.undertow.security.idm.IdentityManager;
+import io.undertow.servlet.ServletExtension;
 
 /**
  * The deployment processor for MP-JWT applications
@@ -63,6 +64,7 @@ class SmallRyeJwtProcessor {
 
     /**
      * Register the CDI beans that are needed by the MP-JWT extension
+     * 
      * @param additionalBeans - producer for additional bean items
      */
     @BuildStep
@@ -79,6 +81,7 @@ class SmallRyeJwtProcessor {
 
     /**
      * Register this extension as a MP-JWT feature
+     * 
      * @return
      */
     @BuildStep
@@ -87,7 +90,8 @@ class SmallRyeJwtProcessor {
     }
 
     /**
-     * Configure a TokenSecurityRealm  if enabled
+     * Configure a TokenSecurityRealm if enabled
+     * 
      * @param template - jwt runtime template
      * @param securityRealm - producer used to register the TokenSecurityRealm
      * @param container - the BeanContainer for creating CDI beans
@@ -99,13 +103,14 @@ class SmallRyeJwtProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     @SuppressWarnings({ "unchecked", "rawtypes" })
     AuthConfigBuildItem configureFileRealmAuthConfig(SmallRyeJwtTemplate template,
-                                                     BuildProducer<ObjectSubstitutionBuildItem> objectSubstitution,
-                                                     BuildProducer<SecurityRealmBuildItem> securityRealm,
-                                                     BeanContainerBuildItem container,
-                                                     BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) throws Exception {
+            BuildProducer<ObjectSubstitutionBuildItem> objectSubstitution,
+            BuildProducer<SecurityRealmBuildItem> securityRealm,
+            BeanContainerBuildItem container,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) throws Exception {
         if (config.enabled) {
             // RSAPublicKey needs to be serialized
-            ObjectSubstitutionBuildItem.Holder pkHolder = new ObjectSubstitutionBuildItem.Holder(RSAPublicKey.class, PublicKeyProxy.class, PublicKeySubstitution.class);
+            ObjectSubstitutionBuildItem.Holder pkHolder = new ObjectSubstitutionBuildItem.Holder(RSAPublicKey.class,
+                    PublicKeyProxy.class, PublicKeySubstitution.class);
             ObjectSubstitutionBuildItem pkSub = new ObjectSubstitutionBuildItem(pkHolder);
             objectSubstitution.produce(pkSub);
             // Have the runtime template create the TokenSecurityRealm and create the build item
@@ -126,6 +131,7 @@ class SmallRyeJwtProcessor {
 
     /**
      * Create the JwtIdentityManager
+     * 
      * @param template - jwt runtime template
      * @param securityDomain - the previously created TokenSecurityRealm
      * @param identityManagerProducer - producer for the identity manager
@@ -133,13 +139,14 @@ class SmallRyeJwtProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void configureIdentityManager(SmallRyeJwtTemplate template, SecurityDomainBuildItem securityDomain,
-                                  BuildProducer<IdentityManagerBuildItem> identityManagerProducer) {
+            BuildProducer<IdentityManagerBuildItem> identityManagerProducer) {
         IdentityManager identityManager = template.createIdentityManager(securityDomain.getSecurityDomain());
         identityManagerProducer.produce(new IdentityManagerBuildItem(identityManager));
     }
 
     /**
      * Register the MP-JWT authentication servlet extension
+     * 
      * @param template - jwt runtime template
      * @param container - the BeanContainer for creating CDI beans
      * @return servlet extension build item

@@ -33,8 +33,8 @@ public interface RecorderContext {
      * non-default constructor registered
      *
      * @param constructor The constructor
-     * @param parameters  A function that maps the object to a list of constructor parameters
-     * @param <T>         The type of the object
+     * @param parameters A function that maps the object to a list of constructor parameters
+     * @param <T> The type of the object
      */
     <T> void registerNonDefaultConstructor(Constructor<T> constructor, Function<T, List<Object>> parameters);
 
@@ -42,8 +42,8 @@ public interface RecorderContext {
      * Registers a substitution to allow objects that are not serialisable to bytecode to be substituted for an object
      * that is.
      *
-     * @param from         The class of the non serializable object
-     * @param to           The class to serialize to
+     * @param from The class of the non serializable object
+     * @param to The class to serialize to
      * @param substitution The subclass of {@link ObjectSubstitution} that performs the substitution
      */
     <F, T> void registerSubstitution(Class<F> from, Class<T> to, Class<? extends ObjectSubstitution<F, T>> substitution);
@@ -64,14 +64,13 @@ public interface RecorderContext {
      */
     Class<?> classProxy(String name);
 
-
     /**
      * Creates a RuntimeValue object that represents an object created via the default constructor.
      * <p>
      * This object can be passed into templates, but must not be used directly at deployment time
      *
      * @param name The name of the class
-     * @param <T>  The type of the class
+     * @param <T> The type of the class
      * @return The class instance proxy
      */
     <T> RuntimeValue<T> newInstance(String name);

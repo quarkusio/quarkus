@@ -48,7 +48,6 @@ import org.jboss.shamrock.panache.jpa.PanacheRepositoryBase;
  */
 public final class PanacheResourceProcessor {
 
-
     private static final DotName DOTNAME_PANACHE_REPOSITORY_BASE = DotName.createSimple(PanacheRepositoryBase.class.getName());
     private static final DotName DOTNAME_PANACHE_REPOSITORY = DotName.createSimple(PanacheRepository.class.getName());
     private static final DotName DOTNAME_PANACHE_ENTITY_BASE = DotName.createSimple(PanacheEntityBase.class.getName());
@@ -73,8 +72,8 @@ public final class PanacheResourceProcessor {
         return new UnremovableBeanBuildItem(new Predicate<BeanInfo>() {
             @Override
             public boolean test(BeanInfo beanInfo) {
-                for(Type t : beanInfo.getTypes()) {
-                    if(UNREMOVABLE_BEANS.contains(t.name())) {
+                for (Type t : beanInfo.getTypes()) {
+                    if (UNREMOVABLE_BEANS.contains(t.name())) {
                         return true;
                     }
                 }
@@ -86,15 +85,15 @@ public final class PanacheResourceProcessor {
 
     @BuildStep
     void build(CombinedIndexBuildItem index,
-               ApplicationIndexBuildItem applicationIndex,
-               BuildProducer<BytecodeTransformerBuildItem> transformers,
-               HibernateEnhancersRegisteredBuildItem hibernateMarker) throws Exception {
+            ApplicationIndexBuildItem applicationIndex,
+            BuildProducer<BytecodeTransformerBuildItem> transformers,
+            HibernateEnhancersRegisteredBuildItem hibernateMarker) throws Exception {
 
         PanacheJpaRepositoryEnhancer daoEnhancer = new PanacheJpaRepositoryEnhancer();
         Set<String> daoClasses = new HashSet<>();
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(DOTNAME_PANACHE_REPOSITORY_BASE)) {
             // Skip PanacheRepository
-            if(classInfo.name().equals(DOTNAME_PANACHE_REPOSITORY))
+            if (classInfo.name().equals(DOTNAME_PANACHE_REPOSITORY))
                 continue;
             daoClasses.add(classInfo.name().toString());
         }
@@ -111,13 +110,13 @@ public final class PanacheResourceProcessor {
         // of PanacheEntity if we ask for subtypes of PanacheEntityBase
         for (ClassInfo classInfo : index.getIndex().getAllKnownSubclasses(DOTNAME_PANACHE_ENTITY_BASE)) {
             // FIXME: should we really skip PanacheEntity or all MappedSuperClass?
-            if(classInfo.name().equals(DOTNAME_PANACHE_ENTITY))
+            if (classInfo.name().equals(DOTNAME_PANACHE_ENTITY))
                 continue;
-            if(modelClasses.add(classInfo.name().toString()))
+            if (modelClasses.add(classInfo.name().toString()))
                 modelEnhancer.collectFields(classInfo);
         }
         for (ClassInfo classInfo : index.getIndex().getAllKnownSubclasses(DOTNAME_PANACHE_ENTITY)) {
-            if(modelClasses.add(classInfo.name().toString()))
+            if (modelClasses.add(classInfo.name().toString()))
                 modelEnhancer.collectFields(classInfo);
         }
         for (String modelClass : modelClasses) {
@@ -128,13 +127,12 @@ public final class PanacheResourceProcessor {
             PanacheFieldAccessEnhancer panacheFieldAccessEnhancer = new PanacheFieldAccessEnhancer(modelEnhancer.entities);
             for (ClassInfo classInfo : applicationIndex.getIndex().getKnownClasses()) {
                 String className = classInfo.name().toString();
-                if(!modelClasses.contains(className)) {
+                if (!modelClasses.contains(className)) {
                     transformers.produce(new BytecodeTransformerBuildItem(className, panacheFieldAccessEnhancer));
                 }
             }
         }
     }
-
 
     static final class ProcessorClassOutput implements ClassOutput {
         private final BuildProducer<GeneratedClassBuildItem> producer;
@@ -147,4 +145,5 @@ public final class PanacheResourceProcessor {
             producer.produce(new GeneratedClassBuildItem(false, name, data));
         }
 
-    }}
+    }
+}

@@ -22,7 +22,6 @@ import org.apache.commons.logging.impl.Jdk14Logger;
 import org.apache.commons.logging.impl.LogFactoryImpl;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
-import org.eclipse.microprofile.rest.client.spi.RestClientBuilderResolver;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
@@ -32,7 +31,6 @@ import org.jboss.protean.arc.processor.BeanRegistrar;
 import org.jboss.protean.arc.processor.ScopeInfo;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
-import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 import org.jboss.resteasy.client.jaxrs.internal.proxy.ProxyBuilderImpl;
 import org.jboss.resteasy.client.jaxrs.internal.proxy.ResteasyClientProxy;
 import org.jboss.resteasy.core.ResteasyProviderFactoryImpl;
@@ -41,6 +39,8 @@ import org.jboss.shamrock.arc.deployment.AdditionalBeanBuildItem;
 import org.jboss.shamrock.arc.deployment.BeanRegistrarBuildItem;
 import org.jboss.shamrock.deployment.annotations.BuildProducer;
 import org.jboss.shamrock.deployment.annotations.BuildStep;
+import org.jboss.shamrock.deployment.annotations.ExecutionTime;
+import org.jboss.shamrock.deployment.annotations.Record;
 import org.jboss.shamrock.deployment.builditem.CombinedIndexBuildItem;
 import org.jboss.shamrock.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import org.jboss.shamrock.deployment.builditem.FeatureBuildItem;
@@ -49,9 +49,9 @@ import org.jboss.shamrock.deployment.builditem.substrate.ReflectiveClassBuildIte
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
 import org.jboss.shamrock.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import org.jboss.shamrock.deployment.util.ServiceUtil;
-import org.jboss.shamrock.smallrye.restclient.runtime.BuilderResolver;
 import org.jboss.shamrock.smallrye.restclient.runtime.RestClientBase;
 import org.jboss.shamrock.smallrye.restclient.runtime.RestClientBuilderImpl;
+import org.jboss.shamrock.smallrye.restclient.runtime.SmallRyeRestClientTemplate;
 
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.ClientResponseFilter;
@@ -94,13 +94,15 @@ class SmallRyeRestClientProcessor {
     }
 
     @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
     void setup(BuildProducer<FeatureBuildItem> feature,
                BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-               BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+               BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+               SmallRyeRestClientTemplate smallRyeRestClientTemplate) {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_REST_CLIENT));
 
-        RestClientBuilderResolver.setInstance(new BuilderResolver());
+        smallRyeRestClientTemplate.setRestClientBuilderResolver();
 
         additionalBeans.produce(new AdditionalBeanBuildItem(RestClient.class));
 
@@ -178,9 +180,7 @@ class SmallRyeRestClientProcessor {
         }));
 
         // Indicates that this extension would like the SSL support to be enabled
-        if (sslNativeConfig.isEnabled()) {
-            extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.SMALLRYE_REST_CLIENT));
-        }
+        extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.SMALLRYE_REST_CLIENT));
         RestClientBuilderImpl.SSL_ENABLED = sslNativeConfig.isEnabled();
     }
 }

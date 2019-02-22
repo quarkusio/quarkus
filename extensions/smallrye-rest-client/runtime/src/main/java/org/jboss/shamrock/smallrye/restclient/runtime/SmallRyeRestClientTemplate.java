@@ -14,19 +14,17 @@
  *  permissions and limitations under the License.
  */
 
-package org.jboss.shamrock.smallrye.restclient.runtime.graal;
+package org.jboss.shamrock.smallrye.restclient.runtime;
 
 import org.eclipse.microprofile.rest.client.spi.RestClientBuilderResolver;
+import org.jboss.shamrock.runtime.annotations.Template;
 
-import com.oracle.svm.core.annotate.Substitute;
-import com.oracle.svm.core.annotate.TargetClass;
-import org.jboss.shamrock.smallrye.restclient.runtime.BuilderResolver;
-
-@TargetClass(RestClientBuilderResolver.class)
-final class RestClientBuilderResolverReplacement {
-
-    @Substitute
-    private static RestClientBuilderResolver loadSpi(ClassLoader cl) {
-        return new BuilderResolver();
+/**
+ * @author <a href="http://kenfinnigan.me">Ken Finnigan</a>
+ */
+@Template
+public class SmallRyeRestClientTemplate {
+    public void setRestClientBuilderResolver() {
+        RestClientBuilderResolver.setInstance(new BuilderResolver());
     }
 }

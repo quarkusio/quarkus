@@ -1,0 +1,99 @@
+= {project-name} - Configuring Logging
+
+This guide explains logging and how to configure it.
+
+== Run Time Configuration
+
+Run time configuration of logging is done through the normal `application.properties` file.
+
+=== Console configuration
+
+Console logging is enabled by default.  To configure or disable it, the following configuration properties are used:
+
+[cols="<m,<m,<2",options="header"]
+|===
+|Property Name|Default|Description
+|quarkus.logging.console.enable|true|Determine whether console logging is enabled.
+|quarkus.logging.console.format|%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c{1.}] (%t) %s%e%n|The format pattern to use for logging to the console; see <<format_string>>.
+|quarkus.logging.console.level|INFO|The minimum log level to display to the console.
+|quarkus.logging.console.color|true|Allow color rendering to be used on the console, if it is supported by the terminal.
+|===
+
+=== File configuration
+
+Logging to a file is also supported and enabled by default.  To configure or disable this behavior, use the following configuration properties:
+
+[cols="<m,<m,<2",options="header"]
+|===
+|Property Name|Default|Description
+|quarkus.logging.file.enable|true|Determine whether file logging is enabled.
+|quarkus.logging.file.format|%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c{1.}] (%t) %s%e%n|The format pattern to use for logging to a file; see <<format_string>>.
+|quarkus.logging.file.level|INFO|The minimum log level to write to the log file.
+|quarkus.logging.file.path|quarkus.log|The path of the log file.
+|===
+
+=== Logging categories
+
+Logging is done on a per-category basis.  Each category can be independently configured.
+A configuration which applies to a category will also apply to all sub-categories of that category,
+unless there is a more specific matching sub-category configuration.
+
+[cols="<m,<m,<2",options="header"]
+|===
+|Property Name|Default|Description
+|quarkus.logging.category."<category-name>".level|INFO footnote:[Some extensions may define customized default log levels for certain categories, in order to reduce log noise by default.  Setting the log level in configuration will override any extension-defined log levels.]|The level to use to configure the category named `<category-name>`.  The quotes are necessary.
+|===
+
+
+=== Root logger configuration
+
+The root logger category is handled separately, and is configured via the following properties:
+
+[cols="<m,<m,<2",options="header"]
+|===
+|Property Name|Default|Description
+|quarkus.logging.level|INFO|The default minimum log level for every log category.
+|===
+
+[id="format_string"]
+== Format String
+
+The logging format string supports the following symbols:
+
+[cols="<m,<3,<5",options="header"]
+|===
+|Symbol|Summary|Description
+
+|%%|`%`|Renders a simple `%` character.
+|%c|Category|Renders the category name.
+|%C|Source class|Renders the source class name.footnote:calc[Format sequences which examine caller information may affect performance]
+|%d{xxx}|Date|Renders a date with the given date format string, which uses the syntax defined by `java.text.SimpleDateFormat`.
+|%e|Exception|Renders the thrown exception, if any.
+|%F|Source file|Renders the source file name.footnote:calc[]
+|%h|Host name|Renders the system simple host name.
+|%H|Qualified host name|Renders the system's fully qualified host name, which may be the same as the simple host name, depending on OS configuration.
+|%i|Process ID|Render the current process PID.
+|%l|Source location|Renders the source location information, which includes source file name, line number, class name, and method name.footnote:calc[]
+|%L|Source line|Renders the source line number.footnote:calc[]
+|%m|Full Message|Renders the log message plus exception (if any).
+|%M|Source method|Renders the source method name.footnote:calc[]
+|%n|Newline|Renders the platform-specific line separator string.
+|%N|Process name|Render the name of the current process.
+|%p|Level|Render the log level of the message.
+|%r|Relative time|Render the time in milliseconds since the start of the application log.
+|%s|Simple message|Renders just the log message, with no exception trace.
+|%t|Thread name|Render the thread name.
+|%t{id}|Thread ID|Render the thread ID.
+|%z{<zone name>}|Time zone|Set the time zone of the output to `<zone name>`.
+|===
+
+
+== Supported Logging APIs
+
+Applications and components may use any of the following APIs for logging, and the logs will be merged:
+
+* JDK `java.util.logging`
+* https://github.com/jboss-logging/jboss-logging[JBoss Logging]
+* https://www.slf4j.org/[SLF4J]
+* https://commons.apache.org/proper/commons-logging/[Apache Commons Logging]
+

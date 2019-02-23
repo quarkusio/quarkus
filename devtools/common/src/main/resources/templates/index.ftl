@@ -105,16 +105,16 @@
 
 <div class="container">
     <div class="left-column">
-        <p class="lead"> Congratulations, you have created a new Shamrock application.</p>
+        <p class="lead"> Congratulations, you have created a new Quarkus application.</p>
 
         <h2>Why do you see this?</h2>
 
-        <p>This page is served by Shamrock. The source is in
+        <p>This page is served by Quarkus. The source is in
             <code>src/main/resources/META-INF/resources/index.html</code>.</p>
 
         <h2>What can I do from here?</h2>
 
-        <p>If not already done, run the application in <em>dev mode</em> using: <code>mvn compile shamrock:dev</code>.
+        <p>If not already done, run the application in <em>dev mode</em> using: <code>mvn compile quarkus:dev</code>.
         </p>
         <ul>
             <li>Add REST resources, Servlets, functions and other services in <code>src/main/java</code>.</li>
@@ -133,7 +133,7 @@
                 <li>GroupId: ${project_groupId}</li>
                 <li>ArtifactId: ${project_artifactId}</li>
                 <li>Version: ${project_version}</li>
-                <li>Shamrock Version: ${shamrock_version}</li>
+                <li>Quarkus Version: ${quarkus_version}</li>
             </ul>
         </div>
         <div class="right-section">

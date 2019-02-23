@@ -32,7 +32,7 @@ public interface BuildProvider {
     void installInto(BuildChainBuilder builder) throws ChainBuildException;
 
     /**
-     * Run any preparatory steps required for a given deployment execution.  This may include providing initial
+     * Run any preparatory steps required for a given deployment execution. This may include providing initial
      * resource values.
      *
      * @param builder the deployment execution builder (not {@code null})

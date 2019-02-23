@@ -3,7 +3,7 @@
 <Configuration verbose="false" status="warn" packages="org.infinispan.util.logging.log4j">
 
     <Appenders>
-        <File name="FileAppender" fileName="${sys:java.io.tmpdir}/protean/shamrock.log" append="false">
+        <File name="FileAppender" fileName="${sys:java.io.tmpdir}/quarkus/quarkus.log" append="false">
             <ThresholdFilter level="trace"/>
             <PatternLayout pattern="%d %-5p [%c] (%t:%x) %m%n"/>
         </File>
@@ -11,8 +11,8 @@
 
     <Loggers>
         <Logger name="org.hibernate" level="error" />
-        <Logger name="org.infinispan.protean" level="error" />
-        <Logger name="org.jboss.shamrock.example.test" level="error" />
+        <Logger name="org.infinispan.quarkus" level="error" />
+        <Logger name="io.quarkus.example.test" level="error" />
 
         <Root level="info">
             <AppenderRef ref="FileAppender"/>

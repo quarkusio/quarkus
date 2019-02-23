@@ -19,33 +19,33 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
-    <artifactId>shamrock-arc</artifactId>
-    <groupId>org.jboss.shamrock</groupId>
+    <artifactId>quarkus-arc</artifactId>
+    <groupId>io.quarkus</groupId>
     <version>1.0.0.Alpha1-SNAPSHOT</version>
     <relativePath>../</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>shamrock-arc-deployment</artifactId>
-  <name>Shamrock - ArC - Deployment</name>
+  <artifactId>quarkus-arc-deployment</artifactId>
+  <name>Quarkus - ArC - Deployment</name>
 
   <dependencies>
     <dependency>
-      <groupId>org.jboss.shamrock</groupId>
-      <artifactId>shamrock-core-deployment</artifactId>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-core-deployment</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.jboss.shamrock</groupId>
-      <artifactId>shamrock-arc-runtime</artifactId>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-arc-runtime</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.jboss.protean.arc</groupId>
+      <groupId>org.jboss.quarkus.arc</groupId>
       <artifactId>arc-processor</artifactId>
     </dependency>
     
     <dependency>
-      <groupId>org.jboss.shamrock</groupId>
-      <artifactId>shamrock-junit5-internal</artifactId>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-junit5-internal</artifactId>
     </dependency>
 
   </dependencies>
@@ -57,8 +57,8 @@
           <configuration>
               <annotationProcessorPaths>
                   <path>
-                      <groupId>org.jboss.shamrock</groupId>
-                      <artifactId>shamrock-extension-processor</artifactId>
+                      <groupId>io.quarkus</groupId>
+                      <artifactId>quarkus-extension-processor</artifactId>
                       <version>${project.version}</version>
                   </path>
               </annotationProcessorPaths>

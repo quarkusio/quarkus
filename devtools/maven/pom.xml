@@ -19,25 +19,25 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>shamrock-build-parent</artifactId>
-        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>quarkus-build-parent</artifactId>
+        <groupId>io.quarkus</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
         <relativePath>../../build-parent/pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-maven-plugin</artifactId>
+    <artifactId>quarkus-maven-plugin</artifactId>
     <packaging>maven-plugin</packaging>
-    <name>Shamrock - Maven Plugin</name>
+    <name>Quarkus - Maven Plugin</name>
 
     <properties>
-        <shamrock.version>${project.version}</shamrock.version>
+        <quarkus.version>${project.version}</quarkus.version>
     </properties>
     <dependencies>
 
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-devtools-common</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devtools-common</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.maven</groupId>
@@ -54,12 +54,12 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-creator</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-creator</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-development-mode</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-development-mode</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.maven.shared</groupId>
@@ -173,7 +173,7 @@
                 <artifactId>maven-plugin-plugin</artifactId>
                 <version>3.5.2</version>
                 <configuration>
-                    <goalPrefix>shamrock</goalPrefix>
+                    <goalPrefix>quarkus</goalPrefix>
                     <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
                 </configuration>
                 <executions>

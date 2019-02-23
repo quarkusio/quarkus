@@ -1,3 +1,0 @@
-org.jboss.shamrock.test.common.http.URLTestHTTPResourceProvider
-org.jboss.shamrock.test.common.http.URITestHTTPResourceProvider
-org.jboss.shamrock.test.common.http.StringTestHTTPResourceProvider

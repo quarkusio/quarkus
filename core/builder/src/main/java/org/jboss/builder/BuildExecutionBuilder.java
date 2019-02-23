@@ -45,7 +45,7 @@ public final class BuildExecutionBuilder {
     }
 
     /**
-     * Get the name of this build target.  The resultant string is useful for diagnostic messages and does not have
+     * Get the name of this build target. The resultant string is useful for diagnostic messages and does not have
      * any other significance.
      *
      * @return the name of this build target (not {@code null})
@@ -60,7 +60,7 @@ public final class BuildExecutionBuilder {
      * @param item the item value
      * @return this builder
      * @throws IllegalArgumentException if this deployer chain was not declared to initially produce {@code type},
-     *      or if the item does not allow multiplicity but this method is called more than one time
+     *         or if the item does not allow multiplicity but this method is called more than one time
      */
     public <T extends BuildItem> BuildExecutionBuilder produce(T item) {
         Assert.checkNotNullParam("item", item);
@@ -78,8 +78,8 @@ public final class BuildExecutionBuilder {
      * @param item the item value
      * @return this builder
      * @throws IllegalArgumentException if this deployer chain was not declared to initially produce {@code type},
-     *  or if {@code type} is {@code null}, or if the item does not allow multiplicity but this method is called
-     *  more than one time
+     *         or if {@code type} is {@code null}, or if the item does not allow multiplicity but this method is called
+     *         more than one time
      */
     public <T extends BuildItem> BuildExecutionBuilder produce(Class<T> type, T item) {
         Assert.checkNotNullParam("type", type);
@@ -98,7 +98,7 @@ public final class BuildExecutionBuilder {
      * @param item the item value
      * @return this builder
      * @throws IllegalArgumentException if this deployer chain was not declared to initially produce {@code type},
-     *      or if the item does not allow multiplicity but this method is called more than one time
+     *         or if the item does not allow multiplicity but this method is called more than one time
      */
     public <N, T extends NamedBuildItem<N>> BuildExecutionBuilder produce(N name, T item) {
         Assert.checkNotNullParam("name", name);
@@ -115,8 +115,8 @@ public final class BuildExecutionBuilder {
      * @param item the item value
      * @return this builder
      * @throws IllegalArgumentException if this deployer chain was not declared to initially produce {@code type},
-     *  or if {@code type} is {@code null}, or if the item does not allow multiplicity but this method is called
-     *  more than one time
+     *         or if {@code type} is {@code null}, or if the item does not allow multiplicity but this method is called
+     *         more than one time
      */
     public <N, T extends NamedBuildItem<N>> BuildExecutionBuilder produce(Class<T> type, N name, T item) {
         Assert.checkNotNullParam("type", type);
@@ -127,7 +127,7 @@ public final class BuildExecutionBuilder {
     }
 
     /**
-     * Run the build.  The chain may run in one or many threads.
+     * Run the build. The chain may run in one or many threads.
      *
      * @return the build result (not {@code null})
      * @throws BuildException if build failed
@@ -139,14 +139,15 @@ public final class BuildExecutionBuilder {
     // -- //
 
     private void produce(final ItemId id, final BuildItem value) {
-        if (! buildChain.hasInitial(id)) {
+        if (!buildChain.hasInitial(id)) {
             throw Messages.msg.undeclaredItem(id);
         }
         if (id.isMulti()) {
             final List<BuildItem> list = initialMulti.computeIfAbsent(id, x -> new ArrayList<>());
             if (Comparable.class.isAssignableFrom(id.getType())) {
                 int pos = Collections.binarySearch((List) list, value);
-                if (pos < 0) pos = -(pos + 1);
+                if (pos < 0)
+                    pos = -(pos + 1);
                 list.add(pos, value);
             } else {
                 list.add(value);

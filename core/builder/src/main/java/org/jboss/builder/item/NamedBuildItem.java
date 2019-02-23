@@ -23,5 +23,6 @@ package org.jboss.builder.item;
  */
 @SuppressWarnings("unused")
 public abstract class NamedBuildItem<N> extends BuildItem {
-    NamedBuildItem() {}
+    NamedBuildItem() {
+    }
 }

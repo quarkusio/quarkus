@@ -27,9 +27,11 @@ import org.junit.Test;
  */
 public class BasicTests {
 
-    public static final class DummyItem extends SimpleBuildItem {}
+    public static final class DummyItem extends SimpleBuildItem {
+    }
 
-    public static final class DummyItem2 extends SimpleBuildItem {}
+    public static final class DummyItem2 extends SimpleBuildItem {
+    }
 
     @Test
     public void testSimple() throws ChainBuildException, BuildException {

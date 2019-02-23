@@ -19,14 +19,14 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>shamrock-caffeine</artifactId>
-        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>quarkus-caffeine</artifactId>
+        <groupId>io.quarkus</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-caffeine-runtime</artifactId>
-    <name>Shamrock - Caffeine - Runtime</name>
+    <artifactId>quarkus-caffeine-runtime</artifactId>
+    <name>Quarkus - Caffeine - Runtime</name>
 
     <dependencies>
         <dependency>
@@ -51,8 +51,8 @@
                 <configuration>
                     <annotationProcessorPaths>
                         <path>
-                            <groupId>org.jboss.shamrock</groupId>
-                            <artifactId>shamrock-extension-processor</artifactId>
+                            <groupId>io.quarkus</groupId>
+                            <artifactId>quarkus-extension-processor</artifactId>
                             <version>${project.version}</version>
                         </path>
                     </annotationProcessorPaths>

@@ -21,21 +21,22 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-build-parent</artifactId>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-build-parent</artifactId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
         <relativePath>../../build-parent/pom.xml</relativePath>
     </parent>
 
     <groupId>org.jboss.logmanager</groupId>
     <artifactId>jboss-logmanager-embedded</artifactId>
-    <name>Shamrock - JBoss Log Manager (embedded version)</name>
+    <name>Quarkus - JBoss Log Manager (embedded version)</name>
     <description>An implementation of java.util.logging.LogManager</description>
 
     <packaging>jar</packaging>
 
     <properties>
         <test.log.dir>${project.build.directory}/test-log-output</test.log.dir>
+        <format.skip>true</format.skip>
     </properties>
 
     <dependencies>

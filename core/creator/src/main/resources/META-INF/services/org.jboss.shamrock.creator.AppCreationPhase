@@ -1,4 +1,0 @@
-org.jboss.shamrock.creator.phase.augment.AugmentPhase
-org.jboss.shamrock.creator.phase.curate.CuratePhase
-org.jboss.shamrock.creator.phase.nativeimage.NativeImagePhase
-org.jboss.shamrock.creator.phase.runnerjar.RunnerJarPhase

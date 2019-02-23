@@ -25,12 +25,12 @@ import org.wildfly.common.Assert;
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  */
 public class BuildException extends Exception {
-    private static final long serialVersionUID = - 2190774463525631311L;
+    private static final long serialVersionUID = -2190774463525631311L;
 
     private final List<Diagnostic> diagnostics;
 
     /**
-     * Constructs a new {@code DeploymentException} instance.  The message is left blank ({@code null}), and no
+     * Constructs a new {@code DeploymentException} instance. The message is left blank ({@code null}), and no
      * cause is specified.
      *
      * @param diagnostics the diagnostics associated with the build failure (not {@code null})
@@ -41,7 +41,7 @@ public class BuildException extends Exception {
     }
 
     /**
-     * Constructs a new {@code DeploymentException} instance with an initial message.  No
+     * Constructs a new {@code DeploymentException} instance with an initial message. No
      * cause is specified.
      *
      * @param msg the message
@@ -51,13 +51,13 @@ public class BuildException extends Exception {
         super(constructMessage(msg, Assert.checkNotNullParam("diagnostics", diagnostics)));
         Assert.checkNotNullParam("diagnostics", diagnostics);
         this.diagnostics = diagnostics;
-        for(Diagnostic d : diagnostics) {
+        for (Diagnostic d : diagnostics) {
             addSuppressed(d.getThrown());
         }
     }
 
     /**
-     * Constructs a new {@code DeploymentException} instance with an initial cause.  If
+     * Constructs a new {@code DeploymentException} instance with an initial cause. If
      * a non-{@code null} cause is specified, its message is used to initialize the message of this
      * {@code DeploymentException}; otherwise the message is left blank ({@code null}).
      *

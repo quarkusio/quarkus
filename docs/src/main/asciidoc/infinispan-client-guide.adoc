@@ -12,15 +12,15 @@ Once you have your {project-name} project configured you can add the `infinispan
 to your project by running the following from the command line in your project base directory.
 
 [source]
-mvn shamrock:add-extension -Dextensions="infinispan-client"
+mvn quarkus:add-extension -Dextensions="infinispan-client"
 
 This will add the following to your pom.xml
 
 [source,xml]
 ----
     <dependency>
-        <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-infinispan-client-deployment</artifactId>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-infinispan-client-deployment</artifactId>
     </dependency>
 ----
 
@@ -34,12 +34,12 @@ can be configured in this file:
 | Default Value
 | Description
 
-| `shamrock.infinispan-client.server-list`
+| `quarkus.infinispan-client.server-list`
 | <empty>
 | Defines the list of servers to connect to upon startup. This allows for multiple servers separated by a semicolon
 for each. (eg. host1:11222;host:11222)
 
-| `shamrock.infinispan-client.near-cache-max-entries`
+| `quarkus.infinispan-client.near-cache-max-entries`
 | 0
 | Controls whether the near cache is enabled (allowing repeated retrievals to be stored).
 If this value is zero or less near cache is disabled. A value greater than zero enables near
@@ -324,9 +324,9 @@ CounterManager counterManager;
 == Near Caching
 
 Near caching is disabled by default, but you can enable it by setting the profile config property
-`shamrock.infinispan-client.near-cache-max-entries` to a value greater than 0. You can also configure
+`quarkus.infinispan-client.near-cache-max-entries` to a value greater than 0. You can also configure
 a regular expression so that only a subset of caches have near caching applied through the
-`shamrock.infinispan-client.near-cache-name-pattern` attribute.
+`quarkus.infinispan-client.near-cache-name-pattern` attribute.
 
 == Encryption
 
@@ -340,7 +340,7 @@ The reason that {project-name} is different is that SubstrateVM does not come wi
 services enabled. This is mentioned at
 https://github.com/oracle/graal/blob/master/substratevm/JCA-SECURITY-SERVICES.md. To
 do this you will need to set the `<enableAllSecurityServices>true</enableAllSecurityServices>` value
-in the `shamrock-maven-plugin` configuration values.
+in the `quarkus-maven-plugin` configuration values.
 
 An example is as shown here, with a comment highlighting them:
 
@@ -348,7 +348,7 @@ An example is as shown here, with a comment highlighting them:
 ----
 <plugin>
    <groupId>${project.groupId}</groupId>
-   <artifactId>shamrock-maven-plugin</artifactId>
+   <artifactId>quarkus-maven-plugin</artifactId>
    <executions>
        <execution>
            <id>native-image</id>

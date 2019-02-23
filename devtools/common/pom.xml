@@ -5,13 +5,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-devtools-all</artifactId>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-devtools-all</artifactId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>shamrock-devtools-common</artifactId>
-    <name>Shamrock - Dev tools - Common Code</name>
+    <artifactId>quarkus-devtools-common</artifactId>
+    <name>Quarkus - Dev tools - Common Code</name>
 
     <build>
         <resources>
@@ -24,7 +24,7 @@
             </resource>
             <resource>
                 <directory>${project.basedir}/../../bom</directory>
-                <targetPath>shamrock-bom</targetPath>
+                <targetPath>quarkus-bom</targetPath>
                 <filtering>false</filtering>
                 <includes>
                     <include>pom.xml</include>
@@ -33,8 +33,8 @@
         </resources>
         <plugins>
             <plugin>
-                <groupId>org.jboss.shamrock</groupId>
-                <artifactId>shamrock-extension-plugin</artifactId>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-extension-plugin</artifactId>
                 <version>${project.version}</version>
                 <executions>
                     <execution>
@@ -50,8 +50,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-devtools-common-core</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devtools-common-core</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.maven</groupId>

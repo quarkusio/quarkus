@@ -27,12 +27,12 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.builder.diag.Diagnostic;
+import org.jboss.builder.item.BuildItem;
+import org.jboss.builder.item.MultiBuildItem;
 import org.jboss.builder.item.NamedBuildItem;
 import org.jboss.builder.item.NamedMultiBuildItem;
-import org.jboss.builder.location.Location;
-import org.jboss.builder.item.MultiBuildItem;
-import org.jboss.builder.item.BuildItem;
 import org.jboss.builder.item.SimpleBuildItem;
+import org.jboss.builder.location.Location;
 import org.wildfly.common.Assert;
 
 /**
@@ -52,7 +52,7 @@ public final class BuildContext {
     }
 
     /**
-     * Get the name of this build target.  The resultant string is useful for diagnostic messages and does not have
+     * Get the name of this build target. The resultant string is useful for diagnostic messages and does not have
      * any other significance.
      *
      * @return the name of this build target (not {@code null})
@@ -62,12 +62,12 @@ public final class BuildContext {
     }
 
     /**
-     * Produce the given item.  If the {@code type} refers to a item which is declared with multiplicity, then this
+     * Produce the given item. If the {@code type} refers to a item which is declared with multiplicity, then this
      * method can be called more than once for the given {@code type}, otherwise it must be called no more than once.
      *
      * @param item the item value (must not be {@code null})
      * @throws IllegalArgumentException if the item does not allow multiplicity but this method is called more than one time,
-     * or if the type of item could not be determined
+     *         or if the type of item could not be determined
      */
     public void produce(BuildItem item) {
         Assert.checkNotNullParam("item", item);
@@ -78,26 +78,27 @@ public final class BuildContext {
     }
 
     /**
-     * Produce the given items.  This method can be called more than once for the given {@code type}
+     * Produce the given items. This method can be called more than once for the given {@code type}
      *
      * @param items the items (must not be {@code null})
      * @throws IllegalArgumentException if the type of item could not be determined
      */
     public void produce(List<? extends MultiBuildItem> items) {
         Assert.checkNotNullParam("items", items);
-        for(MultiBuildItem item : items) {
+        for (MultiBuildItem item : items) {
             doProduce(new ItemId(item.getClass(), null), item);
         }
     }
 
     /**
-     * Produce the given item.  If the {@code type} refers to a item which is declared with multiplicity, then this
+     * Produce the given item. If the {@code type} refers to a item which is declared with multiplicity, then this
      * method can be called more than once for the given {@code type}, otherwise it must be called no more than once.
      *
      * @param type the item type (must not be {@code null})
      * @param item the item value (may be {@code null})
-     * @throws IllegalArgumentException if this deployer was not declared to produce {@code type}, or if {@code type} is {@code null}, or if
-     * the item does not allow multiplicity but this method is called more than one time
+     * @throws IllegalArgumentException if this deployer was not declared to produce {@code type}, or if {@code type} is
+     *         {@code null}, or if
+     *         the item does not allow multiplicity but this method is called more than one time
      */
     public <T extends BuildItem> void produce(Class<T> type, T item) {
         Assert.checkNotNullParam("type", type);
@@ -108,13 +109,13 @@ public final class BuildContext {
     }
 
     /**
-     * Produce the given item.  If the {@code type} refers to a item which is declared with multiplicity, then this
+     * Produce the given item. If the {@code type} refers to a item which is declared with multiplicity, then this
      * method can be called more than once for the given {@code type}, otherwise it must be called no more than once.
      *
      * @param name the build item name (must not be {@code null})
      * @param item the item value (must not be {@code null})
      * @throws IllegalArgumentException if the item does not allow multiplicity but this method is called more than one time,
-     * or if the type of item could not be determined
+     *         or if the type of item could not be determined
      */
     public <N> void produce(N name, NamedBuildItem<N> item) {
         Assert.checkNotNullParam("name", name);
@@ -123,14 +124,14 @@ public final class BuildContext {
     }
 
     /**
-     * Produce the given item.  If the {@code type} refers to a item which is declared with multiplicity, then this
+     * Produce the given item. If the {@code type} refers to a item which is declared with multiplicity, then this
      * method can be called more than once for the given {@code type}, otherwise it must be called no more than once.
      *
      * @param type the item type (must not be {@code null})
      * @param name the build item name (must not be {@code null})
      * @param item the item value (must not be {@code null})
      * @throws IllegalArgumentException if the item does not allow multiplicity but this method is called more than one time,
-     * or if the type of item could not be determined
+     *         or if the type of item could not be determined
      */
     public <N, T extends NamedBuildItem<N>> void produce(Class<T> type, N name, NamedBuildItem<N> item) {
         Assert.checkNotNullParam("type", type);
@@ -144,7 +145,8 @@ public final class BuildContext {
      *
      * @param type the item type (must not be {@code null})
      * @return the produced item (may be {@code null})
-     * @throws IllegalArgumentException if this deployer was not declared to consume {@code type}, or if {@code type} is {@code null}
+     * @throws IllegalArgumentException if this deployer was not declared to consume {@code type}, or if {@code type} is
+     *         {@code null}
      * @throws ClassCastException if the cast failed
      */
     public <T extends SimpleBuildItem> T consume(Class<T> type) {
@@ -153,7 +155,7 @@ public final class BuildContext {
         if (id.isMulti()) {
             throw Messages.msg.cannotMulti(id);
         }
-        if (! stepInfo.getConsumes().contains(id)) {
+        if (!stepInfo.getConsumes().contains(id)) {
             throw Messages.msg.undeclaredItem(id);
         }
         return type.cast(execution.getSingles().get(id));
@@ -165,7 +167,8 @@ public final class BuildContext {
      * @param type the item type (must not be {@code null})
      * @param name the build item name (must not be {@code null})
      * @return the produced item (may be {@code null})
-     * @throws IllegalArgumentException if this deployer was not declared to consume {@code type}, or if {@code type} is {@code null}
+     * @throws IllegalArgumentException if this deployer was not declared to consume {@code type}, or if {@code type} is
+     *         {@code null}
      * @throws ClassCastException if the cast failed
      */
     public <N, T extends NamedBuildItem<N>> T consume(Class<T> type, N name) {
@@ -175,53 +178,55 @@ public final class BuildContext {
         if (id.isMulti()) {
             throw Messages.msg.cannotMulti(id);
         }
-        if (! stepInfo.getConsumes().contains(id)) {
+        if (!stepInfo.getConsumes().contains(id)) {
             throw Messages.msg.undeclaredItem(id);
         }
         return type.cast(execution.getSingles().get(id));
     }
 
     /**
-     * Consume all of the values produced for the named item.  If the
-     * item type implements {@link Comparable}, it will be sorted by natural order before return.  The returned list
+     * Consume all of the values produced for the named item. If the
+     * item type implements {@link Comparable}, it will be sorted by natural order before return. The returned list
      * is a mutable copy.
      *
      * @param type the item element type (must not be {@code null})
      * @return the produced items (may be empty, will not be {@code null})
-     * @throws IllegalArgumentException if this deployer was not declared to consume {@code type}, or if {@code type} is {@code null}
+     * @throws IllegalArgumentException if this deployer was not declared to consume {@code type}, or if {@code type} is
+     *         {@code null}
      */
     public <T extends MultiBuildItem> List<T> consumeMulti(Class<T> type) {
         Assert.checkNotNullParam("type", type);
         final ItemId id = new ItemId(type, null);
-        if (! id.isMulti()) {
+        if (!id.isMulti()) {
             // can happen if obj changes base class
             throw Messages.msg.cannotMulti(id);
         }
-        if (! stepInfo.getConsumes().contains(id)) {
+        if (!stepInfo.getConsumes().contains(id)) {
             throw Messages.msg.undeclaredItem(id);
         }
         return new ArrayList<>((List<T>) (List) execution.getMultis().getOrDefault(id, Collections.emptyList()));
     }
 
     /**
-     * Consume all of the values produced for the named item.  If the
-     * item type implements {@link Comparable}, it will be sorted by natural order before return.  The returned list
+     * Consume all of the values produced for the named item. If the
+     * item type implements {@link Comparable}, it will be sorted by natural order before return. The returned list
      * is a mutable copy.
      *
      * @param type the item element type (must not be {@code null})
      * @param name the build item name (must not be {@code null})
      * @return the produced items (may be empty, will not be {@code null})
-     * @throws IllegalArgumentException if this deployer was not declared to consume {@code type}, or if {@code type} is {@code null}
+     * @throws IllegalArgumentException if this deployer was not declared to consume {@code type}, or if {@code type} is
+     *         {@code null}
      */
     public <N, T extends NamedMultiBuildItem<N>> List<T> consumeMulti(Class<T> type, N name) {
         Assert.checkNotNullParam("type", type);
         Assert.checkNotNullParam("name", name);
         final ItemId id = new ItemId(type, name);
-        if (! id.isMulti()) {
+        if (!id.isMulti()) {
             // can happen if obj changes base class
             throw Messages.msg.cannotMulti(id);
         }
-        if (! stepInfo.getConsumes().contains(id)) {
+        if (!stepInfo.getConsumes().contains(id)) {
             throw Messages.msg.undeclaredItem(id);
         }
         return new ArrayList<>((List<T>) (List) execution.getMultis().getOrDefault(id, Collections.emptyList()));
@@ -229,12 +234,13 @@ public final class BuildContext {
 
     /**
      * Consume all of the values produced for the named item, re-sorting it according
-     * to the given comparator.  The returned list is a mutable copy.
+     * to the given comparator. The returned list is a mutable copy.
      *
      * @param type the item element type (must not be {@code null})
      * @param comparator the comparator to use (must not be {@code null})
      * @return the produced items (may be empty, will not be {@code null})
-     * @throws IllegalArgumentException if this deployer was not declared to consume {@code type}, or if {@code type} is {@code null}
+     * @throws IllegalArgumentException if this deployer was not declared to consume {@code type}, or if {@code type} is
+     *         {@code null}
      */
     public <T extends MultiBuildItem> List<T> consumeMulti(Class<T> type, Comparator<? super T> comparator) {
         final List<T> result = consumeMulti(type);
@@ -244,12 +250,13 @@ public final class BuildContext {
 
     /**
      * Consume all of the values produced for the named item, re-sorting it according
-     * to the given comparator.  The returned list is a mutable copy.
+     * to the given comparator. The returned list is a mutable copy.
      *
      * @param type the item element type (must not be {@code null})
      * @param comparator the comparator to use (must not be {@code null})
      * @return the produced items (may be empty, will not be {@code null})
-     * @throws IllegalArgumentException if this deployer was not declared to consume {@code type}, or if {@code type} is {@code null}
+     * @throws IllegalArgumentException if this deployer was not declared to consume {@code type}, or if {@code type} is
+     *         {@code null}
      */
     public <N, T extends NamedMultiBuildItem<N>> List<T> consumeMulti(Class<T> type, N name, Comparator<? super T> comparator) {
         final List<T> result = consumeMulti(type, name);
@@ -262,11 +269,13 @@ public final class BuildContext {
      *
      * @param type the item type (must not be {@code null})
      * @return {@code true} if the item was produced and is available, {@code false} if it was not or if this deployer does
-     * not consume the named item
+     *         not consume the named item
      */
     public boolean isAvailableToConsume(Class<? extends BuildItem> type) {
         final ItemId id = new ItemId(type, null);
-        return stepInfo.getConsumes().contains(id) && id.isMulti() ? ! execution.getMultis().getOrDefault(id, Collections.emptyList()).isEmpty() : execution.getSingles().containsKey(id);
+        return stepInfo.getConsumes().contains(id) && id.isMulti()
+                ? !execution.getMultis().getOrDefault(id, Collections.emptyList()).isEmpty()
+                : execution.getSingles().containsKey(id);
     }
 
     /**
@@ -274,40 +283,41 @@ public final class BuildContext {
      *
      * @param type the item type (must not be {@code null})
      * @return {@code true} if the item was produced and is available, {@code false} if it was not or if this deployer does
-     * not consume the named item
+     *         not consume the named item
      */
     public <N> boolean isAvailableToConsume(Class<? extends NamedBuildItem<N>> type, N name) {
         final ItemId id = new ItemId(type, name);
-        return stepInfo.getConsumes().contains(id) && id.isMulti() ? ! execution.getMultis().getOrDefault(id, Collections.emptyList()).isEmpty() : execution.getSingles().containsKey(id);
+        return stepInfo.getConsumes().contains(id) && id.isMulti()
+                ? !execution.getMultis().getOrDefault(id, Collections.emptyList()).isEmpty()
+                : execution.getSingles().containsKey(id);
     }
 
     /**
-     * Determine if a item will be consumed in this build.  If a item is not consumed, then build steps are not
+     * Determine if a item will be consumed in this build. If a item is not consumed, then build steps are not
      * required to produce it.
      *
      * @param type the item type (must not be {@code null})
      * @return {@code true} if the item will be consumed, {@code false} if it will not be or if this deployer does
-     * not produce the named item
+     *         not produce the named item
      */
     public boolean isConsumed(Class<? extends BuildItem> type) {
         return execution.getBuildChain().getConsumed().contains(new ItemId(type, null));
     }
 
-
     /**
-     * Determine if a item will be consumed in this build.  If a item is not consumed, then build steps are not
+     * Determine if a item will be consumed in this build. If a item is not consumed, then build steps are not
      * required to produce it.
      *
      * @param type the item type (must not be {@code null})
      * @return {@code true} if the item will be consumed, {@code false} if it will not be or if this deployer does
-     * not produce the named item
+     *         not produce the named item
      */
     public <N> boolean isConsumed(Class<? extends NamedBuildItem<N>> type, N name) {
         return execution.getBuildChain().getConsumed().contains(new ItemId(type, name));
     }
 
     /**
-     * Emit a build note.  This indicates information that the user may be interested in.
+     * Emit a build note. This indicates information that the user may be interested in.
      *
      * @param location the location of interest (may be {@code null})
      * @param format the format string (see {@link String#format(String, Object...)})
@@ -321,7 +331,7 @@ public final class BuildContext {
     }
 
     /**
-     * Emit a build warning.  This indicates a significant build problem that the user should be made aware of.
+     * Emit a build warning. This indicates a significant build problem that the user should be made aware of.
      *
      * @param location the location of interest (may be {@code null})
      * @param format the format string (see {@link String#format(String, Object...)})
@@ -335,7 +345,7 @@ public final class BuildContext {
     }
 
     /**
-     * Emit a build error.  This indicates a build problem that prevents the build from proceeding.
+     * Emit a build error. This indicates a build problem that prevents the build from proceeding.
      *
      * @param location the location of interest (may be {@code null})
      * @param format the format string (see {@link String#format(String, Object...)})
@@ -361,7 +371,7 @@ public final class BuildContext {
     // -- //
 
     private void doProduce(ItemId id, BuildItem value) {
-        if (! stepInfo.getProduces().contains(id)) {
+        if (!stepInfo.getProduces().contains(id)) {
             throw Messages.msg.undeclaredItem(id);
         }
         if (id.isMulti()) {
@@ -369,7 +379,8 @@ public final class BuildContext {
             synchronized (list) {
                 if (Comparable.class.isAssignableFrom(id.getType())) {
                     int pos = Collections.binarySearch((List) list, value);
-                    if (pos < 0) pos = -(pos + 1);
+                    if (pos < 0)
+                        pos = -(pos + 1);
                     list.add(pos, value);
                 } else {
                     list.add(value);
@@ -397,13 +408,14 @@ public final class BuildContext {
         final long start = System.currentTimeMillis();
         log.tracef("Starting step \"%s\"", buildStep);
         try {
-            if (! execution.isErrorReported()) {
+            if (!execution.isErrorReported()) {
                 try {
                     buildStep.execute(this);
                 } catch (Throwable t) {
                     final List<Diagnostic> list = execution.getDiagnostics();
                     synchronized (list) {
-                        list.add(new Diagnostic(Diagnostic.Level.ERROR, t, null, "Build step %s threw an exception", buildStep));
+                        list.add(
+                                new Diagnostic(Diagnostic.Level.ERROR, t, null, "Build step %s threw an exception", buildStep));
                     }
                     execution.setErrorReported();
                 }
@@ -413,7 +425,7 @@ public final class BuildContext {
             execution.removeBuildContext(stepInfo, this);
         }
         final Set<StepInfo> dependents = stepInfo.getDependents();
-        if (! dependents.isEmpty()) {
+        if (!dependents.isEmpty()) {
             for (StepInfo info : dependents) {
                 execution.getBuildContext(info).depFinished();
             }

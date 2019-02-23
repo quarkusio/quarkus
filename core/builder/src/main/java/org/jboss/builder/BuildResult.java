@@ -39,7 +39,9 @@ public final class BuildResult {
     private final List<Diagnostic> diagnostics;
     private final long nanos;
 
-    BuildResult(final ConcurrentHashMap<ItemId, BuildItem> simpleItems, final ConcurrentHashMap<ItemId, List<BuildItem>> multiItems, final Set<ItemId> finalIds, final List<Diagnostic> diagnostics, final long nanos) {
+    BuildResult(final ConcurrentHashMap<ItemId, BuildItem> simpleItems,
+            final ConcurrentHashMap<ItemId, List<BuildItem>> multiItems, final Set<ItemId> finalIds,
+            final List<Diagnostic> diagnostics, final long nanos) {
         this.simpleItems = simpleItems;
         this.multiItems = multiItems;
         this.diagnostics = diagnostics;
@@ -51,7 +53,8 @@ public final class BuildResult {
      *
      * @param type the item type (must not be {@code null})
      * @return the produced item (may be {@code null})
-     * @throws IllegalArgumentException if this deployer was not declared to consume {@code type}, or if {@code type} is {@code null}
+     * @throws IllegalArgumentException if this deployer was not declared to consume {@code type}, or if {@code type} is
+     *         {@code null}
      * @throws ClassCastException if the cast failed
      */
     public <T extends SimpleBuildItem> T consume(Class<T> type) {
@@ -104,19 +107,21 @@ public final class BuildResult {
      */
     public void closeAll() throws RuntimeException {
         for (BuildItem obj : simpleItems.values()) {
-            if (obj instanceof AutoCloseable) try {
-                ((AutoCloseable) obj).close();
-            } catch (Exception e) {
-                Messages.msg.closeFailed(obj, e);
-            }
-        }
-        for (List<? extends BuildItem> list : multiItems.values()) {
-            for (BuildItem obj : list) {
-                if (obj instanceof AutoCloseable) try {
+            if (obj instanceof AutoCloseable)
+                try {
                     ((AutoCloseable) obj).close();
                 } catch (Exception e) {
                     Messages.msg.closeFailed(obj, e);
                 }
+        }
+        for (List<? extends BuildItem> list : multiItems.values()) {
+            for (BuildItem obj : list) {
+                if (obj instanceof AutoCloseable)
+                    try {
+                        ((AutoCloseable) obj).close();
+                    } catch (Exception e) {
+                        Messages.msg.closeFailed(obj, e);
+                    }
             }
         }
     }

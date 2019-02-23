@@ -5,12 +5,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-kafka-client</artifactId>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-kafka-client</artifactId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>shamrock-kafka-client-runtime</artifactId>
+    <artifactId>quarkus-kafka-client-runtime</artifactId>
 
     <dependencies>
 
@@ -36,8 +36,8 @@
                 <configuration>
                     <annotationProcessorPaths>
                         <path>
-                            <groupId>org.jboss.shamrock</groupId>
-                            <artifactId>shamrock-extension-processor</artifactId>
+                            <groupId>io.quarkus</groupId>
+                            <artifactId>quarkus-extension-processor</artifactId>
                             <version>${project.version}</version>
                         </path>
                     </annotationProcessorPaths>

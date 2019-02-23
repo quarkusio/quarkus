@@ -26,7 +26,7 @@ Remember, you need to configure Maven as indicated in the link:maven-config.html
 We recommend to follow the instructions in the next sections and build the application step by step.
 However, you can go right to the completed example.
 
-Clone the Git repository: `git clone https://github.com/jbossas/protean-quickstarts.git`, or download an https://github.com/jbossas/protean-quickstarts/archive/master.zip[archive].
+Clone the Git repository: `git clone https://github.com/jbossas/quarkus-quickstarts.git`, or download an https://github.com/jbossas/quarkus-quickstarts/archive/master.zip[archive].
 
 The solution is located in the `getting-started-kubernetes` directory.
 
@@ -41,22 +41,22 @@ For `minikube`, execute:
 # For minishift use "eval $(minishift docker-env)" instead
 eval $(minikube docker-env)
 
-docker build -t shamrock-quickstart/quickstart .
+docker build -t quarkus-quickstart/quickstart .
 ----
 
 Once the image has been pushed to the Kubernetes image registry, instantiate the application as follows:
 
 [source, bash]
 ----
-kubectl run shamrock-quickstart --image=shamrock-quickstart/quickstart:latest --port=8080 --image-pull-policy=IfNotPresent
-kubectl expose deployment shamrock-quickstart --type=NodePort
+kubectl run quarkus-quickstart --image=quarkus-quickstart/quickstart:latest --port=8080 --image-pull-policy=IfNotPresent
+kubectl expose deployment quarkus-quickstart --type=NodePort
 ----
 
 The application is now exposed as an internal service. If you are using `minikube`, you can access it using:
 
 [source, bash]
 ----
-curl $(minikube service shamrock-quickstart --url)/hello/greeting/shamrock
+curl $(minikube service quarkus-quickstart --url)/hello/greeting/quarkus
 ----
 
 == Deploying the application in OpenShift
@@ -67,25 +67,25 @@ As we have a `Dockerfile` available, we are going to create an OpenShift `build`
 [source]
 ----
 # To build the image on OpenShift
-oc new-build --binary --name=shamrock-quickstart -l app=shamrock-quickstart
-oc start-build shamrock-quickstart --from-dir=. --follow
+oc new-build --binary --name=quarkus-quickstart -l app=quarkus-quickstart
+oc start-build quarkus-quickstart --from-dir=. --follow
 
 # To instantiate the image
-oc new-app --image-stream=shamrock-quickstart:latest
+oc new-app --image-stream=quarkus-quickstart:latest
 
 # To create the route
-oc expose service shamrock-quickstart
+oc expose service quarkus-quickstart
 
 # Get the route URL
-export URL="http://$(oc get route | grep shamrock-quickstart | awk '{print $2}')"
-curl $URL/hello/greeting/shamrock
+export URL="http://$(oc get route | grep quarkus-quickstart | awk '{print $2}')"
+curl $URL/hello/greeting/quarkus
 ----
 
 Your application is accessible at the printed URL.
 
 == Going further
 
-This guide covered the deployment of a Shamrock application on Kubernetes and OpenShift.
-However, there is much more, and the integration with these environments has been tailored to make Shamrock applications execution very smooth.
+This guide covered the deployment of a Quarkus application on Kubernetes and OpenShift.
+However, there is much more, and the integration with these environments has been tailored to make Quarkus applications execution very smooth.
 For instance, the health extension can be used for health check; the configuration support allows mounting the application configuration using config map, the metric extension produces data _scrappable_ by Prometheus and so on.
 

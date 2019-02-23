@@ -19,40 +19,40 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>shamrock-hibernate-orm</artifactId>
-        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>quarkus-hibernate-orm</artifactId>
+        <groupId>io.quarkus</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-hibernate-orm-deployment</artifactId>
-    <name>Shamrock - Hibernate ORM - Deployment</name>
+    <artifactId>quarkus-hibernate-orm-deployment</artifactId>
+    <name>Quarkus - Hibernate ORM - Deployment</name>
 
     <dependencies>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-core-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-hibernate-orm-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm-runtime</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-narayana-jta-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-narayana-jta-deployment</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-agroal-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-agroal-deployment</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-arc-deployment</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc-deployment</artifactId>
         </dependency>
 
         <!--
            Exclusions currently not listed in the parent pom as they need to be different in runtime vs deployment:
-           Re-import this so to dodge the Byte Buddy exclusion we declared in shamrock-hibernate-orm-runtime;
+           Re-import this so to dodge the Byte Buddy exclusion we declared in quarkus-hibernate-orm-runtime;
            to help Java 11 users the explicit dependency to XML parsers might also be useful
            (yet not needed at runtime).
            I prefer to use exclusions only so to transitively let Hibernate ORM manage the versions.
@@ -74,8 +74,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-junit5-internal</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-internal</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.gizmo</groupId>
@@ -92,8 +92,8 @@
                 <configuration>
                     <annotationProcessorPaths>
                         <path>
-                            <groupId>org.jboss.shamrock</groupId>
-                            <artifactId>shamrock-extension-processor</artifactId>
+                            <groupId>io.quarkus</groupId>
+                            <artifactId>quarkus-extension-processor</artifactId>
                             <version>${project.version}</version>
                         </path>
                     </annotationProcessorPaths>

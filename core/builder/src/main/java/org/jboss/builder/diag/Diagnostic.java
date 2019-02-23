@@ -34,7 +34,8 @@ public final class Diagnostic {
         this(level, null, location, format, args);
     }
 
-    public Diagnostic(final Level level, final Throwable thrown, final Location location, final String format, final Object... args) {
+    public Diagnostic(final Level level, final Throwable thrown, final Location location, final String format,
+            final Object... args) {
         Assert.checkNotNullParam("level", level);
         Assert.checkNotNullParam("format", format);
         Assert.checkNotNullParam("args", args);
@@ -87,9 +88,7 @@ public final class Diagnostic {
     }
 
     public enum Level {
-        ERROR("error"),
-        WARN("warning"),
-        NOTE("note"),
+        ERROR("error"), WARN("warning"), NOTE("note"),
         ;
 
         private final String name;

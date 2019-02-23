@@ -1,10 +1,10 @@
 = Read me
-:project-name: Protean
+:project-name: Quarkus
 :config-file: microprofile-config.properties
 :toc:
 
 This module is testing the configuration and integration aspects of JPA;
-for example it covers reading configuration properties from the Protean config files as an alternative to the `persistence.xml`.
+for example it covers reading configuration properties from the Quarkus config files as an alternative to the `persistence.xml`.
 
 All integration tests in this module use `H2`; other databases are being tested from other integration test modules.
 
@@ -25,11 +25,11 @@ See the `docs` section and the Hibernate guide.
 ** [SOLVED] we start from that and can add runtime refinement of the dialect based on JDBC metadata and enlist all dialects of a family to avoid DCE
 * Which properties are the most useful for Hibernate ORM?
 ** see section below
-* Do we have a pass through of properties under something like `shamrock.hibernate`
+* Do we have a pass through of properties under something like `quarkus.hibernate`
 ** [SOLVED] we start with that
-* which prefix do we want? `shamrock.hibernate`, `hibernate`, `jpa` etc
+* which prefix do we want? `quarkus.hibernate`, `hibernate`, `jpa` etc
 ** what about `javax.persistence properties`?
-** [SOLVED] we start with `shamrock.hibernate`
+** [SOLVED] we start with `quarkus.hibernate`
 
 === List of properties
 

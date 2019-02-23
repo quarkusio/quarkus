@@ -20,13 +20,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-smallrye-reactive-type-converters</artifactId>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-smallrye-reactive-type-converters</artifactId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>shamrock-smallrye-reactive-type-converters-runtime</artifactId>
-    <name>Shamrock - SmallRye Reactive Type Converters - Runtime</name>
+    <artifactId>quarkus-smallrye-reactive-type-converters-runtime</artifactId>
+    <name>Quarkus - SmallRye Reactive Type Converters - Runtime</name>
 
     <dependencies>
         <dependency>

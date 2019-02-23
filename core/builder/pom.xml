@@ -20,12 +20,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-builder</artifactId>
-    <name>Shamrock - Builder</name>
+    <artifactId>quarkus-builder</artifactId>
+    <name>Quarkus - Builder</name>
 
     <parent>
-        <groupId>org.jboss.shamrock</groupId>
-        <artifactId>shamrock-build-parent</artifactId>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-build-parent</artifactId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
         <relativePath>../../build-parent/pom.xml</relativePath>
     </parent>

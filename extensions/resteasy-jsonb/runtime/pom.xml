@@ -19,20 +19,20 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>shamrock-resteasy-jsonb</artifactId>
-        <groupId>org.jboss.shamrock</groupId>
+        <artifactId>quarkus-resteasy-jsonb</artifactId>
+        <groupId>io.quarkus</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>shamrock-resteasy-jsonb-runtime</artifactId>
-    <name>Shamrock - RESTEasy - JSON-B - Runtime</name>
+    <artifactId>quarkus-resteasy-jsonb-runtime</artifactId>
+    <name>Quarkus - RESTEasy - JSON-B - Runtime</name>
 
     <dependencies>
         <dependency>
-            <groupId>org.jboss.shamrock</groupId>
-            <artifactId>shamrock-resteasy-runtime</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.resteasy</groupId>
@@ -54,8 +54,8 @@
                 <configuration>
                     <annotationProcessorPaths>
                         <path>
-                            <groupId>org.jboss.shamrock</groupId>
-                            <artifactId>shamrock-extension-processor</artifactId>
+                            <groupId>io.quarkus</groupId>
+                            <artifactId>quarkus-extension-processor</artifactId>
                             <version>${project.version}</version>
                         </path>
                     </annotationProcessorPaths>

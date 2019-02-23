@@ -1,0 +1,3 @@
+io.quarkus.test.common.http.URLTestHTTPResourceProvider
+io.quarkus.test.common.http.URITestHTTPResourceProvider
+io.quarkus.test.common.http.StringTestHTTPResourceProvider

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package io.quarkus.creator.util;
+package io.quarkus.bootstrap.util;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -35,6 +35,7 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.EnumSet;
 import java.util.UUID;
+
 
 /**
  *
@@ -86,10 +87,9 @@ public class IoUtils {
                     }
                     return FileVisitResult.CONTINUE;
                 }
-
                 @Override
                 public FileVisitResult postVisitDirectory(Path dir, IOException e)
-                        throws IOException {
+                    throws IOException {
                     if (e == null) {
                         try {
                             Files.delete(dir);
@@ -107,7 +107,7 @@ public class IoUtils {
     }
 
     public static Path copy(Path source, Path target) throws IOException {
-        if (Files.isDirectory(source)) {
+        if(Files.isDirectory(source)) {
             Files.createDirectories(target);
         } else {
             Files.createDirectories(target.getParent());
@@ -116,21 +116,20 @@ public class IoUtils {
                 new SimpleFileVisitor<Path>() {
                     @Override
                     public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-                            throws IOException {
+                        throws IOException {
                         final Path targetDir = target.resolve(source.relativize(dir));
                         try {
                             Files.copy(dir, targetDir);
                         } catch (FileAlreadyExistsException e) {
-                            if (!Files.isDirectory(targetDir)) {
-                                throw e;
-                            }
+                             if (!Files.isDirectory(targetDir)) {
+                                 throw e;
+                             }
                         }
                         return FileVisitResult.CONTINUE;
                     }
-
                     @Override
                     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-                            throws IOException {
+                        throws IOException {
                         Files.copy(file, target.resolve(source.relativize(file)), StandardCopyOption.REPLACE_EXISTING);
                         return FileVisitResult.CONTINUE;
                     }
@@ -160,5 +159,11 @@ public class IoUtils {
 
     public static void writeFile(Path file, String content) throws IOException {
         Files.write(file, content.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE);
+    }
+
+    public static String tookTime(String action, long startTimeNanos) {
+        final long nanos = Math.abs(System.nanoTime() - startTimeNanos);
+        final long timeSec = nanos / 1000000000;
+        return action + " took " + timeSec + "." + ((nanos - timeSec * 1000000000) / 1000000) + " seconds";
     }
 }

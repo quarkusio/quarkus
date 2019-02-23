@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package io.quarkus.creator;
+package io.quarkus.bootstrap.resolver;
 
 /**
  * Represents an application artifact dependency.
@@ -26,10 +26,16 @@ public class AppDependency {
 
     private final AppArtifact artifact;
     private final String scope;
+    private final boolean optional;
 
     public AppDependency(AppArtifact artifact, String scope) {
+        this(artifact, scope, false);
+    }
+
+    public AppDependency(AppArtifact artifact, String scope, boolean optional) {
         this.artifact = artifact;
         this.scope = scope;
+        this.optional = optional;
     }
 
     public AppArtifact getArtifact() {
@@ -40,11 +46,16 @@ public class AppDependency {
         return scope;
     }
 
+    public boolean isOptional() {
+        return optional;
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((artifact == null) ? 0 : artifact.hashCode());
+        result = prime * result + (optional ? 1231 : 1237);
         result = prime * result + ((scope == null) ? 0 : scope.hashCode());
         return result;
     }
@@ -63,6 +74,8 @@ public class AppDependency {
                 return false;
         } else if (!artifact.equals(other.artifact))
             return false;
+        if (optional != other.optional)
+            return false;
         if (scope == null) {
             if (other.scope != null)
                 return false;
@@ -73,6 +86,11 @@ public class AppDependency {
 
     @Override
     public String toString() {
-        return artifact.toString() + '(' + scope + ')';
+        final StringBuilder buf = new StringBuilder();
+        artifact.append(buf).append('(').append(scope);
+        if(optional) {
+            buf.append(" optional");
+        }
+        return buf.append(')').toString();
     }
 }

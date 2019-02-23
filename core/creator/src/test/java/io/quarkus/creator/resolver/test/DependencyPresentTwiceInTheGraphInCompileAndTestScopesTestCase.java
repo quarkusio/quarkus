@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-package io.quarkus.creator.resolver.test;
+package io.quarkus.bootstrap.resolver.test;
+
+import io.quarkus.bootstrap.resolver.CollectDependenciesBase;
+import io.quarkus.bootstrap.resolver.TsArtifact;
+import io.quarkus.bootstrap.resolver.TsDependency;
 
 /**
  *

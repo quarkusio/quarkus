@@ -32,15 +32,16 @@ import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.repository.RemoteRepository;
 
-import io.quarkus.creator.AppArtifact;
+import io.quarkus.bootstrap.resolver.AppArtifact;
+import io.quarkus.bootstrap.resolver.AppArtifactResolverException;
+import io.quarkus.bootstrap.resolver.AppDependencies;
+import io.quarkus.bootstrap.resolver.aether.AetherArtifactResolver;
 import io.quarkus.creator.AppCreator;
 import io.quarkus.creator.AppCreatorException;
-import io.quarkus.creator.AppDependency;
 import io.quarkus.creator.phase.augment.AugmentPhase;
 import io.quarkus.creator.phase.curate.CurateOutcome;
 import io.quarkus.creator.phase.runnerjar.RunnerJarOutcome;
 import io.quarkus.creator.phase.runnerjar.RunnerJarPhase;
-import io.quarkus.creator.resolver.maven.ResolvedMavenArtifactDeps;
 
 /**
  *
@@ -107,6 +108,7 @@ public class BuildMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "${project.build.directory}")
     private File buildDir;
+
     /**
      * The directory for library jars
      */
@@ -125,12 +127,30 @@ public class BuildMojo extends AbstractMojo {
     @Parameter(defaultValue = "false")
     private boolean uberJar;
 
+    @Parameter(defaultValue = "${project.build.directory}/bootstrap-repo")
+    private File bsRepo;
+
     public BuildMojo() {
         MojoLogger.logSupplier = this::getLog;
     }
 
     @Override
     public void execute() throws MojoExecutionException {
+
+        final AppArtifact appArtifact = new AppArtifact(project.getGroupId(), project.getArtifactId(), project.getVersion());
+        final AppDependencies appDeps;
+        final AetherArtifactResolver bsResolver;
+        try {
+            bsResolver = AetherArtifactResolver.builder()
+                    .setRepoHome(bsRepo.toPath())
+                    .setRepositorySystem(repoSystem)
+                    .setRepositorySystemSession(repoSession)
+                    .setRemoteRepositories(repos)
+                    .build();
+            appDeps = bsResolver.collectRuntimeDependencies(appArtifact);
+        } catch (AppArtifactResolverException e) {
+            throw new MojoExecutionException("Failed to resolve " + appArtifact + " dependencies", e);
+        }
         try (AppCreator appCreator = AppCreator.builder()
                 // configure the build phases we want the app to go through
                 .addPhase(new AugmentPhase()
@@ -145,13 +165,9 @@ public class BuildMojo extends AbstractMojo {
                 .setWorkDir(buildDir.toPath())
                 .build()) {
 
-            final AppArtifact appArtifact = new AppArtifact(project.getGroupId(), project.getArtifactId(),
-                    project.getVersion());
-            final List<AppDependency> appDeps = new ResolvedMavenArtifactDeps(project.getGroupId(), project.getArtifactId(),
-                    project.getVersion(), project.getArtifacts()).collectDependencies(appArtifact);
-
             // push resolved application state
             appCreator.pushOutcome(CurateOutcome.builder()
+                    .setArtifactResolver(bsResolver)
                     .setAppArtifact(appArtifact)
                     .setInitialDeps(appDeps)
                     .build());

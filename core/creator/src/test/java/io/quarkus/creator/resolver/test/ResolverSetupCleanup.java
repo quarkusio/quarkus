@@ -15,19 +15,16 @@
  * limitations under the License.
  */
 
-package io.quarkus.creator.resolver.test;
+package io.quarkus.bootstrap.resolver;
 
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.List;
+import java.util.UUID;
 
+import io.quarkus.bootstrap.resolver.AppArtifactResolverException;
+import io.quarkus.bootstrap.resolver.aether.AetherArtifactResolver;
+import io.quarkus.bootstrap.util.IoUtils;
 import org.junit.After;
 import org.junit.Before;
-
-import io.quarkus.creator.AppCreatorException;
-import io.quarkus.creator.AppDependency;
-import io.quarkus.creator.resolver.aether.AetherArtifactResolver;
-import io.quarkus.creator.util.IoUtils;
 
 /**
  *
@@ -44,15 +41,23 @@ public class ResolverSetupCleanup {
     public void setup() throws Exception {
         workDir = IoUtils.createRandomTmpDir();
         repoHome = IoUtils.mkdirs(workDir.resolve("repo"));
-        resolver = AetherArtifactResolver.getInstance(repoHome, Collections.emptyList());
+        resolver = initResolver();
         repo = TsRepoBuilder.getInstance(resolver, workDir);
     }
 
     @After
     public void cleanup() {
-        if (workDir != null) {
+        if(workDir != null) {
             IoUtils.recursiveDelete(workDir);
         }
+    }
+
+    protected AetherArtifactResolver initResolver() throws AppArtifactResolverException {
+        return AetherArtifactResolver.builder().setRepoHome(repoHome).setOffline(true).build();
+    }
+
+    protected TsJar newJar() {
+        return new TsJar(workDir.resolve(UUID.randomUUID().toString()));
     }
 
     protected TsArtifact install(TsArtifact artifact) {
@@ -60,7 +65,8 @@ public class ResolverSetupCleanup {
         return artifact;
     }
 
-    protected List<AppDependency> collectDeps(TsArtifact artifact) throws AppCreatorException {
-        return resolver.collectDependencies(artifact.toAppArtifact());
+    protected TsArtifact install(TsArtifact artifact, Path p) {
+        repo.install(artifact, p);
+        return artifact;
     }
 }

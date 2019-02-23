@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.quarkus.creator.resolver.test;
+package io.quarkus.bootstrap.resolver;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -53,15 +53,15 @@ public class TsDependency {
     }
 
     public TsDependency exclude(String artifactId) {
-        return exclude(TsArtifact.getGa(artifactId));
+        return exclude(TsArtifact.ga(artifactId));
     }
 
     public TsDependency exclude(String groupId, String artifactId) {
-        return exclude(TsArtifact.getGa(groupId, artifactId));
+        return exclude(TsArtifact.ga(groupId, artifactId));
     }
 
     public TsDependency exclude(TsArtifact artifact) {
-        if (excluded.isEmpty()) {
+        if(excluded.isEmpty()) {
             excluded = new ArrayList<>();
         }
         excluded.add(artifact);
@@ -78,14 +78,14 @@ public class TsDependency {
         }
         dep.setType(artifact.type);
         dep.setVersion(artifact.version);
-        if (scope != null) {
+        if(scope != null) {
             dep.setScope(scope);
         }
-        if (optional) {
+        if(optional) {
             dep.setOptional(optional);
         }
-        if (!excluded.isEmpty()) {
-            for (TsArtifact excluded : excluded) {
+        if(!excluded.isEmpty()) {
+            for(TsArtifact excluded : excluded) {
                 final Exclusion exclusion = new Exclusion();
                 exclusion.setGroupId(excluded.groupId);
                 exclusion.setArtifactId(excluded.artifactId);

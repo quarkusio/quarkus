@@ -1,6 +1,5 @@
 /*
- * Copyright 2018 Red Hat, Inc. and/or its affiliates
- * and other contributors as indicated by the @author tags.
+ * Copyright 2019 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,39 +14,66 @@
  * limitations under the License.
  */
 
-package io.quarkus.creator;
-
-import java.nio.file.Path;
+package io.quarkus.bootstrap.resolver;
 
 /**
- * Represents an application (or its dependency) artifact.
+ * GroupId, artifactId, classifier, type, version
  *
  * @author Alexey Loubyansky
  */
-public class AppArtifact {
+public class AppArtifactCoords {
 
-    private static final String CLASSIFIER_NONE = "";
-    private static final String TYPE_JAR = "jar";
+    protected static final String TYPE_JAR = "jar";
+
+    public static AppArtifactCoords fromString(String str) {
+        return new AppArtifactCoords(split(str, new String[5]));
+    }
+
+    protected static String[] split(String str, String[] parts) {
+        final int versionSep = str.lastIndexOf(':');
+        if(versionSep <= 0 || versionSep == str.length() - 1) {
+            throw new IllegalArgumentException("One of type, version or separating them ':' is missing from '" + str + "'");
+        }
+        parts[4] = str.substring(versionSep + 1);
+
+        final int typeSep = str.lastIndexOf(':', versionSep - 1);
+        if(typeSep <= 0 || typeSep == versionSep - 1) {
+            throw new IllegalArgumentException("One of classifier, type or separating them ':' is missing from '" + str + "'");
+        }
+        parts[3] = str.substring(typeSep + 1, versionSep);
+
+        AppArtifactKey.split(str, parts, typeSep);
+        return parts;
+    }
 
     protected final String groupId;
     protected final String artifactId;
     protected final String classifier;
     protected final String type;
     protected final String version;
-    protected Path path;
 
-    public AppArtifact(String groupId, String artifactId, String version) {
-        this(groupId, artifactId, CLASSIFIER_NONE, TYPE_JAR, version);
+    protected AppArtifactKey key;
+
+    protected AppArtifactCoords(String[] parts) {
+        groupId = parts[0];
+        artifactId = parts[1];
+        classifier = parts[2];
+        type = parts[3];
+        version = parts[4];
     }
 
-    public AppArtifact(String groupId, String artifactId, String classifier, String version) {
-        this(groupId, artifactId, classifier, TYPE_JAR, version);
+    public AppArtifactCoords(String groupId, String artifactId, String version) {
+        this(groupId, artifactId, "", TYPE_JAR, version);
     }
 
-    public AppArtifact(String groupId, String artifactId, String classifier, String type, String version) {
+    public AppArtifactCoords(String groupId, String artifactId, String type, String version) {
+        this(groupId, artifactId, "", type, version);
+    }
+
+    public AppArtifactCoords(String groupId, String artifactId, String classifier, String type, String version) {
         this.groupId = groupId;
         this.artifactId = artifactId;
-        this.classifier = classifier == null ? CLASSIFIER_NONE : classifier;
+        this.classifier = classifier;
         this.type = type;
         this.version = version;
     }
@@ -64,10 +90,6 @@ public class AppArtifact {
         return classifier;
     }
 
-    public boolean hasClassifier() {
-        return !classifier.isEmpty();
-    }
-
     public String getType() {
         return type;
     }
@@ -76,16 +98,8 @@ public class AppArtifact {
         return version;
     }
 
-    public Path getPath() {
-        return path;
-    }
-
-    protected void setPath(Path path) {
-        this.path = path;
-    }
-
-    public boolean isResolved() {
-        return path != null;
+    public AppArtifactKey getKey() {
+        return key == null ? key = new AppArtifactKey(groupId, artifactId) : key;
     }
 
     @Override
@@ -108,7 +122,7 @@ public class AppArtifact {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        AppArtifact other = (AppArtifact) obj;
+        AppArtifactCoords other = (AppArtifactCoords) obj;
         if (artifactId == null) {
             if (other.artifactId != null)
                 return false;
@@ -139,9 +153,25 @@ public class AppArtifact {
 
     @Override
     public String toString() {
-        final StringBuilder buf = new StringBuilder(128);
-        buf.append(groupId).append(':').append(artifactId).append(':').append(classifier).append(':').append(type).append(':')
-                .append(version);
+        final StringBuilder buf = new StringBuilder();
+        append(buf);
         return buf.toString();
+    }
+
+    protected StringBuilder append(final StringBuilder buf) {
+        buf.append(groupId).append(':').append(artifactId);
+        if(!classifier.isEmpty()) {
+            buf.append(':').append(classifier);
+        }
+        return buf.append(':').append(type).append(version);
+    }
+
+    public static void main(String[] args) {
+        AppArtifactCoords ga = fromString("g:a:t:v");
+        System.out.println(ga.getGroupId());
+        System.out.println(ga.getArtifactId());
+        System.out.println("'" + ga.getClassifier() + "'");
+        System.out.println(ga.getType());
+        System.out.println(ga.getVersion());
     }
 }

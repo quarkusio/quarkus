@@ -20,8 +20,11 @@ import static io.quarkus.test.common.PathTestHelper.getAppClassLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
 import java.io.Closeable;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.URLClassLoader;
+import java.nio.file.Path;
 
-import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -30,14 +33,16 @@ import org.junit.jupiter.api.extension.TestInstanceFactory;
 import org.junit.jupiter.api.extension.TestInstanceFactoryContext;
 import org.junit.jupiter.api.extension.TestInstantiationException;
 
-import io.quarkus.runner.RuntimeRunner;
-import io.quarkus.runtime.LaunchMode;
+import io.quarkus.bootstrap.BootstrapClassLoaderBuilder;
+import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.test.common.NativeImageLauncher;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHttpResourceManager;
 
 public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback, TestInstanceFactory {
+
+    private URLClassLoader appCl;
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
@@ -66,14 +71,36 @@ public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallba
     }
 
     private ExtensionState doJavaStart(ExtensionContext context, TestResourceManager testResourceManager) {
-        RuntimeRunner runtimeRunner = RuntimeRunner.builder()
-                .setLaunchMode(LaunchMode.TEST)
-                .setClassLoader(getClass().getClassLoader())
-                .setTarget(getAppClassLocation(context.getRequiredTestClass()))
-                .setFrameworkClassesPath(getTestClassesLocation(context.getRequiredTestClass()))
-                .build();
-        runtimeRunner.run();
-        return new ExtensionState(testResourceManager, runtimeRunner, false);
+
+        final long start = System.nanoTime();
+        final Path appClasses = getAppClassLocation(context.getRequiredTestClass());
+        final Path frameworkClasses = getTestClassesLocation(context.getRequiredTestClass());
+
+        try {
+            appCl = BootstrapClassLoaderBuilder.newInstance()
+                    .setAppClasses(appClasses)
+                    .setFrameworkClasses(frameworkClasses)
+                    .setLocalProjectsDiscovery(true)
+                    .build();
+        } catch (BootstrapException e) {
+            throw new IllegalStateException("Failed to create the boostrap class loader", e);
+        }
+
+        final ClassLoader originalCl = setCCL(appCl);
+        try {
+            final Class<?> rrClass = appCl.loadClass("io.quarkus.runner.RuntimeRunner");
+            final Method m = rrClass.getMethod("runTest", Path.class, Path.class, long.class);
+            final Closeable c = (Closeable) m.invoke(null, appClasses, frameworkClasses, start);
+            return new ExtensionState(testResourceManager, c, false);
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException("Failed to load runner class", e);
+        } catch (NoSuchMethodException | SecurityException e) {
+            throw new IllegalStateException("Failed to locate runner method", e);
+        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            throw new IllegalStateException("Failed to invoke runner", e);
+        } finally {
+            setCCL(originalCl);
+        }
     }
 
     @Override
@@ -98,7 +125,14 @@ public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallba
         }
     }
 
-    static class ExtensionState implements ExtensionContext.Store.CloseableResource {
+    private static ClassLoader setCCL(ClassLoader cl) {
+        final Thread thread = Thread.currentThread();
+        final ClassLoader original = thread.getContextClassLoader();
+        thread.setContextClassLoader(cl);
+        return original;
+    }
+
+    class ExtensionState implements ExtensionContext.Store.CloseableResource {
 
         private final TestResourceManager testResourceManager;
         private final Closeable resource;
@@ -113,7 +147,17 @@ public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallba
         @Override
         public void close() throws Throwable {
             testResourceManager.stop();
-            resource.close();
+            final ClassLoader originalCl = appCl == null ? null : setCCL(appCl);
+            try {
+                resource.close();
+            } finally {
+                if (originalCl != null) {
+                    setCCL(originalCl);
+                }
+            }
+            if (appCl != null) {
+                appCl.close();
+            }
         }
 
         public boolean isSubstrate() {

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package io.quarkus.creator;
+package io.quarkus.bootstrap.resolver;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -27,38 +27,43 @@ import java.util.List;
 public class NoOpArtifactResolver extends AppArtifactResolverBase {
 
     @Override
-    public void relink(AppArtifact appArtifact, Path localPath) throws AppCreatorException {
+    public void relink(AppArtifact appArtifact, Path localPath) throws AppArtifactResolverException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public List<AppDependency> collectDependencies(AppArtifact artifact) throws AppCreatorException {
+    public AppDependencies collectDependencies(AppArtifact artifact) throws AppArtifactResolverException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public List<AppDependency> collectDependencies(AppArtifact root, List<AppDependency> deps) throws AppCreatorException {
+    public AppDependencies collectRuntimeDependencies(AppArtifact artifact) throws AppArtifactResolverException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public AppDependencies collectDependencies(AppArtifact root, List<AppDependency> deps) throws AppArtifactResolverException {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public List<String> listLaterVersions(AppArtifact artifact, String upToVersion, boolean inclusive)
-            throws AppCreatorException {
+            throws AppArtifactResolverException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public String getNextVersion(AppArtifact artifact, String upToVersion, boolean inclusive) throws AppCreatorException {
+    public String getNextVersion(AppArtifact artifact, String upToVersion, boolean inclusive) throws AppArtifactResolverException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public String getLatestVersion(AppArtifact artifact, String upToVersion, boolean inclusive) throws AppCreatorException {
+    public String getLatestVersion(AppArtifact artifact, String upToVersion, boolean inclusive) throws AppArtifactResolverException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    protected void doResolve(AppArtifact artifact) throws AppCreatorException {
+    protected void doResolve(AppArtifact artifact) throws AppArtifactResolverException {
         throw new UnsupportedOperationException();
     }
 }

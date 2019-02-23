@@ -14,27 +14,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.quarkus.creator.resolver.aether;
 
-import org.eclipse.aether.collection.DependencyCollectionContext;
-import org.eclipse.aether.collection.DependencySelector;
-import org.eclipse.aether.graph.Dependency;
+package io.quarkus.bootstrap.resolver;
+
+import java.nio.file.Path;
 
 /**
+ * Represents an application (or its dependency) artifact.
  *
  * @author Alexey Loubyansky
  */
-class DisabledDependencySelector implements DependencySelector {
+public class AppArtifact extends AppArtifactCoords {
 
-    static DisabledDependencySelector INSTANCE = new DisabledDependencySelector();
+    protected Path path;
 
-    @Override
-    public boolean selectDependency(Dependency dependency) {
-        return false;
+    public AppArtifact(String groupId, String artifactId, String version) {
+        super(groupId, artifactId, version);
     }
 
-    @Override
-    public DependencySelector deriveChildSelector(DependencyCollectionContext context) {
-        return this;
+    public AppArtifact(String groupId, String artifactId, String classifier, String type, String version) {
+        super(groupId, artifactId, classifier, type, version);
+    }
+
+    Path getPath() {
+        return path;
+    }
+
+    protected void setPath(Path path) {
+        this.path = path;
+    }
+
+    public boolean isResolved() {
+        return path != null;
     }
 }

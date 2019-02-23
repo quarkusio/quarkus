@@ -14,13 +14,22 @@
  * limitations under the License.
  */
 
-package io.quarkus.creator.resolver.test;
+package io.quarkus.bootstrap.resolver.runtime.test;
+
+import io.quarkus.bootstrap.resolver.CollectDependenciesBase;
+import io.quarkus.bootstrap.resolver.TsArtifact;
+import io.quarkus.bootstrap.resolver.TsDependency;
 
 /**
  *
  * @author Alexey Loubyansky
  */
-public class TestScopeNotCollectedTestCase extends CollectDependenciesBase {
+public class TestScopeIsNotAmongRuntimeDependenciesTestCase extends CollectDependenciesBase {
+
+    @Override
+    protected boolean isCollectRuntimeDeps() {
+        return true;
+    }
 
     @Override
     protected void setupDependencies() {
@@ -29,17 +38,17 @@ public class TestScopeNotCollectedTestCase extends CollectDependenciesBase {
 
         installAsDep(
                 new TsDependency(
-                        new TsArtifact("test-dep")
-                                .addDependency(new TsArtifact("common", "1")),
+                        new TsArtifact("direct-test-dep")
+                        .addDependency(new TsArtifact("common", "1")
+                        .addDependency(new TsDependency(new TsArtifact("not-collected"), "test"))),
                         "test"),
                 false);
 
-        final TsArtifact common2 = new TsArtifact("common", "2");
-        install(common2, true);
 
+        final TsArtifact common = install(new TsArtifact("common", "2"), true);
         installAsDep(
                 new TsArtifact("required-dep-c")
-                        .addDependency(common2),
+                .addDependency(common),
                 true);
     }
 }

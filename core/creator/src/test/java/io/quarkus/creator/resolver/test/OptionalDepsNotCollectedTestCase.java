@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-package io.quarkus.creator.resolver.test;
+package io.quarkus.bootstrap.resolver.test;
+
+import io.quarkus.bootstrap.resolver.CollectDependenciesBase;
+import io.quarkus.bootstrap.resolver.TsArtifact;
+import io.quarkus.bootstrap.resolver.TsDependency;
 
 /**
  *
  * @author Alexey Loubyansky
  */
-public class OptionalDepsNotCollectedTestCase extends CollectDependenciesBase {
+public class OnlyDirectOptionalDepsAreCollectedTestCase extends CollectDependenciesBase {
 
     @Override
     protected void setupDependencies() {
@@ -30,13 +34,12 @@ public class OptionalDepsNotCollectedTestCase extends CollectDependenciesBase {
         installAsDep(
                 new TsDependency(
                         new TsArtifact("optional-dep")
-                                .addDependency(new TsArtifact("common", "1")),
+                        .addDependency(new TsDependency(new TsArtifact("common", "1"), true))
+                        .addDependency(new TsDependency(new TsArtifact("other", "1"), true)),
                         true),
-                false);
+                true);
 
-        final TsArtifact common2 = new TsArtifact("common", "2");
-        install(common2, true);
-
+        TsArtifact common2 = install(new TsArtifact("common", "2"), true);
         installAsDep(new TsArtifact("required-dep-c")
                 .addDependency(common2), true);
     }

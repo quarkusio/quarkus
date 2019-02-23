@@ -43,6 +43,20 @@ import io.quarkus.runtime.LaunchMode;
  */
 public class RuntimeRunner implements Runnable, Closeable {
 
+    public static RuntimeRunner runTest(Path appClasses, Path frameworkClasses, long start) {
+        final RuntimeRunner runtimeRunner = RuntimeRunner.builder()
+                .setLaunchMode(LaunchMode.TEST)
+                .setClassLoader(Thread.currentThread().getContextClassLoader())
+                .setTarget(appClasses)
+                .setFrameworkClassesPath(frameworkClasses)
+                .build();
+        runtimeRunner.start = start;
+        runtimeRunner.run();
+        return runtimeRunner;
+    }
+
+    private long start;
+
     private final Path target;
     private final RuntimeClassLoader loader;
     private Closeable closeTask;
@@ -66,8 +80,15 @@ public class RuntimeRunner implements Runnable, Closeable {
         }
     }
 
+    public static String tookTime(String action, long startTimeNanos) {
+        final long nanos = Math.abs(System.nanoTime() - startTimeNanos);
+        final long timeSec = nanos / 1000000000;
+        return action + " took " + timeSec + "." + ((nanos - timeSec * 1000000000) / 1000000) + " seconds";
+    }
+
     @Override
     public void run() {
+        System.out.println(tookTime("Setup", start));
         Thread.currentThread().setContextClassLoader(loader);
         try {
             QuarkusAugmentor.Builder builder = QuarkusAugmentor.builder();

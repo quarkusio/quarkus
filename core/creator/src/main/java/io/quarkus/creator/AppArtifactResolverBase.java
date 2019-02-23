@@ -1,7 +1,7 @@
 /**
  *
  */
-package io.quarkus.creator;
+package io.quarkus.bootstrap.resolver;
 
 import java.nio.file.Path;
 
@@ -12,15 +12,15 @@ import java.nio.file.Path;
 public abstract class AppArtifactResolverBase implements AppArtifactResolver {
 
     @Override
-    public Path resolve(AppArtifact artifact) throws AppCreatorException {
+    public Path resolve(AppArtifact artifact) throws AppArtifactResolverException {
         Path path = artifact.getPath();
-        if (path != null) {
+        if(path != null) {
             return path;
         }
         doResolve(artifact);
         path = artifact.getPath();
         if (path == null) {
-            throw new AppCreatorException("Failed to resolve " + artifact);
+            throw new AppArtifactResolverException("Failed to resolve " + artifact);
         }
         return path;
     }
@@ -29,5 +29,5 @@ public abstract class AppArtifactResolverBase implements AppArtifactResolver {
         artifact.setPath(p);
     }
 
-    protected abstract void doResolve(AppArtifact artifact) throws AppCreatorException;
+    protected abstract void doResolve(AppArtifact artifact) throws AppArtifactResolverException;
 }

@@ -44,19 +44,20 @@ import java.util.jar.Manifest;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.creator.AppArtifact;
-import io.quarkus.creator.AppArtifactResolver;
+import io.quarkus.bootstrap.resolver.AppArtifact;
+import io.quarkus.bootstrap.resolver.AppArtifactResolver;
+import io.quarkus.bootstrap.resolver.AppArtifactResolverException;
+import io.quarkus.bootstrap.resolver.AppDependency;
+import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.creator.AppCreationPhase;
 import io.quarkus.creator.AppCreator;
 import io.quarkus.creator.AppCreatorException;
-import io.quarkus.creator.AppDependency;
 import io.quarkus.creator.config.reader.MappedPropertiesHandler;
 import io.quarkus.creator.config.reader.PropertiesHandler;
 import io.quarkus.creator.outcome.OutcomeProviderRegistration;
 import io.quarkus.creator.phase.augment.AugmentOutcome;
 import io.quarkus.creator.phase.curate.CurateOutcome;
-import io.quarkus.creator.util.IoUtils;
-import io.quarkus.creator.util.ZipUtils;
 
 /**
  * Based on the provided {@link io.quarkus.creator.phase.augment.AugmentOutcome},
@@ -67,7 +68,6 @@ import io.quarkus.creator.util.ZipUtils;
 public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJarOutcome {
 
     private static final String DEFAULT_MAIN_CLASS = "io.quarkus.runner.GeneratedMain";
-    private static final String PROVIDED = "provided";
 
     private static final Logger log = Logger.getLogger(RunnerJarPhase.class);
 
@@ -165,7 +165,12 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         libDir = IoUtils.mkdirs(libDir == null ? outputDir.resolve("lib") : libDir);
 
         if (finalName == null) {
-            final String name = appState.getArtifactResolver().resolve(appState.getAppArtifact()).getFileName().toString();
+            String name;
+            try {
+                name = appState.getArtifactResolver().resolve(appState.getAppArtifact()).getFileName().toString();
+            } catch (AppArtifactResolverException e) {
+                throw new AppCreatorException("Failed to resolve application artifact, e");
+            }
             int i = name.lastIndexOf('.');
             if (i > 0) {
                 finalName = name.substring(0, i);
@@ -198,15 +203,12 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         log.info("Building jar: " + runnerJar);
 
         final AppArtifactResolver depResolver = appState.getArtifactResolver();
-        final List<AppDependency> appDeps = appState.getEffectiveDeps();
         final Set<String> seen = new HashSet<>();
         final StringBuilder classPath = new StringBuilder();
         final Map<String, List<byte[]>> services = new HashMap<>();
 
+        final List<AppDependency> appDeps = appState.getEffectiveDeps().getAppClasspath();
         for (AppDependency appDep : appDeps) {
-            if (appDep.getScope().equals(PROVIDED) && !augmentOutcome.isWhitelisted(appDep)) {
-                continue;
-            }
             final AppArtifact depArtifact = appDep.getArtifact();
             if (depArtifact.getArtifactId().equals("svm") && depArtifact.getGroupId().equals("com.oracle.substratevm")) {
                 continue;

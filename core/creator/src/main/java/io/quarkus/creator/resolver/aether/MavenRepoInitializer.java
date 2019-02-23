@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.quarkus.creator.resolver.aether;
+package io.quarkus.bootstrap.resolver.aether;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -22,6 +22,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.maven.model.building.ModelBuilder;
+import org.apache.maven.model.resolution.WorkspaceModelResolver;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.apache.maven.settings.Profile;
 import org.apache.maven.settings.Repository;
@@ -48,9 +50,8 @@ import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import org.eclipse.aether.util.repository.AuthenticationBuilder;
 import org.eclipse.aether.util.repository.DefaultProxySelector;
 import org.jboss.logging.Logger;
-
-import io.quarkus.creator.AppCreatorException;
-import io.quarkus.creator.util.PropertyUtils;
+import io.quarkus.bootstrap.resolver.AppArtifactResolverException;
+import io.quarkus.bootstrap.util.PropertyUtils;
 
 /**
  *
@@ -70,21 +71,22 @@ public class MavenRepoInitializer {
     public static final File DEFAULT_GLOBAL_SETTINGS_FILE = new File(
             PropertyUtils.getProperty(MAVEN_HOME, envM2Home != null ? envM2Home : ""), "conf/settings.xml");
 
-    private static RepositorySystem repoSystem;
     private static List<RemoteRepository> remoteRepos;
     private static Settings settings;
 
     private static final Logger log = Logger.getLogger(MavenRepoInitializer.class);
 
     public static RepositorySystem getRepositorySystem() {
-        if (repoSystem != null) {
-            return repoSystem;
-        }
+        return getRepositorySystem(null);
+    }
+
+    public static RepositorySystem getRepositorySystem(WorkspaceModelResolver wsModelResolver) {
 
         final DefaultServiceLocator locator = MavenRepositorySystemUtils.newServiceLocator();
         locator.addService(RepositoryConnectorFactory.class, BasicRepositoryConnectorFactory.class);
         locator.addService(TransporterFactory.class, FileTransporterFactory.class);
         locator.addService(TransporterFactory.class, HttpTransporterFactory.class);
+        locator.setServices(ModelBuilder.class, new BootstrapModelBuilder(wsModelResolver));
 
         locator.setErrorHandler(new DefaultServiceLocator.ErrorHandler() {
             @Override
@@ -94,10 +96,10 @@ public class MavenRepoInitializer {
             }
         });
 
-        return repoSystem = locator.getService(RepositorySystem.class);
+        return locator.getService(RepositorySystem.class);
     }
 
-    public static DefaultRepositorySystemSession newSession(RepositorySystem system) throws AppCreatorException {
+    public static DefaultRepositorySystemSession newSession(RepositorySystem system) throws AppArtifactResolverException {
         return newSession(system, getSettings());
     }
 
@@ -107,7 +109,7 @@ public class MavenRepoInitializer {
         final org.apache.maven.settings.Proxy proxy = settings.getActiveProxy();
         if (proxy != null) {
             Authentication auth = null;
-            if (proxy.getUsername() != null) {
+            if(proxy.getUsername() != null) {
                 auth = new AuthenticationBuilder()
                         .addUsername(proxy.getUsername())
                         .addPassword(proxy.getPassword())
@@ -124,21 +126,18 @@ public class MavenRepoInitializer {
 
         session.setOffline(settings.isOffline());
 
-        // uncomment to generate dirty trees
-        //session.setDependencyGraphTransformer( null );
-
         return session;
     }
 
-    public static List<RemoteRepository> getRemoteRepos() throws AppCreatorException {
-        if (remoteRepos != null) {
+    public static List<RemoteRepository> getRemoteRepos() throws AppArtifactResolverException {
+        if(remoteRepos != null) {
             return remoteRepos;
         }
         remoteRepos = Collections.unmodifiableList(getRemoteRepos(getSettings()));
         return remoteRepos;
     }
 
-    public static List<RemoteRepository> getRemoteRepos(Settings settings) throws AppCreatorException {
+    public static List<RemoteRepository> getRemoteRepos(Settings settings) throws AppArtifactResolverException {
 
         final Map<String, Profile> profilesMap = settings.getProfilesAsMap();
         final List<RemoteRepository> remotes = new ArrayList<>();
@@ -147,8 +146,7 @@ public class MavenRepoInitializer {
             final Profile profile = profilesMap.get(profileName);
             final List<Repository> repositories = profile.getRepositories();
             for (Repository repo : repositories) {
-                final RemoteRepository.Builder repoBuilder = new RemoteRepository.Builder(repo.getId(), repo.getLayout(),
-                        repo.getUrl());
+                final RemoteRepository.Builder repoBuilder = new RemoteRepository.Builder(repo.getId(), repo.getLayout(), repo.getUrl());
                 org.apache.maven.settings.RepositoryPolicy policy = repo.getReleases();
                 if (policy != null) {
                     repoBuilder.setReleasePolicy(
@@ -165,8 +163,8 @@ public class MavenRepoInitializer {
         return remotes;
     }
 
-    public static Settings getSettings() throws AppCreatorException {
-        if (settings != null) {
+    public static Settings getSettings() throws AppArtifactResolverException {
+        if(settings != null) {
             return settings;
         }
         final SettingsBuildingRequest settingsBuildingRequest = new DefaultSettingsBuildingRequest();
@@ -176,16 +174,14 @@ public class MavenRepoInitializer {
 
         final Settings effectiveSettings;
         try {
-            final SettingsBuildingResult result = new DefaultSettingsBuilderFactory().newInstance()
-                    .build(settingsBuildingRequest);
+            final SettingsBuildingResult result = new DefaultSettingsBuilderFactory().newInstance().build(settingsBuildingRequest);
             final List<SettingsProblem> problems = result.getProblems();
-            if (!problems.isEmpty()) {
-                for (SettingsProblem problem : problems) {
-                    switch (problem.getSeverity()) {
+            if(!problems.isEmpty()) {
+                for(SettingsProblem problem : problems) {
+                    switch(problem.getSeverity()) {
                         case ERROR:
                         case FATAL:
-                            throw new AppCreatorException("Settings problem encountered at " + problem.getLocation(),
-                                    problem.getException());
+                            throw new AppArtifactResolverException("Settings problem encountered at " + problem.getLocation(), problem.getException());
                         default:
                             log.warn("Settings problem encountered at " + problem.getLocation(), problem.getException());
                     }
@@ -193,7 +189,7 @@ public class MavenRepoInitializer {
             }
             effectiveSettings = result.getEffectiveSettings();
         } catch (SettingsBuildingException e) {
-            throw new AppCreatorException("Failed to initialize Maven repository settings", e);
+            throw new AppArtifactResolverException("Failed to initialize Maven repository settings", e);
         }
 
         settings = effectiveSettings;

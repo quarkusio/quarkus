@@ -40,6 +40,8 @@ public final class ErrorReplacingProcessReader implements Runnable {
     private final File reportdir;
     private final CountDownLatch doneLatch;
 
+    private ReportAnalyzer reportAnalyzer;
+
     public ErrorReplacingProcessReader(InputStream inputStream, File reportdir, CountDownLatch doneLatch) {
         this.inputStream = inputStream;
         this.reportdir = reportdir;
@@ -97,7 +99,7 @@ public final class ErrorReplacingProcessReader implements Runnable {
         }
     }
 
-    private static void handleErrorState(File report, String firstLine, Deque<String> queue) {
+    private void handleErrorState(File report, String firstLine, Deque<String> queue) {
         System.err.println(firstLine);
         String remainder = firstLine.substring(LINE_START.length());
         Matcher m = Pattern.compile("([^(]*).*").matcher(remainder);
@@ -127,8 +129,10 @@ public final class ErrorReplacingProcessReader implements Runnable {
             int idex = fullName.lastIndexOf('.');
             String clazz = fullName.substring(0, idex);
             String method = fullName.substring(idex + 1);
-
-            System.err.println(ReportAnalyzer.analyse(report.getAbsolutePath(), clazz, method));
+            if (reportAnalyzer == null) {
+                reportAnalyzer = new ReportAnalyzer(report.getAbsolutePath());
+            }
+            System.err.println(reportAnalyzer.analyse(clazz, method));
         } catch (Exception e) {
             e.printStackTrace();
         }

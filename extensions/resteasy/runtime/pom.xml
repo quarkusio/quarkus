@@ -58,6 +58,10 @@
             <groupId>com.sun.activation</groupId>
             <artifactId>jakarta.activation</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jaxb-runtime</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

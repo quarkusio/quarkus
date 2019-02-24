@@ -24,7 +24,7 @@
     <artifactId>jboss-parent</artifactId>
     <version>31</version>
   </parent>
-  <groupId>org.jboss.quarkus.arc</groupId>
+  <groupId>io.quarkus.arc</groupId>
   <artifactId>arc-parent</artifactId>
   <name>ArC - Parent pom</name>
   <packaging>pom</packaging>
@@ -66,13 +66,13 @@
     <dependencies>
 
       <dependency>
-        <groupId>org.jboss.quarkus.arc</groupId>
+        <groupId>io.quarkus.arc</groupId>
         <artifactId>arc-runtime</artifactId>
         <version>${project.version}</version>
       </dependency>
 
       <dependency>
-        <groupId>org.jboss.quarkus.arc</groupId>
+        <groupId>io.quarkus.arc</groupId>
         <artifactId>arc-processor</artifactId>
         <version>${project.version}</version>
       </dependency>

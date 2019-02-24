@@ -20,7 +20,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.jboss.quarkus.arc</groupId>
+    <groupId>io.quarkus.arc</groupId>
     <artifactId>arc-parent</artifactId>
     <version>1.0.0.Alpha1-SNAPSHOT</version>
     <relativePath>../</relativePath>
@@ -73,12 +73,12 @@
     </dependency>
 
     <dependency>
-      <groupId>org.jboss.quarkus.arc</groupId>
+      <groupId>io.quarkus.arc</groupId>
       <artifactId>arc-runtime</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.jboss.quarkus.arc</groupId>
+      <groupId>io.quarkus.arc</groupId>
       <artifactId>arc-maven-plugin</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -88,7 +88,7 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.jboss.quarkus.arc</groupId>
+        <groupId>io.quarkus.arc</groupId>
         <artifactId>arc-maven-plugin</artifactId>
         <version>${project.version}</version>
         <executions>
@@ -130,7 +130,7 @@
                 <transformer
                   implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <manifestEntries>
-                    <Main-Class>org.jboss.quarkus.arc.ArcMain</Main-Class>
+                    <Main-Class>io.quarkus.arc.ArcMain</Main-Class>
                   </manifestEntries>
                 </transformer>
                 <transformer
@@ -149,9 +149,9 @@
             <configuration>
               <artifactSet>
                 <excludes>
-                  <exclude>org.jboss.quarkus.arc:arc-runtime</exclude>
-                  <exclude>org.jboss.quarkus.arc:arc-processor</exclude>
-                  <exclude>org.jboss.quarkus.arc:arc-maven-plugin</exclude>
+                  <exclude>io.quarkus.arc:arc-runtime</exclude>
+                  <exclude>io.quarkus.arc:arc-processor</exclude>
+                  <exclude>io.quarkus.arc:arc-maven-plugin</exclude>
                   <exclude>org.jboss.gizmo:gizmo</exclude>
                   <exclude>org.ow2.asm:asm</exclude>
                 </excludes>
@@ -160,7 +160,7 @@
                 <transformer
                   implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <manifestEntries>
-                    <Main-Class>org.jboss.quarkus.arc.WeldMain</Main-Class>
+                    <Main-Class>io.quarkus.arc.WeldMain</Main-Class>
                   </manifestEntries>
                 </transformer>
                 <transformer
@@ -187,7 +187,7 @@
                 <pluginExecution>
                   <pluginExecutionFilter>
                     <groupId>
-                      org.jboss.quarkus.arc
+                      io.quarkus.arc
                     </groupId>
                     <artifactId>
                       arc-maven-plugin

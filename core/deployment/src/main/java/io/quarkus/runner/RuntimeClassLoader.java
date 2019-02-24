@@ -51,7 +51,7 @@ import org.objectweb.asm.ClassWriter;
 import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.QuarkusClassWriter;
 
-public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
+public class RuntimeClassLoader extends ClassLoader implements ClassOutput, TransformerTarget {
 
     private static final Logger log = Logger.getLogger(RuntimeClassLoader.class);
 

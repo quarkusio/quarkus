@@ -31,6 +31,7 @@ import org.jboss.builder.BuildChainBuilder;
 import org.jboss.builder.BuildResult;
 import org.objectweb.asm.ClassVisitor;
 
+import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.QuarkusAugmentor;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
@@ -44,7 +45,9 @@ import io.quarkus.runtime.LaunchMode;
 public class RuntimeRunner implements Runnable, Closeable {
 
     private final Path target;
-    private final RuntimeClassLoader loader;
+    private final ClassLoader loader;
+    private final ClassOutput classOutput;
+    private final TransformerTarget transformerTarget;
     private Closeable closeTask;
     private final List<Path> additionalArchives;
     private final List<Consumer<BuildChainBuilder>> chainCustomizers;
@@ -55,8 +58,17 @@ public class RuntimeRunner implements Runnable, Closeable {
         this.additionalArchives = new ArrayList<>(builder.additionalArchives);
         this.chainCustomizers = new ArrayList<>(builder.chainCustomizers);
         this.launchMode = builder.launchMode;
-        this.loader = new RuntimeClassLoader(builder.classLoader, target, builder.frameworkClassesPath,
-                builder.transformerCache);
+        if (builder.classOutput == null) {
+            RuntimeClassLoader runtimeClassLoader = new RuntimeClassLoader(builder.classLoader, target,
+                    builder.frameworkClassesPath, builder.transformerCache);
+            this.loader = runtimeClassLoader;
+            this.classOutput = runtimeClassLoader;
+            this.transformerTarget = runtimeClassLoader;
+        } else {
+            this.classOutput = builder.classOutput;
+            this.transformerTarget = builder.transformerTarget;
+            this.loader = builder.classLoader;
+        }
     }
 
     @Override
@@ -73,7 +85,7 @@ public class RuntimeRunner implements Runnable, Closeable {
             QuarkusAugmentor.Builder builder = QuarkusAugmentor.builder();
             builder.setRoot(target);
             builder.setClassLoader(loader);
-            builder.setOutput(loader);
+            builder.setOutput(classOutput);
             builder.setLaunchMode(launchMode);
             for (Path i : additionalArchives) {
                 builder.addAdditionalApplicationArchive(i);
@@ -93,7 +105,7 @@ public class RuntimeRunner implements Runnable, Closeable {
                     functions.computeIfAbsent(i.getClassToTransform(), (f) -> new ArrayList<>()).add(i.getVisitorFunction());
                 }
 
-                loader.setTransformers(functions);
+                transformerTarget.setTransformers(functions);
             }
 
             final Application application;
@@ -135,6 +147,8 @@ public class RuntimeRunner implements Runnable, Closeable {
         private LaunchMode launchMode = LaunchMode.NORMAL;
         private final List<Path> additionalArchives = new ArrayList<>();
         private final List<Consumer<BuildChainBuilder>> chainCustomizers = new ArrayList<>();
+        private ClassOutput classOutput;
+        private TransformerTarget transformerTarget;
 
         public Builder setClassLoader(ClassLoader classLoader) {
             this.classLoader = classLoader;
@@ -176,12 +190,18 @@ public class RuntimeRunner implements Runnable, Closeable {
             return this;
         }
 
-        public LaunchMode getLaunchMode() {
-            return launchMode;
-        }
-
         public Builder setLaunchMode(LaunchMode launchMode) {
             this.launchMode = launchMode;
+            return this;
+        }
+
+        public Builder setClassOutput(ClassOutput classOutput) {
+            this.classOutput = classOutput;
+            return this;
+        }
+
+        public Builder setTransformerTarget(TransformerTarget transformerTarget) {
+            this.transformerTarget = transformerTarget;
             return this;
         }
 

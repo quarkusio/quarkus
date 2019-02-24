@@ -21,7 +21,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -65,6 +64,8 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
     private final Path applicationClasses;
     private final Path frameworkClassesPath;
     private final Path transformerCache;
+
+    private static final String DEBUG_CLASSES_DIR = System.getProperty("io.quarkus.DEBUG_GENERATED_CLASSES_DIR");
 
     private final ConcurrentHashMap<String, Future<Class<?>>> loadingClasses = new ConcurrentHashMap<>();
 
@@ -274,18 +275,20 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
         if (applicationClass) {
             String dotName = className.replace('/', '.');
             appClasses.put(dotName, data);
-            try {
-                File debugPath = new File("/tmp/quarkus-classes");
-                if (!debugPath.exists()) {
-                    debugPath.mkdir();
+            if (DEBUG_CLASSES_DIR != null) {
+                try {
+                    File debugPath = new File(DEBUG_CLASSES_DIR);
+                    if (!debugPath.exists()) {
+                        debugPath.mkdir();
+                    }
+                    File classFile = new File(debugPath, dotName + ".class");
+                    FileOutputStream classWriter = new FileOutputStream(classFile);
+                    classWriter.write(data);
+                    classWriter.close();
+                    log.infof("Wrote %s", classFile.getAbsolutePath());
+                } catch (Throwable t) {
+                    t.printStackTrace();
                 }
-                File classFile = new File(debugPath, dotName + ".class");
-                FileOutputStream classWriter = new FileOutputStream(classFile);
-                classWriter.write(data);
-                classWriter.close();
-                log.infof("Wrote %s", classFile.getAbsolutePath());
-            } catch (Throwable t) {
-                t.printStackTrace();
             }
         } else {
             //this is pretty horrible

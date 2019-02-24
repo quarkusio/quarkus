@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.processor;
+package io.quarkus.arc.processor;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,10 +34,10 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.jandex.WildcardType;
-import org.jboss.quarkus.arc.GenericArrayTypeImpl;
-import org.jboss.quarkus.arc.ParameterizedTypeImpl;
-import org.jboss.quarkus.arc.TypeVariableImpl;
-import org.jboss.quarkus.arc.WildcardTypeImpl;
+import io.quarkus.arc.GenericArrayTypeImpl;
+import io.quarkus.arc.ParameterizedTypeImpl;
+import io.quarkus.arc.TypeVariableImpl;
+import io.quarkus.arc.WildcardTypeImpl;
 import org.jboss.protean.gizmo.BytecodeCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;

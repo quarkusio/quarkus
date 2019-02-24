@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.test.instance.destroy;
+package io.quarkus.arc.test.instance.destroy;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -27,8 +27,8 @@ import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import org.jboss.quarkus.arc.Arc;
-import org.jboss.quarkus.arc.test.ArcTestContainer;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.test.ArcTestContainer;
 import org.junit.Rule;
 import org.junit.Test;
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.processor;
+package io.quarkus.arc.processor;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.jboss.quarkus.arc.processor.ResourceOutput.Resource;
+import io.quarkus.arc.processor.ResourceOutput.Resource;
 
 /**
  *

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.processor;
+package io.quarkus.arc.processor;
 
-import static org.jboss.quarkus.arc.processor.Basics.index;
+import static io.quarkus.arc.processor.Basics.index;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -33,8 +33,8 @@ import javax.interceptor.InvocationContext;
 
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
-import org.jboss.quarkus.arc.processor.BeanProcessor.PrivateMembersCollector;
-import org.jboss.quarkus.arc.processor.types.Baz;
+import io.quarkus.arc.processor.BeanProcessor.PrivateMembersCollector;
+import io.quarkus.arc.processor.types.Baz;
 import org.junit.Test;
 
 public class InterceptorGeneratorTest {

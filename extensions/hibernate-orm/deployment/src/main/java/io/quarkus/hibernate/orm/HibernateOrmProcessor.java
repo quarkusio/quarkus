@@ -186,7 +186,7 @@ public final class HibernateOrmProcessor {
     @BuildStep
     void setupResourceInjection(BuildProducer<ResourceAnnotationBuildItem> resourceAnnotations, Capabilities capabilities,
             BuildProducer<GeneratedResourceBuildItem> resources) {
-        resources.produce(new GeneratedResourceBuildItem("META-INF/services/org.jboss.quarkus.arc.ResourceReferenceProvider",
+        resources.produce(new GeneratedResourceBuildItem("META-INF/services/io.quarkus.arc.ResourceReferenceProvider",
                 JPAResourceReferenceProvider.class.getName().getBytes()));
         resourceAnnotations.produce(new ResourceAnnotationBuildItem(PERSISTENCE_CONTEXT));
         resourceAnnotations.produce(new ResourceAnnotationBuildItem(PERSISTENCE_UNIT));

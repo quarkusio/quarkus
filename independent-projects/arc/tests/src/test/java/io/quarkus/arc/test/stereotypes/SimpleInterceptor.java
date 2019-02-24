@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.test.stereotypes;
+package io.quarkus.arc.test.stereotypes;
 
 import javax.annotation.Priority;
 import javax.interceptor.AroundInvoke;

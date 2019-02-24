@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.processor;
+package io.quarkus.arc.processor;
 
-import static org.jboss.quarkus.arc.processor.Basics.index;
+import static io.quarkus.arc.processor.Basics.index;
 
 import java.io.IOException;
 import java.util.AbstractCollection;
@@ -29,9 +29,9 @@ import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Produces;
 
 import org.jboss.jandex.Index;
-import org.jboss.quarkus.arc.processor.BeanProcessor.PrivateMembersCollector;
-import org.jboss.quarkus.arc.processor.types.Foo;
-import org.jboss.quarkus.arc.processor.types.FooQualifier;
+import io.quarkus.arc.processor.BeanProcessor.PrivateMembersCollector;
+import io.quarkus.arc.processor.types.Foo;
+import io.quarkus.arc.processor.types.FooQualifier;
 import org.junit.Test;
 
 public class BeanGeneratorTest {

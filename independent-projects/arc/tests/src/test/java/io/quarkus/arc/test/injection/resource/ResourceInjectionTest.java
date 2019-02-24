@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.test.injection.resource;
+package io.quarkus.arc.test.injection.resource;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -52,10 +52,10 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.metamodel.Metamodel;
 
-import org.jboss.quarkus.arc.Arc;
-import org.jboss.quarkus.arc.InstanceHandle;
-import org.jboss.quarkus.arc.ResourceReferenceProvider;
-import org.jboss.quarkus.arc.test.ArcTestContainer;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.ResourceReferenceProvider;
+import io.quarkus.arc.test.ArcTestContainer;
 import org.junit.Rule;
 import org.junit.Test;
 

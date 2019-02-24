@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.test.build.extension.annotations;
+package io.quarkus.arc.test.build.extension.annotations;
 
 import javax.annotation.Priority;
 import javax.interceptor.AroundInvoke;

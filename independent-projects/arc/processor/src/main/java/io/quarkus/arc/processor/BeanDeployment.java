@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.processor;
+package io.quarkus.arc.processor;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -45,11 +45,11 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.logging.Logger.Level;
-import org.jboss.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext;
-import org.jboss.quarkus.arc.processor.BeanProcessor.BuildContextImpl;
-import org.jboss.quarkus.arc.processor.BeanRegistrar.RegistrationContext;
-import org.jboss.quarkus.arc.processor.BuildExtension.BuildContext;
-import org.jboss.quarkus.arc.processor.BuildExtension.Key;
+import io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext;
+import io.quarkus.arc.processor.BeanProcessor.BuildContextImpl;
+import io.quarkus.arc.processor.BeanRegistrar.RegistrationContext;
+import io.quarkus.arc.processor.BuildExtension.BuildContext;
+import io.quarkus.arc.processor.BuildExtension.Key;
 
 /**
  *

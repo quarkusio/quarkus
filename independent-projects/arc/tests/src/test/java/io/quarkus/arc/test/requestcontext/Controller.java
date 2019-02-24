@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.test.requestcontext;
+package io.quarkus.arc.test.requestcontext;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;

@@ -7,10 +7,10 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
-import org.jboss.quarkus.arc.processor.BeanDeploymentValidator;
-import org.jboss.quarkus.arc.processor.DotNames;
-import org.jboss.quarkus.arc.processor.InjectionPointInfo;
 
+import io.quarkus.arc.processor.BeanDeploymentValidator;
+import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.smallrye.config.inject.ConfigProducer;
 

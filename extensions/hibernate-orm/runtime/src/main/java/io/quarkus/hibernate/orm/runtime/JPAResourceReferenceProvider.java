@@ -25,10 +25,9 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceContext;
 import javax.persistence.PersistenceUnit;
 
-import org.jboss.quarkus.arc.Arc;
-import org.jboss.quarkus.arc.InstanceHandle;
-import org.jboss.quarkus.arc.ResourceReferenceProvider;
-
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.ResourceReferenceProvider;
 import io.quarkus.hibernate.orm.runtime.entitymanager.ForwardingEntityManager;
 
 public class JPAResourceReferenceProvider implements ResourceReferenceProvider {

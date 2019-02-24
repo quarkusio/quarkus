@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc;
+package io.quarkus.arc;
 
 import javax.enterprise.context.spi.CreationalContext;
 

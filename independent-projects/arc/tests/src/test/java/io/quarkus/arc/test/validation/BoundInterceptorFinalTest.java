@@ -1,4 +1,4 @@
-package org.jboss.quarkus.arc.test.validation;
+package io.quarkus.arc.test.validation;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -7,7 +7,7 @@ import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.spi.DefinitionException;
 import javax.enterprise.inject.spi.DeploymentException;
 
-import org.jboss.quarkus.arc.test.ArcTestContainer;
+import io.quarkus.arc.test.ArcTestContainer;
 import org.junit.Rule;
 import org.junit.Test;
 

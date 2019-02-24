@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc;
+package io.quarkus.arc;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
@@ -50,7 +50,7 @@ import javax.enterprise.util.TypeLiteral;
 import javax.inject.Singleton;
 
 import org.jboss.logging.Logger;
-import org.jboss.quarkus.arc.ArcCDIProvider.ArcCDI;
+import io.quarkus.arc.ArcCDIProvider.ArcCDI;
 
 /**
  *

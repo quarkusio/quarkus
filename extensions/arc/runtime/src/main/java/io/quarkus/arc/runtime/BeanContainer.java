@@ -19,7 +19,7 @@ package io.quarkus.arc.runtime;
 import java.io.Closeable;
 import java.lang.annotation.Annotation;
 
-import org.jboss.quarkus.arc.ManagedContext;
+import io.quarkus.arc.ManagedContext;
 
 /**
  * Represents a CDI bean container.

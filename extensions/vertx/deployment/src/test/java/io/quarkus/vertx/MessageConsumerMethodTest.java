@@ -31,12 +31,12 @@ import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 
-import org.jboss.quarkus.arc.Arc;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.vertx.runtime.ConsumeEvent;
 import io.vertx.core.eventbus.EventBus;

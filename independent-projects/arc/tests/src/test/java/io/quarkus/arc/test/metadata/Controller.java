@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.test.metadata;
+package io.quarkus.arc.test.metadata;
 
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.spi.Bean;

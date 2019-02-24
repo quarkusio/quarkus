@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.test.injection.privatefield;
+package io.quarkus.arc.test.injection.privatefield;
 
 import static org.junit.Assert.assertNotNull;
 
@@ -22,8 +22,8 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
 import javax.inject.Inject;
 
-import org.jboss.quarkus.arc.Arc;
-import org.jboss.quarkus.arc.test.ArcTestContainer;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.test.ArcTestContainer;
 import org.junit.Rule;
 import org.junit.Test;
 

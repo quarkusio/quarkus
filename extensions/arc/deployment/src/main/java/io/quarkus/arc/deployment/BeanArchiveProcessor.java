@@ -30,10 +30,10 @@ import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
-import org.jboss.quarkus.arc.processor.BeanDefiningAnnotation;
-import org.jboss.quarkus.arc.processor.BeanDeployment;
-import org.jboss.quarkus.arc.processor.DotNames;
 
+import io.quarkus.arc.processor.BeanDefiningAnnotation;
+import io.quarkus.arc.processor.BeanDeployment;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;

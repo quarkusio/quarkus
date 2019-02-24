@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.test.producer.disposer;
+package io.quarkus.arc.test.producer.disposer;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -31,10 +31,10 @@ import javax.enterprise.inject.Produces;
 import javax.enterprise.util.TypeLiteral;
 import javax.inject.Singleton;
 
-import org.jboss.quarkus.arc.Arc;
-import org.jboss.quarkus.arc.InstanceHandle;
-import org.jboss.quarkus.arc.test.ArcTestContainer;
-import org.jboss.quarkus.arc.test.MyQualifier;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.test.ArcTestContainer;
+import io.quarkus.arc.test.MyQualifier;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;

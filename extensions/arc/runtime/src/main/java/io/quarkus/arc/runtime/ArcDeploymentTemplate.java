@@ -23,11 +23,11 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
-import org.jboss.quarkus.arc.Arc;
-import org.jboss.quarkus.arc.ArcContainer;
-import org.jboss.quarkus.arc.InstanceHandle;
-import org.jboss.quarkus.arc.ManagedContext;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.ManagedContext;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Template;
 

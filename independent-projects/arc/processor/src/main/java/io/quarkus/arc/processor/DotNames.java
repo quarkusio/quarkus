@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.processor;
+package io.quarkus.arc.processor;
 
 import java.util.Optional;
 
@@ -49,7 +49,7 @@ import javax.interceptor.InterceptorBinding;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import org.jboss.quarkus.arc.ComputingCache;
+import io.quarkus.arc.ComputingCache;
 
 public final class DotNames {
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.processor;
+package io.quarkus.arc.processor;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,7 +40,7 @@ public interface ResourceOutput {
          * <pre>
          * com/foo/MyBean
          * com/foo/MyBean$Bar
-         * org.jboss.quarkus.arc.BeanProvider
+         * io.quarkus.arc.BeanProvider
          * </pre>
          *
          * @return the name

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.processor;
+package io.quarkus.arc.processor;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,7 +38,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
-import org.jboss.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
+import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
 
 final class Beans {
 

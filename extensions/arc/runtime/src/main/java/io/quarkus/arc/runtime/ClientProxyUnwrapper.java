@@ -18,7 +18,7 @@ package io.quarkus.arc.runtime;
 
 import java.util.function.Function;
 
-import org.jboss.quarkus.arc.ClientProxy;
+import io.quarkus.arc.ClientProxy;
 
 public class ClientProxyUnwrapper implements Function<Object, Object> {
     @Override

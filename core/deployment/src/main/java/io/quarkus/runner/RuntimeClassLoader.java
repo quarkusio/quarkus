@@ -275,7 +275,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
             String dotName = className.replace('/', '.');
             appClasses.put(dotName, data);
             try {
-                File debugPath = new File("/tmp/quarkus-classes");
+                File debugPath = new File(System.getProperty("java.io.tmpdir") + File.separator + "/quarkus-classes");
                 if (!debugPath.exists()) {
                     debugPath.mkdir();
                 }

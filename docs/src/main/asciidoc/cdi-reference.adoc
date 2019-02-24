@@ -143,7 +143,7 @@ NOTE: Bean registrations that are result of a `BeanDefiningAnnotationBuildItem` 
 
 `ResourceAnnotationBuildItem` is used to specify resource annotations  that make it possible to resolve non-CDI injection points, such as Java EE resources.
 
-NOTE: An integrator must also provide a corresponding `io.quarkus.arc.ResourceReferenceProvider` implementation.
+NOTE: An integrator must also provide a corresponding `io.quarkus.arc.ResourceReferenceProvider` implementation. 
 
 [source,java]
 ----

@@ -40,18 +40,7 @@ import org.objectweb.asm.Opcodes;
  */
 public final class HibernateEntityEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
 
-    private final Enhancer enhancer;
-
-    public HibernateEntityEnhancer() {
-        BytecodeProvider provider = new org.hibernate.bytecode.internal.bytebuddy.BytecodeProviderImpl();
-        DefaultEnhancementContext enhancementContext = new DefaultEnhancementContext() {
-            @Override
-            public ClassLoader getLoadingClassLoader() {
-                return Thread.currentThread().getContextClassLoader();
-            }
-        };
-        this.enhancer = provider.getEnhancer(enhancementContext);
-    }
+    private final BytecodeProvider provider = new org.hibernate.bytecode.internal.bytebuddy.BytecodeProviderImpl();
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
@@ -62,11 +51,21 @@ public final class HibernateEntityEnhancer implements BiFunction<String, ClassVi
 
         private final String className;
         private final ClassVisitor outputClassVisitor;
+        private final Enhancer enhancer;
 
         public HibernateEnhancingClassVisitor(String className, ClassVisitor outputClassVisitor) {
             super(Opcodes.ASM6, new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS));
             this.className = className;
             this.outputClassVisitor = outputClassVisitor;
+            //note that as getLoadingClassLoader is resolved immediately this can't be created until transform time
+
+            DefaultEnhancementContext enhancementContext = new DefaultEnhancementContext() {
+                @Override
+                public ClassLoader getLoadingClassLoader() {
+                    return Thread.currentThread().getContextClassLoader();
+                }
+            };
+            this.enhancer = provider.getEnhancer(enhancementContext);
         }
 
         @Override
@@ -82,15 +81,22 @@ public final class HibernateEntityEnhancer implements BiFunction<String, ClassVi
             cr.accept(outputClassVisitor, 0);
         }
 
-    }
+        private byte[] hibernateEnhancement(final String className, final byte[] originalBytes) {
+            final byte[] enhanced = enhancer.enhance(className, originalBytes);
+            return enhanced == null ? originalBytes : enhanced;
+        }
 
-    private byte[] hibernateEnhancement(final String className, final byte[] originalBytes) {
-        final byte[] enhanced = enhancer.enhance(className, originalBytes);
-        return enhanced == null ? originalBytes : enhanced;
     }
 
     public byte[] enhance(String className, byte[] bytes) {
+        DefaultEnhancementContext enhancementContext = new DefaultEnhancementContext() {
+            @Override
+            public ClassLoader getLoadingClassLoader() {
+                return Thread.currentThread().getContextClassLoader();
+            }
+
+        };
+        Enhancer enhancer = provider.getEnhancer(enhancementContext);
         return enhancer.enhance(className, bytes);
     }
-
 }

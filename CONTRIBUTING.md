@@ -56,7 +56,32 @@ Docker is not strictly necessary: it is used to run the MariaDB and PostgreSQL t
 
 * Check [the installation guide](https://docs.docker.com/install/), and [the MacOS installation guide](https://docs.docker.com/docker-for-mac/install/)
 * If you just install docker, be sure that your current user can run a container (no root required). 
-On Linux, check [the post-installation guide](https://docs.docker.com/install/linux/linux-postinstall/)         
+On Linux, check [the post-installation guide](https://docs.docker.com/install/linux/linux-postinstall/)
+
+### IDE Config and Code Style
+
+Quarkus has a strictly enforced code style. Code formatting is done by the Eclipse code formatter, using the config files
+found in the `ide-config` directory. By default when you run `mvn install` the code will be formatted automatically.
+When submitting a pull request the CI build will fail if running the formatter results in any code changes, so it is
+recommended that you always run a full maven build before submitting a pull request.
+
+#### Eclipse Setup
+
+Open the *Preferences* window, and then navigate to _Java_ -> _Code Style_ -> _Formatter_. Click _Import_ and then
+select the `eclipse-formatter.xml` file in the `ide-config` directory.
+
+Next navigate to _Java_ -> _Code Style_ -> _Organize Imports_. Click _Import_ and select the `eclipse.importorder` file.
+
+#### IDEA Setup
+
+Open the _Preferences_ window, navigate to _Plugins_ and install the [Eclipse Code Formatter Plugin](https://plugins.jetbrains.com/plugin/6546-eclipse-code-formatter).
+
+Restart you IDE, open the *Preferences* window again and navigate to _Other Settings_ -> _Eclipse Code Formatter_.
+
+Select _Use the Eclipse Code Formatter_, then change the _Eclipse Java Formatter Config File_ to point to the
+`eclipse-formatter.xml` file in the `ide-config` directory. Make sure the _Optimize Imports_ box is ticked, and
+select the `eclipse.importorder` file as the import order config file.
+
         
 ## Build
 

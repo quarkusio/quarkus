@@ -20,7 +20,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.jboss.quarkus.arc</groupId>
+    <groupId>io.quarkus.arc</groupId>
     <artifactId>arc-parent</artifactId>
     <version>1.0.0.Alpha1-SNAPSHOT</version>
     <relativePath>../</relativePath>
@@ -32,7 +32,7 @@
   <dependencies>
 
     <dependency>
-      <groupId>org.jboss.quarkus.arc</groupId>
+      <groupId>io.quarkus.arc</groupId>
       <artifactId>arc-runtime</artifactId>
     </dependency>
 

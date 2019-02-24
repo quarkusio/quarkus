@@ -31,7 +31,7 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.jboss.quarkus.arc</groupId>
+      <groupId>io.quarkus.arc</groupId>
       <artifactId>arc-runtime</artifactId>
     </dependency>
     <dependency>

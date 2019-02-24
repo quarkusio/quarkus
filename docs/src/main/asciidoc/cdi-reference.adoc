@@ -143,13 +143,13 @@ NOTE: Bean registrations that are result of a `BeanDefiningAnnotationBuildItem` 
 
 `ResourceAnnotationBuildItem` is used to specify resource annotations  that make it possible to resolve non-CDI injection points, such as Java EE resources.
 
-NOTE: An integrator must also provide a corresponding `org.jboss.quarkus.arc.ResourceReferenceProvider` implementation. 
+NOTE: An integrator must also provide a corresponding `io.quarkus.arc.ResourceReferenceProvider` implementation.
 
 [source,java]
 ----
 @BuildStep
 void setupResourceInjection(BuildProducer<ResourceAnnotationBuildItem> resourceAnnotations, BuildProducer<GeneratedResourceBuildItem> resources) {
-    resources.produce(new GeneratedResourceBuildItem("META-INF/services/org.jboss.quarkus.arc.ResourceReferenceProvider",
+    resources.produce(new GeneratedResourceBuildItem("META-INF/services/io.quarkus.arc.ResourceReferenceProvider",
         JPAResourceReferenceProvider.class.getName().getBytes()));
     resourceAnnotations.produce(new ResourceAnnotationBuildItem(DotName.createSimple(PersistenceContext.class.getName())));
 }
@@ -176,7 +176,7 @@ NOTE: A bean registration that is a result of an `AdditionalBeanBuildItem` is re
 
 Sometimes it's useful to register a synthetic bean, i.e. a bean that doesn't need to have a corresponding java class.
 In CDI this could be achieved using `AfterBeanDiscovery.addBean()` methods.
-In {project-name} we produce a `BeanRegistrarBuildItem` and leverage the `org.jboss.quarkus.arc.processor.BeanConfigurator` API to build a synthetic bean definition.
+In {project-name} we produce a `BeanRegistrarBuildItem` and leverage the `io.quarkus.arc.processor.BeanConfigurator` API to build a synthetic bean definition.
 
 // TODO add example
 
@@ -226,7 +226,7 @@ BeanDeploymentValidatorBuildItem beanDeploymentValidator() {
 }
 ----
 
-NOTE: See also `org.jboss.quarkus.arc.processor.BuildExtension.Key` to discover the available metadata.
+NOTE: See also `io.quarkus.arc.processor.BuildExtension.Key` to discover the available metadata.
 
 [[remove_unused_beans]]
 == Removing Unused Beans

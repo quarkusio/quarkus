@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.test.interceptors.exceptionhandling;
+package io.quarkus.arc.test.interceptors.exceptionhandling;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import org.jboss.quarkus.arc.Arc;
-import org.jboss.quarkus.arc.Subclass;
-import org.jboss.quarkus.arc.test.ArcTestContainer;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.Subclass;
+import io.quarkus.arc.test.ArcTestContainer;
 import org.junit.Rule;
 import org.junit.Test;
 

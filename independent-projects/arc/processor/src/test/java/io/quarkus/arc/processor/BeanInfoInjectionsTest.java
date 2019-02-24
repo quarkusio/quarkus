@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.processor;
+package io.quarkus.arc.processor;
 
-import static org.jboss.quarkus.arc.processor.Basics.index;
-import static org.jboss.quarkus.arc.processor.Basics.name;
+import static io.quarkus.arc.processor.Basics.index;
+import static io.quarkus.arc.processor.Basics.name;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
@@ -32,9 +32,9 @@ import org.jboss.jandex.Index;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
-import org.jboss.quarkus.arc.processor.types.Bar;
-import org.jboss.quarkus.arc.processor.types.Foo;
-import org.jboss.quarkus.arc.processor.types.FooQualifier;
+import io.quarkus.arc.processor.types.Bar;
+import io.quarkus.arc.processor.types.Foo;
+import io.quarkus.arc.processor.types.FooQualifier;
 import org.junit.Assert;
 import org.junit.Test;
 

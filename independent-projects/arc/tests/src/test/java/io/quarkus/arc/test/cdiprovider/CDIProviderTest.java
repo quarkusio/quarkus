@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.test.cdiprovider;
+package io.quarkus.arc.test.cdiprovider;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -28,7 +28,7 @@ import javax.annotation.PreDestroy;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.spi.CDI;
 
-import org.jboss.quarkus.arc.test.ArcTestContainer;
+import io.quarkus.arc.test.ArcTestContainer;
 import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.Test;

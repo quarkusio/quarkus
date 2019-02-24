@@ -31,12 +31,12 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.quarkus.arc.processor.AnnotationsTransformer;
-import org.jboss.quarkus.arc.processor.DotNames;
-import org.jboss.quarkus.arc.processor.ScopeInfo;
-import org.jboss.quarkus.arc.processor.Transformation;
 
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.processor.ScopeInfo;
+import io.quarkus.arc.processor.Transformation;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 

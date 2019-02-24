@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.processor;
+package io.quarkus.arc.processor;
 
-import static org.jboss.quarkus.arc.processor.Basics.index;
-import static org.jboss.quarkus.arc.processor.Basics.name;
+import static io.quarkus.arc.processor.Basics.index;
+import static io.quarkus.arc.processor.Basics.name;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -28,9 +28,9 @@ import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
-import org.jboss.quarkus.arc.processor.types.Bar;
-import org.jboss.quarkus.arc.processor.types.Foo;
-import org.jboss.quarkus.arc.processor.types.FooQualifier;
+import io.quarkus.arc.processor.types.Bar;
+import io.quarkus.arc.processor.types.Foo;
+import io.quarkus.arc.processor.types.FooQualifier;
 import org.junit.Test;
 
 /**

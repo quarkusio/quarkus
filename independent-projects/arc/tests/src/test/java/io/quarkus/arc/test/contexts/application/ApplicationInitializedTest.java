@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.test.contexts.application;
+package io.quarkus.arc.test.contexts.application;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -23,7 +23,7 @@ import javax.enterprise.context.Initialized;
 import javax.enterprise.event.Observes;
 import javax.inject.Singleton;
 
-import org.jboss.quarkus.arc.test.ArcTestContainer;
+import io.quarkus.arc.test.ArcTestContainer;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;

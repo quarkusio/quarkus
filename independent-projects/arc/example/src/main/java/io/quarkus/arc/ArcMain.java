@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc;
+package io.quarkus.arc;
 
-import org.jboss.quarkus.arc.Arc;
+import io.quarkus.arc.Arc;
 
 public class ArcMain {
 

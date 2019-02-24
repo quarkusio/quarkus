@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.processor;
+package io.quarkus.arc.processor;
 
 import java.lang.reflect.Modifier;
 
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
-import org.jboss.quarkus.arc.Arc;
+import io.quarkus.arc.Arc;
 
 abstract class AbstractGenerator {
 

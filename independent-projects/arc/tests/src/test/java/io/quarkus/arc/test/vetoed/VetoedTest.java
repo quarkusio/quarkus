@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.test.vetoed;
+package io.quarkus.arc.test.vetoed;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -25,9 +25,9 @@ import java.util.AbstractList;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Vetoed;
 
-import org.jboss.quarkus.arc.Arc;
-import org.jboss.quarkus.arc.ArcContainer;
-import org.jboss.quarkus.arc.test.ArcTestContainer;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.test.ArcTestContainer;
 import org.junit.Rule;
 import org.junit.Test;
 

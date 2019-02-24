@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.processor;
+package io.quarkus.arc.processor;
 
 import org.jboss.jandex.DotName;
-import org.jboss.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InjectableBean;
 
 /**
  * Allows a build-time extension to register synthetic {@link InjectableBean} implementations.

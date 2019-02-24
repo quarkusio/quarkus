@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.processor;
+package io.quarkus.arc.processor;
 
 import static org.objectweb.asm.Opcodes.ACC_BRIDGE;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
@@ -48,18 +48,18 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
-import org.jboss.quarkus.arc.CreationalContextImpl;
-import org.jboss.quarkus.arc.CurrentInjectionPointProvider;
-import org.jboss.quarkus.arc.InitializedInterceptor;
-import org.jboss.quarkus.arc.InjectableBean;
-import org.jboss.quarkus.arc.InjectableInterceptor;
-import org.jboss.quarkus.arc.InjectableReferenceProvider;
-import org.jboss.quarkus.arc.LazyValue;
-import org.jboss.quarkus.arc.Subclass;
-import org.jboss.quarkus.arc.processor.BeanInfo.InterceptionInfo;
-import org.jboss.quarkus.arc.processor.BeanProcessor.PrivateMembersCollector;
-import org.jboss.quarkus.arc.processor.ResourceOutput.Resource;
-import org.jboss.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
+import io.quarkus.arc.CreationalContextImpl;
+import io.quarkus.arc.CurrentInjectionPointProvider;
+import io.quarkus.arc.InitializedInterceptor;
+import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InjectableInterceptor;
+import io.quarkus.arc.InjectableReferenceProvider;
+import io.quarkus.arc.LazyValue;
+import io.quarkus.arc.Subclass;
+import io.quarkus.arc.processor.BeanInfo.InterceptionInfo;
+import io.quarkus.arc.processor.BeanProcessor.PrivateMembersCollector;
+import io.quarkus.arc.processor.ResourceOutput.Resource;
+import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 import org.jboss.protean.gizmo.AssignableResultHandle;
 import org.jboss.protean.gizmo.BytecodeCreator;
 import org.jboss.protean.gizmo.CatchBlockCreator;

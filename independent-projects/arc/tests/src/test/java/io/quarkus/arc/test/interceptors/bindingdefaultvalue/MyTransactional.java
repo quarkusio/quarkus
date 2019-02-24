@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.test.interceptors.bindingdefaultvalue;
+package io.quarkus.arc.test.interceptors.bindingdefaultvalue;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;

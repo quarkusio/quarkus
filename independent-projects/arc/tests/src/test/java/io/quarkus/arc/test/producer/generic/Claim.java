@@ -1,4 +1,4 @@
-package org.jboss.quarkus.arc.test.producer.generic;
+package io.quarkus.arc.test.producer.generic;
 
 import javax.enterprise.util.Nonbinding;
 import javax.inject.Qualifier;

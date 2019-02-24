@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.processor;
+package io.quarkus.arc.processor;
 
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
@@ -29,13 +29,13 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
-import org.jboss.quarkus.arc.Arc;
-import org.jboss.quarkus.arc.Components;
-import org.jboss.quarkus.arc.ComponentsProvider;
-import org.jboss.quarkus.arc.InjectableBean;
-import org.jboss.quarkus.arc.InjectableInterceptor;
-import org.jboss.quarkus.arc.InjectableReferenceProvider;
-import org.jboss.quarkus.arc.processor.ResourceOutput.Resource;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.Components;
+import io.quarkus.arc.ComponentsProvider;
+import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InjectableInterceptor;
+import io.quarkus.arc.InjectableReferenceProvider;
+import io.quarkus.arc.processor.ResourceOutput.Resource;
 import org.jboss.protean.gizmo.ClassCreator;
 import org.jboss.protean.gizmo.MethodCreator;
 import org.jboss.protean.gizmo.MethodDescriptor;

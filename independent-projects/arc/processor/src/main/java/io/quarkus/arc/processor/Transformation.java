@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.processor;
+package io.quarkus.arc.processor;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
@@ -27,8 +27,8 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodParameterInfo;
-import org.jboss.quarkus.arc.processor.AnnotationStore.TransformationContextImpl;
-import org.jboss.quarkus.arc.processor.AnnotationsTransformer.TransformationContext;
+import io.quarkus.arc.processor.AnnotationStore.TransformationContextImpl;
+import io.quarkus.arc.processor.AnnotationsTransformer.TransformationContext;
 
 /**
  * Convenient helper class.

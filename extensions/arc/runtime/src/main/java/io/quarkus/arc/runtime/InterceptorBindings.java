@@ -21,7 +21,7 @@ import java.util.Set;
 
 import javax.interceptor.InvocationContext;
 
-import org.jboss.quarkus.arc.InvocationContextImpl;
+import io.quarkus.arc.InvocationContextImpl;
 
 public class InterceptorBindings {
 

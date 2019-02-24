@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc;
+package io.quarkus.arc;
 
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.Type;

@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.processor;
+package io.quarkus.arc.processor;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-import org.jboss.quarkus.arc.processor.ResourceOutput.Resource;
-import org.jboss.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
+import io.quarkus.arc.processor.ResourceOutput.Resource;
+import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 import org.jboss.protean.gizmo.ClassOutput;
 
 /**

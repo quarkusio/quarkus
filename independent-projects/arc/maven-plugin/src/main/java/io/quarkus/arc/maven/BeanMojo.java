@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.maven;
+package io.quarkus.arc.maven;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,9 +46,9 @@ import org.apache.maven.project.MavenProject;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
-import org.jboss.quarkus.arc.processor.BeanDefiningAnnotation;
-import org.jboss.quarkus.arc.processor.BeanProcessor;
-import org.jboss.quarkus.arc.processor.ResourceOutput;
+import io.quarkus.arc.processor.BeanDefiningAnnotation;
+import io.quarkus.arc.processor.BeanProcessor;
+import io.quarkus.arc.processor.ResourceOutput;
 
 /**
  *

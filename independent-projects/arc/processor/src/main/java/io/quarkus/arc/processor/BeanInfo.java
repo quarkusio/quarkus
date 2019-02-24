@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.processor;
+package io.quarkus.arc.processor;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -40,7 +40,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
-import org.jboss.quarkus.arc.processor.Methods.MethodKey;
+import io.quarkus.arc.processor.Methods.MethodKey;
 import org.jboss.protean.gizmo.MethodCreator;
 
 /**

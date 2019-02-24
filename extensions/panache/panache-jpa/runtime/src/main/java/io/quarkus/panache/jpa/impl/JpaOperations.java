@@ -10,8 +10,7 @@ import javax.persistence.Query;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
-import org.jboss.quarkus.arc.Arc;
-
+import io.quarkus.arc.Arc;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.jpa.PanacheQuery;

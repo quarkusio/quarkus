@@ -1,4 +1,4 @@
-package org.jboss.quarkus.arc.processor;
+package io.quarkus.arc.processor;
 
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;

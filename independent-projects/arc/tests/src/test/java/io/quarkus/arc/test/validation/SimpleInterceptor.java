@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.jboss.quarkus.arc.test.validation;
+package io.quarkus.arc.test.validation;
 
 import javax.annotation.Priority;
 import javax.inject.Inject;
@@ -22,7 +22,7 @@ import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
 
-import org.jboss.quarkus.arc.InvocationContextImpl;
+import io.quarkus.arc.InvocationContextImpl;
 
 @Simple
 @Priority(1)

@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Sort {
-    private enum Direction {
+    public enum Direction {
         Ascending, Descending;
     }
 

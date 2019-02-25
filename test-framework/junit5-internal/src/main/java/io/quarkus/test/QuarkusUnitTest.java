@@ -185,8 +185,8 @@ public class QuarkusUnitTest
             try {
                 //this is a bit of a hack to avoid requiring a dep on the arc extension,
                 //as this would mean we cannot use this to test the extension
-                Class<? extends BuildItem> buildItem = (Class<? extends BuildItem>) Class
-                        .forName("io.quarkus.arc.deployment.AdditionalBeanBuildItem");
+                Class<? extends BuildItem> buildItem = Class
+                        .forName("io.quarkus.arc.deployment.AdditionalBeanBuildItem").asSubclass(BuildItem.class);
                 customiers.add(new Consumer<BuildChainBuilder>() {
                     @Override
                     public void accept(BuildChainBuilder buildChainBuilder) {

@@ -476,7 +476,20 @@ public class ConfigurationSetup {
             final Iterable<String> names = keyMap.childNames();
             for (String name : names) {
                 if (name.equals(ConfigPatternMap.WILD_CARD)) {
-                    // skip
+                    // consume and parse
+                    try (BytecodeCreator matchedBody = body.ifNonZero(body.invokeVirtualMethod(NI_HAS_NEXT, keyIter))
+                            .trueBranch()) {
+                        // keyIter.next();
+                        matchedBody.invokeVirtualMethod(NI_NEXT, keyIter);
+                        // (generated recursive)
+                        final int length = methodName.length();
+                        methodName.append('_').append(name);
+                        matchedBody.invokeStaticMethod(
+                                generateParserBody(cc, keyMap.getChild(name), methodName, parseMethodCache), config, keyIter);
+                        methodName.setLength(length);
+                        // return;
+                        matchedBody.returnValue(null);
+                    }
                 } else {
                     // TODO: string switch
                     // if (keyIter.nextSegmentEquals(name)) {

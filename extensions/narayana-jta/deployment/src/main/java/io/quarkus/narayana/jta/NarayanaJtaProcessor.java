@@ -17,7 +17,6 @@
 package io.quarkus.narayana.jta;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.util.Properties;
 
@@ -38,7 +37,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
-import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaConfiguration;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaProducers;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaTemplate;
@@ -90,10 +88,5 @@ class NarayanaJtaProcessor {
         tt.setDefaultProperties(defaultProperties);
         tt.setNodeName(transactions);
 
-    }
-
-    @BuildStep
-    void setupLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
-        filters.produce(new LogCleanupFilterBuildItem("com.arjuna.ats.arjuna", "ARJUNA012170"));
     }
 }

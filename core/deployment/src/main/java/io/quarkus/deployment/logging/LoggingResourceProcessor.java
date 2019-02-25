@@ -61,7 +61,7 @@ public final class LoggingResourceProcessor {
         for (LogCategoryBuildItem category : categories) {
             configOutput.accept(
                     new RunTimeConfigurationDefaultBuildItem(
-                            "quarkus.log.categories.\"" + category.getCategory() + "\".level",
+                            "quarkus.log.category.\"" + category.getCategory() + "\".level",
                             category.getLevel().toString()));
         }
     }
@@ -72,7 +72,7 @@ public final class LoggingResourceProcessor {
         for (LogCleanupFilterBuildItem logCleanupFilter : logCleanupFilters) {
             configOutput.accept(
                     new RunTimeConfigurationDefaultBuildItem(
-                            "quarkus.log.filters.\"" + logCleanupFilter.getFilterElement().getLoggerName()
+                            "quarkus.log.filter.\"" + logCleanupFilter.getFilterElement().getLoggerName()
                                     + "\".if-starts-with",
                             logCleanupFilter.getFilterElement().getMessageStart()));
         }

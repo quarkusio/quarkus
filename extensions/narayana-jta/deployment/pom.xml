@@ -26,21 +26,21 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-narayana-jta</artifactId>
+    <artifactId>quarkus-narayana-jta-deployment</artifactId>
     <name>Quarkus - Narayana JTA - Deployment</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
+            <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc</artifactId>
+            <artifactId>quarkus-arc-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-narayana-jta-runtime</artifactId>
+            <artifactId>quarkus-narayana-jta</artifactId>
         </dependency>
     </dependencies>
 

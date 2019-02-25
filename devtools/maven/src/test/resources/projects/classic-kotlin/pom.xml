@@ -17,19 +17,16 @@
       <groupId>@project.groupId@</groupId>
       <artifactId>quarkus-resteasy</artifactId>
       <version>${quarkus.version}</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>@project.groupId@</groupId>
       <artifactId>quarkus-arc</artifactId>
       <version>${quarkus.version}</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>@project.groupId@</groupId>
-      <artifactId>quarkus-kotlin</artifactId>
+      <artifactId>quarkus-kotlin-deployment</artifactId>
       <version>${quarkus.version}</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>@project.groupId@</groupId>

@@ -10,7 +10,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>quarkus-camel-core</artifactId>
+  <artifactId>quarkus-camel-core-deployment</artifactId>
   <name>Quarkus - Camel - Core - Deployment</name>
 
   <dependencies>
@@ -18,21 +18,21 @@
     <!-- quarkus -->
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-core</artifactId>
+      <artifactId>quarkus-core-deployment</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-arc</artifactId>
+      <artifactId>quarkus-arc-deployment</artifactId>
     </dependency>
 
     <!-- camel -->
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-camel-core-runtime</artifactId>
+      <artifactId>quarkus-camel-core</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-jaxb</artifactId>
+      <artifactId>quarkus-jaxb-deployment</artifactId>
     </dependency>
 
   </dependencies>

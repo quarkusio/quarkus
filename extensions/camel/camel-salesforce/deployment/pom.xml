@@ -10,7 +10,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>quarkus-camel-salesforce</artifactId>
+  <artifactId>quarkus-camel-salesforce-deployment</artifactId>
   <name>Quarkus - Camel - Salesforce - Deployment</name>
 
   <dependencies>
@@ -18,17 +18,17 @@
     <!-- quarkus -->
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-core</artifactId>
+      <artifactId>quarkus-core-deployment</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-arc</artifactId>
+      <artifactId>quarkus-arc-deployment</artifactId>
     </dependency>
 
     <!-- camel -->
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-camel-salesforce-runtime</artifactId>
+      <artifactId>quarkus-camel-salesforce</artifactId>
     </dependency>
 
   </dependencies>

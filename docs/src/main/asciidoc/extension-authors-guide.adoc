@@ -58,14 +58,12 @@ Your extension project should be setup as a multi-module project with two submod
 
 2. A runtime submodule that contains the runtime behavior that will provide the extension behavior in the native executable or runtime JVM.
 
-Your runtime artifact should depend on quarkus-core-runtime, and possibly the runtime artifacts of other Quarkus
-modules if you want to use functionality provided by them. You will also need to include the `maven-dependency-plugin`
-to write out the needed runtime dependencies, if you are using the Quarkus parent pom it will automatically
-inherit the correct configuration.
+Your runtime artifact should depend on `io.quarkus:quarkus-core`, and possibly the runtime artifacts of other Quarkus
+modules if you want to use functionality provided by them. You will also need to include the `io.quarkus.bootstrap:bootstrap-maven-plugin`
+to generate the Quarkus extension descriptor included into the runtime artifact, if you are using the Quarkus parent pom it will automatically inherit the correct configuration.
 
-Note that at present by convention the runtime artifact will have the `-runtime` suffix, and the deployment time artifact
-has no suffix (and is what the end user adds to their project). In the near future this will change, so the `-runtime`
-artifact will loose its suffix, and the deployment time artifacts will have one added.
+NOTE: By convention the deployment time artifact has the `-deployment` suffix, and the runtime artifact
+has no suffix (and is what the end user adds to their project).
 
 [source%nowrap,xml]
 ----
@@ -73,14 +71,15 @@ artifact will loose its suffix, and the deployment time artifacts will have one 
 <dependencies>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-core-runtime</artifactId>
+      <artifactId>quarkus-core</artifactId>
     </dependency>
 </dependencies>
 
 <build>
     <plugins>
         <plugin>
-            <artifactId>maven-dependency-plugin</artifactId>
+            <groupId>io.quarkus.bootstrap</groupId>
+            <artifactId>bootstrap-maven-plugin</artifactId>
         </plugin>
     </plugins>
 </build>
@@ -92,7 +91,7 @@ Under no circumstances can the runtime module depend on a deployment artifact. T
 in pulling all the deployment time code into runtime scope, which defeats the purpose of having the split.
 ====
 
-Your deployment time module should depend on `quarkus-core`, your runtime artifact,
+Your deployment time module should depend on `io.quarkus:quarkus-core-deployment`, your runtime artifact,
 and possibly the deployment artifacts of other Quarkus modules if you want to use functionality provided by them.
 
 
@@ -100,11 +99,10 @@ and possibly the deployment artifacts of other Quarkus modules if you want to us
 ----
 <dependency>
   <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-core</artifactId>
+  <artifactId>quarkus-core-deployment</artifactId>
 </dependency>
 ----
 
-NOTE: For historical reasons the `augment` step is still called `deployment`, this will likely remain until we do our big rename.
 
 == Build Step Processors
 

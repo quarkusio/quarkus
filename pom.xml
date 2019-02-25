@@ -61,14 +61,15 @@
         <module>core</module>
         <module>test-framework</module>
 
-        <!-- Integration Tests -->
-        <module>integration-tests</module>
-
         <!-- Extensions -->
         <module>extensions</module>
 
+        <!-- Integration Tests -->
+        <module>integration-tests</module>
+
         <!-- External projects -->
         <module>independent-projects/arc</module>
+        <module>independent-projects/bootstrap</module>
 
         <!-- Devtools (Maven, cli, gradle) -->
         <module>devtools</module>

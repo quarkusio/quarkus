@@ -37,7 +37,7 @@
 
         <dependency>
             <groupId>io.quarkus.arc</groupId>
-            <artifactId>arc-runtime</artifactId>
+            <artifactId>arc</artifactId>
         </dependency>
 
         <dependency>
@@ -56,7 +56,6 @@
         </dependency>
 
     </dependencies>
-
 
     <build>
         <plugins>

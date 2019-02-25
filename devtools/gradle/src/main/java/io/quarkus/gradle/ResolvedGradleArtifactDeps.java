@@ -34,15 +34,14 @@ import org.gradle.api.artifacts.result.ResolvedDependencyResult;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 
-import io.quarkus.creator.AppArtifact;
-import io.quarkus.creator.AppArtifactResolverBase;
+import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppDependency;
 import io.quarkus.creator.AppCreatorException;
-import io.quarkus.creator.AppDependency;
 
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
  */
-public class ResolvedGradleArtifactDeps extends AppArtifactResolverBase {
+public class ResolvedGradleArtifactDeps {
 
     private final String groupId;
     private final String artifactId;
@@ -105,20 +104,18 @@ public class ResolvedGradleArtifactDeps extends AppArtifactResolverBase {
         });
     }
 
-    @Override
     public void relink(AppArtifact artifact, Path path) throws AppCreatorException {
         throw new UnsupportedOperationException();
     }
 
-    @Override
     protected void doResolve(AppArtifact coords) throws AppCreatorException {
         if (coords.getGroupId().equals(groupId) && coords.getArtifactId().equals(artifactId)) {
-            setPath(coords, projectFile.toPath());
+            coords.setPath(projectFile.toPath());
         } else {
 
             File dep = findMatchingDependencyFile(coords.getGroupId(), coords.getArtifactId(), coords.getVersion());
             if (dep != null)
-                setPath(coords, dep.toPath());
+                coords.setPath(dep.toPath());
             else
                 throw new AppCreatorException("Did not find dependency file for: " + coords.toString());
         }
@@ -131,7 +128,7 @@ public class ResolvedGradleArtifactDeps extends AppArtifactResolverBase {
         File dep = findMatchingDependencyFile(appArtifacat.getGroupId(), appArtifacat.getArtifactId(),
                 appArtifacat.getVersion());
         if (dep != null) {
-            setPath(appArtifacat, dep.toPath());
+            appArtifacat.setPath(dep.toPath());
         }
         return appArtifacat;
     }
@@ -150,7 +147,6 @@ public class ResolvedGradleArtifactDeps extends AppArtifactResolverBase {
         return null;
     }
 
-    @Override
     public List<AppDependency> collectDependencies(AppArtifact coords) throws AppCreatorException {
         if (!coords.getGroupId().equals(groupId) ||
                 !coords.getArtifactId().equals(artifactId) ||
@@ -163,23 +159,19 @@ public class ResolvedGradleArtifactDeps extends AppArtifactResolverBase {
         return deps;
     }
 
-    @Override
     public List<AppDependency> collectDependencies(AppArtifact root, List<AppDependency> deps) throws AppCreatorException {
         throw new UnsupportedOperationException();
     }
 
-    @Override
     public List<String> listLaterVersions(AppArtifact artifact, String upToVersion, boolean inclusive)
             throws AppCreatorException {
         throw new UnsupportedOperationException();
     }
 
-    @Override
     public String getNextVersion(AppArtifact artifact, String upToVersion, boolean inclusive) throws AppCreatorException {
         throw new UnsupportedOperationException();
     }
 
-    @Override
     public String getLatestVersion(AppArtifact artifact, String upToVersion, boolean inclusive) throws AppCreatorException {
         throw new UnsupportedOperationException();
     }

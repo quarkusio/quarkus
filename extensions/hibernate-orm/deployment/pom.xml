@@ -25,47 +25,29 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-hibernate-orm</artifactId>
+    <artifactId>quarkus-hibernate-orm-deployment</artifactId>
     <name>Quarkus - Hibernate ORM - Deployment</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
+            <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-orm-runtime</artifactId>
+            <artifactId>quarkus-hibernate-orm</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-narayana-jta</artifactId>
+            <artifactId>quarkus-narayana-jta-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-agroal</artifactId>
+            <artifactId>quarkus-agroal-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc</artifactId>
-        </dependency>
-
-        <!--
-           Exclusions currently not listed in the parent pom as they need to be different in runtime vs deployment:
-           Re-import this so to dodge the Byte Buddy exclusion we declared in quarkus-hibernate-orm-runtime;
-           to help Java 11 users the explicit dependency to XML parsers might also be useful
-           (yet not needed at runtime).
-           I prefer to use exclusions only so to transitively let Hibernate ORM manage the versions.
-           -->
-        <dependency>
-            <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-core</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.javassist</groupId>
-                    <artifactId>javassist</artifactId>
-                </exclusion>
-            </exclusions>
+            <artifactId>quarkus-arc-deployment</artifactId>
         </dependency>
 
         <dependency>

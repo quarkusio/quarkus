@@ -25,17 +25,17 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-smallrye-reactive-streams-operators</artifactId>
+    <artifactId>quarkus-smallrye-reactive-streams-operators-deployment</artifactId>
     <name>Quarkus - SmallRye Reactive Streams Operators - Deployment</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
+            <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-streams-operators-runtime</artifactId>
+            <artifactId>quarkus-smallrye-reactive-streams-operators</artifactId>
         </dependency>
     </dependencies>
 

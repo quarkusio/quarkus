@@ -19,8 +19,9 @@ package io.quarkus.creator.phase.curate;
 
 import java.util.List;
 
-import io.quarkus.creator.AppArtifact;
-import io.quarkus.creator.AppArtifactResolver;
+import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.resolver.AppModelResolver;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
 import io.quarkus.creator.AppCreatorException;
 
 /**
@@ -29,22 +30,30 @@ import io.quarkus.creator.AppCreatorException;
  */
 public class DefaultUpdateDiscovery implements UpdateDiscovery {
 
-    private final AppArtifactResolver resolver;
+    private final AppModelResolver resolver;
     private final VersionUpdateNumber updateNumber;
 
-    public DefaultUpdateDiscovery(AppArtifactResolver resolver, VersionUpdateNumber updateNumber) {
+    public DefaultUpdateDiscovery(AppModelResolver resolver, VersionUpdateNumber updateNumber) {
         this.resolver = resolver;
         this.updateNumber = updateNumber;
     }
 
     @Override
     public List<String> listUpdates(AppArtifact artifact) throws AppCreatorException {
-        return resolver.listLaterVersions(artifact, resolveUpToVersion(artifact), false);
+        try {
+            return resolver.listLaterVersions(artifact, resolveUpToVersion(artifact), false);
+        } catch (AppModelResolverException e) {
+            throw new AppCreatorException("Failed to collect later versions", e);
+        }
     }
 
     @Override
     public String getNextVersion(AppArtifact artifact) throws AppCreatorException {
-        return resolver.getNextVersion(artifact, resolveUpToVersion(artifact), false);
+        try {
+            return resolver.getNextVersion(artifact, resolveUpToVersion(artifact), false);
+        } catch (AppModelResolverException e) {
+            throw new AppCreatorException("Failed to determine the next available version", e);
+        }
     }
 
     @Override
@@ -62,7 +71,11 @@ public class DefaultUpdateDiscovery implements UpdateDiscovery {
          * }
          * return latestStr;
          */
-        return resolver.getLatestVersion(artifact, resolveUpToVersion(artifact), false);
+        try {
+            return resolver.getLatestVersion(artifact, resolveUpToVersion(artifact), false);
+        } catch (AppModelResolverException e) {
+            throw new AppCreatorException("Failed to determine the latest available version", e);
+        }
     }
 
     private String resolveUpToVersion(AppArtifact artifact) throws AppCreatorException {

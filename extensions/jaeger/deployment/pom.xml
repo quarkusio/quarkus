@@ -26,17 +26,17 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-jaeger</artifactId>
+    <artifactId>quarkus-jaeger-deployment</artifactId>
     <name>Quarkus - Jaeger - Deployment</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
+            <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jaeger-runtime</artifactId>
+            <artifactId>quarkus-jaeger</artifactId>
         </dependency>
         <dependency>
             <groupId>javax.enterprise</groupId>

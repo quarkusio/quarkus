@@ -25,17 +25,17 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-jdbc-mariadb</artifactId>
+    <artifactId>quarkus-jdbc-mariadb-deployment</artifactId>
     <name>Quarkus - JDBC - MariaDB - Deployment</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
+            <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jdbc-mariadb-runtime</artifactId>
+            <artifactId>quarkus-jdbc-mariadb</artifactId>
         </dependency>
     </dependencies>
 

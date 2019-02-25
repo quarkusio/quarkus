@@ -27,7 +27,7 @@
         <relativePath>../</relativePath>
     </parent>
 
-    <artifactId>quarkus-core-runtime</artifactId>
+    <artifactId>quarkus-core</artifactId>
     <name>Quarkus - Core - Runtime</name>
 
     <dependencies>
@@ -110,6 +110,10 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>io.quarkus.bootstrap</groupId>
+                <artifactId>bootstrap-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <executions>
@@ -130,9 +134,6 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

@@ -31,7 +31,6 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -47,19 +46,19 @@ import java.util.jar.Manifest;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.creator.AppArtifact;
-import io.quarkus.creator.AppArtifactResolver;
+import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppDependency;
+import io.quarkus.bootstrap.resolver.AppModelResolver;
+import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.bootstrap.util.ZipUtils;
 import io.quarkus.creator.AppCreationPhase;
 import io.quarkus.creator.AppCreator;
 import io.quarkus.creator.AppCreatorException;
-import io.quarkus.creator.AppDependency;
 import io.quarkus.creator.config.reader.MappedPropertiesHandler;
 import io.quarkus.creator.config.reader.PropertiesHandler;
 import io.quarkus.creator.outcome.OutcomeProviderRegistration;
 import io.quarkus.creator.phase.augment.AugmentOutcome;
 import io.quarkus.creator.phase.curate.CurateOutcome;
-import io.quarkus.creator.util.IoUtils;
-import io.quarkus.creator.util.ZipUtils;
 
 /**
  * Based on the provided {@link io.quarkus.creator.phase.augment.AugmentOutcome},
@@ -70,7 +69,6 @@ import io.quarkus.creator.util.ZipUtils;
 public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJarOutcome {
 
     private static final String DEFAULT_MAIN_CLASS = "io.quarkus.runner.GeneratedMain";
-    private static final String PROVIDED = "provided";
 
     private static final Logger log = Logger.getLogger(RunnerJarPhase.class);
 
@@ -82,13 +80,14 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
             "META-INF/NOTICE",
             "META-INF/LICENSE.txt",
             "META-INF/NOTICE.txt",
-            "dependencies.runtime",
             "META-INF/README",
             "META-INF/quarkus-config-roots.list",
             "META-INF/DEPENDENCIES",
             "META-INF/beans.xml",
             "META-INF/quarkus-javadoc.properties",
-            "LICENSE")));
+            "LICENSE",
+            "quarqus/quarkus-extension.properties",
+            "quarqus/quarkus-deployment-dependency.graph")));
 
     private Path outputDir;
     private Path libDir;
@@ -184,7 +183,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         libDir = IoUtils.mkdirs(libDir == null ? outputDir.resolve("lib") : libDir);
 
         if (finalName == null) {
-            final String name = appState.getArtifactResolver().resolve(appState.getAppArtifact()).getFileName().toString();
+            final String name = appState.getAppArtifact().getPath().getFileName().toString();
             int i = name.lastIndexOf('.');
             if (i > 0) {
                 finalName = name.substring(0, i);
@@ -220,24 +219,22 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         ctx.pushOutcome(RunnerJarOutcome.class, this);
     }
 
-    private void buildRunner(FileSystem runnerZipFs, CurateOutcome appState, AugmentOutcome augmentOutcome) throws Exception {
+    private void buildRunner(FileSystem runnerZipFs, CurateOutcome curateOutcome, AugmentOutcome augmentOutcome)
+            throws Exception {
 
         log.info("Building jar: " + runnerJar);
 
-        final AppArtifactResolver depResolver = appState.getArtifactResolver();
-        final List<AppDependency> appDeps = appState.getEffectiveDeps();
+        final AppModelResolver depResolver = curateOutcome.getArtifactResolver();
         final Map<String, String> seen = new HashMap<>();
         final Map<String, Set<AppDependency>> duplicateCatcher = new HashMap<>();
         final StringBuilder classPath = new StringBuilder();
         final Map<String, List<byte[]>> services = new HashMap<>();
 
+        final List<AppDependency> appDeps = curateOutcome.getEffectiveModel().getUserDependencies();
         for (AppDependency appDep : appDeps) {
-            if (appDep.getScope().equals(PROVIDED) && !augmentOutcome.isWhitelisted(appDep)) {
-                continue;
-            }
             final AppArtifact depArtifact = appDep.getArtifact();
             if (depArtifact.getArtifactId().equals("svm") && depArtifact.getGroupId().equals("com.oracle.substratevm")) {
-                continue;
+                throw new IllegalStateException("Dependency on com.oracle.substratevm:svm");
             }
             final Path resolvedDep = depResolver.resolve(depArtifact);
             if (uberJar) {

@@ -28,6 +28,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.creator.AppCreator;
 import io.quarkus.creator.phase.augment.AugmentPhase;
 import io.quarkus.creator.phase.curate.CuratePhase;
@@ -35,8 +37,6 @@ import io.quarkus.creator.phase.nativeimage.NativeImageOutcome;
 import io.quarkus.creator.phase.nativeimage.NativeImagePhase;
 import io.quarkus.creator.phase.runnerjar.RunnerJarOutcome;
 import io.quarkus.creator.phase.runnerjar.RunnerJarPhase;
-import io.quarkus.creator.util.IoUtils;
-import io.quarkus.creator.util.PropertyUtils;
 
 /**
  *

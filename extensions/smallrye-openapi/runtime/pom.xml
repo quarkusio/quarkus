@@ -26,7 +26,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>quarkus-smallrye-openapi-runtime</artifactId>
+  <artifactId>quarkus-smallrye-openapi</artifactId>
   <name>Quarkus - SmallRye OpenAPI - Runtime</name>
 
   <dependencies>
@@ -46,15 +46,15 @@
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-core-runtime</artifactId>
+      <artifactId>quarkus-core</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-undertow-runtime</artifactId>
+      <artifactId>quarkus-undertow</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-arc-runtime</artifactId>
+      <artifactId>quarkus-arc</artifactId>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
@@ -65,7 +65,19 @@
   <build>
     <plugins>
       <plugin>
-        <artifactId>maven-dependency-plugin</artifactId>
+        <groupId>io.quarkus.bootstrap</groupId>
+        <artifactId>bootstrap-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>generate-extension-descriptor</id>
+            <goals>
+              <goal>extension-descriptor</goal>
+            </goals>
+            <configuration>
+              <deployment>${project.groupId}:quarkus-smallrye-openapi-deployment:${project.version}</deployment>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>

@@ -22,7 +22,7 @@ import java.nio.file.Paths;
 import java.util.Properties;
 
 import io.quarkus.creator.AppCreator;
-import io.quarkus.creator.phase.nativeimage.NativeImageOutcome;
+import io.quarkus.creator.phase.runnerjar.RunnerJarOutcome;
 
 /**
  *
@@ -47,7 +47,13 @@ public class NativeImageOutcomeDemo extends ConfigDemoBase {
     }
 
     @Override
+    protected boolean isLogLibDiff() {
+        return true;
+    }
+
+    @Override
     public void demo(AppCreator creator) throws Exception {
-        creator.resolveOutcome(NativeImageOutcome.class);
+        //creator.resolveOutcome(NativeImageOutcome.class);
+        creator.resolveOutcome(RunnerJarOutcome.class);
     }
 }

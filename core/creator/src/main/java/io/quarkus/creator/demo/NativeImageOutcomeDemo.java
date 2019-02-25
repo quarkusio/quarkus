@@ -22,7 +22,7 @@ import java.nio.file.Paths;
 import java.util.Properties;
 
 import io.quarkus.creator.AppCreator;
-import io.quarkus.creator.phase.nativeimage.NativeImageOutcome;
+import io.quarkus.creator.phase.runnerjar.RunnerJarOutcome;
 
 /**
  *
@@ -37,8 +37,8 @@ public class NativeImageOutcomeDemo extends ConfigDemoBase {
     @Override
     protected Path initAppJar() {
         final Path quarkusRoot = Paths.get("").toAbsolutePath().getParent().getParent();
-        final Path appDir = quarkusRoot.resolve("integration-tests").resolve("bean-validation-strict").resolve("target");
-        return appDir.resolve("quarkus-integration-test-bean-validation-1.0.0.Alpha1-SNAPSHOT.jar");
+        final Path appDir = quarkusRoot.resolve("integration-tests").resolve("hibernate-validator").resolve("target");
+        return appDir.resolve("quarkus-integration-test-hibernate-validator-1.0.0.Alpha1-SNAPSHOT.jar");
     }
 
     @Override
@@ -47,7 +47,13 @@ public class NativeImageOutcomeDemo extends ConfigDemoBase {
     }
 
     @Override
+    protected boolean isLogLibDiff() {
+        return true;
+    }
+
+    @Override
     public void demo(AppCreator creator) throws Exception {
-        creator.resolveOutcome(NativeImageOutcome.class);
+        //creator.resolveOutcome(NativeImageOutcome.class);
+        creator.resolveOutcome(RunnerJarOutcome.class);
     }
 }

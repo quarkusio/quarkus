@@ -18,19 +18,22 @@ package io.quarkus.gradle.tasks;
 import java.io.File;
 import java.util.List;
 
+import org.apache.maven.plugin.MojoExecutionException;
+import org.gradle.api.GradleException;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 
-import io.quarkus.creator.AppArtifact;
+import io.quarkus.bootstrap.resolver.AppArtifact;
+import io.quarkus.bootstrap.resolver.AppArtifactResolverException;
+import io.quarkus.bootstrap.resolver.AppDependencies;
+import io.quarkus.bootstrap.resolver.aether.BootstrapArtifactResolver;
 import io.quarkus.creator.AppCreator;
 import io.quarkus.creator.AppCreatorException;
-import io.quarkus.creator.AppDependency;
 import io.quarkus.creator.phase.augment.AugmentPhase;
 import io.quarkus.creator.phase.curate.CurateOutcome;
 import io.quarkus.creator.phase.runnerjar.RunnerJarOutcome;
 import io.quarkus.creator.phase.runnerjar.RunnerJarPhase;
-import io.quarkus.gradle.ResolvedGradleArtifactDeps;
 
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
@@ -50,6 +53,8 @@ public class QuarkusBuild extends QuarkusTask {
     private boolean useStaticInit = true;
 
     private boolean uberJar = false;
+
+    private File bsRepo;
 
     public QuarkusBuild() {
         super("Quarkus builds a runner jar based on the build jar");
@@ -137,9 +142,31 @@ public class QuarkusBuild extends QuarkusTask {
         this.uberJar = uberJar;
     }
 
+    public File getBootstrapRepo() {
+        return bsRepo;
+    }
+
+    @Option(description = "", option = "bootstrap-repo")
+    @Optional
+    public void getBootstrapRepo(File bsRepo) {
+        this.bsRepo = bsRepo;
+    }
+
     @TaskAction
     public void buildQuarkus() {
         getLogger().lifecycle("building quarkus runner");
+
+        final AppArtifact appArtifact = new AppArtifact(extension().groupId(), extension().artifactId(), extension().version());
+        final AppDependencies appDeps;
+        final BootstrapArtifactResolver bsResolver;
+        try {
+            bsResolver = BootstrapArtifactResolver.builder()
+                    .setRepoHome(getBootstrapRepo().toPath())
+                    .build();
+            appDeps = bsResolver.collectRuntimeDependencies(appArtifact);
+        } catch (AppArtifactResolverException e) {
+            throw new GradleException("Failed to resolve " + appArtifact + " dependencies", e);
+        }
 
         try (AppCreator appCreator = AppCreator.builder()
                 // configure the build phases we want the app to go through
@@ -155,28 +182,18 @@ public class QuarkusBuild extends QuarkusTask {
                 .setWorkDir(extension().buildDir().toPath())
                 .build()) {
 
-            final AppArtifact appArtifact = new AppArtifact(extension().groupId(), extension().artifactId(),
-                    extension().version());
-            try {
-                ResolvedGradleArtifactDeps resolvedGradleArtifactDeps = new ResolvedGradleArtifactDeps(getProject());
-                final List<AppDependency> appDeps = resolvedGradleArtifactDeps.collectDependencies(appArtifact);
+            // push resolved application state
+            appCreator.pushOutcome(CurateOutcome.builder()
+                    .setArtifactResolver(bsResolver)
+                    .setAppArtifact(appArtifact)
+                    .setInitialDeps(appDeps)
+                    .build());
 
-                // push resolved application state
-                appCreator.pushOutcome(CurateOutcome.builder()
-                        .setAppArtifact(appArtifact)
-                        .setArtifactResolver(resolvedGradleArtifactDeps)
-                        .setInitialDeps(appDeps)
-                        .build());
-
-                // resolve the outcome we need here
-                appCreator.resolveOutcome(RunnerJarOutcome.class);
-            } catch (AppCreatorException e) {
-                e.printStackTrace();
-            }
+            // resolve the outcome we need here
+            appCreator.resolveOutcome(RunnerJarOutcome.class);
 
         } catch (AppCreatorException e) {
-            e.printStackTrace();
+            throw new GradleException("Failed to build a runnable JAR", e);
         }
-
     }
 }

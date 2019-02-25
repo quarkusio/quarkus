@@ -31,6 +31,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>quarkus-spring-di-runtime</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core-deployment</artifactId>
         </dependency>

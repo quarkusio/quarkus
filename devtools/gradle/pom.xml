@@ -22,6 +22,10 @@
     <dependencies>
         <!-- Compile -->
         <dependency>
+            <groupId>io.quarkus.bootstrap</groupId>
+            <artifactId>bootstrap-core</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-devtools-common</artifactId>
             <version>${project.version}</version>

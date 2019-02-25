@@ -49,6 +49,11 @@
             <!-- Quarkus core dependencies -->
 
             <dependency>
+                <groupId>io.quarkus.bootstrap</groupId>
+                <artifactId>bootstrap-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-builder</artifactId>
                 <version>${project.version}</version>
@@ -474,6 +479,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-spring-di-runtime</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-security-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -583,6 +593,11 @@
                         <!-- Disable PrintAnalysisCallTree reports for native image building by default -->
                         <disableReports>true</disableReports>
                     </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>io.quarkus.bootstrap</groupId>
+                    <artifactId>bootstrap-maven-plugin</artifactId>
+                    <version>${project.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-dependency-plugin</artifactId>

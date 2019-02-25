@@ -46,7 +46,7 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-vertx-runtime</artifactId>
         </dependency>
-        
+
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5-internal</artifactId>

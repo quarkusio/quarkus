@@ -30,12 +30,12 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 
+import io.quarkus.bootstrap.util.IoUtils;
+import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.creator.AppCreator;
 import io.quarkus.creator.config.reader.PropertiesConfigReader;
 import io.quarkus.creator.config.reader.PropertiesHandler;
 import io.quarkus.creator.phase.curate.CuratePhase;
-import io.quarkus.creator.util.IoUtils;
-import io.quarkus.creator.util.PropertyUtils;
 
 /**
  *
@@ -51,7 +51,7 @@ public class ConfigDemoBase {
 
     public void run() throws Exception {
 
-        final long startTime = System.currentTimeMillis();
+        final long startTime = System.nanoTime();
 
         final Path appJar = getAppJar();
         if (!Files.exists(appJar)) {
@@ -78,9 +78,7 @@ public class ConfigDemoBase {
             }
         }
 
-        final long time = System.currentTimeMillis() - startTime;
-        final long seconds = time / 1000;
-        System.out.println("Done in " + seconds + "." + (time - seconds * 1000) + " seconds");
+        System.out.println(IoUtils.tookTime("Demo", startTime));
     }
 
     protected void demo(AppCreator creator) throws Exception {

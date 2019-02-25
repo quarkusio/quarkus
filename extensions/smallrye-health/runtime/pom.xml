@@ -56,7 +56,19 @@
     <build>
         <plugins>
             <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
+                <groupId>io.quarkus.bootstrap</groupId>
+                <artifactId>bootstrap-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>generate-extension-descriptor</id>
+                        <goals>
+                            <goal>extension-descriptor</goal>
+                        </goals>
+                        <configuration>
+                            <deployment>${project.groupId}:quarkus-smallrye-health-deployment:${project.version}</deployment>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

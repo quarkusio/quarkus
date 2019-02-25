@@ -66,6 +66,11 @@
             <artifactId>asm</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus.bootstrap</groupId>
+            <artifactId>bootstrap-core</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core-runtime</artifactId>
         </dependency>

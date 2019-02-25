@@ -32,8 +32,7 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-infinispan-client-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>quarkus-infinispan-client-runtime</artifactId>
         </dependency>
 
         <!-- This is required to use DSL queries -->
@@ -45,14 +44,12 @@
         <!-- Allow some basic support for @Inject (required for JAXRS) -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>quarkus-arc-runtime</artifactId>
         </dependency>
         <!-- .. and some REST endpoints -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-deployment</artifactId>
-            <scope>provided</scope>
+            <artifactId>quarkus-resteasy-runtime</artifactId>
         </dependency>
 
 
@@ -66,6 +63,12 @@
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-lang3</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

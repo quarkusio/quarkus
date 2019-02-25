@@ -27,13 +27,12 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-smallrye-reactive-messaging-runtime</artifactId>
     </dependency>
-    
-    
+
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-junit5-internal</artifactId>
     </dependency>
-    
+
   </dependencies>
 
   <build>

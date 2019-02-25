@@ -28,12 +28,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 
+import io.quarkus.bootstrap.resolver.AppArtifactResolver;
+import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.creator.config.reader.MappedPropertiesHandler;
 import io.quarkus.creator.config.reader.PropertiesConfigReaderException;
 import io.quarkus.creator.config.reader.PropertiesHandler;
 import io.quarkus.creator.outcome.OutcomeResolver;
 import io.quarkus.creator.outcome.OutcomeResolverFactory;
-import io.quarkus.creator.util.IoUtils;
 
 /**
  *

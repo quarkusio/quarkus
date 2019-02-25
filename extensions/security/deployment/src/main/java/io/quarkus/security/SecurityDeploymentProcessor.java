@@ -65,7 +65,7 @@ class SecurityDeploymentProcessor {
 
     /**
      * Register this extension as a MP-JWT feature
-     * 
+     *
      * @return
      */
     @BuildStep
@@ -75,7 +75,7 @@ class SecurityDeploymentProcessor {
 
     /**
      * Register the Elytron-provided password factory SPI implementation
-     * 
+     *
      * @param classes producer factory for ReflectiveClassBuildItems
      */
     @BuildStep
@@ -90,7 +90,7 @@ class SecurityDeploymentProcessor {
      * runtime value to process the user/roles properties files. This also registers the names of the user/roles properties
      * files
      * to include the build artifact.
-     * 
+     *
      * @param template - runtime security template
      * @param resources - SubstrateResourceBuildItem used to register the realm user/roles properties files names.
      * @param securityRealm - the producer factory for the SecurityRealmBuildItem
@@ -205,7 +205,7 @@ class SecurityDeploymentProcessor {
     /**
      * If a password based realm was created, install the security extension
      * {@linkplain io.quarkus.security.runtime.ElytronIdentityManager}
-     * 
+     *
      * @param template - runtime template
      * @param securityDomain - configured SecurityDomain
      * @param identityManagerProducer - producer factory for IdentityManagerBuildItem

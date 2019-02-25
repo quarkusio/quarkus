@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
+import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.creator.AppCreationPhase;
 import io.quarkus.creator.AppCreator;
 import io.quarkus.creator.AppCreatorException;
@@ -44,7 +45,6 @@ import io.quarkus.creator.config.reader.PropertyContext;
 import io.quarkus.creator.outcome.OutcomeProviderRegistration;
 import io.quarkus.creator.phase.augment.AugmentOutcome;
 import io.quarkus.creator.phase.runnerjar.RunnerJarOutcome;
-import io.quarkus.creator.util.IoUtils;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 /**

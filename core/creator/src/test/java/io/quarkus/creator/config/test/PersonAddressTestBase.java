@@ -28,10 +28,10 @@ import java.util.Properties;
 
 import org.junit.Test;
 
+import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.creator.config.reader.PropertiesConfigReader;
 import io.quarkus.creator.config.reader.PropertiesHandler;
 import io.quarkus.creator.config.reader.PropertyLine;
-import io.quarkus.creator.util.IoUtils;
 
 /**
  *

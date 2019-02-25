@@ -26,17 +26,17 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-resteasy-jsonb</artifactId>
+    <artifactId>quarkus-resteasy-jsonb-deployment</artifactId>
     <name>Quarkus - RESTEasy - JSON-B - Deployment</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy</artifactId>
+            <artifactId>quarkus-resteasy-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-jsonb-runtime</artifactId>
+            <artifactId>quarkus-resteasy-jsonb</artifactId>
         </dependency>
     </dependencies>
 

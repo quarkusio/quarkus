@@ -25,7 +25,7 @@
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-smallrye-reactive-type-converters-runtime</artifactId>
+    <artifactId>quarkus-smallrye-reactive-type-converters</artifactId>
     <name>Quarkus - SmallRye Reactive Type Converters - Runtime</name>
 
     <dependencies>
@@ -36,12 +36,22 @@
     </dependencies>
 
     <build>
-        <!-- Mark this as a runtime dependency, so to make sure it's included on the final classpath during native-image -->
         <plugins>
             <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
+                <groupId>io.quarkus.bootstrap</groupId>
+                <artifactId>bootstrap-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>generate-extension-descriptor</id>
+                        <goals>
+                            <goal>extension-descriptor</goal>
+                        </goals>
+                        <configuration>
+                            <deployment>${project.groupId}:quarkus-smallrye-reactive-type-converters-deployment:${project.version}</deployment>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
-
 </project>

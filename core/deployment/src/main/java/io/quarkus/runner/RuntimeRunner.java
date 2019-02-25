@@ -44,6 +44,17 @@ import io.quarkus.runtime.LaunchMode;
  */
 public class RuntimeRunner implements Runnable, Closeable {
 
+    public static RuntimeRunner runTest(Path appClasses, Path frameworkClasses) {
+        final RuntimeRunner runtimeRunner = RuntimeRunner.builder()
+                .setLaunchMode(LaunchMode.TEST)
+                .setClassLoader(Thread.currentThread().getContextClassLoader())
+                .setTarget(appClasses)
+                .setFrameworkClassesPath(frameworkClasses)
+                .build();
+        runtimeRunner.run();
+        return runtimeRunner;
+    }
+
     private final Path target;
     private final ClassLoader loader;
     private final ClassOutput classOutput;

@@ -10,17 +10,17 @@
    </parent>
    <modelVersion>4.0.0</modelVersion>
 
-   <artifactId>quarkus-smallrye-reactive-messaging-runtime</artifactId>
+   <artifactId>quarkus-smallrye-reactive-messaging</artifactId>
    <name>Quarkus - SmallRye Reactive Messaging - Runtime</name>
 
    <dependencies>
       <dependency>
          <groupId>io.quarkus</groupId>
-         <artifactId>quarkus-arc-runtime</artifactId>
+         <artifactId>quarkus-arc</artifactId>
       </dependency>
       <dependency>
          <groupId>io.quarkus</groupId>
-         <artifactId>quarkus-smallrye-reactive-streams-operators-runtime</artifactId>
+         <artifactId>quarkus-smallrye-reactive-streams-operators</artifactId>
       </dependency>
       <dependency>
          <groupId>io.smallrye.reactive</groupId>
@@ -37,7 +37,19 @@
    <build>
       <plugins>
          <plugin>
-            <artifactId>maven-dependency-plugin</artifactId>
+            <groupId>io.quarkus.bootstrap</groupId>
+            <artifactId>bootstrap-maven-plugin</artifactId>
+            <executions>
+               <execution>
+                  <id>generate-extension-descriptor</id>
+                  <goals>
+                     <goal>extension-descriptor</goal>
+                  </goals>
+                  <configuration>
+                     <deployment>${project.groupId}:quarkus-smallrye-reactive-messaging-deployment:${project.version}</deployment>
+                  </configuration>
+                </execution>
+            </executions>
          </plugin>
          <plugin>
            <artifactId>maven-compiler-plugin</artifactId>

@@ -25,7 +25,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-jdbc-postgresql-runtime</artifactId>
+    <artifactId>quarkus-jdbc-postgresql</artifactId>
     <name>Quarkus - JDBC - PostgreSQL - Runtime</name>
 
     <dependencies>
@@ -40,10 +40,21 @@
     </dependencies>
 
     <build>
-        <!-- Mark this as a runtime dependency, so to make sure it's included on the final classpath during native-image -->
         <plugins>
             <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
+                <groupId>io.quarkus.bootstrap</groupId>
+                <artifactId>bootstrap-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>generate-extension-descriptor</id>
+                        <goals>
+                            <goal>extension-descriptor</goal>
+                        </goals>
+                        <configuration>
+                            <deployment>${project.groupId}:quarkus-jdbc-postgresql-deployment:${project.version}</deployment>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

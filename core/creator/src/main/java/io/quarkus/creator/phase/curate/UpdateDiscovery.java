@@ -19,7 +19,7 @@ package io.quarkus.creator.phase.curate;
 
 import java.util.List;
 
-import io.quarkus.creator.AppArtifact;
+import io.quarkus.bootstrap.model.AppArtifact;
 import io.quarkus.creator.AppCreatorException;
 
 /**

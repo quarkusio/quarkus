@@ -27,7 +27,7 @@
         <relativePath>../</relativePath>
     </parent>
 
-    <artifactId>quarkus-core</artifactId>
+    <artifactId>quarkus-core-deployment</artifactId>
     <name>Quarkus - Core - Deployment</name>
 
     <dependencies>
@@ -66,8 +66,13 @@
             <artifactId>asm</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus.bootstrap</groupId>
+            <artifactId>bootstrap-core</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core-runtime</artifactId>
+            <artifactId>quarkus-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus.gizmo</groupId>

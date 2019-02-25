@@ -11,28 +11,28 @@
 
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>quarkus-scheduler</artifactId>
+  <artifactId>quarkus-scheduler-deployment</artifactId>
   <name>Quarkus - Scheduler - Deployment</name>
 
   <dependencies>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-core</artifactId>
+      <artifactId>quarkus-core-deployment</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-arc</artifactId>
+      <artifactId>quarkus-arc-deployment</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-scheduler-runtime</artifactId>
+      <artifactId>quarkus-scheduler</artifactId>
     </dependency>
-    
+
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-junit5-internal</artifactId>
     </dependency>
-    
+
   </dependencies>
 
   <build>

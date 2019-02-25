@@ -35,6 +35,10 @@
     </properties>
     <dependencies>
         <dependency>
+            <groupId>io.quarkus.bootstrap</groupId>
+            <artifactId>bootstrap-core</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-devtools-common</artifactId>
         </dependency>
@@ -67,7 +71,7 @@
         -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-kotlin</artifactId>
+            <artifactId>quarkus-kotlin-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -175,7 +179,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-plugin-plugin</artifactId>
-                <version>3.5.2</version>
                 <configuration>
                     <goalPrefix>quarkus</goalPrefix>
                     <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>

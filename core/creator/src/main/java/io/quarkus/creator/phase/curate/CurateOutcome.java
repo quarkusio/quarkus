@@ -27,13 +27,15 @@ import org.apache.maven.model.Model;
 import org.apache.maven.model.Repository;
 import org.jboss.logging.Logger;
 
-import io.quarkus.creator.AppArtifact;
-import io.quarkus.creator.AppArtifactResolver;
+import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppDependency;
+import io.quarkus.bootstrap.model.AppModel;
+import io.quarkus.bootstrap.resolver.AppModelResolver;
+import io.quarkus.bootstrap.resolver.AppModelResolverException;
+import io.quarkus.bootstrap.resolver.BootstrapAppModelResolver;
+import io.quarkus.bootstrap.resolver.maven.workspace.ModelUtils;
 import io.quarkus.creator.AppCreator;
 import io.quarkus.creator.AppCreatorException;
-import io.quarkus.creator.AppDependency;
-import io.quarkus.creator.NoOpArtifactResolver;
-import io.quarkus.creator.resolver.aether.AetherArtifactResolver;
 
 /**
  *
@@ -51,20 +53,14 @@ public class CurateOutcome {
 
     public static class Builder {
 
-        private AppArtifact appArtifact;
         private AppArtifact stateArtifact;
-        private List<AppDependency> initialDeps = Collections.emptyList();
+        private AppModel appModel;
         private List<AppDependency> updatedDeps = Collections.emptyList();
-        private AppArtifactResolver resolver;
+        private AppModelResolver resolver;
         private List<Repository> artifactRepos = Collections.emptyList();
         private boolean loadedFromState;
 
         private Builder() {
-        }
-
-        public Builder setAppArtifact(AppArtifact appArtifact) {
-            this.appArtifact = appArtifact;
-            return this;
         }
 
         public Builder setStateArtifact(AppArtifact stateArtifact) {
@@ -72,13 +68,13 @@ public class CurateOutcome {
             return this;
         }
 
-        public Builder setArtifactResolver(AppArtifactResolver resolver) {
+        public Builder setAppModelResolver(AppModelResolver resolver) {
             this.resolver = resolver;
             return this;
         }
 
-        public Builder setInitialDeps(List<AppDependency> deps) {
-            this.initialDeps = deps;
+        public Builder setAppModel(AppModel appModel) {
+            this.appModel = appModel;
             return this;
         }
 
@@ -104,38 +100,35 @@ public class CurateOutcome {
         return new Builder();
     }
 
-    protected final AppArtifact appArtifact;
     protected final AppArtifact stateArtifact;
-    protected final List<AppDependency> initialDeps;
+    protected final AppModel initialModel;
     protected final List<AppDependency> updatedDeps;
-    protected final AppArtifactResolver resolver;
+    protected final AppModelResolver resolver;
     protected final List<Repository> artifactRepos;
     protected final boolean loadedFromState;
-    protected List<AppDependency> effectiveDeps;
+    protected AppModel effectiveModel;
     protected boolean persisted;
 
     public CurateOutcome(Builder builder) {
-        this.appArtifact = builder.appArtifact;
         this.stateArtifact = builder.stateArtifact;
-        this.initialDeps = builder.initialDeps.isEmpty() ? builder.initialDeps
-                : Collections.unmodifiableList(builder.initialDeps);
+        this.initialModel = builder.appModel;
         this.updatedDeps = builder.updatedDeps.isEmpty() ? builder.updatedDeps
                 : Collections.unmodifiableList(builder.updatedDeps);
-        this.resolver = builder.resolver == null ? new NoOpArtifactResolver() : builder.resolver;
+        this.resolver = builder.resolver;
         this.artifactRepos = builder.artifactRepos;
         this.loadedFromState = builder.loadedFromState;
     }
 
-    public AppArtifactResolver getArtifactResolver() {
+    public AppModelResolver getArtifactResolver() {
         return resolver;
     }
 
     public AppArtifact getAppArtifact() {
-        return appArtifact;
+        return initialModel.getAppArtifact();
     }
 
-    public List<AppDependency> getInitialDeps() {
-        return initialDeps;
+    public AppModel getInitialModel() {
+        return initialModel;
     }
 
     public boolean hasUpdatedDeps() {
@@ -146,14 +139,18 @@ public class CurateOutcome {
         return updatedDeps;
     }
 
-    public List<AppDependency> getEffectiveDeps() throws AppCreatorException {
-        if (effectiveDeps != null) {
-            return effectiveDeps;
+    public AppModel getEffectiveModel() throws AppCreatorException {
+        if (effectiveModel != null) {
+            return effectiveModel;
         }
         if (updatedDeps.isEmpty()) {
-            return effectiveDeps = initialDeps;
+            return effectiveModel = initialModel;
         }
-        return effectiveDeps = resolver.collectDependencies(appArtifact, updatedDeps);
+        try {
+            return effectiveModel = resolver.resolveModel(initialModel.getAppArtifact(), updatedDeps);
+        } catch (AppModelResolverException e) {
+            throw new AppCreatorException("Failed to resolve effective application dependencies", e);
+        }
     }
 
     public boolean isPersisted() {
@@ -170,9 +167,10 @@ public class CurateOutcome {
         final Path stateDir = ctx.createWorkDir("state");
         final Path statePom = stateDir.resolve("pom.xml");
 
+        final AppArtifact appArtifact = initialModel.getAppArtifact();
         AppArtifact stateArtifact;
         if (this.stateArtifact == null) {
-            stateArtifact = Utils.getStateArtifact(appArtifact);
+            stateArtifact = ModelUtils.getStateArtifact(appArtifact);
         } else {
             stateArtifact = new AppArtifact(this.stateArtifact.getGroupId(),
                     this.stateArtifact.getArtifactId(),
@@ -240,9 +238,13 @@ public class CurateOutcome {
          * }
          * }
          */
-        Utils.persistModel(statePom, model);
 
-        ((AetherArtifactResolver) resolver).install(stateArtifact, statePom);
+        try {
+            ModelUtils.persistModel(statePom, model);
+            ((BootstrapAppModelResolver) resolver).install(stateArtifact, statePom);
+        } catch (Exception e) {
+            throw new AppCreatorException("Failed to persist application state artifact", e);
+        }
 
         log.info("Persisted provisioning state as " + stateArtifact);
         //ctx.getArtifactResolver().relink(stateArtifact, statePom);

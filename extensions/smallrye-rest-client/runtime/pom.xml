@@ -26,21 +26,21 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-smallrye-rest-client-runtime</artifactId>
+    <artifactId>quarkus-smallrye-rest-client</artifactId>
     <name>Quarkus - SmallRye REST client - Runtime</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core-runtime</artifactId>
+            <artifactId>quarkus-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc-runtime</artifactId>
+            <artifactId>quarkus-arc</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-common-runtime</artifactId>
+            <artifactId>quarkus-resteasy-common</artifactId>
         </dependency>
         <dependency>
             <groupId>io.smallrye</groupId>
@@ -63,7 +63,19 @@
     <build>
         <plugins>
             <plugin>
-                <artifactId>maven-dependency-plugin</artifactId>
+                <groupId>io.quarkus.bootstrap</groupId>
+                <artifactId>bootstrap-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>generate-extension-descriptor</id>
+                        <goals>
+                            <goal>extension-descriptor</goal>
+                        </goals>
+                        <configuration>
+                            <deployment>${project.groupId}:quarkus-smallrye-rest-client-deployment:${project.version}</deployment>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>

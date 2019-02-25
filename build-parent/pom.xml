@@ -61,6 +61,11 @@
             <!-- Quarkus core dependencies -->
 
             <dependency>
+                <groupId>io.quarkus.bootstrap</groupId>
+                <artifactId>bootstrap-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-builder</artifactId>
                 <version>${project.version}</version>
@@ -72,7 +77,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-core-runtime</artifactId>
+                <artifactId>quarkus-core-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -82,7 +87,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-arc-runtime</artifactId>
+                <artifactId>quarkus-arc-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -118,7 +123,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-caffeine-runtime</artifactId>
+                <artifactId>quarkus-caffeine-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -128,7 +133,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-jaxb-runtime</artifactId>
+                <artifactId>quarkus-jaxb-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -138,7 +143,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-netty-runtime</artifactId>
+                <artifactId>quarkus-netty-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -151,7 +156,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-agroal-runtime</artifactId>
+                <artifactId>quarkus-agroal-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -161,7 +166,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-hibernate-validator-runtime</artifactId>
+                <artifactId>quarkus-hibernate-validator-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -171,7 +176,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-camel-core-runtime</artifactId>
+                <artifactId>quarkus-camel-core-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -181,7 +186,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-camel-salesforce-runtime</artifactId>
+                <artifactId>quarkus-camel-salesforce-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -191,7 +196,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-camel-netty4-http-runtime</artifactId>
+                <artifactId>quarkus-camel-netty4-http-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -201,7 +206,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-camel-infinispan-runtime</artifactId>
+                <artifactId>quarkus-camel-infinispan-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -211,7 +216,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-jdbc-postgresql-runtime</artifactId>
+                <artifactId>quarkus-jdbc-postgresql-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -221,7 +226,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-jdbc-h2-runtime</artifactId>
+                <artifactId>quarkus-jdbc-h2-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -231,7 +236,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-jdbc-mariadb-runtime</artifactId>
+                <artifactId>quarkus-jdbc-mariadb-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jdbc-mssql-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -241,17 +251,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-jdbc-mssql-runtime</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-kafka-client</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-kafka-client-runtime</artifactId>
+                <artifactId>quarkus-kafka-client-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -261,7 +266,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-reactive-streams-operators-runtime</artifactId>
+                <artifactId>quarkus-smallrye-reactive-streams-operators-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -271,7 +276,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-reactive-type-converters-runtime</artifactId>
+                <artifactId>quarkus-smallrye-reactive-type-converters-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -281,7 +286,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-fault-tolerance-runtime</artifactId>
+                <artifactId>quarkus-smallrye-fault-tolerance-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -291,7 +296,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-health-runtime</artifactId>
+                <artifactId>quarkus-smallrye-health-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -301,7 +306,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-metrics-runtime</artifactId>
+                <artifactId>quarkus-smallrye-metrics-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -311,7 +316,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-openapi-runtime</artifactId>
+                <artifactId>quarkus-smallrye-openapi-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -321,7 +326,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-opentracing-runtime</artifactId>
+                <artifactId>quarkus-smallrye-opentracing-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -331,7 +336,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-rest-client-runtime</artifactId>
+                <artifactId>quarkus-smallrye-rest-client-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -341,7 +346,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-jaeger-runtime</artifactId>
+                <artifactId>quarkus-jaeger-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -351,7 +356,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-runtime</artifactId>
+                <artifactId>quarkus-resteasy-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -361,7 +366,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-jsonb-runtime</artifactId>
+                <artifactId>quarkus-resteasy-jsonb-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -371,7 +376,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-jwt-runtime</artifactId>
+                <artifactId>quarkus-smallrye-jwt-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -381,7 +386,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-client-runtime</artifactId>
+                <artifactId>quarkus-rest-client-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -391,7 +396,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-resteasy-common-runtime</artifactId>
+                <artifactId>quarkus-resteasy-common-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -401,7 +406,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-narayana-jta-runtime</artifactId>
+                <artifactId>quarkus-narayana-jta-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -411,7 +416,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-undertow-runtime</artifactId>
+                <artifactId>quarkus-undertow-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -421,7 +426,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-hibernate-orm-runtime</artifactId>
+                <artifactId>quarkus-hibernate-orm-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -431,12 +436,17 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-hibernate-orm-panache-runtime</artifactId>
+                <artifactId>quarkus-hibernate-orm-panache-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-panache-common-runtime</artifactId>
+                <artifactId>quarkus-panache-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-panache-common-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -446,7 +456,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-vertx-runtime</artifactId>
+                <artifactId>quarkus-vertx-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -456,7 +466,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-undertow-websockets-runtime</artifactId>
+                <artifactId>quarkus-undertow-websockets-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -466,7 +476,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-scheduler-runtime</artifactId>
+                <artifactId>quarkus-scheduler-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -476,7 +486,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-reactive-messaging-runtime</artifactId>
+                <artifactId>quarkus-smallrye-reactive-messaging-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -486,7 +496,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-smallrye-reactive-messaging-kafka-runtime</artifactId>
+                <artifactId>quarkus-smallrye-reactive-messaging-kafka-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -501,12 +511,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-elytron-security-runtime</artifactId>
+                <artifactId>quarkus-elytron-security-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-infinispan-client-runtime</artifactId>
+                <artifactId>quarkus-infinispan-client-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -521,12 +531,17 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-amazon-lambda-runtime</artifactId>
+                <artifactId>quarkus-amazon-lambda-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-kotlin</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-kotlin-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -605,6 +620,11 @@
                         <!-- Disable PrintAnalysisCallTree reports for native image building by default -->
                         <disableReports>true</disableReports>
                     </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>io.quarkus.bootstrap</groupId>
+                    <artifactId>bootstrap-maven-plugin</artifactId>
+                    <version>${project.version}</version>
                 </plugin>
                 <plugin>
                     <artifactId>maven-dependency-plugin</artifactId>

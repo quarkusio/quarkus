@@ -171,13 +171,11 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-core</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-arc</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
 
             <!-- Quarkus libraries -->
@@ -186,19 +184,16 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-caffeine</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-jaxb</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-netty</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
 
             <!-- Quarkus extensions -->
@@ -207,217 +202,181 @@
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-agroal</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-camel-core</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-camel-salesforce</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-camel-netty4-http</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-camel-infinispan</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-hibernate-validator</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-infinispan-client</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-jdbc-postgresql</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-jdbc-h2</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-jdbc-mariadb</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-jdbc-mssql</artifactId>
+                <artifactId>quarkus-jdbc-mssql-deployment</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-kafka-client</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-smallrye-health</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-smallrye-jwt</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-smallrye-reactive-streams-operators</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-smallrye-reactive-type-converters</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-smallrye-reactive-messaging</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-smallrye-metrics</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-smallrye-openapi</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-smallrye-opentracing</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-smallrye-rest-client</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-resteasy</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-resteasy-jsonb</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-jaxrs-json</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-narayana-jta</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-undertow</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-hibernate-orm</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-smallrye-fault-tolerance</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-vertx</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-hibernate-orm-panache</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-undertow-websockets</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-scheduler</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-spring-di</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-kotlin</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-amazon-lambda</artifactId>
                 <version>${project.version}</version>
-                <scope>provided</scope>
             </dependency>
 
             <!-- Quarkus test dependencies -->
@@ -1224,7 +1183,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus.arc</groupId>
-                <artifactId>arc-runtime</artifactId>
+                <artifactId>arc</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

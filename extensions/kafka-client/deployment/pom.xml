@@ -10,17 +10,17 @@
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-kafka-client</artifactId>
+    <artifactId>quarkus-kafka-client-deployment</artifactId>
     <name>Quarkus - Kafka - Client - Deployment</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
+            <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-kafka-client-runtime</artifactId>
+            <artifactId>quarkus-kafka-client</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

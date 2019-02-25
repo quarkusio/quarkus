@@ -26,13 +26,13 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>quarkus-smallrye-fault-tolerance-runtime</artifactId>
+  <artifactId>quarkus-smallrye-fault-tolerance</artifactId>
   <name>Quarkus - SmallRye Fault tolerance - Runtime</name>
 
   <dependencies>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-core-runtime</artifactId>
+      <artifactId>quarkus-core</artifactId>
     </dependency>
     <dependency>
       <groupId>io.smallrye</groupId>
@@ -54,9 +54,21 @@
 
   <build>
     <plugins>
-      <plugin>
-        <artifactId>maven-dependency-plugin</artifactId>
-      </plugin>
+        <plugin>
+            <groupId>io.quarkus.bootstrap</groupId>
+            <artifactId>bootstrap-maven-plugin</artifactId>
+            <executions>
+                <execution>
+                    <id>generate-extension-descriptor</id>
+                    <goals>
+                        <goal>extension-descriptor</goal>
+                    </goals>
+                    <configuration>
+                        <deployment>${project.groupId}:quarkus-smallrye-fault-tolerance-deployment:${project.version}</deployment>
+                    </configuration>
+                </execution>
+            </executions>
+        </plugin>
         <plugin>
             <artifactId>maven-compiler-plugin</artifactId>
             <configuration>

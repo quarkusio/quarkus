@@ -26,13 +26,13 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-resteasy-common</artifactId>
+    <artifactId>quarkus-resteasy-common-deployment</artifactId>
     <name>Quarkus - RESTEasy - Common - Deployment</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-common-runtime</artifactId>
+            <artifactId>quarkus-resteasy-common</artifactId>
         </dependency>
         <dependency>
             <groupId>com.oracle.substratevm</groupId>

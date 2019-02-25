@@ -26,25 +26,25 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-smallrye-rest-client</artifactId>
+    <artifactId>quarkus-smallrye-rest-client-deployment</artifactId>
     <name>Quarkus - SmallRye REST client - Deployment</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core</artifactId>
+            <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc</artifactId>
+            <artifactId>quarkus-arc-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-common</artifactId>
+            <artifactId>quarkus-resteasy-common-deployment</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-rest-client-runtime</artifactId>
+            <artifactId>quarkus-smallrye-rest-client</artifactId>
         </dependency>
     </dependencies>
 

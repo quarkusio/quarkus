@@ -69,8 +69,8 @@ class SmallRyeHealthProcessor {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.SMALLRYE_HEALTH));
 
         // Register the servlet
-        ServletBuildItem servletBuildItem = new ServletBuildItem("health", SmallRyeHealthServlet.class.getName());
-        servletBuildItem.getMappings().add(health.path);
+        ServletBuildItem servletBuildItem = ServletBuildItem.builder("health", SmallRyeHealthServlet.class.getName())
+                .addMapping(health.path).build();
         servlet.produce(servletBuildItem);
 
         // Make ArC discover the beans marked with the @Health qualifier

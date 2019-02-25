@@ -98,7 +98,7 @@ jobs:
     displayName: 'Maven Build'
     inputs:
       goals: 'install'
-      options: '-B --settings azure-mvn-settings.xml -Dno-native'
+      options: '-B --settings azure-mvn-settings.xml -Dno-native -Dno-format'
 
 - job: Build_JDK11_Linux
   timeoutInMinutes: 60
@@ -114,4 +114,4 @@ jobs:
     inputs:
       jdkVersionOption: '1.11'
       goals: 'install'
-      options: '-B --settings azure-mvn-settings.xml -Dno-native'
+      options: '-B --settings azure-mvn-settings.xml -Dno-native -Dno-format'

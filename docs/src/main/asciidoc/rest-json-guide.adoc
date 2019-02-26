@@ -1,0 +1,373 @@
+= Quarkus - Writing JSON REST Services
+
+JSON is now the _lingua franca_ between microservices.
+
+In this guide, we see how you can get your REST services to consume and produce JSON payloads.
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* an IDE
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven 3.5.3+
+
+== Architecture
+
+The application built in this guide is quite simple: the user can add elements in a list using a form and the list is updated.
+
+All the information between the browser and the server are formatted as JSON.
+
+== Solution
+
+We recommend you to follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone https://github.com/jbossas/quarkus-quickstarts.git`, or download an https://github.com/jbossas/quarkus-quickstarts/archive/master.zip[archive].
+
+The solution is located in the `rest-json` https://github.com/jbossas/quarkus-quickstarts/tree/master/rest-json[directory].
+
+== Creating the Maven project
+
+First, we need a new project. Create a new project with the following command:
+
+[source, subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=rest-json \
+    -DclassName="org.acme.rest.json.FruitResource" \
+    -Dpath="/fruits" \
+    -Dextensions="resteasy-jsonb"
+----
+
+This command generates a Maven structure importing the RESTEasy/JAX-RS and JSON-B extensions.
+
+== Creating your first JSON REST service
+
+In this example, we will create an application to manage a list of fruits.
+
+First, let's create the `Fruit` bean as follows:
+
+[source,java]
+----
+package org.acme.rest.json;
+
+import java.util.Objects;
+
+public class Fruit {
+
+    private String name;
+
+    private String description;
+
+    public Fruit() {
+    }
+
+    public Fruit(String name, String description) {
+        this.name = name;
+        this.description = description;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof Fruit)) {
+            return false;
+        }
+
+        Fruit other = (Fruit) obj;
+
+        return Objects.equals(other.name, this.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.name);
+    }
+}
+----
+
+Nothing fancy. One important thing to note is that having a default constructor is required by the JSON serialization layer.
+
+Now, edit the `org.acme.rest.json.FruitResource` class as follows:
+
+[source,java]
+----
+package org.acme.rest.json;
+
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Set;
+
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+
+@Path("/fruits")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+public class FruitResource {
+
+    private Set<Fruit> fruits = Collections.newSetFromMap(Collections.synchronizedMap(new LinkedHashMap<>()));
+
+    public FruitResource() {
+        fruits.add(new Fruit("Apple", "Winter fruit"));
+        fruits.add(new Fruit("Pineapple", "Tropical fruit"));
+    }
+
+    @GET
+    public Set<Fruit> list() {
+        return fruits;
+    }
+
+    @POST
+    public Set<Fruit> add(Fruit fruit) {
+        fruits.add(fruit);
+        return fruits;
+    }
+
+    @DELETE
+    public Set<Fruit> delete(Fruit fruit) {
+        fruits.remove(fruit);
+        return fruits;
+    }
+}
+----
+
+The implementation is pretty straightforward and you just need to define your endpoints using the JAX-RS annotations.
+
+The `Fruit` objects will be automatically serialized/deserialized by http://json-b.net/[JSON-B].
+
+[NOTE]
+====
+While RESTEasy supports auto-negotiation, when using Quarkus, it is very important to define the `@Produces` and `@Consumes` annotations.
+They are analyzed at build time and Quarkus restricts the number of JAX-RS providers included in the native image to the minimum required by the application.
+It allows to reduce the size of the native image.
+====
+
+== Creating a frontend
+
+Now let's add a simple web page to interact with our `FruitResource`.
+Quarkus automatically serves static resources contained in the `META-INF/resources` directory.
+In the `src/main/resources/META-INF/resources` directory, add a `fruits.html` file with the content from this https://raw.githubusercontent.com/jbossas/quarkus-quickstarts/master/rest-json/src/main/resources/META-INF/resources/fruits.html[fruits.html] file in it.
+
+You can now interact with your REST service:
+
+ * start Quarkus with `mvn compile quarkus:dev`
+ * open a browser to `http://localhost:8080/fruits.html`
+ * add new fruits to the list via the form
+
+== About serialization
+
+The library we use to serialize Java objects to JSON documents is http://json-b.net/[JSON-B].
+It uses Java reflection to get the properties of an object and serialize them.
+
+You might already have understood that, when using GraalVM, you need to register your classes for reflection.
+
+But we did not register `Fruit` for reflection in any way and everything is working fine.
+
+The fact is that Quarkus does some magic when it is capable of inferring the serialized types from the REST methods.
+
+When you have the following REST method, it is fairly easy to determine that `Fruit` will be serialized:
+
+[source,JAVA]
+----
+@GET
+@Produces("application/json")
+public List<Fruit> list() {
+    // ...
+}
+----
+
+Quarkus does that for you automatically by analyzing the REST methods at build time
+and that's why we didn't need any reflection registration in the first part of this guide.
+
+Another common pattern in the JAX-RS world is to use the `Response` object.
+`Response` comes with some nice perks:
+
+ * you can return different entity types depending on what happens in your method (a `Legume` or an `Error` for instance);
+ * you can set the attributes of the `Response` (the status comes to mind in the case of an error).
+ 
+Your REST method then looks like this:
+
+[source,JAVA]
+----
+@GET
+@Produces("application/json")
+public Response list() {
+    // ...
+}
+----
+
+As you can imagine, it is not possible for Quarkus to determine at build time the type included in the `Response` as the information is not available.
+
+In this case, Quarkus won't be able to automatically register for reflection the required classes.
+
+This leads us to our next section.
+
+== Using Response
+
+Let's create the `Legume` class which will be serialized as JSON, following the same model as for our `Fruit` class:
+
+[source,JAVA]
+----
+package org.acme.rest.json;
+
+import java.util.Objects;
+
+public class Legume {
+
+    private String name;
+
+    private String description;
+
+    public Legume() {
+    }
+
+    public Legume(String name, String description) {
+        this.name = name;
+        this.description = description;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof Legume)) {
+            return false;
+        }
+
+        Legume other = (Legume) obj;
+
+        return Objects.equals(other.name, this.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.name);
+    }
+}
+----
+
+Now let's create a `LegumeResource` REST service with only one method which returns the list of legumes.
+
+This method returns a `Response` and not a list of `Legume`.
+
+[source,JAVA]
+----
+package org.acme.rest.json;
+
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Set;
+
+import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+
+@Path("/legumes")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+public class LegumeResource {
+
+    private Set<Legume> legumes = Collections.newSetFromMap(Collections.synchronizedMap(new LinkedHashMap<>()));
+
+    public LegumeResource() {
+        legumes.add(new Legume("Carrot", "Root vegetable, usually orange"));
+        legumes.add(new Legume("Zucchini", "Summer squash"));
+    }
+
+    @GET
+    public Response list() {
+        return Response.ok(legumes).build();
+    }
+}
+----
+
+Now let's add a simple web page to display our list of legumes.
+In the `src/main/resources/META-INF/resources` directory, add a `legumes.html` file with the content from this https://raw.githubusercontent.com/jbossas/quarkus-quickstarts/master/rest-json/src/main/resources/META-INF/resources/legumes.html[legumes.html] file in it.
+
+Open a browser to http://localhost:8080/legumes.html and you will see our list of legumes.
+
+The interesting part starts when running the application as a native image:
+
+ * create the native image with `mvn package -Pnative`.
+ * execute it with `./target/rest-json-1.0-SNAPSHOT-runner`
+ * open a browser and go to http://localhost:8080/legumes.html
+
+No legumes there.
+
+As mentioned above, the issue is that Quarkus was not able to determine the `Legume` class will require some reflection by analyzing the REST endpoints.
+JSON-B tries to get the list of fields of `Legume` and gets an empty list so it does not serialize the fields' data.
+
+[NOTE]
+====
+At the moment, when JSON-B tries to get the list of fields of a class, if the class is not registered for reflection, no exception will be thrown.
+GraalVM will simply return an empty list of fields.
+
+Hopefully, this will change in the future and make the error more obvious.
+====
+
+We can register `Legume` for reflection manually by adding the `@RegisterForReflection` annotation on our `Legume` class:
+[source,JAVA]
+----
+@RegisterForReflection
+public class Legume {
+    // ...
+}
+----
+
+Let's do that and follow the same steps as before:
+
+ * hit `Ctrl+C` to stop the application
+ * create the native image with `mvn package -Pnative`.
+ * execute it with `./target/rest-json-1.0-SNAPSHOT-runner`
+ * open a browser and go to http://localhost:8080/legumes.html
+
+This time, you can see our list of legumes.
+
+== Conclusion
+
+Creating JSON REST services with Quarkus is easy as it relies on proven and well known technologies.
+
+Quarkus does some magic to further simplify things when running your application as a native image.
+
+There is only one thing to remember: if you use `Response` and Quarkus can't determine the beans that are serialized, you need to annotate them with `@RegisterForReflection`.

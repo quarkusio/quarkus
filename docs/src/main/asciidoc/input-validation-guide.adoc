@@ -1,8 +1,6 @@
-= {project-name} - Using JSON and Validation
+= {project-name} - Input Validation and REST Services
 
-JSON is now the _lingua franca_ between microservices.
-In this guide, we see how you can consume and produce JSON payloads.
-The guide also covers how to validate JSON payloads.
+This guide covers how to use Hibernate Validator/Bean Validation in your REST services.
 
 == Prerequisites
 
@@ -131,8 +129,7 @@ public Result tryMeManualValidation(Book book) {
 ----
 
 Yes it does not compile, `Result` is missing, but we will add it very soon.
-First, let's explain this method.
-It indicates it consumes and produces JSON.
+
 The method parameter (`book`) is created from the JSON payload automatically.
 
 The method uses the `Validator` to check the payload.

@@ -1,7 +1,7 @@
 = {project-name} - Simplified Hibernate ORM and JPA with Panache
 :config-file: microprofile-config.properties
 
-Hibernate ORM is the de facto JPA implementation and offers you the full breath of an Object Relational Mapper.
+Hibernate ORM is the de facto JPA implementation and offers you the full breadth of an Object Relational Mapper.
 It makes complex mappings possible, but it does not make simple and common mappings trivial.
 Panache focuses on making your entities trivial and fun to write in {project-name}.
 

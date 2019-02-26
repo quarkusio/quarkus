@@ -19,6 +19,7 @@ include::quarkus-intro.adoc[tag=intro]
 * link:websocket-guide.html[Using Websockets]
 * link:transaction-guide.html[Using Transactions]_
 * link:hibernate-orm-guide.html[Using Hibernate ORM]
+* link:panache-jpa-guide.html[Simplified Hibernate ORM with Panache]
 * link:rest-client-guide.html[Using REST Client]
 * link:opentracing-guide.html[Using OpenTracing]
 * link:infinispan-client-guide.html[Using Infinispan Client]

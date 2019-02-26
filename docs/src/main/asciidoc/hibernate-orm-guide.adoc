@@ -153,32 +153,8 @@ If you have a `persistence.xml`, then you cannot use the `quarkus.hibernate.*` p
 and only persistence units defined in `persistence.xml` will be taken into account.
 --
 
-In your `pom.xml`, add the following dependencies:
-
-* the Hibernate ORM extension
-* your JDBC driver extension (`quarkus-jdbc-postgresql-deployment`, `quarkus-jdbc-h2-deployment`, `quarkus-jdbc-mariadb-deployment`, ...)
-
-[source,xml]
---
-<dependencies>
-    <!-- Hibernate ORM specific dependencies -->
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-hibernate-orm-deployment</artifactId>
-        <scope>provided</scope>
-    </dependency>
-
-    <!-- JDBC driver dependencies -->
-    <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-jdbc-postgresql-deployment</artifactId>
-        <scope>provided</scope>
-    </dependency>
-</dependencies>
---
-
-Annotate your persistent objects with `@Entity`
-then add your `persistence.xml` in `META-INF`:
+Your `pom.xml` dependencies as well as your Java code would be identical to the precedent example. The only
+difference is that you would specify your Hibernate ORM configuration in `META-INF/persistence.xml`:
 
 [source,xml]
 --
@@ -211,52 +187,6 @@ then add your `persistence.xml` in `META-INF`:
     </persistence-unit>
 </persistence>
 --
-
-A `EntityManagerFactory` will be created based on {project-name} `datasource` configuration as long as the Hibernate ORM extension is declared in your `pom.xml`.
-
-You can then happily inject your `EntityManager`:
-
-[source,java]
---
-@ApplicationScoped
-public class SantaClausService {
-    @Inject private EntityManager em; <1>
-
-    @Transactional <2>
-    public void createGift(String giftDescription) {
-        Gift gift = new Gift();
-        gift.setName(giftDescription);
-        em.persist(gift);
-    }
-}
-
-//and of course our entity
-@Entity
-public class Gift {
-    private Long id;
-    private String name;
-
-    @Id @GeneratedValue(strategy = GenerationType.SEQUENCE, generator="giftSeq")
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-}
---
-
-<1> Inject your entity manager and have fun
-<2> Mark your CDI bean method as `@Transactional` and the `EntityManager` will enlist and flush at commit.
 
 == Caching
 

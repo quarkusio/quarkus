@@ -5,11 +5,13 @@ import java.util.List;
 import org.jboss.builder.item.MultiBuildItem;
 
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.security.runtime.AuthConfig;
+import io.undertow.security.idm.IdentityManager;
 
 /**
  * Information about an authentication mechanism to enable. This is used to call the
- * {@linkplain SecurityTemplate#configureUndertowIdentityManager(RuntimeValue, List)} method to register the auth methods
- * enabled.
+ * {@linkplain io.quarkus.security.runtime.SecurityTemplate#configureUndertowIdentityManager(RuntimeValue, IdentityManager, List)}
+ * method to register the auth methods enabled.
  *
  * Custom authentication mechanisms would need to have the {@linkplain io.undertow.servlet.ServletExtension} that
  * registers the {@linkplain io.undertow.security.api.AuthenticationMechanismFactory} for the method.

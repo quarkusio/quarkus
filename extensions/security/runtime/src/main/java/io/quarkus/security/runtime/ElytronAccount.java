@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.quarkus.security;
+package io.quarkus.security.runtime;
 
 import java.security.Principal;
 import java.util.HashSet;

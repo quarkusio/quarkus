@@ -33,6 +33,11 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.security.runtime.AuthConfig;
+import io.quarkus.security.runtime.MPRealmConfig;
+import io.quarkus.security.runtime.PropertiesRealmConfig;
+import io.quarkus.security.runtime.SecurityConfig;
+import io.quarkus.security.runtime.SecurityTemplate;
 import io.quarkus.undertow.ServletExtensionBuildItem;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.servlet.ServletExtension;
@@ -198,7 +203,8 @@ class SecurityDeploymentProcessor {
     }
 
     /**
-     * If a password based realm was created, install the security extension {@linkplain ElytronIdentityManager}
+     * If a password based realm was created, install the security extension
+     * {@linkplain io.quarkus.security.runtime.ElytronIdentityManager}
      * 
      * @param template - runtime template
      * @param securityDomain - configured SecurityDomain

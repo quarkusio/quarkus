@@ -1,4 +1,4 @@
-package io.quarkus.security;
+package io.quarkus.security.runtime;
 
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.TargetClass;

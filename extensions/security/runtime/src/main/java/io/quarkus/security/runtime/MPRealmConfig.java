@@ -1,4 +1,4 @@
-package io.quarkus.security;
+package io.quarkus.security.runtime;
 
 import java.util.Map;
 
@@ -32,11 +32,11 @@ public class MPRealmConfig {
 
     /** The realm users user1=password\nuser2=password2... mapping */
     @ConfigItem
-    Map<String, String> users;
+    public Map<String, String> users;
 
     /** The realm roles user1=role1,role2,...\nuser2=role1,role2,... mapping */
     @ConfigItem
-    Map<String, String> roles;
+    public Map<String, String> roles;
 
     public String getAuthMechanism() {
         return authMechanism;

@@ -1,4 +1,4 @@
-package io.quarkus.security;
+package io.quarkus.security.runtime;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 

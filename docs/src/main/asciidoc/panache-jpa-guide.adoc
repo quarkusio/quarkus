@@ -1,9 +1,9 @@
 = {project-name} - Simplified Hibernate ORM and JPA with Panache
 :config-file: microprofile-config.properties
 
-Hibernate ORM is the de facto JPA implementation and offers you the full breath of an Object Relational Mapper,
-but most Hibernate users end up writing the same kind of entities and the same kind of Data Access Objects (DAOs)
-or Repositories, so we created Panache to make it trivial to write your Hibernate applications in {project-name}.
+Hibernate ORM is the de facto JPA implementation and offers you the full breath of an Object Relational Mapper.
+It makes complex mappings possible, but it does not make simple and common mappings trivial.
+Panache focuses on making your entities trivial and fun to write in {project-name}.
 
 == First: an example
 
@@ -14,7 +14,7 @@ What we're doing in Panache is allow you to write your Hibernate entities like t
 @Entity
 public class Person extends PanacheEntity {
     public String name;
-    public Date birth;
+    public LocalDate birth;
     public PersonStatus status;
     
     public static Person findByName(String name){
@@ -41,7 +41,7 @@ To get started:
 * annotate your entities with `@Entity` and make them extend `PanacheEntity`
 * place your entity logic in static methods in your entities
 
-Follow the link:hibernate-orm-guide.html#setting-up-and-configuring-hibernate-orm-without-persistence-xml-recommended[Hibernate set-up guide for all configation].
+Follow the link:hibernate-orm-guide.html#setting-up-and-configuring-hibernate-orm-without-persistence-xml-recommended[Hibernate set-up guide for all configuration].
 
 In your `pom.xml`, add the following dependencies:
 
@@ -79,7 +79,7 @@ quarkus.datasource.password: connor
 
 == Defining your entity
 
-To define a Panache entity, simply extend `PanacheEntity`, annotated it with `@Entity` and add your
+To define a Panache entity, simply extend `PanacheEntity`, annotate it with `@Entity` and add your
 columns as public fields:
 
 [source,java]
@@ -87,7 +87,7 @@ columns as public fields:
 @Entity
 public class Person extends PanacheEntity {
     public String name;
-    public Date birth;
+    public LocalDate birth;
     public PersonStatus status;
 }
 --
@@ -100,7 +100,7 @@ You can put all your JPA column annotations on the public fields. If you need a 
 @Entity
 public class Person extends PanacheEntity {
     public String name;
-    public Date birth;
+    public LocalDate birth;
     public PersonStatus status;
     
     // this will store all names in lowercase in the DB,
@@ -127,7 +127,7 @@ Once you have written your entity, here are the most common operations you would
 // creating a person
 Person person = new Person();
 person.name = "Stef";
-person.birth = new GregorianCalendar(1910, Calendar.FEBRUARY, 1).getTime()
+person.birth = LocalDate.of(1910, Month.FEBRUARY, 1);
 person.status = Status.Alive;
 
 // persist it
@@ -226,7 +226,7 @@ in your entity class:
 @Entity
 public class Person extends PanacheEntity {
     public String name;
-    public Date birth;
+    public LocalDate birth;
     public PersonStatus status;
     
     public static Person findByName(String name){
@@ -248,7 +248,7 @@ public class Person extends PanacheEntity {
 Normally, HQL queries are of this form: `from EntityName [where ...] [order by ...]`, with optional elements
 at the end.
 
-If your query does not start with `from`, we support for the following additional forms:
+If your query does not start with `from`, we support the following additional forms:
 
 - `order by ...` which will expand to `from EntityName order by ...`
 - `<singleColumnName>` (and single parameter) which will expand to `from EntityName where <singleColumnName> = ?`
@@ -290,7 +290,7 @@ Every query operation accepts passing parameters by index (`Object...`), or by n
 
 == The DAO/Repository option
 
-Look, we get it: you've a love/hate relationship with DAOs/Repositories but you can't live without them. We don't judge, we
+Look, we get it: you have a love/hate relationship with DAOs/Repositories but you can't live without them. We don't judge, we
 know life is tough and we've got you covered.
 
 If you want to have Repositories, you can get the exact same convenient methods injected in your Repository by making it
@@ -375,8 +375,8 @@ public class PersonRepository implements PanacheRepositoryBase<Person,Integer> {
 
 == How and why we simplify Hibernate mapping
 
-There are a number of annoying things users have grown used to reluctantly deal with when it comes to writing
-Hibernate entities, such as:
+When it comes to writing hibernate entities, there are a number of annoying things that users have grown used to 
+reluctantly deal with, such as:
 
 - Duplicating ID logic: most entities need an ID, most people don't care how it's set, because it's not really
 relevant to your model.

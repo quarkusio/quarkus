@@ -56,10 +56,13 @@ The important elements are these 3 options:
 
 They enable the native SSL support for your native image.
 
-As SSL is ipso facto the standard nowadays, we decided to enable its support automatically for some of our extensions e.g. our REST client extension,
-our JDBC drivers extensions...
+As SSL is ipso facto the standard nowadays, we decided to enable its support automatically for some of our extensions:
 
-As long as you have one of those extensions in your project, SSL will be enabled.
+ * the SmallRye REST client extension,
+ * the Agroal connection pooling extension,
+ * the Jaeger extension.
+
+As long as you have one of those extensions in your project, the SSL support will be enabled by default.
 
 Now, let's just check the size of our native image as it will be useful later:
 ```

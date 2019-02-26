@@ -134,7 +134,8 @@ public class ResteasyScanningProcessor {
 
     private static final Set<DotName> TYPES_IGNORED_FOR_REFLECTION = new HashSet<>(Arrays.asList(
             DotName.createSimple("javax.json.JsonObject"),
-            DotName.createSimple("javax.json.JsonArray")));
+            DotName.createSimple("javax.json.JsonArray"),
+            DotName.createSimple("javax.ws.rs.core.Response")));
 
     private static final DotName[] METHOD_ANNOTATIONS = {
             GET,
@@ -481,7 +482,7 @@ public class ResteasyScanningProcessor {
 
     /**
      * Install the JAXRS security provider
-     * 
+     *
      * @param providers - the JaxrsProviderBuildItem providers producer to use
      */
     @BuildStep

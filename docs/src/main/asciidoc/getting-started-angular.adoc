@@ -1,0 +1,140 @@
+= {project-name} - Getting Started With Angular
+
+:toc: macro
+:toclevels: 4
+:doctype: book
+:icons: font
+:docinfo1:
+
+:numbered:
+:sectnums:
+:sectnumlevels: 4
+
+
+Learn how to work with Angular when developing a {project-name} application. This guide covers:
+
+* Laying out your {project-name} application
+* Integrating Angular into your build process
+* Hot deployment with Angular's development mode
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* an IDE
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven 3.5.3+
+* Angular installed as per https://angular.io/guide/quickstart
+
+It is also assumed that you are familiar with the concepts in the link:getting-started-guide.html[Getting Started Guide]
+
+include::./maven-config.adoc[tag=repositories]
+
+== Architecture
+
+In this guide, we create a straightforward angular application that can easily developed alongside a {project-name} Java backend.
+This guide does not cover every step involved in creating a complete application, but focuses on the bits that are
+needed to integrate Quarkus and Angular.
+
+Note that even though this guide focuses on Angular much of what is covered here can be adapted to other frontend
+frameworks.
+
+== Solution
+
+To look at a complete example you can clone the Git repository: `git clone git@github.com:jbossas/quarkus-quickstarts.git`,
+or download an https://github.com/jbossas/quarkus-quickstarts/archive/master.zip[archive].
+
+The solution is located in the `getting-started-angular` directory.
+
+== Integrating Angular into the build
+
+This assumes you are expanding on the link:getting-started-guide.html[Getting Started Guide], or another simple {project-name}
+project.
+
+To create a new Angular command run the following from the root of the project:
+
+`ng new acme --directory src/main/ui`
+
+Angular will ask you some questions, and when it is done you should have a new angular project in the `src/main/ui`
+folder.
+
+The problem we have now is that Maven does not know anything about this folder, so it won't be integrated into our build
+process. Lets fix this so the Angular frontend will be built as part of our normal build process, to do this add the
+following to your `pom.xml` in the `build` -> `plugins` section.
+
+[source,xml]
+----
+<plugin>
+    <groupId>org.codehaus.mojo</groupId>
+    <artifactId>exec-maven-plugin</artifactId>
+    <version>1.6.0</version>
+    <executions>
+        <execution>
+            <id>build-angular</id>
+            <goals>
+                <goal>exec</goal>
+            </goals>
+            <phase>prepare-package</phase>
+            <configuration>
+                <workingDirectory>${project.build.sourceDirectory}/../ui</workingDirectory>
+                <executable>ng</executable>
+                <arguments>
+                    <argument>build</argument>
+                    <argument>--prod</argument>
+                    <argument>--output-path=${project.build.outputDirectory}/META-INF/resources</argument>
+                </arguments>
+            </configuration>
+        </execution>
+    </executions>
+</plugin>
+----
+
+This looks like a lof of XML, but it is basically just the Maven command to run `ng build --prod` and send the output
+to a location where it will be included in the final application jar.
+
+Now you should be able to run `mvn package`, launch the resulting `<project-name>-runner.jar`, navigate to
+http://localhost:8080 and you should see the basic Angular app that is created by `ng new`. If you navigate to a JAX-RS
+endpoint (e.g. `/hello` if you started from the Getting Started app) you should see the JAX-RS requests work as expected.
+
+This works fine for when you are ready to deploy you application, but it sucks for development mode where you don't
+want to have to rebuild everything after every minor change.
+
+== Integrating Angular into Development mode
+
+{project-name} can take advantage of Angular's built in hot deployment server, and integrate it into development mode.
+
+To use this we need to add an additional dependency:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-ui-deployment</artifactId>
+    <scope>provided</scope>
+    <version>${quarkus.version}</version>
+</dependency>
+----
+
+This dependency only takes effect in development mode. This replaces the default Servlet that is responsible for serving
+static content with an alternate Servlet that can proxy requests and websocket connections to Angular's development server.
+This means that even though in the browser it looks like {project-name} is handling all requests, behind the scenes
+the angular development server is handling all UI requests, including hot deployment logic.
+
+By default this assumes that Angular will run on port `4200`, however this can be changed by the `quarkus.ui.port` config
+property.
+
+Now that we have this dependency we need to start our servers. First we need to start {project-name} so run the following
+command from the project root:
+
+`mvn compile quarkus:dev`
+
+Then in another terminal window start Angular's development server, by running the following command from the
+`src/main/ui` folder:
+
+`ng serve`
+
+If you navigate to http://localhost:8080 you should see your application being served, and any changes you make in both
+the front and back ends should immediately be visible.
+
+

@@ -157,6 +157,16 @@
          </dependency>
          <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-ui-deployment</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-ui-runtime</artifactId>
+            <version>${project.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-builder</artifactId>
             <version>${project.version}</version>
          </dependency>

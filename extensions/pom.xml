@@ -80,6 +80,9 @@
 
         <!-- Caching -->
         <module>caffeine</module>
+
+        <!-- UI Integration -->
+        <module>ui</module>
     </modules>
 
 </project>

@@ -24,6 +24,7 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
+import javax.ws.rs.NotFoundException;
 
 import org.jboss.resteasy.plugins.server.servlet.Filter30Dispatcher;
 
@@ -38,7 +39,15 @@ public class ResteasyFilter extends Filter30Dispatcher {
             throws IOException, ServletException {
         HttpServletResponse response = (HttpServletResponse) servletResponse;
         HttpServletRequest request = (HttpServletRequest) servletRequest;
-        if (request.getMethod().equals("GET") || request.getMethod().equals("HEAD")) {
+        if (request.getAttribute("io.quarkus.ui-proxy") != null) {
+            //this is a bit of a hack. In dev mode when we are proxying the request we can't know the result
+            //as it is a non blocking proxy
+            try {
+                servletContainerDispatcher.service(request.getMethod(), request, response, false);
+            } catch (NotFoundException e) {
+                filterChain.doFilter(request, response);
+            }
+        } else if (request.getMethod().equals("GET") || request.getMethod().equals("HEAD")) {
             //we only serve get requests from the default servlet
             filterChain.doFilter(servletRequest, new ResteasyResponseWrapper(response, request));
         } else {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.quarkus.security;
+package io.quarkus.security.runtime;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;

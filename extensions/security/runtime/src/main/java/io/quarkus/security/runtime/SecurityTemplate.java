@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.quarkus.security;
+package io.quarkus.security.runtime;
 
 import java.net.URL;
 import java.security.Permission;
@@ -45,7 +45,6 @@ import org.wildfly.security.authz.PermissionMappable;
 import org.wildfly.security.authz.PermissionMapper;
 import org.wildfly.security.authz.RoleDecoder;
 import org.wildfly.security.authz.Roles;
-import org.wildfly.security.authz.SimpleAttributesEntry;
 import org.wildfly.security.credential.Credential;
 import org.wildfly.security.credential.PasswordCredential;
 import org.wildfly.security.password.interfaces.ClearPassword;
@@ -57,7 +56,6 @@ import io.undertow.security.idm.IdentityManager;
 import io.undertow.servlet.ServletExtension;
 import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.LoginConfig;
-import io.undertow.servlet.api.ServletInfo;
 
 /**
  * The runtime security template class that provides methods for creating RuntimeValues for the deployment security objects.

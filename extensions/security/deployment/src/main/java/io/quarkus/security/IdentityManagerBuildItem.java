@@ -5,7 +5,6 @@ import java.util.List;
 import org.jboss.builder.item.MultiBuildItem;
 
 import io.quarkus.deployment.annotations.BuildProducer;
-import io.quarkus.runtime.RuntimeValue;
 import io.undertow.security.idm.IdentityManager;
 
 /**

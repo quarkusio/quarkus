@@ -6,7 +6,7 @@ import org.wildfly.security.auth.server.SecurityDomain;
 import org.wildfly.security.auth.server.SecurityIdentity;
 import org.wildfly.security.evidence.BearerTokenEvidence;
 
-import io.quarkus.security.ElytronAccount;
+import io.quarkus.security.runtime.ElytronAccount;
 import io.smallrye.jwt.auth.principal.JWTCallerPrincipal;
 import io.smallrye.jwt.auth.principal.JWTCallerPrincipalFactory;
 import io.smallrye.jwt.auth.principal.ParseException;

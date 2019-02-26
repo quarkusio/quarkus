@@ -1,4 +1,4 @@
-package io.quarkus.security;
+package io.quarkus.security.runtime;
 
 import static org.wildfly.common.Assert.checkNotNullParam;
 

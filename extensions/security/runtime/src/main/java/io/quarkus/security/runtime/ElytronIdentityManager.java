@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.quarkus.security;
+package io.quarkus.security.runtime;
 
 import org.jboss.logging.Logger;
 import org.wildfly.security.auth.server.RealmUnavailableException;

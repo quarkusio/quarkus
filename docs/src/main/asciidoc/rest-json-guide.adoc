@@ -21,7 +21,7 @@ All the information between the browser and the server are formatted as JSON.
 
 == Solution
 
-We recommend you to follow the instructions in the next sections and create the application step by step.
+We recommend that you follow the instructions in the next sections and create the application step by step.
 However, you can go right to the completed example.
 
 Clone the Git repository: `git clone https://github.com/jbossas/quarkus-quickstarts.git`, or download an https://github.com/jbossas/quarkus-quickstarts/archive/master.zip[archive].
@@ -169,7 +169,7 @@ It allows to reduce the size of the native image.
 == Creating a frontend
 
 Now let's add a simple web page to interact with our `FruitResource`.
-Quarkus automatically serves static resources contained in the `META-INF/resources` directory.
+Quarkus automatically serves static resources located under the `META-INF/resources` directory.
 In the `src/main/resources/META-INF/resources` directory, add a `fruits.html` file with the content from this https://raw.githubusercontent.com/jbossas/quarkus-quickstarts/master/rest-json/src/main/resources/META-INF/resources/fruits.html[fruits.html] file in it.
 
 You can now interact with your REST service:
@@ -178,16 +178,25 @@ You can now interact with your REST service:
  * open a browser to `http://localhost:8080/fruits.html`
  * add new fruits to the list via the form
 
+== Building a native image
+
+You can build a native image with the usual command `mvn package -Pnative`.
+
+Running it is as simple as executing `./target/rest-json-1.0-SNAPSHOT-runner`.
+
+You can then point your browser to `http://localhost:8080/fruits.html` and use your application.
+
 == About serialization
 
 The library we use to serialize Java objects to JSON documents is http://json-b.net/[JSON-B].
 It uses Java reflection to get the properties of an object and serialize them.
 
-You might already have understood that, when using GraalVM, you need to register your classes for reflection.
+Most likely, you have understood already that using native images requires you to register the usage of reflection.
 
-But we did not register `Fruit` for reflection in any way and everything is working fine.
+So far, we haven't registered any class, even not `Fruit`, for reflection usage.
+However everything is working fine.
 
-The fact is that Quarkus does some magic when it is capable of inferring the serialized types from the REST methods.
+The fact is that Quarkus performs some magic when it is capable of inferring the serialized types from the REST methods.
 
 When you have the following REST method, it is fairly easy to determine that `Fruit` will be serialized:
 
@@ -368,6 +377,6 @@ This time, you can see our list of legumes.
 
 Creating JSON REST services with Quarkus is easy as it relies on proven and well known technologies.
 
-Quarkus does some magic to further simplify things when running your application as a native image.
+As usual, Quarkus further simplifies things under the hood when running your application as a native image.
 
 There is only one thing to remember: if you use `Response` and Quarkus can't determine the beans that are serialized, you need to annotate them with `@RegisterForReflection`.

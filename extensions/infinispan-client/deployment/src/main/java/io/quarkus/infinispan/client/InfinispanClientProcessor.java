@@ -151,7 +151,7 @@ class InfinispanClientProcessor {
         reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "io.netty.channel.socket.nio.NioSocketChannel"));
         // We use reflection to have continuous queries work
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false,
-                "org.infinispan.client.hotrod.event.ContinuousQueryImpl$ClientEntryListener"));
+                "org.infinispan.client.hotrod.event.impl.ContinuousQueryImpl$ClientEntryListener"));
         // We use reflection to allow for near cache invalidations
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false,
                 "org.infinispan.client.hotrod.near.NearCacheService$InvalidatedNearCacheListener"));

@@ -26,8 +26,8 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>test-extension</artifactId>
-    <name>Quarkus - Core Test Extension</name>
+    <artifactId>quarkus-test-extension</artifactId>
+    <name>Quarkus - Core - Test Extension</name>
     <packaging>pom</packaging>
 
     <properties>

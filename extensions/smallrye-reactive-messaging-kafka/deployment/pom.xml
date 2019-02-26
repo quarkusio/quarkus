@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>quarkus-smallrye-reactive-messaging-kafka-deployment</artifactId>
+    <name>Quarkus - SmallRye Reactive Messaging - Kafka - Deployment</name>
 
     <dependencies>
         <dependency>

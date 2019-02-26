@@ -19,14 +19,14 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>test-extension</artifactId>
+        <artifactId>quarkus-test-extension</artifactId>
         <groupId>io.quarkus</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>test-extension-deployment</artifactId>
-    <name>Quarkus - Core Test Extension - Deployment</name>
+    <artifactId>quarkus-test-extension-deployment</artifactId>
+    <name>Quarkus - Core - Test Extension - Deployment</name>
 
     <dependencies>
         <dependency>
@@ -47,7 +47,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>test-extension-runtime</artifactId>
+            <artifactId>quarkus-test-extension-runtime</artifactId>
             <version>1.0.0.Alpha1-SNAPSHOT</version>
         </dependency>
 

@@ -14,7 +14,7 @@ Console logging is enabled by default.  To configure or disable it, the followin
 |===
 |Property Name|Default|Description
 |quarkus.logging.console.enable|true|Determine whether console logging is enabled.
-|quarkus.logging.console.format|%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c{1.}] (%t) %s%e%n|The format pattern to use for logging to the console; see <<format_string>>.
+|quarkus.logging.console.format|%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c{3.}] (%t) %s%e%n|The format pattern to use for logging to the console; see <<format_string>>.
 |quarkus.logging.console.level|INFO|The minimum log level to display to the console.
 |quarkus.logging.console.color|true|Allow color rendering to be used on the console, if it is supported by the terminal.
 |===
@@ -27,7 +27,7 @@ Logging to a file is also supported and enabled by default.  To configure or dis
 |===
 |Property Name|Default|Description
 |quarkus.logging.file.enable|true|Determine whether file logging is enabled.
-|quarkus.logging.file.format|%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c{1.}] (%t) %s%e%n|The format pattern to use for logging to a file; see <<format_string>>.
+|quarkus.logging.file.format|%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c{3.}] (%t) %s%e%n|The format pattern to use for logging to a file; see <<format_string>>.
 |quarkus.logging.file.level|INFO|The minimum log level to write to the log file.
 |quarkus.logging.file.path|quarkus.log|The path of the log file.
 |===

@@ -29,6 +29,11 @@
     <artifactId>test-extension</artifactId>
     <name>Quarkus - Core Test Extension</name>
     <packaging>pom</packaging>
+
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <modules>
         <module>deployment</module>
         <module>runtime</module>

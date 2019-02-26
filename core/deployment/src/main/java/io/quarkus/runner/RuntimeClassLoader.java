@@ -145,6 +145,9 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput {
         } else {
             name = nm;
         }
+        byte[] data = resources.get(name);
+        if (data != null)
+            return new ByteArrayInputStream(data);
         return super.getResourceAsStream(name);
     }
 

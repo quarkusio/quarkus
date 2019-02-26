@@ -146,12 +146,6 @@ public class UndertowBuildStep {
     HttpConfig config;
 
     @BuildStep
-    void setupLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
-        filters.produce(new LogCleanupFilterBuildItem("org.xnio", "XNIO version"));
-        filters.produce(new LogCleanupFilterBuildItem("org.xnio.nio", "XNIO NIO Implementation Version"));
-    }
-
-    @BuildStep
     @Record(RUNTIME_INIT)
     public ServiceStartBuildItem boot(UndertowDeploymentTemplate template,
             ServletDeploymentManagerBuildItem servletDeploymentManagerBuildItem,

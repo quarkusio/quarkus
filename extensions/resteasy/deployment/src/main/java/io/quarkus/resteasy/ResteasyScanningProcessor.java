@@ -75,7 +75,6 @@ import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildIte
 import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
-import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.resteasy.runtime.QuarkusInjectorFactory;
 import io.quarkus.resteasy.runtime.ResteasyFilter;
@@ -212,11 +211,6 @@ public class ResteasyScanningProcessor {
     @BuildStep
     io.quarkus.resteasy.ResteasyJaxrsConfig exportConfig() {
         return new io.quarkus.resteasy.ResteasyJaxrsConfig(resteasyConfig.path);
-    }
-
-    @BuildStep
-    void setupLogFilters(BuildProducer<LogCleanupFilterBuildItem> filters) {
-        filters.produce(new LogCleanupFilterBuildItem("org.jboss.resteasy.resteasy_jaxrs.i18n", "RESTEASY002225"));
     }
 
     @BuildStep

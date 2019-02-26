@@ -34,7 +34,7 @@ public class MapConfigType extends CompoundConfigType {
 
     ResultHandle generateGetChildObject(final BytecodeCreator body, final ResultHandle name, final ResultHandle config,
             final ResultHandle self, final String childName) {
-        return body.invokeVirtualMethod(MethodDescriptor.ofMethod(Map.class, "get", Object.class, Object.class),
+        return body.invokeInterfaceMethod(MethodDescriptor.ofMethod(Map.class, "get", Object.class, Object.class),
                 body.checkCast(self, Map.class), body.load(childName));
     }
 
@@ -45,7 +45,7 @@ public class MapConfigType extends CompoundConfigType {
 
     void generateSetChildObject(final BytecodeCreator body, final ResultHandle name, final ResultHandle self,
             final String containingName, final ResultHandle value) {
-        body.invokeVirtualMethod(MethodDescriptor.ofMethod(Map.class, "put", Object.class, Object.class, Object.class),
+        body.invokeInterfaceMethod(MethodDescriptor.ofMethod(Map.class, "put", Object.class, Object.class, Object.class),
                 body.checkCast(self, Map.class), body.invokeVirtualMethod(NI_GET_NEXT_SEGMENT, name), value);
     }
 

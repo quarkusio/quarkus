@@ -27,7 +27,10 @@ public final class DefaultConfigSource extends PropertiesConfigSource {
 
     @SuppressWarnings("unchecked")
     private static Map<String, String> getMap() {
-        try (InputStream is = DefaultConfigSource.class.getClassLoader().getResourceAsStream(DEFAULT_CONFIG_PROPERTIES_NAME)) {
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        if (cl == null)
+            cl = DefaultConfigSource.class.getClassLoader();
+        try (InputStream is = cl.getResourceAsStream(DEFAULT_CONFIG_PROPERTIES_NAME)) {
             if (is == null) {
                 return Collections.emptyMap();
             }

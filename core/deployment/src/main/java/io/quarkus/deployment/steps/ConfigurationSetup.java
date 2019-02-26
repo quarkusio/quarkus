@@ -473,10 +473,11 @@ public class ConfigurationSetup {
             }
             // }
             // branches for each next-string
+            boolean hasWildCard = false;
             final Iterable<String> names = keyMap.childNames();
             for (String name : names) {
                 if (name.equals(ConfigPatternMap.WILD_CARD)) {
-                    // skip
+                    hasWildCard = true;
                 } else {
                     // TODO: string switch
                     // if (keyIter.nextSegmentEquals(name)) {
@@ -494,6 +495,23 @@ public class ConfigurationSetup {
                         nameMatched.returnValue(null);
                     }
                     // }
+                }
+            }
+            if (hasWildCard) {
+                // consume and parse
+                try (BytecodeCreator matchedBody = body.ifNonZero(body.invokeVirtualMethod(NI_HAS_NEXT, keyIter))
+                        .trueBranch()) {
+                    // keyIter.next();
+                    matchedBody.invokeVirtualMethod(NI_NEXT, keyIter);
+                    // (generated recursive)
+                    final int length = methodName.length();
+                    methodName.append('_').append("wildcard");
+                    matchedBody.invokeStaticMethod(
+                            generateParserBody(cc, keyMap.getChild(ConfigPatternMap.WILD_CARD), methodName, parseMethodCache),
+                            config, keyIter);
+                    methodName.setLength(length);
+                    // return;
+                    matchedBody.returnValue(null);
                 }
             }
             // todo: unknown name warning goes here

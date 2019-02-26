@@ -105,6 +105,11 @@ public class TestServlet {
                 log.warn("Removing key: " + key);
                 matches.remove(key);
             }
+
+            @Override
+            public void resultUpdated(String key, Book value) {
+                log.warn("Entry updated: " + key);
+            }
         };
 
         continuousQuery.addContinuousQueryListener(query, listener);
@@ -158,7 +163,7 @@ public class TestServlet {
     @Produces(MediaType.TEXT_PLAIN)
     public List<String> getIDs() {
         ensureStart();
-        log.fatal("Retrieving all IDs");
+        log.info("Retrieving all IDs");
         return cache.keySet().stream().sorted().collect(Collectors.toList());
     }
 

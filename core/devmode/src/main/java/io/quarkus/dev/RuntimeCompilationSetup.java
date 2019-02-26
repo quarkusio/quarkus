@@ -18,6 +18,8 @@ package io.quarkus.dev;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.ServiceLoader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -33,9 +35,13 @@ public class RuntimeCompilationSetup {
         String sourcesDir = System.getProperty("quarkus.runner.sources");
         String resourcesDir = System.getProperty("quarkus.runner.resources");
         if (classesDir != null) {
+            ServiceLoader<CompilationProvider> serviceLoader = ServiceLoader.load(CompilationProvider.class);
+            List<CompilationProvider> compilationProviders = new ArrayList<>();
+            serviceLoader.iterator().forEachRemaining(compilationProviders::add);
             ClassLoaderCompiler compiler = null;
             try {
-                compiler = new ClassLoaderCompiler(Thread.currentThread().getContextClassLoader(), new File(classesDir));
+                compiler = new ClassLoaderCompiler(Thread.currentThread().getContextClassLoader(), new File(classesDir),
+                        compilationProviders);
             } catch (Exception e) {
                 log.log(Level.SEVERE, "Failed to create compiler, runtime compilation will be unavailable", e);
                 return null;

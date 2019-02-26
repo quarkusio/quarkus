@@ -85,6 +85,8 @@
         <module>lambda</module>
         <!-- Camel -->
         <module>camel</module>
+
+        <module>kotlin</module>
     </modules>
 
 </project>

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- ~ Copyright 2018 Red Hat, Inc. ~ ~ Licensed under the Apache License, 
-    Version 2.0 (the "License"); ~ you may not use this file except in compliance 
-    with the License. ~ You may obtain a copy of the License at ~ ~ http://www.apache.org/licenses/LICENSE-2.0 
-    ~ ~ Unless required by applicable law or agreed to in writing, software ~ 
-    distributed under the License is distributed on an "AS IS" BASIS, ~ WITHOUT 
-    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. ~ See the 
-    License for the specific language governing permissions and ~ limitations 
+    Version 2.0 (the "License"); ~ you may not use this file except in compliance
+    with the License. ~ You may obtain a copy of the License at ~ ~ http://www.apache.org/licenses/LICENSE-2.0
+    ~ ~ Unless required by applicable law or agreed to in writing, software ~
+    distributed under the License is distributed on an "AS IS" BASIS, ~ WITHOUT
+    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. ~ See the
+    License for the specific language governing permissions and ~ limitations
     under the License. -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -126,6 +126,7 @@
         <zookeeper.version>3.4.10</zookeeper.version>
         <scala.version>2.12.2</scala.version>
         <aws-lambda-java.version>1.1.0</aws-lambda-java.version>
+        <kotlin.version>1.3.21</kotlin.version>
         <camel.version>3.0.0-M1</camel.version>
         <javax.xml.soap-api.version>1.4.0</javax.xml.soap-api.version>
         <maven-artifact-transfer.version>0.10.0</maven-artifact-transfer.version>
@@ -387,6 +388,12 @@
                 <version>${project.version}</version>
                 <scope>provided</scope>
             </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-kotlin-deployment</artifactId>
+                <version>${project.version}</version>
+                <scope>provided</scope>
+            </dependency>
 
             <!-- Quarkus test dependencies -->
 
@@ -402,9 +409,9 @@
                 <version>${project.version}</version>
                 <scope>test</scope>
             </dependency>
-            
+
             <!-- External dependencies -->
-            
+
             <!-- Camel -->
             <dependency>
                 <groupId>org.apache.camel</groupId>
@@ -465,7 +472,7 @@
                     </exclusion>
                 </exclusions>
             </dependency>
-            
+
             <dependency>
                 <groupId>org.jboss.logging</groupId>
                 <artifactId>jboss-logging</artifactId>
@@ -1499,6 +1506,12 @@
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>smallrye-converter-api</artifactId>
                 <version>${smallrye-reactive-streams-operators.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-compiler-embeddable</artifactId>
+                <version>${kotlin.version}</version>
             </dependency>
 
             <dependency>

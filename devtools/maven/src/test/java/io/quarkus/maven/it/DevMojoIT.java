@@ -64,7 +64,31 @@ public class DevMojoIT extends MojoTestBase {
         sleep();
         filter(source, ImmutableMap.of(uuid, "carambar"));
 
+        // Wait until we get "carambar"
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains("carambar"));
+    }
+
+    @Test
+    public void testThatTheApplicationIsReloadedOnKotlinChange()
+            throws MavenInvocationException, IOException, InterruptedException {
+        testDir = initProject("projects/classic-kotlin", "projects/project-classic-run-kotlin-change");
+        runAndCheck();
+
+        // Edit the "Hello" message.
+        File source = new File(testDir, "src/main/kotlin/org/acme/HelloResource.kt");
+        String uuid = UUID.randomUUID().toString();
+        filter(source, ImmutableMap.of("return \"hello\"", "return \"" + uuid + "\""));
+
         // Wait until we get "uuid"
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains(uuid));
+        sleep();
+        filter(source, ImmutableMap.of(uuid, "carambar"));
+
+        // Wait until we get "carambar"
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains("carambar"));

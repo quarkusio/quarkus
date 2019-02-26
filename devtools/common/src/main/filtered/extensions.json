@@ -269,5 +269,13 @@
     ],
     "groupId": "io.quarkus",
     "artifactId": "quarkus-smallrye-reactive-messaging-kafka-deployment"
+  },
+  {
+    "name": "Kotlin",
+    "labels": [
+      "kotlin"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-kotlin-deployment"
   }
 ]

@@ -29,7 +29,7 @@
 
     <artifactId>quarkus-devtools-all</artifactId>
     <packaging>pom</packaging>
-    <name>Quarkus - Devtools</name>
+    <name>Quarkus - Dev tools</name>
 
     <properties>
         <test.level>INFO</test.level>

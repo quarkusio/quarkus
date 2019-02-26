@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>quarkus-kafka-client-runtime</artifactId>
+    <name>Quarkus - Kafka - Client - Runtime</name>
 
     <dependencies>
 

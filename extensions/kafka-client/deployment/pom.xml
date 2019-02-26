@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>quarkus-kafka-client-deployment</artifactId>
+    <name>Quarkus - Kafka - Client - Deployment</name>
 
     <dependencies>
         <dependency>

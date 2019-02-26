@@ -11,6 +11,7 @@
     </parent>
 
     <artifactId>quarkus-smallrye-reactive-messaging-kafka-runtime</artifactId>
+    <name>Quarkus - SmallRye Reactive Messaging - Kafka - Runtime</name>
 
     <dependencies>
         <dependency>

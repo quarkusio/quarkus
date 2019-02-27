@@ -18,8 +18,11 @@ package io.quarkus.agroal;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Default;
@@ -29,6 +32,7 @@ import javax.inject.Singleton;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.protean.gizmo.ClassCreator;
 import org.jboss.protean.gizmo.ClassOutput;
@@ -45,6 +49,7 @@ import io.quarkus.agroal.runtime.DataSource;
 import io.quarkus.agroal.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -61,6 +66,10 @@ import io.quarkus.deployment.util.HashUtil;
 class AgroalProcessor {
 
     private static final Logger log = Logger.getLogger(AgroalProcessor.class);
+
+    private static final Set<DotName> UNREMOVABLE_BEANS = new HashSet<>(Arrays.asList(
+            DotName.createSimple(AbstractDataSourceProducer.class.getName()),
+            DotName.createSimple(javax.sql.DataSource.class.getName())));
 
     /**
      * The Agroal build time configuration.
@@ -149,6 +158,20 @@ class AgroalProcessor {
         // - we have the datasource1 and datasource2 elements in the map but the values are not injected
         // - as mentioned above, it doesn't seem to be an issue for the build time config I use in the above method...
         template.configureRuntimeProperties(agroalRuntimeConfig);
+    }
+
+    @BuildStep
+    UnremovableBeanBuildItem markBeansAsUnremovable() {
+        return new UnremovableBeanBuildItem(beanInfo -> {
+            Set<Type> types = beanInfo.getTypes();
+            for (Type t : types) {
+                if (UNREMOVABLE_BEANS.contains(t.name())) {
+                    return true;
+                }
+            }
+
+            return false;
+        });
     }
 
     private void createDataSourceProducerBean(BuildProducer<GeneratedBeanBuildItem> generatedBean,

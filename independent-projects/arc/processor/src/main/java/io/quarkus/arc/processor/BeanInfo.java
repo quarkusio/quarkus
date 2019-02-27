@@ -76,7 +76,7 @@ public class BeanInfo {
     private final Integer alternativePriority;
 
     private final List<StereotypeInfo> stereotypes;
-    
+
     private final String name;
 
     // Gizmo consumers are only used by synthetic beans
@@ -87,15 +87,22 @@ public class BeanInfo {
 
     private final Map<String, Object> params;
 
-    BeanInfo(AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope, Set<Type> types, Set<AnnotationInstance> qualifiers,
-            List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer, Integer alternativePriority, List<StereotypeInfo> stereotypes, String name) {
-        this(null, target, beanDeployment, scope, types, qualifiers, injections, declaringBean, disposer, alternativePriority, stereotypes, name, null, null,
+    BeanInfo(AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope, Set<Type> types,
+            Set<AnnotationInstance> qualifiers,
+            List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer, Integer alternativePriority,
+            List<StereotypeInfo> stereotypes,
+            String name) {
+        this(null, target, beanDeployment, scope, types, qualifiers, injections, declaringBean, disposer, alternativePriority,
+                stereotypes, name, null, null,
                 Collections.emptyMap());
     }
 
-    BeanInfo(ClassInfo implClazz, AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope, Set<Type> types, Set<AnnotationInstance> qualifiers,
-            List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer, Integer alternativePriority, List<StereotypeInfo> stereotypes, String name,
-            Consumer<MethodCreator> creatorConsumer, Consumer<MethodCreator> destroyerConsumer, Map<String, Object> params) {
+    BeanInfo(ClassInfo implClazz, AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope, Set<Type> types,
+            Set<AnnotationInstance> qualifiers,
+            List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer, Integer alternativePriority,
+            List<StereotypeInfo> stereotypes,
+            String name, Consumer<MethodCreator> creatorConsumer, Consumer<MethodCreator> destroyerConsumer,
+            Map<String, Object> params) {
         this.target = Optional.ofNullable(target);
         if (implClazz == null && target != null) {
             switch (target.kind()) {
@@ -125,8 +132,9 @@ public class BeanInfo {
         for (Type type : types) {
             Beans.analyzeType(type, beanDeployment);
         }
-        if (qualifiers.isEmpty() || (qualifiers.size() <= 2 && qualifiers.stream()
-                .allMatch(a -> DotNames.NAMED.equals(a.name()) || DotNames.ANY.equals(a.name())))) {
+        if (qualifiers.isEmpty()
+                || (qualifiers.size() <= 2 && qualifiers.stream()
+                        .allMatch(a -> DotNames.NAMED.equals(a.name()) || DotNames.ANY.equals(a.name())))) {
             qualifiers.add(BuiltinQualifier.DEFAULT.getInstance());
         }
         qualifiers.add(BuiltinQualifier.ANY.getInstance());
@@ -254,13 +262,14 @@ public class BeanInfo {
     }
 
     InterceptionInfo getLifecycleInterceptors(InterceptionType interceptionType) {
-        return lifecycleInterceptors.containsKey(interceptionType) ? lifecycleInterceptors.get(interceptionType) : InterceptionInfo.EMPTY;
+        return lifecycleInterceptors.containsKey(interceptionType) ? lifecycleInterceptors.get(interceptionType)
+                : InterceptionInfo.EMPTY;
     }
 
     public boolean hasLifecycleInterceptors() {
         return !lifecycleInterceptors.isEmpty();
     }
- 
+
     boolean isSubclassRequired() {
         return !interceptedMethods.isEmpty() || lifecycleInterceptors.containsKey(InterceptionType.PRE_DESTROY);
     }
@@ -287,7 +296,8 @@ public class BeanInfo {
             bound.addAll(interception.interceptors);
         }
         if (!interceptedMethods.isEmpty()) {
-            bound.addAll(interceptedMethods.values().stream().flatMap(ii -> ii.interceptors.stream()).collect(Collectors.toList()));
+            bound.addAll(
+                    interceptedMethods.values().stream().flatMap(ii -> ii.interceptors.stream()).collect(Collectors.toList()));
         }
         return bound.isEmpty() ? Collections.emptyList() : bound.stream().distinct().sorted().collect(Collectors.toList());
     }
@@ -307,7 +317,7 @@ public class BeanInfo {
     public List<StereotypeInfo> getStereotypes() {
         return stereotypes;
     }
-    
+
     public String getName() {
         return name;
     }
@@ -326,21 +336,28 @@ public class BeanInfo {
 
     void validate(List<Throwable> errors) {
         if (isClassBean()) {
-            if (!target.get().asClass().hasNoArgsConstructor()) {
-                if (scope.isNormal()) {
-                    errors.add(new DefinitionException("Normal scoped bean must declare a no-args constructor: " + this));
-                }
+            ClassInfo beanClass = target.get().asClass();
+            String classifier = scope.isNormal() ? "Normal scoped" : null;
+            if (classifier == null && isSubclassRequired()) {
+                classifier = "Intercepted";
             }
-            if (Modifier.isFinal(target.get().asClass().flags())) {
-                if (scope.isNormal()) {
-                    errors.add(new DefinitionException("Normal scoped bean must not be final: " + this));
-                }
-                if (isSubclassRequired()) {
-                    errors.add(new DefinitionException("Bean that has a bound interceptor must not be final: " + this));
-                }
+            if (Modifier.isFinal(beanClass.flags()) && classifier != null) {
+                errors.add(new DefinitionException(String.format("%s bean must not be final: %s", classifier, this)));
+            }
+            MethodInfo noArgsConstructor = beanClass.method(Methods.INIT);
+            // Note that spec also requires no-arg constructor for intercepted beans but intercepted subclasses should work fine with non-private @Inject
+            // constructors so we only validate normal scoped beans
+            if (scope.isNormal() && noArgsConstructor == null) {
+                errors.add(new DefinitionException(String
+                        .format("Normal scoped beans must declare a non-private constructor with no parameters: %s", this)));
+            }
+            if (noArgsConstructor != null && Modifier.isPrivate(noArgsConstructor.flags()) && classifier != null) {
+                errors.add(
+                        new DefinitionException(
+                                String.format("%s bean is not proxyable because it has a private no-args constructor: %s. To fix this problem, change the constructor to be package-private",
+                                        classifier, this)));
             }
         }
-        // TODO we should add way more validations
     }
 
     void init(List<Throwable> errors) {
@@ -385,7 +402,8 @@ public class BeanInfo {
             Methods.addInterceptedMethodCandidates(beanDeployment, target.get().asClass(), candidates, classLevelBindings);
 
             for (Entry<MethodKey, Set<AnnotationInstance>> entry : candidates.entrySet()) {
-                List<InterceptorInfo> interceptors = beanDeployment.getInterceptorResolver().resolve(InterceptionType.AROUND_INVOKE, entry.getValue());
+                List<InterceptorInfo> interceptors = beanDeployment.getInterceptorResolver()
+                        .resolve(InterceptionType.AROUND_INVOKE, entry.getValue());
                 if (!interceptors.isEmpty()) {
                     interceptedMethods.put(entry.getKey().method, new InterceptionInfo(interceptors, entry.getValue()));
                 }
@@ -410,26 +428,23 @@ public class BeanInfo {
         }
     }
 
-    private void putLifecycleInterceptors(Map<InterceptionType, InterceptionInfo> lifecycleInterceptors, Set<AnnotationInstance> classLevelBindings,
+    private void putLifecycleInterceptors(Map<InterceptionType, InterceptionInfo> lifecycleInterceptors,
+            Set<AnnotationInstance> classLevelBindings,
             InterceptionType interceptionType) {
-        List<InterceptorInfo> interceptors = beanDeployment.getInterceptorResolver().resolve(interceptionType, classLevelBindings);
+        List<InterceptorInfo> interceptors = beanDeployment.getInterceptorResolver().resolve(interceptionType,
+                classLevelBindings);
         if (!interceptors.isEmpty()) {
             lifecycleInterceptors.put(interceptionType, new InterceptionInfo(interceptors, classLevelBindings));
         }
     }
 
     private void addClassLevelBindings(ClassInfo classInfo, Collection<AnnotationInstance> bindings) {
-        beanDeployment.getAnnotations(classInfo)
-                .stream()
-                .filter(a -> beanDeployment.getInterceptorBinding(a.name()) != null && bindings.stream()
-                        .noneMatch(e -> e.name()
-                                .equals(a.name())))
+        beanDeployment.getAnnotations(classInfo).stream()
+                .filter(a -> beanDeployment.getInterceptorBinding(a.name()) != null
+                        && bindings.stream().noneMatch(e -> e.name().equals(a.name())))
                 .forEach(a -> bindings.add(a));
-        if (classInfo.superClassType() != null && !classInfo.superClassType()
-                .name()
-                .equals(DotNames.OBJECT)) {
-            ClassInfo superClass = beanDeployment.getIndex()
-                    .getClassByName(classInfo.superName());
+        if (classInfo.superClassType() != null && !classInfo.superClassType().name().equals(DotNames.OBJECT)) {
+            ClassInfo superClass = beanDeployment.getIndex().getClassByName(classInfo.superName());
             if (superClass != null) {
                 addClassLevelBindings(superClass, bindings);
             }
@@ -496,7 +511,7 @@ public class BeanInfo {
         private Integer alternativePriority;
 
         private List<StereotypeInfo> stereotypes;
-        
+
         private String name;
 
         private Consumer<MethodCreator> creatorConsumer;
@@ -564,7 +579,7 @@ public class BeanInfo {
             this.stereotypes = stereotypes;
             return this;
         }
-        
+
         Builder name(String name) {
             this.name = name;
             return this;
@@ -586,7 +601,8 @@ public class BeanInfo {
         }
 
         BeanInfo build() {
-            return new BeanInfo(implClazz, target, beanDeployment, scope, types, qualifiers, injections, declaringBean, disposer, alternativePriority,
+            return new BeanInfo(implClazz, target, beanDeployment, scope, types, qualifiers, injections, declaringBean,
+                    disposer, alternativePriority,
                     stereotypes, name, creatorConsumer, destroyerConsumer, params);
         }
 

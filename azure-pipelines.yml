@@ -9,6 +9,14 @@ trigger:
     include:
     - master
 
+pr:
+  branches:
+    include:
+      - master
+  paths:
+    exclude:
+      - docs/src/main/*
+
 jobs:
 - job: Build_Native_Linux
   timeoutInMinutes: 80

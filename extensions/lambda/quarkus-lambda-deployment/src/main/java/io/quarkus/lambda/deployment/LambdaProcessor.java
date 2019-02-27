@@ -44,9 +44,10 @@ public final class LambdaProcessor {
             final String mapping = name.local();
             final String servletName = name.toString() + "Lambda";
 
-            servletProducer.produce(new ServletBuildItem(mapping, servletName)
+            servletProducer.produce(ServletBuildItem.builder(mapping, servletName)
                     .setLoadOnStartup(1)
-                    .addMapping("/" + mapping));
+                    .addMapping("/" + mapping)
+                    .build());
 
             try (final ClassCreator creator = new ClassCreator(classOutput, servletName, null, LambdaServlet.class.getName())) {
                 try (MethodCreator ctor = creator.getMethodCreator("<init>", "void")) {

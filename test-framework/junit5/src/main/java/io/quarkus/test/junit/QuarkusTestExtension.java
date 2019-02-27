@@ -20,8 +20,6 @@ import static io.quarkus.test.common.PathTestHelper.getAppClassLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
 import java.io.Closeable;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
 
@@ -35,6 +33,8 @@ import org.junit.jupiter.api.extension.TestInstantiationException;
 
 import io.quarkus.bootstrap.BootstrapClassLoaderBuilder;
 import io.quarkus.bootstrap.BootstrapException;
+import io.quarkus.runner.RuntimeRunner;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.NativeImageLauncher;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.TestResourceManager;
@@ -82,33 +82,48 @@ public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallba
                     .setFrameworkClasses(frameworkClasses)
                     .setLocalProjectsDiscovery(true)
                     .setOffline(true)
-                    .build();
+                    .setParent(Thread.currentThread().getContextClassLoader())
+                    .buildDeploymentCl();
         } catch (BootstrapException e) {
             throw new IllegalStateException("Failed to create the boostrap class loader", e);
         }
-
+        /*
+         * try {
+         * BootstrapUtils.logUrlDiff(appCl, "Complete CL", BootstrapClassLoaderBuilder.newInstance()
+         * .setAppClasses(appClasses)
+         * .setFrameworkClasses(frameworkClasses)
+         * .setLocalProjectsDiscovery(true)
+         * .setOffline(true)
+         * .setParent(Thread.currentThread().getContextClassLoader())
+         * .buildDeploymentCl(), "Deployment CL");
+         * } catch (BootstrapException e1) {
+         * // TODO Auto-generated catch block
+         * e1.printStackTrace();
+         * }
+         */
         final ClassLoader originalCl = setCCL(appCl);
         try {
+
+            final RuntimeRunner runtimeRunner = RuntimeRunner.builder()
+                    .setLaunchMode(LaunchMode.TEST)
+                    .setClassLoader(Thread.currentThread().getContextClassLoader())
+                    .setTarget(appClasses)
+                    .setFrameworkClassesPath(frameworkClasses)
+                    .build();
+            runtimeRunner.run();
+            return new ExtensionState(testResourceManager, runtimeRunner, false);
             /*
-             * final RuntimeRunner runtimeRunner = RuntimeRunner.builder()
-             * .setLaunchMode(LaunchMode.TEST)
-             * .setClassLoader(Thread.currentThread().getContextClassLoader())
-             * .setTarget(appClasses)
-             * .setFrameworkClassesPath(frameworkClasses)
-             * .build();
-             * runtimeRunner.run();
-             * return new ExtensionState(testResourceManager, runtimeRunner, false);
+             * final Class<?> rrClass = appCl.loadClass("io.quarkus.runner.RuntimeRunner");
+             * final Method m = rrClass.getMethod("runTest", Path.class, Path.class);
+             * final Closeable c = (Closeable) m.invoke(null, appClasses, frameworkClasses);
+             * return new ExtensionState(testResourceManager, c, false);
+             * } catch (ClassNotFoundException e) {
+             * throw new IllegalStateException("Failed to load runner class", e);
+             * } catch (NoSuchMethodException | SecurityException e) {
+             * throw new IllegalStateException("Failed to locate runner method", e);
+             * } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+             * throw new IllegalStateException("Failed to invoke runner", e);
              */
-            final Class<?> rrClass = appCl.loadClass("io.quarkus.runner.RuntimeRunner");
-            final Method m = rrClass.getMethod("runTest", Path.class, Path.class);
-            final Closeable c = (Closeable) m.invoke(null, appClasses, frameworkClasses);
-            return new ExtensionState(testResourceManager, c, false);
-        } catch (ClassNotFoundException e) {
-            throw new IllegalStateException("Failed to load runner class", e);
-        } catch (NoSuchMethodException | SecurityException e) {
-            throw new IllegalStateException("Failed to locate runner method", e);
-        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-            throw new IllegalStateException("Failed to invoke runner", e);
         } finally {
             setCCL(originalCl);
         }

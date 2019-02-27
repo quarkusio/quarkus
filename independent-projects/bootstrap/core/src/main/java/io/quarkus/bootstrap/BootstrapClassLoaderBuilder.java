@@ -138,4 +138,41 @@ public class BootstrapClassLoaderBuilder {
             throw new BootstrapException("Failed to init application classloader", e);
         }
     }
+
+    public URLClassLoader buildDeploymentCl() throws BootstrapException {
+        if (appClasses == null) {
+            throw new IllegalArgumentException("Application classes path has not been set");
+        }
+
+        try {
+            final BootstrapArtifactResolver.Builder resolverBuilder = BootstrapArtifactResolver.builder().setOffline(offline);
+            final LocalProject localProject;
+            if (localProjectsDiscovery) {
+                localProject = LocalProject.resolveLocalProjectWithWorkspace(LocalProject.locateCurrentProjectDir(appClasses));
+                resolverBuilder.setWorkspace(localProject.getWorkspace());
+            } else {
+                localProject = LocalProject.resolveLocalProject(LocalProject.locateCurrentProjectDir(appClasses));
+            }
+
+            final AppArtifact appArtifact = new AppArtifact(localProject.getGroupId(), localProject.getArtifactId(), "",
+                    localProject.getRawModel().getPackaging(), localProject.getVersion());
+            final BootstrapArtifactResolver resolver = resolverBuilder.build();
+            BootstrapAppDependencies appDeps = ((BootstrapAppDependencies)resolver.collectRuntimeDependencies(appArtifact));
+            List<URL> urlList = new ArrayList<>();
+            List<AppDependency> deps = appDeps.getDeploymentClasspath();
+            try {
+                int i = 0;
+                while (i < deps.size()) {
+                    final AppDependency appDep = deps.get(i++);
+                    final Path path = resolver.resolve(appDep.getArtifact());
+                    urlList.add(path.toUri().toURL());
+                }
+            } catch (MalformedURLException e) {
+                throw new IllegalStateException("Failed to create a URL", e);
+            }
+            return new URLClassLoader(urlList.toArray(new URL[urlList.size()]), parent);
+        } catch (AppArtifactResolverException e) {
+            throw new BootstrapException("Failed to init application classloader", e);
+        }
+    }
 }

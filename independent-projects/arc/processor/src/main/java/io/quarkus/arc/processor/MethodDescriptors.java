@@ -17,6 +17,7 @@
 package io.quarkus.arc.processor;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
@@ -85,6 +86,8 @@ final class MethodDescriptors {
     static final MethodDescriptor REFLECTIONS_FIND_METHOD = MethodDescriptor.ofMethod(Reflections.class, "findMethod", Method.class, Class.class, String.class,
             Class[].class);
 
+    static final MethodDescriptor REFLECTIONS_FIND_FIELD = MethodDescriptor.ofMethod(Reflections.class, "findField", Field.class, Class.class, String.class);
+    
     static final MethodDescriptor REFLECTIONS_WRITE_FIELD = MethodDescriptor.ofMethod(Reflections.class, "writeField", void.class, Class.class, String.class,
             Object.class, Object.class);
 

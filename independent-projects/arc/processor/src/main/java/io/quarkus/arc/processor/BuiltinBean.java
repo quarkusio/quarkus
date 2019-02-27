@@ -30,7 +30,7 @@ import io.quarkus.arc.InjectableReferenceProvider;
 import io.quarkus.arc.InjectionPointProvider;
 import io.quarkus.arc.InstanceProvider;
 import io.quarkus.arc.ResourceProvider;
-import io.quarkus.arc.processor.InjectionPointInfo.Kind;
+import io.quarkus.arc.processor.InjectionPointInfo.InjtetionPointKind;
 import org.jboss.protean.gizmo.ClassCreator;
 import org.jboss.protean.gizmo.ClassOutput;
 import org.jboss.protean.gizmo.FieldDescriptor;
@@ -145,7 +145,7 @@ enum BuiltinBean {
             constructor.writeInstanceField(FieldDescriptor.of(clazzCreator.getClassName(), providerName, InjectableReferenceProvider.class.getName()),
                     constructor.getThis(), resourceProvider);
         }
-    }, ip -> ip.getKind() == Kind.RESOURCE);
+    }, ip -> ip.getKind() == InjtetionPointKind.RESOURCE);
 
     private final DotName rawTypeDotName;
 
@@ -154,7 +154,7 @@ enum BuiltinBean {
     private final Predicate<InjectionPointInfo> matcher;
 
     BuiltinBean(DotName rawTypeDotName, Generator generator) {
-        this(rawTypeDotName, generator, ip -> ip.getKind() == Kind.CDI && rawTypeDotName.equals(ip.getRequiredType().name()));
+        this(rawTypeDotName, generator, ip -> ip.getKind() == InjtetionPointKind.CDI && rawTypeDotName.equals(ip.getRequiredType().name()));
     }
 
     BuiltinBean(DotName rawTypeDotName, Generator generator, Predicate<InjectionPointInfo> matcher) {

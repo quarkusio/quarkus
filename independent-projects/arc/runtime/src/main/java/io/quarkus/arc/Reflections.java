@@ -31,6 +31,17 @@ public final class Reflections {
 
     private Reflections() {
     }
+    
+    public static Field findField(Class<?> clazz, String fieldName) {
+        try {
+            return clazz.getDeclaredField(fieldName);
+        } catch (NoSuchFieldException e) {
+            if (clazz.getSuperclass() != null) {
+                return findField(clazz.getSuperclass(), fieldName);
+            }
+            throw new IllegalArgumentException(e);
+        }
+    }
 
     public static Method findMethod(Class<?> clazz, String methodName, Class<?>... parameterTypes) {
         try {

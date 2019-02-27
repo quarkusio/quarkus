@@ -127,7 +127,7 @@
             </plugin>
         </plugins>
     </build>
-
+<!--
     <profiles>
         <profile>
             <id>native-image</id>
@@ -181,6 +181,6 @@
             </build>
         </profile>
     </profiles>
-
+-->
 
 </project>

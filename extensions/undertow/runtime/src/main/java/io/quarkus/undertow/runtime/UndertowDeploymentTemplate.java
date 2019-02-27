@@ -22,6 +22,7 @@ import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.util.EventListener;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.servlet.DispatcherType;
@@ -152,9 +153,16 @@ public class UndertowDeploymentTemplate {
             Class<?> servletClass,
             boolean asyncSupported,
             int loadOnStartup,
-            BeanContainer beanContainer) throws Exception {
+            BeanContainer beanContainer, Map<String, String> initParams,
+            InstanceFactory<? extends Servlet> instanceFactory) throws Exception {
+
+        InstanceFactory<? extends Servlet> factory = instanceFactory != null ? instanceFactory
+                : new QuarkusInstanceFactory(beanContainer.instanceFactory(servletClass));
         ServletInfo servletInfo = new ServletInfo(name, (Class<? extends Servlet>) servletClass,
-                new QuarkusInstanceFactory(beanContainer.instanceFactory(servletClass)));
+                factory);
+        for (Map.Entry<String, String> e : initParams.entrySet()) {
+            servletInfo.addInitParam(e.getKey(), e.getValue());
+        }
         deploymentInfo.getValue().addServlet(servletInfo);
         servletInfo.setAsyncSupported(asyncSupported);
         if (loadOnStartup > 0) {
@@ -198,9 +206,17 @@ public class UndertowDeploymentTemplate {
     public RuntimeValue<FilterInfo> registerFilter(RuntimeValue<DeploymentInfo> info,
             String name, Class<?> filterClass,
             boolean asyncSupported,
-            BeanContainer beanContainer) throws Exception {
-        FilterInfo filterInfo = new FilterInfo(name, (Class<? extends Filter>) filterClass,
-                new QuarkusInstanceFactory(beanContainer.instanceFactory(filterClass)));
+            BeanContainer beanContainer,
+            Map<String, String> initParams,
+            InstanceFactory<? extends Filter> instanceFactory) throws Exception {
+
+        InstanceFactory<? extends Filter> factory = instanceFactory != null ? instanceFactory
+                : new QuarkusInstanceFactory(beanContainer.instanceFactory(filterClass));
+        FilterInfo filterInfo = new FilterInfo(name, (Class<? extends Filter>) filterClass, factory);
+
+        for (Map.Entry<String, String> e : initParams.entrySet()) {
+            filterInfo.addInitParam(e.getKey(), e.getValue());
+        }
         info.getValue().addFilter(filterInfo);
         filterInfo.setAsyncSupported(asyncSupported);
         return new RuntimeValue<>(filterInfo);

@@ -335,12 +335,13 @@ public class ResteasyScanningProcessor {
             //if JAX-RS is installed at the root location we use a filter, otherwise we use a Servlet and take over the whole mapped path
             if (path.equals("/")) {
                 filterProducer
-                        .produce(new FilterBuildItem(JAX_RS_FILTER_NAME, ResteasyFilter.class.getName()).setLoadOnStartup(1)
-                                .addFilterServletNameMapping("default", DispatcherType.REQUEST).setAsyncSupported(true));
+                        .produce(FilterBuildItem.builder(JAX_RS_FILTER_NAME, ResteasyFilter.class.getName()).setLoadOnStartup(1)
+                                .addFilterServletNameMapping("default", DispatcherType.REQUEST).setAsyncSupported(true)
+                                .build());
                 reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, ResteasyFilter.class.getName()));
             } else {
-                servletProducer.produce(new ServletBuildItem(JAX_RS_SERVLET_NAME, HttpServlet30Dispatcher.class.getName())
-                        .setLoadOnStartup(1).addMapping(mappingPath).setAsyncSupported(true));
+                servletProducer.produce(ServletBuildItem.builder(JAX_RS_SERVLET_NAME, HttpServlet30Dispatcher.class.getName())
+                        .setLoadOnStartup(1).addMapping(mappingPath).setAsyncSupported(true).build());
                 reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, HttpServlet30Dispatcher.class.getName()));
             }
 

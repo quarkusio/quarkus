@@ -57,13 +57,14 @@ public class SmallRyeOpenTracingProcessor {
 
         providers.produce(new ResteasyJaxrsProviderBuildItem(QuarkusSmallRyeTracingDynamicFeature.class.getName()));
 
-        FilterBuildItem filterInfo = new FilterBuildItem("tracingFilter", SpanFinishingFilter.class.getName());
-        filterInfo.setAsyncSupported(true);
-        filterInfo.addFilterUrlMapping("*", DispatcherType.FORWARD);
-        filterInfo.addFilterUrlMapping("*", DispatcherType.INCLUDE);
-        filterInfo.addFilterUrlMapping("*", DispatcherType.REQUEST);
-        filterInfo.addFilterUrlMapping("*", DispatcherType.ASYNC);
-        filterInfo.addFilterUrlMapping("*", DispatcherType.ERROR);
+        FilterBuildItem filterInfo = FilterBuildItem.builder("tracingFilter", SpanFinishingFilter.class.getName())
+                .setAsyncSupported(true)
+                .addFilterUrlMapping("*", DispatcherType.FORWARD)
+                .addFilterUrlMapping("*", DispatcherType.INCLUDE)
+                .addFilterUrlMapping("*", DispatcherType.REQUEST)
+                .addFilterUrlMapping("*", DispatcherType.ASYNC)
+                .addFilterUrlMapping("*", DispatcherType.ERROR)
+                .build();
         filterProducer.produce(filterInfo);
     }
 

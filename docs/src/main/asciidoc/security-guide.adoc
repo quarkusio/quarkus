@@ -1,0 +1,301 @@
+= {project-name} - Using Security
+:source-highlighter: coderay
+
+Quarkus comes with integration with the Elytron security subsystem to allow for RBAC based on the
+common security annotations `@RolesAllowed`, `@DenyAll`, `@PermitAll` on REST endpoints. An example of an endpoint that makes use of both JAX-RS and Common Security annotations to describe and secure its endpoints is given in <<SubjectExposingResource Example>>.
+
+.SubjectExposingResource Example
+[source,java]
+--
+import java.security.Principal;
+
+import javax.annotation.security.DenyAll;
+import javax.annotation.security.PermitAll;
+import javax.annotation.security.RolesAllowed;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.SecurityContext;
+
+@Path("subject")
+public class SubjectExposingResource {
+
+    @GET
+    @Path("secured")
+    @RolesAllowed("Tester") <1>
+    public String getSubjectSecured(@Context SecurityContext sec) {
+        Principal user = sec.getUserPrincipal(); <2>
+        String name = user != null ? user.getName() : "anonymous";
+        return name;
+    }
+
+    @GET
+    @Path("unsecured")
+    @PermitAll<3>
+    public String getSubjectUnsecured(@Context SecurityContext sec) {
+        Principal user = sec.getUserPrincipal(); <4>
+        String name = user != null ? user.getName() : "anonymous";
+        return name;
+    }
+
+    @GET
+    @Path("denied")
+    @DenyAll<5>
+    public String getSubjectDenied(@Context SecurityContext sec) {
+        Principal user = sec.getUserPrincipal();
+        String name = user != null ? user.getName() : "anonymous";
+        return name;
+    }
+}
+--
+<1> This `/subject/secured` endpoint requires and authenticated user that has been granted the role "Tester" through the use of the `@RolesAllowed("Tester")` annotation.
+<2> The endpoint obtains the user principal from the JAX-RS SecurityContext. This will be non-null for a secured endpoint.
+<3> The `/subject/unsecured` endpoint allows for unauthenticated access by specifying the `@PermitAll` annotation.
+<4> This call to obtain the user principal will return null if the caller is unauthenticated, non-null if the caller is authenticated.
+<5> The `/subject/denied` endpoint disallows any access regardless of whether the call is authenticated by specifying the `@DenyAll` annotation.
+
+## Setting it up
+
+You need to add the security extension dependency explicitly if you want to enable security behaviors.
+Add the following to your `pom.xml`:
+
+[source,xml]
+--
+<dependencies>
+    <!-- Security extension -->
+    <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-security-deployment</artifactId>
+    </dependency>
+</dependencies>
+--
+
+## Configuration
+The security extension currently supports two different realms for the storage of authentication
+and authorization information. Both support storage of this information in properties type files. The next two sections detail the specific configuration properties.
+
+### Property Files Realm Configuration
+The property files realm supports mapping of users to password and users to roles with a combination of properties files. To enable and configure it, the following configuration properties are used:
+
+|===
+|Property Name|Default|Description
+|quarkus.security.file.enabled|false|Determine whether security via the fila realm is enabled.
+|quarkus.security.file.auth-mechanism|BASIC|Name of authentication mechanism to use
+|quarkus.security.file.realm-name|Quarkus|Name to assign the security realm
+|quarkus.security.file.users|users.properties|Classpath resource name of properties file containing user to password mappings; see <<Users.properties>>
+|quarkus.security.file.roles|roles.properties|Classpath resource name of properties file containing user to role mappings; see <<Roles.properties>>
+|===
+
+.example microprofile-config.properties file section for property files realm
+[source,properties]
+--
+quarkus.security.file.enabled=true
+quarkus.security.file.users=test-users.properties
+quarkus.security.file.roles=test-roles.properties
+quarkus.security.file.auth-mechanism=BASIC
+quarkus.security.file.auth-mechanism=MyRealm
+--
+
+==== Users.properties
+The `quarkus.security.users` configuration property specificies a classpath resource which is a properties file with a user to password mapping, one per line. The following <<example test-users.properties file>> illustrates the format:
+
+.example test-users.properties file
+[source,properties]
+--
+scott=jb0ss <1>
+jdoe=p4ssw0rd <2>
+stuart=test
+noadmin=n0Adm1n
+--
+<1> User `scott` has password defined as `jb0ss`
+<2> User `jdoe` has password defined as `p4ssw0rd`
+
+
+==== Roles.properties
+
+.example test-roles.properties file
+[source,properties]
+--
+scott=Admin,admin,Tester,user <1>
+jdoe=NoRolesUser <2>
+stuart=admin,user <3>
+noadmin=user
+--
+<1> User `scott` has been assigned the roles `Admin`, `admin`, `Tester` and `user`
+<2> User `jdoe` has been assigned the role `NoRolesUser`
+<3> User `stuart` has been assigned the roles `admin` and `user`.
+
+Given these role mappings, only user `scott` would be allowed to access the `/subject/secured` endpoint from the <<SubjectExposingResource Example>>.
+
+### Embeded Realm Configuration
+The embedded realm also supports mapping of users to password and users to roles. It uses the main microprofile-config.properties Quarkus configuration file to embedd this information. To enable and configure it, the following configuration properties are used:
+
+|===
+|Property Name|Default|Description
+|quarkus.security.embedded.enabled|false|Determine whether security via the embedded realm is enabled.
+|quarkus.security.embedded.auth-mechanism|BASIC|Name of authentication mechanism to use
+|quarkus.security.embedded.realm-name|Quarkus|Name to assign the security realm
+|quarkus.security.embedded.users.*|none|Prefix for the properties that specify user to password mappings; see <<Embedded Users>>
+|quarkus.security.embedded.roles.*|none|Prefix for the properties that specify user to role mappings; see <<Embedded Roles>>
+|===
+
+The following is an example microprofile-config.properties file section illustrating the embedded realm configuration:
+
+.example microprofile-config.properties file section for embedded realm
+[source,properties]
+----
+quarkus.security.embedded.enabled=true
+quarkus.security.embedded.users.scott=jb0ss
+quarkus.security.embedded.users.stuart=test
+quarkus.security.embedded.users.jdoe=p4ssw0rd
+quarkus.security.embedded.users.noadmin=n0Adm1n
+quarkus.security.embedded.roles.scott=Admin,admin,Tester,user
+quarkus.security.embedded.roles.stuart=admin,user
+quarkus.security.embedded.roles.jdoe=NoRolesUser
+quarkus.security.embedded.roles.noadmin=user
+quarkus.security.embedded.auth-mechanism=CUSTOM
+----
+
+#### Embedded Users
+The user to password mappings are specified in the microprofile-config.properties by property names of the form `quarkus.security.embedded.users.<user>=<password>`. The following <<Example Passwords>> illustrates the syntax with the 4 user to password mappings shown in lines 2-5:
+
+.Example Passwords
+[source,properties,linenums,highlight='2-5']
+----
+quarkus.security.embedded.enabled=true
+quarkus.security.embedded.users.scott=jb0ss # <1>
+quarkus.security.embedded.users.stuart=test # <2>
+quarkus.security.embedded.users.jdoe=p4ssw0rd
+quarkus.security.embedded.users.noadmin=n0Adm1n
+quarkus.security.embedded.roles.scott=Admin,admin,Tester,user
+quarkus.security.embedded.roles.stuart=admin,user
+quarkus.security.embedded.roles.jdoe=NoRolesUser
+quarkus.security.embedded.roles.noadmin=user
+----
+<1> User `scott` has password `jb0ss`
+<2> User `stuart` has password `test`
+
+#### Embedded Roles
+The user to role mappings are specified in the microprofile-config.properties by property names of the form `quarkus.security.embedded.roles.<user>=role1[,role2[,role3[,...]]]`. The following <<Example Roles>> illustrates the syntax with the 4 user to role mappings shown in lines 6-9:
+
+.Example Roles
+[source,properties,linenums,highlight='6-9']
+----
+quarkus.security.embedded.enabled=true
+quarkus.security.embedded.users.scott=jb0ss 
+quarkus.security.embedded.users.stuart=test 
+quarkus.security.embedded.users.jdoe=p4ssw0rd
+quarkus.security.embedded.users.noadmin=n0Adm1n
+quarkus.security.embedded.roles.scott=Admin,admin,Tester,user # <1>
+quarkus.security.embedded.roles.stuart=admin,user # <2>
+quarkus.security.embedded.roles.jdoe=NoRolesUser
+quarkus.security.embedded.roles.noadmin=user
+----
+<1> User `scott` has roles `Admin`, `admin`, `Tester`, and `user`
+<2> User `stuart` has roles `admin` and `user`
+
+## Augmenting the Security Extension __Advanced Topic__
+[TIP]
+====
+Augmenting the security extension is an advanced topic that relies on writing a {project-name} extension and understanding all that entails. This only needs to be done if you have security stores and authentication mechanisims that are not supported by existing {project-name} extensions.
+====
+The security extension has support for overriding its Elytron `org.wildfly.security.auth.server.SecurityRealm` and the Undertow `io.undertow.security.idm.IdentityManager` used for authentication and authorization decisions. If  your application needs to integrate with alternative identity stores and/or authentication mechanisms, then you can use this advanced feature to to so. In order to do this, one would write an {project-name} extension as described in link:extension-authors-guide.html[Extension Authors Guide] to produce `SecurityRealmBuildItem` and/or `IdentityManagerBuildItem` items as detailed in the following sections. The JWT RBAC extension described in the link:jwt-guide.html[JWT RBAC Security] is an example of an extension that makes use of these extension points.
+
+### Adding a new Security Realm
+If one has an alternative store of indentity and role information, it can be integrated by creating a `org.wildfly.security.auth.server.SecurityRealm` and producing a `io.quarkus.security.SecurityRealmBuildItem` from within the deployment module of a new extension. The deployment module would be responsible for exposing the necessary configuration information to allow users to enable and configure the security realm indentity mappings.
+
+An example of this can be see in the MicroProfile JWT RBAC extension. The relevant JWT extension code fragment is shown in the following listing:
+
+.MP-JWT Extension SecurityRealm Customization Example
+[source,java]
+----
+/**
+ * The deployment processor for MP-JWT applications
+ */
+class SmallRyeJwtProcessor {
+
+    /** */
+    JWTAuthContextInfoGroup config; // <1>
+...
+    /**
+     * Configure a TokenSecurityRealm if enabled
+     * 
+     * @param template - jwt runtime template
+     * @param securityRealm - producer used to register the TokenSecurityRealm
+     * @param container - the BeanContainer for creating CDI beans
+     * @param reflectiveClasses - producer to register classes for reflection
+     * @return auth config item for the MP-JWT auth method and realm
+     * @throws Exception
+     */
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    AuthConfigBuildItem configureFileRealmAuthConfig(SmallRyeJwtTemplate template,
+            BuildProducer<ObjectSubstitutionBuildItem> objectSubstitution,
+            BuildProducer<SecurityRealmBuildItem> securityRealm,
+            BeanContainerBuildItem container,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) throws Exception {
+        if (config.enabled) {
+            // RSAPublicKey needs to be serialized
+            ObjectSubstitutionBuildItem.Holder pkHolder = new ObjectSubstitutionBuildItem.Holder(RSAPublicKey.class,
+                    PublicKeyProxy.class, PublicKeySubstitution.class);
+            ObjectSubstitutionBuildItem pkSub = new ObjectSubstitutionBuildItem(pkHolder);
+            objectSubstitution.produce(pkSub);
+            // <2>
+            // Have the runtime template create the TokenSecurityRealm and create the build item
+            RuntimeValue<SecurityRealm> realm = template.createTokenRealm(container.getValue());
+            AuthConfig authConfig = new AuthConfig();
+            authConfig.setAuthMechanism(config.authMechanism);
+            authConfig.setRealmName(config.realmName);
+            securityRealm.produce(new SecurityRealmBuildItem(realm, authConfig));
+
+            reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, ClaimAttributes.class.getName()));
+            reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, ElytronJwtCallerPrincipal.class.getName()));
+
+            // Return the realm authentication mechanism build item
+            return new AuthConfigBuildItem(authConfig);
+        }
+        return null;
+    }
+
+----
+<1> The JWTAuthContextInfoGroup contains the configuration information needed to create the JWT based security realm.
+<2> The deployment module creates a `TokenSecurityRealm` using the configured authentication mechanism name and security realm name. `TokenSecurityRealm` is a security realm implementation that obtains the caller identity and roles from a MicroProfile JWT auth token.
+
+### Overriding the Undertow IdentityManager Implementation
+The default `io.undertow.security.idm.IdentityManager` installed by the security extension is based on password authentication. It passes a `org.wildfly.security.evidence.PasswordGuessEvidence` representation of the caller authentication credentials to the security realm to validate a user. If you extend the security extension with a security realm that supports this form of evidence,  you can use the default `IdentityManager` provided by the security extension. Your extension would need to produce a `io.quarkus.security.PasswordRealmBuildItem` to indicate that your extension security realm supports `PasswordGuessEvidence`.
+
+If on the other hand, your security realm requires another form of authentication credential evidence, you will need to override the default security extension implementation with one of your own. This requires that your extension produce an `io.quarkus.security.IdentityManagerBuildItem` with the `IdentityManager` implementation.
+
+An example of this can also be see in the MicroProfile JWT RBAC extension. Since the security realm the JWT extension installs is based on JWT auth tokens rather than passwords, it must install an identity manager that is able to extract the token and present that to the security realm. This requies a custom `IdentityManager`. The relevant JWT extension code fragment is shown in the following listing:
+
+[source,java]
+----
+/**
+ * The deployment processor for MP-JWT applications
+ */
+class SmallRyeJwtProcessor {
+...
+    /**
+     * Create the JwtIdentityManager
+     * 
+     * @param template - jwt runtime template
+     * @param securityDomain - the previously created TokenSecurityRealm
+     * @param identityManagerProducer - producer for the identity manager
+     */
+    @BuildStep
+    @Record(ExecutionTime.STATIC_INIT)
+    void configureIdentityManager(SmallRyeJwtTemplate template, SecurityDomainBuildItem securityDomain,
+            BuildProducer<IdentityManagerBuildItem> identityManagerProducer) {
+        // <1>
+        IdentityManager identityManager = template.createIdentityManager(securityDomain.getSecurityDomain());
+        // <2>
+        identityManagerProducer.produce(new IdentityManagerBuildItem(identityManager));
+    }
+----
+<1> Have the runtime module create the runtime IdentityManager instance, which is an io.quarkus.smallrye.jwt.runtime.auth.JwtIdentityManager.
+<2> Produce an `IdentityManagerBuildItem` with the `JwtIdentityManager` so that the security extension installs that as the application identity manager.
+
+## Future Work
+
+Support for additional realms that allow for ecrypted/hashed information as well as integration with Keyloak for OAUTH and JWT generation support is in the works. We will also be moving to more use of the Elytron APIs over the Undertow APIs to allow for more flexibility in handling various authentication and authorization approaches.

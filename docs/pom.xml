@@ -31,7 +31,7 @@
 
     <packaging>pom</packaging>
     <properties>
-        <version.asciidoctor>1.5.7</version.asciidoctor>
+        <version.asciidoctor>1.5.7.1</version.asciidoctor>
     </properties>
 
     <name>Quarkus - Documentation</name>

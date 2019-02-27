@@ -1,5 +1,4 @@
 = {project-name} - Using Security
-:source-highlighter: coderay
 
 Quarkus comes with integration with the Elytron security subsystem to allow for RBAC based on the
 common security annotations `@RolesAllowed`, `@DenyAll`, `@PermitAll` on REST endpoints. An example of an endpoint that makes use of both JAX-RS and Common Security annotations to describe and secure its endpoints is given in <<SubjectExposingResource Example>>.

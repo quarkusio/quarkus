@@ -67,6 +67,32 @@
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.infinispan</groupId>
+            <artifactId>infinispan-server-hotrod</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- needed so server exposes query based caches -->
+        <dependency>
+            <groupId>org.infinispan</groupId>
+            <artifactId>infinispan-remote-query-server</artifactId>
+            <!-- Below should work, but there is something confusing the graal compiler requiring this
+            <scope>test</scope>
+            -->
+        </dependency>
+        <dependency>
+            <groupId>org.infinispan</groupId>
+            <artifactId>infinispan-core</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.infinispan</groupId>
+            <artifactId>infinispan-server-hotrod</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -90,12 +116,14 @@
         <plugins>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <skip>true</skip>
-                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
+            </plugin>
+            <!-- Skip enforcer plugin as we want to use jboss marshalling for test class -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
                 </configuration>
@@ -115,31 +143,6 @@
     </build>
 
     <profiles>
-        <profile>
-            <id>test-infinispan-client</id>
-            <activation>
-                <property>
-                    <name>test-infinispan-client</name>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <skip>false</skip>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <configuration>
-                            <skip>false</skip>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    
         <profile>
             <id>native-image</id>
             <activation>
@@ -190,67 +193,6 @@
                                     <enableJni>true</enableJni>
                                     <enableAllSecurityServices>true</enableAllSecurityServices>
                                 </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>docker-infinispan</id>
-            <activation>
-                <property>
-                    <name>docker</name>
-                </property>
-            </activation>
-            <properties>
-              <!-- do we need properties ? -->
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>io.fabric8</groupId>
-                        <artifactId>docker-maven-plugin</artifactId>
-                        <configuration>
-                            <images>
-                                <image>
-                                  <name>jboss/infinispan-server:${infinispan.version}</name>
-                                    <alias>infinispan-server</alias>
-                                    <run>
-                                        <env>
-                                            <APP_USER>myuser</APP_USER>
-                                            <APP_PASS>qwer1234!</APP_PASS>
-                                        </env>
-                                        <ports>
-                                            <port>11232:11222</port>
-                                        </ports>
-                                        <wait>
-                                            <log>HotRodServer listening on</log>
-                                            <time>10000</time>
-                                        </wait>
-                                    </run>
-                                </image>
-                            </images>
-                            <!--Stops all infinispan server images currently running, not just those we just started.
-                              Useful to stop processes still running from a previously failed integration test run -->
-                            <allContainers>true</allContainers>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>docker-start</id>
-                                <phase>compile</phase>
-                                <goals>
-                                    <goal>stop</goal>
-                                    <goal>start</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>docker-stop</id>
-                                <phase>post-integration-test</phase>
-                                <goals>
-                                    <goal>stop</goal>
-                                </goals>
                             </execution>
                         </executions>
                     </plugin>

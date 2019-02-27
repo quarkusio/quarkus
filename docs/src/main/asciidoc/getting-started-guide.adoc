@@ -297,15 +297,23 @@ In the generated `pom.xml` file, you can see 2 test dependencies:
 
 Quarkus supports https://junit.org/junit4/[Junit 4] and https://junit.org/junit5/[Junit 5] tests.
 In the generated project, we use Junit 5.
-Because of this, the version of the https://maven.apache.org/surefire/maven-surefire-plugin/[Surefire Maven Plugin] must be set, as the default version does not support Junit 5:
+Because of this, the version of the https://maven.apache.org/surefire/maven-surefire-plugin/[Surefire Maven Plugin] must
+be set, as the default version does not support Junit 5:
 
 [source,xml,subs=attributes+]
 ----
 <plugin>
     <artifactId>maven-surefire-plugin</artifactId>
     <version>${surefire.version}</version>
+    <configuration>
+       <systemProperties>
+          <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+       </systemProperties>
+    </configuration>
 </plugin>
 ----
+
+We also set the `java.util.logging` system property to make sure tests will use the correct logmanager.
 
 The generated project contains a simple test.
 Edit the `src/test/java/org/acme/quickstart/GreetingResourceTest.java` to match the following content:

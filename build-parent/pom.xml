@@ -1418,6 +1418,14 @@
     <build>
         <pluginManagement>
             <plugins>
+               <plugin>
+                  <artifactId>maven-surefire-plugin</artifactId>
+                  <configuration>
+                     <systemProperties>
+                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                     </systemProperties>
+                  </configuration>
+               </plugin>
                 <plugin>
                     <groupId>${project.groupId}</groupId>
                     <artifactId>quarkus-maven-plugin</artifactId>

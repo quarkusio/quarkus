@@ -185,7 +185,7 @@ public class JpaOperations {
         // FIXME: check for duplicate ORDER BY clause?
         Query jpaQuery = em.createQuery(sort != null ? findQuery + sort.toOrderBy() : findQuery);
         bindParameters(jpaQuery, params);
-        return new PanacheQuery(em, jpaQuery, findQuery, params);
+        return new PanacheQueryImpl(em, jpaQuery, findQuery, params);
     }
 
     public static PanacheQuery<?> find(Class<?> entityClass, String query, Map<String, Object> params) {
@@ -199,7 +199,7 @@ public class JpaOperations {
         // FIXME: check for duplicate ORDER BY clause?
         Query jpaQuery = em.createQuery(sort != null ? findQuery + sort.toOrderBy() : findQuery);
         bindParameters(jpaQuery, params);
-        return new PanacheQuery(em, jpaQuery, findQuery, params);
+        return new PanacheQueryImpl(em, jpaQuery, findQuery, params);
     }
 
     public static PanacheQuery<?> find(Class<?> entityClass, String query, Parameters params) {
@@ -262,7 +262,7 @@ public class JpaOperations {
     public static PanacheQuery<?> findAll(Class<?> entityClass) {
         String query = "FROM " + getEntityName(entityClass);
         EntityManager em = getEntityManager();
-        return new PanacheQuery(em, em.createQuery(query), query, null);
+        return new PanacheQueryImpl(em, em.createQuery(query), query, null);
     }
 
     @SuppressWarnings("rawtypes")
@@ -270,7 +270,7 @@ public class JpaOperations {
         String query = "FROM " + getEntityName(entityClass);
         String sortedQuery = query + sort.toOrderBy();
         EntityManager em = getEntityManager();
-        return new PanacheQuery(em, em.createQuery(sortedQuery), query, null);
+        return new PanacheQueryImpl(em, em.createQuery(sortedQuery), query, null);
     }
 
     public static List<?> listAll(Class<?> entityClass) {

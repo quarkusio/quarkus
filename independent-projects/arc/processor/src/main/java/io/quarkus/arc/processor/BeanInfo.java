@@ -354,7 +354,7 @@ public class BeanInfo {
             if (noArgsConstructor != null && Modifier.isPrivate(noArgsConstructor.flags()) && classifier != null) {
                 errors.add(
                         new DefinitionException(
-                                String.format("%s bean is not proxyable because it has a private no-args constructor: %s",
+                                String.format("%s bean is not proxyable because it has a private no-args constructor: %s. To fix this problem, change the constructor to be package-private",
                                         classifier, this)));
             }
         }

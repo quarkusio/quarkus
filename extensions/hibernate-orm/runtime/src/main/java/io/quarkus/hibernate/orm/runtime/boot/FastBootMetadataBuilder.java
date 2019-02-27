@@ -111,6 +111,7 @@ public class FastBootMetadataBuilder {
     private final MetadataBuilderImplementor metamodelBuilder;
     private final Object validatorFactory;
 
+    @SuppressWarnings("unchecked")
     public FastBootMetadataBuilder(final PersistenceUnitDescriptor persistenceUnit, Scanner scanner) {
         this.persistenceUnit = persistenceUnit;
         final ClassLoaderService providedClassLoaderService = FlatClassLoaderService.INSTANCE;
@@ -201,7 +202,7 @@ public class FastBootMetadataBuilder {
      * org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl#mergeSettings(org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor,
      * java.util.Map, org.hibernate.boot.registry.StandardServiceRegistryBuilder)
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     private MergedSettings mergeSettings(PersistenceUnitDescriptor persistenceUnit) {
         final MergedSettings mergedSettings = new MergedSettings();
 
@@ -290,7 +291,7 @@ public class FastBootMetadataBuilder {
     /**
      * Enable 2LC for entities and queries by default. Also allow "reference caching" by default.
      */
-    private void enableCachingByDefault(final Map configurationValues) {
+    private void enableCachingByDefault(final Map<String, Object> configurationValues) {
         //Only set these if the user isn't making an explicit choice:
         configurationValues.putIfAbsent(USE_DIRECT_REFERENCE_CACHE_ENTRIES, Boolean.TRUE);
         configurationValues.putIfAbsent(USE_SECOND_LEVEL_CACHE, Boolean.TRUE);
@@ -356,6 +357,7 @@ public class FastBootMetadataBuilder {
         return casted.getDialect();
     }
 
+    @SuppressWarnings("rawtypes")
     private static class MergedSettings {
         private final Map configurationValues = new ConcurrentHashMap(16, 0.75f, 1);
         private List<CacheRegionDefinition> cacheRegionDefinitions;
@@ -517,6 +519,7 @@ public class FastBootMetadataBuilder {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void applyMetadataBuilderContributor() {
 
         Object metadataBuilderContributorSetting = buildTimeSettings

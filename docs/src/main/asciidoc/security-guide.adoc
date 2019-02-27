@@ -48,7 +48,7 @@ public class SubjectExposingResource {
     }
 }
 --
-<1> This `/subject/secured` endpoint requires and authenticated user that has been granted the role "Tester" through the use of the `@RolesAllowed("Tester")` annotation.
+<1> This `/subject/secured` endpoint requires an authenticated user that has been granted the role "Tester" through the use of the `@RolesAllowed("Tester")` annotation.
 <2> The endpoint obtains the user principal from the JAX-RS SecurityContext. This will be non-null for a secured endpoint.
 <3> The `/subject/unsecured` endpoint allows for unauthenticated access by specifying the `@PermitAll` annotation.
 <4> This call to obtain the user principal will return null if the caller is unauthenticated, non-null if the caller is authenticated.
@@ -97,7 +97,7 @@ quarkus.security.file.auth-mechanism=MyRealm
 --
 
 ==== Users.properties
-The `quarkus.security.users` configuration property specificies a classpath resource which is a properties file with a user to password mapping, one per line. The following <<example test-users.properties file>> illustrates the format:
+The `quarkus.security.users` configuration property specifies a classpath resource which is a properties file with a user to password mapping, one per line. The following <<example test-users.properties file>> illustrates the format:
 
 .example test-users.properties file
 [source,properties]
@@ -127,8 +127,8 @@ noadmin=user
 
 Given these role mappings, only user `scott` would be allowed to access the `/subject/secured` endpoint from the <<SubjectExposingResource Example>>.
 
-### Embeded Realm Configuration
-The embedded realm also supports mapping of users to password and users to roles. It uses the main microprofile-config.properties Quarkus configuration file to embedd this information. To enable and configure it, the following configuration properties are used:
+### Embedded Realm Configuration
+The embedded realm also supports mapping of users to password and users to roles. It uses the main microprofile-config.properties Quarkus configuration file to embeds this information. To enable and configure it, the following configuration properties are used:
 
 |===
 |Property Name|Default|Description
@@ -182,8 +182,8 @@ The user to role mappings are specified in the microprofile-config.properties by
 [source,properties,linenums,highlight='6-9']
 ----
 quarkus.security.embedded.enabled=true
-quarkus.security.embedded.users.scott=jb0ss 
-quarkus.security.embedded.users.stuart=test 
+quarkus.security.embedded.users.scott=jb0ss
+quarkus.security.embedded.users.stuart=test
 quarkus.security.embedded.users.jdoe=p4ssw0rd
 quarkus.security.embedded.users.noadmin=n0Adm1n
 quarkus.security.embedded.roles.scott=Admin,admin,Tester,user # <1>
@@ -197,12 +197,12 @@ quarkus.security.embedded.roles.noadmin=user
 ## Augmenting the Security Extension __Advanced Topic__
 [TIP]
 ====
-Augmenting the security extension is an advanced topic that relies on writing a {project-name} extension and understanding all that entails. This only needs to be done if you have security stores and authentication mechanisims that are not supported by existing {project-name} extensions.
+Augmenting the security extension is an advanced topic that relies on writing a {project-name} extension and understanding all that entails. This only needs to be done if you have security stores and authentication mechanisms that are not supported by existing {project-name} extensions.
 ====
 The security extension has support for overriding its Elytron `org.wildfly.security.auth.server.SecurityRealm` and the Undertow `io.undertow.security.idm.IdentityManager` used for authentication and authorization decisions. If  your application needs to integrate with alternative identity stores and/or authentication mechanisms, then you can use this advanced feature to to so. In order to do this, one would write an {project-name} extension as described in link:extension-authors-guide.html[Extension Authors Guide] to produce `SecurityRealmBuildItem` and/or `IdentityManagerBuildItem` items as detailed in the following sections. The JWT RBAC extension described in the link:jwt-guide.html[JWT RBAC Security] is an example of an extension that makes use of these extension points.
 
 ### Adding a new Security Realm
-If one has an alternative store of indentity and role information, it can be integrated by creating a `org.wildfly.security.auth.server.SecurityRealm` and producing a `io.quarkus.security.SecurityRealmBuildItem` from within the deployment module of a new extension. The deployment module would be responsible for exposing the necessary configuration information to allow users to enable and configure the security realm indentity mappings.
+If one has an alternative store of identity and role information, it can be integrated by creating a `org.wildfly.security.auth.server.SecurityRealm` and producing a `io.quarkus.security.SecurityRealmBuildItem` from within the deployment module of a new extension. The deployment module would be responsible for exposing the necessary configuration information to allow users to enable and configure the security realm identity mappings.
 
 An example of this can be see in the MicroProfile JWT RBAC extension. The relevant JWT extension code fragment is shown in the following listing:
 
@@ -219,7 +219,7 @@ class SmallRyeJwtProcessor {
 ...
     /**
      * Configure a TokenSecurityRealm if enabled
-     * 
+     *
      * @param template - jwt runtime template
      * @param securityRealm - producer used to register the TokenSecurityRealm
      * @param container - the BeanContainer for creating CDI beans
@@ -265,9 +265,9 @@ class SmallRyeJwtProcessor {
 ### Overriding the Undertow IdentityManager Implementation
 The default `io.undertow.security.idm.IdentityManager` installed by the security extension is based on password authentication. It passes a `org.wildfly.security.evidence.PasswordGuessEvidence` representation of the caller authentication credentials to the security realm to validate a user. If you extend the security extension with a security realm that supports this form of evidence,  you can use the default `IdentityManager` provided by the security extension. Your extension would need to produce a `io.quarkus.security.PasswordRealmBuildItem` to indicate that your extension security realm supports `PasswordGuessEvidence`.
 
-If on the other hand, your security realm requires another form of authentication credential evidence, you will need to override the default security extension implementation with one of your own. This requires that your extension produce an `io.quarkus.security.IdentityManagerBuildItem` with the `IdentityManager` implementation.
+If on the other hand, your security realm requires another form of authentication credential evidence, you will need to override the default security extension implementation with one of your own. This requires that your extension produces an `io.quarkus.security.IdentityManagerBuildItem` with the `IdentityManager` implementation.
 
-An example of this can also be see in the MicroProfile JWT RBAC extension. Since the security realm the JWT extension installs is based on JWT auth tokens rather than passwords, it must install an identity manager that is able to extract the token and present that to the security realm. This requies a custom `IdentityManager`. The relevant JWT extension code fragment is shown in the following listing:
+An example of this can also be seen in the MicroProfile JWT RBAC extension. Since the security realm the JWT extension installs is based on JWT auth tokens rather than passwords, it must install an identity manager that is able to extract the token and present that to the security realm. This requires a custom `IdentityManager`. The relevant JWT extension code fragment is shown in the following listing:
 
 [source,java]
 ----
@@ -278,7 +278,7 @@ class SmallRyeJwtProcessor {
 ...
     /**
      * Create the JwtIdentityManager
-     * 
+     *
      * @param template - jwt runtime template
      * @param securityDomain - the previously created TokenSecurityRealm
      * @param identityManagerProducer - producer for the identity manager
@@ -298,4 +298,4 @@ class SmallRyeJwtProcessor {
 
 ## Future Work
 
-Support for additional realms that allow for ecrypted/hashed information as well as integration with Keyloak for OAUTH and JWT generation support is in the works. We will also be moving to more use of the Elytron APIs over the Undertow APIs to allow for more flexibility in handling various authentication and authorization approaches.
+Support for additional realms that allow for encrypted/hashed information as well as integration with Keycloak for OAUTH and JWT generation support is in the works. We will also be moving to more use of the Elytron APIs over the Undertow APIs to allow for more flexibility in handling various authentication and authorization approaches.

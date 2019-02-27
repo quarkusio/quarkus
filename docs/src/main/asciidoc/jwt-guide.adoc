@@ -1,6 +1,6 @@
 = {project-name} - Using JWT RBAC
 
-This guide explains how your {project-name} application can utilize MircoProfile JWT RBAC to provide
+This guide explains how your {project-name} application can utilize MicroProfile JWT RBAC to provide
 secured access to the JAX-RS endpoints.
 
 == TODO

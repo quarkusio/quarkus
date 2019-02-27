@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
@@ -12,7 +13,9 @@ import io.restassured.RestAssured;
  * @author William Burns
  */
 @QuarkusTest
+@QuarkusTestResource(InfinispanServerTestResource.class)
 public class InfinispanClientFunctionalityTest {
+
     @Test
     public void testGetAllKeys() {
         System.out.println("Running getAllKeys test");

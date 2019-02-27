@@ -20,7 +20,6 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.jboss.logmanager.ExtHandler;
@@ -197,26 +196,11 @@ public class DelayedHandler extends ExtHandler {
         // Always attempt to drain the queue
         ExtLogRecord record;
         while ((record = logRecords.pollFirst()) != null) {
-            Logger logger = Logger.getLogger(record.getLoggerName());
-            if (getLevel(logger).intValue() > record.getLevel().intValue()) {
-                //this category has an explicit level set and this is too low to log
-                continue;
-            }
-            if (isEnabled() && isLoggable(record)) {
+            if (isEnabled() && isLoggable(record) && Logger.getLogger(record.getLoggerName()).isLoggable(record.getLevel())) {
                 publishToChildren(record);
             }
         }
         activated = true;
-    }
-
-    private Level getLevel(Logger logger) {
-        while (logger != null) {
-            if (logger.getLevel() != null) {
-                return logger.getLevel();
-            }
-            logger = logger.getParent();
-        }
-        return Level.ALL;
     }
 
     private void publishToChildren(final ExtLogRecord record) {

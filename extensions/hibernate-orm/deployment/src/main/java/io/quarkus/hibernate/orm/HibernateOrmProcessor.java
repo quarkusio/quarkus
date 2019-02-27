@@ -52,6 +52,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 
 import io.quarkus.agroal.DataSourceDriverBuildItem;
+import io.quarkus.agroal.DataSourceInitializedBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
@@ -74,7 +75,6 @@ import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
 import io.quarkus.deployment.index.IndexingUtil;
-import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.hibernate.orm.runtime.DefaultEntityManagerFactoryProducer;
@@ -85,7 +85,6 @@ import io.quarkus.hibernate.orm.runtime.JPAResourceReferenceProvider;
 import io.quarkus.hibernate.orm.runtime.RequestScopedEntityManagerHolder;
 import io.quarkus.hibernate.orm.runtime.TransactionEntityManagers;
 import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
-import io.quarkus.runtime.logging.LogCleanupFilter;
 
 /**
  * Simulacrum of JPA bootstrap.
@@ -255,7 +254,8 @@ public final class HibernateOrmProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    public void startPersistenceUnits(HibernateOrmTemplate template, BeanContainerBuildItem beanContainer) throws Exception {
+    public void startPersistenceUnits(HibernateOrmTemplate template, BeanContainerBuildItem beanContainer,
+            Optional<DataSourceInitializedBuildItem> dataSourceInitialized) throws Exception {
         template.startAllPersistenceUnits(beanContainer.getValue());
     }
 

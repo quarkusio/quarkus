@@ -27,6 +27,7 @@ import java.util.function.Predicate;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -45,28 +46,24 @@ public class InjectionPointInfo {
                 qualifiers.add(annotation);
             }
         }
-        return new InjectionPointInfo(field.type(), qualifiers.isEmpty() ? Collections.emptySet() : qualifiers, field);
+        return new InjectionPointInfo(field.type(), qualifiers.isEmpty() ? Collections.emptySet() : qualifiers, field, -1);
     }
 
     static InjectionPointInfo fromResourceField(FieldInfo field, BeanDeployment beanDeployment) {
-        return new InjectionPointInfo(field.type(), new HashSet<>(field.annotations()), Kind.RESOURCE, field);
+        return new InjectionPointInfo(field.type(), new HashSet<>(field.annotations()), InjtetionPointKind.RESOURCE, field, -1);
     }
 
     static List<InjectionPointInfo> fromMethod(MethodInfo method, BeanDeployment beanDeployment) {
         return fromMethod(method, beanDeployment, null);
     }
 
-    static List<InjectionPointInfo> fromMethod(MethodInfo method, BeanDeployment beanDeployment, Predicate<Set<AnnotationInstance>> skipPredicate) {
+    static List<InjectionPointInfo> fromMethod(MethodInfo method, BeanDeployment beanDeployment,
+            Predicate<Set<AnnotationInstance>> skipPredicate) {
         List<InjectionPointInfo> injectionPoints = new ArrayList<>();
         for (ListIterator<Type> iterator = method.parameters().listIterator(); iterator.hasNext();) {
             Type paramType = iterator.next();
-            Set<AnnotationInstance> paramAnnotations = new HashSet<>();
-            for (AnnotationInstance annotation : beanDeployment.getAnnotations(method)) {
-                if (org.jboss.jandex.AnnotationTarget.Kind.METHOD_PARAMETER.equals(annotation.target().kind())
-                        && annotation.target().asMethodParameter().position() == iterator.previousIndex()) {
-                    paramAnnotations.add(annotation);
-                }
-            }
+            int position = iterator.previousIndex();
+            Set<AnnotationInstance> paramAnnotations = getParameterAnnotations(beanDeployment, method, position);
             if (skipPredicate != null && skipPredicate.test(paramAnnotations)) {
                 // Skip parameter, e.g. @Disposes
                 continue;
@@ -77,26 +74,39 @@ public class InjectionPointInfo {
                     paramQualifiers.add(paramAnnotation);
                 }
             }
-            injectionPoints.add(new InjectionPointInfo(paramType, paramQualifiers, method));
+            injectionPoints.add(new InjectionPointInfo(paramType, paramQualifiers, method, position));
         }
         return injectionPoints;
     }
 
+    static Set<AnnotationInstance> getParameterAnnotations(BeanDeployment beanDeployment, MethodInfo method, int position) {
+        Set<AnnotationInstance> annotations = new HashSet<>();
+        for (AnnotationInstance annotation : beanDeployment.getAnnotations(method)) {
+            if (Kind.METHOD_PARAMETER.equals(annotation.target().kind())
+                    && annotation.target().asMethodParameter().position() == position) {
+                annotations.add(annotation);
+            }
+        }
+        return annotations;
+    }
+    
     private final TypeAndQualifiers typeAndQualifiers;
 
     private final AtomicReference<BeanInfo> resolvedBean;
 
-    private final Kind kind;
+    private final InjtetionPointKind kind;
     
     private final boolean hasDefaultedQualifier;
     
     private final AnnotationTarget target;
+    
+    private final int position;
 
-    InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, AnnotationTarget target) {
-        this(requiredType, requiredQualifiers, Kind.CDI, target);
+    InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, AnnotationTarget target, int position) {
+        this(requiredType, requiredQualifiers, InjtetionPointKind.CDI, target, position);
     }
 
-    InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, Kind kind, AnnotationTarget target) {
+    InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, InjtetionPointKind kind, AnnotationTarget target, int position) {
         this.typeAndQualifiers = new TypeAndQualifiers(requiredType,
                 requiredQualifiers.isEmpty() ? Collections.singleton(AnnotationInstance.create(DotNames.DEFAULT, null, Collections.emptyList()))
                         : requiredQualifiers);
@@ -104,6 +114,7 @@ public class InjectionPointInfo {
         this.kind = kind;
         this.hasDefaultedQualifier = requiredQualifiers.isEmpty();
         this.target = target;
+        this.position = position;
     }
 
     void resolve(BeanInfo bean) {
@@ -114,7 +125,7 @@ public class InjectionPointInfo {
         return resolvedBean.get();
     }
 
-    Kind getKind() {
+    InjtetionPointKind getKind() {
         return kind;
     }
 
@@ -143,6 +154,13 @@ public class InjectionPointInfo {
         return target;
     }
     
+    /**
+     * @return the parameter position or {@code -1} for a field injection point
+     */
+    public int getPosition() {
+        return position;
+    }
+
     public String getTargetInfo() {
         switch (target.kind()) {
             case FIELD:
@@ -159,7 +177,7 @@ public class InjectionPointInfo {
         return "InjectionPointInfo [requiredType=" + typeAndQualifiers.type + ", requiredQualifiers=" + typeAndQualifiers.qualifiers + "]";
     }
 
-    enum Kind {
+    enum InjtetionPointKind {
         CDI, RESOURCE
     }
 

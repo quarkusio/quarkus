@@ -3,5 +3,19 @@
 This guide explains how your {project-name} application can utilize MicroProfile JWT RBAC to provide
 secured access to the JAX-RS endpoints.
 
-== TODO
+[cols="<m,<m,<2",options="header"]
+|===
+|Property Name|Default|Description
+|quarkus.jwt.enabled|true|Determine if the jwt extension is enabled.
+|quarkus.jwt.realm-name|Quarkus-JWT|Name to use for security realm.
+|quarkus.jwt.auth-mechanism|MP-JWT|Name to use for authentication mechanism
+|===
 
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can skip right to the completed example.
+
+Clone the Git repository: `git clone `, or download an {quickstart-url}/archive/master.zip[archive].
+
+The solution is located in the `using-opentracing` {quickstart-url}[directory].

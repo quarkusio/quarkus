@@ -151,7 +151,7 @@ public abstract class AbstractDataSourceProducer {
                 case "org.postgresql.Driver":
                     poolConfiguration.connectionFactoryConfiguration().jdbcProperty("sslmode", "disable");
                     break;
-                case "com.mysql.jdbc.Driver":
+                case "org.mariadb.jdbc.Driver":
                     poolConfiguration.connectionFactoryConfiguration().jdbcProperty("useSSL", "false");
                     break;
                 default:

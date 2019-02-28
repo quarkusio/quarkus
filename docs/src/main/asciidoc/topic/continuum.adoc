@@ -175,7 +175,7 @@ public Publisher<String> stream() {
 
 == Message-driven microservices
 
-However, HTTP characteristics does not allow implement https://www.reactivemanifesto.org/[reactive systems], where all the components interact using asynchronous messages passing.
+However, HTTP characteristics prohibit implementing https://www.reactivemanifesto.org/[reactive systems], where all the components interact using asynchronous messages passing.
 But no worries, Quarkus is perfectly suited to implement message-driven microservices and reactive systems.
 
 First, you can consume messages from various brokers such as AMQP or Kafka, and process these messages smoothly:
@@ -193,7 +193,7 @@ public class HealthDataProcessor {
 }
 ----
 
-The `@Incoming` and `@Outgoing` annotations come from https://www.smallrye.io/smallrye-reactive-messaging[Reactive Messaging].
+The `@Incoming` and `@Outgoing` annotations are part of https://www.smallrye.io/smallrye-reactive-messaging[Reactive Messaging].
 They are used to express from which _stream_ you are consuming and to which stream you are sending.
 Thanks to Reactive Messaging you can consume and send messages from and to different brokers and transports such as HTTP, Kafka, or http://camel.apache.org[Apache Camel].
 
@@ -214,11 +214,11 @@ public Publisher<KafkaMessage<String, JsonObject>> filterState(Flowable<MqttMess
 }
 ----
 
-Stream-based manipulation can either use Rx Java 2 (s in the previous snippet) or MicroProfile Reactive Streams Operators.
+Stream-based manipulation can either use Rx Java 2 (as in the previous snippet) or MicroProfile Reactive Streams Operators.
 
 == Functions as a Service and Serverless
 
-Thanks to their stellar startup time and low memory usage, you can implement a Quarkus functions used in a serverless environment.
+Thanks to their stellar startup time and low memory usage, you can implement Quarkus functions to be used serverless environments.
 If you are using AWS Lambda, your Quarkus function looks like:
 
 [source, java]

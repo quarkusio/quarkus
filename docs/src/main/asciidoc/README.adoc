@@ -1,0 +1,28 @@
+= How to Create {project-name} Documentation
+
+This guide describes the asciidoc format and conventions that the {project-name} has
+adopted.
+
+== References
+
+The following links provide background on the general Red Hat conventions and Asciidoc syntax.
+
+* https://redhat-documentation.github.io/asciidoc-markup-conventions/[AsciiDoc Mark-up Quick Reference for Red Hat Documentation]
+* http://asciidoctor.org/docs/user-manual/[Asciidoctor User Manual]
+* http://asciidoctor.org/docs/asciidoc-syntax-quick-reference/[AsciiDoc Syntax Quick Reference]
+
+== Variables for Use in Documents
+The following variables externalize key information that can change over time, and so references
+to such information should be done by using the variable inside of {} curly brackets. The
+complete list of externalized variables for use is given in the following table:
+
+.Variables
+[cols="<m,<m,<2",options="header"]
+|===
+|Property Name|Value|Description
+|\{project-name}|{project-name}|The official name of the project.
+|\{project-version}|{project-version}|The current version of the project.
+|\{project-home-url}|{project-home-url}| The location of the project home page.
+|\{project-org-url}|{project-org-url}| The location project github organization.
+|\{quickstart-url}|{quickstart-url}| The location of the quickstart repo associated with the documentation.
+|===

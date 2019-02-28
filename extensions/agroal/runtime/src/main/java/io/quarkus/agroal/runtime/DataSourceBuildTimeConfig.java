@@ -31,12 +31,6 @@ public class DataSourceBuildTimeConfig {
     public Optional<String> driver;
 
     /**
-     * Use a JTA implementation.
-     */
-    @ConfigItem(defaultValue = "true")
-    public boolean jta;
-
-    /**
      * Whether we want to use XA.
      * <p>
      * If used, the driver has to support it.

@@ -110,11 +110,9 @@ public abstract class AbstractDataSourceProducer {
         poolConfiguration.connectionFactoryConfiguration().jdbcUrl(url);
         poolConfiguration.connectionFactoryConfiguration().connectionProviderClass(driver);
 
-        if (dataSourceBuildTimeConfig.jta || dataSourceBuildTimeConfig.xa) {
-            TransactionIntegration txIntegration = new NarayanaTransactionIntegration(transactionManager,
-                    transactionSynchronizationRegistry);
-            poolConfiguration.transactionIntegration(txIntegration);
-        }
+        TransactionIntegration txIntegration = new NarayanaTransactionIntegration(transactionManager,
+                transactionSynchronizationRegistry);
+        poolConfiguration.transactionIntegration(txIntegration);
 
         // Authentication
         if (dataSourceRuntimeConfig.username.isPresent()) {

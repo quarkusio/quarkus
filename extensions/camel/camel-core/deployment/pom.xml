@@ -11,6 +11,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>quarkus-camel-core-deployment</artifactId>
+  <name>Quarkus - Camel - Core - Deployment</name>
 
   <dependencies>
 

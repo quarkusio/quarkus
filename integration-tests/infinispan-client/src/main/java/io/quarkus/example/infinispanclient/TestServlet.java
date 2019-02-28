@@ -265,7 +265,7 @@ public class TestServlet {
 
         long misses = stats.getNearCacheMisses();
         if (nearCacheMisses + 1 != misses) {
-            return "Near cache didn't miss for some reason. Expected: " + nearCacheMisses + 1 + " but got: " + misses;
+            return "Near cache didn't miss for some reason. Expected: " + (nearCacheMisses + 1) + " but got: " + misses;
         }
 
         if (!retrievedBook.equals(nearCacheBook)) {
@@ -280,7 +280,7 @@ public class TestServlet {
         long hits = stats.getNearCacheHits();
 
         if (nearCacheHits + 1 != hits) {
-            return "Near cache didn't hit for some reason. Expected: " + nearCacheHits + 1 + " but got: " + hits;
+            return "Near cache didn't hit for some reason. Expected: " + (nearCacheHits + 1) + " but got: " + hits;
         }
 
         if (!retrievedBook.equals(nearCacheBook)) {
@@ -293,8 +293,17 @@ public class TestServlet {
 
         long invalidations = stats.getNearCacheInvalidations();
         if (nearCacheInvalidations + 1 != invalidations) {
-            return "Near cache didn't invalidate for some reason. Expected: " + nearCacheInvalidations + 1 + " but got: "
-                    + invalidations;
+            // Try a second time after waiting just a little bit
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            invalidations = stats.getNearCacheInvalidations();
+            if (nearCacheInvalidations + 1 != invalidations) {
+                return "Near cache didn't invalidate for some reason. Expected: " + (nearCacheInvalidations + 1) + " but got: "
+                        + invalidations;
+            }
         }
 
         cache.remove(id);

@@ -99,7 +99,7 @@
       <log4j2.version>2.0</log4j2.version>
       <slf4j.version>1.7.25</slf4j.version>
       <slf4j-jboss-logging.version>1.1.0.Final</slf4j-jboss-logging.version>
-      <wildfly-common.version>1.5.0.Alpha4-format-002</wildfly-common.version>
+      <wildfly-common.version>1.5.0.Final-format-001</wildfly-common.version>
       <wildfly-client-config.version>1.0.0.Final</wildfly-client-config.version>
       <!-- This requires a release build of the https://github.com/jbossas/quarkus-wildfly-elytron-embedded project -->
       <wildfly-elytron.version>2.0.0.Alpha1</wildfly-elytron.version>

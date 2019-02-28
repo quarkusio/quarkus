@@ -41,7 +41,7 @@
 
     <properties>
         <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>
-        <postgres.url>${env.DATABASE_URL}</postgres.url>
+        <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
         <version.compiler.plugin>3.8.0-jboss-2</version.compiler.plugin>
     </properties>
 
@@ -136,19 +136,5 @@
             <url>http://ec2-18-234-117-118.compute-1.amazonaws.com:8081/nexus/content/repositories/snapshots/</url>
         </snapshotRepository>
     </distributionManagement>
-
-    <profiles>
-        <profile>
-            <id>database-url</id>
-            <activation>
-                <property>
-                    <name>!env.DATABASE_URL</name>
-                </property>
-            </activation>
-            <properties>
-                <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
-            </properties>
-        </profile>
-    </profiles>
 
 </project>

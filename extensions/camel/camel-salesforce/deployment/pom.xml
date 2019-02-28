@@ -11,6 +11,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>quarkus-camel-salesforce-deployment</artifactId>
+  <name>Quarkus - Camel - Salesforce - Deployment</name>
 
   <dependencies>
 

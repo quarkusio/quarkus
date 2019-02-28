@@ -12,6 +12,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-camel</artifactId>
+    <name>Quarkus - Camel</name>
     <packaging>pom</packaging>
 
     <modules>

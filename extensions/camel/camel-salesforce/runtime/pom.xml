@@ -11,6 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-camel-salesforce-runtime</artifactId>
+    <name>Quarkus - Camel - Salesforce - Runtime</name>
 
     <dependencies>
 

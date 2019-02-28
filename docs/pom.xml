@@ -76,6 +76,11 @@
                                 <!-- avoid content security policy violations -->
                                 <linkcss>true</linkcss>
                                 <copycss>true</copycss>
+                                <!-- Externalized values for use in the documentation -->
+                                <project-version>${project.version}</project-version>
+                                <project-home-url>https://quarkus.io</project-home-url>
+                                <project-org-url>https://github.com/quarkus</project-org-url>
+                                <quickstart-url>https://github.com/jbossas/quarkus-quickstarts.git</quickstart-url>
                             </attributes>
                         </configuration>
                     </execution>

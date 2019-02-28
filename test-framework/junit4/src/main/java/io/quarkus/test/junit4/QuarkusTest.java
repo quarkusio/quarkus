@@ -43,6 +43,7 @@ public class QuarkusTest extends AbstractQuarkusTestRunner {
 
         @Override
         protected void startQuarkus() {
+            System.setProperty("quarkus.log.file.path", "target/quarkus.log");
             runtimeRunner = RuntimeRunner.builder()
                     .setLaunchMode(LaunchMode.TEST)
                     .setClassLoader(getClass().getClassLoader())

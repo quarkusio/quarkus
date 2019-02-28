@@ -44,6 +44,7 @@ public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallba
         ExtensionContext root = context.getRoot();
         ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
         ExtensionState state = (ExtensionState) store.get(ExtensionState.class.getName());
+        System.setProperty("quarkus.log.file.path", "target/quarkus.log");
         boolean substrateTest = context.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class);
         if (state == null) {
             TestResourceManager testResourceManager = new TestResourceManager(context.getRequiredTestClass());

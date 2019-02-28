@@ -16,8 +16,6 @@ hotspot.log
 .java-version
 .graal-install
 hs_err_pid*.log
-server.log
-quarkus.log
 dumps
 *.orig
 *.rej

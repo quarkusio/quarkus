@@ -13,6 +13,7 @@ include::quarkus-intro.adoc[tag=intro]
 == Other guides
 
 * link:application-configuration-guide.html[Configuring Your Application]
+* link:logging-guide.html[Configuring Logging]
 * link:application-lifecycle-events-guide.html[Application Initialization and Termination]
 * link:rest-json-guide.html[Writing JSON REST Services]
 * link:scheduled-guide.html[Schedule Periodic Tasks]

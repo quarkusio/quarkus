@@ -62,7 +62,7 @@ public class SetupVerifier {
         assertThat(plugin).isNotNull().satisfies(p -> {
             assertThat(p.getArtifactId()).isEqualTo(MojoUtils.getPluginArtifactId());
             assertThat(p.getGroupId()).isEqualTo(MojoUtils.getPluginGroupId());
-            assertThat(p.getVersion()).isEqualTo(MojoUtils.SHAMROCK_VERSION_PROPERTY);
+            assertThat(p.getVersion()).isEqualTo(MojoUtils.QUARKUS_VERSION_PROPERTY);
         });
 
         // Check build execution Configuration

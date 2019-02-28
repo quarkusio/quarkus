@@ -81,7 +81,7 @@ public class CreateProject {
         context.put(PROJECT_GROUP_ID, groupId);
         context.put(PROJECT_ARTIFACT_ID, artifactId);
         context.put(PROJECT_VERSION, version);
-        context.put(SHAMROCK_VERSION, getPluginVersion());
+        context.put(QUARKUS_VERSION, getPluginVersion());
 
         new BasicRest()
                 .generate(root, context);
@@ -113,7 +113,7 @@ public class CreateProject {
             Dependency bom = new Dependency();
             bom.setGroupId(getPluginGroupId());
             bom.setArtifactId(getBomArtifactId());
-            bom.setVersion(SHAMROCK_VERSION_PROPERTY);
+            bom.setVersion(QUARKUS_VERSION_PROPERTY);
             bom.setType("pom");
             bom.setScope("import");
 
@@ -128,7 +128,7 @@ public class CreateProject {
             exec.addGoal("native-image");
             exec.setConfiguration(configuration(new Element("enableHttpUrlHandler", "true")));
 
-            Plugin plg = plugin(getPluginGroupId(), getPluginArtifactId(), SHAMROCK_VERSION_PROPERTY);
+            Plugin plg = plugin(getPluginGroupId(), getPluginArtifactId(), QUARKUS_VERSION_PROPERTY);
             plg.addExecution(exec);
 
             BuildBase buildBase = new BuildBase();
@@ -150,7 +150,7 @@ public class CreateProject {
 
     private void addMainPluginConfig(Model model) {
         if (!hasPlugin(model)) {
-            Plugin plugin = plugin(getPluginGroupId(), getPluginArtifactId(), SHAMROCK_VERSION_PROPERTY);
+            Plugin plugin = plugin(getPluginGroupId(), getPluginArtifactId(), QUARKUS_VERSION_PROPERTY);
             if (isParentPom(model)) {
                 addPluginManagementSection(model, plugin);
                 //strip the quarkusVersion off

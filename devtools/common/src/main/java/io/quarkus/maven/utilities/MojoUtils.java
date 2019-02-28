@@ -49,7 +49,7 @@ public class MojoUtils {
     public static final String JAVA_EXTENSION = ".java";
 
     private static final String PLUGIN_VERSION_PROPERTY_NAME = "quarkus.version";
-    public static final String SHAMROCK_VERSION_PROPERTY = "${" + PLUGIN_VERSION_PROPERTY_NAME + "}";
+    public static final String QUARKUS_VERSION_PROPERTY = "${" + PLUGIN_VERSION_PROPERTY_NAME + "}";
 
     private static final Properties properties = new Properties();
 
@@ -234,7 +234,7 @@ public class MojoUtils {
                         // Do nothing.
                     });
             //TODO This is temporary until "extensions.json" is the generated version
-            extensions.forEach(e -> e.setVersion(MojoUtils.SHAMROCK_VERSION_PROPERTY));
+            extensions.forEach(e -> e.setVersion(MojoUtils.QUARKUS_VERSION_PROPERTY));
             return extensions;
         } catch (IOException e) {
             throw new RuntimeException("Unable to load the extensions.json file", e);

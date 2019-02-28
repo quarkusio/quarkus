@@ -538,3 +538,13 @@ A class that will be initialized at runtime rather than build time. This will ca
 
 `io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem`::
 A convenience feature that allows you to control most of the above features from a single build item.
+
+== IDE support tips
+
+=== Writing {project-name} extensions in Eclipse
+
+The only particular aspect of writing {project-name} extensions in Eclipse is that APT (Annotation Processing Tool) is required as part of extension builds, which means you need to:
+
+- Install `m2e-apt` from https://marketplace.eclipse.org/content/m2e-apt
+- Define this property in your `pom.xml`: `<m2e.apt.activation>jdt_apt</m2e.apt.activation>`, although if you rely on `io.quarkus:quarkus-build-parent` you will get it for free.
+- If you have the `io.quarkus:quarkus-extension-processor` open at the same time in your IDE (for example, if you have the {project-name} sources checked out and open in your IDE) you will need to close that project. Otherwise, Eclipse will not invoke the APT plugin that it contains.

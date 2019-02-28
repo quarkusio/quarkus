@@ -18,12 +18,11 @@ package io.quarkus.agroal.runtime;
 
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.ConfigPhase;
-import io.quarkus.runtime.annotations.ConfigRoot;
 
-@ConfigRoot(phase = ConfigPhase.RUN_TIME_STATIC)
-public class DatasourceConfig {
+@ConfigGroup
+public class DataSourceBuildTimeConfig {
 
     /**
      * The datasource driver class name
@@ -32,33 +31,11 @@ public class DatasourceConfig {
     public Optional<String> driver;
 
     /**
-     * The datasource URL
+     * Whether we want to use XA.
+     * <p>
+     * If used, the driver has to support it.
      */
-    @ConfigItem
-    public Optional<String> url;
-
-    /**
-     * The datasource username
-     */
-    @ConfigItem
-    public Optional<String> username;
-
-    /**
-     * The datasource password
-     */
-    @ConfigItem
-    public Optional<String> password;
-
-    /**
-     * The datasource pool minimum size
-     */
-    @ConfigItem(defaultValue = "5")
-    public int minSize;
-
-    /**
-     * The datasource pool maximum size
-     */
-    @ConfigItem(defaultValue = "20")
-    public int maxSize;
+    @ConfigItem(defaultValue = "false")
+    public boolean xa;
 
 }

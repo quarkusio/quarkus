@@ -203,7 +203,7 @@ The security extension has support for overriding its Elytron `org.wildfly.secur
 ### Adding a new Security Realm
 If one has an alternative store of identity and role information, it can be integrated by creating a `org.wildfly.security.auth.server.SecurityRealm` and producing a `io.quarkus.security.SecurityRealmBuildItem` from within the deployment module of a new extension. The deployment module would be responsible for exposing the necessary configuration information to allow users to enable and configure the security realm identity mappings.
 
-An example of this can be see in the MicroProfile JWT RBAC extension. The relevant JWT extension code fragment is shown in the following listing:
+An example of this can be seen in the MicroProfile JWT RBAC extension. The relevant JWT extension code fragment is shown in the following listing:
 
 .MP-JWT Extension SecurityRealm Customization Example
 [source,java]

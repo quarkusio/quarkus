@@ -17,6 +17,7 @@
 package io.quarkus.undertow.runtime;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
@@ -24,6 +25,7 @@ import java.util.EventListener;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
@@ -39,6 +41,7 @@ import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
+import io.quarkus.runtime.Timing;
 import io.quarkus.runtime.annotations.Template;
 import io.undertow.Undertow;
 import io.undertow.server.HandlerWrapper;
@@ -278,6 +281,19 @@ public class UndertowDeploymentTemplate {
             main = i.wrap(main);
         }
         currentRoot = main;
+
+        Timing.setHttpServer(String.format(
+                "Listening on: " + undertow.getListenerInfo().stream().map(l -> {
+                    String address;
+                    if (l.getAddress() instanceof InetSocketAddress) {
+                        InetSocketAddress inetAddress = (InetSocketAddress) l.getAddress();
+                        address = inetAddress.getHostString() + ":" + inetAddress.getPort();
+                    } else {
+                        address = l.getAddress().toString();
+                    }
+                    return l.getProtcol() + "://" + address;
+                }).collect(Collectors.joining(", "))));
+
         return new RuntimeValue<>(undertow);
     }
 

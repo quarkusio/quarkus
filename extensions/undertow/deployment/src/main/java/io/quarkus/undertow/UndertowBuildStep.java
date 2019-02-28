@@ -98,7 +98,6 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentConfigFileBuildItem;
-import io.quarkus.deployment.builditem.HttpServerBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
@@ -106,7 +105,6 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
-import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.ConfigItem;
@@ -150,13 +148,11 @@ public class UndertowBuildStep {
             List<HttpHandlerWrapperBuildItem> wrappers,
             ShutdownContextBuildItem shutdown,
             Consumer<UndertowBuildItem> undertowProducer,
-            Consumer<HttpServerBuildItem> serverProducer,
             LaunchModeBuildItem launchMode) throws Exception {
         RuntimeValue<Undertow> ut = template.startUndertow(shutdown, servletDeploymentManagerBuildItem.getDeploymentManager(),
                 config, wrappers.stream().map(HttpHandlerWrapperBuildItem::getValue).collect(Collectors.toList()),
                 launchMode.getLaunchMode());
         undertowProducer.accept(new UndertowBuildItem(ut));
-        serverProducer.accept(new HttpServerBuildItem(config.host, config.determinePort(launchMode.getLaunchMode())));
         return new ServiceStartBuildItem("undertow");
     }
 

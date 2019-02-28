@@ -9,7 +9,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
  * @author Emmanuel Bernard emmanuel@hibernate.org
  */
 @ConfigRoot
-public class HibernateConfig {
+public class HibernateOrmConfig {
     /**
      * The hibernate ORM dialect class name
      */

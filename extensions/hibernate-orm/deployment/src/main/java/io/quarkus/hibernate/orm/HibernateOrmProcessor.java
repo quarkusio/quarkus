@@ -106,7 +106,7 @@ public final class HibernateOrmProcessor {
     /**
      * Hibernate ORM configuration
      */
-    HibernateOrmConfig hibernate;
+    HibernateOrmConfig hibernateConfig;
 
     @BuildStep
     HotDeploymentConfigFileBuildItem configFile() {
@@ -287,7 +287,7 @@ public final class HibernateOrmProcessor {
             ApplicationArchivesBuildItem applicationArchivesBuildItem) {
         if (descriptors.isEmpty()) {
             //we have no persistence.xml so we will create a default one
-            Optional<String> dialect = hibernate.dialect;
+            Optional<String> dialect = hibernateConfig.dialect;
             if (!dialect.isPresent()) {
                 dialect = guessDialect(driverBuildItem.map(DataSourceDriverBuildItem::getDriver));
             }
@@ -297,19 +297,19 @@ public final class HibernateOrmProcessor {
                 desc.setName("default");
                 desc.setTransactionType(PersistenceUnitTransactionType.JTA);
                 desc.getProperties().setProperty(AvailableSettings.DIALECT, s);
-                hibernate.schemaGeneration.ifPresent(
+                hibernateConfig.schemaGeneration.ifPresent(
                         p -> desc.getProperties().setProperty(AvailableSettings.HBM2DDL_DATABASE_ACTION, p));
-                if (hibernate.showSql) {
+                if (hibernateConfig.showSql) {
                     desc.getProperties().setProperty(AvailableSettings.SHOW_SQL, "true");
                     desc.getProperties().setProperty(AvailableSettings.FORMAT_SQL, "true");
                 }
-                if (hibernate.generateStatistics) {
+                if (hibernateConfig.generateStatistics) {
                     desc.getProperties().setProperty(AvailableSettings.GENERATE_STATISTICS, "true");
                 }
 
                 // sql-load-script-source
                 // explicit file or default one
-                String file = hibernate.sqlLoadScriptSource.orElse("import.sql"); //default Hibernate ORM file imported
+                String file = hibernateConfig.sqlLoadScriptSource.orElse("import.sql"); //default Hibernate ORM file imported
 
                 Optional<Path> loadScriptPath = Optional
                         .ofNullable(applicationArchivesBuildItem.getRootArchive().getChildPath(file));
@@ -324,7 +324,7 @@ public final class HibernateOrmProcessor {
                         });
 
                 //raise exception if explicit file is not present (i.e. not the default)
-                hibernate.sqlLoadScriptSource
+                hibernateConfig.sqlLoadScriptSource
                         .filter(o -> !loadScriptPath.filter(path -> !Files.isDirectory(path)).isPresent())
                         .ifPresent(
                                 c -> {
@@ -349,7 +349,7 @@ public final class HibernateOrmProcessor {
                 descriptors.add(desc);
             });
         } else {
-            if (hibernate.isAnyPropertySet()) {
+            if (hibernateConfig.isAnyPropertySet()) {
                 throw new ConfigurationError(
                         "Hibernate ORM configuration present in persistence.xml and Quarkus config file at the same time\n"
                                 + "If you use persistence.xml remove all " + HIBERNATE_ORM_CONFIG_PREFIX

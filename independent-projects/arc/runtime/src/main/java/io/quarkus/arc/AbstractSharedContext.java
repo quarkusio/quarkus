@@ -131,6 +131,11 @@ abstract class AbstractSharedContext implements InjectableContext {
             return true;
         }
 
+        @Override
+        public String toString() {
+            return "Key [contextual=" + contextual + "]";
+        }
+        
     }
 
 }

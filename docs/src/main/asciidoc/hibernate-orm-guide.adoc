@@ -106,23 +106,82 @@ This is useful to have a data set ready for your tests or demos.
 
 There are optional properties useful to refine your `EntityManagerFactory` or guide guesses of {project-name}.
 
-`quarkus.hibernate.dialect`:: (e.g. `org.hibernate.dialect.PostgreSQL95Dialect`).
+==== Dialect
+
+`quarkus.hibernate-orm.dialect`:: (e.g. `org.hibernate.dialect.PostgreSQL95Dialect`).
 Class name of the Hibernate ORM dialect.
 
-`quarkus.hibernate.schema-generation.database.action`::
+`quarkus.hibernate-orm.dialect.storage-engine`:: (e.g. `MyISAM` or `InnoDB`).
+The storage engine to use when the dialect supports multiple storage engines.
+
+==== Query
+
+`quarkus.hibernate-orm.query.query-plan-cache-max-size`::
+The maximum size of the query plan cache.
+
+`quarkus.hibernate-orm.query.batch-fetch-size`:: (defaults to `-1` i.e. batch fetching is disabled).
+The size of the batches used when loading entities and collections.
+
+`quarkus.hibernate-orm.query.default-null-ordering`:: (defaults to `none`).
+Default precedence of null values in `ORDER BY` clauses.
+Options are `none`, `first`, `last`.
+
+`quarkus.hibernate-orm.transaction.isolation-level`::
+The isolation level to use for transactions.
+Options are `READ_UNCOMMITTED`, `READ_COMMITTED`, `REPEATABLE_READ`, `SERIALIZABLE`.
+The default value depends on the database engine used.
+
+==== Schema
+
+`quarkus.hibernate-orm.schema.generation`::
 (e.g. `drop-and-create` which is awesome in development mode). Select whether the database schema is generated or not.
 Options are `none`, `create`, `drop-and-create`, `drop`
 
-`quarkus.hibernate.show-sql`:: (defaults to `false`).
-Show SQL logs and format them nicely.
+`quarkus.hibernate-orm.schema.default-catalog`::
+The default catalog to use for the database objects.
 
-`quarkus.hibernate.sql-load-script-source`::
+`quarkus.hibernate-orm.schema.default-schema`::
+The default schema to use for the database objects.
+
+`quarkus.hibernate-orm.schema.halt-on-error`:: (defaults to `false`)
+Whether we should stop on the first error when applying the schema.
+
+`quarkus.hibernate-orm.schema.charset`::
+The charset of the database.
+
+==== Loading data
+
+`quarkus.hibernate-orm.sql-load-script`::
 (defaults to `/import.sql`) Name of the file containing the SQL statements to execute when Hibernate ORM starts.
 By default, simply add `import.sql` in the root of your resources directory and it will be picked up without having to set this property.
 
+==== JDBC
+
+`quarkus.hibernate-orm.jdbc.timezone`::
+The time zone pushed to the JDBC driver.
+
+`quarkus.hibernate-orm.jdbc.statement-fetch-size`::
+How many rows are fetched at a time by the JDBC driver.
+
+`quarkus.hibernate-orm.jdbc.statement-batch-size`::
+The number of updates (inserts, updates and deletes) that are sent by the JDBC driver at one time for execution.
+
+==== Logging
+
+`quarkus.hibernate-orm.log.sql`:: (defaults to `false`).
+Show SQL logs and format them nicely.
+
+`quarkus.hibernate-orm.log.jdbc-warnings`:: (defaults to `false`).
+Whether JDBC warnings should be collected and logged.
+
+==== Statistics
+
+`quarkus.hibernate-orm.statistics.enabled`:: (defaults to `false`)
+Whether statistics collection is enabled.
+
 [NOTE]
 --
-Do not mix `persistence.xml` and `quarkus.hibernate.*` properties in `{config-file}`.
+Do not mix `persistence.xml` and `quarkus.hibernate-orm.*` properties in `{config-file}`.
 {project-name} will raise an exception.
 Make up your mind on which approach you want to use.
 --
@@ -149,7 +208,7 @@ This is useful for:
 
 [NOTE]
 --
-If you have a `persistence.xml`, then you cannot use the `quarkus.hibernate.*` properties
+If you have a `persistence.xml`, then you cannot use the `quarkus.hibernate-orm.*` properties
 and only persistence units defined in `persistence.xml` will be taken into account.
 --
 

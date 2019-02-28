@@ -3,6 +3,7 @@ package io.quarkus.example.test;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
@@ -14,6 +15,7 @@ import io.restassured.RestAssured;
  */
 @QuarkusTest
 @QuarkusTestResource(InfinispanServerTestResource.class)
+@Disabled("Intermittently failing")
 public class InfinispanClientFunctionalityTest {
 
     @Test

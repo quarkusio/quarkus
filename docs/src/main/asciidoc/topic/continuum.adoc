@@ -29,9 +29,9 @@ public class FruitResource {
     EntityManager entityManager;
 
     @GET
-    public Fruit[] get() {
+    public List<Fruit> get() {
         return entityManager.createNamedQuery("Fruits.findAll", Fruit.class)
-              .getResultList().toArray(new Fruit[0]);
+              .getResultList();
     }
 
     @GET
@@ -67,7 +67,7 @@ JPA users have recognized the `EntityManager` used to access the database.
 Finally, methods requiring running in a transaction are simply annotated with `@Transactional`.
 
 Let's now imagine you need to access another HTTP endpoint.
-You can use a HTTP client directly, but, it's often a boring task and the code can become quickly repetitive.
+You can use a HTTP client directly, but, it's often a boring task and the code can quickly become repetitive.
 Quarkus provides a way to call HTTP endpoint easily.
 
 First declare your service as follows:
@@ -107,8 +107,8 @@ public class CountriesResource {
 }
 ----
 
-But you may be wondering where is configured the URL as it's not in the code.
-Remember, it must not be in the code, because the url is likely depending on the environment.
+But you may be wondering where the URL is configured as it's not in the code.
+Remember, it must not be in the code, because the url likely depends on the environment.
 The URL is configured in the application configuration:
 
 [source, text]
@@ -121,7 +121,7 @@ So the url can be updated during the deployment, or at launch time using system 
 
 == Being reactive
 
-Application requirements have changed drastically in the last few years.
+Application requirements have changed drastically over the last few years.
 For any application to succeed in the era of cloud computing, big data or IoT, going reactive is increasingly becoming the architecture style to follow.
 
 Today’s users embrace applications that have milliseconds of response time, 100% uptime, lower latency, push data instead of pull, higher throughput and elasticity.
@@ -146,7 +146,7 @@ This way you can greatly improve your resource consumption and elasticity.
 // TODO Async rest client, but does not seem to be working.
 
 But, what about streams?
-Generating a _server-sent event_ response with Quarkus is just simple:
+Generating a _server-sent event_ response with Quarkus is just as simple:
 
 [source, java]
 ----

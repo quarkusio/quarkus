@@ -24,6 +24,8 @@ graph-output.dot
 *.swp
 *.swo
 ObjectStore
+.gradle
+build
 
 
 docker/distroless/bazel-*

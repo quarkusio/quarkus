@@ -45,7 +45,7 @@ This guide also covers the testing of the endpoint.
 We recommend that you follow the instructions in the next sections and create the application step by step.
 However, you can go right to the completed example.
 
-Clone the Git repository: `git clone git@github.com:jbossas/quarkus-quickstarts.git`, or download an https://github.com/jbossas/quarkus-quickstarts/archive/master.zip[archive].
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
 The solution is located in the `getting-started` directory.
 
@@ -384,12 +384,12 @@ property called `test.url` that is set to the base test URL for situations where
 The application is packaged using `mvn package`.
 It produces 2 jar files:
 
-* `quarkus-quickstart-1.0-SNAPSHOT.jar` - containing just the classes and resources of the projects, it's the regular
+* `quarkus-quickstarts-1.0-SNAPSHOT.jar` - containing just the classes and resources of the projects, it's the regular
 artifact produced by the Maven build;
-* `quarkus-quickstart-1.0-SNAPSHOT-runner.jar` - being an executable _jar_. Be aware that it's not an _über-jar_ as
+* `quarkus-quickstarts-1.0-SNAPSHOT-runner.jar` - being an executable _jar_. Be aware that it's not an _über-jar_ as
 the dependencies are copied into the `target/lib` directory.
 
-You can run the application using: `java -jar target/quarkus-quickstart-1.0-SNAPSHOT-runner.jar`
+You can run the application using: `java -jar target/quarkus-quickstarts-1.0-SNAPSHOT-runner.jar`
 
 NOTE: The `Class-Path` entry of the `MANIFEST.MF` from the _runner jar_ explicitly lists the jars from the `lib` directory.
 So if you want to deploy your application somewhere, you need to copy the _runner_ jar as well as the _lib_ directory.
@@ -409,7 +409,7 @@ public CompletionStage<String> hello() {
 }
 ----
 
-The async version of the code is available in the https://github.com/jbossas/quarkus-quickstarts[Github] repository, in the `getting-started-async` directory.
+The async version of the code is available in the {quickstarts-base-url}[Github] repository, in the `getting-started-async` directory.
 
 == What's next?
 

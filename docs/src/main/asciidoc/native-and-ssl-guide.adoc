@@ -18,9 +18,9 @@ To complete this guide, you need:
 
 This guide is based on the REST client guide so you should get this Maven project first.
 
-Clone the Git repository: `git clone https://github.com/jbossas/protean-quickstarts.git`, or download an https://github.com/jbossas/protean-quickstarts/archive/master.zip[archive].
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The project is located in the `rest-client` https://github.com/jbossas/protean-quickstarts/tree/master/rest-client[directory].
+The project is located in the `rest-client` {quickstarts-tree-url}/rest-client[directory].
 
 == Looks like it works out of the box?!?
 

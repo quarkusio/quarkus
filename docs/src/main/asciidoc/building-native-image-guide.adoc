@@ -40,7 +40,7 @@ Remember, you need to configure Maven as indicated in the link:maven-config.html
 We recommend that you follow the instructions in the next sections and package the application step by step.
 However, you can go right to the completed example.
 
-Clone the Git repository: `git clone https://github.com/jbossas/quarkus-quickstarts.git`, or download an https://github.com/jbossas/quarkus-quickstarts/archive/master.zip[archive].
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
 The solution is located in the `getting-started-native` directory.
 
@@ -88,8 +88,8 @@ We use a profile because, you will see very soon, packaging the native image tak
 
 Create a native executable using: `mvn package -Pnative`.
 
-In addition to the regular files, the build also produces `target/quarkus-quickstart-1.0-SNAPSHOT-runner`.
-You can run it using: `target/quarkus-quickstart-native-1.0-SNAPSHOT-runner`.
+In addition to the regular files, the build also produces `target/quarkus-quickstarts-1.0-SNAPSHOT-runner`.
+You can run it using: `target/quarkus-quickstarts-native-1.0-SNAPSHOT-runner`.
 
 == Testing the native executable
 
@@ -144,18 +144,18 @@ To see the `GreetingResourceIT` run against the native image, add a verify goal:
 ----
 mvn package verify -Pnative
 ...
-[quarkus-quickstart-1.0-SNAPSHOT-runner:5185]   (typeflow):  35,160.93 ms
-[quarkus-quickstart-1.0-SNAPSHOT-runner:5185]    (objects):  24,027.13 ms
-[quarkus-quickstart-1.0-SNAPSHOT-runner:5185]   (features):   1,313.94 ms
-[quarkus-quickstart-1.0-SNAPSHOT-runner:5185]     analysis:  61,512.95 ms
-[quarkus-quickstart-1.0-SNAPSHOT-runner:5185]     universe:   1,924.69 ms
-[quarkus-quickstart-1.0-SNAPSHOT-runner:5185]      (parse):  11,479.41 ms
-[quarkus-quickstart-1.0-SNAPSHOT-runner:5185]     (inline):  13,568.71 ms
-[quarkus-quickstart-1.0-SNAPSHOT-runner:5185]    (compile):  82,885.41 ms
-[quarkus-quickstart-1.0-SNAPSHOT-runner:5185]      compile: 114,095.02 ms
-[quarkus-quickstart-1.0-SNAPSHOT-runner:5185]        image:   5,680.17 ms
-[quarkus-quickstart-1.0-SNAPSHOT-runner:5185]        write:   1,876.14 ms
-[quarkus-quickstart-1.0-SNAPSHOT-runner:5185]      [total]: 197,587.37 ms
+[quarkus-quickstarts-1.0-SNAPSHOT-runner:5185]   (typeflow):  35,160.93 ms
+[quarkus-quickstarts-1.0-SNAPSHOT-runner:5185]    (objects):  24,027.13 ms
+[quarkus-quickstarts-1.0-SNAPSHOT-runner:5185]   (features):   1,313.94 ms
+[quarkus-quickstarts-1.0-SNAPSHOT-runner:5185]     analysis:  61,512.95 ms
+[quarkus-quickstarts-1.0-SNAPSHOT-runner:5185]     universe:   1,924.69 ms
+[quarkus-quickstarts-1.0-SNAPSHOT-runner:5185]      (parse):  11,479.41 ms
+[quarkus-quickstarts-1.0-SNAPSHOT-runner:5185]     (inline):  13,568.71 ms
+[quarkus-quickstarts-1.0-SNAPSHOT-runner:5185]    (compile):  82,885.41 ms
+[quarkus-quickstarts-1.0-SNAPSHOT-runner:5185]      compile: 114,095.02 ms
+[quarkus-quickstarts-1.0-SNAPSHOT-runner:5185]        image:   5,680.17 ms
+[quarkus-quickstarts-1.0-SNAPSHOT-runner:5185]        write:   1,876.14 ms
+[quarkus-quickstarts-1.0-SNAPSHOT-runner:5185]      [total]: 197,587.37 ms
 [INFO]
 [INFO] --- maven-failsafe-plugin:2.21.0:integration-test (default) @ quarkus-quickstart ---
 [INFO]
@@ -163,9 +163,9 @@ mvn package verify -Pnative
 [INFO]  T E S T S
 [INFO] -------------------------------------------------------
 [INFO] Running org.acme.quickstart.GreetingResourceIT
-Executing /Users/starksm/Dev/JBoss/Quarkus/get-started/target/quarkus-quickstart-1.0-SNAPSHOT-runner
-2018-11-26 08:20:43,169 ironmaiden quarkus-quickstart-1.0-SNAPSHOT-runner[5220] INFO  [o.j.s.u.r.UndertowDeploymentTemplate] (main) Starting Undertow on port 8080
-2018-11-26 08:20:43,190 ironmaiden quarkus-quickstart-1.0-SNAPSHOT-runner[5220] INFO  [o.j.quarkus] (main) Quarkus started in 21.930ms
+Executing /Users/starksm/Dev/JBoss/Quarkus/get-started/target/quarkus-quickstarts-1.0-SNAPSHOT-runner
+2018-11-26 08:20:43,169 ironmaiden quarkus-quickstarts-1.0-SNAPSHOT-runner[5220] INFO  [o.j.s.u.r.UndertowDeploymentTemplate] (main) Starting Undertow on port 8080
+2018-11-26 08:20:43,190 ironmaiden quarkus-quickstarts-1.0-SNAPSHOT-runner[5220] INFO  [o.j.quarkus] (main) Quarkus started in 21.930ms
 [INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.097 s - in org.acme.quickstart.GreetingResourceIT
 [INFO]
 [INFO] Results:
@@ -216,7 +216,7 @@ And finally, run it with:
 docker run -i --rm -p 8080:8080 quarkus-quickstart/quickstart
 ----
 
-NOTE: Interested by tiny Docker images, check the https://github.com/jbossas/quarkus/tree/master/docker/distroless[distroless] version.
+NOTE: Interested by tiny Docker images, check the {quarkus-tree-url}/docker/distroless[distroless] version.
 
 == What's next?
 

@@ -32,6 +32,8 @@
     <packaging>pom</packaging>
     <properties>
         <version.asciidoctor>1.5.7</version.asciidoctor>
+        <quickstarts-base-url>https://github.com/jbossas/protean-quickstarts</quickstarts-base-url>
+        <quarkus-base-url>https://github.com/jbossas/protean-shamrock</quarkus-base-url>
     </properties>
 
     <name>Quarkus - Documentation</name>
@@ -53,6 +55,34 @@
                         <graal-version>${graal-sdk.version-for-documentation}</graal-version>
                         <restassured-version>${rest-assured.version}</restassured-version>
                         <project-name>Quarkus</project-name>
+                        <!-- Project website home page -->
+                        <quarkus-home-url>https://quarkus.io</quarkus-home-url>
+                        <!-- Root URL of the Github organization -->
+                        <quarkus-org-url>https://github.com/quarkus</quarkus-org-url>
+
+                        <!-- === Quarkus project settings === -->
+                        <!-- Quarkus repository base URL -->
+                        <quarkus-base-url>${quarkus-base-url}</quarkus-base-url>
+                        <!-- Quarkus repository URL to clone -->
+                        <quarkus-clone-url>${quarkus-base-url}.git</quarkus-clone-url>
+                        <!-- Quarkus URL to master source archive -->
+                        <quarkus-archive-url>${quarkus-base-url}/archive/master.zip</quarkus-archive-url>
+                        <!-- Quarkus URL to master blob source tree; used for referencing source files -->
+                        <quarkus-blob-url>${quarkus-base-url}/blob/master</quarkus-blob-url>
+                        <!-- Quarkus URL to master source tree root; used for referencing directories -->
+                        <quarkus-tree-url>${quarkus-base-url}/tree/master</quarkus-tree-url>
+
+                        <!-- === Quickstart settings === -->
+                        <!-- Quickstart repository base URL -->
+                        <quickstarts-base-url>${quickstarts-base-url}</quickstarts-base-url>
+                        <!-- Quickstart repository URL to clone -->
+                        <quickstarts-clone-url>${quickstarts-base-url}.git</quickstarts-clone-url>
+                        <!-- Quickstart URL to master source archive -->
+                        <quickstarts-archive-url>${quickstarts-base-url}/archive/master.zip</quickstarts-archive-url>
+                        <!-- Quickstart URL to master blob source tree; used for referencing source files -->
+                        <quickstarts-blob-url>${quickstarts-base-url}/blob/master</quickstarts-blob-url>
+                        <!-- Quickstart URL to master source tree root; used for referencing directories -->
+                        <quickstarts-tree-url>${quickstarts-base-url}/tree/master</quickstarts-tree-url>
                     </attributes>
                 </configuration>
                 <executions>
@@ -76,11 +106,6 @@
                                 <!-- avoid content security policy violations -->
                                 <linkcss>true</linkcss>
                                 <copycss>true</copycss>
-                                <!-- Externalized values for use in the documentation -->
-                                <project-version>${project.version}</project-version>
-                                <project-home-url>https://quarkus.io</project-home-url>
-                                <project-org-url>https://github.com/quarkus</project-org-url>
-                                <quickstart-url>https://github.com/jbossas/quarkus-quickstarts.git</quickstart-url>
                             </attributes>
                         </configuration>
                     </execution>

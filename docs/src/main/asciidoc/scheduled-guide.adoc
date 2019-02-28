@@ -26,7 +26,7 @@ image:scheduling-task-architecture.png[alt=Architecture,width=640,height=480]
 We recommend that you follow the instructions in the next sections and create the application step by step.
 However, you can go right to the completed example.
 
-Clone the Git repository: `git clone https://github.com/jbossas/quarkus-quickstarts.git`, or download an https://github.com/jbossas/quarkus-quickstarts/archive/master.zip[archive].
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
 The solution is located in the `scheduling-periodic-task` directory.
 

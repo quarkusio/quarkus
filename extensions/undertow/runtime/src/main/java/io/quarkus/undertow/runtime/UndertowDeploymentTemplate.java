@@ -117,7 +117,7 @@ public class UndertowDeploymentTemplate {
         }
         d.setResourceManager(resourceManager);
 
-        if (launchMode == LaunchMode.DEVELOPMENT) {
+        if (launchMode == LaunchMode.DEVELOPMENT || launchMode == LaunchMode.TEST) {
             d.setServletStackTraces(ServletStackTraces.LOCAL_ONLY);
         } else {
             d.setServletStackTraces(ServletStackTraces.NONE);

@@ -16,8 +16,8 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>quarkus-lambda-runtime</module>
-        <module>quarkus-lambda-deployment</module>
+        <module>runtime</module>
+        <module>deployment</module>
     </modules>
     
 </project>

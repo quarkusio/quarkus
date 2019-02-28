@@ -11,32 +11,17 @@ import javax.servlet.http.HttpServletResponse;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.quarkus.arc.runtime.BeanContainer;
+
 public class LambdaServlet extends HttpServlet {
     private static final String ALLOWED_METHODS = "POST, OPTIONS";
-    private RequestHandler handler;
-    private ObjectMapper mapper = new ObjectMapper();
-    private Class<?> targetType;
+    private final BeanContainer.Instance<? extends RequestHandler> handler;
+    private final ObjectMapper mapper = new ObjectMapper();
+    private final Class<?> targetType;
 
-    public LambdaServlet(final Class<? extends RequestHandler> handler) throws ReflectiveOperationException {
-        this.handler = handler.newInstance();
-        discoverParameterTypes();
-    }
-
-    private void discoverParameterTypes() {
-        final Method[] methods = handler.getClass().getDeclaredMethods();
-        Method method = null;
-        for (int i = 0; i < methods.length && method == null; i++) {
-            if (methods[i].getName().equals("handleRequest")) {
-                final Class<?>[] types = methods[i].getParameterTypes();
-                if (types.length == 2 && !types[0].equals(Object.class)) {
-                    method = methods[i];
-                }
-            }
-        }
-        if (method == null) {
-            method = methods[0];
-        }
-        targetType = method.getParameterTypes()[0];
+    public LambdaServlet(final BeanContainer.Instance<? extends RequestHandler> instance, Class<?> targetType) {
+        this.handler = instance;
+        this.targetType = targetType;
     }
 
     @Override
@@ -53,7 +38,12 @@ public class LambdaServlet extends HttpServlet {
 
         final Object value = mapper.readValue(body, targetType);
 
-        resp.getOutputStream().print(mapper.writeValueAsString(handler.handleRequest(value, null)));
+        resp.getOutputStream().print(mapper.writeValueAsString(handler.get().handleRequest(value, null)));
+    }
+
+    @Override
+    public void destroy() {
+        handler.close();
     }
 
     private static void addCorsResponseHeaders(HttpServletResponse response) {

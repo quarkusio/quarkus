@@ -131,6 +131,7 @@
       <debezium.version>0.8.3.Final</debezium.version>
       <zookeeper.version>3.4.10</zookeeper.version>
       <scala.version>2.12.2</scala.version>
+      <aws-lambda-java.version>1.1.0</aws-lambda-java.version>
    </properties>
 
    <dependencyManagement>
@@ -1425,7 +1426,7 @@
          <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-lambda-java-core</artifactId>
-            <version>1.1.0</version>
+            <version>${aws-lambda-java.version}</version>
          </dependency>
 
       </dependencies>

@@ -160,6 +160,7 @@ public class QuarkusUnitTest
             throw new RuntimeException("QuarkusUnitTest does not have archive producer set");
         }
 
+        System.setProperty("quarkus.log.file.path", "target/quarkus.log");
         ExtensionContext.Store store = extensionContext.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
         if (store.get(TestResourceManager.class.getName()) == null) {
             TestResourceManager manager = new TestResourceManager(extensionContext.getRequiredTestClass());

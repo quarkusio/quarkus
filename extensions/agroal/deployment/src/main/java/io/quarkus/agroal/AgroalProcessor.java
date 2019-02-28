@@ -176,6 +176,11 @@ class AgroalProcessor {
         });
     }
 
+    /**
+     * Create a producer bean managing the lifecycle of the datasources.
+     * <p>
+     * Build time and runtime configuration are both injected into this bean.
+     */
     private void createDataSourceProducerBean(BuildProducer<GeneratedBeanBuildItem> generatedBean,
             String dataSourceProducerClassName) {
         ClassOutput classOutput = new ClassOutput() {

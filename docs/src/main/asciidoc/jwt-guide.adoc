@@ -3,13 +3,53 @@
 This guide explains how your {project-name} application can utilize MicroProfile JWT RBAC to provide
 secured access to the JAX-RS endpoints.
 
+## Configuration
+
 [cols="<m,<m,<2",options="header"]
 |===
 |Property Name|Default|Description
 |quarkus.jwt.enabled|true|Determine if the jwt extension is enabled.
 |quarkus.jwt.realm-name|Quarkus-JWT|Name to use for security realm.
 |quarkus.jwt.auth-mechanism|MP-JWT|Name to use for authentication mechanism
+|mp.jwt.verify.publickey|none|The `mp.jwt.verify.publickey` config property allows the Public Key text itself to be
+                              supplied as a string.  The Public Key will be parsed from the supplied string in the order
+                              defined in section <<Supported Public Key Formats>>.
+|mp.jwt.verify.publickey.location|none|onfig property allows for an external or internal location
+                                       of Public Key to be specified.  The value may be a relative path or a URL.
+|mp.jwt.verify.issuer|none|config property allows for the expected value of the `iss`
+                           claim to be specified.
 |===
+
+### Mapping Properties to Environment Variables
+When using environment variables to specify the MP-JWT configuration properties defined in this section,
+note that some operating systems allow only alphabetic characters and underscores in environment variables.
+Since characters such as '.' may be disallowed, in order to set a value for a config property such as `mp.jwt.verify.publickey`
+using an environment variable, the following mapping rules from the MP configuration spec are relevant:
+
+When searching environment variables for configuration properties, the following transformation is applied to
+attempt to find a match:
+
+* Exact match (i.e. mp.jwt.verify.publickey)
+* Replace nonalphanumeric characters with '_' (i.e. mp_jwt_verify_publickey)
+* Replace nonalphanumeric characters with '_' and convert to uppercase (i.e. MP_JWT_VERIFY_PUBLICKEY)
+
+With these rules, the matching portable environment variables names for the current MP-JWT configuration
+properties are:
+
+`mp.jwt.verify.publickey` :: mp_jwt_verify_publickey or MP_JWT_VERIFY_PUBLICKEY
+`mp.jwt.verify.publickey.location` :: mp_jwt_verify_publickey_location or MP_JWT_VERIFY_PUBLICKEY_LOCATION
+`mp.jwt.verify.issuer` :: mp_jwt_verify_issuer or MP_JWT_VERIFY_ISSUER
+
+### Supported Public Key Formats
+
+Public Keys may be formatted in any of the following formats, specified in order of
+precedence:
+
+ - Public Key Cryptography Standards #8 (PKCS#8) PEM
+ - JSON Web Key (JWK)
+ - JSON Web Key Set (JWKS)
+ - JSON Web Key (JWK) Base64 URL encoded
+ - JSON Web Key Set (JWKS) Base64 URL encoded
 
 == Solution
 

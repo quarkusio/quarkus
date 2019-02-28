@@ -31,6 +31,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
+import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -119,5 +120,12 @@ public class UndertowWebsocketProcessor {
     ServiceStartBuildItem setupWorker(UndertowWebsocketTemplate template, UndertowBuildItem undertow) {
         template.setupWorker(undertow.getUndertow());
         return new ServiceStartBuildItem("Websockets");
+    }
+
+    @BuildStep
+    void beanDefiningAnnotations(BuildProducer<BeanDefiningAnnotationBuildItem> annotations) {
+        annotations.produce(new BeanDefiningAnnotationBuildItem(SERVER_ENDPOINT));
+        annotations.produce(new BeanDefiningAnnotationBuildItem(ENDPOINT));
+        annotations.produce(new BeanDefiningAnnotationBuildItem(CLIENT_ENDPOINT));
     }
 }

@@ -24,7 +24,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Enumeration;
@@ -52,6 +51,7 @@ import io.quarkus.runner.TransformerTarget;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.NativeImageLauncher;
 import io.quarkus.test.common.RestAssuredURLManager;
+import io.quarkus.test.common.TestInjectionManager;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHttpResourceManager;
 
@@ -228,6 +228,7 @@ public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallba
         try {
             Object instance = factoryContext.getTestClass().newInstance();
             TestHttpResourceManager.inject(instance);
+            TestInjectionManager.inject(instance);
             return instance;
         } catch (InstantiationException | IllegalAccessException e) {
             throw new TestInstantiationException("Failed to create test instance", e);

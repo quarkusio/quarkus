@@ -44,6 +44,7 @@ import org.hibernate.dialect.MariaDB103Dialect;
 import org.hibernate.dialect.PostgreSQL95Dialect;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
+import org.hibernate.loader.BatchFetchStyle;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.CompositeIndex;
@@ -71,6 +72,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentConfigFileBuildItem;
+import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
@@ -117,12 +119,13 @@ public final class HibernateOrmProcessor {
     void doParseAndRegisterSubstrateResources(BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceProducer,
             BuildProducer<SubstrateResourceBuildItem> resourceProducer,
             BuildProducer<HotDeploymentConfigFileBuildItem> hotDeploymentProducer,
+            BuildProducer<SystemPropertyBuildItem> systemPropertyProducer,
             ArchiveRootBuildItem root,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             Optional<DataSourceDriverBuildItem> driverBuildItem) throws IOException {
         List<ParsedPersistenceXmlDescriptor> descriptors = loadOriginalXMLParsedDescriptors();
-        handleHibernateORMWithNoPersistenceXml(descriptors, resourceProducer, hotDeploymentProducer, root, driverBuildItem,
-                applicationArchivesBuildItem);
+        handleHibernateORMWithNoPersistenceXml(descriptors, resourceProducer, hotDeploymentProducer, systemPropertyProducer,
+                root, driverBuildItem, applicationArchivesBuildItem);
         for (ParsedPersistenceXmlDescriptor i : descriptors) {
             persistenceProducer.produce(new PersistenceUnitDescriptorBuildItem(i));
         }
@@ -282,6 +285,7 @@ public final class HibernateOrmProcessor {
             List<ParsedPersistenceXmlDescriptor> descriptors,
             BuildProducer<SubstrateResourceBuildItem> resourceProducer,
             BuildProducer<HotDeploymentConfigFileBuildItem> hotDeploymentProducer,
+            BuildProducer<SystemPropertyBuildItem> systemProperty,
             ArchiveRootBuildItem root,
             Optional<DataSourceDriverBuildItem> driverBuildItem,
             ApplicationArchivesBuildItem applicationArchivesBuildItem) {
@@ -297,19 +301,79 @@ public final class HibernateOrmProcessor {
                 desc.setName("default");
                 desc.setTransactionType(PersistenceUnitTransactionType.JTA);
                 desc.getProperties().setProperty(AvailableSettings.DIALECT, s);
-                hibernateConfig.schemaGeneration.ifPresent(
-                        p -> desc.getProperties().setProperty(AvailableSettings.HBM2DDL_DATABASE_ACTION, p));
-                if (hibernateConfig.showSql) {
+
+                // The storage engine has to be set as a system property.
+                if (hibernateConfig.dialectStorageEngine.isPresent()) {
+                    systemProperty.produce(new SystemPropertyBuildItem(AvailableSettings.STORAGE_ENGINE,
+                            hibernateConfig.dialectStorageEngine.get()));
+                }
+
+                // Schema
+                hibernateConfig.schema.generation.ifPresent(
+                        action -> desc.getProperties().setProperty(AvailableSettings.HBM2DDL_DATABASE_ACTION, action));
+
+                hibernateConfig.schema.charset.ifPresent(
+                        charset -> desc.getProperties().setProperty(AvailableSettings.HBM2DDL_CHARSET_NAME, charset));
+
+                hibernateConfig.schema.defaultCatalog.ifPresent(
+                        catalog -> desc.getProperties().setProperty(AvailableSettings.DEFAULT_CATALOG, catalog));
+
+                hibernateConfig.schema.defaultSchema.ifPresent(
+                        schema -> desc.getProperties().setProperty(AvailableSettings.DEFAULT_SCHEMA, schema));
+
+                if (hibernateConfig.schema.haltOnError) {
+                    desc.getProperties().setProperty(AvailableSettings.HBM2DDL_HALT_ON_ERROR, "true");
+                }
+
+                // Query
+                if (hibernateConfig.query.batchFetchSize > 0) {
+                    desc.getProperties().setProperty(AvailableSettings.DEFAULT_BATCH_FETCH_SIZE,
+                            Integer.toString(hibernateConfig.query.batchFetchSize));
+                    desc.getProperties().setProperty(AvailableSettings.BATCH_FETCH_STYLE, BatchFetchStyle.PADDED.toString());
+                }
+
+                hibernateConfig.query.queryPlanCacheMaxSize.ifPresent(
+                        maxSize -> desc.getProperties().setProperty(AvailableSettings.QUERY_PLAN_CACHE_MAX_SIZE, maxSize));
+
+                hibernateConfig.query.defaultNullOrdering.ifPresent(
+                        defaultNullOrdering -> desc.getProperties().setProperty(AvailableSettings.DEFAULT_NULL_ORDERING,
+                                defaultNullOrdering));
+
+                // Transactions
+                hibernateConfig.transaction.isolationLevel.ifPresent(
+                        isolationLevel -> desc.getProperties().setProperty(AvailableSettings.ISOLATION, isolationLevel));
+
+                // JDBC
+                hibernateConfig.jdbc.timezone.ifPresent(
+                        timezone -> desc.getProperties().setProperty(AvailableSettings.JDBC_TIME_ZONE, timezone));
+
+                hibernateConfig.jdbc.statementFetchSize.ifPresent(
+                        fetchSize -> desc.getProperties().setProperty(AvailableSettings.STATEMENT_FETCH_SIZE,
+                                fetchSize.toString()));
+
+                hibernateConfig.jdbc.statementBatchSize.ifPresent(
+                        fetchSize -> desc.getProperties().setProperty(AvailableSettings.STATEMENT_BATCH_SIZE,
+                                fetchSize.toString()));
+
+                // Logging
+                if (hibernateConfig.log.sql) {
                     desc.getProperties().setProperty(AvailableSettings.SHOW_SQL, "true");
                     desc.getProperties().setProperty(AvailableSettings.FORMAT_SQL, "true");
                 }
-                if (hibernateConfig.generateStatistics) {
+
+                if (hibernateConfig.log.jdbcWarnings.isPresent()) {
+                    desc.getProperties().setProperty(AvailableSettings.LOG_JDBC_WARNINGS,
+                            hibernateConfig.log.jdbcWarnings.get().toString());
+                }
+
+                // Statistics
+                if (hibernateConfig.statistics.enabled) {
                     desc.getProperties().setProperty(AvailableSettings.GENERATE_STATISTICS, "true");
                 }
 
-                // sql-load-script-source
+                // sql-load-script
                 // explicit file or default one
-                String file = hibernateConfig.sqlLoadScriptSource.orElse("import.sql"); //default Hibernate ORM file imported
+                String file = hibernateConfig.sqlLoadScript.orElse("import.sql"); //default Hibernate ORM file imported
 
                 Optional<Path> loadScriptPath = Optional
                         .ofNullable(applicationArchivesBuildItem.getRootArchive().getChildPath(file));
@@ -324,7 +388,7 @@ public final class HibernateOrmProcessor {
                         });
 
                 //raise exception if explicit file is not present (i.e. not the default)
-                hibernateConfig.sqlLoadScriptSource
+                hibernateConfig.sqlLoadScript
                         .filter(o -> !loadScriptPath.filter(path -> !Files.isDirectory(path)).isPresent())
                         .ifPresent(
                                 c -> {
@@ -334,7 +398,7 @@ public final class HibernateOrmProcessor {
                                                     + c + "'. Remove property or add file to your path.");
                                 });
 
-                // Push the config cache to the Hibernate configuration
+                // Caching
                 // FIXME: this should use a Map as soon as Map support is complete
                 String prefix = HIBERNATE_ORM_CONFIG_PREFIX + "cache.";
                 for (String propName : ConfigProvider.getConfig().getPropertyNames()) {

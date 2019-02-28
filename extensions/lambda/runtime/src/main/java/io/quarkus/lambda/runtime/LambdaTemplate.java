@@ -1,0 +1,57 @@
+package io.quarkus.lambda.runtime;
+
+import java.lang.reflect.Method;
+import java.util.Objects;
+
+import com.amazonaws.services.lambda.runtime.RequestHandler;
+
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.runtime.annotations.Template;
+import io.undertow.servlet.api.InstanceFactory;
+import io.undertow.servlet.api.InstanceHandle;
+
+@Template
+public class LambdaTemplate {
+
+    public InstanceFactory<LambdaServlet> lambdaServletInstanceFactory(Class<? extends RequestHandler> handlerClass,
+            BeanContainer beanContainer) {
+        BeanContainer.Factory<? extends RequestHandler> factory = beanContainer.instanceFactory(handlerClass);
+        Class<?> paramType = discoverParameterTypes(handlerClass);
+        Objects.requireNonNull(paramType, "Unable to discover parameter type");
+        return new InstanceFactory<LambdaServlet>() {
+            @Override
+            public InstanceHandle<LambdaServlet> createInstance() throws InstantiationException {
+                BeanContainer.Instance<? extends RequestHandler> instance = factory.create();
+                LambdaServlet servlet = new LambdaServlet(instance, paramType);
+                return new InstanceHandle<LambdaServlet>() {
+                    @Override
+                    public LambdaServlet getInstance() {
+                        return servlet;
+                    }
+
+                    @Override
+                    public void release() {
+                        instance.close();
+                    }
+                };
+            }
+        };
+    }
+
+    private static Class<?> discoverParameterTypes(Class<? extends RequestHandler> handlerClass) {
+        final Method[] methods = handlerClass.getMethods();
+        Method method = null;
+        for (int i = 0; i < methods.length && method == null; i++) {
+            if (methods[i].getName().equals("handleRequest")) {
+                final Class<?>[] types = methods[i].getParameterTypes();
+                if (types.length == 2 && !types[0].equals(Object.class)) {
+                    method = methods[i];
+                }
+            }
+        }
+        if (method == null) {
+            method = methods[0];
+        }
+        return method.getParameterTypes()[0];
+    }
+}

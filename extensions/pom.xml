@@ -80,6 +80,8 @@
 
         <!-- Caching -->
         <module>caffeine</module>
+
+        <module>lambda</module>
     </modules>
 
 </project>

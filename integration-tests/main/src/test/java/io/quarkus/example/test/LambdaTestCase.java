@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.quarkus.lambda.sample;
+package io.quarkus.example.test;
 
 import static org.hamcrest.Matchers.is;
 
@@ -29,7 +29,7 @@ public class LambdaTestCase {
     @Test
     public void testHelloLambda() {
         RestAssured.with().body("{\"firstName\":\"Stuart\",\"lastName\":\"Douglas\"}")
-                .when().post("/Hello")
+                .when().post("/HelloLambda")
                 .then()
                 .body(is("\"Hello Stuart Douglas.\""));
     }

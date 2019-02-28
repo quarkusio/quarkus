@@ -1,4 +1,4 @@
-package io.quarkus.lambda.sample;
+package io.quarkus.example.lambda;
 
 import javax.enterprise.context.ApplicationScoped;
 

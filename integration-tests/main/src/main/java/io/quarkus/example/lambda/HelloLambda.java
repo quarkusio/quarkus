@@ -1,11 +1,11 @@
-package io.quarkus.lambda.sample;
+package io.quarkus.example.lambda;
 
 import javax.inject.Inject;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 
-public class Hello implements RequestHandler<HelloRequest, String> {
+public class HelloLambda implements RequestHandler<HelloRequest, String> {
 
     @Inject
     HelloGreeter greeter;

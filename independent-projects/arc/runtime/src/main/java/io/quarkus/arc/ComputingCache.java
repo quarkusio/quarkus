@@ -87,7 +87,7 @@ public class ComputingCache<K, V> {
     }
     
     public Set<V> getPresentValues() {
-        return map.values().stream().map(LazyValue::get).collect(Collectors.toSet());
+        return map.values().stream().map(LazyValue::getIfPresent).filter(Objects::nonNull).collect(Collectors.toSet());
     }
 
     public void forEachEntry(BiConsumer<? super K, ? super V> action) {

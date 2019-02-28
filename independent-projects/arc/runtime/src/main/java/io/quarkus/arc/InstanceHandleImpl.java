@@ -98,4 +98,10 @@ class InstanceHandleImpl<T> implements InstanceHandle<T> {
         }
     }
 
+    @Override
+    public String toString() {
+        return "InstanceHandleImpl [bean=" + bean + ", instance=" + instance + ", creationalContext=" + creationalContext
+                + ", parentCreationalContext=" + parentCreationalContext + ", destroyed=" + destroyed + "]";
+    }
+    
 }

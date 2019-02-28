@@ -56,9 +56,7 @@
   <modules>
     <module>runtime</module>
     <module>processor</module>
-    <module>maven-plugin</module>
     <module>tests</module>
-    <module>example</module>
   </modules>
 
   <dependencyManagement>

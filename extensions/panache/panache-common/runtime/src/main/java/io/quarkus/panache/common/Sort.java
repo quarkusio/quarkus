@@ -75,7 +75,7 @@ public class Sort {
      * Sort by the given column, in the given order.
      * 
      * @param column the column to sort on, in the given order.
-     * @param direction the direction to sort in
+     * @param direction the direction to sort on
      * @return a new Sort instance which sorts on the given column in the given order.
      * @see #by(String)
      * @see #by(String...)

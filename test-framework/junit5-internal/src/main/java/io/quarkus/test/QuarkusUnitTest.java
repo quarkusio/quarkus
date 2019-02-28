@@ -62,7 +62,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.TestResourceManager;
-import io.quarkus.test.common.http.TestHttpResourceManager;
+import io.quarkus.test.common.http.TestHTTPResourceManager;
 
 /**
  * A test extension for testing Quarkus internals, not intended for end user consumption
@@ -111,7 +111,7 @@ public class QuarkusUnitTest
 
             Object actualTestInstance = extensionContext.getStore(ExtensionContext.Namespace.GLOBAL).get(testClass.getName());
             if (actualTestInstance != null) { //happens if a deployment exception is expected
-                TestHttpResourceManager.inject(actualTestInstance);
+                TestHTTPResourceManager.inject(actualTestInstance);
             }
             return factory.newInstance(new InvocationHandler() {
                 @Override

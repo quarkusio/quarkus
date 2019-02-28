@@ -71,6 +71,12 @@ public final class LightPersistenceXmlDescriptor implements PersistenceUnitDescr
         if (toClone.getJarFileUrls() != null && !toClone.getJarFileUrls().isEmpty()) {
             throw new UnsupportedOperationException("Value found for #getJarFileUrls : not supported yet");
         }
+        if (toClone.getJtaDataSource() != null) {
+            throw new UnsupportedOperationException("Value found for #getJtaDataSource : not supported yet");
+        }
+        if (toClone.getNonJtaDataSource() != null) {
+            throw new UnsupportedOperationException("Value found for #getNonJtaDataSource : not supported");
+        }
     }
 
     private static final Properties filterNonStrings(final Properties properties) {

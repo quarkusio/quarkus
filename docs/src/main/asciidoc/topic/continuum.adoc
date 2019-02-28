@@ -12,7 +12,7 @@ Quarkus development model morphs to adapt itself to the type of application you 
 == HTTP microservices
 
 Let’s start with the basic: HTTP microservices.
-In this context, you need to develop a HTTP endpoint, often called REST or CRUD.
+In this context, you need to develop an HTTP endpoint, often called REST or CRUD.
 You process incoming HTTP requests, and to do so you often need to rely on others services, such as databases, or another HTTP service.
 
 For this type of application, Quarkus relies on well-known standards such as JAX-RS, JPA and MicroProfile Rest Client.

@@ -15,7 +15,7 @@ pr:
       - master
   paths:
     exclude:
-      - docs/src/main/*
+      - docs/src/main/**
 
 jobs:
 - job: Build_Native_Linux

@@ -32,6 +32,8 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -70,6 +72,22 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
     private static final String PROVIDED = "provided";
 
     private static final Logger log = Logger.getLogger(RunnerJarPhase.class);
+
+    private static final Set<String> IGNORED_ENTRIES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            "META-INF/INDEX.LIST",
+            "META-INF/MANIFEST.MF",
+            "module-info.class",
+            "META-INF/LICENSE",
+            "META-INF/NOTICE",
+            "META-INF/LICENSE.txt",
+            "META-INF/NOTICE.txt",
+            "dependencies.runtime",
+            "META-INF/README",
+            "META-INF/quarkus-config-roots.list",
+            "META-INF/DEPENDENCIES",
+            "META-INF/beans.xml",
+            "META-INF/quarkus-javadoc.properties",
+            "LICENSE")));
 
     private Path outputDir;
     private Path libDir;
@@ -184,7 +202,11 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         // this greatly aids tools (such as s2i) that look for a single jar in the output directory to work OOTB
         if (uberJar) {
             try {
-                Files.move(outputDir.resolve(finalName + ".jar"), outputDir.resolve(finalName + ".jar.original"));
+                Path originalFile = outputDir.resolve(finalName + ".jar.original");
+                if (Files.exists(originalFile)) {
+                    Files.delete(originalFile);
+                }
+                Files.move(outputDir.resolve(finalName + ".jar"), originalFile);
             } catch (IOException e) {
                 throw new AppCreatorException("Unable to build uberjar", e);
             }
@@ -199,7 +221,8 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
 
         final AppArtifactResolver depResolver = appState.getArtifactResolver();
         final List<AppDependency> appDeps = appState.getEffectiveDeps();
-        final Set<String> seen = new HashSet<>();
+        final Map<String, String> seen = new HashMap<>();
+        final Map<String, Set<AppDependency>> duplicateCatcher = new HashMap<>();
         final StringBuilder classPath = new StringBuilder();
         final Map<String, List<byte[]>> services = new HashMap<>();
 
@@ -233,13 +256,17 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
                                         final String relativePath = root.relativize(file).toString();
                                         if (relativePath.startsWith("META-INF/services/") && relativePath.length() > 18) {
                                             services.computeIfAbsent(relativePath, (u) -> new ArrayList<>()).add(read(file));
-                                        } else if (!relativePath.equals("META-INF/MANIFEST.MF")) {
-                                            if (seen.add(relativePath)) {
+                                        } else if (!IGNORED_ENTRIES.contains(relativePath)) {
+                                            duplicateCatcher.computeIfAbsent(relativePath, (a) -> new HashSet<>()).add(appDep);
+                                            if (!seen.containsKey(relativePath)) {
+                                                seen.put(relativePath, appDep.toString());
                                                 Files.copy(file, runnerZipFs.getPath(relativePath),
                                                         StandardCopyOption.REPLACE_EXISTING);
-                                            } else {
+                                            } else if (!relativePath.endsWith(".class")) {
+                                                //for .class entries we warn as a group
                                                 log.warn("Duplicate entry " + relativePath + " entry from " + appDep
-                                                        + " will be ignored");
+                                                        + " will be ignored. Existing file was provided by "
+                                                        + seen.get(relativePath));
                                             }
                                         }
                                         return FileVisitResult.CONTINUE;
@@ -255,6 +282,15 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
                 classPath.append(" lib/" + fileName);
             }
         }
+        Set<Set<AppDependency>> explained = new HashSet<>();
+        for (Map.Entry<String, Set<AppDependency>> entry : duplicateCatcher.entrySet()) {
+            if (entry.getValue().size() > 1) {
+                if (explained.add(entry.getValue())) {
+                    log.warn("Dependencies with duplicate files detected. The dependencies " + entry.getValue()
+                            + " contain duplicate files, e.g. " + entry.getKey());
+                }
+            }
+        }
 
         final Path wiringClassesDir = augmentOutcome.getWiringClassesDir();
         Files.walk(wiringClassesDir).forEach(new Consumer<Path>() {
@@ -263,7 +299,8 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
                 try {
                     final String relativePath = wiringClassesDir.relativize(path).toString();
                     if (Files.isDirectory(path)) {
-                        if (seen.add(relativePath + "/") && !relativePath.isEmpty()) {
+                        if (!seen.containsKey(relativePath + "/") && !relativePath.isEmpty()) {
+                            seen.put(relativePath + "/", "Current Application");
                             addDir(runnerZipFs, path, relativePath);
                         }
                         return;
@@ -275,7 +312,7 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
                         services.computeIfAbsent(relativePath, (u) -> new ArrayList<>()).add(Files.readAllBytes(path));
                         return;
                     }
-                    seen.add(relativePath);
+                    seen.put(relativePath, "Current Application");
                     Files.copy(path, runnerZipFs.getPath(relativePath), StandardCopyOption.REPLACE_EXISTING);
                 } catch (Exception e) {
                     throw new RuntimeException(e);

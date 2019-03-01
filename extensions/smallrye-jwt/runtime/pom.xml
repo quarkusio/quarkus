@@ -30,7 +30,10 @@
     <name>Quarkus - SmallRye JWT - Runtime</name>
 
     <dependencies>
-
+        <dependency>
+            <groupId>org.wildfly.security</groupId>
+            <artifactId>wildfly-elytron-realm-token</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.smallrye</groupId>
             <artifactId>smallrye-jwt</artifactId>

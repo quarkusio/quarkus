@@ -1234,6 +1234,12 @@
             <groupId>org.jboss.spec.javax.security.jacc</groupId>
             <artifactId>jboss-jacc-api_1.5_spec</artifactId>
             <version>${javax.security.jacc-api.version}</version>
+            <exclusions>
+               <exclusion>
+                  <groupId>org.jboss.spec.javax.servlet</groupId>
+                  <artifactId>jboss-servlet-api_3.1_spec</artifactId>
+               </exclusion>
+            </exclusions>
          </dependency>
          <dependency>
             <groupId>org.jboss.spec.javax.security.auth.message</groupId>
@@ -1350,6 +1356,12 @@
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-json-binding-provider</artifactId>
             <version>${resteasy.version}</version>
+            <exclusions>
+               <exclusion>
+                  <groupId>javax.json</groupId>
+                  <artifactId>javax.json-api</artifactId>
+               </exclusion>
+            </exclusions>
          </dependency>
          <dependency>
             <groupId>org.jboss.resteasy</groupId>
@@ -1462,7 +1474,17 @@
          </dependency>
          <dependency>
             <groupId>org.wildfly.security</groupId>
-            <artifactId>wildfly-elytron</artifactId>
+            <artifactId>wildfly-elytron-auth-server</artifactId>
+            <version>${wildfly-elytron.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.wildfly.security</groupId>
+            <artifactId>wildfly-elytron-realm</artifactId>
+            <version>${wildfly-elytron.version}</version>
+         </dependency>
+         <dependency>
+            <groupId>org.wildfly.security</groupId>
+            <artifactId>wildfly-elytron-realm-token</artifactId>
             <version>${wildfly-elytron.version}</version>
          </dependency>
 
@@ -1659,6 +1681,9 @@
                                             <exclude>javax.activation:javax-activation-api</exclude>
                                             <exclude>javax.activation:activation</exclude>
                                             <exclude>org.jboss.marshalling:jboss-marshalling-osgi</exclude>
+                                            <exclude>org.jboss.spec.javax.servlet:jboss-servlet-api_3.1_spec</exclude>
+                                            <!-- The API is packaged by the implementation-->
+                                            <exclude>javax.json:javax.json-api</exclude>
                                         </excludes>
                                     </bannedDependencies>
                                 </rules>

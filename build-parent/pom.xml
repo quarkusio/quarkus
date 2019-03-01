@@ -1234,6 +1234,12 @@
             <groupId>org.jboss.spec.javax.security.jacc</groupId>
             <artifactId>jboss-jacc-api_1.5_spec</artifactId>
             <version>${javax.security.jacc-api.version}</version>
+            <exclusions>
+               <exclusion>
+                  <groupId>org.jboss.spec.javax.servlet</groupId>
+                  <artifactId>jboss-servlet-api_3.1_spec</artifactId>
+               </exclusion>
+            </exclusions>
          </dependency>
          <dependency>
             <groupId>org.jboss.spec.javax.security.auth.message</groupId>
@@ -1669,6 +1675,7 @@
                                             <exclude>javax.activation:javax-activation-api</exclude>
                                             <exclude>javax.activation:activation</exclude>
                                             <exclude>org.jboss.marshalling:jboss-marshalling-osgi</exclude>
+                                            <exclude>org.jboss.spec.javax.servlet:jboss-servlet-api_3.1_spec</exclude>
                                         </excludes>
                                     </bannedDependencies>
                                 </rules>

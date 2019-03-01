@@ -20,10 +20,12 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.jboss</groupId>
-    <artifactId>jboss-parent</artifactId>
-    <version>31</version>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-build-parent</artifactId>
+    <version>1.0.0.Alpha1-SNAPSHOT</version>
+    <relativePath>../../build-parent/pom.xml</relativePath>
   </parent>
+
   <groupId>io.quarkus.arc</groupId>
   <artifactId>arc-parent</artifactId>
   <name>ArC - Parent pom</name>

@@ -1356,6 +1356,12 @@
             <groupId>org.jboss.resteasy</groupId>
             <artifactId>resteasy-json-binding-provider</artifactId>
             <version>${resteasy.version}</version>
+            <exclusions>
+               <exclusion>
+                  <groupId>javax.json</groupId>
+                  <artifactId>javax.json-api</artifactId>
+               </exclusion>
+            </exclusions>
          </dependency>
          <dependency>
             <groupId>org.jboss.resteasy</groupId>
@@ -1676,6 +1682,8 @@
                                             <exclude>javax.activation:activation</exclude>
                                             <exclude>org.jboss.marshalling:jboss-marshalling-osgi</exclude>
                                             <exclude>org.jboss.spec.javax.servlet:jboss-servlet-api_3.1_spec</exclude>
+                                            <!-- The API is packaged by the implementation-->
+                                            <exclude>javax.json:javax.json-api</exclude>
                                         </excludes>
                                     </bannedDependencies>
                                 </rules>

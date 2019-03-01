@@ -10,7 +10,7 @@ import java.util.ServiceLoader;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
-public class TestHttpResourceManager {
+public class TestHTTPResourceManager {
 
     static final String uri;
     static final Map<Class<?>, TestHTTPResourceProvider<?>> providers;

@@ -80,7 +80,12 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
             "META-INF/LICENSE",
             "META-INF/NOTICE",
             "META-INF/LICENSE.txt",
-            "META-INF/NOTICE.txt")));
+            "META-INF/NOTICE.txt",
+            "dependencies.runtime",
+            "META-INF/README",
+            "META-INF/quarkus-config-roots.list",
+            "META-INF/DEPENDENCIES",
+            "META-INF/beans.xml")));
 
     private Path outputDir;
     private Path libDir;
@@ -195,7 +200,11 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
         // this greatly aids tools (such as s2i) that look for a single jar in the output directory to work OOTB
         if (uberJar) {
             try {
-                Files.move(outputDir.resolve(finalName + ".jar"), outputDir.resolve(finalName + ".jar.original"));
+                Path originalFile = outputDir.resolve(finalName + ".jar.original");
+                if (Files.exists(originalFile)) {
+                    Files.delete(originalFile);
+                }
+                Files.move(outputDir.resolve(finalName + ".jar"), originalFile);
             } catch (IOException e) {
                 throw new AppCreatorException("Unable to build uberjar", e);
             }

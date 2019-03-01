@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -159,13 +160,27 @@ public class MojoTestBase {
     }
 
     static String getHttpResponse(String path) {
+        return getHttpResponse(path, false);
+    }
+
+    static String getHttpResponse(String path, boolean allowError) {
         AtomicReference<String> resp = new AtomicReference<>();
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> {
                     try {
                         URL url = new URL("http://localhost:8080" + ((path.startsWith("/") ? path : "/" + path)));
-                        String content = IOUtils.toString(url, "UTF-8");
+                        String content;
+                        if (!allowError) {
+                            content = IOUtils.toString(url, "UTF-8");
+                        } else {
+                            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                            if (conn.getResponseCode() >= 400) {
+                                content = IOUtils.toString(conn.getErrorStream(), "UTF-8");
+                            } else {
+                                content = IOUtils.toString(conn.getInputStream(), "UTF-8");
+                            }
+                        }
                         resp.set(content);
                         return true;
                     } catch (Exception e) {

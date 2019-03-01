@@ -38,7 +38,7 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.runtime.RuntimeValue;
 
-class CamelIntiProcessor {
+class CamelInitProcessor {
     @Inject
     ApplicationArchivesBuildItem applicationArchivesBuildItem;
     @Inject
@@ -54,7 +54,7 @@ class CamelIntiProcessor {
 
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep(applicationArchiveMarkers = CamelSupport.CAMEL_SERVICE_BASE_PATH)
-    CamelRuntimeBuildItem createInitiTask(RecorderContext recorderContext, CamelTemplate template) {
+    CamelRuntimeBuildItem createInitTask(RecorderContext recorderContext, CamelTemplate template) {
         Properties properties = new Properties();
         Config config = ConfigProvider.getConfig();
         for (String i : config.getPropertyNames()) {
@@ -74,7 +74,7 @@ class CamelIntiProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep(applicationArchiveMarkers = CamelSupport.CAMEL_SERVICE_BASE_PATH)
-    void createRuntimeInitiTask(CamelTemplate template, CamelRuntimeBuildItem runtime, ShutdownContextBuildItem shutdown)
+    void createRuntimeInitTask(CamelTemplate template, CamelRuntimeBuildItem runtime, ShutdownContextBuildItem shutdown)
             throws Exception {
         template.start(shutdown, runtime.getRuntime());
     }
@@ -109,7 +109,7 @@ class CamelIntiProcessor {
                 String k = entry.getKey().toString();
                 if (k.equals("class")) {
                     String clazz = entry.getValue().toString();
-                    Class cl = Class.forName(clazz);
+                    Class<?> cl = Class.forName(clazz);
 
                     consumer.accept(name, cl);
                 }

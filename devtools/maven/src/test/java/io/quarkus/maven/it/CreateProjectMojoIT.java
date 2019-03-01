@@ -106,7 +106,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
 
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
-                .contains(MojoUtils.getPluginGroupId(), MojoUtils.SHAMROCK_VERSION_PROPERTY, MojoUtils.getPluginGroupId());
+                .contains(MojoUtils.getPluginGroupId(), MojoUtils.QUARKUS_VERSION_PROPERTY, MojoUtils.getPluginGroupId());
         assertThat(new File(testDir, "src/main/java")).isDirectory();
 
         assertThat(new File(testDir, "src/main/resources/META-INF/microprofile-config.properties")).exists();

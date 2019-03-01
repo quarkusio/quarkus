@@ -51,7 +51,7 @@ public class CreateProjectTest {
         Assertions.assertTrue(createProject.doCreateProject(new HashMap<>()));
 
         assertThat(FileUtils.readFileToString(pom, "UTF-8"))
-                .contains(getPluginArtifactId(), SHAMROCK_VERSION_PROPERTY, getPluginGroupId());
+                .contains(getPluginArtifactId(), QUARKUS_VERSION_PROPERTY, getPluginGroupId());
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/test/java")).isDirectory();
 
@@ -93,7 +93,7 @@ public class CreateProjectTest {
         Assertions.assertTrue(createProject.doCreateProject(ctxt));
 
         assertThat(FileUtils.readFileToString(pom, "UTF-8"))
-                .contains(getPluginArtifactId(), SHAMROCK_VERSION_PROPERTY, getPluginGroupId());
+                .contains(getPluginArtifactId(), QUARKUS_VERSION_PROPERTY, getPluginGroupId());
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/test/java")).isDirectory();
 
@@ -133,7 +133,7 @@ public class CreateProjectTest {
         assertThat(new File(testDir, "src/main/java/org/acme/MyApplication.java")).doesNotExist();
 
         assertThat(FileUtils.readFileToString(pom, "UTF-8"))
-                .contains(getPluginArtifactId(), SHAMROCK_VERSION_PROPERTY, getPluginGroupId());
+                .contains(getPluginArtifactId(), QUARKUS_VERSION_PROPERTY, getPluginGroupId());
         assertThat(new File(testDir, "src/main/java")).isDirectory();
         assertThat(new File(testDir, "src/test/java")).isDirectory();
 
@@ -141,7 +141,7 @@ public class CreateProjectTest {
         assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).exists();
 
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
-                .containsIgnoringCase(MojoUtils.SHAMROCK_VERSION_PROPERTY);
+                .containsIgnoringCase(MojoUtils.QUARKUS_VERSION_PROPERTY);
 
     }
 

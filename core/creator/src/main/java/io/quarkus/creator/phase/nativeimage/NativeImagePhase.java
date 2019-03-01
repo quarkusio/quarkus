@@ -60,7 +60,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
     private static final String GRAALVM_HOME = "GRAALVM_HOME";
 
-    private static final String SHAMROCK_PREFIX = "quarkus.";
+    private static final String QUARKUS_PREFIX = "quarkus.";
 
     private static final boolean IS_LINUX = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("linux");
 
@@ -319,7 +319,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
                     properties.load(reader);
                 }
                 for (String propertyName : properties.stringPropertyNames()) {
-                    if (propertyName.startsWith(SHAMROCK_PREFIX)) {
+                    if (propertyName.startsWith(QUARKUS_PREFIX)) {
                         continue;
                     }
 

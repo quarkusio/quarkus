@@ -20,10 +20,16 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-build-parent</artifactId>
+        <version>1.0.0.Alpha1-SNAPSHOT</version>
+        <relativePath>../../build-parent/pom.xml</relativePath>
+    </parent>
+
     <groupId>org.infinispan.quarkus</groupId>
     <artifactId>infinispan-hibernate-cache-quarkus</artifactId>
     <name>Infinispan Hibernate Cache - Quarkus</name>
-    <version>1.0.0.Alpha1-SNAPSHOT</version>
 
     <properties>
 
@@ -96,6 +102,10 @@
                 <exclusion>
                     <groupId>net.bytebuddy</groupId>
                     <artifactId>byte-buddy-agent</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>net.bytebuddy</groupId>
+                    <artifactId>byte-buddy</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
-        <version>1.0.0.Alpha1-SNAPSHOT</version>
+        <version>0.10.0</version>
     </parent>
 
     <artifactId>quarkus-smallrye-reactive-messaging-kafka-runtime</artifactId>

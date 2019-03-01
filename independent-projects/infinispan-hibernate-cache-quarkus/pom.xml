@@ -23,7 +23,7 @@
     <groupId>org.infinispan.quarkus</groupId>
     <artifactId>infinispan-hibernate-cache-quarkus</artifactId>
     <name>Infinispan Hibernate Cache - Quarkus</name>
-    <version>1.0.0.Alpha1-SNAPSHOT</version>
+    <version>0.10.0</version>
 
     <properties>
 

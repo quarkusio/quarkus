@@ -21,7 +21,7 @@
   <parent>
     <artifactId>quarkus-smallrye-openapi</artifactId>
     <groupId>io.quarkus</groupId>
-    <version>1.0.0.Alpha1-SNAPSHOT</version>
+    <version>0.10.0</version>
     <relativePath>../</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>

@@ -21,7 +21,7 @@
     <parent>
         <artifactId>quarkus-test-extension</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>1.0.0.Alpha1-SNAPSHOT</version>
+        <version>0.10.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -48,7 +48,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-extension-runtime</artifactId>
-            <version>1.0.0.Alpha1-SNAPSHOT</version>
+            <version>0.10.0</version>
         </dependency>
 
         <!-- test dependencies -->

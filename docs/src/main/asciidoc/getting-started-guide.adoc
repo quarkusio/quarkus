@@ -171,28 +171,26 @@ of the resource is created and not one per request. You can configure this using
 Now we are ready to run our application.
 Use: `mvn compile quarkus:dev`:
 
-[source, text]
+[source, bash]
 ----
-[INFO] --------------------< org.acme:quarkus-quickstart >--------------------
+[INFO] --------------------< org.acme:quarkus-quickstart >---------------------
 [INFO] Building quarkus-quickstart 1.0-SNAPSHOT
 [INFO] --------------------------------[ jar ]---------------------------------
-[INFO] 
+[INFO]
 [INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ quarkus-quickstart ---
 [INFO] Using 'UTF-8' encoding to copy filtered resources.
-[INFO] skip non existing resourceDirectory /opt/source/quarkus/quickstarts/getting-started/src/main/resources
-[INFO] 
+[INFO] skip non existing resourceDirectory /Users/starksm/Dev/JBoss/Protean/starksm64-quarkus-quickstarts/getting-started/src/main/resources
+[INFO]
 [INFO] --- maven-compiler-plugin:3.1:compile (default-compile) @ quarkus-quickstart ---
-[INFO] Nothing to compile - all classes are up to date
-[INFO] 
-[INFO] --- quarkus-maven-plugin:0.4.0:dev (default-cli) @ quarkus-quickstart ---
-INFO  [o.j.s.u.r.UndertowDeploymentTemplate] (main) Starting Undertow on port 8080
-INFO  [o.xnio] (main) XNIO version 3.6.5.Final
-INFO  [o.x.nio] (main) XNIO NIO Implementation Version 3.6.5.Final
-INFO  [o.j.threads] (main) JBoss Threads version 3.0.0.Alpha4
-INFO  [o.j.s.d.QuarkusAugmentor] (main) Beginning quarkus augmentation
-INFO  [o.j.s.d.QuarkusAugmentor] (main) Quarkus augmentation completed in 322ms
-INFO  [o.j.r.r.i18n] (main) RESTEASY002225: Deploying javax.ws.rs.core.Application: class org.acme.quickstart.MyApplication
-INFO  [o.j.quarkus] (main) Quarkus started in 697.982ms
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 2 source files to /Users/starksm/Dev/JBoss/Protean/starksm64-quarkus-quickstarts/getting-started/target/classes
+[INFO]
+[INFO] --- quarkus-maven-plugin:1.0.0.Alpha1-SNAPSHOT:dev (default-cli) @ quarkus-quickstart ---
+Listening for transport dt_socket at address: 5005
+2019-02-28 17:05:22,347 INFO  [io.qua.dep.QuarkusAugmentor] (main) Beginning quarkus augmentation
+2019-02-28 17:05:22,635 INFO  [io.qua.dep.QuarkusAugmentor] (main) Quarkus augmentation completed in 288ms
+2019-02-28 17:05:22,770 INFO  [io.quarkus] (main) Quarkus 1.0.0.Alpha1-SNAPSHOT started in 0.668s. Listening on: http://localhost:8080
+2019-02-28 17:05:22,771 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy]
 ----
 
 Once started, you can request the provided endpoint:

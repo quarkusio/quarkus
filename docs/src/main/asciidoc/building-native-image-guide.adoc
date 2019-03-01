@@ -88,8 +88,8 @@ We use a profile because, you will see very soon, packaging the native image tak
 
 Create a native executable using: `mvn package -Pnative`.
 
-In addition to the regular files, the build also produces `target/quarkus-quickstarts-1.0-SNAPSHOT-runner`.
-You can run it using: `target/quarkus-quickstarts-native-1.0-SNAPSHOT-runner`.
+In addition to the regular files, the build also produces `target/quarkus-quickstart-runner`.
+You can run it using: `target/quarkus-quickstart-runner.jar`.
 
 == Testing the native executable
 
@@ -144,33 +144,30 @@ To see the `GreetingResourceIT` run against the native image, add a verify goal:
 ----
 mvn package verify -Pnative
 ...
-[quarkus-quickstarts-1.0-SNAPSHOT-runner:5185]   (typeflow):  35,160.93 ms
-[quarkus-quickstarts-1.0-SNAPSHOT-runner:5185]    (objects):  24,027.13 ms
-[quarkus-quickstarts-1.0-SNAPSHOT-runner:5185]   (features):   1,313.94 ms
-[quarkus-quickstarts-1.0-SNAPSHOT-runner:5185]     analysis:  61,512.95 ms
-[quarkus-quickstarts-1.0-SNAPSHOT-runner:5185]     universe:   1,924.69 ms
-[quarkus-quickstarts-1.0-SNAPSHOT-runner:5185]      (parse):  11,479.41 ms
-[quarkus-quickstarts-1.0-SNAPSHOT-runner:5185]     (inline):  13,568.71 ms
-[quarkus-quickstarts-1.0-SNAPSHOT-runner:5185]    (compile):  82,885.41 ms
-[quarkus-quickstarts-1.0-SNAPSHOT-runner:5185]      compile: 114,095.02 ms
-[quarkus-quickstarts-1.0-SNAPSHOT-runner:5185]        image:   5,680.17 ms
-[quarkus-quickstarts-1.0-SNAPSHOT-runner:5185]        write:   1,876.14 ms
-[quarkus-quickstarts-1.0-SNAPSHOT-runner:5185]      [total]: 197,587.37 ms
+[quarkus-quickstart-runner:50955]     universe:     391.96 ms
+[quarkus-quickstart-runner:50955]      (parse):     904.37 ms
+[quarkus-quickstart-runner:50955]     (inline):   1,143.32 ms
+[quarkus-quickstart-runner:50955]    (compile):   6,228.44 ms
+[quarkus-quickstart-runner:50955]      compile:   9,130.58 ms
+[quarkus-quickstart-runner:50955]        image:   2,101.42 ms
+[quarkus-quickstart-runner:50955]        write:     803.18 ms
+[quarkus-quickstart-runner:50955]      [total]:  33,520.15 ms
 [INFO]
-[INFO] --- maven-failsafe-plugin:2.21.0:integration-test (default) @ quarkus-quickstart ---
+[INFO] --- maven-failsafe-plugin:2.22.0:integration-test (default) @ quarkus-quickstart-native ---
 [INFO]
 [INFO] -------------------------------------------------------
 [INFO]  T E S T S
 [INFO] -------------------------------------------------------
 [INFO] Running org.acme.quickstart.GreetingResourceIT
-Executing /Users/starksm/Dev/JBoss/Quarkus/get-started/target/quarkus-quickstarts-1.0-SNAPSHOT-runner
-2018-11-26 08:20:43,169 ironmaiden quarkus-quickstarts-1.0-SNAPSHOT-runner[5220] INFO  [o.j.s.u.r.UndertowDeploymentTemplate] (main) Starting Undertow on port 8080
-2018-11-26 08:20:43,190 ironmaiden quarkus-quickstarts-1.0-SNAPSHOT-runner[5220] INFO  [o.j.quarkus] (main) Quarkus started in 21.930ms
-[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.097 s - in org.acme.quickstart.GreetingResourceIT
+Executing [/Users/starksm/Dev/JBoss/Protean/starksm64-quarkus-quickstarts/getting-started-native/target/quarkus-quickstart-runner, -Dquarkus.http.port=8081, -Dtest.url=http://localhost:8081, -Dquarkus.log.file.path=target/quarkus.log]
+2019-02-28 16:52:42,020 INFO  [io.quarkus] (main) Quarkus 1.0.0.Alpha1-SNAPSHOT started in 0.007s. Listening on: http://localhost:8080
+2019-02-28 16:52:42,021 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy]
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.081 s - in org.acme.quickstart.GreetingResourceIT
 [INFO]
 [INFO] Results:
 [INFO]
 [INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0
+
 ...
 ----
 

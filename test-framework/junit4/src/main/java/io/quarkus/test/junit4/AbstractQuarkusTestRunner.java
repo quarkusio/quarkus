@@ -23,7 +23,7 @@ import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
 
-import io.quarkus.test.common.http.TestHttpResourceManager;
+import io.quarkus.test.common.http.TestHTTPResourceManager;
 
 abstract class AbstractQuarkusTestRunner extends BlockJUnit4ClassRunner {
 
@@ -62,7 +62,7 @@ abstract class AbstractQuarkusTestRunner extends BlockJUnit4ClassRunner {
     @Override
     protected Object createTest() throws Exception {
         Object instance = super.createTest();
-        TestHttpResourceManager.inject(instance);
+        TestHTTPResourceManager.inject(instance);
         return instance;
     }
 }

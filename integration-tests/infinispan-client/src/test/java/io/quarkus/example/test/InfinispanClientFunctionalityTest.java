@@ -15,7 +15,6 @@ import io.restassured.RestAssured;
  */
 @QuarkusTest
 @QuarkusTestResource(InfinispanServerTestResource.class)
-@Disabled("Intermittently failing")
 public class InfinispanClientFunctionalityTest {
 
     @Test

@@ -16,33 +16,27 @@
 
 package io.quarkus.agroal.runtime;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.runtime.annotations.Template;
 
 @Template
-public class DataSourceTemplate {
+public class AgroalTemplate {
 
-    public BeanContainerListener addDatasource(DatasourceConfig config, boolean disableSslSupport) {
+    public static final String DEFAULT_DATASOURCE_NAME = "<default>";
+
+    public BeanContainerListener addDataSource(
+            Class<? extends AbstractDataSourceProducer> dataSourceProducerClass,
+            AgroalBuildTimeConfig agroalBuildTimeConfig,
+            boolean disableSslSupport) {
         return new BeanContainerListener() {
             @Override
             public void created(BeanContainer beanContainer) {
-                DataSourceProducer producer = beanContainer.instance(DataSourceProducer.class);
-                try {
-                    producer.setDriver(
-                            Class.forName(config.driver.get(), true, Thread.currentThread().getContextClassLoader()));
-                } catch (ClassNotFoundException e) {
-                    throw new RuntimeException(e);
-                }
-                producer.setUrl(config.url.get());
-                if (config.username.isPresent()) {
-                    producer.setUserName(config.username.get());
-                }
-                if (config.password.isPresent()) {
-                    producer.setPassword(config.password.get());
-                }
-                producer.setMinSize(config.minSize);
-                producer.setMaxSize(config.maxSize);
+                AbstractDataSourceProducer producer = beanContainer.instance(dataSourceProducerClass);
+
+                producer.setBuildTimeConfig(agroalBuildTimeConfig);
+
                 if (disableSslSupport) {
                     producer.disableSslSupport();
                 }
@@ -50,4 +44,12 @@ public class DataSourceTemplate {
         };
     }
 
+    public void configureRuntimeProperties(AgroalRuntimeConfig agroalRuntimeConfig) {
+        // TODO @dmlloyd
+        // Same here, the map is entirely empty (obviously, I didn't expect the values
+        // that were not properly injected but at least the config objects present in
+        // the map)
+        // The elements from the default datasource are there
+        Arc.container().instance(AbstractDataSourceProducer.class).get().setRuntimeConfig(agroalRuntimeConfig);
+    }
 }

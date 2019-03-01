@@ -31,7 +31,7 @@
 
     <packaging>pom</packaging>
     <properties>
-        <version.asciidoctor>1.5.7</version.asciidoctor>
+        <version.asciidoctor>1.5.7.1</version.asciidoctor>
         <quickstarts-base-url>https://github.com/jbossas/protean-quickstarts</quickstarts-base-url>
         <quarkus-base-url>https://github.com/jbossas/protean-shamrock</quarkus-base-url>
     </properties>

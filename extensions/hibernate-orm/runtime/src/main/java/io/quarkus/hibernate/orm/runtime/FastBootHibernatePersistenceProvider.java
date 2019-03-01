@@ -26,6 +26,7 @@ import javax.persistence.spi.LoadState;
 import javax.persistence.spi.PersistenceProvider;
 import javax.persistence.spi.PersistenceUnitInfo;
 import javax.persistence.spi.ProviderUtil;
+import javax.sql.DataSource;
 
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
@@ -36,6 +37,8 @@ import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.hibernate.jpa.internal.util.PersistenceUtilHelper;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.hibernate.orm.runtime.boot.FastBootEntityManagerFactoryBuilder;
 import io.quarkus.hibernate.orm.runtime.boot.registry.PreconfiguredServiceRegistryBuilder;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
@@ -158,20 +161,27 @@ final class FastBootHibernatePersistenceProvider implements PersistenceProvider 
 
             final MetadataImplementor metadata = recordedState.getMetadata();
 
-            final Map<String, Object> configurationValues = recordedState.getConfigurationProperties();
+            final BuildTimeSettings buildTimeSettings = recordedState.getBuildTimeSettings();
             // TODO:
             final Object validatorFactory = null;
             // TODO:
             final Object cdiBeanManager = null;
 
+            RuntimeSettings.Builder runtimeSettingsBuilder = new RuntimeSettings.Builder(buildTimeSettings);
+
+            // Inject the datasource
+            injectDataSource(persistenceUnitName, runtimeSettingsBuilder);
+
+            RuntimeSettings runtimeSettings = runtimeSettingsBuilder.build();
+
             StandardServiceRegistry standardServiceRegistry = rewireMetadataAndExtractServiceRegistry(
-                    configurationValues, recordedState);
+                    runtimeSettings, recordedState);
 
             return new FastBootEntityManagerFactoryBuilder(
                     metadata /* Uses the StandardServiceRegistry references by this! */,
                     persistenceUnitName,
                     standardServiceRegistry /* Mostly ignored! (yet needs to match) */,
-                    configurationValues,
+                    runtimeSettings,
                     validatorFactory, cdiBeanManager);
         }
 
@@ -179,10 +189,11 @@ final class FastBootHibernatePersistenceProvider implements PersistenceProvider 
         return null;
     }
 
-    private StandardServiceRegistry rewireMetadataAndExtractServiceRegistry(Map<String, Object> configurationValues,
+    private StandardServiceRegistry rewireMetadataAndExtractServiceRegistry(RuntimeSettings runtimeSettings,
             RecordedState rs) {
         PreconfiguredServiceRegistryBuilder serviceRegistryBuilder = new PreconfiguredServiceRegistryBuilder(rs);
-        configurationValues.forEach((key, value) -> {
+
+        runtimeSettings.getSettings().forEach((key, value) -> {
             serviceRegistryBuilder.applySetting(key, value);
         });
         // TODO serviceRegistryBuilder.addInitiator( )
@@ -247,6 +258,26 @@ final class FastBootHibernatePersistenceProvider implements PersistenceProvider 
                     "The FastbootHibernateProvider PersistenceProvider can not support runtime provided properties. "
                             + "Make sure you set all properties you need in the configuration resources before building the application.");
         }
+    }
+
+    private void injectDataSource(String persistenceUnitName, RuntimeSettings.Builder runtimeSettingsBuilder) {
+        // first convert
+
+        if (runtimeSettingsBuilder.isConfigured(AvailableSettings.URL) ||
+                runtimeSettingsBuilder.isConfigured(AvailableSettings.DATASOURCE) ||
+                runtimeSettingsBuilder.isConfigured(AvailableSettings.JPA_JTA_DATASOURCE) ||
+                runtimeSettingsBuilder.isConfigured(AvailableSettings.JPA_NON_JTA_DATASOURCE)) {
+            // the datasource has been defined in the persistence unit, we can bail out
+            return;
+        }
+
+        // for now we only support one datasource but this will change
+        InstanceHandle<DataSource> dataSourceHandle = Arc.container().instance(DataSource.class);
+        if (!dataSourceHandle.isAvailable()) {
+            throw new IllegalStateException("No datasource has been defined for persistence unit " + persistenceUnitName);
+        }
+
+        runtimeSettingsBuilder.put(AvailableSettings.DATASOURCE, Arc.container().instance(DataSource.class).get());
     }
 
     private final ProviderUtil providerUtil = new ProviderUtil() {

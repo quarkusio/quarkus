@@ -41,17 +41,21 @@ public final class ConfigExpander implements BiConsumer<ResolveContext<RuntimeEx
     public void accept(final ResolveContext<RuntimeException> context, final StringBuilder stringBuilder) {
         if (!enter()) {
             throw new IllegalArgumentException("Nested recursive expansion is too deep");
-        } else
-            try {
-                final String key = context.getKey();
+        }
+        try {
+            final String key = context.getKey();
+            if (context.hasDefault()) {
                 final Optional<String> expanded = ConfigProvider.getConfig().getOptionalValue(key, String.class);
                 if (expanded.isPresent()) {
                     stringBuilder.append(expanded.get());
                 } else {
                     context.expandDefault();
                 }
-            } finally {
-                exit();
+            } else {
+                stringBuilder.append(ConfigProvider.getConfig().getValue(key, String.class));
             }
+        } finally {
+            exit();
+        }
     }
 }

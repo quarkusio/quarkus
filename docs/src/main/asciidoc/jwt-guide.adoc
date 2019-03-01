@@ -58,4 +58,18 @@ However, you can skip right to the completed example.
 
 Clone the Git repository: `git clone `, or download an {quickstart-url}/archive/master.zip[archive].
 
-The solution is located in the `using-opentracing` {quickstart-url}[directory].
+The solution is located in the `using-jwt-rbac` {quickstart-url}[directory].
+
+== Creating the Maven project
+
+First, we need a new project. Create a new project with the following command:
+
+[source, subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=using-jwt-rbac \
+    -DclassName="org.acme.jwt.TokenSecuredResource" \
+    -Dpath="/secured" \
+    -Dextensions="resteasy-jsonb, smallrye-jwt"
+----

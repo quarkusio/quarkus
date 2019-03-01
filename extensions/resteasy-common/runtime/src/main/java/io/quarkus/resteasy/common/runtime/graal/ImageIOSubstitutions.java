@@ -1,4 +1,4 @@
-package io.quarkus.runtime.graal;
+package io.quarkus.resteasy.common.runtime.graal;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;

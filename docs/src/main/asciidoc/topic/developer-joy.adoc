@@ -1,0 +1,27 @@
+= {project-name} - Developer Joy
+
+== Beyond simply working, we're aiming for Joy
+
+{project-name} is not just about being great for writing Web Applications or Micro-Services. We're focusing on more than the feature set: we make sure that every feature works well, simply, with as little to no configuration, in the most intuitive way possible. It should be trivial to develop simple things, and easy to develop the more complex ones.
+
+We've looked for the most useful extensions, we've made sure they all work together, that every use-case is covered, that out-of-the-box configuration is the most sensible, that every error helps you to resolve it. More than productivity: using {project-name} should be enjoyable.
+
+=== Unified configuration
+
+Gone are the days of a thousand configuration files and formats. We're aiming for cohesion, so a single configuration file is all it takes for {project-name} applications to configure every single extension. Not only that, but we've made sure that every configurable option has the most useful and sensible default so you can get started with no configuration whatsoever.
+
+=== Live Coding
+
+Build applications faster with https://quarkus/live-coding[live coding]: fix bugs just by saving your code and reloading your browser.
+
+=== Works on all the things
+
+There's nothing worse than getting different results when running your application or tests under Maven, Gradle, or the IDE. Whatever your work-flow, {project-name} application or tests are trivial to run in any environment, so pick your best tool and we make sure you get the same results as easily as possible.
+
+=== Opinionated
+
+We get it: there are a thousand ways to write the same code. Every company has traditions about how a project should be structured, and that can be fine. But it makes it really hard to write simple documentation, to enboard new developers, and to make things simple.
+
+{project-name} will focus on what we feel is the simplest and most useful way to use any given feature. We will work hard to trim that particular feature to its most useful essence, and to document it thoroughly, in an intuitive manner. That's analysing up-front how to best use that feature and helping you avoid that analysis, through our experience, and guiding you in what we think is the best way to do things. That's taking an opinion on how you should do things and voicing it.
+
+Perhaps you'll disagree with our opinion, or you'll have a much more complex use-case that will not be solved by our recommended way, but that's fine. Don't worry: we will not prevent you from more advanced usage on the features we provide or the frameworks we integrate.

@@ -1,0 +1,40 @@
+= {project-name} - Community
+
+== An Open Project
+
+{project-name} is an Open Source project licensed under the https://www.apache.org/licenses/LICENSE-2.0[Apache License version 2.0].
+
+First and foremost, it is an open community where contributions, ideas and discussions are done in the open and welcome contributors.
+
+Let's join forces in building the future of Java applications.
+
+== Code and issue tracker
+
+The source code is hosted on https://github.com/jbossas/protean-shamrock/[GitHub].
+
+If you need to report a bug or request a new feature, look for a similar one on our https://github.com/jbossas/protean-shamrock/issues[github issues tracker]. If you don’t find any, create a new issue. 
+
+== Getting help
+
+=== Documentation
+
+We have a lot of documentation for getting started with {project-name}, be sure to https://quarkus/getting-started[check it out]!
+
+=== https://stackoverflow.com[Stack Overflow]
+
+After the documentation, probably the best place to look for answers. We actively monitor the following tags:
+
+- https://stackoverflow.com/questions/tagged/quarkus 
+
+=== Chat
+
+If you prefer live chat with the developers, we have a Zulip chat where we all hang out, don't hesitate to https://protean.zulipchat.com/#narrow/stream/173288-Protean-users[ask your questions there].
+
+== Contributing
+
+If you are an extension developers or want to contribute to {project-name} development, join our mailing list either:
+
+- by emailing quarkus-dev+subscribe@googlegroups.com
+- by visiting to the Google Groups page https://groups.google.com/d/forum/quarkus-dev
+
+Make sure you visit our extensive https://quarkus/getting-started/extension-authors-guide[extension developer guide].

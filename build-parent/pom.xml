@@ -24,9 +24,6 @@
     <packaging>pom</packaging>
 
     <properties>
-        <!-- Enable APT by default for Eclipse -->
-        <m2e.apt.activation>jdt_apt</m2e.apt.activation>
-
         <aesh.version>1.11</aesh.version>
         <jandex.version>2.1.1.Final</jandex.version>
         <resteasy.version>4.0.0.Beta8</resteasy.version>
@@ -134,6 +131,9 @@
         <aws-lambda-java.version>1.1.0</aws-lambda-java.version>
         <camel.version>3.0.0-M1</camel.version>
         <javax.xml.soap-api.version>1.4.0</javax.xml.soap-api.version>
+
+        <!-- Enable APT by default for Eclipse -->
+        <m2e.apt.activation>jdt_apt</m2e.apt.activation>
     </properties>
 
     <dependencyManagement>
@@ -1789,6 +1789,23 @@
                                         </versionRange>
                                         <goals>
                                             <goal>jandex</goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <ignore></ignore>
+                                    </action>
+                                </pluginExecution>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>io.quarkus</groupId>
+                                        <artifactId>
+                                            quarkus-extension-plugin
+                                        </artifactId>
+                                        <versionRange>
+                                            [0.1.0,)
+                                        </versionRange>
+                                        <goals>
+                                            <goal>extension-list</goal>
                                         </goals>
                                     </pluginExecutionFilter>
                                     <action>

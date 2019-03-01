@@ -24,9 +24,9 @@ All the information between the browser and the server are formatted as JSON.
 We recommend that you follow the instructions in the next sections and create the application step by step.
 However, you can go right to the completed example.
 
-Clone the Git repository: `git clone https://github.com/jbossas/quarkus-quickstarts.git`, or download an https://github.com/jbossas/quarkus-quickstarts/archive/master.zip[archive].
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `rest-json` https://github.com/jbossas/quarkus-quickstarts/tree/master/rest-json[directory].
+The solution is located in the `rest-json` {quickstarts-tree-url}/rest-json[directory].
 
 == Creating the Maven project
 
@@ -170,7 +170,7 @@ It allows to reduce the size of the native image.
 
 Now let's add a simple web page to interact with our `FruitResource`.
 Quarkus automatically serves static resources located under the `META-INF/resources` directory.
-In the `src/main/resources/META-INF/resources` directory, add a `fruits.html` file with the content from this https://raw.githubusercontent.com/jbossas/quarkus-quickstarts/master/rest-json/src/main/resources/META-INF/resources/fruits.html[fruits.html] file in it.
+In the `src/main/resources/META-INF/resources` directory, add a `fruits.html` file with the content from this {quickstarts-blob-url}/rest-json/src/main/resources/META-INF/resources/fruits.html[fruits.html] file in it.
 
 You can now interact with your REST service:
 

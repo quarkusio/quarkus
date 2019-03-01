@@ -56,11 +56,9 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-arc-runtime</artifactId>
     </dependency>
-    <!-- TODO: This is necessary, and above exclusion, because SmallRye OpenAPI has multiple versions from different dependencies -->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
-      <version>${jackson.version}</version>
     </dependency>
   </dependencies>
 

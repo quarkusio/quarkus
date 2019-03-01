@@ -62,7 +62,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.TestResourceManager;
-import io.quarkus.test.common.http.TestHttpResourceManager;
+import io.quarkus.test.common.http.TestHTTPResourceManager;
 
 /**
  * A test extension for testing Quarkus internals, not intended for end user consumption
@@ -111,7 +111,7 @@ public class QuarkusUnitTest
 
             Object actualTestInstance = extensionContext.getStore(ExtensionContext.Namespace.GLOBAL).get(testClass.getName());
             if (actualTestInstance != null) { //happens if a deployment exception is expected
-                TestHttpResourceManager.inject(actualTestInstance);
+                TestHTTPResourceManager.inject(actualTestInstance);
             }
             return factory.newInstance(new InvocationHandler() {
                 @Override
@@ -185,8 +185,8 @@ public class QuarkusUnitTest
             try {
                 //this is a bit of a hack to avoid requiring a dep on the arc extension,
                 //as this would mean we cannot use this to test the extension
-                Class<? extends BuildItem> buildItem = (Class<? extends BuildItem>) Class
-                        .forName("io.quarkus.arc.deployment.AdditionalBeanBuildItem");
+                Class<? extends BuildItem> buildItem = Class
+                        .forName("io.quarkus.arc.deployment.AdditionalBeanBuildItem").asSubclass(BuildItem.class);
                 customiers.add(new Consumer<BuildChainBuilder>() {
                     @Override
                     public void accept(BuildChainBuilder buildChainBuilder) {

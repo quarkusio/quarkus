@@ -26,13 +26,11 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
-import io.quarkus.test.common.http.TestHttpResourceManager;
+import io.quarkus.test.common.http.TestHTTPResourceManager;
 
 public class NativeImageLauncher implements Closeable {
 
@@ -60,7 +58,7 @@ public class NativeImageLauncher implements Closeable {
         List<String> args = new ArrayList<>();
         args.add(path);
         args.add("-Dquarkus.http.port=" + port);
-        args.add("-Dtest.url=" + TestHttpResourceManager.getUri());
+        args.add("-Dtest.url=" + TestHTTPResourceManager.getUri());
         args.add("-Dquarkus.log.file.path=target/quarkus.log");
 
         System.out.println("Executing " + args);

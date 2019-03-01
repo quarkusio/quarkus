@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Red Hat, Inc.
+ * Copyright 2019 Red Hat, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,11 @@
  * limitations under the License.
  */
 
-package io.quarkus.arc;
+package io.quarkus.agroal.test;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Produces;
+import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.h2.H2DatabaseTestResource;
 
-@ApplicationScoped
-public class GeneratedStringProducer {
-
-    @Dependent
-    @Generated
-    @Produces
-    String produce() {
-        return "" + System.nanoTime();
-    }
-
+@QuarkusTestResource(H2DatabaseTestResource.class)
+public class TestResources {
 }

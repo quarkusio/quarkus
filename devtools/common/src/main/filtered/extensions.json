@@ -260,5 +260,14 @@
     ],
     "groupId": "io.quarkus",
     "artifactId": "quarkus-smallrye-jwt-deployment"
+  },
+  {
+    "name": "Kafka Connector for SmallRye Reactive Messaging",
+    "labels": [
+      "kafka",
+      "reactive-kafka"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-reactive-messaging-kafka-deployment"
   }
 ]

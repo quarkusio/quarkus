@@ -19,8 +19,6 @@ package io.quarkus.hibernate.orm.runtime;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.sql.DataSource;
-
 import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.jboss.logging.Logger;
@@ -36,8 +34,6 @@ import io.quarkus.runtime.annotations.Template;
 public class HibernateOrmTemplate {
 
     private List<String> entities = new ArrayList<>();
-
-    private static final String CONNECTION_URL = "hibernate.connection.url";
 
     public void addEntity(String entityClass) {
         entities.add(entityClass);
@@ -83,20 +79,6 @@ public class HibernateOrmTemplate {
         return new BeanContainerListener() {
             @Override
             public void created(BeanContainer beanContainer) {
-                //this initializes the JPA metadata, and also sets the datasource if no connection URL has been set and a DataSource
-                //is available
-                if (beanContainer != null) {
-                    BeanContainer.Factory<DataSource> ds = beanContainer.instanceFactory(DataSource.class);
-                    if (ds != null) {
-                        DataSource dataSource = ds.create().get();
-                        for (ParsedPersistenceXmlDescriptor i : parsedPersistenceXmlDescriptors) {
-                            if (!i.getProperties().containsKey(CONNECTION_URL)) {
-                                i.setJtaDataSource(dataSource);
-                            }
-                        }
-                    }
-                }
-
                 PersistenceUnitsHolder.initializeJpa(parsedPersistenceXmlDescriptors, scanner);
             }
         };

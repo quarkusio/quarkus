@@ -18,7 +18,6 @@ package io.quarkus.hibernate.orm.runtime.boot;
 
 import java.io.Serializable;
 import java.security.NoSuchAlgorithmException;
-import java.util.Map;
 
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityNotFoundException;
@@ -41,22 +40,24 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.tool.schema.spi.DelayedDropRegistryNotAvailableImpl;
 import org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator;
 
+import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
+
 public final class FastBootEntityManagerFactoryBuilder implements EntityManagerFactoryBuilder {
 
     private final MetadataImplementor metadata;
     private final String persistenceUnitName;
     private final StandardServiceRegistry standardServiceRegistry;
-    private final Map configurationValues;
+    private final RuntimeSettings runtimeSettings;
     private final Object validatorFactory;
     private final Object cdiBeanManager;
 
     public FastBootEntityManagerFactoryBuilder(MetadataImplementor metadata, String persistenceUnitName,
-            StandardServiceRegistry standardServiceRegistry, Map configurationValues, Object validatorFactory,
+            StandardServiceRegistry standardServiceRegistry, RuntimeSettings runtimeSettings, Object validatorFactory,
             Object cdiBeanManager) {
         this.metadata = metadata;
         this.persistenceUnitName = persistenceUnitName;
         this.standardServiceRegistry = standardServiceRegistry;
-        this.configurationValues = configurationValues;
+        this.runtimeSettings = runtimeSettings;
         this.validatorFactory = validatorFactory;
         this.cdiBeanManager = cdiBeanManager;
     }
@@ -96,7 +97,7 @@ public final class FastBootEntityManagerFactoryBuilder implements EntityManagerF
             SessionFactoryBuilder sfBuilder = metadata.getSessionFactoryBuilder();
             populate(sfBuilder, standardServiceRegistry);
 
-            SchemaManagementToolCoordinator.process(metadata, standardServiceRegistry, configurationValues,
+            SchemaManagementToolCoordinator.process(metadata, standardServiceRegistry, runtimeSettings.getSettings(),
                     DelayedDropRegistryNotAvailableImpl.INSTANCE);
         } catch (Exception e) {
             throw persistenceException("Error performing schema management", e);
@@ -129,21 +130,20 @@ public final class FastBootEntityManagerFactoryBuilder implements EntityManagerF
 
         // will use user override value or default to false if not supplied to follow
         // JPA spec.
-        final boolean jtaTransactionAccessEnabled = readBooleanConfigurationValue(
+        final boolean jtaTransactionAccessEnabled = runtimeSettings.getBoolean(
                 AvailableSettings.ALLOW_JTA_TRANSACTION_ACCESS);
         if (!jtaTransactionAccessEnabled) {
             ((SessionFactoryBuilderImplementor) sfBuilder).disableJtaTransactionAccess();
         }
 
-        final boolean allowRefreshDetachedEntity = readBooleanConfigurationValue(
+        final boolean allowRefreshDetachedEntity = runtimeSettings.getBoolean(
                 org.hibernate.cfg.AvailableSettings.ALLOW_REFRESH_DETACHED_ENTITY);
         if (!allowRefreshDetachedEntity) {
             ((SessionFactoryBuilderImplementor) sfBuilder).disableRefreshDetachedEntity();
         }
 
         // Locate and apply any requested SessionFactoryObserver
-        final Object sessionFactoryObserverSetting = configurationValues
-                .remove(AvailableSettings.SESSION_FACTORY_OBSERVER);
+        final Object sessionFactoryObserverSetting = runtimeSettings.get(AvailableSettings.SESSION_FACTORY_OBSERVER);
         if (sessionFactoryObserverSetting != null) {
 
             final StrategySelector strategySelector = ssr.getService(StrategySelector.class);
@@ -162,11 +162,6 @@ public final class FastBootEntityManagerFactoryBuilder implements EntityManagerF
         if (this.cdiBeanManager != null) {
             sfBuilder.applyBeanManager(cdiBeanManager);
         }
-    }
-
-    private boolean readBooleanConfigurationValue(String propertyName) {
-        Object propertyValue = configurationValues.remove(propertyName);
-        return propertyValue != null && Boolean.parseBoolean(propertyValue.toString());
     }
 
     private static class ServiceRegistryCloser implements SessionFactoryObserver {

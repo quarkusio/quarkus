@@ -14,21 +14,28 @@
  * limitations under the License.
  */
 
-package io.quarkus.arc;
+package io.quarkus.agroal.runtime;
 
-import io.quarkus.arc.Arc;
+import java.util.Optional;
 
-public class ArcMain {
+import io.quarkus.runtime.annotations.ConfigGroup;
+import io.quarkus.runtime.annotations.ConfigItem;
 
-    static {
-        // This is needed for graal ahead-of-time compilation
-        // ArcContainer collects all beans using a service provider
-        Arc.initialize();
-    }
+@ConfigGroup
+public class DataSourceBuildTimeConfig {
 
-    public static void main(String[] args) {
-        Arc.container().instance(Generator.class).get().run();
-        Arc.shutdown();
-    }
+    /**
+     * The datasource driver class name
+     */
+    @ConfigItem
+    public Optional<String> driver;
+
+    /**
+     * Whether we want to use XA.
+     * <p>
+     * If used, the driver has to support it.
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean xa;
 
 }

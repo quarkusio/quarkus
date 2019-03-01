@@ -13,6 +13,7 @@ include::quarkus-intro.adoc[tag=intro]
 == Other guides
 
 * link:application-configuration-guide.html[Configuring Your Application]
+* link:logging-guide.html[Configuring Logging]
 * link:application-lifecycle-events-guide.html[Application Initialization and Termination]
 * link:rest-json-guide.html[Writing JSON REST Services]
 * link:scheduled-guide.html[Schedule Periodic Tasks]
@@ -23,6 +24,8 @@ include::quarkus-intro.adoc[tag=intro]
 * link:panache-jpa-guide.html[Simplified Hibernate ORM with Panache]
 * link:rest-client-guide.html[Using REST Client]
 * link:opentracing-guide.html[Using OpenTracing]
+* link:security-guide.html[Using Security]
+* link:jwt-guide.html[Using JWT RBAC Security]
 * link:infinispan-client-guide.html[Using Infinispan Client]
 * link:spring-di-guide.html[Using our Spring Dependency Injection compatibility layer]
 * link:extension-authors-guide.html[Write Your Own Extension] _(advanced)_

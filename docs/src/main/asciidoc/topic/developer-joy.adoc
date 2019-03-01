@@ -2,7 +2,7 @@
 
 == Beyond simply working, we're aiming for Joy
 
-{project-name} is not just about being great for writing Web Applications or Micro-Services. We're focusing on more than the feature set: we make sure that every feature works well, simply, with as little to no configuration, in the most intuitive way possible. It should be trivial to develop simple things, and easy to develop the more complex ones.
+{project-name} is not just about being great for writing Web Applications or Micro-Services. We're focusing on more than the feature set: we make sure that every feature works well, simply, with little to no configuration, in the most intuitive way possible. It should be trivial to develop simple things, and easy to develop the more complex ones.
 
 We've looked for the most useful extensions, we've made sure they all work together, that every use-case is covered, that out-of-the-box configuration is the most sensible, that every error helps you to resolve it. More than productivity: using {project-name} should be enjoyable.
 
@@ -16,11 +16,11 @@ Build applications faster with https://quarkus/live-coding[live coding]: fix bug
 
 === Works on all the things
 
-There's nothing worse than getting different results when running your application or tests under Maven, Gradle, or the IDE. Whatever your work-flow, {project-name} application or tests are trivial to run in any environment, so pick your best tool and we make sure you get the same results as easily as possible.
+There's nothing worse than getting different results when running your application or tests under Maven, Gradle, or the IDE. Whatever your work-flow, {project-name} application or tests are trivial to run in any environment, so pick your favorite tool and we make sure you get the same results as easily as possible.
 
 === Opinionated
 
-We get it: there are a thousand ways to write the same code. Every company has traditions about how a project should be structured, and that can be fine. But it makes it really hard to write simple documentation, to enboard new developers, and to make things simple.
+We get it: there are a thousand ways to write the same code. Every company has traditions about how a project should be structured, and that can be fine. But it makes it really hard to write simple documentation, to onboard new developers, and to make things simple.
 
 {project-name} will focus on what we feel is the simplest and most useful way to use any given feature. We will work hard to trim that particular feature to its most useful essence, and to document it thoroughly, in an intuitive manner. That's analysing up-front how to best use that feature and helping you avoid that analysis, through our experience, and guiding you in what we think is the best way to do things. That's taking an opinion on how you should do things and voicing it.
 

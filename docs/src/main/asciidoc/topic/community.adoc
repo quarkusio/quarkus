@@ -10,31 +10,37 @@ Let's join forces in building the future of Java applications.
 
 == Code and issue tracker
 
-The source code is hosted on https://github.com/jbossas/protean-shamrock/[GitHub].
+The source code is hosted on {quarkus-base-url}[GitHub].
 
-If you need to report a bug or request a new feature, look for a similar one on our https://github.com/jbossas/protean-shamrock/issues[github issues tracker]. If you don’t find any, create a new issue. 
+If you need to report a bug or request a new feature, look for a similar one on our {quarkus-issues-url}[github issues tracker]. If you don’t find any, create a new issue. 
 
 == Getting help
 
 === Documentation
 
-We have a lot of documentation for getting started with {project-name}, be sure to https://quarkus/getting-started[check it out]!
+We have a lot of documentation for getting started with {project-name}, be sure to {quarkus-site-getting-started}[check it out]!
 
 === https://stackoverflow.com[Stack Overflow]
 
 After the documentation, probably the best place to look for answers. We actively monitor the following tags:
 
-- https://stackoverflow.com/questions/tagged/quarkus 
+- https://stackoverflow.com/questions/tagged/quarkus
 
 === Chat
 
-If you prefer live chat with the developers, we have a Zulip chat where we all hang out, don't hesitate to https://protean.zulipchat.com/#narrow/stream/173288-Protean-users[ask your questions there].
+If you prefer live chat with the developers, we have a Zulip chat where we all hang out, don't hesitate to {quarkus-chat-url}[ask your questions there].
 
 == Contributing
 
-If you are an extension developers or want to contribute to {project-name} development, join our mailing list either:
+There are a lot of ways to contribute to {project-name} development:
 
-- by emailing quarkus-dev+subscribe@googlegroups.com
-- by visiting to the Google Groups page https://groups.google.com/d/forum/quarkus-dev
+ * Writing documentation and quickstarts,
+ * {quarkus-issues-url}[Fixing bugs or even just opening an issue],
+ * Writing new extensions.
 
-Make sure you visit our extensive https://quarkus/getting-started/extension-authors-guide[extension developer guide].
+If you are an extension developer or want to contribute to {project-name} development, join our mailing list either:
+
+- by emailing {quarkus-mailing-list-subscription-email}
+- by visiting the Google Groups page {quarkus-mailing-list-index}
+
+Make sure you visit our extensive {quarkus-site-extension-authors-guide}[extension developer guide].

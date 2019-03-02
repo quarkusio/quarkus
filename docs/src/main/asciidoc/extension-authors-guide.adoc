@@ -548,3 +548,16 @@ The only particular aspect of writing {project-name} extensions in Eclipse is th
 - Install `m2e-apt` from https://marketplace.eclipse.org/content/m2e-apt
 - Define this property in your `pom.xml`: `<m2e.apt.activation>jdt_apt</m2e.apt.activation>`, although if you rely on `io.quarkus:quarkus-build-parent` you will get it for free.
 - If you have the `io.quarkus:quarkus-extension-processor` open at the same time in your IDE (for example, if you have the {project-name} sources checked out and open in your IDE) you will need to close that project. Otherwise, Eclipse will not invoke the APT plugin that it contains.
+
+== Troubleshooting / Debugging Tips
+
+=== Saving Application Generated Classes to Disk
+
+The class augmentation step of {project-name} generates classes for various purposes. Sometimes you need to view these
+classes/bytecode to debug or understand an issue. Classes that are related to application augmentation are currently held in
+memory in a runtime class loader. To have these classes written out to disk for inspection, specify the
+`io.quarkus.DEBUG_GENERATED_CLASSES_DIR` system property, for example:
+[code,bash]
+----
+mvn clean install -Dio.quarkus.DEBUG_GENERATED_CLASSES_DIR=./target/app-generated-classes
+----

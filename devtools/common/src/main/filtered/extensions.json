@@ -20,6 +20,42 @@
     "artifactId": "quarkus-arc-deployment"
   },
   {
+    "name": "Camel Core",
+    "labels": [
+      "camel-core",
+      "camel"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-camel-core-deployment"
+  },
+  {
+    "name": "Camel Infinispan",
+    "labels": [
+      "camel-infinispan",
+      "camel"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-camel-infinispan-deployment"
+  },
+  {
+    "name": "Camel Netty4 HTTP",
+    "labels": [
+      "camel-netty4-http",
+      "camel"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-camel-netty4-http-deployment"
+  },
+  {
+    "name": "Camel Salesforce",
+    "labels": [
+      "camel-salesforce",
+      "camel"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-camel-salesforce-deployment"
+  },
+  {
     "name": "Hibernate ORM",
     "labels": [
       "hibernate-orm",

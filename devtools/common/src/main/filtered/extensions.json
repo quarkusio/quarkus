@@ -20,6 +20,16 @@
     "artifactId": "quarkus-arc-deployment"
   },
   {
+    "name": "Hibernate ORM",
+    "labels": [
+      "hibernate-orm",
+      "jpa",
+      "hibernate"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-hibernate-orm-deployment"
+  },
+  {
     "name": "Hibernate Validator",
     "labels": [
       "hibernate-validator",
@@ -30,30 +40,6 @@
     "artifactId": "quarkus-hibernate-validator-deployment"
   },
   {
-    "name": "SmallRye Fault Tolerance",
-    "labels": [
-      "smallrye-fault-tolerance",
-      "fault-tolerance",
-      "microprofile-fault-tolerance",
-      "circuit-breaker",
-      "bulkhead"
-    ],
-    "groupId": "io.quarkus",
-    "artifactId": "quarkus-smallrye-fault-tolerance-deployment"
-  },
-  {
-    "name": "SmallRye Health",
-    "labels": [
-      "smallrye-health",
-      "health-check",
-      "health",
-      "microprofile-health",
-      "microprofile-health-check"
-    ],
-    "groupId": "io.quarkus",
-    "artifactId": "quarkus-smallrye-health-deployment"
-  },
-  {
     "name": "Infinispan Client",
     "labels": [
       "infinispan-client",
@@ -61,6 +47,20 @@
     ],
     "groupId": "io.quarkus",
     "artifactId": "quarkus-infinispan-client-deployment"
+  },
+  {
+    "name": "Narayana JTA",
+    "labels": [
+      "narayana-jta",
+      "narayana",
+      "jta",
+      "transactions",
+      "transaction",
+      "tx",
+      "txs"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-narayana-jta-deployment"
   },
   {
     "name": "RESTEasy",
@@ -88,14 +88,57 @@
     "artifactId": "quarkus-resteasy-jsonb-deployment"
   },
   {
-    "name": "Hibernate ORM",
+    "name": "Scheduler",
     "labels": [
-      "hibernate-orm",
-      "jpa",
-      "hibernate"
+      "scheduler",
+      "tasks",
+      "periodic-tasks"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-hibernate-orm-deployment"
+    "artifactId": "quarkus-scheduler-deployment"
+  },
+  {
+    "name": "Security",
+    "labels": [
+      "security"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-security-deployment"
+  },
+  {
+    "name": "SmallRye Fault Tolerance",
+    "labels": [
+      "smallrye-fault-tolerance",
+      "fault-tolerance",
+      "microprofile-fault-tolerance",
+      "circuit-breaker",
+      "bulkhead"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-fault-tolerance-deployment"
+  },
+  {
+    "name": "SmallRye Health",
+    "labels": [
+      "smallrye-health",
+      "health-check",
+      "health",
+      "microprofile-health",
+      "microprofile-health-check"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-health-deployment"
+  },
+  {
+    "name": "SmallRye JWT",
+    "labels": [
+      "smallrye-jwt",
+      "jwt",
+      "json-web-token",
+      "rbac"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-jwt-deployment"
   },
   {
     "name": "SmallRye Metrics",
@@ -168,6 +211,23 @@
     "artifactId": "quarkus-smallrye-reactive-messaging-deployment"
   },
   {
+    "name": "SmallRye Reactive Messaging - Kafka Connector",
+    "labels": [
+      "kafka",
+      "reactive-kafka"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-smallrye-reactive-messaging-kafka-deployment"
+  },
+  {
+    "name": "Spring DI compatibility layer",
+    "labels": [
+      "spring-di"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-spring-di-deployment"
+  },
+  {
     "name": "Rest Client",
     "labels": [
       "rest-client",
@@ -178,30 +238,6 @@
     "artifactId": "quarkus-rest-client-deployment"
   },
   {
-    "name": "Scheduler",
-    "labels": [
-      "scheduler",
-      "tasks",
-      "periodic-tasks"
-    ],
-    "groupId": "io.quarkus",
-    "artifactId": "quarkus-scheduler-deployment"
-  },
-  {
-    "name": "Narayana JTA",
-    "labels": [
-      "narayana-jta",
-      "narayana",
-      "jta",
-      "transactions",
-      "transaction",
-      "tx",
-      "txs"
-    ],
-    "groupId": "io.quarkus",
-    "artifactId": "quarkus-narayana-jta-deployment"
-  },
-  {
     "name": "Undertow",
     "labels": [
       "undertow",
@@ -209,17 +245,6 @@
     ],
     "groupId": "io.quarkus",
     "artifactId": "quarkus-undertow-deployment"
-  },
-  {
-    "name": "Eclipse Vert.x",
-    "labels": [
-      "eclipse-vert.x",
-      "vertx",
-      "vert.x",
-      "reactive"
-    ],
-    "groupId": "io.quarkus",
-    "artifactId": "quarkus-vertx-deployment"
   },
   {
     "name": "Undertow WebSockets",
@@ -235,39 +260,15 @@
     "artifactId": "quarkus-undertow-websockets-deployment"
   },
   {
-    "name": "Spring DI compatibility layer",
+    "name": "Eclipse Vert.x",
     "labels": [
-      "spring-di"
+      "eclipse-vert.x",
+      "vertx",
+      "vert.x",
+      "reactive"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-spring-di-deployment"
-  },
-  {
-    "name": "Security",
-    "labels": [
-      "security"
-    ],
-    "groupId": "io.quarkus",
-    "artifactId": "quarkus-security-deployment"
-  },
-  {
-    "name": "SmallRye JWT",
-    "labels": [
-      "smallrye-jwt",
-      "jwt",
-      "json-web-token",
-      "rbac"
-    ],
-    "groupId": "io.quarkus",
-    "artifactId": "quarkus-smallrye-jwt-deployment"
-  },
-  {
-    "name": "Kafka Connector for SmallRye Reactive Messaging",
-    "labels": [
-      "kafka",
-      "reactive-kafka"
-    ],
-    "groupId": "io.quarkus",
-    "artifactId": "quarkus-smallrye-reactive-messaging-kafka-deployment"
+    "artifactId": "quarkus-vertx-deployment"
   }
+
 ]

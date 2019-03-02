@@ -70,16 +70,19 @@ public class HibernateOrmConfig {
     /**
      * Statistics configuration.
      */
-    @ConfigItem
-    public HibernateOrmConfigStatistics statistics;
+    @ConfigItem(defaultValue = "false")
+    public boolean statistics;
 
     public boolean isAnyPropertySet() {
-        return dialect.isPresent() || dialectStorageEngine.isPresent() || sqlLoadScript.isPresent() || batchFetchSize > 0 ||
+        return dialect.isPresent() ||
+                dialectStorageEngine.isPresent() ||
+                sqlLoadScript.isPresent() ||
+                batchFetchSize > 0 ||
+                statistics ||
                 query.isAnyPropertySet() ||
                 schema.isAnyPropertySet() ||
                 jdbc.isAnyPropertySet() ||
-                log.isAnyPropertySet() ||
-                statistics.isAnyPropertySet();
+                log.isAnyPropertySet();
     }
 
     @ConfigGroup
@@ -192,20 +195,6 @@ public class HibernateOrmConfig {
 
         public boolean isAnyPropertySet() {
             return sql || jdbcWarnings.isPresent();
-        }
-    }
-
-    @ConfigGroup
-    public static class HibernateOrmConfigStatistics {
-
-        /**
-         * Whether statistics are collected.
-         */
-        @ConfigItem(defaultValue = "false")
-        public boolean enabled;
-
-        public boolean isAnyPropertySet() {
-            return enabled;
         }
     }
 }

@@ -363,7 +363,7 @@ public final class HibernateOrmProcessor {
                 }
 
                 // Statistics
-                if (hibernateConfig.statistics.enabled) {
+                if (hibernateConfig.statistics) {
                     desc.getProperties().setProperty(AvailableSettings.GENERATE_STATISTICS, "true");
                 }
 

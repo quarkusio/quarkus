@@ -171,7 +171,7 @@ Whether JDBC warnings should be collected and logged.
 
 ==== Statistics
 
-`quarkus.hibernate-orm.statistics.enabled`:: (defaults to `false`)
+`quarkus.hibernate-orm.statistics`:: (defaults to `false`)
 Whether statistics collection is enabled.
 
 [NOTE]

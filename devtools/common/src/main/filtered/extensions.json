@@ -79,10 +79,50 @@
     "name": "Infinispan Client",
     "labels": [
       "infinispan-client",
-      "data-grid-client"
+      "data-grid-client",
+      "infinispan"
     ],
     "groupId": "io.quarkus",
     "artifactId": "quarkus-infinispan-client-deployment"
+  },
+  {
+    "name": "JDBC Driver - H2",
+    "labels": [
+      "jdbc-h2",
+      "jdbc",
+      "h2"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jdbc-h2-deployment"
+  },
+  {
+    "name": "JDBC Driver - MariaDB",
+    "labels": [
+      "jdbc-mariadb",
+      "jdbc",
+      "mariadb"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jdbc-mariadb-deployment"
+  },
+  {
+    "name": "JDBC Driver - PostgreSQL",
+    "labels": [
+      "jdbc-postgresql",
+      "jdbc",
+      "postgresql"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jdbc-postgresql-deployment"
+  },
+  {
+    "name": "AWS Lambda",
+    "labels": [
+      "lambda",
+      "aws"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-lambda-deployment"
   },
   {
     "name": "Narayana JTA",
@@ -97,6 +137,17 @@
     ],
     "groupId": "io.quarkus",
     "artifactId": "quarkus-narayana-jta-deployment"
+  },
+  {
+    "name": "Panache JPA",
+    "labels": [
+      "panache-jpa",
+      "panache",
+      "hibernate",
+      "jpa"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-panache-jpa-deployment"
   },
   {
     "name": "RESTEasy",

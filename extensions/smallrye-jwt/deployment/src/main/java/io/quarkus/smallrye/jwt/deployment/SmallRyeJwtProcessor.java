@@ -86,7 +86,7 @@ class SmallRyeJwtProcessor {
      */
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem(FeatureBuildItem.MP_JWT);
+        return new FeatureBuildItem(FeatureBuildItem.SMALLRYE_JWT);
     }
 
     /**

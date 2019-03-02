@@ -1,4 +1,4 @@
-package io.quarkus.reactivemessaging;
+package io.quarkus.smallrye.reactivemessaging.kafka.deployment;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;

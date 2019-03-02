@@ -247,10 +247,10 @@
             </dependencies>
         </profile>
         <profile>
-            <id>native-image</id>
+            <id>native-image-it-main</id>
             <activation>
                 <property>
-                    <name>!no-native</name>
+                    <name>native</name>
                 </property>
             </activation>
             <build>

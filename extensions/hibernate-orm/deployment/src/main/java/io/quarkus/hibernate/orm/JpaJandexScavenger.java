@@ -78,10 +78,10 @@ final class JpaJandexScavenger {
         this.nonJpaModelClasses = nonJpaModelClasses;
     }
 
-    public JpaEntitiesBuildItems discoverModelAndRegisterForReflection() throws IOException {
+    public JpaEntitiesBuildItem discoverModelAndRegisterForReflection() throws IOException {
         // list all entities and create a JPADeploymentTemplate out of it
         // Not functional as we will need one deployment template per persistence unit
-        final JpaEntitiesBuildItems domainObjectCollector = new JpaEntitiesBuildItems();
+        final JpaEntitiesBuildItem domainObjectCollector = new JpaEntitiesBuildItem();
         final Set<String> enumTypeCollector = new HashSet<>();
 
         enlistJPAModelClasses(indexView, domainObjectCollector, enumTypeCollector, JPA_ENTITY);
@@ -105,7 +105,7 @@ final class JpaJandexScavenger {
         return domainObjectCollector;
     }
 
-    private static void enlistExplicitClasses(IndexView index, JpaEntitiesBuildItems domainObjectCollector,
+    private static void enlistExplicitClasses(IndexView index, JpaEntitiesBuildItem domainObjectCollector,
             Set<String> enumTypeCollector, List<String> managedClassNames) {
         for (String className : managedClassNames) {
             DotName dotName = DotName.createSimple(className);
@@ -123,7 +123,7 @@ final class JpaJandexScavenger {
         }
     }
 
-    private static void enlistReturnType(IndexView index, JpaEntitiesBuildItems domainObjectCollector,
+    private static void enlistReturnType(IndexView index, JpaEntitiesBuildItem domainObjectCollector,
             Set<String> enumTypeCollector) {
         Collection<AnnotationInstance> annotations = index.getAnnotations(EMBEDDED);
         if (annotations != null && annotations.size() > 0) {
@@ -147,7 +147,7 @@ final class JpaJandexScavenger {
         }
     }
 
-    private void enlistJPAModelClasses(IndexView index, JpaEntitiesBuildItems domainObjectCollector,
+    private void enlistJPAModelClasses(IndexView index, JpaEntitiesBuildItem domainObjectCollector,
             Set<String> enumTypeCollector, DotName dotName) {
         Collection<AnnotationInstance> jpaAnnotations = index.getAnnotations(dotName);
         if (jpaAnnotations != null && jpaAnnotations.size() > 0) {
@@ -171,7 +171,7 @@ final class JpaJandexScavenger {
      * TODO this approach fails if the Jandex index is not complete (e.g. misses somes interface or super types)
      * TODO should we also return the return types of all methods and fields? It could container Enums for example.
      */
-    private static void addClassHierarchyToReflectiveList(IndexView index, JpaEntitiesBuildItems domainObjectCollector,
+    private static void addClassHierarchyToReflectiveList(IndexView index, JpaEntitiesBuildItem domainObjectCollector,
             Set<String> enumTypeCollector, DotName className) {
         // If type is not Object
         // recursively add superclass and interfaces

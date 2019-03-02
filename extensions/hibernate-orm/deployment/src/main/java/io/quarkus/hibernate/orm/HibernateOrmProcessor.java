@@ -177,7 +177,7 @@ public final class HibernateOrmProcessor {
             ApplicationIndexBuildItem applicationIndex,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<JpaEntitiesBuildItems> domainObjectsProducer) throws Exception {
+            BuildProducer<JpaEntitiesBuildItem> domainObjectsProducer) throws Exception {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.HIBERNATE_ORM));
 
@@ -197,7 +197,7 @@ public final class HibernateOrmProcessor {
                 .map(NonJpaModelBuildItem::getClassName)
                 .collect(Collectors.toSet());
         JpaJandexScavenger scavenger = new JpaJandexScavenger(reflectiveClass, descriptors, compositeIndex, nonJpaModelClasses);
-        final JpaEntitiesBuildItems domainObjects = scavenger.discoverModelAndRegisterForReflection();
+        final JpaEntitiesBuildItem domainObjects = scavenger.discoverModelAndRegisterForReflection();
 
         for (String className : domainObjects.getClassNames()) {
             template.addEntity(className);
@@ -226,7 +226,7 @@ public final class HibernateOrmProcessor {
     }
 
     @BuildStep
-    public HibernateEnhancersRegisteredBuildItem enhancerDomainObjects(JpaEntitiesBuildItems domainObjects,
+    public HibernateEnhancersRegisteredBuildItem enhancerDomainObjects(JpaEntitiesBuildItem domainObjects,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
             BuildProducer<GeneratedClassBuildItem> additionalClasses) {
@@ -372,7 +372,7 @@ public final class HibernateOrmProcessor {
         throw new ConfigurationError(error);
     }
 
-    private void enhanceEntities(final JpaEntitiesBuildItems domainObjects,
+    private void enhanceEntities(final JpaEntitiesBuildItem domainObjects,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
             BuildProducer<GeneratedClassBuildItem> additionalClasses) {

@@ -14,7 +14,6 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String HIBERNATE_ORM = "hibernate-orm";
     public static final String HIBERNATE_VALIDATOR = "hibernate-validator";
     public static final String JAEGER = "jaeger";
-    public static final String MP_JWT = "mp-jwt";
     public static final String NARAYANA_JTA = "narayana-jta";
     public static final String RESTEASY = "resteasy";
     public static final String RESTEASY_JSONB = "resteasy-jsonb";
@@ -24,6 +23,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String SMALLRYE_OPENAPI = "smallrye-openapi";
     public static final String SMALLRYE_METRICS = "smallrye-metrics";
     public static final String SMALLRYE_FAULT_TOLERANCE = "smallrye-fault-tolerance";
+    public static final String SMALLRYE_JWT = "smallrye-jwt";
     public static final String SMALLRYE_OPENTRACING = "smallrye-opentracing";
     public static final String SMALLRYE_REACTIVE_MESSAGING = "smallrye-reactive-messaging";
     public static final String SMALLRYE_REACTIVE_STREAMS_OPERATORS = "smallrye-reactive-streams-operators";

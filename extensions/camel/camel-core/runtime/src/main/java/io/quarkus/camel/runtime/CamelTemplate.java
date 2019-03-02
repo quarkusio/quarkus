@@ -18,11 +18,9 @@ public class CamelTemplate {
     public CamelRuntime init(
             RuntimeValue<?> iruntime,
             RuntimeRegistry registry,
-            Properties properties,
             List<RuntimeValue<?>> builders) {
         CamelRuntime runtime = CamelRuntime.class.cast(iruntime.getValue());
         runtime.setRegistry(registry);
-        runtime.setProperties(properties);
         runtime.setBuilders(builders.stream()
                 .map(RuntimeValue::getValue)
                 .map(RoutesBuilder.class::cast)

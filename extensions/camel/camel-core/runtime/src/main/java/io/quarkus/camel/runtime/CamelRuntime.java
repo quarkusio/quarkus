@@ -33,6 +33,8 @@ import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.support.ResourceHelper;
 import org.apache.camel.support.service.ServiceSupport;
 import org.apache.camel.util.ObjectHelper;
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 
 public class CamelRuntime extends ServiceSupport {
 
@@ -47,10 +49,10 @@ public class CamelRuntime extends ServiceSupport {
     public static final String PROP_CAMEL_DEFER = PFX_CAMEL + "defer";
 
     protected RuntimeRegistry registry;
-    protected Properties properties;
     protected AbstractCamelContext context;
     protected List<RoutesBuilder> builders;
     protected PropertiesComponent propertiesComponent;
+    private Properties properties;
 
     public void bind(String name, Object object) {
         registry.bind(name, object);
@@ -62,6 +64,16 @@ public class CamelRuntime extends ServiceSupport {
 
     public void doInit() {
         try {
+            this.properties = new Properties();
+            Config config = ConfigProvider.getConfig();
+            for (String i : config.getPropertyNames()) {
+                try {
+                    properties.put(i, config.getValue(i, String.class));
+                } catch (Exception e) {
+                    //ignore it if expansion fails
+                }
+            }
+
             AbstractCamelContext context = createContext();
             context.setRegistry(registry);
             context.setAutoStartup(false);
@@ -148,10 +160,6 @@ public class CamelRuntime extends ServiceSupport {
 
     public void setRegistry(RuntimeRegistry registry) {
         this.registry = registry;
-    }
-
-    public void setProperties(Properties properties) {
-        this.properties = properties;
     }
 
     public void setBuilders(List<RoutesBuilder> builders) {

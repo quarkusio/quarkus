@@ -32,8 +32,9 @@
     <packaging>pom</packaging>
     <properties>
         <version.asciidoctor>1.5.7.1</version.asciidoctor>
-        <quickstarts-base-url>https://github.com/jbossas/protean-quickstarts</quickstarts-base-url>
+        <quarkus-home-url>https://quarkus.io</quarkus-home-url>
         <quarkus-base-url>https://github.com/jbossas/protean-shamrock</quarkus-base-url>
+        <quickstarts-base-url>https://github.com/jbossas/protean-quickstarts</quickstarts-base-url>
     </properties>
 
     <name>Quarkus - Documentation</name>
@@ -56,9 +57,19 @@
                         <restassured-version>${rest-assured.version}</restassured-version>
                         <project-name>Quarkus</project-name>
                         <!-- Project website home page -->
-                        <quarkus-home-url>https://quarkus.io</quarkus-home-url>
+                        <quarkus-home-url>${quarkus-home-url}</quarkus-home-url>
                         <!-- Root URL of the Github organization -->
                         <quarkus-org-url>https://github.com/quarkusio</quarkus-org-url>
+
+                        <!-- === Website URLs === -->
+                        <!-- This will probably go away once all the pages are integrated in the website but keep track of the links -->
+                        <quarkus-site-getting-started>${quarkus-home-url}/getting-started</quarkus-site-getting-started>
+                        <quarkus-site-extension-authors-guide>${quarkus-home-url}/documentation/extension-authors-guide</quarkus-site-extension-authors-guide>
+
+                        <!-- === Communication === -->
+                        <quarkus-chat-url>https://protean.zulipchat.com/#narrow/stream/173288-Protean-users</quarkus-chat-url>
+                        <quarkus-mailing-list-subscription-email>quarkus-dev+subscribe@googlegroups.com</quarkus-mailing-list-subscription-email>
+                        <quarkus-mailing-list-index>https://groups.google.com/d/forum/quarkus-dev</quarkus-mailing-list-index>
 
                         <!-- === Quarkus project settings === -->
                         <!-- Quarkus repository base URL -->
@@ -71,6 +82,8 @@
                         <quarkus-blob-url>${quarkus-base-url}/blob/master</quarkus-blob-url>
                         <!-- Quarkus URL to master source tree root; used for referencing directories -->
                         <quarkus-tree-url>${quarkus-base-url}/tree/master</quarkus-tree-url>
+                        <!-- Quarkus URL to issues -->
+                        <quarkus-issues-url>${quarkus-base-url}/issues</quarkus-issues-url>
 
                         <!-- === Quickstart settings === -->
                         <!-- Quickstart repository base URL -->
@@ -95,6 +108,7 @@
                         <configuration>
                             <backend>html5</backend>
                             <sourceHighlighter>coderay</sourceHighlighter>
+                            <preserveDirectories>true</preserveDirectories>
                             <attributes>
                                 <imagesdir>./images</imagesdir>
                                 <icons>font</icons>

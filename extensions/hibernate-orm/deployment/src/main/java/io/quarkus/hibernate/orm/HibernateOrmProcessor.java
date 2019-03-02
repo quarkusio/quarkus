@@ -326,9 +326,9 @@ public final class HibernateOrmProcessor {
                 }
 
                 // Query
-                if (hibernateConfig.query.batchFetchSize > 0) {
+                if (hibernateConfig.batchFetchSize > 0) {
                     desc.getProperties().setProperty(AvailableSettings.DEFAULT_BATCH_FETCH_SIZE,
-                            Integer.toString(hibernateConfig.query.batchFetchSize));
+                            Integer.toString(hibernateConfig.batchFetchSize));
                     desc.getProperties().setProperty(AvailableSettings.BATCH_FETCH_STYLE, BatchFetchStyle.PADDED.toString());
                 }
 

@@ -36,6 +36,14 @@ public class HibernateOrmConfig {
     public Optional<String> sqlLoadScript;
 
     /**
+     * The size of a batch when using batch loading to load entities and collections.
+     * <p>
+     * -1 means batch loading is disabled.
+     */
+    @ConfigItem(defaultValue = "-1")
+    public int batchFetchSize;
+
+    /**
      * Query related configuration.
      */
     @ConfigItem
@@ -66,7 +74,7 @@ public class HibernateOrmConfig {
     public HibernateOrmConfigStatistics statistics;
 
     public boolean isAnyPropertySet() {
-        return dialect.isPresent() || dialectStorageEngine.isPresent() || sqlLoadScript.isPresent() ||
+        return dialect.isPresent() || dialectStorageEngine.isPresent() || sqlLoadScript.isPresent() || batchFetchSize > 0 ||
                 query.isAnyPropertySet() ||
                 schema.isAnyPropertySet() ||
                 jdbc.isAnyPropertySet() ||
@@ -84,14 +92,6 @@ public class HibernateOrmConfig {
         public Optional<String> queryPlanCacheMaxSize;
 
         /**
-         * The size of a batch when using batch loading.
-         * <p>
-         * -1 means batch loading is disabled.
-         */
-        @ConfigItem(defaultValue = "-1")
-        public int batchFetchSize;
-
-        /**
          * The default ordering of nulls specific in the ORDER BY clause.
          * <p>
          * Valid values are: none, first, last.
@@ -100,7 +100,7 @@ public class HibernateOrmConfig {
         public Optional<String> defaultNullOrdering;
 
         public boolean isAnyPropertySet() {
-            return queryPlanCacheMaxSize.isPresent() || batchFetchSize > 0 || defaultNullOrdering.isPresent();
+            return queryPlanCacheMaxSize.isPresent() || defaultNullOrdering.isPresent();
         }
     }
 

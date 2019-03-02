@@ -114,13 +114,19 @@ Class name of the Hibernate ORM dialect.
 `quarkus.hibernate-orm.dialect.storage-engine`:: (e.g. `MyISAM` or `InnoDB`).
 The storage engine to use when the dialect supports multiple storage engines.
 
+==== Miscellaneous
+
+`quarkus.hibernate-orm.sql-load-script`::
+(defaults to `/import.sql`) Name of the file containing the SQL statements to execute when Hibernate ORM starts.
+By default, simply add `import.sql` in the root of your resources directory and it will be picked up without having to set this property.
+
+`quarkus.hibernate-orm.batch-fetch-size`:: (defaults to `-1` i.e. batch fetching is disabled).
+The size of the batches used when loading entities and collections.
+
 ==== Query
 
 `quarkus.hibernate-orm.query.query-plan-cache-max-size`::
 The maximum size of the query plan cache.
-
-`quarkus.hibernate-orm.query.batch-fetch-size`:: (defaults to `-1` i.e. batch fetching is disabled).
-The size of the batches used when loading entities and collections.
 
 `quarkus.hibernate-orm.query.default-null-ordering`:: (defaults to `none`).
 Default precedence of null values in `ORDER BY` clauses.
@@ -143,12 +149,6 @@ Whether we should stop on the first error when applying the schema.
 
 `quarkus.hibernate-orm.schema.charset`::
 The charset of the database.
-
-==== Loading data
-
-`quarkus.hibernate-orm.sql-load-script`::
-(defaults to `/import.sql`) Name of the file containing the SQL statements to execute when Hibernate ORM starts.
-By default, simply add `import.sql` in the root of your resources directory and it will be picked up without having to set this property.
 
 ==== JDBC
 

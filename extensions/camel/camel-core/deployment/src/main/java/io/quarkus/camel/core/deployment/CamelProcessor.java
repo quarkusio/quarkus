@@ -69,7 +69,7 @@ class CamelProcessor {
 
     @BuildStep
     FeatureBuildItem feature() {
-        return new FeatureBuildItem("camel-core");
+        return new FeatureBuildItem(FeatureBuildItem.CAMEL_CORE);
     }
 
     @BuildStep

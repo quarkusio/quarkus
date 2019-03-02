@@ -12,7 +12,6 @@
         <maven.compiler.target>1.8</maven.compiler.target>
 
         <quarkus.version>${quarkus_version}</quarkus.version>
-        <restassured.version>${rest_assured_version}</restassured.version>
         <surefire-plugin.version>${surefire_plugin_version}</surefire-plugin.version>
     </properties>
 
@@ -46,7 +45,6 @@
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
-            <version>${restassured.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

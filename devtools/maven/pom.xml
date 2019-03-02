@@ -34,7 +34,6 @@
         <quarkus.version>${project.version}</quarkus.version>
     </properties>
     <dependencies>
-
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-devtools-common</artifactId>
@@ -64,7 +63,6 @@
         <dependency>
             <groupId>org.apache.maven.shared</groupId>
             <artifactId>maven-artifact-transfer</artifactId>
-            <version>0.10.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.codehaus.plexus</groupId>
@@ -100,7 +98,6 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
         </dependency>
 
         <!-- test -->
@@ -123,19 +120,16 @@
         <dependency>
             <groupId>org.apache.maven.shared</groupId>
             <artifactId>maven-invoker</artifactId>
-            <version>3.0.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
-            <version>3.1.5</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.jprocesses</groupId>
             <artifactId>jProcesses</artifactId>
-            <version>1.6.5</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -194,7 +188,6 @@
                     <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
                     <cloneClean>true</cloneClean>
                     <settingsFile>src/it/settings.xml</settingsFile>
-                    <localRepositoryPath>${project.build.directory}/local-repo</localRepositoryPath>
                     <postBuildHookScript>verify</postBuildHookScript>
                     <addTestClassPath>true</addTestClassPath>
                     <skipInvocation>${maven.test.skip}</skipInvocation>

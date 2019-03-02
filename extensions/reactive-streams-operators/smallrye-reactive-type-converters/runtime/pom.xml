@@ -32,7 +32,6 @@
         <dependency>
             <groupId>io.smallrye.reactive</groupId>
             <artifactId>smallrye-converter-api</artifactId>
-            <version>${smallrye-reactive-streams-operators.version}</version>
         </dependency>
     </dependencies>
 

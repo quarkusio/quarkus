@@ -42,12 +42,6 @@ public class HibernateOrmConfig {
     public HibernateOrmConfigQuery query;
 
     /**
-     * Transaction related configuration.
-     */
-    @ConfigItem
-    public HibernateOrmConfigTransaction transaction;
-
-    /**
      * Schema related configuration.
      */
     @ConfigItem
@@ -74,7 +68,6 @@ public class HibernateOrmConfig {
     public boolean isAnyPropertySet() {
         return dialect.isPresent() || dialectStorageEngine.isPresent() || sqlLoadScript.isPresent() ||
                 query.isAnyPropertySet() ||
-                transaction.isAnyPropertySet() ||
                 schema.isAnyPropertySet() ||
                 jdbc.isAnyPropertySet() ||
                 log.isAnyPropertySet() ||
@@ -108,20 +101,6 @@ public class HibernateOrmConfig {
 
         public boolean isAnyPropertySet() {
             return queryPlanCacheMaxSize.isPresent() || batchFetchSize > 0 || defaultNullOrdering.isPresent();
-        }
-    }
-
-    @ConfigGroup
-    public static class HibernateOrmConfigTransaction {
-
-        /**
-         * The transaction isolation level.
-         */
-        @ConfigItem
-        public Optional<String> isolationLevel;
-
-        public boolean isAnyPropertySet() {
-            return isolationLevel.isPresent();
         }
     }
 

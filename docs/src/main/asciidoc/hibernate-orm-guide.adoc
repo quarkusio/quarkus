@@ -126,11 +126,6 @@ The size of the batches used when loading entities and collections.
 Default precedence of null values in `ORDER BY` clauses.
 Options are `none`, `first`, `last`.
 
-`quarkus.hibernate-orm.transaction.isolation-level`::
-The isolation level to use for transactions.
-Options are `READ_UNCOMMITTED`, `READ_COMMITTED`, `REPEATABLE_READ`, `SERIALIZABLE`.
-The default value depends on the database engine used.
-
 ==== Schema
 
 `quarkus.hibernate-orm.schema.generation`::

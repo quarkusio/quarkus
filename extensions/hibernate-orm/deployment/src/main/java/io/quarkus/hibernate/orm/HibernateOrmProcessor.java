@@ -339,10 +339,6 @@ public final class HibernateOrmProcessor {
                         defaultNullOrdering -> desc.getProperties().setProperty(AvailableSettings.DEFAULT_NULL_ORDERING,
                                 defaultNullOrdering));
 
-                // Transactions
-                hibernateConfig.transaction.isolationLevel.ifPresent(
-                        isolationLevel -> desc.getProperties().setProperty(AvailableSettings.ISOLATION, isolationLevel));
-
                 // JDBC
                 hibernateConfig.jdbc.timezone.ifPresent(
                         timezone -> desc.getProperties().setProperty(AvailableSettings.JDBC_TIME_ZONE, timezone));

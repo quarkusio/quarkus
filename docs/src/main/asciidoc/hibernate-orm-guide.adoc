@@ -132,22 +132,22 @@ The maximum size of the query plan cache.
 Default precedence of null values in `ORDER BY` clauses.
 Options are `none`, `first`, `last`.
 
-==== Schema
+==== Database
 
-`quarkus.hibernate-orm.schema.generation`::
+`quarkus.hibernate-orm.database.generation`::
 (e.g. `drop-and-create` which is awesome in development mode). Select whether the database schema is generated or not.
 Options are `none`, `create`, `drop-and-create`, `drop`
 
-`quarkus.hibernate-orm.schema.default-catalog`::
-The default catalog to use for the database objects.
-
-`quarkus.hibernate-orm.schema.default-schema`::
-The default schema to use for the database objects.
-
-`quarkus.hibernate-orm.schema.halt-on-error`:: (defaults to `false`)
+`quarkus.hibernate-orm.database.generation.halt-on-error`:: (defaults to `false`)
 Whether we should stop on the first error when applying the schema.
 
-`quarkus.hibernate-orm.schema.charset`::
+`quarkus.hibernate-orm.database.default-catalog`::
+The default catalog to use for the database objects.
+
+`quarkus.hibernate-orm.database.default-schema`::
+The default schema to use for the database objects.
+
+`quarkus.hibernate-orm.database.charset`::
 The charset of the database.
 
 ==== JDBC

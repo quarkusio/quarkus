@@ -308,22 +308,22 @@ public final class HibernateOrmProcessor {
                             hibernateConfig.dialectStorageEngine.get()));
                 }
 
-                // Schema
-                hibernateConfig.schema.generation.ifPresent(
+                // Database
+                hibernateConfig.database.generation.ifPresent(
                         action -> desc.getProperties().setProperty(AvailableSettings.HBM2DDL_DATABASE_ACTION, action));
 
-                hibernateConfig.schema.charset.ifPresent(
-                        charset -> desc.getProperties().setProperty(AvailableSettings.HBM2DDL_CHARSET_NAME, charset));
-
-                hibernateConfig.schema.defaultCatalog.ifPresent(
-                        catalog -> desc.getProperties().setProperty(AvailableSettings.DEFAULT_CATALOG, catalog));
-
-                hibernateConfig.schema.defaultSchema.ifPresent(
-                        schema -> desc.getProperties().setProperty(AvailableSettings.DEFAULT_SCHEMA, schema));
-
-                if (hibernateConfig.schema.haltOnError) {
+                if (hibernateConfig.database.generationHaltOnError) {
                     desc.getProperties().setProperty(AvailableSettings.HBM2DDL_HALT_ON_ERROR, "true");
                 }
+
+                hibernateConfig.database.charset.ifPresent(
+                        charset -> desc.getProperties().setProperty(AvailableSettings.HBM2DDL_CHARSET_NAME, charset));
+
+                hibernateConfig.database.defaultCatalog.ifPresent(
+                        catalog -> desc.getProperties().setProperty(AvailableSettings.DEFAULT_CATALOG, catalog));
+
+                hibernateConfig.database.defaultSchema.ifPresent(
+                        schema -> desc.getProperties().setProperty(AvailableSettings.DEFAULT_SCHEMA, schema));
 
                 // Query
                 if (hibernateConfig.batchFetchSize > 0) {

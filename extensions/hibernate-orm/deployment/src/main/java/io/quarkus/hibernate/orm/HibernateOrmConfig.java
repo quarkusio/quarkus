@@ -50,10 +50,10 @@ public class HibernateOrmConfig {
     public HibernateOrmConfigQuery query;
 
     /**
-     * Schema related configuration.
+     * Database related configuration.
      */
     @ConfigItem
-    public HibernateOrmConfigSchema schema;
+    public HibernateOrmConfigDatabase database;
 
     /**
      * JDBC related configuration.
@@ -80,7 +80,7 @@ public class HibernateOrmConfig {
                 batchFetchSize > 0 ||
                 statistics ||
                 query.isAnyPropertySet() ||
-                schema.isAnyPropertySet() ||
+                database.isAnyPropertySet() ||
                 jdbc.isAnyPropertySet() ||
                 log.isAnyPropertySet();
     }
@@ -108,7 +108,7 @@ public class HibernateOrmConfig {
     }
 
     @ConfigGroup
-    public static class HibernateOrmConfigSchema {
+    public static class HibernateOrmConfigDatabase {
 
         /**
          * Control how schema generation is happening in Hibernate ORM.
@@ -117,6 +117,12 @@ public class HibernateOrmConfig {
          */
         @ConfigItem
         public Optional<String> generation;
+
+        /**
+         * Whether we should stop schema application at the first error or continue.
+         */
+        @ConfigItem(name = "generation.halt-on-error", defaultValue = "false")
+        public boolean generationHaltOnError;
 
         /**
          * The default database catalog.
@@ -131,19 +137,13 @@ public class HibernateOrmConfig {
         public Optional<String> defaultSchema;
 
         /**
-         * Whether we should stop schema application at the first error or continue.
-         */
-        @ConfigItem(defaultValue = "false")
-        public boolean haltOnError;
-
-        /**
          * The charset of the database.
          */
         @ConfigItem
         public Optional<String> charset;
 
         public boolean isAnyPropertySet() {
-            return generation.isPresent() || defaultCatalog.isPresent() || defaultSchema.isPresent() || haltOnError
+            return generation.isPresent() || defaultCatalog.isPresent() || defaultSchema.isPresent() || generationHaltOnError
                     || charset.isPresent();
         }
     }

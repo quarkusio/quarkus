@@ -26,11 +26,11 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String RESTEASY_JSONB = "resteasy-jsonb";
     public static final String SCHEDULER = "scheduler";
     public static final String SECURITY = "security";
-    public static final String SMALLRYE_HEALTH = "smallrye-health";
-    public static final String SMALLRYE_OPENAPI = "smallrye-openapi";
-    public static final String SMALLRYE_METRICS = "smallrye-metrics";
     public static final String SMALLRYE_FAULT_TOLERANCE = "smallrye-fault-tolerance";
+    public static final String SMALLRYE_HEALTH = "smallrye-health";
     public static final String SMALLRYE_JWT = "smallrye-jwt";
+    public static final String SMALLRYE_METRICS = "smallrye-metrics";
+    public static final String SMALLRYE_OPENAPI = "smallrye-openapi";
     public static final String SMALLRYE_OPENTRACING = "smallrye-opentracing";
     public static final String SMALLRYE_REACTIVE_MESSAGING = "smallrye-reactive-messaging";
     public static final String SMALLRYE_REACTIVE_MESSAGING_KAFKA = "smallrye-reactive-messaging";

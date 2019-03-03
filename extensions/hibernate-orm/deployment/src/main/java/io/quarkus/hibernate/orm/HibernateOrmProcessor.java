@@ -44,6 +44,7 @@ import org.hibernate.dialect.MariaDB103Dialect;
 import org.hibernate.dialect.PostgreSQL95Dialect;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
+import org.hibernate.loader.BatchFetchStyle;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.CompositeIndex;
@@ -71,6 +72,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentConfigFileBuildItem;
+import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.configuration.ConfigurationError;
@@ -97,6 +99,8 @@ import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
  */
 public final class HibernateOrmProcessor {
 
+    private static final String HIBERNATE_ORM_CONFIG_PREFIX = "quarkus.hibernate-orm.";
+
     private static final DotName PERSISTENCE_CONTEXT = DotName.createSimple(PersistenceContext.class.getName());
     private static final DotName PERSISTENCE_UNIT = DotName.createSimple(PersistenceUnit.class.getName());
     private static final DotName PRODUCES = DotName.createSimple(Produces.class.getName());
@@ -104,7 +108,7 @@ public final class HibernateOrmProcessor {
     /**
      * Hibernate ORM configuration
      */
-    HibernateConfig hibernate;
+    HibernateOrmConfig hibernateConfig;
 
     @BuildStep
     HotDeploymentConfigFileBuildItem configFile() {
@@ -115,12 +119,13 @@ public final class HibernateOrmProcessor {
     void doParseAndRegisterSubstrateResources(BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceProducer,
             BuildProducer<SubstrateResourceBuildItem> resourceProducer,
             BuildProducer<HotDeploymentConfigFileBuildItem> hotDeploymentProducer,
+            BuildProducer<SystemPropertyBuildItem> systemPropertyProducer,
             ArchiveRootBuildItem root,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             Optional<DataSourceDriverBuildItem> driverBuildItem) throws IOException {
         List<ParsedPersistenceXmlDescriptor> descriptors = loadOriginalXMLParsedDescriptors();
-        handleHibernateORMWithNoPersistenceXml(descriptors, resourceProducer, hotDeploymentProducer, root, driverBuildItem,
-                applicationArchivesBuildItem);
+        handleHibernateORMWithNoPersistenceXml(descriptors, resourceProducer, hotDeploymentProducer, systemPropertyProducer,
+                root, driverBuildItem, applicationArchivesBuildItem);
         for (ParsedPersistenceXmlDescriptor i : descriptors) {
             persistenceProducer.produce(new PersistenceUnitDescriptorBuildItem(i));
         }
@@ -314,12 +319,13 @@ public final class HibernateOrmProcessor {
             List<ParsedPersistenceXmlDescriptor> descriptors,
             BuildProducer<SubstrateResourceBuildItem> resourceProducer,
             BuildProducer<HotDeploymentConfigFileBuildItem> hotDeploymentProducer,
+            BuildProducer<SystemPropertyBuildItem> systemProperty,
             ArchiveRootBuildItem root,
             Optional<DataSourceDriverBuildItem> driverBuildItem,
             ApplicationArchivesBuildItem applicationArchivesBuildItem) {
         if (descriptors.isEmpty()) {
             //we have no persistence.xml so we will create a default one
-            Optional<String> dialect = hibernate.dialect;
+            Optional<String> dialect = hibernateConfig.dialect;
             if (!dialect.isPresent()) {
                 dialect = guessDialect(driverBuildItem.map(DataSourceDriverBuildItem::getDriver));
             }
@@ -329,19 +335,75 @@ public final class HibernateOrmProcessor {
                 desc.setName("default");
                 desc.setTransactionType(PersistenceUnitTransactionType.JTA);
                 desc.getProperties().setProperty(AvailableSettings.DIALECT, s);
-                hibernate.schemaGeneration.ifPresent(
-                        p -> desc.getProperties().setProperty(AvailableSettings.HBM2DDL_DATABASE_ACTION, p));
-                if (hibernate.showSql) {
+
+                // The storage engine has to be set as a system property.
+                if (hibernateConfig.dialectStorageEngine.isPresent()) {
+                    systemProperty.produce(new SystemPropertyBuildItem(AvailableSettings.STORAGE_ENGINE,
+                            hibernateConfig.dialectStorageEngine.get()));
+                }
+
+                // Database
+                hibernateConfig.database.generation.ifPresent(
+                        action -> desc.getProperties().setProperty(AvailableSettings.HBM2DDL_DATABASE_ACTION, action));
+
+                if (hibernateConfig.database.generationHaltOnError) {
+                    desc.getProperties().setProperty(AvailableSettings.HBM2DDL_HALT_ON_ERROR, "true");
+                }
+
+                hibernateConfig.database.charset.ifPresent(
+                        charset -> desc.getProperties().setProperty(AvailableSettings.HBM2DDL_CHARSET_NAME, charset));
+
+                hibernateConfig.database.defaultCatalog.ifPresent(
+                        catalog -> desc.getProperties().setProperty(AvailableSettings.DEFAULT_CATALOG, catalog));
+
+                hibernateConfig.database.defaultSchema.ifPresent(
+                        schema -> desc.getProperties().setProperty(AvailableSettings.DEFAULT_SCHEMA, schema));
+
+                // Query
+                if (hibernateConfig.batchFetchSize > 0) {
+                    desc.getProperties().setProperty(AvailableSettings.DEFAULT_BATCH_FETCH_SIZE,
+                            Integer.toString(hibernateConfig.batchFetchSize));
+                    desc.getProperties().setProperty(AvailableSettings.BATCH_FETCH_STYLE, BatchFetchStyle.PADDED.toString());
+                }
+
+                hibernateConfig.query.queryPlanCacheMaxSize.ifPresent(
+                        maxSize -> desc.getProperties().setProperty(AvailableSettings.QUERY_PLAN_CACHE_MAX_SIZE, maxSize));
+
+                hibernateConfig.query.defaultNullOrdering.ifPresent(
+                        defaultNullOrdering -> desc.getProperties().setProperty(AvailableSettings.DEFAULT_NULL_ORDERING,
+                                defaultNullOrdering));
+
+                // JDBC
+                hibernateConfig.jdbc.timezone.ifPresent(
+                        timezone -> desc.getProperties().setProperty(AvailableSettings.JDBC_TIME_ZONE, timezone));
+
+                hibernateConfig.jdbc.statementFetchSize.ifPresent(
+                        fetchSize -> desc.getProperties().setProperty(AvailableSettings.STATEMENT_FETCH_SIZE,
+                                fetchSize.toString()));
+
+                hibernateConfig.jdbc.statementBatchSize.ifPresent(
+                        fetchSize -> desc.getProperties().setProperty(AvailableSettings.STATEMENT_BATCH_SIZE,
+                                fetchSize.toString()));
+
+                // Logging
+                if (hibernateConfig.log.sql) {
                     desc.getProperties().setProperty(AvailableSettings.SHOW_SQL, "true");
                     desc.getProperties().setProperty(AvailableSettings.FORMAT_SQL, "true");
                 }
-                if (hibernate.generateStatistics) {
+
+                if (hibernateConfig.log.jdbcWarnings.isPresent()) {
+                    desc.getProperties().setProperty(AvailableSettings.LOG_JDBC_WARNINGS,
+                            hibernateConfig.log.jdbcWarnings.get().toString());
+                }
+
+                // Statistics
+                if (hibernateConfig.statistics) {
                     desc.getProperties().setProperty(AvailableSettings.GENERATE_STATISTICS, "true");
                 }
 
-                // sql-load-script-source
+                // sql-load-script
                 // explicit file or default one
-                String file = hibernate.sqlLoadScriptSource.orElse("import.sql"); //default Hibernate ORM file imported
+                String file = hibernateConfig.sqlLoadScript.orElse("import.sql"); //default Hibernate ORM file imported
 
                 Optional<Path> loadScriptPath = Optional
                         .ofNullable(applicationArchivesBuildItem.getRootArchive().getChildPath(file));
@@ -356,20 +418,24 @@ public final class HibernateOrmProcessor {
                         });
 
                 //raise exception if explicit file is not present (i.e. not the default)
-                hibernate.sqlLoadScriptSource
+                hibernateConfig.sqlLoadScript
                         .filter(o -> !loadScriptPath.filter(path -> !Files.isDirectory(path)).isPresent())
                         .ifPresent(
                                 c -> {
                                     throw new ConfigurationError(
-                                            "Unable to find file referenced in 'quarkus.hibernate.sql-load-script-source="
+                                            "Unable to find file referenced in '" + HIBERNATE_ORM_CONFIG_PREFIX
+                                                    + ".sql-load-script-source="
                                                     + c + "'. Remove property or add file to your path.");
                                 });
 
-                String prefix = "quarkus.hibernate.cache.";
+                // Caching
+                // FIXME: this should use a Map as soon as Map support is complete
+                String prefix = HIBERNATE_ORM_CONFIG_PREFIX + "cache.";
                 for (String propName : ConfigProvider.getConfig().getPropertyNames()) {
                     if (propName.startsWith(prefix)) {
                         String value = QuarkusConfig.getString(propName, null, false);
-                        String hibernateKey = propName.replace("quarkus.", "");
+                        String hibernateKey = propName.replace(HIBERNATE_ORM_CONFIG_PREFIX, "hibernate.")
+                                .replace("\"", "");
                         desc.getProperties().setProperty(hibernateKey, value);
                     }
                 }
@@ -377,10 +443,11 @@ public final class HibernateOrmProcessor {
                 descriptors.add(desc);
             });
         } else {
-            if (hibernate.isAnyPropertySet()) {
+            if (hibernateConfig.isAnyPropertySet()) {
                 throw new ConfigurationError(
                         "Hibernate ORM configuration present in persistence.xml and Quarkus config file at the same time\n"
-                                + "If you use persistence.xml remove all quarkus.hibernate.* properties from the Quarkus config file.");
+                                + "If you use persistence.xml remove all " + HIBERNATE_ORM_CONFIG_PREFIX
+                                + "* properties from the Quarkus config file.");
             }
         }
     }
@@ -401,7 +468,7 @@ public final class HibernateOrmProcessor {
         }
         String error = driver.isPresent()
                 ? "Hibernate extension could not guess the dialect from the driver '" + resolvedDriver
-                        + "'. Add an explicit 'quarkus.hibernate.dialect' property."
+                        + "'. Add an explicit '" + HIBERNATE_ORM_CONFIG_PREFIX + "dialect' property."
                 : "Hibernate extension cannot guess the dialect as no JDBC driver is specified by 'quarkus.datasource.driver'";
         throw new ConfigurationError(error);
     }

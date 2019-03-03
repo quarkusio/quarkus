@@ -43,7 +43,6 @@ import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
 import io.quarkus.deployment.builditem.ClassOutputBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.deployment.builditem.HttpServerBuildItem;
 import io.quarkus.deployment.builditem.JavaLibraryPathAdditionalPathBuildItem;
 import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
@@ -74,7 +73,6 @@ class MainClassBuildStep {
             List<SystemPropertyBuildItem> properties,
             List<JavaLibraryPathAdditionalPathBuildItem> javaLibraryPathAdditionalPaths,
             Optional<SslTrustStoreSystemPropertyBuildItem> sslTrustStoreSystemProperty,
-            Optional<HttpServerBuildItem> httpServer,
             List<FeatureBuildItem> features,
             BuildProducer<ApplicationClassNameBuildItem> appClassNameProducer,
             List<BytecodeRecorderObjectLoaderBuildItem> loaders,
@@ -208,11 +206,9 @@ class MainClassBuildStep {
                 .map(f -> f.getInfo())
                 .sorted()
                 .collect(Collectors.joining(", ")));
-        ResultHandle serverHandle = httpServer.isPresent() ? tryBlock.load("Listening on: http://" + httpServer.get()
-                .getHost() + ":" + httpServer.get().getPort()) : tryBlock.load("");
         tryBlock.invokeStaticMethod(
-                ofMethod(Timing.class, "printStartupTime", void.class, String.class, String.class, String.class),
-                tryBlock.load(Version.getVersion()), featuresHandle, serverHandle);
+                ofMethod(Timing.class, "printStartupTime", void.class, String.class, String.class),
+                tryBlock.load(Version.getVersion()), featuresHandle);
 
         cb = tryBlock.addCatch(Throwable.class);
         cb.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cb.getCaughtException());

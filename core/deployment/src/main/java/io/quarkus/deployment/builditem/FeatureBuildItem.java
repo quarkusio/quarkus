@@ -21,6 +21,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String JDBC_H2 = "jdbc-h2";
     public static final String JDBC_MARIADB = "jdbc-mariadb";
     public static final String JDBC_POSTGRESQL = "jdbc-postgresql";
+    public static final String KOTLIN = "kotlin";
     public static final String NARAYANA_JTA = "narayana-jta";
     public static final String RESTEASY = "resteasy";
     public static final String RESTEASY_JSONB = "resteasy-jsonb";

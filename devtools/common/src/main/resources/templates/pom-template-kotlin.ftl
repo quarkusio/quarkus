@@ -12,9 +12,8 @@
         <maven.compiler.target>1.8</maven.compiler.target>
 
         <quarkus.version>${quarkus_version}</quarkus.version>
-        <kotlin.version>${kotlin_version}</kotlin.version>
-        <restassured.version>${rest_assured_version}</restassured.version>
         <surefire-plugin.version>${surefire_plugin_version}</surefire-plugin.version>
+        <kotlin.version>${kotlin_version}</kotlin.version>
     </properties>
 
     <dependencyManagement>
@@ -38,15 +37,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc-deployment</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-kotlin-deployment</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib-jdk8</artifactId>
-            <version>${kotlin.version}</version>
         </dependency>
 
         <!-- Test extensions -->
@@ -57,7 +51,6 @@
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
-            <version>${restassured.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -107,6 +100,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <!-- Soon to be replaced by plugin that will pre-configure all necessary annotations -->
                     <compilerPlugins>
                         <plugin>all-open</plugin>
                     </compilerPlugins>

@@ -1,8 +1,8 @@
 = {project-name} - Using Kotlin
 
-https://kotlinlang.org/[Kotlin] is a very popular programming language that targets the JVM (amongst other environments). Kotlin has experienced a surge in popularity the last few years making it the popular JVM language (not named Java).
+https://kotlinlang.org/[Kotlin] is a very popular programming language that targets the JVM (amongst other environments). Kotlin has experienced a surge in popularity the last few years making it the most popular JVM language, except for Java of course.
 
-{project-name} provides first class support for using Kotlin as will be explained in this guide
+{project-name} provides first class support for using Kotlin as will be explained in this guide.
 
 == Prerequisites
 
@@ -29,7 +29,7 @@ mvn io.quarkus:quarkus-maven-plugin:${quarkus-version}:create \
     -Dextensions="kotlin"
 ----
 
-When adding `kotlin` to the extensions list, the Maven plugin will generate project that is properly
+When adding `kotlin` to the extensions list, the Maven plugin will generate a project that is properly
 configured to work with Kotlin. Furthermore  the `org.acme.rest.GreetingResource` class is implemented as Kotlin source code (as is the case with the generated tests).
 
 == Important configuration points
@@ -85,19 +85,19 @@ The generated `pom.xml` contains the following modifications compared to its cou
 The important thing to note is the use of the https://kotlinlang.org/docs/reference/compiler-plugins.html#all-open-compiler-plugin[all-open] Kotlin compiler plugin.
 In order to understand why this plugin is needed, first we need to note that by default all the classes generated from the Kotlin compiler are marked as `final`.
 
-Having `final` classes however does work well with various frameworks that need to create https://docs.oracle.com/javase/8/docs/technotes/guides/reflection/proxy.html[Dynamic Proxies].
+Having `final` classes however does not work well with various frameworks that need to create https://docs.oracle.com/javase/8/docs/technotes/guides/reflection/proxy.html[Dynamic Proxies].
 
-Thus, the `all-open` Kotlin compiler plugin allows us to make the configure the compiler to *not* mark as `final` classes that have certain annotations. In the snippet above,
+Thus, the `all-open` Kotlin compiler plugin allows us to configure the compiler to *not* mark as `final` classes that have certain annotations. In the snippet above,
 we have specified that classes annotated with `javax.ws.rs.Path` should not be `final`.
 
 If your application contains classes annotated with `javax.enterprise.context.ApplicationScoped`
 for example, then `<option>all-open:annotation=javax.enterprise.context.ApplicationScoped</option>` needs to be added as well. Same goes for any class that needs to have a dynamic proxy created at runtime.
 
-Future versions of {project-name} will configure the Kotlin compiler plugin in way that will make it unnecessary to alter this configuration.
+Future versions of {project-name} will configure the Kotlin compiler plugin in a way that will make it unnecessary to alter this configuration.
 
 == Live reload
 
 {project-name} provides support for live reloading changes made to source code. This support is also available to Kotlin, meaning that developers can update their Kotlin source
 code and immediately see their changes reflected.
 
-One thing to note is that the live reload feature is not available when making changes to both Java and Kotlin source that have dependencies on each other.s
+One thing to note is that the live reload feature is not available when making changes to both Java and Kotlin source that have dependencies on each other. We hope to alleviate this limitation in the future.

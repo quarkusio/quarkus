@@ -12,8 +12,6 @@
         <maven.compiler.target>1.8</maven.compiler.target>
 
         <quarkus.version>${quarkus_version}</quarkus.version>
-        <kotlin.version>${kotlin_version}</kotlin.version>
-        <restassured.version>${rest_assured_version}</restassured.version>
         <surefire-plugin.version>${surefire_plugin_version}</surefire-plugin.version>
     </properties>
 
@@ -46,7 +44,6 @@
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib-jdk8</artifactId>
-            <version>${kotlin.version}</version>
         </dependency>
 
         <!-- Test extensions -->
@@ -57,7 +54,6 @@
         <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
-            <version>${restassured.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -91,7 +87,6 @@
             <plugin>
                 <artifactId>kotlin-maven-plugin</artifactId>
                 <groupId>org.jetbrains.kotlin</groupId>
-                <version>${kotlin.version}</version>
                 <executions>
                     <execution>
                         <id>compile</id>
@@ -107,6 +102,7 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <!-- Soon to be replaced by plugin that will pre-configure all necessary annotations -->
                     <compilerPlugins>
                         <plugin>all-open</plugin>
                     </compilerPlugins>
@@ -121,7 +117,7 @@
                     <dependency>
                         <groupId>org.jetbrains.kotlin</groupId>
                         <artifactId>kotlin-maven-allopen</artifactId>
-                        <version>${kotlin.version}</version>
+                        <version>1.3.21</version>
                     </dependency>
                 </dependencies>
             </plugin>

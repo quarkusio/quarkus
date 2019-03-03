@@ -13,6 +13,7 @@
 
         <quarkus.version>${quarkus_version}</quarkus.version>
         <surefire-plugin.version>${surefire_plugin_version}</surefire-plugin.version>
+        <kotlin.version>${kotlin_version}</kotlin.version>
     </properties>
 
     <dependencyManagement>
@@ -83,6 +84,7 @@
             <plugin>
                 <artifactId>kotlin-maven-plugin</artifactId>
                 <groupId>org.jetbrains.kotlin</groupId>
+                <version>${kotlin.version}</version>
                 <executions>
                     <execution>
                         <id>compile</id>
@@ -113,7 +115,7 @@
                     <dependency>
                         <groupId>org.jetbrains.kotlin</groupId>
                         <artifactId>kotlin-maven-allopen</artifactId>
-                        <version>1.3.21</version>
+                        <version>${kotlin.version}</version>
                     </dependency>
                 </dependencies>
             </plugin>

@@ -25,6 +25,7 @@ import org.apache.maven.model.PluginManagement;
 import org.apache.maven.model.Profile;
 
 import io.quarkus.BasicRest;
+import io.quarkus.SourceType;
 import io.quarkus.maven.utilities.MojoUtils;
 
 /**
@@ -36,6 +37,7 @@ public class CreateProject {
     private String groupId;
     private String artifactId;
     private String version = getPluginVersion();
+    private SourceType sourceType = SourceType.JAVA;
 
     private Model model;
 
@@ -55,6 +57,11 @@ public class CreateProject {
 
     public CreateProject version(String version) {
         this.version = version;
+        return this;
+    }
+
+    public CreateProject sourceType(SourceType sourceType) {
+        this.sourceType = sourceType;
         return this;
     }
 
@@ -82,6 +89,7 @@ public class CreateProject {
         context.put(PROJECT_ARTIFACT_ID, artifactId);
         context.put(PROJECT_VERSION, version);
         context.put(QUARKUS_VERSION, getPluginVersion());
+        context.put(SOURCE_TYPE, sourceType);
 
         new BasicRest()
                 .generate(root, context);

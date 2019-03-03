@@ -30,22 +30,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
-
-import javax.tools.Diagnostic;
-import javax.tools.DiagnosticCollector;
-import javax.tools.JavaCompiler;
-import javax.tools.JavaFileObject;
-import javax.tools.StandardJavaFileManager;
-import javax.tools.StandardLocation;
-import javax.tools.ToolProvider;
 
 /**
  * Class that handles compilation of source files
@@ -55,11 +47,13 @@ import javax.tools.ToolProvider;
 public class ClassLoaderCompiler {
 
     public static final String DEV_MODE_CLASS_PATH = "META-INF/dev-mode-class-path.txt";
-    private final File outputDirectory;
-    private final Set<File> classPath;
+    private final List<CompilationProvider> compilationProviders;
+    private final CompilationProvider.Context compilationContext;
+    private final Set<String> allHandledExtensions;
 
-    public ClassLoaderCompiler(ClassLoader classLoader, File outputDirectory) throws IOException {
-        this.outputDirectory = outputDirectory;
+    public ClassLoaderCompiler(ClassLoader classLoader, File outputDirectory, List<CompilationProvider> compilationProviders)
+            throws IOException {
+        this.compilationProviders = compilationProviders;
 
         List<URL> urls = new ArrayList<>();
         ClassLoader c = classLoader;
@@ -122,34 +116,26 @@ public class ClassLoaderCompiler {
                 }
             }
         }
-        this.classPath = classPathElements;
+
+        this.compilationContext = new CompilationProvider.Context(classPathElements, outputDirectory);
+        this.allHandledExtensions = new HashSet<>();
+        for (CompilationProvider compilationProvider : compilationProviders) {
+            allHandledExtensions.add(compilationProvider.handledExtension());
+        }
     }
 
-    public void compile(Set<File> filesToCompile) {
+    public Set<String> allHandledExtensions() {
+        return allHandledExtensions;
+    }
 
-        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-        if (compiler == null) {
-            throw new RuntimeException("No system java compiler provided");
-        }
-        DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
-        try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, null);) {
-
-            fileManager.setLocation(StandardLocation.CLASS_PATH, classPath);
-            fileManager.setLocation(StandardLocation.CLASS_OUTPUT, Collections.singleton(outputDirectory));
-
-            Iterable<? extends JavaFileObject> sources = fileManager.getJavaFileObjectsFromFiles(filesToCompile);
-            JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics, null, null, sources);
-
-            if (!task.call()) {
-                throw new RuntimeException("Compilation failed" + diagnostics.getDiagnostics());
+    public void compile(Map<String, Set<File>> extensionToChangedFiles) {
+        for (String extension : extensionToChangedFiles.keySet()) {
+            for (CompilationProvider compilationProvider : compilationProviders) {
+                if (extension.equals(compilationProvider.handledExtension())) {
+                    compilationProvider.compile(extensionToChangedFiles.get(extension), compilationContext);
+                    break;
+                }
             }
-
-            for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics.getDiagnostics()) {
-                System.out.format("%s, line %d in %s", diagnostic.getMessage(null), diagnostic.getLineNumber(),
-                        diagnostic.getSource().getName());
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Cannot close file manager", e);
         }
     }
 }

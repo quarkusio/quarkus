@@ -116,6 +116,14 @@
     "artifactId": "quarkus-jdbc-postgresql-deployment"
   },
   {
+    "name": "Kotlin",
+    "labels": [
+      "kotlin"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-kotlin-deployment"
+  },
+  {
     "name": "AWS Lambda",
     "labels": [
       "lambda",
@@ -358,5 +366,4 @@
     "groupId": "io.quarkus",
     "artifactId": "quarkus-vertx-deployment"
   }
-
 ]

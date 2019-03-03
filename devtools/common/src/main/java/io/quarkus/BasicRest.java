@@ -5,10 +5,8 @@ import static java.lang.String.format;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
@@ -58,6 +56,8 @@ public class BasicRest extends QuarkusTemplate {
 
             if (className.endsWith(MojoUtils.JAVA_EXTENSION)) {
                 className = className.substring(0, className.length() - MojoUtils.JAVA_EXTENSION.length());
+            } else if (className.endsWith(MojoUtils.KOTLIN_EXTENSION)) {
+                className = className.substring(0, className.length() - MojoUtils.KOTLIN_EXTENSION.length());
             }
 
             if (className.contains(".")) {
@@ -83,12 +83,24 @@ public class BasicRest extends QuarkusTemplate {
     }
 
     private void createClasses() throws IOException {
-        File classFile = new File(srcMain, className + MojoUtils.JAVA_EXTENSION);
-        File testClassFile = new File(testMain, className + "Test" + MojoUtils.JAVA_EXTENSION);
-        File itTestClassFile = new File(testMain, "Native" + className + "IT" + MojoUtils.JAVA_EXTENSION);
-        generate("templates/resource-template.ftl", context, classFile, "resource code");
-        generate("templates/test-resource-template.ftl", context, testClassFile, "test code");
-        generate("templates/native-test-resource-template.ftl", context, itTestClassFile, "IT code");
+        File classFile = new File(srcMain, className + getProperSourceExtension());
+        File testClassFile = new File(testMain, className + "Test" + getProperSourceExtension());
+        File itTestClassFile = new File(testMain, "Native" + className + "IT" + getProperSourceExtension());
+        generate(
+                getSourceType() == SourceType.JAVA
+                        ? "templates/resource-template.ftl"
+                        : "templates/resource-template-kotlin.ftl",
+                context, classFile, "resource code");
+        generate(
+                getSourceType() == SourceType.JAVA
+                        ? "templates/test-resource-template.ftl"
+                        : "templates/test-resource-template-kotlin.ftl",
+                context, testClassFile, "test code");
+        generate(
+                getSourceType() == SourceType.JAVA
+                        ? "templates/native-test-resource-template.ftl"
+                        : "templates/native-test-resource-template-kotlin.ftl",
+                context, itTestClassFile, "IT code");
     }
 
     @SuppressWarnings("unchecked")
@@ -100,7 +112,9 @@ public class BasicRest extends QuarkusTemplate {
         final File pomFile = new File(projectRoot, "pom.xml");
         boolean newProject = !pomFile.exists();
         if (newProject) {
-            generate("templates/pom-template.ftl", context, pomFile, "Unable to generate pom.xml");
+            final String templateName = getSourceType() == SourceType.JAVA ? "templates/pom-template.ftl"
+                    : "templates/pom-template-kotlin.ftl";
+            generate(templateName, context, pomFile, "Unable to generate pom.xml");
         } else {
             final Model model = MojoUtils.readPom(pomFile);
             context.put(PROJECT_GROUP_ID, model.getGroupId());
@@ -111,8 +125,8 @@ public class BasicRest extends QuarkusTemplate {
         className = get("className", null);
         path = get(RESOURCE_PATH, path);
 
-        srcMain = mkdirs(new File(projectRoot, "src/main/java"));
-        testMain = mkdirs(new File(projectRoot, "src/test/java"));
+        srcMain = mkdirs(new File(projectRoot, getSourceType() == SourceType.JAVA ? "src/main/java" : "src/main/kotlin"));
+        testMain = mkdirs(new File(projectRoot, getSourceType() == SourceType.JAVA ? "src/test/java" : "src/test/kotlin"));
 
         return newProject;
     }
@@ -166,5 +180,13 @@ public class BasicRest extends QuarkusTemplate {
             dir.mkdirs();
         }
         return dir;
+    }
+
+    private SourceType getSourceType() {
+        return (SourceType) context.get(SOURCE_TYPE);
+    }
+
+    private String getProperSourceExtension() {
+        return getSourceType() == SourceType.JAVA ? MojoUtils.JAVA_EXTENSION : MojoUtils.KOTLIN_EXTENSION;
     }
 }

@@ -60,6 +60,16 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-development-mode</artifactId>
         </dependency>
+        <!--
+            This is needed in order to install the quarkus-kotlin-deployment artifact
+            before the tests run.
+            This ensures that the kotlin test project that needs it will have it available
+        -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-kotlin-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.apache.maven.shared</groupId>
             <artifactId>maven-artifact-transfer</artifactId>

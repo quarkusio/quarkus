@@ -16,6 +16,8 @@
 
 package io.quarkus.dev;
 
+import static java.util.stream.Collectors.groupingBy;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -23,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -91,7 +94,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
             try (final Stream<Path> sourcesStream = Files.walk(sourcesDir)) {
                 changedSourceFiles = sourcesStream
                         .parallel()
-                        .filter(p -> p.toString().endsWith(".java"))
+                        .filter(p -> matchingHandledExtension(p).isPresent())
                         .filter(p -> wasRecentlyModified(p))
                         .map(Path::toFile)
                         //Needing a concurrent Set, not many standard options:
@@ -104,7 +107,8 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
             log.info("Changes source files detected, recompiling " + changedSourceFiles);
 
             try {
-                compiler.compile(changedSourceFiles);
+                compiler.compile(changedSourceFiles.stream()
+                        .collect(groupingBy(this::getFileExtension, Collectors.toSet())));
             } catch (Exception e) {
                 DevModeMain.deploymentProblem = e;
                 return null;
@@ -126,6 +130,19 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
 
         lastChange = System.currentTimeMillis();
         return changedClasses;
+    }
+
+    private Optional<String> matchingHandledExtension(Path p) {
+        return compiler.allHandledExtensions().stream().filter(e -> p.toString().endsWith(e)).findFirst();
+    }
+
+    private String getFileExtension(File file) {
+        String name = file.getName();
+        int lastIndexOf = name.lastIndexOf(".");
+        if (lastIndexOf == -1) {
+            return ""; // empty extension
+        }
+        return name.substring(lastIndexOf);
     }
 
     private boolean checkForConfigFileChange() {
@@ -167,9 +184,10 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
             if (recent) {
                 return true;
             }
-            if (p.toString().endsWith(".java")) {
+            Optional<String> matchingExtension = matchingHandledExtension(p);
+            if (matchingExtension.isPresent()) {
                 String pathName = sourcesDir.relativize(p).toString();
-                String classFileName = pathName.substring(0, pathName.length() - 5) + ".class";
+                String classFileName = pathName.substring(0, pathName.length() - matchingExtension.get().length()) + ".class";
                 Path classFile = classesDir.resolve(classFileName);
                 if (!Files.exists(classFile)) {
                     return true;

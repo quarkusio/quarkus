@@ -10,6 +10,7 @@ public abstract class QuarkusTemplate {
     public static final String PROJECT_VERSION = "project_version";
     public static final String QUARKUS_VERSION = "quarkus_version";
     public static final String PACKAGE_NAME = "package_name";
+    public static final String SOURCE_TYPE = "source_type";
     public static final String CLASS_NAME = "class_name";
     public static final String RESOURCE_PATH = "path";
 

@@ -36,10 +36,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc-deployment</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-kotlin-deployment</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>

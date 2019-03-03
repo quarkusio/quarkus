@@ -35,6 +35,7 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
 import org.jboss.logging.Logger;
+import org.wildfly.common.net.Inet;
 
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.runtime.BeanContainer;
@@ -287,7 +288,7 @@ public class UndertowDeploymentTemplate {
                     String address;
                     if (l.getAddress() instanceof InetSocketAddress) {
                         InetSocketAddress inetAddress = (InetSocketAddress) l.getAddress();
-                        address = inetAddress.getHostString() + ":" + inetAddress.getPort();
+                        address = Inet.toURLString(inetAddress.getAddress(), true) + ":" + inetAddress.getPort();
                     } else {
                         address = l.getAddress().toString();
                     }

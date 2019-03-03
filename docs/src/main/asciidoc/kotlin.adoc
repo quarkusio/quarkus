@@ -23,7 +23,7 @@ First, we need a new Kotlin project. This can be done using the following comman
 ----
 mvn io.quarkus:quarkus-maven-plugin:${quarkus-version}:create \
     -DprojectGroupId=org.acme \
-    -DprojectArtifactId=rest \
+    -DprojectArtifactId=rest-kotlin \
     -DclassName="org.acme.rest.GreetingResource" \
     -Dpath="/greeting" \
     -Dextensions="kotlin"

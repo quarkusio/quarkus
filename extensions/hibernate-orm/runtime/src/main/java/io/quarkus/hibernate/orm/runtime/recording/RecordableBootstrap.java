@@ -33,7 +33,6 @@ import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
-import org.hibernate.cache.internal.RegionFactoryInitiator;
 import org.hibernate.cfg.Environment;
 import org.hibernate.engine.config.internal.ConfigurationServiceInitiator;
 import org.hibernate.engine.jdbc.batch.internal.BatchBuilderInitiator;
@@ -362,7 +361,6 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
         final Map settingsCopy = new HashMap();
         settingsCopy.putAll(settings);
         settingsCopy.put(org.hibernate.boot.cfgxml.spi.CfgXmlAccessService.LOADED_CONFIG_KEY, aggregatedCfgXml);
-        Environment.verifyProperties(settingsCopy);
         ConfigurationHelper.resolvePlaceHolders(settingsCopy);
 
         return new StandardServiceRegistryImpl(autoCloseRegistry, bootstrapServiceRegistry, initiators,

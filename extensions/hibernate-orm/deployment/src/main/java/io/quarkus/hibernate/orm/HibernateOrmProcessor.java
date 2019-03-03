@@ -127,49 +127,8 @@ public final class HibernateOrmProcessor {
     }
 
     @BuildStep
-    void handleNativeImageImportSql(BuildProducer<SubstrateResourceBuildItem> resources,
-            List<PersistenceUnitDescriptorBuildItem> descriptors) {
-        for (PersistenceUnitDescriptorBuildItem i : descriptors) {
-            //add resources
-            if (i.getDescriptor().getProperties().containsKey("javax.persistence.sql-load-script-source")) {
-                resources.produce(new SubstrateResourceBuildItem(
-                        (String) i.getDescriptor().getProperties().get("javax.persistence.sql-load-script-source")));
-            } else {
-                resources.produce(new SubstrateResourceBuildItem("import.sql"));
-            }
-        }
-    }
-
-    @BuildStep
-    void registerBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans, CombinedIndexBuildItem combinedIndex,
-            List<PersistenceUnitDescriptorBuildItem> descriptors) {
-        additionalBeans.produce(new AdditionalBeanBuildItem(false, JPAConfig.class, TransactionEntityManagers.class,
-                RequestScopedEntityManagerHolder.class));
-
-        if (descriptors.size() == 1) {
-            // There is only one persistence unit - register CDI beans for EM and EMF if no
-            // producers are defined
-            if (isUserDefinedProducerMissing(combinedIndex.getIndex(), PERSISTENCE_UNIT)) {
-                additionalBeans.produce(new AdditionalBeanBuildItem(DefaultEntityManagerFactoryProducer.class));
-            }
-            if (isUserDefinedProducerMissing(combinedIndex.getIndex(), PERSISTENCE_CONTEXT)) {
-                additionalBeans.produce(new AdditionalBeanBuildItem(DefaultEntityManagerProducer.class));
-            }
-        }
-    }
-
-    @BuildStep
-    void setupResourceInjection(BuildProducer<ResourceAnnotationBuildItem> resourceAnnotations, Capabilities capabilities,
-            BuildProducer<GeneratedResourceBuildItem> resources) {
-        resources.produce(new GeneratedResourceBuildItem("META-INF/services/io.quarkus.arc.ResourceReferenceProvider",
-                JPAResourceReferenceProvider.class.getName().getBytes()));
-        resourceAnnotations.produce(new ResourceAnnotationBuildItem(PERSISTENCE_CONTEXT));
-        resourceAnnotations.produce(new ResourceAnnotationBuildItem(PERSISTENCE_UNIT));
-    }
-
-    @BuildStep
     @Record(STATIC_INIT)
-    public BeanContainerListenerBuildItem build(RecorderContext recorder, HibernateOrmTemplate template,
+    public void build(RecorderContext recorder, HibernateOrmTemplate template,
             List<PersistenceUnitDescriptorBuildItem> descItems,
             List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
             List<NonJpaModelBuildItem> nonJpaModelBuildItems,
@@ -177,7 +136,8 @@ public final class HibernateOrmProcessor {
             ApplicationIndexBuildItem applicationIndex,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<JpaEntitiesBuildItems> domainObjectsProducer) throws Exception {
+            BuildProducer<JpaEntitiesBuildItem> domainObjectsProducer,
+            BuildProducer<BeanContainerListenerBuildItem> beanContainerListener) throws Exception {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.HIBERNATE_ORM));
 
@@ -197,16 +157,21 @@ public final class HibernateOrmProcessor {
                 .map(NonJpaModelBuildItem::getClassName)
                 .collect(Collectors.toSet());
         JpaJandexScavenger scavenger = new JpaJandexScavenger(reflectiveClass, descriptors, compositeIndex, nonJpaModelClasses);
-        final JpaEntitiesBuildItems domainObjects = scavenger.discoverModelAndRegisterForReflection();
+        final JpaEntitiesBuildItem domainObjects = scavenger.discoverModelAndRegisterForReflection();
+
+        // remember how to run the enhancers later
+        domainObjectsProducer.produce(domainObjects);
+
+        if (!hasEntities(domainObjects, nonJpaModelBuildItems)) {
+            // we can bail out early
+            return;
+        }
 
         for (String className : domainObjects.getClassNames()) {
             template.addEntity(className);
         }
         template.enlistPersistenceUnit();
         template.callHibernateFeatureInit();
-
-        // remember how to run the enhancers later
-        domainObjectsProducer.produce(domainObjects);
 
         //set up the scanner, as this scanning has already been done we need to just tell it about the classes we
         //have discovered. This scanner is bytecode serializable and is passed directly into the template
@@ -222,11 +187,67 @@ public final class HibernateOrmProcessor {
         //now we serialize the XML and class list to bytecode, to remove the need to re-parse the XML on JVM startup
         recorder.registerNonDefaultConstructor(ParsedPersistenceXmlDescriptor.class.getDeclaredConstructor(URL.class),
                 (i) -> Collections.singletonList(i.getPersistenceUnitRootUrl()));
-        return new BeanContainerListenerBuildItem(template.initMetadata(descriptors, scanner));
+        beanContainerListener.produce(new BeanContainerListenerBuildItem(template.initMetadata(descriptors, scanner)));
     }
 
     @BuildStep
-    public HibernateEnhancersRegisteredBuildItem enhancerDomainObjects(JpaEntitiesBuildItems domainObjects,
+    void handleNativeImageImportSql(BuildProducer<SubstrateResourceBuildItem> resources,
+            List<PersistenceUnitDescriptorBuildItem> descriptors,
+            JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels) {
+        if (!hasEntities(jpaEntities, nonJpaModels)) {
+            return;
+        }
+
+        for (PersistenceUnitDescriptorBuildItem i : descriptors) {
+            //add resources
+            if (i.getDescriptor().getProperties().containsKey("javax.persistence.sql-load-script-source")) {
+                resources.produce(new SubstrateResourceBuildItem(
+                        (String) i.getDescriptor().getProperties().get("javax.persistence.sql-load-script-source")));
+            } else {
+                resources.produce(new SubstrateResourceBuildItem("import.sql"));
+            }
+        }
+    }
+
+    @BuildStep
+    void setupResourceInjection(BuildProducer<ResourceAnnotationBuildItem> resourceAnnotations,
+            BuildProducer<GeneratedResourceBuildItem> resources,
+            JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels) {
+        if (!hasEntities(jpaEntities, nonJpaModels)) {
+            return;
+        }
+
+        resources.produce(new GeneratedResourceBuildItem("META-INF/services/io.quarkus.arc.ResourceReferenceProvider",
+                JPAResourceReferenceProvider.class.getName().getBytes()));
+        resourceAnnotations.produce(new ResourceAnnotationBuildItem(PERSISTENCE_CONTEXT));
+        resourceAnnotations.produce(new ResourceAnnotationBuildItem(PERSISTENCE_UNIT));
+    }
+
+    @BuildStep
+    void registerBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans, CombinedIndexBuildItem combinedIndex,
+            List<PersistenceUnitDescriptorBuildItem> descriptors,
+            JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels) {
+        if (!hasEntities(jpaEntities, nonJpaModels)) {
+            return;
+        }
+
+        additionalBeans.produce(new AdditionalBeanBuildItem(false, JPAConfig.class, TransactionEntityManagers.class,
+                RequestScopedEntityManagerHolder.class));
+
+        if (descriptors.size() == 1) {
+            // There is only one persistence unit - register CDI beans for EM and EMF if no
+            // producers are defined
+            if (isUserDefinedProducerMissing(combinedIndex.getIndex(), PERSISTENCE_UNIT)) {
+                additionalBeans.produce(new AdditionalBeanBuildItem(DefaultEntityManagerFactoryProducer.class));
+            }
+            if (isUserDefinedProducerMissing(combinedIndex.getIndex(), PERSISTENCE_CONTEXT)) {
+                additionalBeans.produce(new AdditionalBeanBuildItem(DefaultEntityManagerProducer.class));
+            }
+        }
+    }
+
+    @BuildStep
+    public HibernateEnhancersRegisteredBuildItem enhancerDomainObjects(JpaEntitiesBuildItem domainObjects,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
             BuildProducer<GeneratedClassBuildItem> additionalClasses) {
@@ -240,7 +261,11 @@ public final class HibernateOrmProcessor {
     @Record(STATIC_INIT)
     public void build(HibernateOrmTemplate template,
             Capabilities capabilities, BuildProducer<BeanContainerListenerBuildItem> buildProducer,
-            List<PersistenceUnitDescriptorBuildItem> descriptors) throws Exception {
+            List<PersistenceUnitDescriptorBuildItem> descriptors,
+            JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels) throws Exception {
+        if (!hasEntities(jpaEntities, nonJpaModels)) {
+            return;
+        }
 
         buildProducer.produce(new BeanContainerListenerBuildItem(
                 template.initializeJpa(capabilities.isCapabilityPresent(Capabilities.TRANSACTIONS))));
@@ -255,8 +280,17 @@ public final class HibernateOrmProcessor {
     @BuildStep
     @Record(RUNTIME_INIT)
     public void startPersistenceUnits(HibernateOrmTemplate template, BeanContainerBuildItem beanContainer,
-            Optional<DataSourceInitializedBuildItem> dataSourceInitialized) throws Exception {
+            Optional<DataSourceInitializedBuildItem> dataSourceInitialized,
+            JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels) throws Exception {
+        if (!hasEntities(jpaEntities, nonJpaModels)) {
+            return;
+        }
+
         template.startAllPersistenceUnits(beanContainer.getValue());
+    }
+
+    private boolean hasEntities(JpaEntitiesBuildItem jpaEntities, List<NonJpaModelBuildItem> nonJpaModels) {
+        return !jpaEntities.getClassNames().isEmpty() || !nonJpaModels.isEmpty();
     }
 
     private boolean isUserDefinedProducerMissing(IndexView index, DotName annotationName) {
@@ -372,7 +406,7 @@ public final class HibernateOrmProcessor {
         throw new ConfigurationError(error);
     }
 
-    private void enhanceEntities(final JpaEntitiesBuildItems domainObjects,
+    private void enhanceEntities(final JpaEntitiesBuildItem domainObjects,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
             BuildProducer<GeneratedClassBuildItem> additionalClasses) {

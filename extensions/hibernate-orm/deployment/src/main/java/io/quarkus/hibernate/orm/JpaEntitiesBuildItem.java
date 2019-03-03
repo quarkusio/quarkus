@@ -28,7 +28,7 @@ import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
  * Internal model to represent which objects are likely needing enhancement
  * via HibernateEntityEnhancer.
  */
-public final class JpaEntitiesBuildItems extends SimpleBuildItem {
+public final class JpaEntitiesBuildItem extends SimpleBuildItem {
 
     private final Set<String> classNames = new HashSet<String>();
 

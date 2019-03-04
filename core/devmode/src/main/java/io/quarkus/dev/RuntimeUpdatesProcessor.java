@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.devmode.HotReplacementContext;
+import io.quarkus.runtime.Timing;
 
 public class RuntimeUpdatesProcessor implements HotReplacementContext {
 
@@ -78,13 +79,13 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext {
     }
 
     public void doScan() throws IOException {
-        final long start = System.currentTimeMillis();
+        final long startNanoseconds = System.nanoTime();
         final ConcurrentMap<String, byte[]> changedClasses = scanForChangedClasses();
         if (changedClasses == null)
             return;
 
         DevModeMain.restartApp();
-        log.info("Hot replace total time: " + (System.currentTimeMillis() - start) + "ms");
+        log.infof("Hot replace total time: %ss ", Timing.convertToBigDecimalSeconds(System.nanoTime() - startNanoseconds));
     }
 
     ConcurrentMap<String, byte[]> scanForChangedClasses() throws IOException {

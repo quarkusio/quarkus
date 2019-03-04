@@ -82,7 +82,7 @@ public class Timing {
         logger.infof("Quarkus stopped in %ss", secondsRepresentation);
     }
 
-    private static BigDecimal convertToBigDecimalSeconds(final long timeNanoSeconds) {
+    public static BigDecimal convertToBigDecimalSeconds(final long timeNanoSeconds) {
         final BigDecimal secondsRepresentation=BigDecimal.valueOf(timeNanoSeconds) // As nanoseconds
         .divide(BigDecimal.valueOf(1_000_000),BigDecimal.ROUND_HALF_UP) // Convert to milliseconds, discard remaining digits while rounding
         .divide(BigDecimal.valueOf(1_000),3,BigDecimal.ROUND_HALF_UP); // Convert to seconds, while preserving 3 digits

@@ -14,9 +14,9 @@ secured access to the JAX-RS endpoints.
 |quarkus.jwt.realm-name|Quarkus-JWT|Name to use for security realm.
 |quarkus.jwt.auth-mechanism|MP-JWT|Name to use for authentication mechanism
 |mp.jwt.verify.publickey|none|The `mp.jwt.verify.publickey` config property allows the Public Key text itself to be supplied as a string.  The Public Key will be parsed from the supplied string in the order defined in section <<Supported Public Key Formats>>.
-|mp.jwt.verify.publickey.location|none|onfig property allows for an external or internal location of Public Key to be specified.  The value may be a relative path or a URL.
-|mp.jwt.verify.issuer|none|config property specifies for the expected value of the `iss`
-                           claim of the JWT to be specified. This match is required for JWT validation.
+|mp.jwt.verify.publickey.location|none|Config property allows for an external or internal location of Public Key to be specified.  The value may be a relative path or a URL.
+|mp.jwt.verify.issuer|none|Config property specifies for the value of the `iss` (issuer)
+                           claim of the JWT that the server will accept as valid.
 |===
 
 === Supported Public Key Formats
@@ -35,9 +35,9 @@ precedence:
 We recommend that you follow the instructions in the next sections and create the application step by step.
 However, you can skip right to the completed example.
 
-Clone the Git repository: `git clone `, or download an {quickstart-url}/archive/master.zip[archive].
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}/archive/master.zip[archive].
 
-The solution is located in the `using-jwt-rbac` {quickstart-url}[directory].
+The solution is located in the `using-jwt-rbac` {quickstarts-archive-url}[directory].
 
 == Creating the Maven project
 
@@ -288,7 +288,7 @@ but we are making it explicit.
 === Adding a Public Key
 
 The https://tools.ietf.org/html/rfc7519[JWT specification] defines various levels of security of JWTs that one can use.
-The {mp-jwt} specification requires that its JWTs utility signed tokens that use RSA-256 as the signature algorithm. This in
+The {mp-jwt} specification requires that JWTs that are signed with the RSA-256 signature algorithm. This in
 turn requires a RSA public key pair. On the REST endpoint server side, you need to configure the location of the RSA public
 key to use to verify the JWT sent along with requests. The `mp.jwt.verify.publickey.location=publicKey.pem` setting configured
 previously expects that the public key is available on the classpath as `publicKey.pem`. To accomplish this, copy the following
@@ -675,8 +675,8 @@ Now we can generate a JWT to use with `TokenSecuredResource` endpoint. To do thi
 mvn exec:java -Dexec.mainClass=org.acme.jwt.GenerateToken -Dexec.classpathScope=test
 ----
 
-TIP: You may need to run `mvn test-compile` before this if your working strictly from the command line and not an IDE that
-automatically compiles code and you write it.
+TIP: You may need to run `mvn test-compile` before this if you are working strictly from the command line and not an IDE that
+automatically compiles code as you write it.
 
 .Sample JWT Generation Output
 [source, bash]
@@ -867,7 +867,7 @@ a new JWT or a long lived JWT you generated previously:
 curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:8080/secured/winners; echo
 ----
 
-Example output using my generated token is shown in the follow. Note that the first pick corresponds to the day of month of
+Example output using my generated token is shown in the following example output. Note that the first pick corresponds to the day of month of
 the birthdate claim from the `JwtClaims.json` content.
 
 .Example Output for /secured/winners
@@ -970,7 +970,7 @@ Scotts-iMacPro:using-jwt-rbac starksm$ curl -H "Authorization: Bearer eyJraWQiOi
 
 == Explore the Solution
 
-The solution repository located in the `using-jwt-rbac` {quickstart-url}[directory] contains all of the versions we have
+The solution repository located in the `using-jwt-rbac` {quickstarts-archive-url}[directory] contains all of the versions we have
 worked through in this quickstart guide as well as some additional endpoints that illustrate subresources with injection
 of `JsonWebToken`s and its claims into those using the CDI APIs. We suggest that you check out the quickstart solutions and
-explore the `using-jwt-rbac` to learn more about the {extension-name} extension features.
+explore the `using-jwt-rbac` directory to learn more about the {extension-name} extension features.

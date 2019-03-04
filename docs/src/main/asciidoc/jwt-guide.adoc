@@ -5,7 +5,7 @@
 This guide explains how your {project-name} application can utilize {mp-jwt} to provide
 secured access to the JAX-RS endpoints.
 
-## Configuration
+== Configuration
 
 [cols="<m,<m,<2",options="header"]
 |===
@@ -15,11 +15,11 @@ secured access to the JAX-RS endpoints.
 |quarkus.jwt.auth-mechanism|MP-JWT|Name to use for authentication mechanism
 |mp.jwt.verify.publickey|none|The `mp.jwt.verify.publickey` config property allows the Public Key text itself to be supplied as a string.  The Public Key will be parsed from the supplied string in the order defined in section <<Supported Public Key Formats>>.
 |mp.jwt.verify.publickey.location|none|onfig property allows for an external or internal location of Public Key to be specified.  The value may be a relative path or a URL.
-|mp.jwt.verify.issuer|none|config property allows for the expected value of the `iss`
-                           claim to be specified.
+|mp.jwt.verify.issuer|none|config property specifies for the expected value of the `iss`
+                           claim of the JWT to be specified. This match is required for JWT validation.
 |===
 
-### Supported Public Key Formats
+=== Supported Public Key Formats
 
 Public Keys may be formatted in any of the following formats, specified in order of
 precedence:
@@ -155,9 +155,6 @@ Scotts-iMacPro:using-jwt-rbac starksm$ mvn compile quarkus:dev
 ...
 Listening for transport dt_socket at address: 5005
 2019-03-03 07:23:06,988 INFO  [io.qua.dep.QuarkusAugmentor] (main) Beginning quarkus augmentation
-2019-03-03 07:23:07,235 INFO  [io.qua.arc.pro.BeanProcessor] (build-11) Found unrecommended usage of private members (use package-private instead) in application beans:
-	- @Inject field org.acme.jwt.LottoNumbersResource#birthdate,
-	- @Inject field org.acme.jwt.LottoNumbersResource#jwt
 2019-03-03 07:23:07,328 INFO  [io.qua.dep.QuarkusAugmentor] (main) Quarkus augmentation completed in 340ms
 2019-03-03 07:23:07,493 INFO  [io.quarkus] (main) Quarkus 1.0.0.Alpha1-SNAPSHOT started in 0.769s. Listening on: http://127.0.0.1:8080
 2019-03-03 07:23:07,493 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jsonb, security, smallrye-jwt]
@@ -172,7 +169,8 @@ Scotts-iMacPro:using-jwt-rbac starksm$ curl http://127.0.0.1:8080/secured/permit
 hello + anonymous, isSecure: false, authScheme: null, hasJWT: false
 ----
 
-We have not provided any JWT in our request, so we would not expect that there is any security state seen by the endpoint, and the response is consistent with that:
+We have not provided any JWT in our request, so we would not expect that there is any security state seen by the endpoint, and
+the response is consistent with that:
 
 * user name is anonymous
 * isSecure is false as https is not used
@@ -236,7 +234,8 @@ public class TokenSecuredResource {
 }
 ----
 <1> This new endpoint will be located at /secured/roles-allowed
-<2> @RolesAllowed is a JSR 250 common security annotation that indicates that the given endpoint is accessible by a caller if they have either a "Echoer" or "Subscriber" role assigned.
+<2> @RolesAllowed is a JSR 250 common security annotation that indicates that the given endpoint is accessible by a caller if
+they have either a "Echoer" or "Subscriber" role assigned.
 
 After you make this addition to your `TokenSecuredResource`, rerun the `mvn compile quarkus:dev` command, and then try `curl -v http://127.0.0.1:8080/secured/roles-allowed; echo` to attempt to access the new endpoint. Your output should be:
 
@@ -309,7 +308,7 @@ nQIDAQAB
 -----END PUBLIC KEY-----
 ----
 
-== Generating a JWT
+=== Generating a JWT
 
 Often one obtains a JWT from an identity manager like https://www.keycloak.org/[Keycloak], but for this quickstart we will generate our own using the
 https://bitbucket.org/connect2id/nimbus-jose-jwt/wiki/Home[Nimbus JOSE+JWT] library and the TokenUtils class shown in the following listing. Take this source and place it into using-jwt-rbac/src/test/java/org/acme/jwt/TokenUtils.java.
@@ -523,21 +522,47 @@ package org.acme.jwt;
 
 import java.util.HashMap;
 
+import org.eclipse.microprofile.jwt.Claims;
+
 /**
  * A simple utility class to generate and print a JWT token string to stdout. Can be run with:
  * mvn exec:java -Dexec.mainClass=org.acme.jwt.GenerateToken -Dexec.classpathScope=test
  */
 public class GenerateToken {
+    /**
+     *
+     * @param args - [0]: optional name of classpath resource for json document of claims to add; defaults to "/JwtClaims.json"
+     *             [1]: optional time in seconds for expiration of generated token; defaults to 300
+     * @throws Exception
+     */
     public static void main(String[] args) throws Exception {
-        String claimsJson = "/Claims1.json";
+        String claimsJson = "/JwtClaims.json";
         if (args.length > 0) {
             claimsJson = args[0];
         }
         HashMap<String, Long> timeClaims = new HashMap<>();
+        if (args.length > 1) {
+            long duration = Long.parseLong(args[1]);
+            long exp = TokenUtils.currentTimeInSecs() + duration;
+            timeClaims.put(Claims.exp.name(), exp);
+        }
         String token = TokenUtils.generateTokenString(claimsJson, timeClaims);
         System.out.println(token);
     }
 }
+----
+
+To get these classes to compile and run, you need to add the following dependency to your using-jwt-rbac/pom.xml:
+
+.nimbus-jose-jwt library dependency
+[source, xml]
+----
+    <dependency>
+      <groupId>com.nimbusds</groupId>
+      <artifactId>nimbus-jose-jwt</artifactId>
+      <version>6.7</version>
+      <scope>test</scope>
+    </dependency>
 ----
 
 Now we need the content of the RSA private key that corresponds to the public key we have in the TokenSecuredResource application. Take the following PEM content and place it into using-jwt-rbac/src/test/resources/privateKey.pem.
@@ -575,10 +600,11 @@ f3cg+fr8aou7pr9SHhJlZCU=
 -----END PRIVATE KEY-----
 ----
 
-And finally, we need to define what claims to include in the JWT. The `TokenUtils` class uses a json resource on the classpath to define the non-time sensitive claims, so take the content from the following listing and place it into
-using-jwt-rbac/src/test/resources/Claims1.json:
+And finally, we need to define what claims to include in the JWT. The `TokenUtils` class uses a json resource on the classpath
+to define the non-time sensitive claims, so take the content from the following listing and place it into
+using-jwt-rbac/src/test/resources/JwtClaims.json:
 
-.MP-JWT claims document
+.JwtClaims.json claims document
 [source, json]
 ----
 {
@@ -602,6 +628,45 @@ using-jwt-rbac/src/test/resources/Claims1.json:
 }
 ----
 
+Let's explore the content of this document in more detail to understand how the claims will affect our application security.
+
+.JwtClaims.json claims document
+[source, json, linenums, highlight="2,6,10,14"]
+----
+{
+    "iss": "https://quarkus.io/using-jwt-rbac", <1>
+    "jti": "a-123",
+    "sub": "jdoe-using-jwt-rbac",
+    "upn": "jdoe@quarkus.io", <2>
+    "preferred_username": "jdoe",
+    "aud": "using-jwt-rbac",
+    "birthdate": "2001-07-13",
+    "roleMappings": { <3>
+        "group1": "Group1MappedRole",
+        "group2": "Group2MappedRole"
+    },
+    "groups": [ <4>
+        "Echoer",
+        "Tester",
+        "Subscriber",
+        "group2"
+    ]
+}
+----
+<1> The `iss` claim is the issuer of the JWT. This needs to match the server side `mp.jwt.verify.issuer`
+in order for the token to be accepted as valid.
+<2> The `upn` claim is defined by the {mp-jwt} spec as preferred claim to use for the
+`Principal` seen via the container security APIs.
+<3> The `roleMappings` claim can be used to map from a role defined in the `groups` claim
+to an application level role defined in a `@RolesAllowed` annotation. We won't use this
+feature in this quickstart, but it can be useful when the IDM providing the token has
+roles that do not directly align with those defined by the application.
+<4> The `group` claim provides the groups and top-level roles associated with the JWT bearer.
+In this quickstart we are only using the top-level role mapping which means the JWT will
+be seen to have the roles "Echoer", "Tester", "Subscriber" and "group2". The full set of roles would
+also include a "Group2MappedRole" due to the `roleMappings` claim having a mapping from
+"group2" to "Group2MappedRole".
+
 Now we can generate a JWT to use with `TokenSecuredResource` endpoint. To do this, run the following command:
 
 .Command to Generate JWT
@@ -609,6 +674,9 @@ Now we can generate a JWT to use with `TokenSecuredResource` endpoint. To do thi
 ----
 mvn exec:java -Dexec.mainClass=org.acme.jwt.GenerateToken -Dexec.classpathScope=test
 ----
+
+TIP: You may need to run `mvn test-compile` before this if your working strictly from the command line and not an IDE that
+automatically compiles code and you write it.
 
 .Sample JWT Generation Output
 [source, bash]
@@ -622,30 +690,287 @@ Scotts-iMacPro:using-jwt-rbac starksm$ mvn exec:java -Dexec.mainClass=org.acme.j
 Downloading from jboss: https://repository.jboss.org/nexus/content/groups/public/net/minidev/json-smart/maven-metadata.xml
 [INFO]
 [INFO] --- exec-maven-plugin:1.6.0:java (default-cli) @ using-jwt-rbac ---
-eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJqZG9lLXVzaW5nLWp3dC1yYmFjIiwiYXVkIjoidXNpbmctand0LXJiYWMiLCJ1cG4iOiJqZG9lQHF1YXJrdXMuaW8iLCJiaXJ0aGRhdGUiOiIyMDAxLTA3LTEzIiwiYXV0aF90aW1lIjoxNTUxNjUyMDkxLCJpc3MiOiJodHRwczpcL1wvcXVhcmt1cy5pb1wvdXNpbmctand0LXJiYWMiLCJyb2xlTWFwcGluZ3MiOnsiZ3JvdXAyIjoiR3JvdXAyTWFwcGVkUm9sZSIsImdyb3VwMSI6Ikdyb3VwMU1hcHBlZFJvbGUifSwiZ3JvdXBzIjpbIkVjaG9lciIsIlRlc3RlciIsIlN1YnNjcmliZXIiLCJncm91cDIiXSwicHJlZmVycmVkX3VzZXJuYW1lIjoiamRvZSIsImV4cCI6MTU1MTY1MjM5MSwiaWF0IjoxNTUxNjUyMDkxLCJqdGkiOiJhLTEyMyJ9.aPA4Rlc4kw7n_OZZRRk25xZydJy_J_3BRR8ryYLyHTO1o68_aNWWQCgpnAuOW64svPhPnLYYnQzK-l2vHX34B64JySyBD4y_vRObGmdwH_SEufBAWZV7mkG3Y4mTKT3_4EWNu4VH92IhdnkGI4GJB6yHAEzlQI6EdSOa4Nq8Gp4uPGqHsUZTJrA3uIW0TbNshFBm47-oVM3ZUrBz57JKtr0e9jv0HjPQWyvbzx1HuxZd6eA8ow8xzvooKXFxoSFCMnxotd3wagvYQ9ysBa89bgzL-lhjWtusuMFDUVYwFqADE7oOSOD4Vtclgq8svznBQ-YpfTHfb9QEcofMlpyjNA
+Setting exp: 1551659976 / Sun Mar 03 16:39:36 PST 2019
+	Added claim: sub, value: jdoe-using-jwt-rbac
+	Added claim: aud, value: [using-jwt-rbac]
+	Added claim: upn, value: jdoe@quarkus.io
+	Added claim: birthdate, value: 2001-07-13
+	Added claim: auth_time, value: 1551659676
+	Added claim: iss, value: https://quarkus.io/using-jwt-rbac
+	Added claim: roleMappings, value: {"group2":"Group2MappedRole","group1":"Group1MappedRole"}
+	Added claim: groups, value: ["Echoer","Tester","Subscriber","group2"]
+	Added claim: preferred_username, value: jdoe
+	Added claim: exp, value: Sun Mar 03 16:39:36 PST 2019
+	Added claim: iat, value: Sun Mar 03 16:34:36 PST 2019
+	Added claim: jti, value: a-123
+eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJqZG9lLXVzaW5nLWp3dC1yYmFjIiwiYXVkIjoidXNpbmctand0LXJiYWMiLCJ1cG4iOiJqZG9lQHF1YXJrdXMuaW8iLCJiaXJ0aGRhdGUiOiIyMDAxLTA3LTEzIiwiYXV0aF90aW1lIjoxNTUxNjU5Njc2LCJpc3MiOiJodHRwczpcL1wvcXVhcmt1cy5pb1wvdXNpbmctand0LXJiYWMiLCJyb2xlTWFwcGluZ3MiOnsiZ3JvdXAyIjoiR3JvdXAyTWFwcGVkUm9sZSIsImdyb3VwMSI6Ikdyb3VwMU1hcHBlZFJvbGUifSwiZ3JvdXBzIjpbIkVjaG9lciIsIlRlc3RlciIsIlN1YnNjcmliZXIiLCJncm91cDIiXSwicHJlZmVycmVkX3VzZXJuYW1lIjoiamRvZSIsImV4cCI6MTU1MTY1OTk3NiwiaWF0IjoxNTUxNjU5Njc2LCJqdGkiOiJhLTEyMyJ9.O9tx_wNNS4qdpFhxeD1e7v4aBNWz1FCq0UV8qmXd7dW9xM4hA5TO-ZREk3ApMrL7_rnX8z81qGPIo_R8IfHDyNaI1SLD56gVX-NaOLS2OjfcbO3zOWJPKR_BoZkYACtMoqlWgIwIRC-wJKUJU025dHZiNL0FWO4PjwuCz8hpZYXIuRscfFhXKrDX1fh3jDhTsOEFfu67ACd85f3BdX9pe-ayKSVLh_RSbTbBPeyoYPE59FW7H5-i8IE-Gqu838Hz0i38ksEJFI25eR-AJ6_PSUD0_-TV3NjXhF3bFIeT4VSaIZcpibekoJg0cQm-4ApPEcPLdgTejYHA-mupb8hSwg
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
 [INFO] ------------------------------------------------------------------------
-[INFO] Total time: 1.849 s
-[INFO] Finished at: 2019-03-03T12:27:51-08:00
+[INFO] Total time: 1.682 s
+[INFO] Finished at: 2019-03-03T16:34:36-08:00
 [INFO] ------------------------------------------------------------------------
 ----
 
 The JWT string is the base64 encoded string that has 3 parts separated by '.' characters:
 `eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJqZG9lLXVzaW5nLWp3dC1yYmFjIiwiYXVkIjoidXNpbmctand0LXJiYWMiLCJ1cG4iOiJqZG9lQHF1YXJrdXMuaW8iLCJiaXJ0aGRhdGUiOiIyMDAxLTA3LTEzIiwiYXV0aF90aW1lIjoxNTUxNjUyMDkxLCJpc3MiOiJodHRwczpcL1wvcXVhcmt1cy5pb1wvdXNpbmctand0LXJiYWMiLCJyb2xlTWFwcGluZ3MiOnsiZ3JvdXAyIjoiR3JvdXAyTWFwcGVkUm9sZSIsImdyb3VwMSI6Ikdyb3VwMU1hcHBlZFJvbGUifSwiZ3JvdXBzIjpbIkVjaG9lciIsIlRlc3RlciIsIlN1YnNjcmliZXIiLCJncm91cDIiXSwicHJlZmVycmVkX3VzZXJuYW1lIjoiamRvZSIsImV4cCI6MTU1MTY1MjM5MSwiaWF0IjoxNTUxNjUyMDkxLCJqdGkiOiJhLTEyMyJ9.aPA4Rlc4kw7n_OZZRRk25xZydJy_J_3BRR8ryYLyHTO1o68_aNWWQCgpnAuOW64svPhPnLYYnQzK-l2vHX34B64JySyBD4y_vRObGmdwH_SEufBAWZV7mkG3Y4mTKT3_4EWNu4VH92IhdnkGI4GJB6yHAEzlQI6EdSOa4Nq8Gp4uPGqHsUZTJrA3uIW0TbNshFBm47-oVM3ZUrBz57JKtr0e9jv0HjPQWyvbzx1HuxZd6eA8ow8xzvooKXFxoSFCMnxotd3wagvYQ9ysBa89bgzL-lhjWtusuMFDUVYwFqADE7oOSOD4Vtclgq8svznBQ-YpfTHfb9QEcofMlpyjNA`
 
-Now let's use this to make a secured request to the secured/roles-allowed endpoint. Make sure you have the {project-name} server running using the `mvn compile quarkus:dev` command, and then run the following command, making sure to use your version of the generated JWT from the previous step:
+If you start playing around with the code and/or the solution code, you will only be able
+to use a given token for 5-6 minutes because that is the default expiration period + grace period. To use
+a longer expiration, pass in the lifetime of the token in seconds as the second argument to the `GenerateToken` class using
+`-Dexec.args=...`. The first argument is the classpath resource name of the json document containing the claims to add to
+the JWT, and should be '/JwtClaims.json' for this quickstart.
+
+.Example Command to Generate JWT with Lifetime of 3600 Seconds
+[source, bash]
+----
+Scotts-iMacPro:using-jwt-rbac starksm$ mvn exec:java -Dexec.mainClass=org.acme.jwt.GenerateToken -Dexec.classpathScope=test -Dexec.args="/JwtClaims.json 3600"
+[INFO] Scanning for projects...
+[INFO]
+[INFO] ----------------------< org.acme:using-jwt-rbac >-----------------------
+[INFO] Building using-jwt-rbac 1.0-SNAPSHOT
+[INFO] --------------------------------[ jar ]---------------------------------
+Downloading from jboss: https://repository.jboss.org/nexus/content/groups/public/net/minidev/json-smart/maven-metadata.xml
+[INFO]
+[INFO] --- exec-maven-plugin:1.6.0:java (default-cli) @ using-jwt-rbac ---
+Setting exp: 1551663155 / Sun Mar 03 17:32:35 PST 2019
+	Added claim: sub, value: jdoe-using-jwt-rbac
+	Added claim: aud, value: [using-jwt-rbac]
+	Added claim: upn, value: jdoe@quarkus.io
+	Added claim: birthdate, value: 2001-07-13
+	Added claim: auth_time, value: 1551659555
+	Added claim: iss, value: https://quarkus.io/using-jwt-rbac
+	Added claim: roleMappings, value: {"group2":"Group2MappedRole","group1":"Group1MappedRole"}
+	Added claim: groups, value: ["Echoer","Tester","Subscriber","group2"]
+	Added claim: preferred_username, value: jdoe
+	Added claim: exp, value: Sun Mar 03 17:32:35 PST 2019
+	Added claim: iat, value: Sun Mar 03 16:32:35 PST 2019
+	Added claim: jti, value: a-123
+eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJqZG9lLXVzaW5nLWp3dC1yYmFjIiwiYXVkIjoidXNpbmctand0LXJiYWMiLCJ1cG4iOiJqZG9lQHF1YXJrdXMuaW8iLCJiaXJ0aGRhdGUiOiIyMDAxLTA3LTEzIiwiYXV0aF90aW1lIjoxNTUxNjU5NTU1LCJpc3MiOiJodHRwczpcL1wvcXVhcmt1cy5pb1wvdXNpbmctand0LXJiYWMiLCJyb2xlTWFwcGluZ3MiOnsiZ3JvdXAyIjoiR3JvdXAyTWFwcGVkUm9sZSIsImdyb3VwMSI6Ikdyb3VwMU1hcHBlZFJvbGUifSwiZ3JvdXBzIjpbIkVjaG9lciIsIlRlc3RlciIsIlN1YnNjcmliZXIiLCJncm91cDIiXSwicHJlZmVycmVkX3VzZXJuYW1lIjoiamRvZSIsImV4cCI6MTU1MTY2MzE1NSwiaWF0IjoxNTUxNjU5NTU1LCJqdGkiOiJhLTEyMyJ9.QUfvHUstBHySis40QjecA7GbNEhM_kNWPRvgT7RShqIRJxr3A3pC3uO1p6Swx-7qiR21YYmGM3-hgXJPky-dKSGye_aLOXbNsqBn8RYmrrzFIlhtkZPhdqY60wYoMC4zk13oZKozUeVr5F-tLKtkXxoTQT1QWYH0YLk5BhpD1uJVpF8jiPk-CiLBn36Qee6cS2nBW1s7e2amnzgROeLAR5f1TQYPFHA9ULK9OxXq4ciMciwC_BCIykyR0pkBHhhhGjMcTxvwNMq6zRTwMGxvz-IZ53Gi8P_gl8ntT_NAJ5gd4RTmeqbWDFcrjBsCDRN92ixH50q_XDrcOs-s9800Gw
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 1.685 s
+[INFO] Finished at: 2019-03-03T16:32:35-08:00
+[INFO] ------------------------------------------------------------------------
+----
+
+
+== Finally, Secured Access to /secured/roles-allowed
+Now let's use this to make a secured request to the /secured/roles-allowed endpoint. Make sure you have the {project-name} server running using the `mvn compile quarkus:dev` command, and then run the following command, making sure to use your version of the generated JWT from the previous step:
 
 [source, bash]
 ----
 curl -H "Authorization: Bearer eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJqZG9lLXVzaW5nLWp3dC1yYmFjIiwiYXVkIjoidXNpbmctand0LXJiYWMiLCJ1cG4iOiJqZG9lQHF1YXJrdXMuaW8iLCJiaXJ0aGRhdGUiOiIyMDAxLTA3LTEzIiwiYXV0aF90aW1lIjoxNTUxNjUyMDkxLCJpc3MiOiJodHRwczpcL1wvcXVhcmt1cy5pb1wvdXNpbmctand0LXJiYWMiLCJyb2xlTWFwcGluZ3MiOnsiZ3JvdXAyIjoiR3JvdXAyTWFwcGVkUm9sZSIsImdyb3VwMSI6Ikdyb3VwMU1hcHBlZFJvbGUifSwiZ3JvdXBzIjpbIkVjaG9lciIsIlRlc3RlciIsIlN1YnNjcmliZXIiLCJncm91cDIiXSwicHJlZmVycmVkX3VzZXJuYW1lIjoiamRvZSIsImV4cCI6MTU1MTY1MjM5MSwiaWF0IjoxNTUxNjUyMDkxLCJqdGkiOiJhLTEyMyJ9.aPA4Rlc4kw7n_OZZRRk25xZydJy_J_3BRR8ryYLyHTO1o68_aNWWQCgpnAuOW64svPhPnLYYnQzK-l2vHX34B64JySyBD4y_vRObGmdwH_SEufBAWZV7mkG3Y4mTKT3_4EWNu4VH92IhdnkGI4GJB6yHAEzlQI6EdSOa4Nq8Gp4uPGqHsUZTJrA3uIW0TbNshFBm47-oVM3ZUrBz57JKtr0e9jv0HjPQWyvbzx1HuxZd6eA8ow8xzvooKXFxoSFCMnxotd3wagvYQ9ysBa89bgzL-lhjWtusuMFDUVYwFqADE7oOSOD4Vtclgq8svznBQ-YpfTHfb9QEcofMlpyjNA" http://127.0.0.1:8080/secured/roles-allowed; echo
 ----
 
+.curl Command for /secured/roles-allowed With JWT
 [source, bash]
 ----
 Scotts-iMacPro:using-jwt-rbac starksm$ curl -H "Authorization: Bearer eyJraWQ..." http://127.0.0.1:8080/secured/roles-allowed; echo
 hello + jdoe@quarkus.io, isSecure: false, authScheme: MP-JWT, hasJWT: true
 ----
 
-Success!
+Success! We now have:
 
+* a non-anonymous caller name of jdoe@quarkus.io
+* an authentication scheme of MP-JWT
+* a non-null JsonWebToken
+
+== Using the JsonWebToken and Claim Injection
+
+Now that we can generate a JWT to access our secured REST endpoints, let's see what more we can do with the `JsonWebToken`
+interface and the JWT claims. The `org.eclipse.microprofile.jwt.JsonWebToken` interface extends the `java.security.Principal`
+interface, and is in fact the type of the object that is returned by the `javax.ws.rs.core.SecurityContext#getUserPrincipal()` call we
+used previously. This means that code that does not use CDI but does have access to the REST container `SecurityContext` can get
+hold of the caller `JsonWebToken` interface by casting the `SecurityContext#getUserPrincipal()`.
+
+The `JsonWebToken` interface defines methods for accessing claims in the underlying JWT. It provides accessors for common
+claims that are required by the {mp-jwt} specification as well as arbitrary claims that may exist in the JWT.
+
+Let's expand our `TokenSecuredResource` with another endpoint /secured/winners. The `winners()` method, some hypothetical lottery
+ winning number generator, whose code is shown in the following list:
+
+.TokenSecuredResource#winners Method Addition
+[source, java]
+----
+package org.acme.jwt;
+
+import java.security.Principal;
+import java.time.LocalDate;
+import java.util.ArrayList;
+
+import javax.annotation.security.PermitAll;
+import javax.annotation.security.RolesAllowed;
+import javax.inject.Inject;
+import javax.json.JsonString;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.SecurityContext;
+
+import org.eclipse.microprofile.jwt.Claims;
+import org.eclipse.microprofile.jwt.JsonWebToken;
+
+
+/**
+ * Version 3 of the TokenSecuredResource
+ */
+ @Path("/secured")
+ public class TokenSecuredResourceV3 {
+
+     @Inject
+     JsonWebToken jwt;
+
+...
+
+    @GET
+    @Path("winners")
+    @Produces(MediaType.TEXT_PLAIN)
+    @RolesAllowed("Subscriber")
+    public String winners() {
+        int remaining = 6;
+        ArrayList<Integer> numbers = new ArrayList<>();
+
+        // If the JWT contains a birthdate claim, use the day of the month as a pick
+        if (jwt.containsClaim(Claims.birthdate.name())) { // <1>
+            String bdayString = jwt.getClaim(Claims.birthdate.name()); // <2>
+            LocalDate bday = LocalDate.parse(bdayString);
+            numbers.add(bday.getDayOfMonth()); // <3>
+            remaining --;
+        }
+        // Fill remaining picks with random numbers
+        while(remaining > 0) { // <4>
+            int pick = (int) Math.rint(64 * Math.random() + 1);
+            numbers.add(pick);
+            remaining --;
+        }
+        return numbers.toString();
+    }
+}
+----
+<1> Here we use the injected `JsonWebToken` to check for a `birthday` claim.
+<2> If it exists, we obtain the claim value as a `String`, and then convert it to a `LocalDate`.
+<3> The day of month value of the `birthday` claim is inserted as the first winning number pick.
+<4> The remainder of the winning number picks are random numbers.
+
+This illustrates how you can use the JWT to not only provide identity and role based authorization, but as a stateless container
+of information associated with the authenticated caller that can be used to alter you business method logic.
+Add this `winners` method to your `TokenSecuredResource` code, and run the following command, replacing _YOUR_TOKEN_ with
+a new JWT or a long lived JWT you generated previously:
+
+.curl command for /secured/winners
+[source, bash]
+----
+curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:8080/secured/winners; echo
+----
+
+Example output using my generated token is shown in the follow. Note that the first pick corresponds to the day of month of
+the birthdate claim from the `JwtClaims.json` content.
+
+.Example Output for /secured/winners
+[source, bash]
+----
+Scotts-iMacPro:using-jwt-rbac starksm$ curl -H "Authorization: Bearer eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJqZG9lLXVzaW5nLWp3dC1yYmFjIiwiYXVkIjoidXNpbmctand0LXJiYWMiLCJ1cG4iOiJqZG9lQHF1YXJrdXMuaW8iLCJiaXJ0aGRhdGUiOiIyMDAxLTA3LTEzIiwiYXV0aF90aW1lIjoxNTUxNjY2MDMzLCJpc3MiOiJodHRwczpcL1wvcXVhcmt1cy5pb1wvdXNpbmctand0LXJiYWMiLCJyb2xlTWFwcGluZ3MiOnsiZ3JvdXAyIjoiR3JvdXAyTWFwcGVkUm9sZSIsImdyb3VwMSI6Ikdyb3VwMU1hcHBlZFJvbGUifSwiZ3JvdXBzIjpbIkVjaG9lciIsIlRlc3RlciIsIlN1YnNjcmliZXIiLCJncm91cDIiXSwicHJlZmVycmVkX3VzZXJuYW1lIjoiamRvZSIsImV4cCI6MTU1MTY2NjMzMywiaWF0IjoxNTUxNjY2MDMzLCJqdGkiOiJhLTEyMyJ9.LqJ5LlCrVIbCcRAus4aNHv7UfvuUgrcEVOwBxwfPY4c-YCaUxK0owxbtP2WtR5__yTFXpdplR6gVJWwv4Hw8c_sP8MRQi_5bdnTqZt3TeJsepx0cm7AIwJCopmpbuNjIgLVLZ_6VP3ZkZ2VK9SDO-9yBMPWWp2bnLILdwfYsOuJbFB_bWxSQYnTioms7NZjVefVY8eqawwfRq75PhB7W2iw-Ni2puVFjnpTiAZeCUCur-zjQ50QG6zSCZpVqPcI5JZ2-KeJKheiglYCYp0cauTdVgXjdlXCGQbAU0xirLxJXNsxg2GZxgV9luGwy1y3BdezwoM2m4mXviuHJP-lziA" http://localhost:8080/secured/winners; echo
+[13, 47, 42, 45, 19, 25]
+----
+
+=== Claims Injection
+
+In the previous `winners()` method we accessed the `birthday` claim through the `JsonWebToken` interface. {mp-jwt} also supports
+the direct injection of claim values from the JWT using CDI injection and the {mp-jwt} `@Claim` qualifier. Here is an alternative
+version of the `winners()` method that injects the `birthday` claim value as an `Optional<JsonString>`:
+
+.TokenSecuredResource#winners2 Method Addition
+[source, java]
+----
+package org.acme.jwt;
+
+import java.security.Principal;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Optional;
+
+import javax.annotation.security.PermitAll;
+import javax.annotation.security.RolesAllowed;
+import javax.inject.Inject;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.SecurityContext;
+
+import org.eclipse.microprofile.jwt.Claim;
+import org.eclipse.microprofile.jwt.Claims;
+import org.eclipse.microprofile.jwt.JsonWebToken;
+
+/**
+ * Version 4 of the TokenSecuredResource
+ */
+@Path("/secured")
+public class TokenSecuredResource {
+
+    @Inject
+    JsonWebToken jwt;
+    @Inject // <1>
+    @Claim(standard = Claims.birthdate) // <2>
+    Optional<String> birthdate; // <3>
+
+    ...
+
+    @GET
+    @Path("winners2")
+    @Produces(MediaType.TEXT_PLAIN)
+    @RolesAllowed("Subscriber")
+    public String winners2() {
+        int remaining = 6;
+        ArrayList<Integer> numbers = new ArrayList<>();
+
+        // If the JWT contains a birthdate claim, use the day of the month as a pick
+        if (birthdate.isPresent()) { // <4>
+            String bdayString = birthdate.get(); <5>
+            LocalDate bday = LocalDate.parse(bdayString);
+            numbers.add(bday.getDayOfMonth());
+            remaining --;
+        }
+        // Fill remaining picks with random numbers
+        while(remaining > 0) {
+            int pick = (int) Math.rint(64 * Math.random() + 1);
+            numbers.add(pick);
+            remaining --;
+        }
+        return numbers.toString();
+    }
+}
+----
+<1> We use CDI `@Inject` along with...
+<2> an {mp-jwt} `@Claim(standard = Claims.birthdate)` qualifier to inject the `birthdate` claim directly as
+<3> an `Optional<String>` value.
+<4> Now we check whether the injected `birthdate` field is present
+<5> and if it is, get its value.
+
+The remainder of the code is the same as before. Update your `TokenSecuredResource` to either add or replace the current
+`winners()` method, and then invoke the following command with _YOUR_TOKEN_ replaced:
+
+.curl command for /secured/winners2
+[source, bash]
+----
+curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:8080/secured/winners2; echo
+----
+
+.Example Output for /secured/winners2
+[source, bash]
+----
+Scotts-iMacPro:using-jwt-rbac starksm$ curl -H "Authorization: Bearer eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiOiJqZG9lLXVzaW5nLWp3dC1yYmFjIiwiYXVkIjoidXNpbmctand0LXJiYWMiLCJ1cG4iOiJqZG9lQHF1YXJrdXMuaW8iLCJiaXJ0aGRhdGUiOiIyMDAxLTA3LTEzIiwiYXV0aF90aW1lIjoxNTUxNjY3MzEzLCJpc3MiOiJodHRwczpcL1wvcXVhcmt1cy5pb1wvdXNpbmctand0LXJiYWMiLCJyb2xlTWFwcGluZ3MiOnsiZ3JvdXAyIjoiR3JvdXAyTWFwcGVkUm9sZSIsImdyb3VwMSI6Ikdyb3VwMU1hcHBlZFJvbGUifSwiZ3JvdXBzIjpbIkVjaG9lciIsIlRlc3RlciIsIlN1YnNjcmliZXIiLCJncm91cDIiXSwicHJlZmVycmVkX3VzZXJuYW1lIjoiamRvZSIsImV4cCI6MTU1MTY3MDkxMywiaWF0IjoxNTUxNjY3MzEzLCJqdGkiOiJhLTEyMyJ9.c2QJAK3a1VOYL6vOt40VSEAy9wXPBEjVbqApTTNG8V8UDkQZ6HiOR9-rKOFX3WmTtQVru3O9zDu2_T2_v8kTmCkT-ThxodqC4VxD_QVx1v6BaSJ9-MX1Q7nrkD0Mk1V6x0Cqd6jmHxtJy0Ep8IgeMw2Y5gL9a1NgWVeldXP6cdHrHcYKYGnZKmYp7VpqZBoONPIS_QmWXm-JerwVpwt0juEtZUQoGCJdp7-GZA31QyEN64gCMKfdhYNnLuWQaom3i0uF_LfXtlMHdRU0kzDnLrnGw99ynTAex7ah7zG10ZbanK-PI-nD6wcTbE9WqriwohHM9BFJoBmF81RRk5uMsw" http://localhost:8080/secured/winners2; echo
+[13, 38, 36, 38, 36, 22]
+----
+
+== Explore the Solution
+
+The solution repository located in the `using-jwt-rbac` {quickstart-url}[directory] contains all of the versions we have
+worked through in this quickstart guide as well as some additional endpoints that illustrate subresources with injection
+of `JsonWebToken`s and its claims into those using the CDI APIs. We suggest that you check out the quickstart solutions and
+explore the `using-jwt-rbac` to learn more about the {extension-name} extension features.

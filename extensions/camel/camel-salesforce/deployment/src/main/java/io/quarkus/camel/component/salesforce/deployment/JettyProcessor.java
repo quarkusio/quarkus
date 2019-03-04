@@ -5,6 +5,14 @@ import java.util.List;
 
 import javax.inject.Inject;
 
+import org.apache.camel.component.salesforce.internal.dto.LoginError;
+import org.apache.camel.component.salesforce.internal.dto.LoginToken;
+import org.apache.camel.component.salesforce.internal.dto.NotifyForFieldsEnum;
+import org.apache.camel.component.salesforce.internal.dto.NotifyForOperationsEnum;
+import org.apache.camel.component.salesforce.internal.dto.PushTopic;
+import org.apache.camel.component.salesforce.internal.dto.QueryRecordsPushTopic;
+import org.apache.camel.component.salesforce.internal.dto.RestChoices;
+import org.apache.camel.component.salesforce.internal.dto.RestErrors;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.ProtocolHandlers;
 
@@ -24,8 +32,17 @@ class JettyProcessor {
     @BuildStep
     SubstrateConfigBuildItem process() {
         for (Class<?> i : JETTY_REFLECTIVE_CLASSES) {
-            addReflectiveClass(false, false, i.getName());
+            addReflectiveClass(true, false, i.getName());
         }
+        addReflectiveClass(true, true, LoginError.class.getName(),
+                LoginToken.class.getName(),
+                NotifyForFieldsEnum.class.getName(),
+                NotifyForOperationsEnum.class.getName(),
+                PushTopic.class.getName(),
+                QueryRecordsPushTopic.class.getName(),
+                RestChoices.class.getName(),
+                RestErrors.class.getName());
+
         return SubstrateConfigBuildItem.builder()
                 .addRuntimeInitializedClass("org.eclipse.jetty.io.ByteBufferPool")
                 .addRuntimeInitializedClass("org.eclipse.jetty.util.thread.QueuedThreadPool")

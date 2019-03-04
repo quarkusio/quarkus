@@ -31,7 +31,6 @@ public final class SubstituteRemoteCacheManager {
 
     @Substitute
     private void registerMBean() {
-
     }
 
     @Substitute

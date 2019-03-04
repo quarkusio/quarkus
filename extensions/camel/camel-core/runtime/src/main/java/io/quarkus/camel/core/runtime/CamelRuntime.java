@@ -82,7 +82,6 @@ public class CamelRuntime extends ServiceSupport {
 
             loadRoutesFromBuilders(true);
 
-            context.start();
         } catch (Exception e) {
             throw RuntimeCamelException.wrapRuntimeCamelException(e);
         }
@@ -91,6 +90,7 @@ public class CamelRuntime extends ServiceSupport {
     public void doStart() throws Exception {
         log.info("Apache Camel {} (CamelContext: {}) is starting", context.getVersion(), context.getName());
 
+        this.context.start();
         String conf = getProperty(PROP_CAMEL_CONF);
         String confd = getProperty(PROP_CAMEL_CONFD);
         log.info("confPath: {}", conf);

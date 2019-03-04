@@ -1,0 +1,27 @@
+= {project-name} - Gradle Plugin Repositories
+
+// tag::repositories[]
+{project-name} Gradle plugin is not yet published to the https://plugins.gradle.org/[Gradle Plugin Portal],
+so you need to add the following to your '~/.gradle/init.gradle' file:
+[source, groovy, subs=attributes+]
+----
+allprojects {
+  buildscript { <1>
+    repositories {
+      mavenCentral()
+    }
+    dependencies {
+      classpath 'io.quarkus:quarkus-gradle-plugin:{quarkus-version}'
+    }
+  }
+  repositories {
+    mavenCentral()
+  }
+}
+----
+
+<1> The buildscript block is needed for the {project-name} Gradle plugin.
+
+Alternatively you add the buildscript and repositories blocks in your `build.gradle` file.
+
+// end::repositories[]

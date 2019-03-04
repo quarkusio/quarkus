@@ -447,8 +447,16 @@ public class UndertowBuildStep {
         // @WebServlet
         final Collection<AnnotationInstance> webServletAnnotations = index.getAnnotations(WEB_SERVLET);
         if (webServletAnnotations != null && webServletAnnotations.size() > 0) {
-            ServletsMetaData servlets = new ServletsMetaData();
-            List<ServletMappingMetaData> servletMappings = new ArrayList<ServletMappingMetaData>();
+            ServletsMetaData servlets = metaData.getServlets();
+            if (servlets == null) {
+                servlets = new ServletsMetaData();
+                metaData.setServlets(servlets);
+            }
+            List<ServletMappingMetaData> servletMappings = metaData.getServletMappings();
+            if (servletMappings == null) {
+                servletMappings = new ArrayList<>();
+                metaData.setServletMappings(servletMappings);
+            }
             for (final AnnotationInstance annotation : webServletAnnotations) {
                 ServletMetaData servlet = new ServletMetaData();
                 AnnotationTarget target = annotation.target();
@@ -524,14 +532,20 @@ public class UndertowBuildStep {
                 }
                 servlets.add(servlet);
             }
-            metaData.setServlets(servlets);
-            metaData.setServletMappings(servletMappings);
         }
         // @WebFilter
         final Collection<AnnotationInstance> webFilterAnnotations = index.getAnnotations(WEB_FILTER);
         if (webFilterAnnotations != null && webFilterAnnotations.size() > 0) {
-            FiltersMetaData filters = new FiltersMetaData();
-            List<FilterMappingMetaData> filterMappings = new ArrayList<FilterMappingMetaData>();
+            FiltersMetaData filters = metaData.getFilters();
+            if (filters == null) {
+                filters = new FiltersMetaData();
+                metaData.setFilters(filters);
+            }
+            List<FilterMappingMetaData> filterMappings = metaData.getFilterMappings();
+            if (filterMappings == null) {
+                filterMappings = new ArrayList<>();
+                metaData.setFilterMappings(filterMappings);
+            }
             for (final AnnotationInstance annotation : webFilterAnnotations) {
                 FilterMetaData filter = new FilterMetaData();
                 AnnotationTarget target = annotation.target();
@@ -625,13 +639,15 @@ public class UndertowBuildStep {
                     filterMappings.add(filterMapping);
                 }
             }
-            metaData.setFilters(filters);
-            metaData.setFilterMappings(filterMappings);
         }
         // @WebListener
         final Collection<AnnotationInstance> webListenerAnnotations = index.getAnnotations(WEB_LISTENER);
         if (webListenerAnnotations != null && webListenerAnnotations.size() > 0) {
-            List<ListenerMetaData> listeners = new ArrayList<ListenerMetaData>();
+            List<ListenerMetaData> listeners = metaData.getListeners();
+            if (listeners == null) {
+                listeners = new ArrayList<>();
+                metaData.setListeners(listeners);
+            }
             for (final AnnotationInstance annotation : webListenerAnnotations) {
                 ListenerMetaData listener = new ListenerMetaData();
                 AnnotationTarget target = annotation.target();
@@ -646,7 +662,6 @@ public class UndertowBuildStep {
                 }
                 listeners.add(listener);
             }
-            metaData.setListeners(listeners);
         }
         // @RunAs
         final Collection<AnnotationInstance> runAsAnnotations = index.getAnnotations(RUN_AS);

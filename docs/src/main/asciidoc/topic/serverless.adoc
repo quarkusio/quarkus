@@ -57,7 +57,7 @@ or
 mvn quarkus:native-image ## produces a standalone executable
 ----
 
-The runnable jar can then be execute simply by running `java -jar target/myapplication-runner.jar`.  Either scenario requires minimal work,
+The runnable jar can then be executed simply by running `java -jar target/myapplication-runner.jar`.  Either scenario requires minimal work,
  then, to bundle in to your preferred FaaS platform.
 
 === FaaS API

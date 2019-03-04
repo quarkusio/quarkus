@@ -8,7 +8,7 @@ include::quarkus-intro.adoc[tag=intro]
 * link:building-native-image-guide.html[Building Native Image]
 * link:kubernetes-guide.html[Deploy Application on Kubernetes]
 * link:getting-started-knative-guide.html[Deploy as Knative Application on Kubernetes]
-* link:ide-configuration.html[Project Scaffolding and IDE]
+* link:tooling.html[Project Scaffolding and IDE]
 
 == Other guides
 

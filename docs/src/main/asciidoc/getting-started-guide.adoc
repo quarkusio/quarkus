@@ -415,9 +415,10 @@ This guide covered the creation of an application using Quarkus.
 However, there is much more.
 We recommend continuing the journey with the link:building-native-image-guide.html[building a native image guide], where you learn about the native executable creation and the packaging in a container.
 
-In addition, the link:ide-configuration.html[developer guide] document explains how to:
+In addition, the link:tooling.html[tooling guide] document explains how to:
 
 * scaffold a project in a single command line,
 * enable the _development model_ (hot reload)
 * import the project in your favorite IDE
+* and more
 

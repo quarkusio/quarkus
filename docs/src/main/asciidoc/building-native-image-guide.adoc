@@ -16,7 +16,7 @@ To complete this guide, you need:
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * GraalVM installed from the http://www.graalvm.org/downloads/[GraalVM web site].
 Using the community edition is enough.
-At least version {graal-version} is required.
+At least version {graalvm-version} is required.
 * The `GRAALVM_HOME` environment variable configured appropriately
 * Apache Maven 3.5.3+
 * A running Docker

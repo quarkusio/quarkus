@@ -8,10 +8,11 @@ include::quarkus-intro.adoc[tag=intro]
 * link:building-native-image-guide.html[Building Native Image]
 * link:kubernetes-guide.html[Deploy Application on Kubernetes]
 * link:getting-started-knative-guide.html[Deploy as Knative Application on Kubernetes]
-* link:ide-configuration.html[Project Scaffolding and IDE]
+* link:tooling.html[Project Scaffolding and IDE]
 
 == Other guides
 
+* link:tooling.html[Use tooling with Quarkus]
 * link:application-configuration-guide.html[Configuring Your Application]
 * link:logging-guide.html[Configuring Logging]
 * link:application-lifecycle-events-guide.html[Application Initialization and Termination]
@@ -46,7 +47,7 @@ _Mandatory:_
 _Recommended:_
 
 * https://docs.docker.com/install/[Docker]
-* http://www.graalvm.org/docs/getting-started/[GraalVM {graal-version}]
+* http://www.graalvm.org/docs/getting-started/[GraalVM {graalvm-version}]
 
 
 == Feedback, looking for help?

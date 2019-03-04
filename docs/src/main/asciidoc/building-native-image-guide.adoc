@@ -178,7 +178,7 @@ IMPORTANT: Before going further, be sure to have a working Docker environment.
 You can run the application in a Docker container using the JAR produced by the Quarkus Maven Plugin.
 However, in this guide we focus on creating a Docker image using the produced native executable.
 
-By default, the native image is tailored for your operating system (Windows, macOS etc).
+By default, the native image is tailored for your operating system (Linux, macOS, Windows etc).
 Because the Docker container may not use the same _executable_ format as the one produced by your operating system,
 we will instruct the Maven build to produce an executable from inside a Docker container:
 

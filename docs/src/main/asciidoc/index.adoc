@@ -12,6 +12,7 @@ include::quarkus-intro.adoc[tag=intro]
 
 == Other guides
 
+* link:tooling.html[Use tooling with Quarkus]
 * link:application-configuration-guide.html[Configuring Your Application]
 * link:logging-guide.html[Configuring Logging]
 * link:application-lifecycle-events-guide.html[Application Initialization and Termination]

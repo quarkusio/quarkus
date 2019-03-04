@@ -1,10 +1,124 @@
-= {project-name} - Project Scaffolding and IDE
+= {project-name} - Using Tooling with Quarkus
+
+Quarkus come with a toolchain enabling developers from live reload all the way down to deploying a Kubernetes application.
+In this guide, we will explore:
+
+* how to use Maven as a build tool
+* how to use Gradle as a build tool (coming soon)
+* how to use the native CLI for your toolchain (coming soon)
+* how to create and scaffold a new project
+* how to deal with extensions
+* how to enable live reload
+* how to develop your application in your IDE
+* how to compile your application natively
+
+[[build-tool]]
+== Choosing your build tool
+
+{project-name} comes with a toolchain to help you at all development stages.
+You can use Maven or Gradle as build tool.
+And we offer a native CLI that are convenient to use (coming soon).
+
+[[build-tool-maven]]
+=== Maven configuration
+
+Configure Maven as indicated in the link:maven-config.html[Maven configuration page].
+
+If you have not used <<project-creation,project scaffolding>>, add the following elements in your `pom.xml`
+
+[source,xml,subs=attributes+]
+----
+<dependencyManagement>
+    <dependencies>
+        <dependency> <1>
+            <groupId>io.quarkus</groupId> 
+            <artifactId>quarkus-bom</artifactId>
+            <version>${quarkus.version}</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+
+<build>
+    <plugins>
+        <plugin> <2>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-maven-plugin</artifactId>
+            <version>${quarkus.version}</version>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>build</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+</build>
+
+<profiles>
+    <profile> <3>
+        <id>native</id>
+        <build>
+            <plugins>
+                <plugin> <3>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-maven-plugin</artifactId>
+                    <version>${quarkus.version}</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>native-image</goal>
+                            </goals>
+                            <configuration>
+                                <enableHttpUrlHandler>true</enableHttpUrlHandler>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin> <4>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>${surefire.version}</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>integration-test</goal>
+                                <goal>verify</goal>
+                            </goals>
+                            <configuration>
+                                <systemProperties>
+                                    <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
+                                </systemProperties>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </build>
+    </profile>
+</profiles>
+----
+
+<1> Optionally use a BOM file to omit the version on the different {project-name} dependencies.
+<2> Use the {project-name} Maven plugin that will hook into the build process
+<3> Use a native profile and plugin to activate Graal VM compilation
+<4> If you want to test your native image with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@SubstrateVM` will be run against the native image. See the link:building-native-image-guide.html[Native image guide] for more info.
+
+
+=== Gradle configuration
+
+TODO
+
+=== Native CLI
+
+TODO: explain how to install it
 
 [[project-creation]]
 == Creating a new project
 
-Remember, you need to configure Maven as indicated in the link:maven-config.html[Maven configuration page].
-Then, you can scaffold a new project with:
+With Maven, you can scaffold a new project with:
 
 [source,subs=attributes+]
 ----
@@ -81,6 +195,17 @@ mvn compile quarkus:dev
 
 You can then update the application sources, resources and configurations.
 The changes are automatically reflected in your running application.
+This is great to do development spanning UI and database as you see changes reflected immediatly.
+
+`quarkus:dev` enables hot deployment with background compilation, which means
+that when you modify your Java files your resource files and refresh your browser these changes will automatically take effect.
+This works too for resource files like the configuration property file.
+The act of
+refreshing the browser triggers a scan of the workspace, and if any changes are detected the Java files are compiled,
+and the application is redeployed, then your request is serviced by the redeployed application. If there are any issues
+with compilation or deployment an error page will let you know.
+
+Hit `CTRL+C` to stop the application.
 
 == Debugging
 
@@ -130,3 +255,61 @@ In a separated terminal or the embedded terminal, go to the project root and run
 **Visual Studio Code**
 
 Open the project directory in VS Code. If you have installed the Java Extension Pack (grouping a set of Java extensions), the project is loaded as a Maven project.
+
+== Building a native image
+
+Native images make {project-name} applications ideal for containers and FaaS workloads.
+
+Make sure to have `GRAALVM_HOME` configured and pointing to Graal VM version {graalvm-version}.
+Verify that your `pom.xml` has the proper `native` profile (see <<build-tool-maven>>).
+
+Create a native executable using: `mvn package -Pnative`.
+A native executable will be present in `target`
+
+To run Integration Tests on the native executable, make sure to have the proper maven plugin configured (see <<build-tool-maven>>) and launch the `verify` goal.
+
+[source]
+----
+mvn package verify -Pnative
+...
+[quarkus-quickstart-runner:50955]     universe:     391.96 ms
+[quarkus-quickstart-runner:50955]      (parse):     904.37 ms
+[quarkus-quickstart-runner:50955]     (inline):   1,143.32 ms
+[quarkus-quickstart-runner:50955]    (compile):   6,228.44 ms
+[quarkus-quickstart-runner:50955]      compile:   9,130.58 ms
+[quarkus-quickstart-runner:50955]        image:   2,101.42 ms
+[quarkus-quickstart-runner:50955]        write:     803.18 ms
+[quarkus-quickstart-runner:50955]      [total]:  33,520.15 ms
+[INFO]
+[INFO] --- maven-failsafe-plugin:2.22.0:integration-test (default) @ quarkus-quickstart-native ---
+[INFO]
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running org.acme.quickstart.GreetingResourceIT
+Executing [/Users/starksm/Dev/JBoss/Protean/starksm64-quarkus-quickstarts/getting-started-native/target/quarkus-quickstart-runner, -Dquarkus.http.port=8081, -Dtest.url=http://localhost:8081, -Dquarkus.log.file.path=target/quarkus.log]
+2019-02-28 16:52:42,020 INFO  [io.quarkus] (main) Quarkus 1.0.0.Alpha1-SNAPSHOT started in 0.007s. Listening on: http://localhost:8080
+2019-02-28 16:52:42,021 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy]
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.081 s - in org.acme.quickstart.GreetingResourceIT
+[INFO]
+[INFO] Results:
+[INFO]
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0
+
+...
+----
+
+=== Build a container friendly executable
+
+The native executable will be specific to your openrating system.
+To create an executable that will run in a container, use the following:
+
+[source, bash]
+----
+mvn package -Pnative -Dnative-image.docker-build=true
+----
+
+The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.
+However, it's not an issue as we are going to copy it to a Docker container.
+
+You can follow the link:building-native-image-guide.html[Build a native image guide] as well as link:kubernetes-guide.html[Deploying Application to Kubernetes and OpenShift] for more information.

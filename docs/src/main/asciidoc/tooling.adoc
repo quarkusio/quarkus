@@ -1,6 +1,6 @@
 = {project-name} - Using Tooling with Quarkus
 
-Quarkus come with a toolchain enabling developers from live reload all the way down to deploying a Kubernetes application.
+Quarkus comes with a toolchain enabling developers from live reload all the way down to deploying a Kubernetes application.
 In this guide, we will explore:
 
 * how to use Maven as a build tool
@@ -17,7 +17,7 @@ In this guide, we will explore:
 
 {project-name} comes with a toolchain to help you at all development stages.
 You can use Maven or Gradle as build tool.
-And we offer a native CLI that are convenient to use (coming soon).
+And we offer a native CLI that is convenient to use (coming soon).
 
 [[build-tool-maven]]
 === Maven configuration
@@ -101,10 +101,10 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 </profiles>
 ----
 
-<1> Optionally use a BOM file to omit the version on the different {project-name} dependencies.
+<1> Optionally use a BOM file to omit the version of the different {project-name} dependencies.
 <2> Use the {project-name} Maven plugin that will hook into the build process
-<3> Use a native profile and plugin to activate Graal VM compilation
-<4> If you want to test your native image with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@SubstrateVM` will be run against the native image. See the link:building-native-image-guide.html[Native image guide] for more info.
+<3> Use a native profile and plugin to activate GraalVM compilation
+<4> If you want to test your native image with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@SubstrateTest` will be run against the native image. See the link:building-native-image-guide.html[Native image guide] for more info.
 
 
 === Gradle configuration
@@ -181,7 +181,7 @@ You can list extensions with: `mvn quarkus:list-extensions`.
 You can enable an extension using:
 
 [source]
-mvn quarkus:add-extension -Dextensions="validation"
+mvn quarkus:add-extension -Dextensions="hibernate-validator"
 
 Extensions are passed using a comma-separated list.
 
@@ -195,7 +195,7 @@ mvn compile quarkus:dev
 
 You can then update the application sources, resources and configurations.
 The changes are automatically reflected in your running application.
-This is great to do development spanning UI and database as you see changes reflected immediatly.
+This is great to do development spanning UI and database as you see changes reflected immediately.
 
 `quarkus:dev` enables hot deployment with background compilation, which means
 that when you modify your Java files your resource files and refresh your browser these changes will automatically take effect.
@@ -260,13 +260,13 @@ Open the project directory in VS Code. If you have installed the Java Extension 
 
 Native images make {project-name} applications ideal for containers and FaaS workloads.
 
-Make sure to have `GRAALVM_HOME` configured and pointing to Graal VM version {graalvm-version}.
+Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {graalvm-version}.
 Verify that your `pom.xml` has the proper `native` profile (see <<build-tool-maven>>).
 
 Create a native executable using: `mvn package -Pnative`.
 A native executable will be present in `target`
 
-To run Integration Tests on the native executable, make sure to have the proper maven plugin configured (see <<build-tool-maven>>) and launch the `verify` goal.
+To run Integration Tests on the native executable, make sure to have the proper Maven plugin configured (see <<build-tool-maven>>) and launch the `verify` goal.
 
 [source]
 ----
@@ -301,7 +301,7 @@ Executing [/Users/starksm/Dev/JBoss/Protean/starksm64-quarkus-quickstarts/gettin
 
 === Build a container friendly executable
 
-The native executable will be specific to your openrating system.
+The native executable will be specific to your operating system.
 To create an executable that will run in a container, use the following:
 
 [source, bash]

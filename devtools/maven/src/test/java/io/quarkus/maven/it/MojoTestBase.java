@@ -214,12 +214,4 @@ public class MojoTestBase {
         URL url = new URL("http://localhost:8080");
         return IOUtils.toString(url, "UTF-8");
     }
-
-    protected void sleep() {
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-    }
 }

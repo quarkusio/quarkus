@@ -61,7 +61,12 @@ public class DevMojoIT extends MojoTestBase {
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains(uuid));
-        sleep();
+
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .until(source::isFile);
+
         filter(source, ImmutableMap.of(uuid, "carambar"));
 
         // Wait until we get "carambar"
@@ -85,7 +90,12 @@ public class DevMojoIT extends MojoTestBase {
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains(uuid));
-        sleep();
+
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .until(source::isFile);
+
         filter(source, ImmutableMap.of(uuid, "carambar"));
 
         // Wait until we get "carambar"
@@ -125,7 +135,7 @@ public class DevMojoIT extends MojoTestBase {
     }
 
     @Test
-    @Disabled("Issue https://github.com/quarkus-project/quarkus/issues/245")
+    @Disabled("Issue https://github.com/jbossas/protean-shamrock/issues/245")
     public void testThatTheApplicationIsReloadedOnNewServlet() throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic", "projects/project-classic-run-new-servlet");
         runAndCheck();
@@ -157,7 +167,6 @@ public class DevMojoIT extends MojoTestBase {
                 .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/my").contains("hello from servlet"));
 
         // delete servlet
-        sleep();
         source.delete();
 
         await()
@@ -195,9 +204,12 @@ public class DevMojoIT extends MojoTestBase {
         String greeting = getHttpResponse("/app/hello/greeting");
         assertThat(greeting).containsIgnoringCase("bonjour");
 
-        sleep();
-        sleep();
         File source = new File(testDir, "src/main/resources/META-INF/microprofile-config.properties");
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .until(source::isFile);
+
         String uuid = UUID.randomUUID().toString();
         filter(source, ImmutableMap.of("bonjour", uuid));
 
@@ -263,7 +275,10 @@ public class DevMojoIT extends MojoTestBase {
                 .containsIgnoringCase("return \"" + uuid + "\"")
                 .containsIgnoringCase("compile");
 
-        sleep();
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .until(source::isFile);
         filter(source, ImmutableMap.of("\"" + uuid + "\"", "\"carambar\";"));
 
         // Wait until we get "uuid"
@@ -303,7 +318,10 @@ public class DevMojoIT extends MojoTestBase {
                 .pollDelay(1, TimeUnit.SECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/hello").contains("message"));
 
-        sleep();
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .until(source::isFile);
 
         filter(source, ImmutableMap.of("message", "foobarbaz"));
 

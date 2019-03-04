@@ -92,8 +92,8 @@ public String hello() {
 
 == Create the configuration
 
-By default, Quarkus reads `META-INF/microprofile-config.properties`.
-Edit the `src/main/resources/META-INF/microprofile-config.properties` with the following content:
+By default, Quarkus reads `application.properties`.
+Edit the `src/main/resources/application.properties` with the following content:
 
 [source]
 ----
@@ -154,3 +154,33 @@ You can add the `greeting.suffix`, remove the other properties, change the value
 
 As usual, the application can be packaged using `mvn clean package` and executed using the `-runner.jar` file.
 You can also generate the native executable with `mvn clean package -Pnative`.
+
+== Overriding properties at runtime
+
+{project-name} does much of its configuration and bootstrap at build time.
+Most properties will then be read and set during the build time step.
+To change them, make sure to repackage your application.
+
+[source,bash]
+--
+mvn clean package
+--
+
+Extensions do define _some_ properties as overridable at runtime.
+A canonical example is the database URL, username and password which is only known specifically in your target environment.
+This is a tradeoff as the more runtime properties are available, the less build time prework Quarkus can do. The list of runtime properties is therefore lean.
+
+You can override these runtime properties with the following mechanisms (in decreasing priority):
+
+1. using system properties: `java -jar target/myapp-runner.jar -Dquarkus.database.password=youshallnotpass`
+2. using environment variable: `export QUARKUS_DATABASE_PASSWORD=youshallnotpass ; java -jar target/myapp-runner.jar`
+
+NOTE: Environment variables names are following the conversion rules of link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/asciidoc/configsources.asciidoc#default-configsources[Eclipse Microprofile]
+
+== More info on how to configure
+
+{project-name} relies on Eclipse Microprofile and inherit his features.
+
+There are converters that convert your property file content from String to typed Java types. See the list link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/asciidoc/converters.asciidoc[in the specification].
+
+TODO: make ken review this section and discuss SmallRye expansion.

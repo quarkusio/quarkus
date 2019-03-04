@@ -46,7 +46,7 @@ _Mandatory:_
 _Recommended:_
 
 * https://docs.docker.com/install/[Docker]
-* http://www.graalvm.org/docs/getting-started/[GraalVM {graal-version}]
+* http://www.graalvm.org/docs/getting-started/[GraalVM {graalvm-version}]
 
 
 == Feedback, looking for help?

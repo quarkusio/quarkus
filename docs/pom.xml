@@ -53,7 +53,7 @@
                     <attributes>
                         <quarkus-version>${project.version}</quarkus-version>
                         <surefire-version>${version.surefire.plugin}</surefire-version>
-                        <graal-version>${graal-sdk.version-for-documentation}</graal-version>
+                        <graalvm-version>${graal-sdk.version-for-documentation}</graalvm-version>
                         <restassured-version>${rest-assured.version}</restassured-version>
                         <project-name>Quarkus</project-name>
                         <!-- Project website home page -->

@@ -268,7 +268,7 @@ Open the project directory in VS Code. If you have installed the Java Extension 
 
 Native images make {project-name} applications ideal for containers and serverless workloads.
 
-Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {graal-version}.
+Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {graalvm-version}.
 Verify that your `pom.xml` has the proper `native` profile (see <<build-tool-maven>>).
 
 Create a native executable using: `mvn package -Pnative`.

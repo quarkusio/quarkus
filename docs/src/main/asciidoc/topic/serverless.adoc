@@ -42,7 +42,7 @@ public class CRUDResource {
 }
 ----
 
-Taking this simple GET operation, we can use quarkus to build a runnable jar or even an native image which we can then embed in a Docker
+Taking this simple GET operation, we can use Quarkus to build a runnable jar or even a native image which we can then embed in a Docker
 image or for use in a Knative Build script for deployment on top of kubernetes.
 
 [source, shell]

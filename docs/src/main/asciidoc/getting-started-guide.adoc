@@ -107,12 +107,6 @@ In addition, you can see the `quarkus-maven-plugin` responsible of the packaging
 </build>
 ----
 
-[NOTE]
-.What's Quarkus?
-====
-Quarkus can be seen as {project-name} core.
-====
-
 If we focus on the dependencies section, you can see 2 extensions allowing the development of REST applications:
 
 [source,xml]
@@ -130,7 +124,7 @@ If we focus on the dependencies section, you can see 2 extensions allowing the d
 [NOTE]
 .What's ArC?
 ====
-ArC is a CDI-based dependency injection solution - see also link:cdi-reference.html[Contexts and Dependency Injection].
+ArC is a CDI-based dependency injection solution tailored for Quarkus architecture - see also link:cdi-reference.html[Contexts and Dependency Injection].
 ====
 
 === The JAX-RS resources
@@ -163,7 +157,7 @@ It's a very simple REST endpoint, returning "hello" to requests on "/hello".
 .Differences with vanilla Jax-RS
 ====
 With Quarkus no need to create an `Application` class. It's supported but not required. In addition, only one instance
-of the resource is created and not one per request. You can configure this using the different `XScoped` annotations.
+of the resource is created and not one per request. You can configure this using the different `*Scoped` annotations (`ApplicationScoped`, `RequestScoped`, etc).
 ====
 
 == Running the application
@@ -263,7 +257,9 @@ Then check that http://localhost:8080/hello/greeting/quarkus returns `hello quar
 == Development Mode
 
 `quarkus:dev` runs Quarkus in development mode. This enables hot deployment with background compilation, which means
-that when you modify your Java files and refresh your browser these changes will automatically take effect. The act of
+that when you modify your Java files your resource files and refresh your browser these changes will automatically take effect.
+This works too for resource files like the configuration property file.
+The act of
 refreshing the browser triggers a scan of the workspace, and if any changes are detected the Java files are compiled,
 and the application is redeployed, then your request is serviced by the redeployed application. If there are any issues
 with compilation or deployment an error page will let you know.

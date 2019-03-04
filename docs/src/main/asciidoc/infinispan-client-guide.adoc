@@ -21,6 +21,7 @@ This will add the following to your pom.xml
     <dependency>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-infinispan-client-deployment</artifactId>
+        <scope>provided</scope>
     </dependency>
 ----
 
@@ -95,6 +96,9 @@ buf schema and a marshaller for each user type(s).
 NOTE: Annotation based proto stream marshalling is not yet supported in
 the {project-name} Infinispan client. This will be added soon, allowing you to only annotate your classes,
 skipping the following steps.
+
+NOTE: This version has an issue currently requiring the Query DSL module as a dependency when running in
+native mode with proto buf based marshalling. This should be remedied in a future version.
 
 Protobuf schema:: You can supply a protobuf schema through either one of two ways.
   . Proto File
@@ -383,11 +387,11 @@ the {project-name} Infinispan Client extension.
 
 | DIGEST-MD5
 | [green]*Y*
-|
+| Requires steps from Encryption section above
 
 | PLAIN
 | [green]*Y*
-|
+| Requires steps from Encryption section above
 
 | EXTERNAL
 | [green]*Y*

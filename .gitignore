@@ -5,6 +5,7 @@ target
 .settings
 .project
 .classpath
+.vscode/
 *~
 local-test
 out

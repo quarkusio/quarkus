@@ -5,13 +5,14 @@ adopted.
 
 == References
 
-The following links provide background on the general Red Hat conventions and Asciidoc syntax.
+The following links provide background on the general conventions and Asciidoc syntax.
 
-* https://redhat-documentation.github.io/asciidoc-markup-conventions/[AsciiDoc Mark-up Quick Reference for Red Hat Documentation]
+* https://redhat-documentation.github.io/asciidoc-markup-conventions/[AsciiDoc Mark-up Quick Reference for Documentation]
 * http://asciidoctor.org/docs/user-manual/[Asciidoctor User Manual]
 * http://asciidoctor.org/docs/asciidoc-syntax-quick-reference/[AsciiDoc Syntax Quick Reference]
 
 == Variables for Use in Documents
+
 The following variables externalize key information that can change over time, and so references
 to such information should be done by using the variable inside of {} curly brackets. The
 complete list of externalized variables for use is given in the following table:

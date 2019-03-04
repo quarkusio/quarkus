@@ -42,5 +42,6 @@
         <module>maven</module>
         <module>gradle</module>
         <module>aesh</module>
+        <module>reflection-agent</module>
     </modules>
 </project>

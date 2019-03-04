@@ -561,9 +561,9 @@ The only particular aspect of writing {project-name} extensions in Eclipse is th
 The class augmentation step of {project-name} generates classes for various purposes. Sometimes you need to view these
 classes/bytecode to debug or understand an issue. Classes that are related to application augmentation are currently held in
 memory in a runtime class loader. To have these classes written out to disk for inspection, specify the
-`io.quarkus.DEBUG_GENERATED_CLASSES_DIR` system property, for example:
+`quarkus.debug.generated-classes-dir` system property, for example:
 
 [source,shell]
 ----
-mvn clean install -Dio.quarkus.DEBUG_GENERATED_CLASSES_DIR=./target/app-generated-classes
+mvn clean install -Dquarkus.debug.generated-classes-dir=./target/app-generated-classes
 ----

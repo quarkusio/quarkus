@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -37,12 +38,27 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.annotations.ConfigItem;
+import io.quarkus.runtime.annotations.ConfigPhase;
+import io.quarkus.runtime.annotations.ConfigRoot;
 
 class CamelInitProcessor {
     @Inject
     ApplicationArchivesBuildItem applicationArchivesBuildItem;
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
+
+    @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
+    static class CamelConfig {
+
+        /**
+         * The class of the CamelRuntime implementation
+         */
+        @ConfigItem
+        Optional<String> runtime;
+    }
+
+    CamelConfig config;
 
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
@@ -56,17 +72,17 @@ class CamelInitProcessor {
     @BuildStep(applicationArchiveMarkers = CamelSupport.CAMEL_SERVICE_BASE_PATH)
     CamelRuntimeBuildItem createInitTask(RecorderContext recorderContext, CamelTemplate template) {
         Properties properties = new Properties();
-        Config config = ConfigProvider.getConfig();
-        for (String property : config.getPropertyNames()) {
+        Config configProvider = ConfigProvider.getConfig();
+        for (String property : configProvider.getPropertyNames()) {
             if (property.startsWith("camel.")) {
-                properties.put(property, config.getValue(property, String.class));
+                properties.put(property, configProvider.getValue(property, String.class));
             }
             if (property.startsWith("integration.")) {
-                properties.put(property.substring("integration.".length()), config.getValue(property, String.class));
+                properties.put(property.substring("integration.".length()), configProvider.getValue(property, String.class));
             }
         }
 
-        String clazz = properties.getProperty(CamelRuntime.PROP_CAMEL_RUNTIME, CamelRuntime.class.getName());
+        String clazz = config.runtime.orElse(CamelRuntime.class.getName());
         RuntimeValue<?> runtime = recorderContext.newInstance(clazz);
         RuntimeRegistry registry = new RuntimeRegistry();
         List<RuntimeValue<?>> builders = getInitRouteBuilderClasses().map(recorderContext::newInstance)

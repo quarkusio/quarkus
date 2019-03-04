@@ -57,7 +57,7 @@ This command generates the Maven project with a REST endpoint and imports the `s
 
 === Examine the JAX-RS resource
 
-Open the `src/main/java/org/acme/opentracing/TracedResource.java` file and see the following content:
+Open the `src/main/java/org/acme/jwt/TokenSecuredResource.java` file and see the following content:
 
 .Basic REST Endpoint
 [source,java]
@@ -80,7 +80,7 @@ public class TokenSecuredResource {
 }
 ----
 
-This is a basic REST endpoint that does not have any of the {extension-name} specific features, so lets add some.
+This is a basic REST endpoint that does not have any of the {extension-name} specific features, so let's add some.
 
 NOTE: The {mp-jwt} 1.1.1 specification details the annotations and behaviors we will make use of in
 this quickstart. See https://github.com/eclipse/microprofile-jwt-auth/releases/download/1.1.1/microprofile-jwt-auth-spec.html[HTML]
@@ -126,11 +126,11 @@ public class TokenSecuredResource {
     }
 }
 ----
-<1> Here we inject the JsonWebToken interface, and extension of the java.security.Prinicpal interface that provides access to the claims associated with the current authenticated token.
+<1> Here we inject the JsonWebToken interface, and extension of the java.security.Principal interface that provides access to the claims associated with the current authenticated token.
 <2> @PermitAll is a JSR 250 common security annotation that indicates that the given endpoint is accessible by any caller, authenticated or not.
 <3> Here we inject the JAX-RS SecurityContext to inspect the security state of the call.
 <4> Here we obtain the current request user/caller `Principal`. For an unsecured call this will be null, so we build the user name by checking `caller` against null.
-<5> The reply we build up makes use of the caller name, the `isSecure()` and `getAuthenticationScheme()` states of the request `SecurityContext`, and whether a non-null `JsonWebToken` has injected.
+<5> The reply we build up makes use of the caller name, the `isSecure()` and `getAuthenticationScheme()` states of the request `SecurityContext`, and whether a non-null `JsonWebToken` was injected.
 
 == Run the application
 
@@ -160,7 +160,7 @@ Listening for transport dt_socket at address: 5005
 2019-03-03 07:23:07,493 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jsonb, security, smallrye-jwt]
 ----
 
-Now that the REST endpoint is running, we can access using a command line tool like curl:
+Now that the REST endpoint is running, we can access it using a command line tool like curl:
 
 .curl command for /secured/permit-all
 [source, bash]
@@ -261,7 +261,7 @@ Scotts-iMacPro:using-jwt-rbac starksm$ curl -v http://127.0.0.1:8080/secured/rol
 Not authorized
 ----
 
-Excellent, we have not provided any JWT in the request, so we should not be able to access the endpoint, and we were not. Instead we received an HTTP 401 Unauthorized error. We need to obtain and pass in a valid JWT to access that endpoint. There are two steps to this, 1) configuration our {extension-name} extension with information on how to validate a JWT, and 2) generating a matching JWT with the appropriate claims.
+Excellent, we have not provided any JWT in the request, so we should not be able to access the endpoint, and we were not. Instead we received an HTTP 401 Unauthorized error. We need to obtain and pass in a valid JWT to access that endpoint. There are two steps to this, 1) configuring our {extension-name} extension with information on how to validate a JWT, and 2) generating a matching JWT with the appropriate claims.
 
 == Configuring the {extension-name} Extension Security Information
 

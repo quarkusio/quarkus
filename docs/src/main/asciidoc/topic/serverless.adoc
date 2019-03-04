@@ -4,9 +4,9 @@ Functions as a Service and, more broadly, serverless is an emerging trend that i
 major platform and cloud providers.  Owing much to the simplicity of the development model, more and more workloads are being deployed as
  serverless functions to take advantage of the automatic scaling and concurrency that serverless offers.  However, to date, Java and the
  JVM has not been a primary focus for many.  JVM startup time and memory overhead are prohibitive costs for many organizations.  However,
-  it would be a shame to leave behind the wealth of experience and vast ecosystem in order to gain efficiencies in a serverless model.
+  it would be a shame to leave behind the wealth of experience and vast ecosystem of Java.
 
-Quarkus solves of much of this for us.  Quarkus offers blindingly fast start up times memory optimized applications well-suited to
+Quarkus solves of much of this for us.  Quarkus offers blindingly fast start up times with memory optimized applications well-suited to
 serverless environments.  With Quarkus, developers can continue to use Java and many of the libraries familiar to them.  Quarkus takes on
  the work of packaging everything up for deployment.
 
@@ -28,9 +28,6 @@ public class CRUDResource {
     @Inject
     EntityManager em;
 
-    @Inject
-    UserTransaction transaction;
-
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Transactional
@@ -43,7 +40,7 @@ public class CRUDResource {
 ----
 
 Taking this simple GET operation, we can use Quarkus to build a runnable jar or even a native image which we can then embed in a Docker
-image or for use in a Knative Build script for deployment on top of kubernetes.
+image or for use in a Knative Build script for deployment on top of Kubernetes.
 
 [source, shell]
 ----
@@ -57,8 +54,9 @@ or
 mvn quarkus:native-image ## produces a standalone executable
 ----
 
-The runnable jar can then be executed simply by running `java -jar target/myapplication-runner.jar`.  Either scenario requires minimal work,
- then, to bundle in to your preferred FaaS platform.
+The runnable jar can then be executed simply by running `java -jar target/myapplication-runner.jar`.
+ The native image can be run with `target/myappliction-runner`.
+Either scenario requires minimal work, then, to bundle in to your preferred FaaS platform.
 
 === FaaS API
 All this begs the question: why doesn't Quarkus simply provide its own opinionated API?  While this may happen eventually, the current

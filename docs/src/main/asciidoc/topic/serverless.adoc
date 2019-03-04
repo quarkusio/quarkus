@@ -62,4 +62,4 @@ The runnable jar can then be executed simply by running `java -jar target/myappl
 
 === FaaS API
 All this begs the question: why doesn't Quarkus simply provide its own opinionated API?  While this may happen eventually, the current
-philosophy is to integrate what choices make sense so developers don't need to learn a whole new API set to make use of Quarkus.
+philosophy is to integrate with what choices make sense so developers don't need to learn a whole new API set to make use of Quarkus.

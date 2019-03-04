@@ -1,6 +1,6 @@
-= {project-name} - Using Tooling with Quarkus
+= {project-name} - Using our Tooling
 
-Quarkus comes with a toolchain enabling developers from live reload all the way down to deploying a Kubernetes application.
+{project-name} comes with a toolchain enabling developers from live reload all the way down to deploying a Kubernetes application.
 In this guide, we will explore:
 
 * how to use Maven as a build tool
@@ -109,11 +109,15 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 
 === Gradle configuration
 
-TODO
+_Coming soon..._
+
+// TODO Gradle configuration
 
 === Native CLI
 
-TODO: explain how to install it
+_Coming soon..._
+
+// TODO: explain how to install the native CLI
 
 [[project-creation]]
 == Creating a new project
@@ -166,8 +170,8 @@ The following table lists the attributes you can pass to the `create` command:
 
 |===
 
-If you decide to generate a REST resource (using the `className` attribute), the endpoint is exposed at: `http://localhost:8080/$root/$path`.
-If you use the default `root` and `path`, the URL is: http://localhost:8080/hello.
+If you decide to generate a REST resource (using the `className` attribute), the endpoint is exposed at: `http://localhost:8080/$path`.
+If you use the default `path`, the URL is: http://localhost:8080/hello.
 
 The project is either generated in the current directory or in a directory named after the passed artifactId.
 If the current directory is empty, the project is generated in-place.
@@ -177,7 +181,11 @@ Instructions to build the image and run the container are written in the `Docker
 
 == Dealing with extensions
 
-You can list extensions with: `mvn quarkus:list-extensions`.
+From inside a {project-name} project, you can obtain a list of the available extensions with:
+
+[source]
+mvn quarkus:list-extensions
+
 You can enable an extension using:
 
 [source]
@@ -187,7 +195,7 @@ Extensions are passed using a comma-separated list.
 
 == Development mode
 
-Quarkus comes with a built-in development mode.
+{project-name} comes with a built-in development mode.
 Run you application with:
 
 [source]
@@ -198,7 +206,7 @@ The changes are automatically reflected in your running application.
 This is great to do development spanning UI and database as you see changes reflected immediately.
 
 `quarkus:dev` enables hot deployment with background compilation, which means
-that when you modify your Java files your resource files and refresh your browser these changes will automatically take effect.
+that when you modify your Java files or your resource files and refresh your browser these changes will automatically take effect.
 This works too for resource files like the configuration property file.
 The act of
 refreshing the browser triggers a scan of the workspace, and if any changes are detected the Java files are compiled,
@@ -209,7 +217,7 @@ Hit `CTRL+C` to stop the application.
 
 == Debugging
 
-You can run a Quarkus application in debug mode using:
+You can run a {project-name} application in debug mode using:
 
 [source]
 mvn compile quarkus:dev -Ddebug=true
@@ -258,13 +266,13 @@ Open the project directory in VS Code. If you have installed the Java Extension 
 
 == Building a native image
 
-Native images make {project-name} applications ideal for containers and FaaS workloads.
+Native images make {project-name} applications ideal for containers and serverless workloads.
 
-Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {graalvm-version}.
+Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {graal-version}.
 Verify that your `pom.xml` has the proper `native` profile (see <<build-tool-maven>>).
 
 Create a native executable using: `mvn package -Pnative`.
-A native executable will be present in `target`
+A native executable will be present in `target/`.
 
 To run Integration Tests on the native executable, make sure to have the proper Maven plugin configured (see <<build-tool-maven>>) and launch the `verify` goal.
 

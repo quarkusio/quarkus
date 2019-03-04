@@ -7,7 +7,7 @@ Panache focuses on making your entities trivial and fun to write in {project-nam
 
 == First: an example
 
-What we're doing in Panache is allow you to write your Hibernate entities like this:
+What we're doing in Panache is allow you to write your Hibernate ORM entities like this:
 
 [source,java]
 --
@@ -31,7 +31,10 @@ public class Person extends PanacheEntity {
 }
 --
 
+You have noticed how much more compact and readable the code is?
 Does this look interesting? Read on!
+
+NOTE: the `list()` method might be surprising at first. It takes fragments of HQL (JP-QL) queries and contextualize the rest. That's makes for very consise but yet readable code.
 
 == Setting up and configuring Panache JPA
 
@@ -117,10 +120,11 @@ public class Person extends PanacheEntity {
 
 And thanks to our field access rewrite, when your users read `person.name` they will actually call your `getName()` accessor,
 and similarly for field writes and the setter.
+This allows for proper encapsulation at runtime as all fields calls will be replaced by the corresponding getter/setter calls.
 
 == Most useful operations
 
-Once you have written your entity, here are the most common operations you would be able to do:
+Once you have written your entity, here are the most common operations you will be able to do:
 
 [source,java]
 --
@@ -164,7 +168,15 @@ Person.delete("status", Status.Alive);
 Person.deleteAll();
 --
 
-Naturally, all `list` methods have equivalent `stream` versions.
+All `list` methods have equivalent `stream` versions.
+
+[source,java]
+--
+List<String> namesButEmmanuels = Person.streamAll()
+    .map(p -> p.name.toLowerCase() )
+    .filter( n -> ! "emmanuel".equals(n) )
+    .collect(Collectors.toList());
+--
 
 == Paging
 
@@ -193,6 +205,12 @@ int numberOfPages = livingPersons.pageCount();
 
 // get the total number of entities returned by this query without paging
 int count = livingPersons.count();
+
+// and you can chain methods of course
+return Person.find("status", Status.Alive)
+    .page(Page.ofSize(25))
+    .nextPage()
+    .stream()
 --
 
 The `PanacheQuery` type has many other methods to deal with paging and returning streams.
@@ -211,6 +229,9 @@ But these methods also accept an optional `Sort` parameter, which allows your to
 [source,java]
 --
 List<Person> persons = Person.list(Sort.by("name").and("birth"));
+
+// and with more restrictions
+List<Person> persons = Person.list("status", Sort.by("name").and("birth"), Status.Alive);
 --
 
 The `Sort` class has plenty of methods for adding columns and specifying sort direction.
@@ -270,7 +291,7 @@ Or by name using a `Map`:
 Map<String, Object> params = new HashMap<>();
 params.put("name", "stef");
 params.put("status", Status.Alive);
-Person.find("name = :name and status = :status", "stef", Status.Alive);
+Person.find("name = :name and status = :status", params);
 --
 
 Or using the convenience class `Parameters` to either build a `Map` or just use as-is:
@@ -337,7 +358,7 @@ go back to specifying your ID and using getters and setters if that's your thing
 
 == Custom IDs
 
-IDs are often a touchy subject, and not everyone's up for letting them handled by the framework, but once again we
+IDs are often a touchy subject, and not everyone's up for letting them handled by the framework, once again we
 have you covered.
 
 You can specify your own ID strategy by extending `PanacheEntityBase` instead of `PanacheEntity`. Then
@@ -375,7 +396,7 @@ public class PersonRepository implements PanacheRepositoryBase<Person,Integer> {
 
 == How and why we simplify Hibernate mapping
 
-When it comes to writing hibernate entities, there are a number of annoying things that users have grown used to 
+When it comes to writing Hibernate ORM entities, there are a number of annoying things that users have grown used to 
 reluctantly deal with, such as:
 
 - Duplicating ID logic: most entities need an ID, most people don't care how it's set, because it's not really
@@ -408,4 +429,4 @@ your entity `Person` by typing `Person.` and getting completion for all the oper
 `Person.find("name = ?1 and status = ?2", "stef", Status.Alive)` or even better
 `Person.find("name", "stef")`.
 
-That's all there is to it: with Panache, Hibernate has never looked so trim. 
+That's all there is to it: with Panache, Hibernate has never looked so trim and neat. 

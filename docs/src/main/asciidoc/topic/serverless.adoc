@@ -36,7 +36,7 @@ public class CRUDResource {
     @Transactional
     @Path("/cake")
     public String getCake() {
-        Cake c = (Cake) em.createQuery("from Cake").getSingleResult();
+        Cake c = em.createQuery("from Cake", Cake.class).getSingleResult();
         return c.getType();
     }
 }

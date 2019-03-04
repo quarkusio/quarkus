@@ -1,0 +1,30 @@
+== Functions as a Service and Serverless
+
+Functions as a Service and, more broadly, serverless is an emerging trend that is gaining wide adoption with offerings from most of the
+major platform and cloud providers.  Owing much to the simplicity of the development model, more and more workloads are being deployed as
+ serverless functions to take advantage of the automatic scaling and concurrency that serverless offers.  However, to date, Java and the
+ JVM has not been a primary focus for many.  JVM startup time and memory overhead are prohibitive costs for many organizations.  However,
+  it would be a shame to leave behind the wealth of experience and vast ecosystem in order to gain efficiencies in a serverless model.
+
+Quarkus solves of much of this for us.  Quarkus offers blindingly fast start up times memory optimized applications well-suited to
+serverless environments.  With Quarkus, developers can continue to use Java and many of the libraries familiar to them.  Quarkus takes on
+ the work of packaging everything up for deployment.
+
+Thanks to their stellar startup time and low memory usage, you can implement Quarkus functions to be used in serverless environments.
+If you are using AWS Lambda, your Quarkus function looks like:
+
+[source, java]
+----
+public class HelloLambda implements RequestHandler<HelloRequest, String> {
+
+    @Inject
+    HelloGreeter greeter;
+
+    @Override
+    public String handleRequest(HelloRequest request, Context context) {
+        return greeter.greet(request.firstName, request.lastName);
+    }
+}
+----
+
+You can use any of the Quarkus features in your function, benefit from the fast startup and embrace this new world without having to change your programming language.

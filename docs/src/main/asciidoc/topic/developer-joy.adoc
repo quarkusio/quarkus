@@ -8,15 +8,15 @@ We've looked for the most useful extensions, we've made sure they all work toget
 
 === Unified configuration
 
-Gone are the days of a thousand configuration files and formats. We're aiming for cohesion, so a single configuration file is all it takes for {project-name} applications to configure every single extension. Not only that, but we've made sure that every configurable option has the most useful and sensible default so you can get started with no configuration whatsoever.
+Gone are the days of a thousand configuration files and formats. We're aiming for cohesion, so a single configuration file is all it takes for {project-name} applications to configure every single extension. Not only that, but we've made sure that every configurable option has the most useful and sensible defaults so you can get started with no configuration whatsoever.
 
 === Live Coding
 
-Build applications faster with https://quarkus/live-coding[live coding]: fix bugs just by saving your code and reloading your browser.
+Build applications faster with {quarkus-site-live-coding}[live coding]: fix bugs just by saving your code and reloading your browser.
 
 === Works on all the things
 
-There's nothing worse than getting different results when running your application or tests under Maven, Gradle, or the IDE. Whatever your work-flow, {project-name} application or tests are trivial to run in any environment, so pick your favorite tool and we make sure you get the same results as easily as possible.
+There's nothing worse than getting different results when running your application or tests under Maven, Gradle, or the IDE. Whatever your workflow, {project-name} applications or tests are trivial to run in any environment, so pick your favorite tool and we make sure you get the same results as easily as possible.
 
 === Opinionated
 

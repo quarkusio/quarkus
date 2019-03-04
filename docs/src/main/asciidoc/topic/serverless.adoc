@@ -10,21 +10,55 @@ Quarkus solves of much of this for us.  Quarkus offers blindingly fast start up 
 serverless environments.  With Quarkus, developers can continue to use Java and many of the libraries familiar to them.  Quarkus takes on
  the work of packaging everything up for deployment.
 
-Thanks to their stellar startup time and low memory usage, you can implement Quarkus functions to be used in serverless environments.
-If you are using AWS Lambda, your Quarkus function looks like:
+=== Running a Quarkus app on serverless
+
+One of the challenges when adopting serverless as development paradigm comes down to choice.  There are many choices available to build
+your functions and which one is chosen can have lasting impacts.  Quarkus can help eliminate some of this by allowing you to bring
+along the frameworks you know use and trust.  While many FaaS offerings bring with them their own APIs one needs to implement in order to
+ function properly, many also offer the option to deploy arbitrary containers via Docker or OCI images.
+
+Consider the following basic CRUD example:
 
 [source, java]
 ----
-public class HelloLambda implements RequestHandler<HelloRequest, String> {
+@Path("/")
+@ApplicationScoped
+public class CRUDResource {
 
     @Inject
-    HelloGreeter greeter;
+    EntityManager em;
 
-    @Override
-    public String handleRequest(HelloRequest request, Context context) {
-        return greeter.greet(request.firstName, request.lastName);
+    @Inject
+    UserTransaction transaction;
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    @Transactional
+    @Path("/cake")
+    public String getCake() {
+        Cake c = (Cake) em.createQuery("from Cake").getSingleResult();
+        return c.getType();
     }
 }
 ----
 
-You can use any of the Quarkus features in your function, benefit from the fast startup and embrace this new world without having to change your programming language.
+Taking this simple GET operation, we can use quarkus to build a runnable jar or even an native image which we can then embed in a Docker
+image or for use in a Knative Build script for deployment on top of kubernetes.
+
+[source, shell]
+----
+mvn package ## produces a runnable jar with dependencies in target/lib
+----
+
+or
+
+[source, bash]
+----
+mvn quarkus:native-image ## produces a standalone executable
+----
+
+Either scenario requires minimal work, then, to bundle in to your preferred FaaS platform.
+
+=== FaaS API
+All this begs the question: why doesn't Quarkus simply provide its own opinionated API?  While this may happen eventually, the current
+philosophy is to integrate what choices make sense so developers don't need to learn a whole new API set to make use of Quarkus.

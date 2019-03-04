@@ -89,7 +89,7 @@ We use a profile because, you will see very soon, packaging the native image tak
 Create a native executable using: `mvn package -Pnative`.
 
 In addition to the regular files, the build also produces `target/quarkus-quickstart-runner`.
-You can run it using: `target/quarkus-quickstart-runner.jar`.
+You can run it using: `./target/quarkus-quickstart-runner`.
 
 == Testing the native executable
 
@@ -177,8 +177,10 @@ IMPORTANT: Before going further, be sure to have a working Docker environment.
 
 You can run the application in a Docker container using the JAR produced by the Quarkus Maven Plugin.
 However, in this guide we focus on creating a Docker image using the produced native executable.
-Because the Docker container may not use the same _executable_ format as the one produced by default, we must instruct the Maven build to produce an
- executable from inside a Docker container:
+
+By default, the native image is tailored for your operating system (Windows, macOS etc).
+Because the Docker container may not use the same _executable_ format as the one produced by your operating system,
+we will instruct the Maven build to produce an executable from inside a Docker container:
 
 [source, bash]
 ----

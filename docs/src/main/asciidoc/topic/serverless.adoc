@@ -57,7 +57,8 @@ or
 mvn quarkus:native-image ## produces a standalone executable
 ----
 
-Either scenario requires minimal work, then, to bundle in to your preferred FaaS platform.
+The runnable jar can then be execute simply by running `java -jar target/myapplication-runner.jar`.  Either scenario requires minimal work,
+ then, to bundle in to your preferred FaaS platform.
 
 === FaaS API
 All this begs the question: why doesn't Quarkus simply provide its own opinionated API?  While this may happen eventually, the current

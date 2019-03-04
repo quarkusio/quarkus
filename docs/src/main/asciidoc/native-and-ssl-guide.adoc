@@ -24,7 +24,7 @@ The project is located in the `rest-client` {quickstarts-tree-url}/rest-client[d
 
 == Looks like it works out of the box?!?
 
-If you open the application's configuration file (`src/main/resources/META-INF/microprofile-config.properties`), you can see the following line:
+If you open the application's configuration file (`src/main/resources/application.properties`), you can see the following line:
 ```
 org.acme.restclient.CountriesService/mp-rest/url=https://restcountries.eu/rest
 ```
@@ -78,7 +78,7 @@ So if you are sure you don't need it, you can disable it entirely.
 
 First, let's disable it without changing the REST service URL and see how it goes.
 
-Open `src/main/resources/META-INF/microprofile-config.properties` and add the following line:
+Open `src/main/resources/application.properties` and add the following line:
 ```
 quarkus.ssl.native=false
 ```
@@ -95,7 +95,7 @@ Exception handling request to /country/name/greece: com.oracle.svm.core.jdk.Unsu
 
 This error is the one you obtain when trying to use SSL while it was not explicitly enabled in your native image.
 
-Now, let's change the REST service URL to **not** use SSL in `src/main/resources/META-INF/microprofile-config.properties`:
+Now, let's change the REST service URL to **not** use SSL in `src/main/resources/application.properties`:
 ```
 org.acme.restclient.CountriesService/mp-rest/url=http://restcountries.eu/rest
 ```
@@ -132,7 +132,7 @@ And there's more to it.
 
 Let's revert the changes we made to the configuration file and go back to SSL with the following command:
 ```
-git checkout -- src/main/resources/META-INF/microprofile-config.properties
+git checkout -- src/main/resources/application.properties
 ```
 
 And let's build the native image again:

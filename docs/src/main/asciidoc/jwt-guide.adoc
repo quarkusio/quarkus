@@ -265,12 +265,12 @@ Excellent, we have not provided any JWT in the request, so we should not be able
 
 == Configuring the {extension-name} Extension Security Information
 
-In the <<Configuration>> section we introduce the microprofile-config.properties that affect the {extension-name} extension.
+In the <<Configuration>> section we introduce the `application.properties` file that affect the {extension-name} extension.
 
-=== Setting up microprofile-config.properties
- For part A of step 1, create a using-jwt-rbac/src/main/resources/META-INF/microprofile-config.properties with the following content:
+=== Setting up application.properties
+ For part A of step 1, create a using-jwt-rbac/src/main/resources/application.properties with the following content:
 
-.META-INF/microprofile-config.properties for TokenSecuredResource
+.application.properties for TokenSecuredResource
 [source, properties]
 ----
 mp.jwt.verify.publickey.location=publicKey.pem #<1>

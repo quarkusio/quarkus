@@ -85,7 +85,7 @@ The property files realm supports mapping of users to password and users to role
 |quarkus.security.file.roles|roles.properties|Classpath resource name of properties file containing user to role mappings; see <<Roles.properties>>
 |===
 
-.example microprofile-config.properties file section for property files realm
+.example application.properties file section for property files realm
 [source,properties]
 --
 quarkus.security.file.enabled=true
@@ -127,7 +127,7 @@ noadmin=user
 Given these role mappings, only user `scott` would be allowed to access the `/subject/secured` endpoint from the <<SubjectExposingResource Example>>.
 
 ### Embedded Realm Configuration
-The embedded realm also supports mapping of users to password and users to roles. It uses the main microprofile-config.properties Quarkus configuration file to embed this information. To enable and configure it, the following configuration properties are used:
+The embedded realm also supports mapping of users to password and users to roles. It uses the main application.properties Quarkus configuration file to embed this information. To enable and configure it, the following configuration properties are used:
 
 |===
 |Property Name|Default|Description
@@ -138,9 +138,9 @@ The embedded realm also supports mapping of users to password and users to roles
 |quarkus.security.embedded.roles.*|none|Prefix for the properties that specify user to role mappings; see <<Embedded Roles>>
 |===
 
-The following is an example microprofile-config.properties file section illustrating the embedded realm configuration:
+The following is an example application.properties file section illustrating the embedded realm configuration:
 
-.example microprofile-config.properties file section for embedded realm
+.example application.properties file section for embedded realm
 [source,properties]
 ----
 quarkus.security.embedded.enabled=true
@@ -156,7 +156,7 @@ quarkus.security.embedded.auth-mechanism=CUSTOM
 ----
 
 #### Embedded Users
-The user to password mappings are specified in the microprofile-config.properties by property names of the form `quarkus.security.embedded.users.<user>=<password>`. The following <<Example Passwords>> illustrates the syntax with the 4 user to password mappings shown in lines 2-5:
+The user to password mappings are specified in the `application.properties` file by property names of the form `quarkus.security.embedded.users.<user>=<password>`. The following <<Example Passwords>> illustrates the syntax with the 4 user to password mappings shown in lines 2-5:
 
 .Example Passwords
 [source,properties,linenums,highlight='2-5']
@@ -175,7 +175,7 @@ quarkus.security.embedded.roles.noadmin=user
 <2> User `stuart` has password `test`
 
 #### Embedded Roles
-The user to role mappings are specified in the microprofile-config.properties by property names of the form `quarkus.security.embedded.roles.<user>=role1[,role2[,role3[,...]]]`. The following <<Example Roles>> illustrates the syntax with the 4 user to role mappings shown in lines 6-9:
+The user to role mappings are specified in the `application.properties` file by property names of the form `quarkus.security.embedded.roles.<user>=role1[,role2[,role3[,...]]]`. The following <<Example Roles>> illustrates the syntax with the 4 user to role mappings shown in lines 6-9:
 
 .Example Roles
 [source,properties,linenums,highlight='6-9']

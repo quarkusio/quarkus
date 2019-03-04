@@ -65,6 +65,7 @@
                         <!-- This will probably go away once all the pages are integrated in the website but keep track of the links -->
                         <quarkus-site-getting-started>${quarkus-home-url}/getting-started</quarkus-site-getting-started>
                         <quarkus-site-extension-authors-guide>${quarkus-home-url}/documentation/extension-authors-guide</quarkus-site-extension-authors-guide>
+                        <quarkus-site-live-coding>${quarkus-home-url}/live-coding</quarkus-site-live-coding>
 
                         <!-- === Communication === -->
                         <quarkus-chat-url>https://protean.zulipchat.com/#narrow/stream/173288-Protean-users</quarkus-chat-url>

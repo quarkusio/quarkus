@@ -74,7 +74,7 @@ private String suffix;
 private Optional<String> name;
 ----
 
-The first property is _mandatory_. If you do not provide a value, the build fails.
+If you do not provide a value for the first property, it will have a `null` value.
 The second property injects the given default value if the configuration file does not provide a value.
 The third property is optional. The injected `Optional` is empty as the configuration file does not provide a value.
 
@@ -172,15 +172,19 @@ This is a tradeoff as the more runtime properties are available, the less build 
 
 You can override these runtime properties with the following mechanisms (in decreasing priority):
 
-1. using system properties: `java -jar target/myapp-runner.jar -Dquarkus.database.password=youshallnotpass`
-2. using environment variable: `export QUARKUS_DATABASE_PASSWORD=youshallnotpass ; java -jar target/myapp-runner.jar`
+1. using system properties:
+  * for a runner jar: `java -Dquarkus.datasource.password=youshallnotpass -jar target/myapp-runner.jar`
+  * for a native image: `./target/myapp-runner -Dquarkus.datasource.password=youshallnotpass`
+2. using environment variables:
+  * for a runner jar: `export QUARKUS_DATASOURCE_PASSWORD=youshallnotpass ; java -jar target/myapp-runner.jar`
+  * for a native image: `export QUARKUS_DATASOURCE_PASSWORD=youshallnotpass ; ./target/myapp-runner`
 
-NOTE: Environment variables names are following the conversion rules of link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/asciidoc/configsources.asciidoc#default-configsources[Eclipse Microprofile]
+NOTE: Environment variables names are following the conversion rules of link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/asciidoc/configsources.asciidoc#default-configsources[Eclipse MicroProfile]
 
 == More info on how to configure
 
-{project-name} relies on Eclipse Microprofile and inherit his features.
+{project-name} relies on Eclipse MicroProfile and inherit its features.
 
-There are converters that convert your property file content from String to typed Java types. See the list link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/asciidoc/converters.asciidoc[in the specification].
+There are converters that convert your property file content from `String` to typed Java types. See the list link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/asciidoc/converters.asciidoc[in the specification].
 
-TODO: make ken review this section and discuss SmallRye expansion.
+// TODO: make Ken review this section and discuss SmallRye expansion.

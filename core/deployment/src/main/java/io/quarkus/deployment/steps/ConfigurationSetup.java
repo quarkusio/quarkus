@@ -38,6 +38,8 @@ import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
 import org.objectweb.asm.Opcodes;
 import org.wildfly.common.net.CidrAddress;
+import org.wildfly.security.ssl.CipherSuiteSelector;
+import org.wildfly.security.ssl.Protocol;
 
 import io.quarkus.deployment.AccessorFinder;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -67,6 +69,8 @@ import io.quarkus.runtime.configuration.InetSocketAddressConverter;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.quarkus.runtime.configuration.RegexConverter;
 import io.quarkus.runtime.configuration.SimpleConfigurationProviderResolver;
+import io.quarkus.runtime.configuration.ssl.CipherSuiteSelectorConverter;
+import io.quarkus.runtime.configuration.ssl.ProtocolConverter;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
@@ -138,6 +142,14 @@ public class ConfigurationSetup {
                 200,
                 Pattern.class,
                 RegexConverter.class));
+        configurationTypes.produce(new ConfigurationCustomConverterBuildItem(
+                200,
+                CipherSuiteSelector.class,
+                CipherSuiteSelectorConverter.class));
+        configurationTypes.produce(new ConfigurationCustomConverterBuildItem(
+                200,
+                Protocol.class,
+                ProtocolConverter.class));
     }
 
     /**

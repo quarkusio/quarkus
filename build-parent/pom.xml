@@ -30,6 +30,12 @@
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <kotlin.version>1.3.21</kotlin.version>
 
+        <!-- These properties are needed in order for them to be resolvable by the documentation -->
+        <!-- The Graal version we suggest using in documentation - as that's
+           what we work with by self downloading it: -->
+        <graal-sdk.version-for-documentation>1.0.0-rc12</graal-sdk.version-for-documentation>
+        <rest-assured.version>3.3.0</rest-assured.version>
+
         <!-- Enable APT by default for Eclipse -->
         <m2e.apt.activation>jdt_apt</m2e.apt.activation>
     </properties>

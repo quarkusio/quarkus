@@ -101,42 +101,42 @@ class InfinispanClientProcessor {
                 Util.close(stream);
             }
 
-            InfinispanClientProducer.replaceProperties(properties);
-
             // We use caffeine for bounded near cache - so register that reflection if we have a bounded near cache
             if (properties.containsKey(ConfigurationProperties.NEAR_CACHE_MAX_ENTRIES)) {
                 reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.github.benmanes.caffeine.cache.SSMS"));
                 reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, "com.github.benmanes.caffeine.cache.PSMS"));
             }
+        }
 
-            // This is always non null
-            Object marshaller = properties.get(ConfigurationProperties.MARSHALLER);
+        InfinispanClientProducer.replaceProperties(properties);
 
-            if (marshaller instanceof ProtoStreamMarshaller) {
-                ApplicationArchive applicationArchive = applicationArchivesBuildItem.getRootArchive();
-                // If we have properties file we may have to care about
-                Path metaPath = applicationArchive.getChildPath(META_INF);
+        // This is always non null
+        Object marshaller = properties.get(ConfigurationProperties.MARSHALLER);
 
-                Iterator<Path> protoFiles = Files.list(metaPath)
-                        .filter(Files::isRegularFile)
-                        .filter(p -> p.toString().endsWith(PROTO_EXTENSION))
-                        .iterator();
-                // We monitor the entire meta inf directory if properties are available
-                if (protoFiles.hasNext()) {
-                    // Quarkus doesn't currently support hot deployment watching directories
-                    //                hotDeployment.produce(new HotDeploymentConfigFileBuildItem(META_INF));
-                }
+        if (marshaller instanceof ProtoStreamMarshaller) {
+            ApplicationArchive applicationArchive = applicationArchivesBuildItem.getRootArchive();
+            // If we have properties file we may have to care about
+            Path metaPath = applicationArchive.getChildPath(META_INF);
 
-                while (protoFiles.hasNext()) {
-                    Path path = protoFiles.next();
-                    byte[] bytes = Files.readAllBytes(path);
-                    // This uses the default file encoding - should we enforce UTF-8?
-                    properties.put(InfinispanClientProducer.PROTOBUF_FILE_PREFIX + path.getFileName().toString(),
-                            new String(bytes, StandardCharsets.UTF_8));
-                }
-
-                InfinispanClientProducer.handleProtoStreamRequirements(properties);
+            Iterator<Path> protoFiles = Files.list(metaPath)
+                    .filter(Files::isRegularFile)
+                    .filter(p -> p.toString().endsWith(PROTO_EXTENSION))
+                    .iterator();
+            // We monitor the entire meta inf directory if properties are available
+            if (protoFiles.hasNext()) {
+                // Quarkus doesn't currently support hot deployment watching directories
+                //                hotDeployment.produce(new HotDeploymentConfigFileBuildItem(META_INF));
             }
+
+            while (protoFiles.hasNext()) {
+                Path path = protoFiles.next();
+                byte[] bytes = Files.readAllBytes(path);
+                // This uses the default file encoding - should we enforce UTF-8?
+                properties.put(InfinispanClientProducer.PROTOBUF_FILE_PREFIX + path.getFileName().toString(),
+                        new String(bytes, StandardCharsets.UTF_8));
+            }
+
+            InfinispanClientProducer.handleProtoStreamRequirements(properties);
         }
 
         // Add any user project listeners to allow reflection in native code
@@ -197,7 +197,7 @@ class InfinispanClientProcessor {
         // Only write the entries if is a valid number and it isn't already configured
         if (maxEntries > 0 && !properties.containsKey(ConfigurationProperties.NEAR_CACHE_MODE)) {
             // This is already empty so no need for putIfAbsent
-            properties.put(ConfigurationProperties.NEAR_CACHE_MODE, NearCacheMode.INVALIDATED);
+            properties.put(ConfigurationProperties.NEAR_CACHE_MODE, NearCacheMode.INVALIDATED.toString());
             properties.putIfAbsent(ConfigurationProperties.NEAR_CACHE_MAX_ENTRIES, maxEntries);
         }
 

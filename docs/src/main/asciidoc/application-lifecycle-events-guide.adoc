@@ -43,7 +43,7 @@ It generates:
 
 * the Maven structure
 * a landing page accessible on `http://localhost:8080`
-* an example of `Dockerfile`
+* example `Dockerfile` files for both `native` and `jvm` modes
 * the application configuration file
 * an `org.acme.events.GreetingResource` resource
 * an associated test

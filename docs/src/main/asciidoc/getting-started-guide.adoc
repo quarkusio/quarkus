@@ -68,7 +68,7 @@ It generates:
 * an `org.acme.quickstart.GreetingResource` resource exposed on `/hello`
 * an associated unit test
 * a landing page accessible on `http://localhost:8080`
-* an example of `Dockerfile`
+* example `Dockerfile` files for both `native` and `jvm` modes
 * the application configuration file
 
 Once generated, look at the `pom.xml`.

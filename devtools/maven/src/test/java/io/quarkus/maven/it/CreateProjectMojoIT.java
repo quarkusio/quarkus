@@ -69,7 +69,8 @@ public class CreateProjectMojoIT extends MojoTestBase {
                 .read();
         assertThat(config).contains("key = value");
 
-        assertThat(new File(testDir, "src/main/docker/Dockerfile")).isFile();
+        assertThat(new File(testDir, "src/main/docker/Dockerfile.native")).isFile();
+        assertThat(new File(testDir, "src/main/docker/Dockerfile.jvm")).isFile();
 
         Model model = load(testDir);
         final DependencyManagement dependencyManagement = model.getDependencyManagement();

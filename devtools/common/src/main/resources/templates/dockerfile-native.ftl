@@ -5,7 +5,7 @@
 #
 # Then, build the image with:
 #
-# docker build -f src/main/docker/Dockerfile -t quarkus/${project_artifactId} .
+# docker build -f src/main/docker/Dockerfile.native -t quarkus/${project_artifactId} .
 #
 # Then run the container using:
 #

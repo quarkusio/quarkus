@@ -16,7 +16,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.ImmutableMap;
@@ -132,47 +131,6 @@ public class DevMojoIT extends MojoTestBase {
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/app/foo").contains("bar"));
-    }
-
-    @Test
-    @Disabled("Issue https://github.com/jbossas/protean-shamrock/issues/245")
-    public void testThatTheApplicationIsReloadedOnNewServlet() throws MavenInvocationException, IOException {
-        testDir = initProject("projects/classic", "projects/project-classic-run-new-servlet");
-        runAndCheck();
-
-        File source = new File(testDir, "src/main/java/org/acme/MySimpleServlet.java");
-        String myNewServlet = "package org.acme;\n" +
-                "\n" +
-                "import java.io.IOException;\n" +
-                "\n" +
-                "import javax.servlet.annotation.WebServlet;\n" +
-                "import javax.servlet.http.HttpServlet;\n" +
-                "import javax.servlet.http.HttpServletRequest;\n" +
-                "import javax.servlet.http.HttpServletResponse;\n" +
-                "\n" +
-                "@WebServlet(name=\"MyServlet\", urlPatterns=\"/my\")\n" +
-                "public class MySimpleServlet extends HttpServlet {\n" +
-                "    \n" +
-                "    @Override\n" +
-                "    protected void doGet(HttpServletRequest request, \n" +
-                "      HttpServletResponse response) throws IOException {\n" +
-                "          response.setContentType(\"text/plain\");\n" +
-                "          response.getWriter().println(\"hello from servlet\");\n" +
-                "      }\n" +
-                "}";
-        FileUtils.write(source, myNewServlet, Charset.forName("UTF-8"));
-
-        await()
-                .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/my").contains("hello from servlet"));
-
-        // delete servlet
-        source.delete();
-
-        await()
-                .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> getHttpResponse("/my", 404));
-
     }
 
     private void runAndCheck() throws FileNotFoundException, MavenInvocationException {

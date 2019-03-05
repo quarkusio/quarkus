@@ -25,8 +25,8 @@ This will add the following to your pom.xml
     </dependency>
 ----
 
-The Infinispan client is configurable in the `microprofile-config.properties` file that can be
-provided in the `META-INF` directory. These are the properties that
+The Infinispan client is configurable in the `application.properties` file that can be
+provided in the `src/main/resources` directory. These are the properties that
 can be configured in this file:
 
 [cols=3*,options="header"]

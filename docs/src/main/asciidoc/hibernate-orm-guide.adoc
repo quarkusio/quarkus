@@ -299,7 +299,7 @@ Query query = ...
 query.setHint("org.hibernate.cacheable", Boolean.TRUE);
 --
 
-If you have a NamedQuery then you can enable caching directly on its definition, which will usually be on an entity:
+If you have a `NamedQuery` then you can enable caching directly on its definition, which will usually be on an entity:
 
 [source,java]
 --
@@ -325,11 +325,19 @@ All cached queries are by default kept in a single region dedicated to them call
 
 All regions are bounded by size and time by default. The defaults are `10000` max entries, and `100` seconds as maximum idle time.
 
-The size of each region can be customized via the `hibernate.cache.<region_name>.memory.object.count` property (Replace _<region_name>_ with the actual region name).
+The size of each region can be customized via the `quarkus.hibernate-orm.cache."<region_name>".memory.object-count` property (Replace _<region_name>_ with the actual region name).
 
-To set the maximum idle time, provide the number of seconds via the `hibernate.cache.<region_name>.expiration.max_idle` property (Replace _<region_name>_ with the actual region name).
+To set the maximum idle time, provide the number of seconds via the `quarkus.hibernate-orm.cache."<region_name>".expiration.max-idle` property (Replace _<region_name>_ with the actual region name).
 
-## Limitations of Caching
+[NOTE]
+====
+The double quotes are mandatory if your region name contains a dot. For instance:
+```
+quarkus.hibernate-orm.cache."com.acme.MyEntity".memory.object-count=1000
+```
+====
+
+=== Limitations of Caching
 
 The caching technology provided within {project-name} is currently quite rudimentary and limited.
 

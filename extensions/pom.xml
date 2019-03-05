@@ -87,6 +87,8 @@
         <module>camel</module>
 
         <module>kotlin</module>
+
+        <module>command-line-runner</module>
     </modules>
 
 </project>

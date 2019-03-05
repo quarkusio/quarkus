@@ -51,6 +51,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
+import io.quarkus.deployment.builditem.MainAfterStartupBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
@@ -283,10 +284,21 @@ public final class ExtensionLoader {
                 assert recordAnnotation != null;
                 final ExecutionTime executionTime = recordAnnotation.value();
                 final boolean optional = recordAnnotation.optional();
-                methodStepConfig = methodStepConfig.andThen(bsb -> bsb.produces(
-                        executionTime == ExecutionTime.STATIC_INIT ? StaticBytecodeRecorderBuildItem.class
-                                : MainBytecodeRecorderBuildItem.class,
-                        optional ? ProduceFlags.of(ProduceFlag.WEAK) : ProduceFlags.NONE));
+                methodStepConfig = methodStepConfig.andThen(bsb -> {
+                    Class<? extends BuildItem> buildItem = executionTime == ExecutionTime.STATIC_INIT
+                            ? StaticBytecodeRecorderBuildItem.class
+                            : MainBytecodeRecorderBuildItem.class;
+                    if (executionTime == ExecutionTime.STATIC_INIT) {
+                        buildItem = StaticBytecodeRecorderBuildItem.class;
+                    } else if (executionTime == ExecutionTime.RUNTIME_INIT) {
+                        buildItem = MainBytecodeRecorderBuildItem.class;
+                    } else if (executionTime == ExecutionTime.AFTER_STARTUP) {
+                        buildItem = MainAfterStartupBytecodeRecorderBuildItem.class;
+                    }
+                    bsb.produces(
+                            buildItem,
+                            optional ? ProduceFlags.of(ProduceFlag.WEAK) : ProduceFlags.NONE);
+                });
             }
             boolean methodConsumingConfig = consumingConfig;
             if (methodParameters.length == 0) {
@@ -449,8 +461,10 @@ public final class ExtensionLoader {
                         // commit recorded data
                         if (recordAnnotation.value() == ExecutionTime.STATIC_INIT) {
                             bc.produce(new StaticBytecodeRecorderBuildItem(bri));
-                        } else {
+                        } else if (recordAnnotation.value() == ExecutionTime.RUNTIME_INIT) {
                             bc.produce(new MainBytecodeRecorderBuildItem(bri));
+                        } else if (recordAnnotation.value() == ExecutionTime.AFTER_STARTUP) {
+                            bc.produce(new MainAfterStartupBytecodeRecorderBuildItem(bri));
                         }
 
                     }

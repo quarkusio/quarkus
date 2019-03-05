@@ -108,9 +108,14 @@ public abstract class Application {
         } finally {
             stateLock.unlock();
         }
+        doPostStart();
     }
 
     protected abstract void doStart(String[] args);
+
+    protected void doPostStart() {
+
+    }
 
     /**
      * Stop the application. If another thread is also trying to stop the application, this method waits for that
@@ -220,6 +225,10 @@ public abstract class Application {
         } finally {
             stateLock.unlock();
         }
+    }
+
+    protected void requestShutdown() {
+        shutdownRequested = true;
     }
 
     private static IllegalStateException interruptedOnAwaitStart() {

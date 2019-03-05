@@ -38,6 +38,15 @@ public class StartupContext implements Closeable {
         values.put(ShutdownContext.class.getName(), shutdownContext);
     }
 
+    public void setMainArgs(final String[] args) {
+        values.put(MainArgsSupplier.class.getName(), new MainArgsSupplier() {
+            @Override
+            public String[] getArgs() {
+                return args;
+            }
+        });
+    }
+
     public void putValue(String name, Object value) {
         values.put(name, value);
     }

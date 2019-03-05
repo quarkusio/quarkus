@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
-import io.quarkus.scheduler.api.Scheduled;
+import io.quarkus.scheduler.Scheduled;
 
 public class SimpleJobs {
 

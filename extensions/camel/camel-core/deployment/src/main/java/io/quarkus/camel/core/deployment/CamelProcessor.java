@@ -36,7 +36,7 @@ import io.quarkus.deployment.builditem.substrate.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBundleBuildItem;
-import io.quarkus.jaxb.JaxbFileRootBuildItem;
+import io.quarkus.jaxb.deployment.JaxbFileRootBuildItem;
 
 class CamelProcessor {
     private static final List<Class<?>> CAMEL_REFLECTIVE_CLASSES = Arrays.asList(

@@ -51,10 +51,10 @@ import org.quartz.spi.JobFactory;
 import org.quartz.spi.TriggerFiredBundle;
 
 import io.quarkus.runtime.StartupEvent;
-import io.quarkus.scheduler.api.Scheduled;
-import io.quarkus.scheduler.api.ScheduledExecution;
-import io.quarkus.scheduler.api.Scheduler;
-import io.quarkus.scheduler.api.Trigger;
+import io.quarkus.scheduler.Scheduled;
+import io.quarkus.scheduler.ScheduledExecution;
+import io.quarkus.scheduler.Scheduler;
+import io.quarkus.scheduler.Trigger;
 
 /**
  *

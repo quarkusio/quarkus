@@ -20,7 +20,7 @@ import java.util.Map;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.annotations.Template;
-import io.quarkus.scheduler.api.Scheduled;
+import io.quarkus.scheduler.Scheduled;
 
 /**
  *

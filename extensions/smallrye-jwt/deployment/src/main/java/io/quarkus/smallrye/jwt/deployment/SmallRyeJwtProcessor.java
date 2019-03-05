@@ -30,12 +30,12 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.elytron.security.deployment.AuthConfigBuildItem;
+import io.quarkus.elytron.security.deployment.IdentityManagerBuildItem;
+import io.quarkus.elytron.security.deployment.SecurityDomainBuildItem;
+import io.quarkus.elytron.security.deployment.SecurityRealmBuildItem;
+import io.quarkus.elytron.security.runtime.AuthConfig;
 import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.security.AuthConfigBuildItem;
-import io.quarkus.security.IdentityManagerBuildItem;
-import io.quarkus.security.SecurityDomainBuildItem;
-import io.quarkus.security.SecurityRealmBuildItem;
-import io.quarkus.security.runtime.AuthConfig;
 import io.quarkus.smallrye.jwt.runtime.ClaimValueProducer;
 import io.quarkus.smallrye.jwt.runtime.CommonJwtProducer;
 import io.quarkus.smallrye.jwt.runtime.JWTAuthContextInfoGroup;
@@ -49,7 +49,7 @@ import io.quarkus.smallrye.jwt.runtime.auth.JWTAuthMethodExtension;
 import io.quarkus.smallrye.jwt.runtime.auth.MpJwtValidator;
 import io.quarkus.smallrye.jwt.runtime.auth.PublicKeyProxy;
 import io.quarkus.smallrye.jwt.runtime.auth.PublicKeySubstitution;
-import io.quarkus.undertow.ServletExtensionBuildItem;
+import io.quarkus.undertow.deployment.ServletExtensionBuildItem;
 import io.smallrye.jwt.config.JWTAuthContextInfoProvider;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.servlet.ServletExtension;
@@ -64,7 +64,7 @@ class SmallRyeJwtProcessor {
 
     /**
      * Register the CDI beans that are needed by the MP-JWT extension
-     * 
+     *
      * @param additionalBeans - producer for additional bean items
      */
     @BuildStep
@@ -81,7 +81,7 @@ class SmallRyeJwtProcessor {
 
     /**
      * Register this extension as a MP-JWT feature
-     * 
+     *
      * @return
      */
     @BuildStep
@@ -91,7 +91,7 @@ class SmallRyeJwtProcessor {
 
     /**
      * Configure a TokenSecurityRealm if enabled
-     * 
+     *
      * @param template - jwt runtime template
      * @param securityRealm - producer used to register the TokenSecurityRealm
      * @param container - the BeanContainer for creating CDI beans
@@ -131,7 +131,7 @@ class SmallRyeJwtProcessor {
 
     /**
      * Create the JwtIdentityManager
-     * 
+     *
      * @param template - jwt runtime template
      * @param securityDomain - the previously created TokenSecurityRealm
      * @param identityManagerProducer - producer for the identity manager
@@ -146,7 +146,7 @@ class SmallRyeJwtProcessor {
 
     /**
      * Register the MP-JWT authentication servlet extension
-     * 
+     *
      * @param template - jwt runtime template
      * @param container - the BeanContainer for creating CDI beans
      * @return servlet extension build item

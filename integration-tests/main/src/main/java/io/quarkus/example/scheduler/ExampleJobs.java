@@ -5,9 +5,9 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 
-import io.quarkus.scheduler.api.Scheduled;
-import io.quarkus.scheduler.api.ScheduledExecution;
-import io.quarkus.scheduler.api.Scheduler;
+import io.quarkus.scheduler.Scheduled;
+import io.quarkus.scheduler.ScheduledExecution;
+import io.quarkus.scheduler.Scheduler;
 
 public class ExampleJobs {
 

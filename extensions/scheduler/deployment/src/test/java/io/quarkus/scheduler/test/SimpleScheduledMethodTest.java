@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.scheduler.api.Scheduler;
+import io.quarkus.scheduler.Scheduler;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class SimpleScheduledMethodTest {

@@ -15,7 +15,7 @@
  */
 package io.quarkus.scheduler.runtime;
 
-import io.quarkus.scheduler.api.ScheduledExecution;
+import io.quarkus.scheduler.ScheduledExecution;
 
 /**
  * Invokes a scheduled business method of a bean.

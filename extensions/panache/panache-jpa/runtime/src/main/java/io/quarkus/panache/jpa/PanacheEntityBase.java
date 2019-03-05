@@ -8,7 +8,7 @@ import javax.persistence.Transient;
 
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
-import io.quarkus.panache.jpa.impl.JpaOperations;
+import io.quarkus.panache.jpa.runtime.JpaOperations;
 
 /**
  * <p>

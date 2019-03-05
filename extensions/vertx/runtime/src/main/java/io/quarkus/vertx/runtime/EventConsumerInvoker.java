@@ -15,6 +15,7 @@
  */
 package io.quarkus.vertx.runtime;
 
+import io.quarkus.vertx.ConsumeEvent;
 import io.vertx.core.eventbus.Message;
 
 /**

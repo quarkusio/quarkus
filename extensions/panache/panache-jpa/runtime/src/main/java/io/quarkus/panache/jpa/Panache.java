@@ -6,7 +6,7 @@ import javax.persistence.EntityManager;
 import javax.transaction.TransactionManager;
 
 import io.quarkus.panache.common.Parameters;
-import io.quarkus.panache.jpa.impl.JpaOperations;
+import io.quarkus.panache.jpa.runtime.JpaOperations;
 
 /**
  * Utility class for Panache.

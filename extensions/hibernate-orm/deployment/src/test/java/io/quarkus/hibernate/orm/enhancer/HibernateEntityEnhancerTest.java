@@ -31,7 +31,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 
-import io.quarkus.hibernate.orm.HibernateEntityEnhancer;
+import io.quarkus.hibernate.orm.deployment.HibernateEntityEnhancer;
 
 /**
  * Verifies the HibernateEntityEnhancer actually does enhance the entity class

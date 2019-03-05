@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import javax.enterprise.context.ApplicationScoped;
 
-import io.quarkus.scheduler.api.Scheduled;
+import io.quarkus.scheduler.Scheduled;
 
 /**
  *

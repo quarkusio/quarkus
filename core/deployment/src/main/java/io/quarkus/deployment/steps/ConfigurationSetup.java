@@ -166,6 +166,7 @@ public class ConfigurationSetup {
         // expand properties
         builder.withWrapper(ExpandingConfigSource::new);
         builder.addDefaultSources();
+        builder.withSources(new ApplicationPropertiesConfigSource.InJar());
         for (ConfigurationCustomConverterBuildItem converter : converters) {
             withConverterHelper(builder, converter.getType(), converter.getPriority(), converter.getConverter());
         }

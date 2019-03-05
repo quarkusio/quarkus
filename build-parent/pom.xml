@@ -787,7 +787,6 @@
                     </configuration>
                 </plugin>
             </plugins>
-
         </pluginManagement>
     </build>
 
@@ -872,8 +871,7 @@
             <id>release</id>
             <build>
                 <plugins>
-                    <!-- this will be required when we switch to Maven Central -->
-                    <!-- <plugin>
+                    <plugin>
                          <groupId>org.sonatype.plugins</groupId>
                         <artifactId>nexus-staging-maven-plugin</artifactId>
                         <version>1.6.3</version>
@@ -883,7 +881,7 @@
                             <serverId>ossrh</serverId>
                             <autoReleaseAfterClose>false</autoReleaseAfterClose>
                         </configuration>
-                    </plugin> -->
+                    </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-source-plugin</artifactId>

@@ -91,16 +91,13 @@
     </repositories>
 
     <distributionManagement>
-        <repository>
-            <id>quarkus-nexus-release</id>
-            <name>Quarkus AWS Nexus - Releases</name>
-            <url>http://ec2-18-234-117-118.compute-1.amazonaws.com:8081/nexus/content/repositories/releases/</url>
-        </repository>
         <snapshotRepository>
-            <id>quarkus-nexus-snapshot</id>
-            <name>Quarkus AWS Nexus - Snapshots</name>
-            <url>http://ec2-18-234-117-118.compute-1.amazonaws.com:8081/nexus/content/repositories/snapshots/</url>
+            <id>sonatype-nexus-snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
+        <repository>
+            <id>sonatype-nexus-snapshots</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
     </distributionManagement>
-
 </project>

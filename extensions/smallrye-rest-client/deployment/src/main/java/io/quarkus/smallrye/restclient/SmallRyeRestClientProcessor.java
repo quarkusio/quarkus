@@ -34,6 +34,7 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.protean.gizmo.MethodDescriptor;
 import org.jboss.protean.gizmo.ResultHandle;
+import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.internal.proxy.ProxyBuilderImpl;
 import org.jboss.resteasy.client.jaxrs.internal.proxy.ResteasyClientProxy;
 import org.jboss.resteasy.core.ResteasyProviderFactoryImpl;
@@ -116,6 +117,9 @@ class SmallRyeRestClientProcessor {
                 ClientRequestFilter[].class.getName(),
                 ClientResponseFilter[].class.getName(),
                 javax.ws.rs.ext.ReaderInterceptor[].class.getName()));
+
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false,
+                ResteasyClientBuilder.class.getName()));
     }
 
     @BuildStep

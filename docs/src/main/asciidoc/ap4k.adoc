@@ -1,0 +1,155 @@
+= {project-name} - Deploying an Application to Kubernetes and OpenShift
+
+This guide covers:
+
+* The deployment of the application to Kubernetes
+* The deployment of the application to OpenShift
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* roughly 15 minutes
+* an IDE
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven 3.5.3+
+* access to Kubernetes or Openshift cluster (Minikube and Minishift are both viable options)
+* have the following binaries on your PATH: `docker` (for building and pushing images), `kubectl` (for deploying to Kubernetes) and `oc` (for deploying to Openshift)
+
+Remember, you need to configure Maven as indicated in the link:maven-config.html[Maven configuration page].
+
+== Creating the Maven project
+
+First, we need a new project that contains the ap4k extension. This can be done using the following command:
+
+[source, subs=attributes+]
+----
+mvn io.quarkus:quarkus-maven-plugin:${quarkus-version}:create \
+    -DprojectGroupId=org.acme \
+    -DprojectArtifactId=ap4k \
+    -DclassName="org.acme.rest.GreetingResource" \
+    -Dpath="/greeting" \
+    -Dextensions="ap4k"
+----
+
+With project setup, proceed to create a `src/main/java/org/acme/rest/MyApplication.java` file that contains the following source:
+
+[source,java]
+----
+import javax.ws.rs.core.Application;
+
+public class MyApplication extends Application {
+
+}
+----
+
+This is the class we will use in the following sections to add our ap4k annotations.
+
+== Enable Kubernetes support
+
+By simply adding the `io.ap4k.kubernetes.annotation.KubernetesApplication` annotation to the `MyApplication` class, you will now be able to create a `Kubernetes` resources file
+that can later by applied to to deploy the application to Kubernetes.
+
+`MyApplication` should look like so:
+
+[source,java]
+----
+import javax.ws.rs.core.Application;
+import io.ap4k.kubernetes.annotation.KubernetesApplication;
+import io.ap4k.kubernetes.annotation.Port;
+
+@KubernetesApplication(ports = @Port(name = "http", containerPort = 8080), group = "yourDockerUsername")
+public class MyApplication extends Application {
+
+}
+----
+
+Now, when you build the project using `mvn package`, amongst the other file that are created you should see two files named `kubernetes.json` and `kubernetes.yaml`
+in `target/wiring-classes/META-INF/ap4k/` directory.
+
+If you look at either file you will see that it contains both a Kubernetes `Deployment` and a `Service`.
+
+An important thing to note about the `Deployment` is that is uses `yourDockerUsername/ap4k:1.0-SNAPSHOT` as the Docker image of the `Pod`.
+
+Also the `Service` is configured to use container port `8080` (due to the `@Port` annotation you added). This port configuration is necessary for the time being but in the future ap4k will provider
+tighter integration with {project-name} and will be able to automatically configure the ports based on the standard {project-name} configuration properties.
+
+An important thing to keep in mind is that so far all ap4k has done is generate the `Kubernetes` resources, it has not applied them. The next section will walk you through how this can be done.
+
+== Closing the Kubernetes / Docker loop
+
+For this section of the guide it is assumed that both `docker` and `kubectl` binaries are present on the PATH, that you have logged into `docker.io` with `yourDockerUsername` using `docker login` and finally that
+`kubectl` can properly interact with the Kubernetes cluster you are using.
+
+The first thing you need to do is add a proper `Dockerfile` that will be used to build an image based on the runner jar.
+For the time being it is recreated to manually create said `Dockerfile` (something will change soon with the proper `Dockerfile` being provided when the project is created using the Maven `create` goal), by creating `src/main/docker/Dockerfile.jvm` with the following content:
+
+[source, subs=attributes+]
+----
+FROM fabric8/java-jboss-openjdk8-jdk:1.5.4
+ENV JAVA_OPTIONS=-Dquarkus.http.host=0.0.0.0
+COPY target/lib/* /deployments/lib/
+COPY target/*-runner.jar /deployments/app.jar
+ENTRYPOINT [ "/deployments/run-java.sh" ]
+----
+
+Now, add the `io.ap4k.docker.annotation.EnableDockerBuild` annotation to `MyApplication` like so:
+
+[source,java]
+----
+import javax.ws.rs.core.Application;
+import io.ap4k.docker.annotation.EnableDockerBuild;
+import io.ap4k.kubernetes.annotation.KubernetesApplication;
+import io.ap4k.kubernetes.annotation.Port;
+
+@EnableDockerBuild(dockerFile = "src/main/docker/Dockerfile.jvm")
+@KubernetesApplication(ports = @Port(name = "http", containerPort = 8080), group = "yourDockerUsername")
+public class MyApplication extends Application {
+
+}
+----
+
+If you start out by simply executing `mvn clean package -Dap4k.build=true` then at the end of the build you have a `yourDockerUsername/ap4k:1.0-SNAPSHOT` image built locally that can be executed like so:
+
+`docker run --rm -p 8080:8080 yourDockerUsername/ap4k:1.0-SNAPSHOT`
+
+To actually deploy your application onto your Kubernetes cluster, you need to execute `mvn clean package -Dap4k.push=true -Dap4k.deploy=true`.
+
+In addition to what the previous command did, this command also pushes the image to the registry and applies the Kubernetes resources. At the end of the process the application will be deployed onto the cluster.
+
+== Enable Openshift support
+
+For this section of the guide it is assumed that `oc` is present on the PATH and that is able to properly communicate with the Openshift cluster you intend to use.
+
+Deploying applications onto Openshift is even easier than vanilla Kubernetes due to the existence of https://docs.openshift.com/container-platform/3.6/architecture/core_concepts/builds_and_image_streams.html#source-build[S2I].
+
+To enable Openshift and S2I support, modify `MyApplication` as so:
+
+[source,java]
+----
+import javax.ws.rs.core.Application;
+import io.ap4k.kubernetes.annotation.Env;
+import io.ap4k.kubernetes.annotation.Port;
+import io.ap4k.openshift.annotation.EnableS2iBuild;
+import io.ap4k.openshift.annotation.OpenshiftApplication;
+
+@OpenshiftApplication(envVars = @Env(name = "JAVA_OPTIONS", value = "-Dquarkus.http.host=0.0.0.0"), ports = @Port(name = "http", containerPort = 8080))
+@EnableS2iBuild
+public class MyApplication extends Application {
+
+}
+----
+
+If you simply execute `mvn clean package` you will see two new files named `openshift.json` and `openshift.yaml`
+in `target/wiring-classes/META-INF/ap4k/` directory. These contain the Openshift specific resources.
+
+Apply the resources and launching s2i is simply a matter of executing `mvn clean package -Dap4k.deploy=true`. When the build is done the application should be properly deployed on Openshift (without having any Docker image built/pushed/pulled).
+
+
+== Using gradle
+
+In order to be able to utilize the full capabilities of ap4k when using the {project-name} Gradle plugin instead of the Maven plugin,
+all tasks executions need to be performed using the `--no-daemon` flag.
+The reason this is needed is because ap4k invokes the `docker`, `kubectl` and `oc` binaries as part of JVM Shutdown hooks (which in turn is done
+because ap4k needs to have access to the final `*-runner` jar that is constructed when the build process completes).
+When running Gradle without the `--no-daemon` flag, Gradle does not shutdown the JVM thus preventing the hooks from executing.

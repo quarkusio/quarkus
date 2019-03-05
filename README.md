@@ -1,6 +1,6 @@
 # Quarkus
 
-[![Build Status](https://dev.azure.com/protean-ci/Shamrock/_apis/build/status/jbossas.protean-shamrock)](https://dev.azure.com/protean-ci/Shamrock/_build/latest?definitionId=4)
+[![Build Status](https://dev.azure.com/protean-ci/Quarkus/_apis/build/status/quarkusio.quarkus)](https://dev.azure.com/protean-ci/Quarkus/_build/latest?definitionId=7)
 
 > Quarkus is a Cloud Native, Container First framework for writing Java applications.
 

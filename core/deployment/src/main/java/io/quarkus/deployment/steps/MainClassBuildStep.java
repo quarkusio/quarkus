@@ -36,9 +36,11 @@ import io.quarkus.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
 import io.quarkus.deployment.builditem.ClassOutputBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.JavaLibraryPathAdditionalPathBuildItem;
+import io.quarkus.deployment.builditem.MainAfterStartupBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
+import io.quarkus.deployment.builditem.ShutdownBuildItem;
 import io.quarkus.deployment.builditem.SslTrustStoreSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
@@ -70,12 +72,14 @@ class MainClassBuildStep {
     MainClassBuildItem build(List<StaticBytecodeRecorderBuildItem> staticInitTasks,
             List<ObjectSubstitutionBuildItem> substitutions,
             List<MainBytecodeRecorderBuildItem> mainMethod,
+            List<MainAfterStartupBytecodeRecorderBuildItem> mainMethodAfterStartup,
             List<SystemPropertyBuildItem> properties,
             List<JavaLibraryPathAdditionalPathBuildItem> javaLibraryPathAdditionalPaths,
             Optional<SslTrustStoreSystemPropertyBuildItem> sslTrustStoreSystemProperty,
             List<FeatureBuildItem> features,
             BuildProducer<ApplicationClassNameBuildItem> appClassNameProducer,
             List<BytecodeRecorderObjectLoaderBuildItem> loaders,
+            Optional<ShutdownBuildItem> shutdownBuildItem,
             ClassOutputBuildItem classOutput) {
 
         String appClassName = APP_CLASS + COUNT.incrementAndGet();
@@ -131,6 +135,7 @@ class MainClassBuildStep {
 
         mv = file.getMethodCreator("doStart", void.class, String[].class);
         mv.setModifiers(Modifier.PROTECTED | Modifier.FINAL);
+        ResultHandle mainMethodArgs = mv.getMethodParam(0);
 
         // very first thing is to set system props (for run time, which use substitutions for a different
         // storage from build-time)
@@ -187,6 +192,9 @@ class MainClassBuildStep {
         mv.invokeStaticMethod(ofMethod(Timing.class, "mainStarted", void.class));
         startupContext = mv.readStaticField(scField.getFieldDescriptor());
 
+        mv.invokeVirtualMethod(ofMethod(StartupContext.class, "setMainArgs", void.class, String[].class),
+                startupContext, mainMethodArgs);
+
         tryBlock = mv.tryBlock();
         for (MainBytecodeRecorderBuildItem holder : mainMethod) {
             final BytecodeRecorderImpl recorder = holder.getBytecodeRecorder();
@@ -214,7 +222,30 @@ class MainClassBuildStep {
         cb.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cb.getCaughtException());
         cb.invokeVirtualMethod(ofMethod(StartupContext.class, "close", void.class), startupContext);
         cb.throwException(RuntimeException.class, "Failed to start quarkus", cb.getCaughtException());
+
+        // Application.class: start method after startup
+        for (MainAfterStartupBytecodeRecorderBuildItem holder : mainMethodAfterStartup) {
+            final BytecodeRecorderImpl recorder = holder.getBytecodeRecorder();
+            if (!recorder.isEmpty()) {
+                for (BytecodeRecorderObjectLoaderBuildItem item : loaders) {
+                    recorder.registerObjectLoader(item.getObjectLoader());
+                }
+                recorder.writeBytecode(classOutput.getClassOutput());
+                ResultHandle dup = mv.newInstance(ofConstructor(recorder.getClassName()));
+                mv.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup,
+                        startupContext);
+            }
+        }
+
         mv.returnValue(null);
+
+        // Application class: doPostStart method
+        if (shutdownBuildItem.isPresent()) {
+            mv = file.getMethodCreator("doPostStart", void.class);
+            mv.setModifiers(Modifier.PROTECTED);
+            mv.invokeSpecialMethod(ofMethod(Application.class, "requestShutdown", void.class), mv.getThis());
+            mv.returnValue(null);
+        }
 
         // Application class: stop method
 

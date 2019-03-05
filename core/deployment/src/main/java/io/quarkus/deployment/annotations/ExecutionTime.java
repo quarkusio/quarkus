@@ -27,5 +27,10 @@ public enum ExecutionTime {
     /**
      * The bytecode is run from a main method
      */
-    RUNTIME_INIT
+    RUNTIME_INIT,
+
+    /**
+     * The bytecode is run from a main method after all RUNTIME_INIT
+     */
+    AFTER_STARTUP
 }

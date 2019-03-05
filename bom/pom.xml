@@ -131,6 +131,7 @@
         <maven-invoker.version>3.0.1</maven-invoker.version>
         <awaitility.version>3.1.5</awaitility.version>
         <jprocesses.version>1.6.5</jprocesses.version>
+        <jboss-logmanager.version>1.0.0</jboss-logmanager.version>
     </properties>
 
     <dependencyManagement>
@@ -478,7 +479,7 @@
             <dependency>
                 <groupId>org.jboss.logmanager</groupId>
                 <artifactId>jboss-logmanager-embedded</artifactId>
-                <version>${project.version}</version>
+                <version>${jboss-logmanager.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.jboss.modules</groupId>

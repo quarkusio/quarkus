@@ -249,8 +249,8 @@ public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallba
 
         @Override
         public void close() throws Throwable {
-            testResourceManager.stop();
             resource.close();
+            testResourceManager.stop();
         }
 
         public boolean isSubstrate() {

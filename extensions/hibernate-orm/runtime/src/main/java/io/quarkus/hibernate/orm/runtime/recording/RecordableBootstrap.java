@@ -73,10 +73,6 @@ import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
  * be assignable to it.
  */
 public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
-    /**
-     * The default resource name for a hibernate configuration xml file.
-     */
-    public static final String DEFAULT_CFG_RESOURCE_NAME = "hibernate.cfg.xml";
 
     private final Map settings;
     private final List<StandardServiceInitiator> initiators = standardInitiatorList();

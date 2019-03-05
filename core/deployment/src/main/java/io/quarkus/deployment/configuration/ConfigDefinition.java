@@ -15,6 +15,7 @@ import static io.quarkus.deployment.util.StringUtil.withoutSuffix;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -172,6 +173,15 @@ public class ConfigDefinition extends CompoundConfigType {
         GroupConfigType gct = new GroupConfigType(containingName, container, consumeSegment, configGroupClass, accessorFinder);
         final Field[] fields = configGroupClass.getDeclaredFields();
         for (Field field : fields) {
+            final int mods = field.getModifiers();
+            if (Modifier.isStatic(mods)) {
+                // ignore static fields
+                continue;
+            }
+            if (Modifier.isFinal(mods)) {
+                // ignore final fields
+                continue;
+            }
             final ConfigItem configItemAnnotation = field.getAnnotation(ConfigItem.class);
             final String name = configItemAnnotation == null ? hyphenate(field.getName()) : configItemAnnotation.name();
             String subKey;

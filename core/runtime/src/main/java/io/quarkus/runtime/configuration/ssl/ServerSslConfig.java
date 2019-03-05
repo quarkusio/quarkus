@@ -40,12 +40,6 @@ import io.quarkus.runtime.annotations.ConfigItem;
  */
 @ConfigGroup
 public class ServerSslConfig {
-
-    static final Logger log = Logger.getLogger("io.quarkus.configuration.ssl");
-
-    private static final Protocol[] NO_PROTOCOLS = new Protocol[0];
-    private static final X509Certificate[] NO_CERTS = new X509Certificate[0];
-
     /**
      * The server certificate configuration.
      */
@@ -88,12 +82,15 @@ public class ServerSslConfig {
      * @throws GeneralSecurityException if something failed in the context setup
      */
     public SSLContext toSSLContext() throws GeneralSecurityException, IOException {
+        //TODO: static fields break config
+        Logger log = Logger.getLogger("io.quarkus.configuration.ssl");
         final Optional<Path> certFile = certificate.file;
         final Optional<Path> keyFile = certificate.keyFile;
         final Optional<Path> keyStoreFile = certificate.keyStoreFile;
         final KeyStore keyStore;
         if (certFile.isPresent() && keyFile.isPresent()) {
             keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+            keyStore.load(null, "password".toCharArray());
             final Path certPath = certFile.get();
             final Iterator<PemEntry<?>> certItr = Pem.parsePemContent(load(certPath));
             final ArrayList<X509Certificate> certList = new ArrayList<>();
@@ -129,7 +126,8 @@ public class ServerSslConfig {
             if (keyItr.hasNext()) {
                 log.warnf("Ignoring extra content in key file \"%s\"", keyPath);
             }
-            keyStore.setEntry("default", new KeyStore.PrivateKeyEntry(privateKey, certList.toArray(NO_CERTS)), null);
+            keyStore.setEntry("default", new KeyStore.PrivateKeyEntry(privateKey, certList.toArray(new X509Certificate[0])),
+                    new KeyStore.PasswordProtection("password".toCharArray()));
         } else if (keyStoreFile.isPresent()) {
             final Path keyStorePath = keyStoreFile.get();
             final Optional<String> keyStoreFileType = certificate.keyStoreFileType;
@@ -157,14 +155,14 @@ public class ServerSslConfig {
             return null;
         }
         final KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        keyManagerFactory.init(keyStore, null);
+        keyManagerFactory.init(keyStore, "password".toCharArray());
         final SSLContextBuilder sslContextBuilder = new SSLContextBuilder();
         sslContextBuilder.setCipherSuiteSelector(cipherSuites.orElse(CipherSuiteSelector.openSslDefault()));
         ProtocolSelector protocolSelector;
         if (protocols.isEmpty()) {
             protocolSelector = ProtocolSelector.defaultProtocols();
         } else {
-            protocolSelector = ProtocolSelector.empty().add(protocols.toArray(NO_PROTOCOLS));
+            protocolSelector = ProtocolSelector.empty().add(protocols.toArray(new Protocol[0]));
         }
         sslContextBuilder.setProtocolSelector(protocolSelector);
         sslContextBuilder.setKeyManager((X509ExtendedKeyManager) keyManagerFactory.getKeyManagers()[0]);

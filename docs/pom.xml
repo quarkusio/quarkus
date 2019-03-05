@@ -33,8 +33,8 @@
     <properties>
         <version.asciidoctor>1.5.7.1</version.asciidoctor>
         <quarkus-home-url>https://quarkus.io</quarkus-home-url>
-        <quarkus-base-url>https://github.com/jbossas/protean-shamrock</quarkus-base-url>
-        <quickstarts-base-url>https://github.com/jbossas/protean-quickstarts</quickstarts-base-url>
+        <quarkus-base-url>https://github.com/quarkusio/quarkus</quarkus-base-url>
+        <quickstarts-base-url>https://github.com/quarkusio/quarkus-quickstarts</quickstarts-base-url>
     </properties>
 
     <name>Quarkus - Documentation</name>
@@ -68,7 +68,7 @@
                         <quarkus-site-live-coding>${quarkus-home-url}/live-coding</quarkus-site-live-coding>
 
                         <!-- === Communication === -->
-                        <quarkus-chat-url>https://protean.zulipchat.com/#narrow/stream/173288-Protean-users</quarkus-chat-url>
+                        <quarkus-chat-url>https://quarkusio.zulipchat.com/#</quarkus-chat-url>
                         <quarkus-mailing-list-subscription-email>quarkus-dev+subscribe@googlegroups.com</quarkus-mailing-list-subscription-email>
                         <quarkus-mailing-list-index>https://groups.google.com/d/forum/quarkus-dev</quarkus-mailing-list-index>
 

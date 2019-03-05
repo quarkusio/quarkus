@@ -29,8 +29,6 @@ To complete this guide, you need:
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.5.3+
 
-include::./maven-config.adoc[tag=repositories]
-
 == Architecture
 
 In this guide, we create a straightforward application serving a `hello` endpoint. To demonstrate

@@ -34,7 +34,7 @@ public class Person extends PanacheEntity {
 You have noticed how much more compact and readable the code is?
 Does this look interesting? Read on!
 
-NOTE: the `list()` method might be surprising at first. It takes fragments of HQL (JP-QL) queries and contextualize the rest. That's makes for very consise but yet readable code.
+NOTE: the `list()` method might be surprising at first. It takes fragments of HQL (JP-QL) queries and contextualize the rest. That makes for very concise but yet readable code.
 
 == Setting up and configuring Panache JPA
 

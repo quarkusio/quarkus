@@ -116,7 +116,7 @@
         <reactive-streams.version>1.0.2</reactive-streams.version>
         <test-containers.version>1.10.6</test-containers.version>
         <jboss-logging.version>3.3.2.Final</jboss-logging.version>
-        <vertx-axle-client.version>0.0.1</vertx-axle-client.version>
+        <axle-client.version>0.0.1</axle-client.version>
         <kafka-clients.version>1.1.0</kafka-clients.version>
         <kafka2.version>1.1.0</kafka2.version>
         <debezium.version>0.8.3.Final</debezium.version>
@@ -1326,9 +1326,9 @@
                 <version>${vertx.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.jboss.axle</groupId>
-                <artifactId>vertx-axle-generator</artifactId>
-                <version>${vertx-axle-client.version}</version>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>smallrye-axle-generator</artifactId>
+                <version>${axle-client.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>com.fasterxml.jackson.core</groupId>
@@ -1341,9 +1341,9 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>org.jboss.axle</groupId>
-                <artifactId>vertx-axle-core</artifactId>
-                <version>${vertx-axle-client.version}</version>
+                <groupId>io.smallrye.reactive</groupId>
+                <artifactId>smallrye-axle-core</artifactId>
+                <version>${axle-client.version}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>com.fasterxml.jackson.core</groupId>

@@ -219,20 +219,5 @@ Stream-based manipulation can either use Rx Java 2 (as in the previous snippet) 
 == Functions as a Service and Serverless
 
 Thanks to their stellar startup time and low memory usage, you can implement Quarkus functions to be used in serverless environments.
-If you are using AWS Lambda, your Quarkus function looks like:
-
-[source, java]
-----
-public class HelloLambda implements RequestHandler<HelloRequest, String> {
-
-    @Inject
-    HelloGreeter greeter;
-
-    @Override
-    public String handleRequest(HelloRequest request, Context context) {
-        return greeter.greet(request.firstName, request.lastName);
-    }
-}
-----
-
-You can use any of the Quarkus features in your function, benefit from the fast startup and embrace this new world without having to change your programming language.
+Whether your use AWS Lambda, or another serverless environment, Quarkus is perfectly suited to implement your function.
+You can actually use any of the Quarkus features in your function, benefit from the fast startup and embrace this new world without having to change your programming language.

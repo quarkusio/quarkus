@@ -13,10 +13,10 @@ Console logging is enabled by default.  To configure or disable it, the followin
 [cols="<m,<m,<2",options="header"]
 |===
 |Property Name|Default|Description
-|quarkus.logging.console.enable|true|Determine whether console logging is enabled.
-|quarkus.logging.console.format|%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n|The format pattern to use for logging to the console; see <<format_string>>.
-|quarkus.logging.console.level|INFO|The minimum log level to display to the console.
-|quarkus.logging.console.color|true|Allow color rendering to be used on the console, if it is supported by the terminal.
+|quarkus.log.console.enable|true|Determine whether console logging is enabled.
+|quarkus.log.console.format|%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n|The format pattern to use for logging to the console; see <<format_string>>.
+|quarkus.log.console.level|INFO|The minimum log level to display to the console.
+|quarkus.log.console.color|true|Allow color rendering to be used on the console, if it is supported by the terminal.
 |===
 
 === File configuration
@@ -26,10 +26,10 @@ Logging to a file is also supported and enabled by default.  To configure or dis
 [cols="<m,<m,<2",options="header"]
 |===
 |Property Name|Default|Description
-|quarkus.logging.file.enable|true|Determine whether file logging is enabled.
-|quarkus.logging.file.format|%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c{3.}] (%t) %s%e%n|The format pattern to use for logging to a file; see <<format_string>>.
-|quarkus.logging.file.level|INFO|The minimum log level to write to the log file.
-|quarkus.logging.file.path|quarkus.log|The path of the log file.
+|quarkus.log.file.enable|true|Determine whether file logging is enabled.
+|quarkus.log.file.format|%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c{3.}] (%t) %s%e%n|The format pattern to use for logging to a file; see <<format_string>>.
+|quarkus.log.file.level|INFO|The minimum log level to write to the log file.
+|quarkus.log.file.path|quarkus.log|The path of the log file.
 |===
 
 === Logging categories
@@ -41,9 +41,11 @@ unless there is a more specific matching sub-category configuration.
 [cols="<m,<m,<2",options="header"]
 |===
 |Property Name|Default|Description
-|quarkus.logging.category."<category-name>".level|INFO footnote:[Some extensions may define customized default log levels for certain categories, in order to reduce log noise by default.  Setting the log level in configuration will override any extension-defined log levels.]|The level to use to configure the category named `<category-name>`.  The quotes are necessary.
+|quarkus.log.category."<category-name>".level|INFO footnote:[Some extensions may define customized default log levels for certain categories, in order to reduce log noise by default.  Setting the log level in configuration will override any extension-defined log levels.]|The level to use to configure the category named `<category-name>`.  The quotes are necessary.
 |===
 
+NOTE: The quotes shown in the property name are required as categories normally contain '.' which must
+be escaped. An example is shown in <<category-example>>.
 
 === Root logger configuration
 
@@ -52,7 +54,7 @@ The root logger category is handled separately, and is configured via the follow
 [cols="<m,<m,<2",options="header"]
 |===
 |Property Name|Default|Description
-|quarkus.logging.level|INFO|The default minimum log level for every log category.
+|quarkus.log.level|INFO|The default minimum log level for every log category.
 |===
 
 [id="format_string"]
@@ -87,6 +89,32 @@ The logging format string supports the following symbols:
 |%z{<zone name>}|Time zone|Set the time zone of the output to `<zone name>`.
 |===
 
+
+== Examples
+
+.Console DEBUG Logging, No color, Shortened Time, Shortened Category Prefixes
+[source, properties]
+----
+quarkus.log.console.enable=true
+quarkus.log.console.format=%d{HH:mm:ss} %-5p [%c{2.}]] (%t) %s%e%n
+quarkus.log.console.level=DEBUG
+quarkus.log.console.color=false
+----
+
+
+[#category-example]
+.File TRACE Logging Configuration
+[source, properties]
+----
+quarkus.log.file.enable=true
+# Send output to a trace.log file under the /tmp directory
+quarkus.log.file.path=/tmp/trace.log
+quarkus.log.file.level=TRACE
+quarkus.log.file.format=%d{HH:mm:ss} %-5p [%c{2.}]] (%t) %s%e%n
+# Set 2 categories (io.quarkus.smallrye.jwt, io.undertow.request.security) to TRACE level
+quarkus.log.category."io.quarkus.smallrye.jwt".level=TRACE
+quarkus.log.category."io.undertow.request.security".level=TRACE
+----
 
 == Supported Logging APIs
 

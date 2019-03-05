@@ -33,8 +33,8 @@
     <properties>
         <version.asciidoctor>1.5.7.1</version.asciidoctor>
         <quarkus-home-url>https://quarkus.io</quarkus-home-url>
-        <quarkus-base-url>https://github.com/jbossas/protean-shamrock</quarkus-base-url>
-        <quickstarts-base-url>https://github.com/jbossas/protean-quickstarts</quickstarts-base-url>
+        <quarkus-base-url>https://github.com/quarkusio/quarkus</quarkus-base-url>
+        <quickstarts-base-url>https://github.com/quarkusio/quarkus-quickstarts</quickstarts-base-url>
     </properties>
 
     <name>Quarkus - Documentation</name>

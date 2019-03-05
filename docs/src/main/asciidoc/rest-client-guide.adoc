@@ -12,7 +12,7 @@ To complete this guide, you need:
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.5.3+
 
-Remember, you need to configure Maven as indicated in the link:maven-config.html[Maven configuration page].
+
 
 == Solution
 

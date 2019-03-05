@@ -22,8 +22,6 @@ And we offer a native CLI that is convenient to use (coming soon).
 [[build-tool-maven]]
 === Maven configuration
 
-Configure Maven as indicated in the link:maven-config.html[Maven configuration page].
-
 If you have not used <<project-creation,project scaffolding>>, add the following elements in your `pom.xml`
 
 [source,xml,subs=attributes+]

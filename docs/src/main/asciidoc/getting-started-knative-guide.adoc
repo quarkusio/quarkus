@@ -21,7 +21,7 @@ For this guide you need:
 * having deployed Knative components on https://github.com/knative/docs/blob/master/install/Knative-with-Minikube.md[Minikube]
 or https://github.com/openshift-cloud-functions/Documentation/blob/master/knative-minishift.md[Minishift]
 
-Remember, you need to configure Maven as indicated in the link:maven-config.html[Maven configuration page].
+
 
 == Solution
 

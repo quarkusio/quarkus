@@ -239,6 +239,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-infinispan-client-deployment</artifactId>
+                <version>${project.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-jdbc-postgresql-deployment</artifactId>
                 <version>${project.version}</version>
                 <scope>provided</scope>

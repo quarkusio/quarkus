@@ -191,14 +191,12 @@ You can then point your browser to `http://localhost:8080/fruits.html` and use y
 The library we use to serialize Java objects to JSON documents is http://json-b.net/[JSON-B].
 It uses Java reflection to get the properties of an object and serialize them.
 
-Most likely, you have understood already that using native images requires you to register the usage of reflection.
+Using native images with GraalVM, all classes that will be used with reflection need to be registered.
+The good news is that Quarkus does that work for you most of the time.
+So far, we haven't registered any class, not even `Fruit`, for reflection usage and everything is working fine.
 
-So far, we haven't registered any class, even not `Fruit`, for reflection usage.
-However everything is working fine.
-
-The fact is that Quarkus performs some magic when it is capable of inferring the serialized types from the REST methods.
-
-When you have the following REST method, it is fairly easy to determine that `Fruit` will be serialized:
+Quarkus performs some magic when it is capable of inferring the serialized types from the REST methods.
+When you have the following REST method, Quarkus determines that `Fruit` will be serialized:
 
 [source,JAVA]
 ----
@@ -229,8 +227,7 @@ public Response list() {
 }
 ----
 
-As you can imagine, it is not possible for Quarkus to determine at build time the type included in the `Response` as the information is not available.
-
+It is not possible for Quarkus to determine at build time the type included in the `Response` as the information is not available.
 In this case, Quarkus won't be able to automatically register for reflection the required classes.
 
 This leads us to our next section.

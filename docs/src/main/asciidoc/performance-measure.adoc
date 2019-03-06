@@ -50,9 +50,19 @@ In order to not incur the performance overhead of running with NVM enabled, we m
 
 Linux::
 
- The linux https://linux.die.net/man/1/pmap[pmap] tool provides a report on the native memory map for a process
+ The linux https://linux.die.net/man/1/pmap[pmap] and https://linux.die.net/man/1/ps[ps] tools provide a report on the native memory map for a process
 
- pmap -x <pid>
+[source,shell]
+--
+ $ ps -o pid,rss,command -p <pid>
+
+   PID   RSS COMMAND
+ 11229 12628 ./target/getting-started-1.0-SNAPSHOT-runner
+--
+
+[source,shell]
+--
+ $ pmap -x <pid>
 
  13150:   /data/quarkus-application -Xmx100m -Xmn70m
  Address           Kbytes     RSS   Dirty Mode  Mapping
@@ -67,6 +77,7 @@ Linux::
  ...
  ---------------- ------- ------- -------
  total kB         9726508  256092  220900
+--
 
 Each Memory region that has been allocated for the process is listed;
 
@@ -79,8 +90,6 @@ Each Memory region that has been allocated for the process is listed;
 
 The Total RSS (kB) line reports the total native memory the process is using.
 
-Windows::
-TODO
 macOS::
 On macOS, you can use `ps x -o pid,rss,command -p <PID>` which list the RSS for a given process in KB (1024 bytes).
 
@@ -102,4 +111,48 @@ Otherwise, you will miss the time the framework _actually_ takes to initialize.
 
 Here is how we measure startup time in our tests.
 
-TODO
+We create a sample application that logs timestamps for certain points in the application lifecycle.
+
+[source, java]
+--
+@Path("/")
+public class GreetingEndpoint {
+
+    private static final String template = "Hello, %s!";
+
+    @GET
+    @Path("/greeting")
+    @Produces("application/json")
+    public Greeting greeting(@QueryParam("name") String name) {
+        System.out.println(new SimpleDateFormat("HH:mm:ss.SSS").format(new java.util.Date(System.currentTimeMillis())));
+        String suffix = name != null ? name : "World";
+        return new Greeting(String.format(template, suffix));
+    }
+
+    void onStart(@Observes StartupEvent startup) {
+        System.out.println(new SimpleDateFormat("HH:mm:ss.SSS").format(new Date()));
+    }
+}
+--
+
+We start looping in a shell, sending requests to the rest endpoint of the sample application we are testing.
+
+[source, shell]
+--
+$ while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:8080/api/greeting)" != "200" ]]; do sleep .00001; done
+--
+
+In a separate terminal, we start the timing application that we are testing, printing the time the application starts
+
+[source, shell]
+--
+$ date +"%H:%M:%S.%s" &&  ./target/quarkus-timing-runner
+
+16:17:01.1551889021
+16:17:01.626
+2019-03-06 16:17:01,626 INFO  [io.quarkus] (main) Quarkus 0.11.0 started in 0.035s. Listening on: http://127.0.0.1:8080
+2019-03-06 16:17:01,626 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jsonb]
+16:17:01.637
+--
+
+The difference between the final timestamp and the first timestamp is the total startup time for the application to serve the first request.

@@ -183,7 +183,7 @@ By default, the native image is tailored for your operating system (Linux, macOS
 Because the Docker container may not use the same _executable_ format as the one produced by your operating system,
 we will instruct the Maven build to produce an executable from inside a Docker container:
 
-[source, bash]
+[source,shell]
 ----
 mvn package -Pnative -Dnative-image.docker-build=true
 ----

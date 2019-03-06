@@ -84,7 +84,7 @@ TODO
 macOS::
 On macOS, you can use `ps x -o pid,rss,command -p <PID>` which list the RSS for a given process in KB (1024 bytes).
 
-[source,bash]
+[source,shell]
 --
 $ ps x -o pid,rss,command -p 57160
 

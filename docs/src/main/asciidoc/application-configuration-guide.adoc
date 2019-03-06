@@ -163,7 +163,7 @@ You can also generate the native executable with `mvn clean package -Pnative`.
 Most properties will then be read and set during the build time step.
 To change them, make sure to repackage your application.
 
-[source,bash]
+[source,shell]
 --
 mvn clean package
 --

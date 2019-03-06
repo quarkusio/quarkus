@@ -139,9 +139,9 @@
         <div class="right-section">
             <h3>Next steps</h3>
             <ul>
-                <li><a href="${doc_root}/ide-configuration.html#import-in-your-ide">Setup your IDE</a></li>
-                <li><a href="${doc_root}/getting-started-guide.html">Getting started</a></li>
-                <li><a href="${doc_root}/index.html">Documentation</a></li>
+                <li><a href="${doc_root}/guides/maven-tooling.html">Setup your IDE</a></li>
+                <li><a href="${doc_root}/guides/getting-started-guide.html">Getting started</a></li>
+                <li><a href="${doc_root}">Quarkus Web Site</a></li>
             </ul>
         </div>
     </div>

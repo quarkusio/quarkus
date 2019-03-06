@@ -1,3 +1,4 @@
+include::./attributes.adoc[]
 = {project-name} - Using Kotlin
 
 https://kotlinlang.org/[Kotlin] is a very popular programming language that targets the JVM (amongst other environments). Kotlin has experienced a surge in popularity the last few years making it the most popular JVM language, except for Java of course.

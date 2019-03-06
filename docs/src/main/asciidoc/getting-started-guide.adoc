@@ -1,3 +1,4 @@
+include::./attributes.adoc[]
 = {project-name} - Creating Your First Application
 
 :toc: macro

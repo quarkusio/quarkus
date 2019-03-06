@@ -1,3 +1,4 @@
+include::./attributes.adoc[]
 = {project-name} - Infinispan Client
 
 Infinispan is an in memory data grid that allows running in a server outside of application processes. This extension

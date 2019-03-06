@@ -1,3 +1,4 @@
+include::./attributes.adoc[]
 = {project-name} - Gradle Plugin Repositories
 
 // tag::repositories[]

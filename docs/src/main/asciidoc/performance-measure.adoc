@@ -1,3 +1,4 @@
+include::./attributes.adoc[]
 = {project-name} - Measuring Performance
 
 This guide covers:

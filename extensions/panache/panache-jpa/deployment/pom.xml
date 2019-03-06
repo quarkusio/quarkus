@@ -60,7 +60,7 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.jboss.gizmo</groupId>
+            <groupId>io.quarkus.gizmo</groupId>
             <artifactId>gizmo</artifactId>
             <type>test-jar</type>
             <scope>test</scope>

@@ -1,7 +1,7 @@
 package io.quarkus.deployment.recording;
 
-import org.jboss.protean.gizmo.BytecodeCreator;
-import org.jboss.protean.gizmo.ResultHandle;
+import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.ResultHandle;
 
 /**
  * A segment of code generation which produces the necessary instructions to load the given object. The result handle

@@ -22,7 +22,7 @@ import java.util.function.Function;
 
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
-import org.jboss.protean.gizmo.ClassOutput;
+import io.quarkus.gizmo.ClassOutput;
 
 /**
  *

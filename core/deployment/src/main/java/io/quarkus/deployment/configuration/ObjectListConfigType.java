@@ -6,11 +6,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.IntFunction;
 
-import org.jboss.protean.gizmo.BytecodeCreator;
-import org.jboss.protean.gizmo.MethodDescriptor;
-import org.jboss.protean.gizmo.ResultHandle;
-
 import io.quarkus.deployment.AccessorFinder;
+import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.configuration.ArrayListFactory;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.NameIterator;

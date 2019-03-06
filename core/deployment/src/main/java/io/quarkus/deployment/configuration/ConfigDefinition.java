@@ -29,17 +29,17 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.TreeMap;
 
-import org.jboss.protean.gizmo.BytecodeCreator;
-import org.jboss.protean.gizmo.ClassCreator;
-import org.jboss.protean.gizmo.ClassOutput;
-import org.jboss.protean.gizmo.FieldDescriptor;
-import org.jboss.protean.gizmo.MethodCreator;
-import org.jboss.protean.gizmo.MethodDescriptor;
-import org.jboss.protean.gizmo.ResultHandle;
 import org.objectweb.asm.Opcodes;
 import org.wildfly.common.Assert;
 
 import io.quarkus.deployment.AccessorFinder;
+import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;

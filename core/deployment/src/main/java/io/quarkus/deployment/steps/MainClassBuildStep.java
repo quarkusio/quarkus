@@ -16,8 +16,8 @@
 
 package io.quarkus.deployment.steps;
 
-import static org.jboss.protean.gizmo.MethodDescriptor.ofConstructor;
-import static org.jboss.protean.gizmo.MethodDescriptor.ofMethod;
+import static io.quarkus.gizmo.MethodDescriptor.ofConstructor;
+import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import java.lang.reflect.Modifier;
 import java.util.List;
@@ -27,14 +27,6 @@ import java.util.stream.Collectors;
 
 import org.graalvm.nativeimage.ImageInfo;
 import org.jboss.builder.Version;
-import org.jboss.protean.gizmo.BytecodeCreator;
-import org.jboss.protean.gizmo.CatchBlockCreator;
-import org.jboss.protean.gizmo.ClassCreator;
-import org.jboss.protean.gizmo.FieldCreator;
-import org.jboss.protean.gizmo.MethodCreator;
-import org.jboss.protean.gizmo.MethodDescriptor;
-import org.jboss.protean.gizmo.ResultHandle;
-import org.jboss.protean.gizmo.TryBlock;
 
 import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -51,6 +43,14 @@ import io.quarkus.deployment.builditem.SslTrustStoreSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
+import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.CatchBlockCreator;
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.FieldCreator;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.Application;
 import io.quarkus.runtime.StartupContext;
 import io.quarkus.runtime.StartupTask;

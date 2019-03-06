@@ -78,7 +78,7 @@
             <artifactId>quarkus-junit5-internal</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.gizmo</groupId>
+            <groupId>io.quarkus.gizmo</groupId>
             <artifactId>gizmo</artifactId>
             <type>test-jar</type>
             <scope>test</scope>

@@ -41,15 +41,15 @@ import io.quarkus.arc.CreationalContextImpl;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
-import org.jboss.protean.gizmo.AssignableResultHandle;
-import org.jboss.protean.gizmo.BytecodeCreator;
-import org.jboss.protean.gizmo.ClassCreator;
-import org.jboss.protean.gizmo.DescriptorUtils;
-import org.jboss.protean.gizmo.FieldCreator;
-import org.jboss.protean.gizmo.FieldDescriptor;
-import org.jboss.protean.gizmo.MethodCreator;
-import org.jboss.protean.gizmo.MethodDescriptor;
-import org.jboss.protean.gizmo.ResultHandle;
+import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.DescriptorUtils;
+import io.quarkus.gizmo.FieldCreator;
+import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 
 /**
  *

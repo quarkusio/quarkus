@@ -29,8 +29,8 @@ import io.quarkus.arc.BeanCreator;
 import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.processor.BeanRegistrar;
 import io.quarkus.arc.test.ArcTestContainer;
-import org.jboss.protean.gizmo.MethodDescriptor;
-import org.jboss.protean.gizmo.ResultHandle;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 import org.junit.Rule;
 import org.junit.Test;
 

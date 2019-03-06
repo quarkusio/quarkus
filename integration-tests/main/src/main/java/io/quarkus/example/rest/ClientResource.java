@@ -17,10 +17,12 @@
 package io.quarkus.example.rest;
 
 import java.net.URL;
+import java.util.List;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
@@ -45,6 +47,42 @@ public class ClientResource {
     @Path("/cdi")
     public String cdi() throws Exception {
         return restInterface.get();
+    }
+
+    @GET
+    @Path("manual/jackson")
+    @Produces("application/json")
+    public TestResource.MyData getDataManual() throws Exception {
+        RestInterface iface = RestClientBuilder.newBuilder()
+                .baseUrl(new URL(System.getProperty("test.url")))
+                .build(RestInterface.class);
+        System.out.println(iface.getData());
+        return iface.getData();
+    }
+
+    @GET
+    @Path("cdi/jackson")
+    @Produces("application/json")
+    public TestResource.MyData getDataCdi() {
+        return restInterface.getData();
+    }
+
+    @GET
+    @Path("/manual/complex")
+    @Produces("application/json")
+    public List<ComponentType> complexManual() throws Exception {
+        RestInterface iface = RestClientBuilder.newBuilder()
+                .baseUrl(new URL(System.getProperty("test.url")))
+                .build(RestInterface.class);
+        System.out.println(iface.complex());
+        return iface.complex();
+    }
+
+    @GET
+    @Path("/cdi/complex")
+    @Produces("application/json")
+    public List<ComponentType> complexCdi() {
+        return restInterface.complex();
     }
 
 }

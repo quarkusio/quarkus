@@ -16,8 +16,11 @@
 
 package io.quarkus.example.rest;
 
+import java.util.List;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
@@ -27,4 +30,14 @@ public interface RestInterface {
 
     @GET
     String get();
+
+    @GET
+    @Path("/jackson")
+    @Produces("application/json")
+    TestResource.MyData getData();
+
+    @GET
+    @Path("/complex")
+    @Produces("application/json")
+    List<ComponentType> complex();
 }

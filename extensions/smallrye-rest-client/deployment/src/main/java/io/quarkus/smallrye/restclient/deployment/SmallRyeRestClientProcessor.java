@@ -18,7 +18,9 @@ package io.quarkus.smallrye.restclient.deployment;
 
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.ClientResponseFilter;
@@ -32,6 +34,8 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.internal.proxy.ProxyBuilderImpl;
 import org.jboss.resteasy.client.jaxrs.internal.proxy.ResteasyClientProxy;
@@ -132,6 +136,7 @@ class SmallRyeRestClientProcessor {
 
         // According to the spec only rest client interfaces annotated with RegisterRestClient are registered as beans
         Map<DotName, ClassInfo> interfaces = new HashMap<>();
+        Set<Type> returnTypes = new HashSet<>();
 
         for (AnnotationInstance annotation : combinedIndexBuildItem.getIndex().getAnnotations(REGISTER_REST_CLIENT)) {
             AnnotationTarget target = annotation.target();
@@ -147,6 +152,16 @@ class SmallRyeRestClientProcessor {
                 continue;
             }
             interfaces.put(theInfo.name(), theInfo);
+
+            // Find Return types
+            for (MethodInfo method : theInfo.methods()) {
+                Type type = method.returnType();
+                if (!type.name().toString().contains("java.lang")) {
+                    if (!returnTypes.contains(type)) {
+                        returnTypes.add(type);
+                    }
+                }
+            }
         }
 
         if (interfaces.isEmpty()) {
@@ -158,6 +173,11 @@ class SmallRyeRestClientProcessor {
             proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem(iName, ResteasyClientProxy.class.getName()));
             proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem(iName, RestClientProxy.class.getName()));
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, iName));
+        }
+
+        // Register Interface return types for reflection
+        for (Type returnType : returnTypes) {
+            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, returnType.toString()));
         }
 
         beanRegistrars.produce(new BeanRegistrarBuildItem(new BeanRegistrar() {

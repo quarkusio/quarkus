@@ -60,6 +60,7 @@ primitive wrappers (eg. Integer, Long, Double etc.), String, Date and Instant. U
 some additional steps that are detailed here. Let's say we have the following user classes:
 
 .Author.java
+[source,java]
 ----
 public class Author {
    private final String name;
@@ -74,6 +75,7 @@ public class Author {
 ----
 
 .Book.java
+[source,java]
 ----
 public class Book {
    private final String title;
@@ -159,6 +161,7 @@ Here is the Marshaller class for our Author & Book classes.
 NOTE: The type name must match the `<protobuf package>.<protobuf message>` exactly!
 +
 .AuthorMarshaller.java
+[source,java]
 ----
 public class AuthorMarshaller implements MessageMarshaller<Author> {
 
@@ -188,6 +191,7 @@ public class AuthorMarshaller implements MessageMarshaller<Author> {
 ----
 +
 .BookMarshaller.java
+[source,java]
 ----
 public class BookMarshaller implements MessageMarshaller<Book> {
 

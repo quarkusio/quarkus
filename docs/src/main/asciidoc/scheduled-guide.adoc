@@ -20,7 +20,7 @@ To complete this guide, you need:
 In this guide, we create a straightforward application accessible using HTTP to get the current value of a counter.
 This counter is periodically (every 10 seconds) incremented.
 
-image:scheduling-task-architecture.png[alt=Architecture,width=640,height=480]
+image:scheduling-task-architecture.png[alt=Architecture]
 
 == Solution
 

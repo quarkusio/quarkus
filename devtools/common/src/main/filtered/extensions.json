@@ -1,6 +1,6 @@
 [
   {
-    "name": "Agroal",
+    "name": "Agroal - Database connection pool",
     "labels": [
       "agroal",
       "database-connection-pool"
@@ -144,7 +144,7 @@
     "artifactId": "quarkus-amazon-lambda"
   },
   {
-    "name": "Narayana JTA",
+    "name": "Narayana JTA - Transaction manager",
     "labels": [
       "narayana-jta",
       "narayana",

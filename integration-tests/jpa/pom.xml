@@ -5,7 +5,7 @@
     <parent>
         <artifactId>quarkus-integration-tests-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>1.0.0.Alpha1-SNAPSHOT</version>
+        <version>999-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>

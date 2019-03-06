@@ -38,7 +38,7 @@ public class NativeImageOutcomeDemo extends ConfigDemoBase {
     protected Path initAppJar() {
         final Path quarkusRoot = Paths.get("").toAbsolutePath().getParent().getParent();
         final Path appDir = quarkusRoot.resolve("integration-tests").resolve("bean-validation-strict").resolve("target");
-        return appDir.resolve("quarkus-integration-test-bean-validation-1.0.0.Alpha1-SNAPSHOT.jar");
+        return appDir.resolve("quarkus-integration-test-bean-validation-999-SNAPSHOT.jar");
     }
 
     @Override

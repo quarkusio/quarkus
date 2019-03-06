@@ -93,7 +93,7 @@ public class ConfigDemoBase {
     protected Path initAppJar() {
         final Path quarkusRoot = Paths.get("").toAbsolutePath().getParent().getParent();
         //final Path appDir = quarkusRoot.resolve("integration-tests").resolve("bean-validation-strict").resolve("target");
-        //final Path appJar = appDir.resolve("quarkus-integration-test-bean-validation-1.0.0.Alpha1-SNAPSHOT.jar");
+        //final Path appJar = appDir.resolve("quarkus-integration-test-bean-validation-999-SNAPSHOT.jar");
 
         final Path quickstartsRoot = quarkusRoot.getParent().resolve("quarkus-quickstarts");
         if (!Files.exists(quickstartsRoot)) {

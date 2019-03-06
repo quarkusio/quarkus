@@ -54,7 +54,7 @@
     <modules>
         <module>bom</module>
         <module>build-parent</module>
-    
+
         <!-- Core components -->
         <module>core</module>
         <module>test-framework</module>
@@ -68,7 +68,7 @@
         <!-- External projects -->
         <module>independent-projects/arc</module>
 
-          <!-- Devtools (Maven, cli, gradle) -->
+        <!-- Devtools (Maven, cli, gradle) -->
         <module>devtools</module>
 
         <!-- Misc. -->
@@ -107,72 +107,75 @@
         </repository>
     </distributionManagement>
 
-    <profile>
-        <id>release</id>
-        <build>
-            <plugins>
-                <plugin>
-                    <groupId>org.sonatype.plugins</groupId>
-                    <artifactId>nexus-staging-maven-plugin</artifactId>
-                    <version>1.6.3</version>
-                    <extensions>true</extensions>
-                    <configuration>
-                        <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                        <serverId>ossrh</serverId>
-                        <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-source-plugin</artifactId>
-                    <executions>
-                        <execution>
-                            <id>attach-sources</id>
-                            <goals>
-                                <goal>jar-no-fork</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-javadoc-plugin</artifactId>
-                    <executions>
-                        <execution>
-                            <id>attach-javadocs</id>
-                            <goals>
-                                <goal>jar</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <!--
-                    ## IMPORTANT ##
-                    In your ~/.m2/settings.xml you need to add and edit the following profile:
-                    <profile>
-                        <id>release</id>
-                        <properties>
-                            <gpg.useagent>false</gpg.useagent>
-                            <gpg.executable>/usr/local/Cellar/gnupg@1.4/1.4.23_1/bin/gpg1</gpg.executable> <- use gpg1 on Mac OS X
-                            <gpg.homedir>~/.gnupg</gpg.homedir>  <- Update to your own directory
-                            <gpg.passphrase>******</gpg.passphrase> <- Add your passphrase
-                        </properties>
-                    </profile>
-                     -->
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-gpg-plugin</artifactId>
-                    <executions>
-                        <execution>
-                            <id>sign-artifacts</id>
-                            <phase>verify</phase>
-                            <goals>
-                                <goal>sign</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-            </plugins>
-        </build>
-    </profile>
+    <profiles>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>1.6.3</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                            <serverId>ossrh</serverId>
+                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <!--
+                        ## IMPORTANT ##
+                        In your ~/.m2/settings.xml you need to add and edit the following profile:
+                        <profile>
+                            <id>release</id>
+                            <properties>
+                                <gpg.useagent>false</gpg.useagent>
+                                <gpg.executable>/usr/local/Cellar/gnupg@1.4/1.4.23_1/bin/gpg1</gpg.executable> <- use gpg1 on Mac OS X
+                                <gpg.homedir>~/.gnupg</gpg.homedir>  <- Update to your own directory
+                                <gpg.passphrase>******</gpg.passphrase> <- Add your passphrase
+                            </properties>
+                        </profile>
+                         -->
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
 </project>

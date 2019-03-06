@@ -82,7 +82,7 @@
         <!-- Caching -->
         <module>caffeine</module>
 
-        <module>lambda</module>
+        <module>amazon-lambda</module>
         <!-- Camel -->
         <module>camel</module>
 

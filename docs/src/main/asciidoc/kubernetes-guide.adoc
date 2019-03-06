@@ -65,7 +65,7 @@ curl $(minikube service quarkus-quickstart --url)/hello/greeting/quarkus
 In this section, we are going to leverage the build mechanism of OpenShift.
 As we have a `Dockerfile` available, we are going to create an OpenShift `build` executing it:
 
-[source]
+[source,shell]
 ----
 # To build the image on OpenShift
 oc new-build --binary --name=quarkus-quickstart -l app=quarkus-quickstart

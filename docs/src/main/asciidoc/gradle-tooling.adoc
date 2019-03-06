@@ -71,7 +71,7 @@ dependencies { <4>
 
 From inside a {project-name} project, you can obtain a list of the available extensions with:
 
-[source]
+[source,shell]
 gradle list-extensions
 
 Functionality to automatically add extensions to your Gradle project is not implemented yet (coming soon).
@@ -81,7 +81,7 @@ Functionality to automatically add extensions to your Gradle project is not impl
 {project-name} comes with a built-in development mode.
 Run you application with:
 
-[source]
+[source,shell]
 gradle quarkus-dev
 
 You can then update the application sources, resources and configurations.
@@ -101,7 +101,7 @@ Hit `CTRL+C` to stop the application.
 
 You can run a {project-name} application in debug mode using:
 
-[source]
+[source,shell]
 gradle quarkus-dev --debug=true
 
 Then, attach your debugger to `localhost:5005`.

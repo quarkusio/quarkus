@@ -26,7 +26,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-integration-test-main</artifactId>
+    <artifactId>quarkus-integration-test-elytron-security</artifactId>
     <name>Quarkus - Integration Tests - Elytron Security</name>
     <description>The elytron-security integration tests module</description>
 

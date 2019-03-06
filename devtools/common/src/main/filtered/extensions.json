@@ -66,6 +66,17 @@
     "artifactId": "quarkus-hibernate-orm"
   },
   {
+    "name": "Hibernate ORM with Panache",
+    "labels": [
+      "hibernate-orm-panache",
+      "panache",
+      "hibernate",
+      "jpa"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-hibernate-orm-panache"
+  },
+  {
     "name": "Hibernate Validator",
     "labels": [
       "hibernate-validator",
@@ -145,17 +156,6 @@
     ],
     "groupId": "io.quarkus",
     "artifactId": "quarkus-narayana-jta"
-  },
-  {
-    "name": "Panache JPA",
-    "labels": [
-      "panache-jpa",
-      "panache",
-      "hibernate",
-      "jpa"
-    ],
-    "groupId": "io.quarkus",
-    "artifactId": "quarkus-panache-jpa"
   },
   {
     "name": "RESTEasy",

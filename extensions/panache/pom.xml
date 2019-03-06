@@ -31,7 +31,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>panache-common</module>
-        <module>panache-jpa</module>
+        <module>hibernate-orm-panache</module>
     </modules>
 
 

@@ -377,7 +377,7 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-panache-jpa</artifactId>
+                <artifactId>quarkus-hibernate-orm-panache</artifactId>
                 <version>${project.version}</version>
                 <scope>provided</scope>
             </dependency>
@@ -1211,11 +1211,6 @@
             <dependency>
                 <groupId>io.quarkus.arc</groupId>
                 <artifactId>arc-runtime</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jboss.panache</groupId>
-                <artifactId>panache</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

@@ -22,39 +22,17 @@
         <artifactId>quarkus-build-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
-        <relativePath>../build-parent/pom.xml</relativePath>
+	<relativePath>../../../build-parent/pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-integration-tests-parent</artifactId>
-    <name>Quarkus - Integration Tests</name>
-
+    <artifactId>quarkus-hibernate-orm-panache-parent</artifactId>
+    <name>Quarkus - Hibernate ORM with Panache - JPA</name>
     <packaging>pom</packaging>
-
-    <properties>
-        <maven.deploy.skip>true</maven.deploy.skip>
-    </properties>
-
     <modules>
-        <module>class-transformer</module>
-        <module>shared-library</module>
-        <module>hibernate-validator</module>
-        <module>common-jpa-entities</module>
-        <module>infinispan-client</module>
-        <module>main</module>
-        <module>jpa</module>
-        <module>jpa-postgresql</module>
-        <module>jpa-mariadb</module>
-        <module>jpa-h2</module>
-        <module>hibernate-orm-panache</module>
-        <module>vertx</module>
-        <module>spring-di</module>
-        <module>infinispan-cache-jpa</module>
-        <module>infinispan-cache-jpa-stress</module>
-        <!-- Camel tests are not working on Fedora + Bash
-        see https://github.com/jbossas/protean-shamrock/issues/1130
-        <module>camel-core</module>
-        <module>camel-salesforce</module>
-        -->
+        <module>deployment</module>
+        <module>runtime</module>
     </modules>
+
+
 </project>

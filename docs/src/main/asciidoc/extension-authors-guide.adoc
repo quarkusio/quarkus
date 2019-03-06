@@ -1,5 +1,5 @@
 include::./attributes.adoc[]
-= {project-name} - Extension Authors Guide
+= {project-name} - Writing Your Own Extension
 
 :numbered:
 :sectnums:

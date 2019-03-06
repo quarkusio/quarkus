@@ -78,25 +78,25 @@ The property files realm supports mapping of users to password and users to role
 
 |===
 |Property Name|Default|Description
-|quarkus.elytron-security.file.enabled|false|Determine whether security via the fila realm is enabled.
-|quarkus.elytron-security.file.auth-mechanism|BASIC|Name of authentication mechanism to use
-|quarkus.elytron-security.file.realm-name|Quarkus|Name to assign the security realm
-|quarkus.elytron-security.file.users|users.properties|Classpath resource name of properties file containing user to password mappings; see <<Users.properties>>
-|quarkus.elytron-security.file.roles|roles.properties|Classpath resource name of properties file containing user to role mappings; see <<Roles.properties>>
+|quarkus.security.file.enabled|false|Determine whether security via the fila realm is enabled.
+|quarkus.security.file.auth-mechanism|BASIC|Name of authentication mechanism to use
+|quarkus.security.file.realm-name|Quarkus|Name to assign the security realm
+|quarkus.security.file.users|users.properties|Classpath resource name of properties file containing user to password mappings; see <<Users.properties>>
+|quarkus.security.file.roles|roles.properties|Classpath resource name of properties file containing user to role mappings; see <<Roles.properties>>
 |===
 
 .example application.properties file section for property files realm
 [source,properties]
 --
-quarkus.elytron-security.file.enabled=true
-quarkus.elytron-security.file.users=test-users.properties
-quarkus.elytron-security.file.roles=test-roles.properties
-quarkus.elytron-security.file.auth-mechanism=BASIC
-quarkus.elytron-security.file.auth-mechanism=MyRealm
+quarkus.security.file.enabled=true
+quarkus.security.file.users=test-users.properties
+quarkus.security.file.roles=test-roles.properties
+quarkus.security.file.auth-mechanism=BASIC
+quarkus.security.file.auth-mechanism=MyRealm
 --
 
 ==== Users.properties
-The `quarkus.elytron-security.users` configuration property specifies a classpath resource which is a properties file with a user to password mapping, one per line. The following <<example test-users.properties file>> illustrates the format:
+The `quarkus.security.users` configuration property specifies a classpath resource which is a properties file with a user to password mapping, one per line. The following <<example test-users.properties file>> illustrates the format:
 
 .example test-users.properties file
 [source,properties]
@@ -131,11 +131,11 @@ The embedded realm also supports mapping of users to password and users to roles
 
 |===
 |Property Name|Default|Description
-|quarkus.elytron-security.embedded.enabled|false|Determine whether security via the embedded realm is enabled.
-|quarkus.elytron-security.embedded.auth-mechanism|BASIC|Name of authentication mechanism to use
-|quarkus.elytron-security.embedded.realm-name|Quarkus|Name to assign the security realm
-|quarkus.elytron-security.embedded.users.*|none|Prefix for the properties that specify user to password mappings; see <<Embedded Users>>
-|quarkus.elytron-security.embedded.roles.*|none|Prefix for the properties that specify user to role mappings; see <<Embedded Roles>>
+|quarkus.security.embedded.enabled|false|Determine whether security via the embedded realm is enabled.
+|quarkus.security.embedded.auth-mechanism|BASIC|Name of authentication mechanism to use
+|quarkus.security.embedded.realm-name|Quarkus|Name to assign the security realm
+|quarkus.security.embedded.users.*|none|Prefix for the properties that specify user to password mappings; see <<Embedded Users>>
+|quarkus.security.embedded.roles.*|none|Prefix for the properties that specify user to role mappings; see <<Embedded Roles>>
 |===
 
 The following is an example application.properties file section illustrating the embedded realm configuration:
@@ -143,52 +143,52 @@ The following is an example application.properties file section illustrating the
 .example application.properties file section for embedded realm
 [source,properties]
 ----
-quarkus.elytron-security.embedded.enabled=true
-quarkus.elytron-security.embedded.users.scott=jb0ss
-quarkus.elytron-security.embedded.users.stuart=test
-quarkus.elytron-security.embedded.users.jdoe=p4ssw0rd
-quarkus.elytron-security.embedded.users.noadmin=n0Adm1n
-quarkus.elytron-security.embedded.roles.scott=Admin,admin,Tester,user
-quarkus.elytron-security.embedded.roles.stuart=admin,user
-quarkus.elytron-security.embedded.roles.jdoe=NoRolesUser
-quarkus.elytron-security.embedded.roles.noadmin=user
-quarkus.elytron-security.embedded.auth-mechanism=CUSTOM
+quarkus.security.embedded.enabled=true
+quarkus.security.embedded.users.scott=jb0ss
+quarkus.security.embedded.users.stuart=test
+quarkus.security.embedded.users.jdoe=p4ssw0rd
+quarkus.security.embedded.users.noadmin=n0Adm1n
+quarkus.security.embedded.roles.scott=Admin,admin,Tester,user
+quarkus.security.embedded.roles.stuart=admin,user
+quarkus.security.embedded.roles.jdoe=NoRolesUser
+quarkus.security.embedded.roles.noadmin=user
+quarkus.security.embedded.auth-mechanism=CUSTOM
 ----
 
 #### Embedded Users
-The user to password mappings are specified in the `application.properties` file by property names of the form `quarkus.elytron-security.embedded.users.<user>=<password>`. The following <<Example Passwords>> illustrates the syntax with the 4 user to password mappings shown in lines 2-5:
+The user to password mappings are specified in the `application.properties` file by property names of the form `quarkus.security.embedded.users.<user>=<password>`. The following <<Example Passwords>> illustrates the syntax with the 4 user to password mappings shown in lines 2-5:
 
 .Example Passwords
 [source,properties,linenums,highlight='2-5']
 ----
-quarkus.elytron-security.embedded.enabled=true
-quarkus.elytron-security.embedded.users.scott=jb0ss # <1>
-quarkus.elytron-security.embedded.users.stuart=test # <2>
-quarkus.elytron-security.embedded.users.jdoe=p4ssw0rd
-quarkus.elytron-security.embedded.users.noadmin=n0Adm1n
-quarkus.elytron-security.embedded.roles.scott=Admin,admin,Tester,user
-quarkus.elytron-security.embedded.roles.stuart=admin,user
-quarkus.elytron-security.embedded.roles.jdoe=NoRolesUser
-quarkus.elytron-security.embedded.roles.noadmin=user
+quarkus.security.embedded.enabled=true
+quarkus.security.embedded.users.scott=jb0ss # <1>
+quarkus.security.embedded.users.stuart=test # <2>
+quarkus.security.embedded.users.jdoe=p4ssw0rd
+quarkus.security.embedded.users.noadmin=n0Adm1n
+quarkus.security.embedded.roles.scott=Admin,admin,Tester,user
+quarkus.security.embedded.roles.stuart=admin,user
+quarkus.security.embedded.roles.jdoe=NoRolesUser
+quarkus.security.embedded.roles.noadmin=user
 ----
 <1> User `scott` has password `jb0ss`
 <2> User `stuart` has password `test`
 
 #### Embedded Roles
-The user to role mappings are specified in the `application.properties` file by property names of the form `quarkus.elytron-security.embedded.roles.<user>=role1[,role2[,role3[,...]]]`. The following <<Example Roles>> illustrates the syntax with the 4 user to role mappings shown in lines 6-9:
+The user to role mappings are specified in the `application.properties` file by property names of the form `quarkus.security.embedded.roles.<user>=role1[,role2[,role3[,...]]]`. The following <<Example Roles>> illustrates the syntax with the 4 user to role mappings shown in lines 6-9:
 
 .Example Roles
 [source,properties,linenums,highlight='6-9']
 ----
-quarkus.elytron-security.embedded.enabled=true
-quarkus.elytron-security.embedded.users.scott=jb0ss
-quarkus.elytron-security.embedded.users.stuart=test
-quarkus.elytron-security.embedded.users.jdoe=p4ssw0rd
-quarkus.elytron-security.embedded.users.noadmin=n0Adm1n
-quarkus.elytron-security.embedded.roles.scott=Admin,admin,Tester,user # <1>
-quarkus.elytron-security.embedded.roles.stuart=admin,user # <2>
-quarkus.elytron-security.embedded.roles.jdoe=NoRolesUser
-quarkus.elytron-security.embedded.roles.noadmin=user
+quarkus.security.embedded.enabled=true
+quarkus.security.embedded.users.scott=jb0ss
+quarkus.security.embedded.users.stuart=test
+quarkus.security.embedded.users.jdoe=p4ssw0rd
+quarkus.security.embedded.users.noadmin=n0Adm1n
+quarkus.security.embedded.roles.scott=Admin,admin,Tester,user # <1>
+quarkus.security.embedded.roles.stuart=admin,user # <2>
+quarkus.security.embedded.roles.jdoe=NoRolesUser
+quarkus.security.embedded.roles.noadmin=user
 ----
 <1> User `scott` has roles `Admin`, `admin`, `Tester`, and `user`
 <2> User `stuart` has roles `admin` and `user`
@@ -201,7 +201,7 @@ Augmenting the elytron-security extension is an advanced topic that relies on wr
 The elytron-security extension has support for overriding its Elytron `org.wildfly.security.auth.server.SecurityRealm` and the Undertow `io.undertow.security.idm.IdentityManager` used for authentication and authorization decisions. If  your application needs to integrate with alternative identity stores and/or authentication mechanisms, then you can use this advanced feature to do so. In order to do this, one would write an {project-name} extension as described in link:extension-authors-guide.html[Extension Authors Guide] to produce `SecurityRealmBuildItem` and/or `IdentityManagerBuildItem` items as detailed in the following sections. The JWT RBAC extension described in the link:jwt-guide.html[JWT RBAC Security] is an example of an extension that makes use of these extension points.
 
 ### Adding a new Security Realm
-If one has an alternative store of identity and role information, it can be integrated by creating a `org.wildfly.security.auth.server.SecurityRealm` and producing a `io.quarkus.elytron-security.SecurityRealmBuildItem` from within the deployment module of a new extension. The deployment module would be responsible for exposing the necessary configuration information to allow users to enable and configure the security realm identity mappings.
+If one has an alternative store of identity and role information, it can be integrated by creating a `org.wildfly.security.auth.server.SecurityRealm` and producing a `io.quarkus.security.SecurityRealmBuildItem` from within the deployment module of a new extension. The deployment module would be responsible for exposing the necessary configuration information to allow users to enable and configure the security realm identity mappings.
 
 An example of this can be seen in the MicroProfile JWT RBAC extension. The relevant JWT extension code fragment is shown in the following listing:
 
@@ -262,9 +262,9 @@ class SmallRyeJwtProcessor {
 <2> The deployment module creates a `TokenSecurityRealm` using the configured authentication mechanism name and security realm name. `TokenSecurityRealm` is a security realm implementation that obtains the caller identity and roles from a MicroProfile JWT auth token.
 
 ### Overriding the Undertow IdentityManager Implementation
-The default `io.undertow.security.idm.IdentityManager` installed by the elytron-security extension is based on password authentication. It passes a `org.wildfly.security.evidence.PasswordGuessEvidence` representation of the caller authentication credentials to the security realm to validate a user. If you extend the elytron-security extension with a security realm that supports this form of evidence,  you can use the default `IdentityManager` provided by the elytron-security extension. Your extension would need to produce a `io.quarkus.elytron-security.PasswordRealmBuildItem` to indicate that your extension security realm supports `PasswordGuessEvidence`.
+The default `io.undertow.security.idm.IdentityManager` installed by the elytron-security extension is based on password authentication. It passes a `org.wildfly.security.evidence.PasswordGuessEvidence` representation of the caller authentication credentials to the security realm to validate a user. If you extend the elytron-security extension with a security realm that supports this form of evidence,  you can use the default `IdentityManager` provided by the elytron-security extension. Your extension would need to produce a `io.quarkus.security.PasswordRealmBuildItem` to indicate that your extension security realm supports `PasswordGuessEvidence`.
 
-If on the other hand, your security realm requires another form of authentication credential evidence, you will need to override the default elytron-security extension implementation with one of your own. This requires that your extension produces an `io.quarkus.elytron-security.IdentityManagerBuildItem` with the `IdentityManager` implementation.
+If on the other hand, your security realm requires another form of authentication credential evidence, you will need to override the default elytron-security extension implementation with one of your own. This requires that your extension produces an `io.quarkus.security.IdentityManagerBuildItem` with the `IdentityManager` implementation.
 
 An example of this can also be seen in the MicroProfile JWT RBAC extension. Since the security realm the JWT extension installs is based on JWT auth tokens rather than passwords, it must install an identity manager that is able to extract the token and present that to the security realm. This requires a custom `IdentityManager`. The relevant JWT extension code fragment is shown in the following listing:
 

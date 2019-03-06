@@ -33,11 +33,8 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.security.runtime.AuthConfig;
-import io.quarkus.security.runtime.ElytronSecurityConfig;
-import io.quarkus.security.runtime.MPRealmConfig;
-import io.quarkus.security.runtime.PropertiesRealmConfig;
-import io.quarkus.security.runtime.SecurityTemplate;
+import io.quarkus.security.runtime.*;
+import io.quarkus.security.runtime.SecurityConfig;
 import io.quarkus.undertow.ServletExtensionBuildItem;
 import io.undertow.security.idm.IdentityManager;
 import io.undertow.servlet.ServletExtension;
@@ -61,11 +58,11 @@ import io.undertow.servlet.ServletExtension;
 class SecurityDeploymentProcessor {
     private static final Logger log = Logger.getLogger(SecurityDeploymentProcessor.class.getName());
     /** Prefix for the user to password mapping properties */
-    private static final String USERS_PREFIX = "quarkus.elytron-security.embedded.users";
+    private static final String USERS_PREFIX = "quarkus.security.embedded.users";
     /** Prefix for the user to password mapping properties */
-    private static final String ROLES_PREFIX = "quarkus.elytron-security.embedded.roles";
+    private static final String ROLES_PREFIX = "quarkus.security.embedded.roles";
 
-    ElytronSecurityConfig security;
+    SecurityConfig security;
 
     /**
      * Register this extension as a MP-JWT feature

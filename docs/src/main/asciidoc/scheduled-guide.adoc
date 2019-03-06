@@ -1,5 +1,5 @@
 include::./attributes.adoc[]
-= {project-name} - Schedule Periodic Tasks
+= {project-name} - Scheduling Periodic Tasks
 
 Modern applications often need to run specific tasks periodically.
 In this guide, you learn how to schedule periodic tasks.

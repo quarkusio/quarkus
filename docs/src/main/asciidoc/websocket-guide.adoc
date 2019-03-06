@@ -1,5 +1,5 @@
 include::./attributes.adoc[]
-= {project-name} - Using Web Sockets
+= {project-name} - Using WebSockets
 
 This guide explains how your Quarkus application can utilize web sockets to create interactive web applications.
 Because it's the _canonical_ web socket application, we are going to create a simple chat application.

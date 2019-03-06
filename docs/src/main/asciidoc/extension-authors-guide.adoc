@@ -562,7 +562,8 @@ The class augmentation step of {project-name} generates classes for various purp
 classes/bytecode to debug or understand an issue. Classes that are related to application augmentation are currently held in
 memory in a runtime class loader. To have these classes written out to disk for inspection, specify the
 `io.quarkus.DEBUG_GENERATED_CLASSES_DIR` system property, for example:
-[code,bash]
+
+[source,shell]
 ----
 mvn clean install -Dio.quarkus.DEBUG_GENERATED_CLASSES_DIR=./target/app-generated-classes
 ----

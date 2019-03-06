@@ -258,7 +258,7 @@ public class UndertowDeploymentTemplate {
 
         if (undertow == null) {
             SSLContext context = config.ssl.toSSLContext();
-            doServerStart(config,  launchMode, context);
+            doServerStart(config, launchMode, context);
 
             if (launchMode != LaunchMode.DEVELOPMENT) {
                 //in development mode undertow should not be shut down

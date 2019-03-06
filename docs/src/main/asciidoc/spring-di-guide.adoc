@@ -44,7 +44,7 @@ This command generates a Maven project with a REST endpoint and imports the `spr
 
 === Examine the pom.xml file
 
-In the `pom.xml` file, we see that the `quarkus-spring-di-deployment` dependency has been added.
+In the `pom.xml` file, we see that the `quarkus-spring-di` dependency has been added.
 We also need to add a dependency on the `spring-context` artifact, which we can do by adding:
 
 

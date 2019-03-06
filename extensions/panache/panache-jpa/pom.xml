@@ -26,7 +26,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-panache-jpa</artifactId>
+    <artifactId>quarkus-panache-jpa-parent</artifactId>
     <name>Quarkus - Panache - JPA</name>
     <packaging>pom</packaging>
     <modules>

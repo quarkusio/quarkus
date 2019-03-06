@@ -27,7 +27,7 @@
         <relativePath>../</relativePath>
     </parent>
 
-    <artifactId>quarkus-core-deployment</artifactId>
+    <artifactId>quarkus-core</artifactId>
     <name>Quarkus - Core - Deployment</name>
 
     <dependencies>

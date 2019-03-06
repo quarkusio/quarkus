@@ -26,7 +26,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>dummy-extension-deployment</artifactId>
+  <artifactId>dummy-extension</artifactId>
   <properties>
     <quarkus.extension.name>Agroal</quarkus.extension.name>
     <quarkus.extension.desc>Description of the Agroal extension</quarkus.extension.desc>

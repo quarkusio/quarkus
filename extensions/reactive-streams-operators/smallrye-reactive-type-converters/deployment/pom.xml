@@ -6,17 +6,17 @@
 
     <parent>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-smallrye-reactive-type-converters</artifactId>
+        <artifactId>quarkus-smallrye-reactive-type-converters-parent</artifactId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-smallrye-reactive-type-converters-deployment</artifactId>
+    <artifactId>quarkus-smallrye-reactive-type-converters</artifactId>
     <name>Quarkus - SmallRye Reactive Type Converters - Deployment</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core-deployment</artifactId>
+            <artifactId>quarkus-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

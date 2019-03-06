@@ -44,7 +44,7 @@ public class ExtensionListIT {
     public void testExtensionListCreation() throws MavenInvocationException, IOException, InterruptedException {
         testDir = initProject();
 
-        running = new RunningInvoker(testDir, false);
+        running = new RunningInvoker(testDir, true);
         final MavenProcessInvocationResult result = running.execute(Collections.singletonList("package"),
                 Collections.emptyMap());
 
@@ -54,7 +54,7 @@ public class ExtensionListIT {
         assertThat(jsonFile).isFile();
 
         String data = FileUtils.readFileToString(jsonFile, "UTF-8");
-        assertThat(data).contains("\"artifactId\" : \"dummy-extension-deployment\",");
+        assertThat(data).contains("\"artifactId\" : \"dummy-extension\",");
         assertThat(data).contains("\"name\" : \"Agroal\",");
         assertThat(data).contains("\"description\" : \"Description of the Agroal extension\",");
         assertThat(data).contains("\"labels\" : [ \"agroal\", \"database-connection-pool\", \"jsf\" ]");

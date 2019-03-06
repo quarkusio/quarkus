@@ -20,7 +20,7 @@ Add the following to your `pom.xml`:
     <!-- Transaction Manager extension -->
     <dependency>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-narayana-jta-deployment</artifactId>
+        <artifactId>quarkus-narayana-jta</artifactId>
     </dependency>
 </dependencies>
 --

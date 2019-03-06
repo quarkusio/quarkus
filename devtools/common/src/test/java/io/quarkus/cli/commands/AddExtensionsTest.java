@@ -29,9 +29,9 @@ public class AddExtensionsTest {
                 .addExtensions(new HashSet<>(asList("agroal", "arc", " hibernate-validator")));
 
         Model model = MojoUtils.readPom(pom);
-        hasDependency(model, "quarkus-agroal-deployment");
-        hasDependency(model, "quarkus-arc-deployment");
-        hasDependency(model, "quarkus-hibernate-validator-deployment");
+        hasDependency(model, "quarkus-agroal");
+        hasDependency(model, "quarkus-arc");
+        hasDependency(model, "quarkus-hibernate-validator");
     }
 
     private void hasDependency(final Model model, final String artifactId) {

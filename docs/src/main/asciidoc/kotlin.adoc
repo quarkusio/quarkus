@@ -57,7 +57,7 @@ class GreetingResource {
 
 The generated `pom.xml` contains the following modifications compared to its counterpart when Kotlin is not selected:
 
-* The `quarkus-kotlin-deployment` artifact is added to the dependencies. This artifact provides support for Kotlin in the live reload mode (more about this later on)
+* The `quarkus-kotlin` artifact is added to the dependencies. This artifact provides support for Kotlin in the live reload mode (more about this later on)
 * The `kotlin-stdlib-jdk8` is also added as a dependency.
 * Maven's `sourceDirectory` and `testSourceDirectory` build properties are configured to point to Kotlin sources (`src/main/kotlin` and `src/test/kotlin` respectively)
 * The `kotlin-maven-plugin` is configured as follows:

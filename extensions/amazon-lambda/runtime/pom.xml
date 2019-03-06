@@ -6,7 +6,7 @@
 
     <parent>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-amazon-lambda</artifactId>
+        <artifactId>quarkus-amazon-lambda-parent</artifactId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>

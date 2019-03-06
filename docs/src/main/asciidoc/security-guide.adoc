@@ -65,7 +65,7 @@ Add the following to your `pom.xml`:
     <!-- Elytron Security extension -->
     <dependency>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-elytron-security-deployment</artifactId>
+        <artifactId>quarkus-elytron-security</artifactId>
     </dependency>
 </dependencies>
 --

@@ -160,7 +160,7 @@ A native executable will be present in `build/`.
 The native executable will be specific to your operating system.
 To create an executable that will run in a container, use the following:
 
-[source, bash]
+[source,shell]
 ----
 gradle quarkus-native --docker-build=true
 ----

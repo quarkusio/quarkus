@@ -57,7 +57,7 @@ mvn package # produces a runnable jar with dependencies in target/lib
 
 or
 
-[source, bash]
+[source,shell]
 ----
 mvn package quarkus:native-image # produces a standalone executable
 ----

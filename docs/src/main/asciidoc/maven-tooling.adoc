@@ -279,7 +279,7 @@ Executing [/Users/starksm/Dev/JBoss/Protean/starksm64-quarkus-quickstarts/gettin
 The native executable will be specific to your operating system.
 To create an executable that will run in a container, use the following:
 
-[source, bash]
+[source,shell]
 ----
 mvn package -Pnative -Dnative-image.docker-build=true
 ----

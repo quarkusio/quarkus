@@ -16,7 +16,7 @@ auth param.
 
 After obtaining the download install it and set `JAVA_HOME`
 
-[source,bash]
+[source,shell]
 ----
 wget -O jvmci.tgz http://download.oracle.com/otn/utilities_drivers/oracle-labs/labsjdk-8u172-jvmci-0.46-darwin-amd64.tar.gz?AuthParam=[GENERATED AUTH TOKEN HERE]
 tar -xzvf jvmci.tgz -C /opt
@@ -29,7 +29,7 @@ export PATH=$JAVA_HOME/bin:$PATH
 
 Now you need to install Graal’s special build tool, `mx`.
 
-[source,bash]
+[source,shell]
 ----
 git clone git@github.com:graalvm/mx.git
 export PATH=`pwd`/mx:$PATH
@@ -39,7 +39,7 @@ export PATH=`pwd`/mx:$PATH
 
 You can now check-out and build Substrate:
 
-[source,bash]
+[source,shell]
 ----
 git clone git clone git@github.com:oracle/graal.git 
 cd graal/substratevm
@@ -48,7 +48,7 @@ mx build
 
 Once built, you can quickly run the tools in place
 
-[source,bash]
+[source,shell]
 ----
 echo "public class HelloWorld { public static void main(String[] args) { System.out.println(\"Hello World\"); } }" > HelloWorld.java
 javac HelloWorld.java
@@ -65,7 +65,7 @@ build options to pick the modules in your distribution.
 For a simple subset VM with just substrate and its native tools execute
 the following:
 
-[source,bash]
+[source,shell]
 ----
  cd ../vm
  mx --dy /substratevm,/tools build
@@ -74,7 +74,7 @@ the following:
 
 For a stock CE build the following will do:
 
-[source,bash]
+[source,shell]
 ----
 mx --dy /substratevm,/tools,/sulong,/graal-nodejs build
 tar -czvf my-custom-graal.tgz -C latest_graalvm .

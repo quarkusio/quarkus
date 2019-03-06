@@ -164,7 +164,7 @@ of the resource is created and not one per request. You can configure this using
 Now we are ready to run our application.
 Use: `mvn compile quarkus:dev`:
 
-[source, bash]
+[source,shell]
 ----
 [INFO] --------------------< org.acme:quarkus-quickstart >---------------------
 [INFO] Building quarkus-quickstart 1.0-SNAPSHOT

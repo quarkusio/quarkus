@@ -48,7 +48,7 @@ public class AppCreatorDemo {
      * This demo assumes you've built quarkus and its artifacts are in your local repo
      * (otherwise they would have to be available in one of the remote repos to be resolvable)
      *
-     * AND also example quarkus-strict-bean-validation-example-1.0.0.Alpha1-SNAPSHOT.jar. This jar is
+     * AND also example quarkus-strict-bean-validation-example-999-SNAPSHOT.jar. This jar is
      * used as an example user app that is augmented and turned into a runnable application
      */
 
@@ -56,7 +56,7 @@ public class AppCreatorDemo {
         final Path quarkusRoot = Paths.get("").toAbsolutePath().getParent().getParent();
         final Path exampleTarget = quarkusRoot.resolve("integration-tests").resolve("bean-validation-strict").resolve("target");
 
-        final Path appJar = exampleTarget.resolve("quarkus-integration-test-bean-validation-1.0.0.Alpha1-SNAPSHOT.jar");
+        final Path appJar = exampleTarget.resolve("quarkus-integration-test-bean-validation-999-SNAPSHOT.jar");
         if (!Files.exists(appJar)) {
             throw new Exception("Failed to locate user app " + appJar);
         }

@@ -157,7 +157,7 @@ Scotts-iMacPro:using-jwt-rbac starksm$ mvn compile quarkus:dev
 Listening for transport dt_socket at address: 5005
 2019-03-03 07:23:06,988 INFO  [io.qua.dep.QuarkusAugmentor] (main) Beginning quarkus augmentation
 2019-03-03 07:23:07,328 INFO  [io.qua.dep.QuarkusAugmentor] (main) Quarkus augmentation completed in 340ms
-2019-03-03 07:23:07,493 INFO  [io.quarkus] (main) Quarkus 1.0.0.Alpha1-SNAPSHOT started in 0.769s. Listening on: http://127.0.0.1:8080
+2019-03-03 07:23:07,493 INFO  [io.quarkus] (main) Quarkus started in 0.769s. Listening on: http://127.0.0.1:8080
 2019-03-03 07:23:07,493 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, resteasy-jsonb, security, smallrye-jwt]
 ----
 

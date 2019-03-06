@@ -4,7 +4,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-build-parent</artifactId>
-        <version>1.0.0.Alpha1-SNAPSHOT</version>
+        <version>999-SNAPSHOT</version>
 	<relativePath>../../build-parent/pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -111,6 +111,32 @@
                 </executions>
             </plugin>
             <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-gradle-jars</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+
+                        <configuration>
+                            <outputDirectory>${basedir}/target</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>build/libs/</directory>
+                                    <includes>
+                                        <include>${project.artifactId}-${project.version}.jar</include>
+                                        <include>${project.artifactId}-${project.version}-javadoc.jar</include>
+                                        <include>${project.artifactId}-${project.version}-sources.jar</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
                 <executions>
@@ -123,16 +149,16 @@
                         <configuration>
                             <artifacts>
                                 <artifact>
-                                    <file>build/libs/${project.artifactId}-${project.version}.jar</file>
+                                    <file>target/${project.artifactId}-${project.version}.jar</file>
                                     <type>jar</type>
                                 </artifact>
                                 <artifact>
-                                    <file>build/libs/${project.artifactId}-${project.version}-javadoc.jar</file>
+                                    <file>target/${project.artifactId}-${project.version}-javadoc.jar</file>
                                     <type>jar</type>
                                     <classifier>javadoc</classifier>
                                 </artifact>
                                 <artifact>
-                                    <file>build/libs/${project.artifactId}-${project.version}-sources.jar</file>
+                                    <file>target/${project.artifactId}-${project.version}-sources.jar</file>
                                     <type>jar</type>
                                     <classifier>sources</classifier>
                                 </artifact>

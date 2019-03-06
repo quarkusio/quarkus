@@ -23,7 +23,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-war-launcher-parent</artifactId>
-        <version>1.0.0.Alpha1-SNAPSHOT</version>
+        <version>999-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 

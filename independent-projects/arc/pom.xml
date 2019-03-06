@@ -28,7 +28,7 @@
   <artifactId>arc-parent</artifactId>
   <name>ArC - Parent pom</name>
   <packaging>pom</packaging>
-  <version>1.0.0.Alpha1-SNAPSHOT</version>
+  <version>999-SNAPSHOT</version>
 
   <licenses>
     <license>
@@ -37,6 +37,13 @@
       <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
     </license>
   </licenses>
+
+  <scm>
+    <url>https://github.com/quarkusio/quarkus</url>
+    <connection>scm:git:git@github.com:quarkusio/quarkus.git</connection>
+    <developerConnection>scm:git:git@github.com:quarkusio/quarkus.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -219,7 +226,7 @@
               <configuration>
                   <nexusUrl>https://oss.sonatype.org/</nexusUrl>
                   <serverId>ossrh</serverId>
-                  <autoReleaseAfterClose>false</autoReleaseAfterClose>
+                  <autoReleaseAfterClose>true</autoReleaseAfterClose>
               </configuration>
           </plugin>
           <plugin>

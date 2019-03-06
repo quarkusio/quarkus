@@ -34,7 +34,7 @@ On MacOS, point the variable to the `Home` sub-directory:
 `export GRAALVM_HOME=~clement/Development/graalvm/Contents/Home/`
 ====
 
-Remember, you need to configure Maven as indicated in the link:maven-config.html[Maven configuration page].
+
 
 == Solution
 

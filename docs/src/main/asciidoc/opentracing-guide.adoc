@@ -14,7 +14,7 @@ To complete this guide, you need:
 * Apache Maven 3.5.3+
 * Docker
 
-Remember, you need to configure Maven as indicated in the link:maven-config.html[Maven configuration page].
+
 
 == Architecture
 

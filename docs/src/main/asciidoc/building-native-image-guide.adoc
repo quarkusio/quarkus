@@ -51,7 +51,7 @@ Let's now produce a native executable for our application.
 It improves the startup time of the application, and produces a minimal disk footprint.
 The executable would have everything to run the application including the "JVM" (shrunk to be just enough to run the application), and the application.
 
-image:native-image-process.png[Creating a native executable, width=640]
+image:native-image-process.png[Creating a native executable]
 
 Before going further, be sure that the `GRAALVM_HOME` environment variable is configured appropriately.
 

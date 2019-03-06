@@ -19,7 +19,7 @@ To complete this guide, you need:
 
 In this guide, we create a straightforward chat application using web sockets to receive and send messages to the other connected users.
 
-image:websocket-guide-architecture.png[alt=Architecture,width=640,height=480]
+image:websocket-guide-architecture.png[alt=Architecture]
 
 == Solution
 
@@ -130,7 +130,7 @@ Then open your 2 browser windows to http://localhost:8080/:
 2. Click on connect
 3. Send and receive messages
 
-image:websocket-guide-screenshot.png[alt=Application,width=800]
+image:websocket-guide-screenshot.png[alt=Application]
 
 As usual, the application can be packaged using `mvn clean package` and executed using the `-runner.jar` file.
 You can also build the native executable using `mvn package -Pnative`.

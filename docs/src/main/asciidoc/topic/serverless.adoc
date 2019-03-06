@@ -1,8 +1,16 @@
 == Functions as a Service and Serverless
 
-Functions as a Service and, more broadly, serverless is an emerging trend that is gaining wide adoption with offerings from most of the
+Functions as a Service, and more broadly serverless, is an emerging trend that is gaining wide adoption with offerings from most of the
 major platform and cloud providers.
-Owing much to the simplicity of the development model, more and more workloads are being deployed as serverless functions to take advantage of the automatic scaling and concurrency that serverless offers.
+In a FaaS environment, the deployment artifacts are small, single purpose "functions."
+These functions are typically stateless which means they can be scaled up or down to meet current load requirements.
+The magic of FaaS happens at the platform level which manages these functions and their resources without direct administrator interference.
+Because the system can monitor and respond to varying levels of traffic and load congestion, developers are free to disregard the server,
+ in effect, and focus on the business logic implemented by each function.
+Applications become "serverless."
+
+Owing much to the simplicity of the development model, more and more workloads are being deployed as serverless functions to take
+advantage of the automatic scaling and concurrency that serverless platforms offer.
 However, to date, Java and the JVM has not been a primary focus for many.
 JVM startup time and memory overhead are prohibitive costs for many organizations.
 However, it would be a shame to leave behind the wealth of experience and vast ecosystem of Java.
@@ -23,20 +31,18 @@ Consider the following basic CRUD example:
 
 [source, java]
 ----
-@Path("/")
 @ApplicationScoped
+@Path("/")
+@Produces(MediaType.APPLICATION_JSON)
 public class CRUDResource {
 
     @Inject
     EntityManager em;
 
     @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    @Transactional
-    @Path("/cake")
-    public String getCake() {
-        Cake c = em.createQuery("from Cake", Cake.class).getSingleResult();
-        return c.getType();
+    @Path("/cakes")
+    public List<Cake> listCakes() {
+        return em.createQuery("from Cake", Cake.class).getResultList();
     }
 }
 ----
@@ -46,14 +52,14 @@ image or for use in a Knative Build script for deployment on top of Kubernetes.
 
 [source, shell]
 ----
-mvn package ## produces a runnable jar with dependencies in target/lib
+mvn package # produces a runnable jar with dependencies in target/lib
 ----
 
 or
 
 [source, bash]
 ----
-mvn quarkus:native-image ## produces a standalone executable
+mvn package quarkus:native-image # produces a standalone executable
 ----
 
 The runnable jar can then be executed simply by running `java -jar target/myapplication-runner.jar`.

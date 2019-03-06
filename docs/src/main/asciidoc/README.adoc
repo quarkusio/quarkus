@@ -1,3 +1,4 @@
+include::./attributes.adoc[]
 = How to Create {project-name} Documentation
 
 This guide describes the asciidoc format and conventions that the {project-name} has

@@ -1,3 +1,4 @@
+include::./attributes.adoc[]
 = Building {project-name} apps with {project-name} Command Line Interface (CLI)
 
 == Installing the CLI

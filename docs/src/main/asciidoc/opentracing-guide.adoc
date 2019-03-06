@@ -1,3 +1,4 @@
+include::./attributes.adoc[]
 = {project-name} - Using OpenTracing
 
 This guide explains how your Quarkus application can utilize opentracing to provide distributed tracing for

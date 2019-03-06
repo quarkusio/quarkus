@@ -1,3 +1,4 @@
+include::./attributes.adoc[]
 = {project-name} - Using the REST Client
 
 This guide explains how to use the MicroProfile REST Client in order to interact with REST APIs

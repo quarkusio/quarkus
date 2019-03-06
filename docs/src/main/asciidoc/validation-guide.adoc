@@ -1,3 +1,4 @@
+include::./attributes.adoc[]
 = {project-name} - Validation with Hibernate Validator
 
 This guide covers how to use Hibernate Validator/Bean Validation for:

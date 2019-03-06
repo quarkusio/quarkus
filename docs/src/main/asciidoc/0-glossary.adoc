@@ -1,3 +1,4 @@
+include::./attributes.adoc[]
 = Internal glossary
 
 This is not a document to be published outside.

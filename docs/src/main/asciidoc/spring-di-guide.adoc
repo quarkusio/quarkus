@@ -1,3 +1,4 @@
+include::./attributes.adoc[]
 = {project-name} - Using our Spring Dependency Injection compatibility layer
 
 While you are encouraged to use CDI annotations for injection, {project-name} provides a compatibility layer for Spring dependency injection in the form of the `spring-di` extension.

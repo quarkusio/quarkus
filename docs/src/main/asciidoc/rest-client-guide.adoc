@@ -28,7 +28,7 @@ The solution is located in the `rest-client` directory.
 
 First, we need a new project. Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,shell,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -176,7 +176,7 @@ It will allow to narrow down the number of JAX-RS providers (which can be seen a
 In order to determine the base URL to which REST calls will be made, the REST Client uses configuration from `application.properties`.
 The name of the property needs to follow a certain convention which is best displayed in the following code:
 
-[source]
+[source,shell]
 ----
 # Your configuration properties
 org.acme.restclient.CountriesService/mp-rest/url=https://restcountries.eu/rest

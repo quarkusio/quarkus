@@ -30,7 +30,7 @@ The solution is located in the `using-spring-di` directory.
 
 First, we need a new project. Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,shell,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
@@ -122,7 +122,7 @@ public class NoOpSingleStringFunction implements StringFunction {
 {project-name} also provides support for injecting configuration values using Spring's `@Value` annotation.
 To see that in action, first edit the `src/main/resources/application.properties` with the following content:
 
-[source]
+[source,java]
 ----
 # Your configuration properties
 greeting.message = hello

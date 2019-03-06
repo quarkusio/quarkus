@@ -141,7 +141,7 @@ The executable is retrieved using the `native.image.path` system property config
 <2> We extend our previous tests, but you can also implement your tests
 
 To see the `GreetingResourceIT` run against the native image, add a verify goal:
-[source]
+[source,shell]
 ----
 mvn package verify -Pnative
 ...
@@ -192,7 +192,7 @@ The produced executable will be a 64 bit Linux executable, so depending on your 
 However, it's not an issue as we are going to copy it to a Docker container.
 The project generation has provided a `Dockerfile` in the `src/main/docker` directory with the following content:
 
-[source]
+[source,dockerfile]
 ----
 FROM registry.fedoraproject.org/fedora-minimal
 WORKDIR /work/
@@ -204,14 +204,14 @@ CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
 
 Then, if you didn't delete the generated native executable, you can build the docker image with:
 
-[source]
+[source,shell]
 ----
 docker build -f src/main/docker/Dockerfile -t quarkus-quickstart/quickstart .
 ----
 
 And finally, run it with:
 
-[source]
+[source,shell]
 ----
 docker run -i --rm -p 8080:8080 quarkus-quickstart/quickstart
 ----

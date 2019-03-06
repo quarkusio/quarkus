@@ -90,6 +90,7 @@ public class UndertowDeploymentTemplate {
     private static final String RESOURCES_PROP = "quarkus.undertow.resources";
 
     private static volatile Undertow undertow;
+    private static volatile HandlerWrapper hotDeploymentWrapper;
     private static volatile HttpHandler currentRoot = ResponseCodeHandler.HANDLE_404;
 
     public RuntimeValue<DeploymentInfo> createDeployment(String name, Set<String> knownFile, Set<String> knownDirectories,
@@ -255,16 +256,18 @@ public class UndertowDeploymentTemplate {
             List<HandlerWrapper> wrappers, LaunchMode launchMode) throws ServletException {
 
         if (undertow == null) {
-            startUndertowEagerly(config, null, launchMode);
+            doServerStart(config, launchMode);
 
-            //in development mode undertow is started eagerly
-            shutdown.addShutdownTask(new Runnable() {
-                @Override
-                public void run() {
-                    undertow.stop();
-                    undertow = null;
-                }
-            });
+            if (launchMode != LaunchMode.DEVELOPMENT) {
+                //in development mode undertow should not be shut down
+                shutdown.addShutdownTask(new Runnable() {
+                    @Override
+                    public void run() {
+                        undertow.stop();
+                        undertow = null;
+                    }
+                });
+            }
         }
         shutdown.addShutdownTask(new Runnable() {
             @Override
@@ -298,6 +301,10 @@ public class UndertowDeploymentTemplate {
         return new RuntimeValue<>(undertow);
     }
 
+    public static void setHotDeployment(HandlerWrapper handlerWrapper) {
+        hotDeploymentWrapper = handlerWrapper;
+    }
+
     /**
      * Used for quarkus:run, where we want undertow to start very early in the process.
      * <p>
@@ -305,7 +312,7 @@ public class UndertowDeploymentTemplate {
      * be no chance to use hot deployment to fix the error. In development mode we start Undertow early, so any error
      * on boot can be corrected via the hot deployment handler
      */
-    public static void startUndertowEagerly(HttpConfig config, HandlerWrapper hotDeploymentWrapper, LaunchMode launchMode)
+    private static void doServerStart(HttpConfig config, LaunchMode launchMode)
             throws ServletException {
         if (undertow == null) {
             int port = config.determinePort(launchMode);

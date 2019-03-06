@@ -22,6 +22,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.quarkus.runtime.configuration.ssl.ServerSslConfig;
 
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public class HttpConfig {
@@ -33,11 +34,22 @@ public class HttpConfig {
     public int port;
 
     /**
+     * The HTTPS port
+     */
+    @ConfigItem(defaultValue = "8443")
+    public int sslPort;
+
+    /**
      * The HTTP port used to run tests
      */
     @ConfigItem(defaultValue = "8081")
     public int testPort;
 
+    /**
+     * The HTTPS port used to run tests
+     */
+    @ConfigItem(defaultValue = "8444")
+    public int testSslPort;
     /**
      * The HTTP host
      */
@@ -58,8 +70,17 @@ public class HttpConfig {
     @ConfigItem
     public OptionalInt ioThreads;
 
+    /**
+     * The SSL config
+     */
+    public ServerSslConfig ssl;
+
     public int determinePort(LaunchMode launchMode) {
         return launchMode == LaunchMode.TEST ? testPort : port;
+    }
+
+    public int determineSslPort(LaunchMode launchMode) {
+        return launchMode == LaunchMode.TEST ? testSslPort : sslPort;
     }
 
 }

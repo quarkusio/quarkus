@@ -8,6 +8,7 @@ import java.io.OutputStreamWriter;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -67,6 +68,7 @@ import io.quarkus.runtime.configuration.ExpandingConfigSource;
 import io.quarkus.runtime.configuration.InetAddressConverter;
 import io.quarkus.runtime.configuration.InetSocketAddressConverter;
 import io.quarkus.runtime.configuration.NameIterator;
+import io.quarkus.runtime.configuration.PathConverter;
 import io.quarkus.runtime.configuration.RegexConverter;
 import io.quarkus.runtime.configuration.SimpleConfigurationProviderResolver;
 import io.quarkus.runtime.configuration.ssl.CipherSuiteSelectorConverter;
@@ -150,6 +152,10 @@ public class ConfigurationSetup {
                 200,
                 Protocol.class,
                 ProtocolConverter.class));
+        configurationTypes.produce(new ConfigurationCustomConverterBuildItem(
+                200,
+                Path.class,
+                PathConverter.class));
     }
 
     /**

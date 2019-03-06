@@ -22,7 +22,12 @@ import io.quarkus.deployment.builditem.HotDeploymentConfigFileBuildItem;
 class DevModeBuildStep {
 
     @BuildStep
-    HotDeploymentConfigFileBuildItem config() {
+    HotDeploymentConfigFileBuildItem mpConfig() {
         return new HotDeploymentConfigFileBuildItem("META-INF/microprofile-config.properties");
+    }
+
+    @BuildStep
+    HotDeploymentConfigFileBuildItem appProperties() {
+        return new HotDeploymentConfigFileBuildItem("application.properties");
     }
 }

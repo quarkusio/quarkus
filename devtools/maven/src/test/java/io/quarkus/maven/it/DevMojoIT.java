@@ -7,6 +7,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
@@ -148,8 +150,8 @@ public class DevMojoIT extends MojoTestBase {
     }
 
     @Test
-    public void testThatTheApplicationIsReloadedOnConfigChange() throws MavenInvocationException, IOException {
-        testDir = initProject("projects/classic", "projects/project-classic-run-config-change");
+    public void testThatTheApplicationIsReloadedOnMpConfigChange() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/classic", "projects/project-classic-run-mpconfig-change");
         assertThat(testDir).isDirectory();
         running = new RunningInvoker(testDir, false);
         running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap());
@@ -163,6 +165,42 @@ public class DevMojoIT extends MojoTestBase {
         assertThat(greeting).containsIgnoringCase("bonjour");
 
         File source = new File(testDir, "src/main/resources/META-INF/microprofile-config.properties");
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .pollInterval(1, TimeUnit.SECONDS)
+                .until(source::isFile);
+
+        String uuid = UUID.randomUUID().toString();
+        filter(source, ImmutableMap.of("bonjour", uuid));
+
+        // Wait until we get "uuid"
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(1, TimeUnit.MINUTES)
+                .until(() -> getHttpResponse("/app/hello/greeting").contains(uuid));
+    }
+
+    @Test
+    public void testThatTheApplicationIsReloadedOnAppPropertiesChange() throws MavenInvocationException, IOException {
+        testDir = initProject("projects/classic", "projects/project-classic-run-appprops-change");
+        // use application.properties instead of mp config
+        assertThat(testDir).isDirectory();
+        Files.move(
+                testDir.toPath().resolve("src/main/resources/META-INF/microprofile-config.properties"),
+                testDir.toPath().resolve("src/main/resources/application.properties"),
+                StandardCopyOption.REPLACE_EXISTING);
+        running = new RunningInvoker(testDir, false);
+        running.execute(Arrays.asList("compile", "quarkus:dev"), Collections.emptyMap());
+
+        String resp = getHttpResponse();
+
+        assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.acme")
+                .containsIgnoringCase("1.0-SNAPSHOT");
+
+        String greeting = getHttpResponse("/app/hello/greeting");
+        assertThat(greeting).containsIgnoringCase("bonjour");
+
+        File source = new File(testDir, "src/main/resources/application.properties");
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)

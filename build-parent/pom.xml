@@ -486,12 +486,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-security-deployment</artifactId>
+                <artifactId>quarkus-elytron-security-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-security-runtime</artifactId>
+                <artifactId>quarkus-elytron-security-runtime</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

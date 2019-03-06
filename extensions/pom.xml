@@ -73,7 +73,7 @@
         <module>spring-di</module>
 
         <!-- Security -->
-        <module>security</module>
+        <module>elytron-security</module>
         <module>smallrye-jwt</module>
 
         <!-- Infinispan -->

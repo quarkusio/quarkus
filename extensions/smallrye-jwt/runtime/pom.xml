@@ -44,7 +44,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-security-runtime</artifactId>
+            <artifactId>quarkus-elytron-security-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

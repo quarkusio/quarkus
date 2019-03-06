@@ -34,9 +34,9 @@ import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.security.runtime.AuthConfig;
+import io.quarkus.security.runtime.ElytronSecurityConfig;
 import io.quarkus.security.runtime.MPRealmConfig;
 import io.quarkus.security.runtime.PropertiesRealmConfig;
-import io.quarkus.security.runtime.SecurityConfig;
 import io.quarkus.security.runtime.SecurityTemplate;
 import io.quarkus.undertow.ServletExtensionBuildItem;
 import io.undertow.security.idm.IdentityManager;
@@ -60,8 +60,12 @@ import io.undertow.servlet.ServletExtension;
  */
 class SecurityDeploymentProcessor {
     private static final Logger log = Logger.getLogger(SecurityDeploymentProcessor.class.getName());
+    /** Prefix for the user to password mapping properties */
+    private static final String USERS_PREFIX = "quarkus.elytron-security.embedded.users";
+    /** Prefix for the user to password mapping properties */
+    private static final String ROLES_PREFIX = "quarkus.elytron-security.embedded.roles";
 
-    SecurityConfig security;
+    ElytronSecurityConfig security;
 
     /**
      * Register this extension as a MP-JWT feature
@@ -142,18 +146,18 @@ class SecurityDeploymentProcessor {
             // These are not being populated correctly by the core config Map logic for some reason, so reparse them here
             log.debugf("MPRealmConfig.users: %s", realmConfig.users);
             log.debugf("MPRealmConfig.roles: %s", realmConfig.roles);
-            Set<String> userKeys = QuarkusConfig.getNames("quarkus.security.embedded.users");
+            Set<String> userKeys = QuarkusConfig.getNames(USERS_PREFIX);
 
             log.debugf("userKeys: %s", userKeys);
             for (String key : userKeys) {
-                String pass = QuarkusConfig.getString("quarkus.security.embedded.users." + key, null, false);
+                String pass = QuarkusConfig.getString(USERS_PREFIX + '.' + key, null, false);
                 log.debugf("%s.pass = %s", key, pass);
                 realmConfig.users.put(key, pass);
             }
-            Set<String> roleKeys = QuarkusConfig.getNames("quarkus.security.embedded.roles");
+            Set<String> roleKeys = QuarkusConfig.getNames(ROLES_PREFIX);
             log.debugf("roleKeys: %s", roleKeys);
             for (String key : roleKeys) {
-                String roles = QuarkusConfig.getString("quarkus.security.embedded.roles." + key, null, false);
+                String roles = QuarkusConfig.getString(ROLES_PREFIX + '.' + key, null, false);
                 log.debugf("%s.roles = %s", key, roles);
                 realmConfig.roles.put(key, roles);
             }

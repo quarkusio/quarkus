@@ -330,7 +330,7 @@ public class LegumeResource {
 ----
 
 Now let's add a simple web page to display our list of legumes.
-In the `src/main/resources/META-INF/resources` directory, add a `legumes.html` file with the content from this https://raw.githubusercontent.com/jbossas/quarkus-quickstarts/master/rest-json/src/main/resources/META-INF/resources/legumes.html[legumes.html] file in it.
+In the `src/main/resources/META-INF/resources` directory, add a `legumes.html` file with the content from this https://raw.githubusercontent.com/quarkusio/quarkus-quickstarts/master/rest-json/src/main/resources/META-INF/resources/legumes.html[legumes.html] file in it.
 
 Open a browser to http://localhost:8080/legumes.html and you will see our list of legumes.
 

@@ -22,9 +22,9 @@ import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Default;
 
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.protean.gizmo.BytecodeCreator;
-import org.jboss.protean.gizmo.FieldDescriptor;
-import org.jboss.protean.gizmo.ResultHandle;
+import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 
 enum BuiltinQualifier {
 

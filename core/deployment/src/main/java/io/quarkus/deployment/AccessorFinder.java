@@ -1,13 +1,13 @@
 package io.quarkus.deployment;
 
-import static org.jboss.protean.gizmo.DescriptorUtils.isPrimitive;
+import static io.quarkus.gizmo.DescriptorUtils.isPrimitive;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.jboss.protean.gizmo.DescriptorUtils;
-import org.jboss.protean.gizmo.FieldDescriptor;
-import org.jboss.protean.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.DescriptorUtils;
+import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.MethodDescriptor;
 
 /**
  */

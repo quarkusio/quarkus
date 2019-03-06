@@ -38,9 +38,9 @@ import io.quarkus.arc.GenericArrayTypeImpl;
 import io.quarkus.arc.ParameterizedTypeImpl;
 import io.quarkus.arc.TypeVariableImpl;
 import io.quarkus.arc.WildcardTypeImpl;
-import org.jboss.protean.gizmo.BytecodeCreator;
-import org.jboss.protean.gizmo.MethodDescriptor;
-import org.jboss.protean.gizmo.ResultHandle;
+import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 
 /**
  *

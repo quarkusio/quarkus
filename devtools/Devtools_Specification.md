@@ -23,7 +23,7 @@ Regardless of the initial conditions, the final product should include:
 
 1.  Dependencies on:
     2. The quarkus BOM in dependenciesManagement
-    3. quarkus-jaxrs-deployment
+    3. quarkus-jaxrs
     4. quarkus-junit4
 5. The quarkus-maven-plugin
 5. The `native` profile

@@ -6,17 +6,17 @@
 
     <parent>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-kafka-client</artifactId>
+        <artifactId>quarkus-kafka-client-parent</artifactId>
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-kafka-client-deployment</artifactId>
+    <artifactId>quarkus-kafka-client</artifactId>
     <name>Quarkus - Kafka - Client - Deployment</name>
 
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core-deployment</artifactId>
+            <artifactId>quarkus-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

@@ -27,7 +27,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-netty</artifactId>
+    <artifactId>quarkus-netty-parent</artifactId>
     <name>Quarkus - Netty</name>
     <packaging>pom</packaging>
     <modules>

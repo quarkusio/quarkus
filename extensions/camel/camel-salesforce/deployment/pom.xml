@@ -3,14 +3,14 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
-    <artifactId>quarkus-camel-salesforce</artifactId>
+    <artifactId>quarkus-camel-salesforce-parent</artifactId>
     <groupId>io.quarkus</groupId>
     <version>999-SNAPSHOT</version>
     <relativePath>../</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>quarkus-camel-salesforce-deployment</artifactId>
+  <artifactId>quarkus-camel-salesforce</artifactId>
   <name>Quarkus - Camel - Salesforce - Deployment</name>
 
   <dependencies>
@@ -18,11 +18,11 @@
     <!-- quarkus -->
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-core-deployment</artifactId>
+      <artifactId>quarkus-core</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-arc-deployment</artifactId>
+      <artifactId>quarkus-arc</artifactId>
     </dependency>
 
     <!-- camel -->

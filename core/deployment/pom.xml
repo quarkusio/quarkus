@@ -27,7 +27,7 @@
         <relativePath>../</relativePath>
     </parent>
 
-    <artifactId>quarkus-core-deployment</artifactId>
+    <artifactId>quarkus-core</artifactId>
     <name>Quarkus - Core - Deployment</name>
 
     <dependencies>
@@ -54,7 +54,7 @@
             <artifactId>jboss-classfilewriter</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.gizmo</groupId>
+            <groupId>io.quarkus.gizmo</groupId>
             <artifactId>gizmo</artifactId>
         </dependency>
         <dependency>
@@ -70,7 +70,7 @@
             <artifactId>quarkus-core-runtime</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.gizmo</groupId>
+            <groupId>io.quarkus.gizmo</groupId>
             <artifactId>gizmo</artifactId>
             <type>test-jar</type>
             <scope>test</scope>

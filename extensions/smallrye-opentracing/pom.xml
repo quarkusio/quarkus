@@ -26,7 +26,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-smallrye-opentracing</artifactId>
+    <artifactId>quarkus-smallrye-opentracing-parent</artifactId>
     <name>Quarkus - SmallRye OpenTracing</name>
     <packaging>pom</packaging>
     <modules>

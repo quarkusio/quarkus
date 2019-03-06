@@ -26,7 +26,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-undertow</artifactId>
+    <artifactId>quarkus-undertow-parent</artifactId>
     <name>Quarkus - Undertow</name>
     <packaging>pom</packaging>
     <modules>

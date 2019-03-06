@@ -38,19 +38,19 @@
         <!-- Enables the JPA capabilities -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-orm-deployment</artifactId>
+            <artifactId>quarkus-hibernate-orm</artifactId>
             <scope>provided</scope>
         </dependency>
         <!-- We'll be using the H2 database -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jdbc-h2-deployment</artifactId>
+            <artifactId>quarkus-jdbc-h2</artifactId>
             <scope>provided</scope>
         </dependency>
         <!-- .. and some REST endpoints -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-deployment</artifactId>
+            <artifactId>quarkus-resteasy</artifactId>
             <scope>provided</scope>
         </dependency>
 

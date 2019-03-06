@@ -14,13 +14,13 @@
   <dependencies>
     <dependency>
       <groupId>@project.groupId@</groupId>
-      <artifactId>quarkus-resteasy-deployment</artifactId>
+      <artifactId>quarkus-resteasy</artifactId>
       <version>${quarkus.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>@project.groupId@</groupId>
-      <artifactId>quarkus-arc-deployment</artifactId>
+      <artifactId>quarkus-arc</artifactId>
       <version>${quarkus.version}</version>
       <scope>provided</scope>
     </dependency>

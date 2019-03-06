@@ -11,7 +11,7 @@
         <relativePath>../../../build-parent/pom.xml</relativePath>
     </parent>
 
-    <artifactId>quarkus-smallrye-reactive-type-converters</artifactId>
+    <artifactId>quarkus-smallrye-reactive-type-converters-parent</artifactId>
     <name>Quarkus - SmallRye Reactive Type Converters</name>
     <packaging>pom</packaging>
 

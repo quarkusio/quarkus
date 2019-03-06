@@ -16,7 +16,7 @@
 
 package io.quarkus.deployment.steps;
 
-import static org.jboss.protean.gizmo.MethodDescriptor.ofMethod;
+import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Constructor;
@@ -31,17 +31,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.jboss.protean.gizmo.CatchBlockCreator;
-import org.jboss.protean.gizmo.ClassCreator;
-import org.jboss.protean.gizmo.MethodCreator;
-import org.jboss.protean.gizmo.MethodDescriptor;
-import org.jboss.protean.gizmo.ResultHandle;
-import org.jboss.protean.gizmo.TryBlock;
-
 import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ClassOutputBuildItem;
 import io.quarkus.deployment.builditem.substrate.*;
+import io.quarkus.gizmo.CatchBlockCreator;
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.ResourceHelper;
 
 public class SubstrateAutoFeatureStep {

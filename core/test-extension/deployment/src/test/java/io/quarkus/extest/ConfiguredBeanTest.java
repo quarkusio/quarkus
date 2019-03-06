@@ -9,6 +9,11 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.extest.runtime.NestedConfig;
+import io.quarkus.extest.runtime.ObjectOfValue;
+import io.quarkus.extest.runtime.ObjectValueOf;
+import io.quarkus.extest.runtime.TestBuildAndRunTimeConfig;
+import io.quarkus.extest.runtime.TestRunTimeConfig;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**

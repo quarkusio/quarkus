@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <parent>
-        <artifactId>quarkus-camel</artifactId>
+        <artifactId>quarkus-camel-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>999-SNAPSHOT</version>
         <relativePath>../</relativePath>
@@ -12,7 +12,7 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-camel-core</artifactId>
+    <artifactId>quarkus-camel-core-parent</artifactId>
     <name>Quarkus - Camel - Core</name>
     <packaging>pom</packaging>
     <modules>

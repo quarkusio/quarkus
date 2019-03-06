@@ -80,7 +80,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
                 && d.getType().equalsIgnoreCase("pom"))).isTrue();
 
         assertThat(
-                model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy-deployment")
+                model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy")
                         && d.getVersion() == null)).isTrue();
 
         assertThat(model.getProfiles()).hasSize(1);
@@ -185,7 +185,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
         check(new File(testDir, "src/main/java/org/acme/MyResource.java"), "package org.acme;");
 
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
-                .contains("quarkus-resteasy-deployment", "quarkus-smallrye-metrics-deployment").doesNotContain("missing");
+                .contains("quarkus-resteasy", "quarkus-smallrye-metrics").doesNotContain("missing");
 
         Model model = load(testDir);
         assertThat(model.getDependencyManagement().getDependencies().stream()
@@ -195,11 +195,11 @@ public class CreateProjectMojoIT extends MojoTestBase {
                         && d.getType().equalsIgnoreCase("pom"))).isTrue();
 
         assertThat(
-                model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy-deployment")
+                model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy")
                         && d.getVersion() == null)).isTrue();
 
         assertThat(model.getDependencies().stream()
-                .anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-smallrye-metrics-deployment")
+                .anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-smallrye-metrics")
                         && d.getVersion() == null)).isTrue();
     }
 
@@ -231,7 +231,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
                         && d.getType().equalsIgnoreCase("pom"))).isTrue();
 
         assertThat(
-                model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy-deployment")
+                model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy")
                         && d.getVersion() == null)).isTrue();
 
         assertThat(model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("commons-io")

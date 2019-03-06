@@ -6,7 +6,7 @@
       "database-connection-pool"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-agroal-deployment"
+    "artifactId": "quarkus-agroal"
   },
   {
     "name": "Arc",
@@ -17,7 +17,7 @@
       "di"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-arc-deployment"
+    "artifactId": "quarkus-arc"
   },
   {
     "name": "Camel Core",
@@ -26,7 +26,7 @@
       "camel"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-camel-core-deployment"
+    "artifactId": "quarkus-camel-core"
   },
   {
     "name": "Camel Infinispan",
@@ -35,7 +35,7 @@
       "camel"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-camel-infinispan-deployment"
+    "artifactId": "quarkus-camel-infinispan"
   },
   {
     "name": "Camel Netty4 HTTP",
@@ -44,7 +44,7 @@
       "camel"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-camel-netty4-http-deployment"
+    "artifactId": "quarkus-camel-netty4-http"
   },
   {
     "name": "Camel Salesforce",
@@ -53,7 +53,7 @@
       "camel"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-camel-salesforce-deployment"
+    "artifactId": "quarkus-camel-salesforce"
   },
   {
     "name": "Hibernate ORM",
@@ -63,7 +63,7 @@
       "hibernate"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-hibernate-orm-deployment"
+    "artifactId": "quarkus-hibernate-orm"
   },
   {
     "name": "Hibernate Validator",
@@ -73,7 +73,7 @@
       "validation"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-hibernate-validator-deployment"
+    "artifactId": "quarkus-hibernate-validator"
   },
   {
     "name": "Infinispan Client",
@@ -83,7 +83,7 @@
       "infinispan"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-infinispan-client-deployment"
+    "artifactId": "quarkus-infinispan-client"
   },
   {
     "name": "JDBC Driver - H2",
@@ -93,7 +93,7 @@
       "h2"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-jdbc-h2-deployment"
+    "artifactId": "quarkus-jdbc-h2"
   },
   {
     "name": "JDBC Driver - MariaDB",
@@ -103,7 +103,7 @@
       "mariadb"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-jdbc-mariadb-deployment"
+    "artifactId": "quarkus-jdbc-mariadb"
   },
   {
     "name": "JDBC Driver - PostgreSQL",
@@ -113,7 +113,7 @@
       "postgresql"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-jdbc-postgresql-deployment"
+    "artifactId": "quarkus-jdbc-postgresql"
   },
   {
     "name": "Kotlin",
@@ -121,7 +121,7 @@
       "kotlin"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-kotlin-deployment"
+    "artifactId": "quarkus-kotlin"
   },
   {
     "name": "AWS Lambda",
@@ -130,7 +130,7 @@
       "aws"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-amazon-lambda-deployment"
+    "artifactId": "quarkus-amazon-lambda"
   },
   {
     "name": "Narayana JTA",
@@ -144,7 +144,7 @@
       "txs"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-narayana-jta-deployment"
+    "artifactId": "quarkus-narayana-jta"
   },
   {
     "name": "Panache JPA",
@@ -155,7 +155,7 @@
       "jpa"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-panache-jpa-deployment"
+    "artifactId": "quarkus-panache-jpa"
   },
   {
     "name": "RESTEasy",
@@ -166,7 +166,7 @@
       "rest"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-resteasy-deployment"
+    "artifactId": "quarkus-resteasy"
   },
   {
     "name": "RESTEasy - JSON-B",
@@ -180,7 +180,7 @@
       "jsonb"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-resteasy-jsonb-deployment"
+    "artifactId": "quarkus-resteasy-jsonb"
   },
   {
     "name": "Scheduler",
@@ -190,7 +190,7 @@
       "periodic-tasks"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-scheduler-deployment"
+    "artifactId": "quarkus-scheduler"
   },
   {
     "name": "Security",
@@ -198,7 +198,7 @@
       "security"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-security-deployment"
+    "artifactId": "quarkus-elytron-security"
   },
   {
     "name": "SmallRye Fault Tolerance",
@@ -210,7 +210,7 @@
       "bulkhead"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-smallrye-fault-tolerance-deployment"
+    "artifactId": "quarkus-smallrye-fault-tolerance"
   },
   {
     "name": "SmallRye Health",
@@ -222,7 +222,7 @@
       "microprofile-health-check"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-smallrye-health-deployment"
+    "artifactId": "quarkus-smallrye-health"
   },
   {
     "name": "SmallRye JWT",
@@ -233,7 +233,7 @@
       "rbac"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-smallrye-jwt-deployment"
+    "artifactId": "quarkus-smallrye-jwt"
   },
   {
     "name": "SmallRye Metrics",
@@ -245,7 +245,7 @@
       "monitoring"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-smallrye-metrics-deployment"
+    "artifactId": "quarkus-smallrye-metrics"
   },
   {
     "name": "SmallRye OpenAPI",
@@ -255,7 +255,7 @@
       "open-api"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-smallrye-openapi-deployment"
+    "artifactId": "quarkus-smallrye-openapi"
   },
   {
     "name": "SmallRye OpenTracing",
@@ -267,7 +267,7 @@
       "jaeger"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-smallrye-opentracing-deployment"
+    "artifactId": "quarkus-smallrye-opentracing"
   },
   {
     "name": "SmallRye Reactive Streams Operators",
@@ -280,7 +280,7 @@
       "reactive"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-smallrye-reactive-streams-operators-deployment"
+    "artifactId": "quarkus-smallrye-reactive-streams-operators"
   },
   {
     "name": "SmallRye Reactive Type Converters",
@@ -293,7 +293,7 @@
       "reactive"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-smallrye-reactive-type-converters-deployment"
+    "artifactId": "quarkus-smallrye-reactive-type-converters"
   },
   {
     "name": "SmallRye Reactive Messaging",
@@ -303,7 +303,7 @@
       "reactive"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-smallrye-reactive-messaging-deployment"
+    "artifactId": "quarkus-smallrye-reactive-messaging"
   },
   {
     "name": "SmallRye Reactive Messaging - Kafka Connector",
@@ -312,7 +312,7 @@
       "reactive-kafka"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-smallrye-reactive-messaging-kafka-deployment"
+    "artifactId": "quarkus-smallrye-reactive-messaging-kafka"
   },
   {
     "name": "SmallRye REST Client",
@@ -323,7 +323,7 @@
       "microprofile-rest-client"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-smallrye-rest-client-deployment"
+    "artifactId": "quarkus-smallrye-rest-client"
   },
   {
     "name": "Spring DI compatibility layer",
@@ -331,7 +331,7 @@
       "spring-di"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-spring-di-deployment"
+    "artifactId": "quarkus-spring-di"
   },
   {
     "name": "Undertow",
@@ -340,7 +340,7 @@
       "servlet"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-undertow-deployment"
+    "artifactId": "quarkus-undertow"
   },
   {
     "name": "Undertow WebSockets",
@@ -353,7 +353,7 @@
       "web-sockets"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-undertow-websockets-deployment"
+    "artifactId": "quarkus-undertow-websockets"
   },
   {
     "name": "Eclipse Vert.x",
@@ -364,6 +364,6 @@
       "reactive"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-vertx-deployment"
+    "artifactId": "quarkus-vertx"
   }
 ]

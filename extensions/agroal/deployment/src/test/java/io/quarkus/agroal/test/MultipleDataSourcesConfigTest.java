@@ -16,7 +16,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
-import io.quarkus.agroal.runtime.DataSource;
+import io.quarkus.agroal.DataSource;
 import io.quarkus.test.QuarkusUnitTest;
 
 @Disabled

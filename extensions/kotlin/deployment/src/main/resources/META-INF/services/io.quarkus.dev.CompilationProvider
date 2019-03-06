@@ -1,1 +1,1 @@
-io.quarkus.kotlin.KotlinCompilationProvider
+io.quarkus.kotlin.deployment.KotlinCompilationProvider

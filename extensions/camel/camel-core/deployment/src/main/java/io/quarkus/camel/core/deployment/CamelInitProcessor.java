@@ -24,10 +24,10 @@ import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
-import io.quarkus.camel.runtime.CamelRuntime;
-import io.quarkus.camel.runtime.CamelRuntimeProducer;
-import io.quarkus.camel.runtime.CamelTemplate;
-import io.quarkus.camel.runtime.RuntimeRegistry;
+import io.quarkus.camel.core.runtime.CamelRuntime;
+import io.quarkus.camel.core.runtime.CamelRuntimeProducer;
+import io.quarkus.camel.core.runtime.CamelTemplate;
+import io.quarkus.camel.core.runtime.RuntimeRegistry;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;

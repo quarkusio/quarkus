@@ -38,7 +38,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.test.QuarkusUnitTest;
-import io.quarkus.vertx.runtime.ConsumeEvent;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
 

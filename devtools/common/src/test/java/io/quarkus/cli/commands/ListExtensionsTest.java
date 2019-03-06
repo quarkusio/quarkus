@@ -46,7 +46,7 @@ public class ListExtensionsTest {
 
         final Map<String, Dependency> installed = listExtensions.findInstalled();
 
-        Assertions.assertNotNull(installed.get(getPluginGroupId() + ":quarkus-agroal-deployment"));
+        Assertions.assertNotNull(installed.get(getPluginGroupId() + ":quarkus-agroal"));
     }
 
     /**
@@ -77,8 +77,8 @@ public class ListExtensionsTest {
 
         final Map<String, Dependency> installed = listExtensions.findInstalled();
 
-        Assertions.assertNotNull(installed.get(getPluginGroupId() + ":quarkus-resteasy-deployment"));
-        Assertions.assertNotNull(installed.get(getPluginGroupId() + ":quarkus-hibernate-validator-deployment"));
+        Assertions.assertNotNull(installed.get(getPluginGroupId() + ":quarkus-resteasy"));
+        Assertions.assertNotNull(installed.get(getPluginGroupId() + ":quarkus-hibernate-validator"));
     }
 
     @Test

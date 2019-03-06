@@ -8,14 +8,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeSet;
 
-import org.jboss.protean.gizmo.AssignableResultHandle;
-import org.jboss.protean.gizmo.BytecodeCreator;
-import org.jboss.protean.gizmo.FieldDescriptor;
-import org.jboss.protean.gizmo.MethodDescriptor;
-import org.jboss.protean.gizmo.ResultHandle;
 import org.wildfly.common.Assert;
 
 import io.quarkus.deployment.AccessorFinder;
+import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.smallrye.config.SmallRyeConfig;
 

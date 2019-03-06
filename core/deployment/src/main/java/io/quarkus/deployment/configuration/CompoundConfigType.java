@@ -1,8 +1,7 @@
 package io.quarkus.deployment.configuration;
 
-import org.jboss.protean.gizmo.BytecodeCreator;
-import org.jboss.protean.gizmo.ResultHandle;
-
+import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.smallrye.config.SmallRyeConfig;
 

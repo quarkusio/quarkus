@@ -4,6 +4,10 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
+import io.quarkus.extest.runtime.IConfigConsumer;
+import io.quarkus.extest.runtime.TestAnnotation;
+import io.quarkus.extest.runtime.TestBuildAndRunTimeConfig;
+import io.quarkus.extest.runtime.TestRunTimeConfig;
 import io.quarkus.runtime.StartupEvent;
 
 /**

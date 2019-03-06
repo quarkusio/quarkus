@@ -24,11 +24,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.function.Consumer;
 
-import org.jboss.protean.gizmo.TestClassLoader;
 import org.junit.Assert;
 import org.junit.Test;
 
 import io.quarkus.deployment.ClassOutput;
+import io.quarkus.gizmo.TestClassLoader;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.StartupContext;
 import io.quarkus.runtime.StartupTask;

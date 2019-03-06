@@ -41,7 +41,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import io.quarkus.arc.processor.Methods.MethodKey;
-import org.jboss.protean.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodCreator;
 
 /**
  *

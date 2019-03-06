@@ -16,8 +16,8 @@
 
 package io.quarkus.deployment.recording;
 
-import static org.jboss.protean.gizmo.MethodDescriptor.ofConstructor;
-import static org.jboss.protean.gizmo.MethodDescriptor.ofMethod;
+import static io.quarkus.gizmo.MethodDescriptor.ofConstructor;
+import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Array;
@@ -51,19 +51,19 @@ import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
-import org.jboss.protean.gizmo.AssignableResultHandle;
-import org.jboss.protean.gizmo.BytecodeCreator;
-import org.jboss.protean.gizmo.CatchBlockCreator;
-import org.jboss.protean.gizmo.ClassCreator;
-import org.jboss.protean.gizmo.FieldDescriptor;
-import org.jboss.protean.gizmo.MethodCreator;
-import org.jboss.protean.gizmo.MethodDescriptor;
-import org.jboss.protean.gizmo.ResultHandle;
-import org.jboss.protean.gizmo.TryBlock;
 import org.wildfly.common.Assert;
 
 import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.recording.AnnotationProxyProvider.AnnotationProxy;
+import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.CatchBlockCreator;
+import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.ObjectSubstitution;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.StartupContext;

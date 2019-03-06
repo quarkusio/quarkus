@@ -1,12 +1,11 @@
 package io.quarkus.deployment.recording;
 
-import org.jboss.protean.gizmo.ClassOutput;
-
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AnnotationProxyBuildItem;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.gizmo.ClassOutput;
 
 public class AnnotationProxyBuildStep {
 

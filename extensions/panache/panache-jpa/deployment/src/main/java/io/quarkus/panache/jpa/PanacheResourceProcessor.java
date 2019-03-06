@@ -28,7 +28,6 @@ import javax.persistence.EntityManager;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
-import org.jboss.protean.gizmo.ClassOutput;
 
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
@@ -38,6 +37,7 @@ import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.hibernate.orm.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.HibernateEnhancersRegisteredBuildItem;
 import io.quarkus.panache.jpa.PanacheEntity;

@@ -34,10 +34,10 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import io.quarkus.arc.BeanCreator;
 import io.quarkus.arc.BeanDestroyer;
-import org.jboss.protean.gizmo.FieldDescriptor;
-import org.jboss.protean.gizmo.MethodCreator;
-import org.jboss.protean.gizmo.MethodDescriptor;
-import org.jboss.protean.gizmo.ResultHandle;
+import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 
 /**
  * Synthetic bean configurator. An alternative to {@link javax.enterprise.inject.spi.configurator.BeanConfigurator}.

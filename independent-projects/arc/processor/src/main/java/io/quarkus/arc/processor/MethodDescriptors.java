@@ -45,7 +45,7 @@ import io.quarkus.arc.InvocationContextImpl;
 import io.quarkus.arc.InvocationContextImpl.InterceptorInvocation;
 import io.quarkus.arc.LazyValue;
 import io.quarkus.arc.Reflections;
-import org.jboss.protean.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.MethodDescriptor;
 
 /**
  *

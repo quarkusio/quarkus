@@ -24,13 +24,13 @@ import java.util.Set;
 import org.hibernate.engine.spi.ManagedEntity;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 import org.hibernate.engine.spi.SelfDirtinessTracker;
-import org.jboss.protean.gizmo.TestClassLoader;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 
+import io.quarkus.gizmo.TestClassLoader;
 import io.quarkus.hibernate.orm.HibernateEntityEnhancer;
 
 /**

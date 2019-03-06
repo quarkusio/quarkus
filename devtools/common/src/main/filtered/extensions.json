@@ -130,7 +130,7 @@
       "aws"
     ],
     "groupId": "io.quarkus",
-    "artifactId": "quarkus-lambda-deployment"
+    "artifactId": "quarkus-amazon-lambda-deployment"
   },
   {
     "name": "Narayana JTA",

@@ -56,6 +56,7 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
@@ -131,6 +132,7 @@ class SmallRyeRestClientProcessor {
             SslNativeConfigBuildItem sslNativeConfig,
             BuildProducer<SubstrateProxyDefinitionBuildItem> proxyDefinition,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             BuildProducer<BeanRegistrarBuildItem> beanRegistrars,
             BuildProducer<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport) {
 
@@ -177,7 +179,7 @@ class SmallRyeRestClientProcessor {
 
         // Register Interface return types for reflection
         for (Type returnType : returnTypes) {
-            reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, returnType.toString()));
+            reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(returnType));
         }
 
         beanRegistrars.produce(new BeanRegistrarBuildItem(new BeanRegistrar() {

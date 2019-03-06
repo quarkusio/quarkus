@@ -66,7 +66,7 @@ It generates:
 * the Maven structure
 * an `org.acme.quickstart.GreetingResource` resource exposed on `/hello`
 * an associated unit test
-* a landing page accessible on `http://localhost:8080`
+* a landing page that is accessible on `http://localhost:8080` after starting the application
 * an example of `Dockerfile`
 * the application configuration file
 
@@ -155,7 +155,7 @@ It's a very simple REST endpoint, returning "hello" to requests on "/hello".
 [TIP]
 .Differences with vanilla Jax-RS
 ====
-With Quarkus no need to create an `Application` class. It's supported but not required. In addition, only one instance
+With Quarkus there is no need to create an `Application` class. It's supported but not required. In addition, only one instance
 of the resource is created and not one per request. You can configure this using the different `*Scoped` annotations (`ApplicationScoped`, `RequestScoped`, etc).
 ====
 
@@ -193,7 +193,7 @@ $ curl http://localhost:8080/hello
 hello
 ```
 
-Hit `CTRL+C` to stop the application, but you can also keep it running and enjoy the blasting fast hot-reload.
+Hit `CTRL+C` to stop the application, but you can also keep it running and enjoy the blazing fast hot-reload.
 
 == Using injection
 
@@ -258,9 +258,8 @@ Then check that http://localhost:8080/hello/greeting/quarkus returns `hello quar
 `quarkus:dev` runs Quarkus in development mode. This enables hot deployment with background compilation, which means
 that when you modify your Java files your resource files and refresh your browser these changes will automatically take effect.
 This works too for resource files like the configuration property file.
-The act of
-refreshing the browser triggers a scan of the workspace, and if any changes are detected the Java files are compiled,
-and the application is redeployed, then your request is serviced by the redeployed application. If there are any issues
+Refreshing the browser triggers a scan of the workspace, and if any changes are detected the Java files are recompiled
+and the application is redeployed; your request is then serviced by the redeployed application. If there are any issues
 with compilation or deployment an error page will let you know.
 
 This will also listen for a debugger on port `5005`. If your want to wait for the debugger to attach before running you
@@ -377,12 +376,12 @@ property called `test.url` that is set to the base test URL for situations where
 The application is packaged using `mvn package`.
 It produces 2 jar files:
 
-* `quarkus-quickstart-1.0-SNAPSHOT.jar` - containing just the classes and resources of the projects, it's the regular
+* `getting-started-1.0-SNAPSHOT.jar` - containing just the classes and resources of the projects, it's the regular
 artifact produced by the Maven build;
-* `quarkus-quickstart-1.0-SNAPSHOT-runner.jar` - being an executable _jar_. Be aware that it's not an _über-jar_ as
+* `getting-started-1.0-SNAPSHOT-runner.jar` - being an executable _jar_. Be aware that it's not an _über-jar_ as
 the dependencies are copied into the `target/lib` directory.
 
-You can run the application using: `java -jar target/quarkus-quickstart-1.0-SNAPSHOT-runner.jar`
+You can run the application using: `java -jar target/getting-started-1.0-SNAPSHOT-runner.jar`
 
 NOTE: The `Class-Path` entry of the `MANIFEST.MF` from the _runner jar_ explicitly lists the jars from the `lib` directory.
 So if you want to deploy your application somewhere, you need to copy the _runner_ jar as well as the _lib_ directory.

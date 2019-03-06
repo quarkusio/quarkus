@@ -63,6 +63,10 @@ modules if you want to use functionality provided by them. You will also need to
 to write out the needed runtime dependencies, if you are using the Quarkus parent pom it will automatically
 inherit the correct configuration.
 
+Note that at present by convention the runtime artifact will have the `-runtime` suffix, and the deployment time artifact
+has no suffix (and is what the end user adds to their project). In the near future this will change, so the `-runtime`
+artifact will loose its suffix, and the deployment time artifacts will have one added.
+
 [source%nowrap,xml]
 ----
 

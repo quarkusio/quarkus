@@ -1,3 +1,4 @@
+include::./attributes.adoc[]
 = {project-name} - Extension Authors Guide
 
 :numbered:

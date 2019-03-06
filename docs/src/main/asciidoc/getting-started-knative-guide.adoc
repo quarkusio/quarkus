@@ -1,3 +1,4 @@
+include::./attributes.adoc[]
 :experimental:
 
 = {project-name} - Deploying Knative Application to Kubernetes or OpenShift

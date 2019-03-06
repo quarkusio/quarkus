@@ -58,7 +58,7 @@
                         <project-name>Quarkus</project-name>
                         <!-- Project website home page -->
                         <quarkus-home-url>${quarkus-home-url}</quarkus-home-url>
-                        <!-- Root URL of the Github organization -->
+                        <!-- Root URL of the GitHub organization -->
                         <quarkus-org-url>https://github.com/quarkusio</quarkus-org-url>
 
                         <!-- === Website URLs === -->

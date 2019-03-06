@@ -1,8 +1,9 @@
-== {project-name} - Building a Custom SubstrateVM
+include::./attributes.adoc[]
+= {project-name} - Building a Custom SubstrateVM
 
-=== Prerequisites
+== Prerequisites
 
-==== Install JVMCI
+=== Install JVMCI
 
 Before anything can be done you must first install a JVMCI build.
 
@@ -24,7 +25,7 @@ export JAVA_HOME=/opt/labsjdk1.8.0_172-jvmci-0.46/
 export PATH=$JAVA_HOME/bin:$PATH
 ----
 
-==== Install MX
+=== Install MX
 
 Now you need to install Graal’s special build tool, `mx`.
 
@@ -34,7 +35,7 @@ git clone git@github.com:graalvm/mx.git
 export PATH=`pwd`/mx:$PATH
 ----
 
-=== Checkout and build SubstrateVM
+== Checkout and build SubstrateVM
 
 You can now check-out and build Substrate:
 
@@ -55,7 +56,7 @@ mx native-image HelloWorld
 ./helloworld
 ----
 
-=== Building a custom GraalVM distribution
+== Building a custom GraalVM distribution
 
 In order to create a custom GraalVM distribution (necessary for usage
 in quarkus) you must switch to the vm subdirectory, and use special

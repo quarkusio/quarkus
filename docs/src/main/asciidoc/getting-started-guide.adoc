@@ -1,3 +1,4 @@
+include::./attributes.adoc[]
 = {project-name} - Creating Your First Application
 
 :toc: macro
@@ -401,7 +402,7 @@ public CompletionStage<String> hello() {
 }
 ----
 
-The async version of the code is available in the {quickstarts-base-url}[Github] repository, in the `getting-started-async` directory.
+The async version of the code is available in the {quickstarts-base-url}[GitHub] repository, in the `getting-started-async` directory.
 
 == What's next?
 

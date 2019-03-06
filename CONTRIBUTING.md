@@ -17,14 +17,14 @@ The DCO text is also included verbatim in the [dco.txt](dco.txt) file in the roo
 
 ## Reporting an issue
 
-This project uses Github issues to manage the issues. Open an issue directly in Github.
+This project uses GitHub issues to manage the issues. Open an issue directly in GitHub.
 
 If you believe you found a bug, and it's likely possible, please indicate a way to reproduce it, what you are seeing and what you would expect to see.
 Don't forget to indicate your Java, Maven and GraalVM version. 
 
 ## Before you contribute
 
-To contribute, use Github Pull Requests, from your **own** fork.
+To contribute, use GitHub Pull Requests, from your **own** fork.
 
 ### Code reviews
 
@@ -49,7 +49,7 @@ Be sure to test your pull request in:
 
 If you have not done so on this machine, you need to:
  
-* Install Git and configure your Github access
+* Install Git and configure your GitHub access
 * Install Java SDK (OpenJDK recommended)
 * Download and Apache Maven (3.5+) 
 * Install [GraalVM](http://www.graalvm.org/downloads/) (community edition is enough)

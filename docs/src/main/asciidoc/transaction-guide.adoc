@@ -1,3 +1,4 @@
+include::./attributes.adoc[]
 = Using Transactions in Quarkus
 
 Quarkus comes with a Transaction Manager and uses it to coordinate and expose transactions to your applications.
@@ -5,7 +6,7 @@ Each extension dealing with persistence will integrate with it for you.
 And you will explicitly interact with transactions via CDI.
 This guide will walk you through all that.
 
-## Setting it up
+== Setting it up
 
 You don't need to worry about setting it up most of the time as extensions needing it will simply add it as a dependency.
 Hibernate ORM for example will include the transaction manager and set it up properly.
@@ -24,16 +25,16 @@ Add the following to your `pom.xml`:
 </dependencies>
 --
 
-## Starting and stopping transactions: defining your boundaries
+== Starting and stopping transactions: defining your boundaries
 
 You can define your transaction boundaries the easy way, or the less easy way :)
 
-### Declarative approach
+=== Declarative approach
 
 The easiest way to define your transaction boundaries is to use the `@Transactional` annotation on your entry method (`javax.transaction.Transactional`).
 
 [source,java]
---
+====
 @ApplicationScoped
 public class SantaClausService {
 
@@ -52,8 +53,7 @@ public class SantaClausService {
         }
     }
 }
---
-
+====
 <1> This annotation defines your transaction boundaries and will wrap this call within a transaction.
 <2> A `RuntimeException` crossing the transaction boundaries will rollback the transaction.
 
@@ -82,7 +82,7 @@ You can also programmatically ask for a transaction to be marked for rollback.
 Inject a `TransactionManager` for this.
 
 [source,java]
---
+====
 @ApplicationScoped
 public class SantaClausService {
 
@@ -102,17 +102,17 @@ public class SantaClausService {
         }
     }
 }
---
+====
 
 <1> Inject the `TransactionManager` to be able to activate `setRollbackOnly` semantic.
 <2> Programmatically decide to set the transaction for rollback.
 
-### API approach
+=== API approach
 
 The less easy way is to inject a `UserTransaction` and use the various transaction demarcation methods.
 
 [source,java]
---
+====
 @ApplicationScoped
 public class SantaClausService {
 
@@ -134,14 +134,14 @@ public class SantaClausService {
         }
     }
 }
---
+====
 
 [NOTE]
---
+====
 You cannot use `UserTransaction` in a method having a transaction started by a `@Transactional` call.
---
+====
 
-## Why always having a transaction manager?
+== Why always having a transaction manager?
 
 Does it work everywhere I want to?::
 

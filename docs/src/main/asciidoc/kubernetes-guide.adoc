@@ -1,3 +1,4 @@
+include::./attributes.adoc[]
 = {project-name} - Deploying Application to Kubernetes and OpenShift
 
 This guide covers:

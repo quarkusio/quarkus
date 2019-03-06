@@ -1,3 +1,4 @@
+include::./attributes.adoc[]
 = {project-name} - Building a Native Image
 
 This guide covers:

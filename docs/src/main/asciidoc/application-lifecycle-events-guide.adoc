@@ -1,3 +1,4 @@
+include::./attributes.adoc[]
 = {project-name} - Application Initialization and Termination
 
 You often need to execute custom actions when the application starts and clean up everything when the application stops.

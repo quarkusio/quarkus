@@ -1,3 +1,4 @@
+include::./attributes.adoc[]
 = {project-name} - Simplified Hibernate ORM and JPA with Panache
 :config-file: application.properties
 

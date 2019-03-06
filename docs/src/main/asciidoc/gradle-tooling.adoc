@@ -44,8 +44,13 @@ group = 'org.acme'
 version = '1.0-SNAPSHOT'
 
 buildscript { <2>
+
   repositories {
     mavenCentral()
+    maven {
+      //this is temporary, all dependencies should be in central soon
+      url 'http://repository.jboss.org/nexus/content/groups/public'
+    }
   }
   dependencies {
     classpath 'io.quarkus:quarkus-gradle-plugin:{quarkus-version}'
@@ -54,10 +59,15 @@ buildscript { <2>
 
 repositories { <3>
   mavenCentral()
+  maven {
+    url 'http://repository.jboss.org/nexus/content/groups/public'
+  }
 }
 
 dependencies { <4>
-  compileOnly group: 'io.quarkus', name: 'quarkus-resteasy-deployment', version:'{quarkus-version}'
+  compileOnly group: 'io.quarkus', name: 'quarkus-resteasy', version:'{quarkus-version}'
+  testOnly group: 'io.quarkus', name: 'quarkus-junit5', version:'{quarkus-version}'
+  testCompile group: 'io.rest-assured', name: 'rest-assured', version: '3.3.0'
 }
 ----
 

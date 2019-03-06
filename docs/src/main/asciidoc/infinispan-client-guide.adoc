@@ -4,8 +4,8 @@ include::./attributes.adoc[]
 Infinispan is an in memory data grid that allows running in a server outside of application processes. This extension
 provides functionality to allow the client that can connect to said server when running in {project-name}.
 
-More information can be found about Infinispan at http://www.infinispan.org and the client/server at
-http://infinispan.org/docs/dev/user_guide/user_guide.html#client_server
+More information can be found about Infinispan at https://infinispan.org and the client/server at
+https://infinispan.org/docs/dev/user_guide/user_guide.html#client_server
 
 == Configuration
 
@@ -311,7 +311,7 @@ You can do this by adding the following dependency to your project.
 ----
 
 With this added you can use Infinispan querying just as you would normally, nothing special required.
-You can read more about this at http://infinispan.org/docs/dev/user_guide/user_guide.html#query_dsl.
+You can read more about this at https://infinispan.org/docs/dev/user_guide/user_guide.html#query_dsl.
 
 You can use either the Query DSL or the Ickle Query language with the {project-name} infinispan client
 extension.
@@ -344,7 +344,7 @@ Encryption at this point requires additional steps to get working.
 
 The first step is to configure the `hotrod-client.properties` file to point to your truststore
 and/or keystore. This is further detailed at
-http://infinispan.org/docs/dev/user_guide/user_guide.html#hr_encryption.
+https://infinispan.org/docs/dev/user_guide/user_guide.html#hr_encryption.
 
 The reason that {project-name} is different is that SubstrateVM does not come with security
 services enabled. This is mentioned at
@@ -413,7 +413,7 @@ the {project-name} Infinispan Client extension.
 
 |===
 
-The guide for configuring these can be found at http://infinispan.org/docs/dev/user_guide/user_guide.html#authentication.
+The guide for configuring these can be found at https://infinispan.org/docs/dev/user_guide/user_guide.html#authentication.
 However you need to configure these through the `hotrod-client.properties` file if using Dependency Injection.
 
 == Additional Features

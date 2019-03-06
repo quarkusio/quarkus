@@ -16,17 +16,17 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc-deployment</artifactId>
+            <artifactId>quarkus-arc</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-deployment</artifactId>
+            <artifactId>quarkus-resteasy</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core-deployment</artifactId>
+            <artifactId>quarkus-core</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -37,7 +37,7 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-camel-core-deployment</artifactId>
+            <artifactId>quarkus-camel-core</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -48,7 +48,7 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-camel-salesforce-deployment</artifactId>
+            <artifactId>quarkus-camel-salesforce</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>

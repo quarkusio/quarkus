@@ -26,7 +26,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-resteasy-common</artifactId>
+    <artifactId>quarkus-resteasy-common-parent</artifactId>
     <name>Quarkus - RESTEasy - Common</name>
     <packaging>pom</packaging>
     <modules>

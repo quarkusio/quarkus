@@ -21,7 +21,7 @@ This will add the following to your pom.xml
 ----
     <dependency>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-infinispan-client-deployment</artifactId>
+        <artifactId>quarkus-infinispan-client</artifactId>
         <scope>provided</scope>
     </dependency>
 ----

@@ -67,7 +67,7 @@
         -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-kotlin-deployment</artifactId>
+            <artifactId>quarkus-kotlin</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

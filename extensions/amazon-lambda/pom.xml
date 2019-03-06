@@ -11,7 +11,7 @@
         <relativePath>../../build-parent/pom.xml</relativePath>
     </parent>
 
-    <artifactId>quarkus-amazon-lambda</artifactId>
+    <artifactId>quarkus-amazon-lambda-parent</artifactId>
     <name>Quarkus - Amazon Lambda</name>
     <packaging>pom</packaging>
 

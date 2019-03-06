@@ -50,79 +50,79 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-metrics-deployment</artifactId>
+            <artifactId>quarkus-smallrye-metrics</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-openapi-deployment</artifactId>
+            <artifactId>quarkus-smallrye-openapi</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-opentracing-deployment</artifactId>
+            <artifactId>quarkus-smallrye-opentracing</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-amazon-lambda-deployment</artifactId>
+            <artifactId>quarkus-amazon-lambda</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc-deployment</artifactId>
+            <artifactId>quarkus-arc</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-health-deployment</artifactId>
+            <artifactId>quarkus-smallrye-health</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-reactive-streams-operators-deployment</artifactId>
+            <artifactId>quarkus-smallrye-reactive-streams-operators</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-validator-deployment</artifactId>
+            <artifactId>quarkus-hibernate-validator</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-narayana-jta-deployment</artifactId>
+            <artifactId>quarkus-narayana-jta</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-undertow-websockets-deployment</artifactId>
+            <artifactId>quarkus-undertow-websockets</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-fault-tolerance-deployment</artifactId>
+            <artifactId>quarkus-smallrye-fault-tolerance</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-scheduler-deployment</artifactId>
+            <artifactId>quarkus-scheduler</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-elytron-security-deployment</artifactId>
+            <artifactId>quarkus-elytron-security</artifactId>
             <scope>provided</scope>
         </dependency>
 
         <!-- JAX-RS -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-deployment</artifactId>
+            <artifactId>quarkus-resteasy</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-jsonb-deployment</artifactId>
+            <artifactId>quarkus-resteasy-jsonb</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -139,19 +139,19 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-rest-client-deployment</artifactId>
+            <artifactId>quarkus-smallrye-rest-client</artifactId>
             <scope>provided</scope>
         </dependency>
 
         <!-- JPA -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-orm-deployment</artifactId>
+            <artifactId>quarkus-hibernate-orm</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-jdbc-h2-deployment</artifactId>
+            <artifactId>quarkus-jdbc-h2</artifactId>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -161,7 +161,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-kafka-client-deployment</artifactId>
+            <artifactId>quarkus-kafka-client</artifactId>
             <scope>provided</scope>
         </dependency>
 
@@ -241,7 +241,7 @@
             <dependencies>
                 <dependency>
                     <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-jdbc-postgresql-deployment</artifactId>
+                    <artifactId>quarkus-jdbc-postgresql</artifactId>
                     <scope>provided</scope>
                 </dependency>
             </dependencies>

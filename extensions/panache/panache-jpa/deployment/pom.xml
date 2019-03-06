@@ -19,23 +19,23 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>quarkus-panache-jpa</artifactId>
+        <artifactId>quarkus-panache-jpa-parent</artifactId>
         <groupId>io.quarkus</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-panache-jpa-deployment</artifactId>
+    <artifactId>quarkus-panache-jpa</artifactId>
     <name>Quarkus - Panache - JPA - Deployment</name>
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core-deployment</artifactId>
+            <artifactId>quarkus-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-orm-deployment</artifactId>
+            <artifactId>quarkus-hibernate-orm</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

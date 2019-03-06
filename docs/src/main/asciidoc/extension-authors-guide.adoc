@@ -88,7 +88,7 @@ Under no circumstances can the runtime module depend on a deployment artifact. T
 in pulling all the deployment time code into runtime scope, which defeats the purpose of having the split.
 ====
 
-Your deployment time module should depend on `quarkus-core-deployment`, your runtime artifact,
+Your deployment time module should depend on `quarkus-core`, your runtime artifact,
 and possibly the deployment artifacts of other Quarkus modules if you want to use functionality provided by them.
 
 
@@ -96,7 +96,7 @@ and possibly the deployment artifacts of other Quarkus modules if you want to us
 ----
 <dependency>
   <groupId>io.quarkus</groupId>
-  <artifactId>quarkus-core-deployment</artifactId>
+  <artifactId>quarkus-core</artifactId>
 </dependency>
 ----
 

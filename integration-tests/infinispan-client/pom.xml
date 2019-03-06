@@ -32,7 +32,7 @@
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-infinispan-client-deployment</artifactId>
+            <artifactId>quarkus-infinispan-client</artifactId>
             <scope>provided</scope>
         </dependency>
 
@@ -45,13 +45,13 @@
         <!-- Allow some basic support for @Inject (required for JAXRS) -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc-deployment</artifactId>
+            <artifactId>quarkus-arc</artifactId>
             <scope>provided</scope>
         </dependency>
         <!-- .. and some REST endpoints -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-deployment</artifactId>
+            <artifactId>quarkus-resteasy</artifactId>
             <scope>provided</scope>
         </dependency>
 

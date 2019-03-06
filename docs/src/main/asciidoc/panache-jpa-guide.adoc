@@ -50,7 +50,7 @@ Follow the link:hibernate-orm-guide.html#setting-up-and-configuring-hibernate-or
 In your `pom.xml`, add the following dependencies:
 
 * the Panache JPA extension
-* your JDBC driver extension (`quarkus-jdbc-postgresql-deployment`, `quarkus-jdbc-h2-deployment`, `quarkus-jdbc-mariadb-deployment`, ...)
+* your JDBC driver extension (`quarkus-jdbc-postgresql`, `quarkus-jdbc-h2`, `quarkus-jdbc-mariadb`, ...)
 
 [source,xml]
 --
@@ -58,14 +58,14 @@ In your `pom.xml`, add the following dependencies:
     <!-- Hibernate ORM specific dependencies -->
     <dependency>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-panache-jpa-deployment</artifactId>
+        <artifactId>quarkus-panache-jpa</artifactId>
         <scope>provided</scope>
     </dependency>
 
     <!-- JDBC driver dependencies -->
     <dependency>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-jdbc-postgresql-deployment</artifactId>
+        <artifactId>quarkus-jdbc-postgresql</artifactId>
         <scope>provided</scope>
     </dependency>
 </dependencies>

@@ -26,7 +26,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-smallrye-health</artifactId>
+    <artifactId>quarkus-smallrye-health-parent</artifactId>
     <name>Quarkus - SmallRye Health</name>
 
     <packaging>pom</packaging>

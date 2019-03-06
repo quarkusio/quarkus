@@ -26,7 +26,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-jaxb</artifactId>
+    <artifactId>quarkus-jaxb-parent</artifactId>
     <name>Quarkus - JAXB</name>
     <packaging>pom</packaging>
     <modules>

@@ -190,7 +190,7 @@ mvn package -Pnative -Dnative-image.docker-build=true
 
 The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.
 However, it's not an issue as we are going to copy it to a Docker container.
-The project generation has provided a `Dockerfile` in the `src/main/docker` directory with the following content:
+The project generation has provided a `Dockerfile` in the root directory of the project with the following content:
 
 [source]
 ----
@@ -206,7 +206,7 @@ Then, if you didn't delete the generated native executable, you can build the do
 
 [source]
 ----
-docker build -f src/main/docker/Dockerfile -t quarkus-quickstart/quickstart .
+docker build -f Dockerfile -t quarkus-quickstart/quickstart .
 ----
 
 And finally, run it with:

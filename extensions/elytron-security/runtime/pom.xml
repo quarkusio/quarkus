@@ -18,14 +18,14 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>quarkus-security</artifactId>
+        <artifactId>quarkus-elytron-security</artifactId>
         <groupId>io.quarkus</groupId>
         <version>1.0.0.Alpha1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>quarkus-security-runtime</artifactId>
+    <artifactId>quarkus-elytron-security-runtime</artifactId>
     <name>Quarkus - Security - Runtime</name>
 
     <dependencies>

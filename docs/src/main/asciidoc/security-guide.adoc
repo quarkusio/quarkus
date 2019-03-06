@@ -55,22 +55,22 @@ public class SubjectExposingResource {
 
 ## Setting it up
 
-You need to add the security extension dependency explicitly if you want to enable security behaviors.
+You need to add the elytron-security extension dependency explicitly if you want to enable security behaviors.
 Add the following to your `pom.xml`:
 
 [source,xml]
 --
 <dependencies>
-    <!-- Security extension -->
+    <!-- Elytron Security extension -->
     <dependency>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-security-deployment</artifactId>
+        <artifactId>quarkus-elytron-security-deployment</artifactId>
     </dependency>
 </dependencies>
 --
 
 ## Configuration
-The security extension currently supports two different realms for the storage of authentication
+The elytron-security extension currently supports two different realms for the storage of authentication
 and authorization information. Both support storage of this information in properties type files. The next two sections detail the specific configuration properties.
 
 ### Property Files Realm Configuration
@@ -193,12 +193,12 @@ quarkus.security.embedded.roles.noadmin=user
 <1> User `scott` has roles `Admin`, `admin`, `Tester`, and `user`
 <2> User `stuart` has roles `admin` and `user`
 
-## Augmenting the Security Extension __Advanced Topic__
+## Augmenting the Elytron Security Extension __Advanced Topic__
 [TIP]
 ====
-Augmenting the security extension is an advanced topic that relies on writing a {project-name} extension and understanding all that entails. This only needs to be done if you have security stores and authentication mechanisms that are not supported by existing {project-name} extensions.
+Augmenting the elytron-security extension is an advanced topic that relies on writing a {project-name} extension and understanding all that entails. This only needs to be done if you have security stores and authentication mechanisms that are not supported by existing {project-name} extensions.
 ====
-The security extension has support for overriding its Elytron `org.wildfly.security.auth.server.SecurityRealm` and the Undertow `io.undertow.security.idm.IdentityManager` used for authentication and authorization decisions. If  your application needs to integrate with alternative identity stores and/or authentication mechanisms, then you can use this advanced feature to do so. In order to do this, one would write an {project-name} extension as described in link:extension-authors-guide.html[Extension Authors Guide] to produce `SecurityRealmBuildItem` and/or `IdentityManagerBuildItem` items as detailed in the following sections. The JWT RBAC extension described in the link:jwt-guide.html[JWT RBAC Security] is an example of an extension that makes use of these extension points.
+The elytron-security extension has support for overriding its Elytron `org.wildfly.security.auth.server.SecurityRealm` and the Undertow `io.undertow.security.idm.IdentityManager` used for authentication and authorization decisions. If  your application needs to integrate with alternative identity stores and/or authentication mechanisms, then you can use this advanced feature to do so. In order to do this, one would write an {project-name} extension as described in link:extension-authors-guide.html[Extension Authors Guide] to produce `SecurityRealmBuildItem` and/or `IdentityManagerBuildItem` items as detailed in the following sections. The JWT RBAC extension described in the link:jwt-guide.html[JWT RBAC Security] is an example of an extension that makes use of these extension points.
 
 ### Adding a new Security Realm
 If one has an alternative store of identity and role information, it can be integrated by creating a `org.wildfly.security.auth.server.SecurityRealm` and producing a `io.quarkus.security.SecurityRealmBuildItem` from within the deployment module of a new extension. The deployment module would be responsible for exposing the necessary configuration information to allow users to enable and configure the security realm identity mappings.
@@ -262,9 +262,9 @@ class SmallRyeJwtProcessor {
 <2> The deployment module creates a `TokenSecurityRealm` using the configured authentication mechanism name and security realm name. `TokenSecurityRealm` is a security realm implementation that obtains the caller identity and roles from a MicroProfile JWT auth token.
 
 ### Overriding the Undertow IdentityManager Implementation
-The default `io.undertow.security.idm.IdentityManager` installed by the security extension is based on password authentication. It passes a `org.wildfly.security.evidence.PasswordGuessEvidence` representation of the caller authentication credentials to the security realm to validate a user. If you extend the security extension with a security realm that supports this form of evidence,  you can use the default `IdentityManager` provided by the security extension. Your extension would need to produce a `io.quarkus.security.PasswordRealmBuildItem` to indicate that your extension security realm supports `PasswordGuessEvidence`.
+The default `io.undertow.security.idm.IdentityManager` installed by the elytron-security extension is based on password authentication. It passes a `org.wildfly.security.evidence.PasswordGuessEvidence` representation of the caller authentication credentials to the security realm to validate a user. If you extend the elytron-security extension with a security realm that supports this form of evidence,  you can use the default `IdentityManager` provided by the elytron-security extension. Your extension would need to produce a `io.quarkus.security.PasswordRealmBuildItem` to indicate that your extension security realm supports `PasswordGuessEvidence`.
 
-If on the other hand, your security realm requires another form of authentication credential evidence, you will need to override the default security extension implementation with one of your own. This requires that your extension produces an `io.quarkus.security.IdentityManagerBuildItem` with the `IdentityManager` implementation.
+If on the other hand, your security realm requires another form of authentication credential evidence, you will need to override the default elytron-security extension implementation with one of your own. This requires that your extension produces an `io.quarkus.security.IdentityManagerBuildItem` with the `IdentityManager` implementation.
 
 An example of this can also be seen in the MicroProfile JWT RBAC extension. Since the security realm the JWT extension installs is based on JWT auth tokens rather than passwords, it must install an identity manager that is able to extract the token and present that to the security realm. This requires a custom `IdentityManager`. The relevant JWT extension code fragment is shown in the following listing:
 
@@ -293,7 +293,7 @@ class SmallRyeJwtProcessor {
     }
 ----
 <1> Have the runtime module create the runtime IdentityManager instance, which is an io.quarkus.smallrye.jwt.runtime.auth.JwtIdentityManager.
-<2> Produce an `IdentityManagerBuildItem` with the `JwtIdentityManager` so that the security extension installs that as the application identity manager.
+<2> Produce an `IdentityManagerBuildItem` with the `JwtIdentityManager` so that the elytron-security extension installs that as the application identity manager.
 
 ## Future Work
 

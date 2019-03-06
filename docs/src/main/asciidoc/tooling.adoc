@@ -22,4 +22,3 @@ And we offer a native CLI that is convenient to use (coming soon).
 * link:maven-tooling.html[Maven]
 * link:gradle-tooling.html[Gradle]
 //* link:cli-tooling.html[CLI]
-

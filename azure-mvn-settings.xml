@@ -25,36 +25,6 @@
             <updatePolicy>never</updatePolicy>
           </snapshots>
         </repository>
-        <!-- Forgot the password? see https://github.com/quarkus-project/hibernate-quarkus/wiki/Quarkus-Nexus-credentials -->
-        <repository>
-            <id>quarkus-nexus-release</id>
-            <name>Quarkus AWS Nexus - Releases</name>
-            <url>http://ec2-18-234-117-118.compute-1.amazonaws.com:8081/nexus/content/repositories/releases/</url>
-            <layout>default</layout>
-            <releases>
-                <enabled>true</enabled>
-                <updatePolicy>never</updatePolicy>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <!-- Forgot the password? see https://github.com/quarkus-project/hibernate-quarkus/wiki/Quarkus-Nexus-credentials -->
-        <repository>
-            <id>quarkus-nexus-snapshot</id>
-            <name>Quarkus AWS Nexus - Snapshots</name>
-            <url>http://ec2-18-234-117-118.compute-1.amazonaws.com:8081/nexus/content/repositories/snapshots/</url>
-            <layout>default</layout>
-            <releases>
-                <enabled>true</enabled>
-                <updatePolicy>never</updatePolicy>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-                <!-- 10 minutes. Or enforce refresh by using -U option to Maven -->
-                <updatePolicy>daily</updatePolicy>
-            </snapshots>
-        </repository>
       </repositories>
     </profile>
   </profiles>

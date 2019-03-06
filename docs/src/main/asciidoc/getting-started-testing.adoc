@@ -1,0 +1,255 @@
+= {project-name} - Testing Your Application
+
+:toc: macro
+:toclevels: 4
+:doctype: book
+:icons: font
+:docinfo1:
+
+:numbered:
+:sectnums:
+:sectnumlevels: 4
+
+
+Learn how to test your Quarkus Application.
+This guide covers:
+
+* Testing in JVM mode
+* Testing in native mode
+* Injection of resources into tests
+
+== Prerequisites
+
+To complete this guide, you need:
+
+* less than 15 minutes
+* an IDE
+* JDK 1.8+ installed with `JAVA_HOME` configured appropriately
+* Apache Maven 3.5.3+
+* The completed greeter application from the link:getting-started-guide.adoc[Getting Started Guide]
+
+== Architecture
+
+In this guide, we expand on the initial test that was created as part of the Getting Started Guide.
+We cover injection into tests and also how to test native images.
+
+== Solution
+
+We recommend that you follow the instructions in the next sections and create the application step by step.
+However, you can go right to the completed example.
+
+Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
+
+The solution is located in the `getting-started-testing` directory.
+
+This guide assumes you already have the completed application from the `getting-started` directory.
+
+== Recap of HTTP based Testing in JVM mode
+
+If you have started from the Getting Started example you should already have a completed test, including the correct
+`pom.xml` setup.
+
+In the `pom.xml` file you should see 2 test dependencies:
+
+[source,xml,subs=attributes+]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-junit5</artifactId>
+    <version>${quarkus.version}</version>
+    <scope>test</scope>
+</dependency>
+<dependency>
+    <groupId>io.rest-assured</groupId>
+    <artifactId>rest-assured</artifactId>
+    <version>{restassured-version}</version>
+    <scope>test</scope>
+</dependency>
+----
+
+`quarkus-junit5` is required for testing, as it provides the `@QuarkusTest` annotation that controls the testing framework.
+`rest-assured` is not required but is a convenient way to test HTTP endpoints, we also provide integration that automatically
+sets the correct URL so no configuration is required.
+
+Because we are using JUnit 5, the version of the https://maven.apache.org/surefire/maven-surefire-plugin/[Surefire Maven Plugin]
+must be set, as the default version does not support Junit 5:
+
+[source,xml,subs=attributes+]
+----
+<plugin>
+    <artifactId>maven-surefire-plugin</artifactId>
+    <version>${surefire.version}</version>
+    <configuration>
+       <systemProperties>
+          <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+       </systemProperties>
+    </configuration>
+</plugin>
+----
+
+We also set the `java.util.logging` system property to make sure tests will use the correct logmanager.
+
+The project should also contain a simple test:
+
+[source,java]
+----
+package org.acme.quickstart;
+
+import io.quarkus.test.junit.QuarkusTest;
+import org.junit.jupiter.api.Test;
+
+import java.util.UUID;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.is;
+
+@QuarkusTest
+public class GreetingResourceTest {
+
+    @Test
+    public void testHelloEndpoint() {
+        given()
+          .when().get("/hello")
+          .then()
+             .statusCode(200)
+             .body(is("hello"));
+    }
+
+    @Test
+    public void testGreetingEndpoint() {
+        String uuid = UUID.randomUUID().toString();
+        given()
+          .pathParam("name", uuid)
+          .when().get("/hello/greeting/{name}")
+          .then()
+            .statusCode(200)
+            .body(is("hello " + uuid));
+    }
+
+}
+----
+
+This test uses HTTP to directly test our REST endpoint. When the test is run the application will be started before
+the test is run.
+
+=== Controlling the test port
+
+While Quarkus will listen on port `8080` by default when running tests it defaults to `8081`. This allows you to run
+tests while having the application running in parallel. This can be configured via the `quarkus.http.test-port`
+config property in `application.properties`.
+
+Quarkus also provides Restassured integration that updates the default port used by Restassured before the tests are run,
+so no additional configuration should be required.
+
+=== Injecting a URI
+
+It is also possible to directly inject the URL into the test which can make is easy to use a different client. This is
+done via the `@TestHTTPResource` annotation.
+
+Lets write a simple test that shows this off to load some static resources. First create a simple HTML file in
+`src/main/resources/META-INF/resources/index.html` :
+
+
+[source,xml]
+----
+<html>
+    <head>
+        <title>Testing Guide</title>
+    </head>
+    <body>
+        Information about testing
+    </body>
+</html>
+----
+
+We will create a simple test to ensure that this is being served correctly:
+
+
+[source,java]
+----
+package org.acme.quickstart;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.junit.QuarkusTest;
+
+@QuarkusTest
+public class StaticContentTest {
+
+    @TestHTTPResource("index.html") // <1>
+    URL url;
+
+    @Test
+    public void testIndexHtml() throws Exception {
+        try (InputStream in = url.openStream()) {
+            String contents = readStream(in);
+            Assertions.assertTrue(contents.contains("<title>Testing Guide</title>"));
+        }
+    }
+
+    private static String readStream(InputStream in) throws IOException {
+        byte[] data = new byte[1024];
+        int r;
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        while ((r = in.read(data)) > 0) {
+            out.write(data, 0, r);
+        }
+        return new String(out.toByteArray(), StandardCharsets.UTF_8);
+    }
+}
+----
+<1> This annotation allows you to directly inject the URL of the Quarkus instance, the value of the annotation will be the path component of the URL
+
+For now `@TestHTTPResource` allows you to inject `URI`, `URL` and `String` representations of the URL.
+
+
+== Injection into tests
+
+So far we have only covered integration style tests that test the app via HTTP endpoints, but what if we want to do unit
+testing and test our beans directly?
+
+Quarkus supports this by allowing you to inject CDI beans into your tests via the `@Inject` annotation. Lets create a
+simple test that tests the greeting service directly without using HTTP:
+
+
+[source,java]
+----
+package org.acme.quickstart;
+
+import javax.inject.Inject;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+import io.quarkus.test.junit.QuarkusTest;
+
+@QuarkusTest
+public class GreetingServiceTest {
+
+    @Inject //<1>
+    GreetingService service;
+
+    @Test
+    public void testGreetingService() {
+        Assertions.assertEquals("hello Quarkus", service.greeting("Quarkus"));
+    }
+}
+----
+<1> The `GreetingService` bean will be injected into the test
+
+
+== Native Image Testing
+
+It is also possible to test native images using `@SubstrateTest`. This supports all the features mentioned in this
+guide except injecting into tests (and the native image runs in a separate non-JVM process this is not really possible).
+
+
+This is covered in the link:building-native-image-guide.html[Native Image Guide].

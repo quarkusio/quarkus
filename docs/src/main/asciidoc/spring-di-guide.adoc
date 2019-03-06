@@ -119,7 +119,7 @@ public class NoOpSingleStringFunction implements StringFunction {
 ----
 
 {project-name} also provides support for injecting configuration values using Spring's `@Value` annotation.
-To see that in action, first edit the `src/main/resources/META-INF/microprofile-config.properties` with the following content:
+To see that in action, first edit the `src/main/resources/application.properties` with the following content:
 
 [source]
 ----
@@ -189,7 +189,7 @@ public class GreeterBean {
 ----
 
 In the code above, we see that both field injection and constructor injection are being used (note that constructor injection does not need the `@Autowired` annotation since there is a single constructor).
-Furthermore, the `@Value` annotation on `suffix` has also a default value defined, which in this case will be used since we have not defined `greeting.suffix` in `microprofile-config.properties`.
+Furthermore, the `@Value` annotation on `suffix` has also a default value defined, which in this case will be used since we have not defined `greeting.suffix` in `application.properties`.
 
 
 === Update the JAX-RS resource

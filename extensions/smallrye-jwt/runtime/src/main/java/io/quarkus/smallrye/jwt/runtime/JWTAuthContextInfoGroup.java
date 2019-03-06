@@ -7,7 +7,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 /**
  * deployment configuration
  */
-@ConfigRoot(phase = ConfigPhase.RUN_TIME_STATIC, name = "jwt")
+@ConfigRoot(name = "smallrye-jwt")
 public class JWTAuthContextInfoGroup {
 
     /**

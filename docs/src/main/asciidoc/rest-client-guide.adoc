@@ -172,7 +172,7 @@ It will allow to narrow down the number of JAX-RS providers (which can be seen a
 
 == Create the configuration
 
-In order to determine the base URL to which REST calls will be made, the REST Client uses configuration from `META-INF/microprofile-config.properties`.
+In order to determine the base URL to which REST calls will be made, the REST Client uses configuration from `application.properties`.
 The name of the property needs to follow a certain convention which is best displayed in the following code:
 
 [source]

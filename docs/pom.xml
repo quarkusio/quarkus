@@ -68,7 +68,7 @@
                         <quarkus-site-live-coding>${quarkus-home-url}/live-coding</quarkus-site-live-coding>
 
                         <!-- === Communication === -->
-                        <quarkus-chat-url>https://protean.zulipchat.com/#narrow/stream/173288-Protean-users</quarkus-chat-url>
+                        <quarkus-chat-url>https://quarkusio.zulipchat.com/#</quarkus-chat-url>
                         <quarkus-mailing-list-subscription-email>quarkus-dev+subscribe@googlegroups.com</quarkus-mailing-list-subscription-email>
                         <quarkus-mailing-list-index>https://groups.google.com/d/forum/quarkus-dev</quarkus-mailing-list-index>
 

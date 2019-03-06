@@ -1,0 +1,170 @@
+= Building {project-name} apps with Gradle
+
+== Gradle configuration
+
+Configure Gradle as indicated in the link:gradle-config.html[Gradle configuration page].
+
+At the moment there is no way of automatically generating a new project using the {project-name} Gradle plugin, 
+luckily setting up a {project-name} project with Gradle is very simple. You only need to add the {project-name} Gradle plugin like this:
+
+[source,groovy,subs=attributes+]
+----
+apply plugin: 'io.quarkus.gradle.plugin'
+----
+Note: If you did not follow the steps indicated in the link:gradle-config.html[Gradle configuration page]
+you need to add this block to your 'build.gradle' file as well:
+
+[source,groovy,subs=attributes+]
+----
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+  dependencies {
+    classpath 'io.quarkus:quarkus-gradle-plugin:{quarkus-version}'
+  }
+}
+----
+
+[[project-creation]]
+== Creating a new project
+
+For now we have to manually create a Gradle project file for {project-name}. 
+Here is a complete sample file for a simple rest project:
+
+[source,groovy,subs=attributes+]
+----
+apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'io.quarkus.gradle.plugin' <1>
+
+
+group = 'org.acme'
+version = '1.0-SNAPSHOT'
+
+buildscript { <2>
+  repositories {
+    mavenCentral()
+  }
+  dependencies {
+    classpath 'io.quarkus:quarkus-gradle-plugin:{quarkus-version}'
+  }
+}
+
+repositories { <3>
+  mavenCentral()
+}
+
+dependencies { <4>
+  compileOnly group: 'io.quarkus', name: 'quarkus-resteasy-deployment', version:'{quarkus-version}'
+}
+----
+
+<1> The {project-name} plugin needs to be applied.
+<2> The buildscript block can be omitted if you added it to your '~/.gradle/init.gradle' file.
+<3> The repositories block can be omitted if you added it to your '~/.gradle/init.gradle' file.
+<4> This dependency is needed for a rest application similar to the getting started example.
+
+
+== Dealing with extensions
+
+From inside a {project-name} project, you can obtain a list of the available extensions with:
+
+[source]
+gradle list-extensions
+
+Functionality to automatically add extensions to your Gradle project is not implemented yet (coming soon).
+
+== Development mode
+
+{project-name} comes with a built-in development mode.
+Run you application with:
+
+[source]
+gradle quarkus-dev
+
+You can then update the application sources, resources and configurations.
+The changes are automatically reflected in your running application.
+This is great to do development spanning UI and database as you see changes reflected immediately.
+
+`quarkus-dev` enables hot deployment with background compilation, which means that when you modify 
+your Java files or your resource files and refresh your browser these changes will automatically take effect.
+This works too for resource files like the configuration property file.
+The act of refreshing the browser triggers a scan of the workspace, and if any changes are detected the 
+Java files are compiled, and the application is redeployed, then your request is serviced by the 
+redeployed application. If there are any issues with compilation or deployment an error page will let you know.
+
+Hit `CTRL+C` to stop the application.
+
+== Debugging
+
+You can run a {project-name} application in debug mode using:
+
+[source]
+gradle quarkus-dev --debug=true
+
+Then, attach your debugger to `localhost:5005`.
+
+== Import in your IDE
+
+Once you have a <<project-creation, project generated>>, you can import it in your favorite IDE.
+The only requirement is the ability to import a Gradle project.
+
+**Eclipse**
+
+In Eclipse, click on: `File -> Import`.
+In the wizard, select: `Maven -> Existing Gradle Project`.
+On the next screen, select the root location of the project.
+The next screen list the found modules; select the generated project and click on `Finish`. Done!
+
+In a separated terminal, run `gradle quarkus-dev`, and enjoy a highly productive environment.
+
+**IntelliJ**
+
+In IntelliJ:
+
+1. From inside IntelliJ select `File -> New -> Project From Existing Sources...` or, if you are on the welcome dialog, select `Import project`.
+2. Select the project root
+3. Select `Import project from external model` and `Gradle`
+4. Next a few times (review the different options if needed)
+5. On the last screen click on Finish
+
+In a separated terminal or in the embedded terminal, run `gradle quarkus-dev`. Enjoy!
+
+**Apache Netbeans**
+
+In Netbeans:
+
+1. Select `File -> Open Project`
+2. Select the project root
+3. Click on `Open Project`
+
+In a separated terminal or the embedded terminal, go to the project root and run `gradle quarkus-dev`. Enjoy!
+
+**Visual Studio Code**
+
+Open the project directory in VS Code. If you have installed the Java Extension Pack (grouping a set of Java extensions), the project is loaded as a Gradle project.
+
+== Building a native image
+
+Native images make {project-name} applications ideal for containers and serverless workloads.
+
+Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {graalvm-version}.
+
+Create a native executable using: `gradle quarkus-native`.
+A native executable will be present in `build/`.
+
+=== Build a container friendly executable
+
+The native executable will be specific to your operating system.
+To create an executable that will run in a container, use the following:
+
+[source, bash]
+----
+gradle quarkus-native --docker-build=true
+----
+
+The produced executable will be a 64 bit Linux executable, so depending on your operating system 
+it may no longer be runnable.
+However, it's not an issue as we are going to copy it to a Docker container.
+

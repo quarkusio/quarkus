@@ -163,7 +163,7 @@ Configuration in Quarkus is based on SmallRye Config, an implementation of the M
 All of the standard features of MP-Config are supported; in addition, there are several extensions which are made available
 by the SmallRye Config project as well as by Quarkus itself.
 
-The value of these properties is configured in a `META-INF/microprofile-config.properties` file that conforms to the MicroProfile config format.
+The value of these properties is configured in a `application.properties` file that follows the MicroProfile config format.
 
 Configuration of Quarkus extensions is injection-based, using annotations.
 
@@ -344,7 +344,7 @@ key type.
 <2> The `@ConfigRoot` annotation indicates that this object is a configuration root group, whose property names will have a parent only of `quarkus.`.  In this case the properties within the group will begin with `quarkus.log.*`.
 <3> Here the `LoggingProcessor` injects a `LogConfiguration` instance automatically by detecting the `@ConfigRoot` annotation.
 
-A corresponding `META-INF/microprofile-config.properties` file for the `File` values could be:
+A corresponding `application.properties` file for the `File` values could be:
 [source%nowrap,properties]
 ----
 quarkus.log.file.enable=true
@@ -496,13 +496,13 @@ public class PersistenceAndQuarkusConfigTest {
             .setExpectedException(ConfigurationError.class)                     <1>
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsManifestResource("META-INF/some-persistence.xml", "persistence.xml")
-                    .addAsManifestResource("META-INF/microprofile-config.properties"));
+                    .addAsResource("application.properties"));
 
     @Test
     public void testPersistenceAndConfigTest() {
         // should not be called, deployment exception should happen first:
         // it's illegal to have Hibernate configuration properties in both the
-        // microprofile-config.properties an in the persistence.xml
+        // application.properties and in the persistence.xml
         Assertions.fail();
     }
 

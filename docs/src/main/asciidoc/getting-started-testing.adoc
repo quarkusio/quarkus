@@ -1,3 +1,4 @@
+include::./attributes.adoc[]
 = {project-name} - Testing Your Application
 
 :toc: macro
@@ -26,7 +27,7 @@ To complete this guide, you need:
 * an IDE
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.5.3+
-* The completed greeter application from the link:getting-started-guide.adoc[Getting Started Guide]
+* The completed greeter application from the link:getting-started-guide.html[Getting Started Guide]
 
 == Architecture
 

@@ -21,7 +21,7 @@ Version {graalvm-version} is required.
 * The `GRAALVM_HOME` environment variable configured appropriately
 * Apache Maven 3.5.3+
 * A running Docker
-* The code of the application developed in the link:getting-started-guide.adoc[Getting Started Guide].
+* The code of the application developed in the link:getting-started-guide.html[Getting Started Guide].
 
 [NOTE]
 ====

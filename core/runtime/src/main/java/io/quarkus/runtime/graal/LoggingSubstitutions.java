@@ -29,8 +29,7 @@ import com.oracle.svm.core.annotate.TargetClass;
 
 import io.quarkus.runtime.logging.InitialConfigurator;
 
-/**
- */
+@SuppressWarnings("MultipleTopLevelClasses")
 @TargetClass(className = "org.jboss.logmanager.LoggerNode")
 final class Target_org_jboss_logmanager_LoggerNode {
 

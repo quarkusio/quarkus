@@ -838,6 +838,124 @@
             </build>
         </profile>
         <profile>
+            <!-- Stolen from https://github.com/opendaylight/infrautils/blob/master/common/parent/pom.xml -->
+            <id>errorprone</id>
+            <!-- Run Error Prone (see http://errorprone.info)
+                UNLESS we're running Maven inside the Eclipse IDE under M2E (i.e. only on the "mvn" CLI)
+                because in M2E it causes havoc for the m2e-apt extension (which configures Annotations Processors,
+                such as e.g. http://Immutables.org, for the Eclipse JDT APT support); see full details in
+                https://github.com/jbosstools/m2e-apt/issues/62.  Not running errorprone within the Eclipse
+                IDE is not a problem, because that's not yet supported, anyway;
+                see http://errorprone.info/docs/installation#Eclipse. -->
+<!--
+            <activation>
+                <property>
+                <name>!m2e.version</name>
+                </property>
+< ! - -
+                <jdk>[1.8.0,9)</jdk>
+- - >
+            </activation>
+-->
+            <build>
+                <plugins>
+                <plugin>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                    <compilerId>javac-with-errorprone</compilerId>
+                    <forceJavacCompilerUse>true</forceJavacCompilerUse>
+                    <compilerArgs combine.children="append">
+                        <!-- TODO evaluate further which other non-default error prone bug patterns could also be enabled...
+                            http://errorprone.info/bugpatterns -->
+                        <arg>-XepExcludedPaths:.*/target/.*</arg>
+                        <arg>-XepDisableWarningsInGeneratedCode</arg>
+                        <!-- TODO Do we need and want <arg>-Xep:OperatorPrecedence:OFF</arg> ? -->
+                        <!-- There are lots of disabled goodies in error-prone which only emit warnings (which nobody will ever look at!),
+                            so let us enable them all as least as warnings, and then selectively turn some of them into ERROR, and suppress
+                            those we really don't want (or can't enforce for whatever reason) with OFF. -->
+                        <arg>-XepAllDisabledChecksAsWarnings</arg>
+                        <!-- StaticOrDefaultInterfaceMethod is an Android specific warning which we don't care about -->
+                        <arg>-Xep:StaticOrDefaultInterfaceMethod:OFF</arg>
+                        <!-- FieldMissingNullable is badly broken :( https://github.com/google/error-prone/issues/708 -->
+                        <arg>-Xep:FieldMissingNullable:OFF</arg>
+                        <!-- To "Use parameter comments to document ambiguous literals" is unrealistic on a large existing code base -->
+                        <arg>-Xep:BooleanParameter:OFF</arg>
+                        <arg>-Xep:ReturnMissingNullable:OFF</arg> <!-- TODO later make ERROR, like it is in infrautil? -->
+                        <arg>-Xep:InconsistentOverloads:WARN</arg> <!-- TODO later make ERROR, like it is in infrautil? -->
+                        <arg>-Xep:ConstructorLeaksThis:OFF</arg><!-- TODO <arg>-Xep:ConstructorLeaksThis:ERROR</arg> after https://github.com/google/error-prone/pull/789 for https://github.com/google/error-prone/issues/655, and maybe also https://github.com/google/error-prone/issues/809? -->
+                        <arg>-Xep:MethodCanBeStatic:WARN</arg> <!-- TODO later make ERROR, like it is in infrautil? -->
+                        <arg>-Xep:ThrowsUncheckedException:OFF</arg>
+                        <!-- TODO <arg>-Xep:TestExceptionChecker:ERROR</arg> once all @Test with expected use org.opendaylight.infrautils.testutils.Asserts.assertThrows() instead -->
+                        <arg>-Xep:RedundantThrows:ERROR</arg>
+                        <arg>-Xep:Var:OFF</arg> <!-- TODO later make ERROR, like it is in infrautil? -->
+                        <!-- Following are things which seem useful to enforce, found in other projects;
+                            we could relax these again if during enforcement all over infrautils we find them to be too strict -->
+                        <arg>-Xep:ConstantField:WARN</arg> <!-- TODO later make ERROR, like it is in infrautil? -->code
+                        <arg>-Xep:EmptySetMultibindingContributions:ERROR</arg>
+                        <arg>-Xep:MixedArrayDimensions:ERROR</arg>
+                        <arg>-Xep:MultipleTopLevelClasses:ERROR</arg>
+                        <arg>-Xep:MultiVariableDeclaration:OFF</arg> <!-- TODO later make ERROR, like it is in infrautil? -->
+                        <arg>-Xep:PackageLocation:ERROR</arg>
+                        <arg>-Xep:PrivateConstructorForNoninstantiableModule:ERROR</arg>
+                        <arg>-Xep:RemoveUnusedImports:ERROR</arg>
+                        <arg>-Xep:UnnecessaryStaticImport:ERROR</arg>
+                        <arg>-Xep:UseBinds:ERROR</arg>
+                        <arg>-Xep:WildcardImport:WARN</arg> <!-- TODO later make ERROR, like it is in infrautil? -->
+                        <!-- FutureReturnValueIgnored is better (stronger) than error-prone's own (and FindBug's) @CheckReturnValue annotation, as it checks that ANY return Future are checked, not just those from methods annotated @CheckReturnValue -->
+                        <arg>-Xep:FutureReturnValueIgnored:ERROR</arg>
+                        <arg>-Xep:IntLongMath:ERROR</arg>
+                        <arg>-Xep:FloatCast:ERROR</arg>
+                        <arg>-Xep:ClassNewInstance:ERROR</arg>
+                        <arg>-Xep:ConstructorInvokesOverridable:ERROR</arg>
+                        <arg>-Xep:ThreeLetterTimeZoneID:ERROR</arg>
+                        <arg>-Xep:UnsafeFinalization:ERROR</arg>
+                        <arg>-Xep:MutableMethodReturnType:ERROR</arg>
+                        <arg>-Xep:SynchronizeOnNonFinalField:ERROR</arg>
+                        <arg>-Xep:WaitNotInLoop:ERROR</arg>
+                        <arg>-Xep:SwitchDefault:ERROR</arg>
+                        <arg>-Xep:ReachabilityFenceUsage:ERROR</arg>
+                        <arg>-Xep:BoxedPrimitiveConstructor:ERROR</arg>
+                        <arg>-Xep:InjectOnConstructorOfAbstractClass:ERROR</arg>
+                        <arg>-Xep:StringSplitter:ERROR</arg>
+                        <arg>-Xep:UnnecessaryDefaultInEnumSwitch:ERROR</arg>
+                        <arg>-Xep:DefaultCharset:ERROR</arg>
+                        <arg>-Xep:StreamResourceLeak:ERROR</arg>
+                        <!-- new in 2.3.0 -->
+                        <arg>-Xep:InconsistentCapitalization:ERROR</arg>
+                        <arg>-Xep:TruthIncompatibleType:ERROR</arg>
+                        <arg>-Xep:ByteBufferBackingArray:ERROR</arg>
+                        <arg>-Xep:OrphanedFormatString:ERROR</arg>
+                        <arg>-Xep:CatchAndPrintStackTrace:ERROR</arg>
+                        <arg>-Xep:VarTypeName:ERROR</arg>
+                        <!-- new in 2.3.1 -->
+                        <arg>-Xep:ObjectToString:ERROR</arg>
+                        <arg>-Xep:AssertThrowsMultipleStatements:ERROR</arg>
+                        <arg>-Xep:FieldCanBeFinal:WARN</arg> <!-- TODO later make ERROR, like it is in infrautil? -->
+                        <!-- new in 2.3.2 -->
+                        <arg>-Xep:AndroidJdkLibsChecker:OFF</arg>
+                        <arg>-Xep:Java7ApiChecker:OFF</arg>
+                    </compilerArgs>
+                    </configuration>
+                    <dependencies>
+                    <dependency>
+                        <!-- TODO remove this, see https://github.com/google/error-prone/issues/1242 ? -->
+                        <groupId>org.codehaus.plexus</groupId>
+                        <artifactId>plexus-compiler-javac-errorprone</artifactId>
+                        <version>2.8.5</version>
+                    </dependency>
+                    <!-- Override plexus-compiler-javac-errorprone's dependency on Error Prone with the latest version -->
+                    <dependency>
+                        <groupId>com.google.errorprone</groupId>
+                        <artifactId>error_prone_core</artifactId>
+                        <!-- Keep this version in line with the one of error_prone_annotations above -->
+                        <version>2.3.3</version>
+                    </dependency>
+                    </dependencies>
+                </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
             <id>eclipse</id>
             <activation>
                 <property>

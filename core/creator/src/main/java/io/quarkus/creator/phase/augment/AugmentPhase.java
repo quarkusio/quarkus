@@ -428,7 +428,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
         try {
             return new ZipFile(p.toFile());
         } catch (IOException e) {
-            throw new RuntimeException("Error opening zip stream from artifact: " + p);
+            throw new RuntimeException("Error opening zip stream from artifact: " + p, e);
         }
     }
 

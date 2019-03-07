@@ -25,13 +25,13 @@ Version {graalvm-version} is required.
 
 [NOTE]
 ====
-Once you have downloaded GraalVM, expand the archive and set the `GRAALVM_HOME` variable to this location:
+Once you have downloaded GraalVM, expand the archive and set the `GRAALVM_HOME` variable to this location. For instance:
 
-`export GRAALVM_HOME=~clement/Development/graalvm/`
+`export GRAALVM_HOME=~/Development/graalvm/`
 
 On MacOS, point the variable to the `Home` sub-directory:
 
-`export GRAALVM_HOME=~clement/Development/graalvm/Contents/Home/`
+`export GRAALVM_HOME=~/Development/graalvm/Contents/Home/`
 ====
 
 
@@ -59,49 +59,46 @@ If you have generated the application from the previous tutorial, you can find i
 
 [source,xml]
 ----
-<profiles>
-    <profile>
-        <id>native</id>
-        <build>
-            <plugins>
-                <plugin>
-                    <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-maven-plugin</artifactId>
-                    <version>${quarkus.version}</version>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>native-image</goal>
-                            </goals>
-                            <configuration>
-                                <enableHttpUrlHandler>true</enableHttpUrlHandler>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-            </plugins>
-        </build>
-    </profile>
-</profiles>
+<profile>
+    <id>native</id>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-maven-plugin</artifactId>
+                <version>${quarkus.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>native-image</goal>
+                        </goals>
+                        <configuration>
+                            <enableHttpUrlHandler>true</enableHttpUrlHandler>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</profile>
 ----
 
 We use a profile because, you will see very soon, packaging the native image takes a _few_ seconds.
 
 Create a native executable using: `mvn package -Pnative`.
 
-In addition to the regular files, the build also produces `target/quarkus-quickstart-runner`.
-You can run it using: `./target/quarkus-quickstart-runner`.
+In addition to the regular files, the build also produces an executable: `target/getting-started-1.0-SNAPSHOT-runner`.
+You can run it using: `target/getting-started-1.0-SNAPSHOT-runner`.
 
 == Testing the native executable
 
 Producing a native executable can lead to a few issues, and so it's also a good idea to run some tests against the application running in the native file.
 
-In the `pom.xml` file, extend the `native` profile with:
+In the `native` profile of the `pom.xml` file, the following failsafe plugin declaration will run the tests:
 
 [source, xml]
 ----
 <plugin>
-    <groupId>org.apache.maven.plugins</groupId>
     <artifactId>maven-failsafe-plugin</artifactId>
     <version>${surefire.version}</version>
     <executions>
@@ -120,7 +117,7 @@ In the `pom.xml` file, extend the `native` profile with:
 </plugin>
 ----
 
-Then, create the `src/test/java/org/acme/quickstart/GreetingResourceIT.java` with the following content:
+You'll also find the `src/test/java/org/acme/quickstart/NativeGreetingResourceIT.java` test class in the project:
 
 [source,java]
 ----
@@ -130,10 +127,9 @@ package org.acme.quickstart;
 import io.quarkus.test.junit.SubstrateTest;
 
 @SubstrateTest // <1>
-public class GreetingResourceIT extends GreetingResourceTest { // <2>
+public class NativeGreetingResourceIT extends GreetingResourceTest { // <2>
 
-    // Run the same tests
-
+    // Execute the same tests but in native mode.
 }
 ----
 <1> Use another test runner that starts the application from the native file before the tests.
@@ -143,8 +139,8 @@ The executable is retrieved using the `native.image.path` system property config
 To see the `GreetingResourceIT` run against the native image, add a verify goal:
 [source,shell]
 ----
-mvn package verify -Pnative
-...
+$ mvn package verify -Pnative
+
 [quarkus-quickstart-runner:50955]     universe:     391.96 ms
 [quarkus-quickstart-runner:50955]      (parse):     904.37 ms
 [quarkus-quickstart-runner:50955]     (inline):   1,143.32 ms
@@ -168,8 +164,6 @@ Executing [/Users/starksm/Dev/JBoss/Protean/starksm64-quarkus-quickstarts/gettin
 [INFO] Results:
 [INFO]
 [INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0
-
-...
 ----
 
 == Producing a Docker container

@@ -61,7 +61,8 @@ You can then happily inject your `EntityManager`:
 --
 @ApplicationScoped
 public class SantaClausService {
-    @Inject private EntityManager em; <1>
+    @Inject
+    EntityManager em; <1>
 
     @Transactional <2>
     public void createGift(String giftDescription) {

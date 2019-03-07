@@ -36,12 +36,6 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- This is required to use DSL queries -->
-        <dependency>
-            <groupId>org.infinispan</groupId>
-            <artifactId>infinispan-query-dsl</artifactId>
-        </dependency>
-
         <!-- Allow some basic support for @Inject (required for JAXRS) -->
         <dependency>
             <groupId>io.quarkus</groupId>

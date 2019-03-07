@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.google.common.base.Splitter;
+
 /**
  * Class path based runner that can resolve artifacts from the current class path.
  * <p>
@@ -67,15 +69,15 @@ public class ClassPathArtifactResolver implements ArtifactResolver {
         for (StoredUrl url : pathList) {
             Matcher matcher = filePatten.matcher(url.fileName);
             if (matcher.matches()) {
-                String[] groupParts = groupId.split("\\.");
-                if (url.path.getNameCount() < groupParts.length + 2) {
+                List<String> groupParts = Splitter.on('.').splitToList(groupId);
+                if (url.path.getNameCount() < groupParts.size() + 2) {
                     continue;
                 }
 
                 boolean matches = true;
-                for (int i = 0; i < groupParts.length; ++i) {
-                    String up = url.path.getName(url.path.getNameCount() - groupParts.length - 3 + i).toString();
-                    if (!up.equals(groupParts[i])) {
+                for (int i = 0; i < groupParts.size(); ++i) {
+                    String up = url.path.getName(url.path.getNameCount() - groupParts.size() - 3 + i).toString();
+                    if (!up.equals(groupParts.get(i))) {
                         matches = false;
                         break;
                     }

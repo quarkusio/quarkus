@@ -51,7 +51,7 @@ public class ExampleConfigMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         try {
-            File out = new File(project.getBasedir(), "src/main/resources/META-INF/example-microprofile-config.properties");
+            File out = new File(project.getBasedir(), "src/main/resources/application.properties");
             out.getParentFile().mkdirs();
 
             Properties properties = new Properties();

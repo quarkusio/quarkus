@@ -45,7 +45,7 @@ public class BasicRest extends QuarkusTemplate {
         }
         createIndexPage();
         createDockerFile();
-        createMicroProfileConfig();
+        createApplicationConfig();
     }
 
     private void setupContext() {
@@ -166,11 +166,11 @@ public class BasicRest extends QuarkusTemplate {
         generate("templates/dockerfile.ftl", context, docker, "docker file");
     }
 
-    private void createMicroProfileConfig() throws IOException {
-        File meta = new File(projectRoot, "src/main/resources/META-INF");
-        File file = new File(mkdirs(meta), "microprofile-config.properties");
+    private void createApplicationConfig() throws IOException {
+        File meta = new File(projectRoot, "src/main/resources");
+        File file = new File(mkdirs(meta), "application.properties");
         if (!file.exists()) {
-            Files.write(file.toPath(), Arrays.asList("# Configuration file", "key = value"), StandardOpenOption.CREATE_NEW);
+            Files.write(file.toPath(), Arrays.asList("# Configuration file", "# key = value"), StandardOpenOption.CREATE_NEW);
             System.out.println("Configuration file created in src/main/resources/META-INF/" + file.getName());
         }
     }

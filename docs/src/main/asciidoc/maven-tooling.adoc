@@ -1,91 +1,6 @@
 include::./attributes.adoc[]
 = Building {project-name} apps with Maven
 
-[[build-tool-maven]]
-== Maven configuration
-
-If you have not used <<project-creation,project scaffolding>>, add the following elements in your `pom.xml`
-
-[source,xml,subs=attributes+]
-----
-<dependencyManagement>
-    <dependencies>
-        <dependency> <1>
-            <groupId>io.quarkus</groupId> 
-            <artifactId>quarkus-bom</artifactId>
-            <version>${quarkus.version}</version>
-            <type>pom</type>
-            <scope>import</scope>
-        </dependency>
-    </dependencies>
-</dependencyManagement>
-
-<build>
-    <plugins>
-        <plugin> <2>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-maven-plugin</artifactId>
-            <version>${quarkus.version}</version>
-            <executions>
-                <execution>
-                    <goals>
-                        <goal>build</goal>
-                    </goals>
-                </execution>
-            </executions>
-        </plugin>
-    </plugins>
-</build>
-
-<profiles>
-    <profile> <3>
-        <id>native</id>
-        <build>
-            <plugins>
-                <plugin> <3>
-                    <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-maven-plugin</artifactId>
-                    <version>${quarkus.version}</version>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>native-image</goal>
-                            </goals>
-                            <configuration>
-                                <enableHttpUrlHandler>true</enableHttpUrlHandler>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin> <4>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-failsafe-plugin</artifactId>
-                    <version>${surefire.version}</version>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>integration-test</goal>
-                                <goal>verify</goal>
-                            </goals>
-                            <configuration>
-                                <systemProperties>
-                                    <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
-                                </systemProperties>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-            </plugins>
-        </build>
-    </profile>
-</profiles>
-----
-
-<1> Optionally use a BOM file to omit the version of the different {project-name} dependencies.
-<2> Use the {project-name} Maven plugin that will hook into the build process
-<3> Use a native profile and plugin to activate GraalVM compilation
-<4> If you want to test your native image with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@SubstrateTest` will be run against the native image. See the link:building-native-image-guide.html[Native image guide] for more info.
-
 [[project-creation]]
 == Creating a new project
 
@@ -288,3 +203,88 @@ The produced executable will be a 64 bit Linux executable, so depending on your 
 However, it's not an issue as we are going to copy it to a Docker container.
 
 You can follow the link:building-native-image-guide.html[Build a native image guide] as well as link:kubernetes-guide.html[Deploying Application to Kubernetes and OpenShift] for more information.
+
+[[build-tool-maven]]
+== Maven configuration
+
+If you have not used <<project-creation,project scaffolding>>, add the following elements in your `pom.xml`
+
+[source,xml,subs=attributes+]
+----
+<dependencyManagement>
+    <dependencies>
+        <dependency> <1>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-bom</artifactId>
+            <version>${quarkus.version}</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+
+<build>
+    <plugins>
+        <plugin> <2>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-maven-plugin</artifactId>
+            <version>${quarkus.version}</version>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>build</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+</build>
+
+<profiles>
+    <profile> <3>
+        <id>native</id>
+        <build>
+            <plugins>
+                <plugin> <3>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-maven-plugin</artifactId>
+                    <version>${quarkus.version}</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>native-image</goal>
+                            </goals>
+                            <configuration>
+                                <enableHttpUrlHandler>true</enableHttpUrlHandler>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin> <4>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>${surefire.version}</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>integration-test</goal>
+                                <goal>verify</goal>
+                            </goals>
+                            <configuration>
+                                <systemProperties>
+                                    <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
+                                </systemProperties>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </build>
+    </profile>
+</profiles>
+----
+
+<1> Optionally use a BOM file to omit the version of the different {project-name} dependencies.
+<2> Use the {project-name} Maven plugin that will hook into the build process
+<3> Use a native profile and plugin to activate GraalVM compilation
+<4> If you want to test your native image with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@SubstrateTest` will be run against the native image. See the link:building-native-image-guide.html[Native image guide] for more info.

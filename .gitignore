@@ -27,6 +27,5 @@ graph-output.dot
 ObjectStore
 .gradle
 build
-
-
 docker/distroless/bazel-*
+/.apt_generated_tests/

@@ -5,6 +5,7 @@ import static io.quarkus.deployment.util.ReflectUtil.toError;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
@@ -49,7 +50,6 @@ import io.quarkus.deployment.builditem.substrate.RuntimeReinitializedClassBuildI
 import io.quarkus.deployment.configuration.ConfigDefinition;
 import io.quarkus.deployment.configuration.ConfigPatternMap;
 import io.quarkus.deployment.configuration.LeafConfigType;
-import io.quarkus.deployment.recording.ObjectLoader;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -192,10 +192,15 @@ public class ConfigurationSetup {
     private static <T> void withConverterHelper(final SmallRyeConfigBuilder builder, final Class<T> type, final int priority,
             final Class<? extends Converter<?>> converterClass) {
         try {
-            builder.withConverter(type, priority, ((Class<? extends Converter<T>>) converterClass).newInstance());
+            builder.withConverter(type, priority,
+                    ((Class<? extends Converter<T>>) converterClass).getDeclaredConstructor().newInstance());
         } catch (InstantiationException e) {
             throw toError(e);
         } catch (IllegalAccessException e) {
+            throw toError(e);
+        } catch (InvocationTargetException e) {
+            throw toError(e);
+        } catch (NoSuchMethodException e) {
             throw toError(e);
         }
     }
@@ -259,11 +264,7 @@ public class ConfigurationSetup {
             Consumer<BytecodeRecorderObjectLoaderBuildItem> objectLoaderConsumer,
             List<ConfigurationCustomConverterBuildItem> converters,
             List<RunTimeConfigurationSourceBuildItem> runTimeSources) {
-        final ClassOutput classOutput = new ClassOutput() {
-            public void write(final String name, final byte[] data) {
-                classConsumer.accept(new GeneratedClassBuildItem(false, name, data));
-            }
-        };
+        final ClassOutput classOutput = (name, data) -> classConsumer.accept(new GeneratedClassBuildItem(false, name, data));
         // Get the set of run time and static init leaf keys
         final ConfigDefinition configDefinition = configurationBuildItem.getConfigDefinition();
 
@@ -418,22 +419,21 @@ public class ConfigurationSetup {
             }
         }
 
-        objectLoaderConsumer.accept(new BytecodeRecorderObjectLoaderBuildItem(new ObjectLoader() {
-            public ResultHandle load(final BytecodeCreator body, final Object obj) {
-                final ConfigDefinition.RootInfo rootInfo = configDefinition.getInstanceInfo(obj);
-                if (rootInfo == null)
-                    return null;
-
-                if (!rootInfo.getConfigPhase().isAvailableAtRun()) {
-                    String msg = String.format(
-                            "You are trying to use a ConfigRoot[%s] at runtime whose phase[%s] does not allow this",
-                            rootInfo.getRootClass().getName(), rootInfo.getConfigPhase());
-                    throw new IllegalStateException(msg);
-                }
-                final FieldDescriptor fieldDescriptor = rootInfo.getFieldDescriptor();
-                final ResultHandle configRoot = body.invokeStaticMethod(GET_ROOT_METHOD);
-                return body.readInstanceField(fieldDescriptor, configRoot);
+        objectLoaderConsumer.accept(new BytecodeRecorderObjectLoaderBuildItem((body, obj) -> {
+            final ConfigDefinition.RootInfo rootInfo = configDefinition.getInstanceInfo(obj);
+            if (rootInfo == null) {
+                return null;
             }
+
+            if (!rootInfo.getConfigPhase().isAvailableAtRun()) {
+                String msg = String.format(
+                        "You are trying to use a ConfigRoot[%s] at runtime whose phase[%s] does not allow this",
+                        rootInfo.getRootClass().getName(), rootInfo.getConfigPhase());
+                throw new IllegalStateException(msg);
+            }
+            final FieldDescriptor fieldDescriptor = rootInfo.getFieldDescriptor();
+            final ResultHandle configRoot = body.invokeStaticMethod(GET_ROOT_METHOD);
+            return body.readInstanceField(fieldDescriptor, configRoot);
         }));
 
         runTimeInitConsumer.accept(new RuntimeReinitializedClassBuildItem(CONFIG_HELPER));
@@ -483,8 +483,9 @@ public class ConfigurationSetup {
             final StringBuilder methodName, final Map<String, MethodDescriptor> parseMethodCache) {
         final String methodNameStr = methodName.toString();
         final MethodDescriptor existing = parseMethodCache.get(methodNameStr);
-        if (existing != null)
+        if (existing != null) {
             return existing;
+        }
         try (MethodCreator body = cc.getMethodCreator(methodName.toString(), void.class, SmallRyeConfig.class,
                 NameIterator.class)) {
             body.setModifiers(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC);

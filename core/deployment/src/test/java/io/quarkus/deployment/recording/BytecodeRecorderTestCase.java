@@ -58,11 +58,11 @@ public class BytecodeRecorderTestCase {
         runTest(recorder -> {
             TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
             template.intArray(4, 5, 6);
-        }, (Object) new int[] { 4, 5, 6 });
+        }, new int[] { 4, 5, 6 });
         runTest(recorder -> {
             TestTemplate template = recorder.getRecordingProxy(TestTemplate.class);
             template.doubleArray(4, 5, 6);
-        }, (Object) new double[] { 4, 5, 6 });
+        }, new double[] { 4, 5, 6 });
     }
 
     @Test
@@ -117,7 +117,7 @@ public class BytecodeRecorderTestCase {
         generator.accept(recorder);
         recorder.writeBytecode(new TestClassOutput(tcl));
 
-        StartupTask task = (StartupTask) tcl.loadClass(TEST_CLASS).newInstance();
+        StartupTask task = (StartupTask) tcl.loadClass(TEST_CLASS).getDeclaredConstructor().newInstance();
         task.deploy(new StartupContext());
         Assert.assertEquals(expected.length, TestTemplate.RESULT.size());
         for (Object i : expected) {

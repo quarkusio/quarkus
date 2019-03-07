@@ -119,7 +119,7 @@
         <ul>
             <li>Add REST resources, Servlets, functions and other services in <code>src/main/java</code>.</li>
             <li>Your static assets are located in <code>src/main/resources/META-INF/resources</code>.</li>
-            <li>Configure your application in <code>src/main/resources/META-INF/microprofile-config.properties</code>.
+            <li>Configure your application in <code>src/main/resources/application.properties</code>.
             </li>
         </ul>
 

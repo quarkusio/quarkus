@@ -62,10 +62,10 @@ public class CreateProjectMojoIT extends MojoTestBase {
 
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(new File(testDir, "src/main/java")).isDirectory();
-        assertThat(new File(testDir, "src/main/resources/META-INF/microprofile-config.properties")).isFile();
+        assertThat(new File(testDir, "src/main/resources/application.properties")).isFile();
 
         String config = Files
-                .asCharSource(new File(testDir, "src/main/resources/META-INF/microprofile-config.properties"), Charsets.UTF_8)
+                .asCharSource(new File(testDir, "src/main/resources/application.properties"), Charsets.UTF_8)
                 .read();
         assertThat(config).contains("key = value");
 
@@ -109,7 +109,7 @@ public class CreateProjectMojoIT extends MojoTestBase {
                 .contains(MojoUtils.getPluginGroupId(), MojoUtils.QUARKUS_VERSION_PROPERTY, MojoUtils.getPluginGroupId());
         assertThat(new File(testDir, "src/main/java")).isDirectory();
 
-        assertThat(new File(testDir, "src/main/resources/META-INF/microprofile-config.properties")).exists();
+        assertThat(new File(testDir, "src/main/resources/application.properties")).exists();
         assertThat(new File(testDir, "src/main/resources/META-INF/resources/index.html")).exists();
 
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))

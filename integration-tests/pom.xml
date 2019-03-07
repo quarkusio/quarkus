@@ -52,7 +52,7 @@
         <module>infinispan-cache-jpa</module>
         <module>infinispan-cache-jpa-stress</module>
         <!-- Camel tests are not working on Fedora + Bash
-        see https://github.com/jbossas/protean-shamrock/issues/1130
+        see https://github.com/quarkusio/quarkus/issues/1130
         <module>camel-core</module>
         <module>camel-salesforce</module>
         -->

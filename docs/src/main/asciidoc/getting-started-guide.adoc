@@ -172,11 +172,11 @@ Use: `mvn compile quarkus:dev`:
 [INFO]
 [INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ quarkus-quickstart ---
 [INFO] Using 'UTF-8' encoding to copy filtered resources.
-[INFO] skip non existing resourceDirectory /Users/starksm/Dev/JBoss/Protean/starksm64-quarkus-quickstarts/getting-started/src/main/resources
+[INFO] skip non existing resourceDirectory /Users/starksm/Dev/JBoss/Quarkus/starksm64-quarkus-quickstarts/getting-started/src/main/resources
 [INFO]
 [INFO] --- maven-compiler-plugin:3.1:compile (default-compile) @ quarkus-quickstart ---
 [INFO] Changes detected - recompiling the module!
-[INFO] Compiling 2 source files to /Users/starksm/Dev/JBoss/Protean/starksm64-quarkus-quickstarts/getting-started/target/classes
+[INFO] Compiling 2 source files to /Users/starksm/Dev/JBoss/Quarkus/starksm64-quarkus-quickstarts/getting-started/target/classes
 [INFO]
 [INFO] --- quarkus-maven-plugin:<version>:dev (default-cli) @ quarkus-quickstart ---
 Listening for transport dt_socket at address: 5005

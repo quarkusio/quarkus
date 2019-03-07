@@ -136,8 +136,7 @@ public class PreconfiguredServiceRegistryBuilder {
         // N.B. support for custom IntegratorProvider injected via Properties (as
         // instance) removed
 
-        // N.B. support for custom StrategySelector is not implemented yet: see
-        // MirroringStrategySelector
+        // N.B. support for custom StrategySelector is not implemented yet
 
         final StrategySelectorImpl strategySelector = new StrategySelectorImpl(FlatClassLoaderService.INSTANCE);
 

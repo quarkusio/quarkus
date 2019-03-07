@@ -33,7 +33,6 @@ import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
-import org.hibernate.cache.internal.RegionFactoryInitiator;
 import org.hibernate.cfg.Environment;
 import org.hibernate.engine.config.internal.ConfigurationServiceInitiator;
 import org.hibernate.engine.jdbc.batch.internal.BatchBuilderInitiator;
@@ -65,6 +64,7 @@ import org.hibernate.service.spi.ServiceContributor;
 import org.hibernate.tool.hbm2ddl.ImportSqlCommandExtractorInitiator;
 import org.hibernate.tool.schema.internal.SchemaManagementToolInitiator;
 
+import io.quarkus.hibernate.orm.runtime.boot.QuarkusEnvironment;
 import io.quarkus.hibernate.orm.runtime.service.DialectFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.service.DisabledJMXInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
@@ -74,10 +74,6 @@ import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
  * be assignable to it.
  */
 public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
-    /**
-     * The default resource name for a hibernate configuration xml file.
-     */
-    public static final String DEFAULT_CFG_RESOURCE_NAME = "hibernate.cfg.xml";
 
     private final Map settings;
     private final List<StandardServiceInitiator> initiators = standardInitiatorList();
@@ -94,7 +90,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
     }
 
     public RecordableBootstrap(BootstrapServiceRegistry bootstrapServiceRegistry, LoadedConfig loadedConfigBaseline) {
-        this.settings = Environment.getProperties();
+        this.settings = QuarkusEnvironment.getInitialProperties();
         this.bootstrapServiceRegistry = bootstrapServiceRegistry;
         this.configLoader = new ConfigLoader(bootstrapServiceRegistry);
         this.aggregatedCfgXml = loadedConfigBaseline;
@@ -157,7 +153,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 
         serviceInitiators.trimToSize();
 
-        return Collections.unmodifiableList(serviceInitiators);
+        return serviceInitiators;
     }
 
     @Override
@@ -362,7 +358,6 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
         final Map settingsCopy = new HashMap();
         settingsCopy.putAll(settings);
         settingsCopy.put(org.hibernate.boot.cfgxml.spi.CfgXmlAccessService.LOADED_CONFIG_KEY, aggregatedCfgXml);
-        Environment.verifyProperties(settingsCopy);
         ConfigurationHelper.resolvePlaceHolders(settingsCopy);
 
         return new StandardServiceRegistryImpl(autoCloseRegistry, bootstrapServiceRegistry, initiators,

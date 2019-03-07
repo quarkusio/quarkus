@@ -70,7 +70,7 @@
         <jboss-metadata-web.version>11.0.0.Final</jboss-metadata-web.version>
         <maven-core.version>3.5.4</maven-core.version>
         <maven-resolver.version>1.1.1</maven-resolver.version>
-        <guava.version>23.0</guava.version>
+        <guava.version>27.0.1-jre</guava.version>
         <plexus-utils.version>3.0.24</plexus-utils.version>
         <maven-plugin-annotations.version>3.5.2</maven-plugin-annotations.version>
         <plexus-component-annotations.version>1.7.1</plexus-component-annotations.version>

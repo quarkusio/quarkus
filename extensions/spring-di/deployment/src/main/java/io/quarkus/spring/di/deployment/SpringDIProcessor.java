@@ -19,6 +19,7 @@ package io.quarkus.spring.di.deployment;
 import static org.jboss.jandex.AnnotationInstance.create;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -211,11 +212,7 @@ public class SpringDIProcessor {
                                 annotationsToAdd.add(create(
                                         CDI_NAMED_ANNOTATION,
                                         annotation.target(),
-                                        new ArrayList<AnnotationValue>() {
-                                            {
-                                                add(AnnotationValue.createStringValue("value", value));
-                                            }
-                                        }));
+                                        Collections.singletonList(AnnotationValue.createStringValue("value", value))));
                             }
                         }
                     }
@@ -243,11 +240,7 @@ public class SpringDIProcessor {
                     annotationsToAdd.add(create(
                             CDI_NAMED_ANNOTATION,
                             context.getTarget(),
-                            new ArrayList<AnnotationValue>() {
-                                {
-                                    add(AnnotationValue.createStringValue("value", beanName));
-                                }
-                            }));
+                            Collections.singletonList(AnnotationValue.createStringValue("value", beanName))));
 
                     return true;
                 }

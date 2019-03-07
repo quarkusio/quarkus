@@ -57,22 +57,6 @@ public class DevModeMain {
         wiringDir = new File(args[1]);
         cacheDir = new File(args[2]);
 
-        //first lets look for some config, as it is not on the current class path
-        //and we need to load it to start undertow eagerly
-        File config = new File(classesRoot, "META-INF/microprofile-config.properties");
-        if (config.exists()) {
-            try {
-                Config built = SmallRyeConfigProviderResolver.instance().getBuilder()
-                        .addDefaultSources()
-                        .addDiscoveredConverters()
-                        .addDiscoveredSources()
-                        .withSources(new PropertiesConfigSource(config.toURL())).build();
-                SmallRyeConfigProviderResolver.instance().registerConfig(built, Thread.currentThread().getContextClassLoader());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-
         runtimeUpdatesProcessor = RuntimeCompilationSetup.setup();
         if (runtimeUpdatesProcessor != null) {
             runtimeUpdatesProcessor.scanForChangedClasses();

@@ -34,7 +34,7 @@ The solution is located in the `using-websockets` {quickstarts-tree-url}/using-w
 
 First, we need a new project. Create a new project with the following command:
 
-[source, subs=attributes+]
+[source,shell,subs=attributes+]
 ----
 mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \

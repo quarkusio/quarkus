@@ -23,7 +23,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jboss.logging.Logger;
+
 public class StartupContext implements Closeable {
+
+    private static final Logger LOG = Logger.getLogger(StartupContext.class);
 
     private final Map<String, Object> values = new HashMap<>();
     private final List<Runnable> shutdownTasks = new ArrayList<>();
@@ -54,7 +58,7 @@ public class StartupContext implements Closeable {
             try {
                 r.run();
             } catch (Throwable e) {
-                e.printStackTrace();
+                LOG.error("Running a shutdown task failed", e);
             }
         }
         shutdownTasks.clear();

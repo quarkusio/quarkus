@@ -32,7 +32,6 @@ import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Template;
 import io.smallrye.metrics.MetricRegistries;
-import io.smallrye.metrics.app.CounterImpl;
 
 @Template
 public class SmallRyeMetricsTemplate {
@@ -41,31 +40,6 @@ public class SmallRyeMetricsTemplate {
     private static final String MEMORY_HEAP_USAGE = "memory.heap.usage";
     private static final String MEMORY_NON_HEAP_USAGE = "memory.nonHeap.usage";
     private static final String THREAD_COUNT = "thread.count";
-
-    /*
-     * public <E extends Member & AnnotatedElement> void registerCounted(Class<?> topClass, E element) {
-     * MetricRegistry registry = MetricRegistries.get(MetricRegistry.Type.APPLICATION);
-     * //registry.register(name, new CounterImpl());
-     * MetricResolver resolver = new MetricResolver();
-     * MetricResolver.Of<Counted> of = resolver.counted(topClass, element);
-     * Metadata meta = new Metadata(of.metricName(), MetricType.COUNTER);
-     * //registry.register(meta, new CounterImpl());
-     * }
-     */
-    public void registerCounted(String topClassName, String elementName, ShutdownContext shutdown) {
-        MetricRegistry registry = MetricRegistries.get(MetricRegistry.Type.APPLICATION);
-
-        String name = MetricRegistry.name(topClassName, elementName);
-        Metadata meta = new Metadata(name, MetricType.COUNTER);
-        log.debugf("Register: %s", name);
-        registry.register(meta, new CounterImpl());
-        shutdown.addShutdownTask(new Runnable() {
-            @Override
-            public void run() {
-                registry.remove(name);
-            }
-        });
-    }
 
     public void registerBaseMetrics(ShutdownContext shutdown) {
         MetricRegistry registry = MetricRegistries.get(MetricRegistry.Type.BASE);

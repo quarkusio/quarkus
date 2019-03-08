@@ -29,14 +29,20 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.inject.Singleton;
+import javax.net.ssl.TrustManager;
 import javax.servlet.DispatcherType;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.DynamicFeature;
+import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.SecurityContext;
+import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
@@ -45,6 +51,7 @@ import javax.ws.rs.ext.Providers;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -93,7 +100,7 @@ import io.quarkus.undertow.deployment.ServletInitParamBuildItem;
  */
 public class ResteasyScanningProcessor {
 
-    private static final String JAVAX_WS_RS_APPLICATION = "javax.ws.rs.Application";
+    private static final String JAVAX_WS_RS_APPLICATION = Application.class.getName();
     private static final String JAX_RS_FILTER_NAME = JAVAX_WS_RS_APPLICATION;
     private static final String JAX_RS_SERVLET_NAME = JAVAX_WS_RS_APPLICATION;
     private static final String JAX_RS_APPLICATION_PARAMETER_NAME = JAVAX_WS_RS_APPLICATION;
@@ -132,9 +139,12 @@ public class ResteasyScanningProcessor {
     private static final DotName JSONB_ANNOTATION = DotName.createSimple("javax.json.bind.annotation.JsonbAnnotation");
 
     private static final Set<DotName> TYPES_IGNORED_FOR_REFLECTION = new HashSet<>(Arrays.asList(
+            // javax.json
             DotName.createSimple("javax.json.JsonObject"),
             DotName.createSimple("javax.json.JsonArray"),
-            DotName.createSimple("javax.ws.rs.core.Response")));
+            // JAX-RS
+            DotName.createSimple(Response.class.getName()),
+            DotName.createSimple(AsyncResponse.class.getName())));
 
     private static final DotName[] METHOD_ANNOTATIONS = {
             GET,
@@ -511,9 +521,10 @@ public class ResteasyScanningProcessor {
                 if (isReflectionDeclarationRequiredFor(method.returnType())) {
                     reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(method.returnType()));
                 }
-                for (Type param : method.parameters()) {
-                    if (isReflectionDeclarationRequiredFor(param)) {
-                        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(param));
+                for (short i = 0; i < method.parameters().size(); i++) {
+                    Type parameterType = method.parameters().get(i);
+                    if (isReflectionDeclarationRequiredFor(parameterType) && !hasAnnotation(method, i, CONTEXT)) {
+                        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(parameterType));
                     }
                 }
             }
@@ -652,6 +663,18 @@ public class ResteasyScanningProcessor {
             default:
                 return null;
         }
+    }
+
+    private static boolean hasAnnotation(MethodInfo method, short paramPosition, DotName annotation) {
+        for (AnnotationInstance annotationInstance : method.annotations()) {
+            AnnotationTarget target = annotationInstance.target();
+            if (target != null && target.kind() == Kind.METHOD_PARAMETER
+                    && target.asMethodParameter().position() == paramPosition
+                    && annotationInstance.name().equals(annotation)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static class ProviderDiscoverer {

@@ -37,7 +37,7 @@ ENV MAVEN_OPTS="-XX:+TieredCompilation -XX:TieredStopAtLevel=1"
 LABEL io.openshift.s2i.scripts-url="image:///usr/local/s2i" \
       io.openshift.s2i.destination="/tmp" \
 
-      io.k8s.description="Platform for building and running Quarkus.io NATIVE Java applications" \
+      io.k8s.description="Platform for building and running Quarkus.io Native Java applications" \
       io.k8s.display-name="Quarkus.io NATIVE Java Applications" \
       io.openshift.tags="builder,java,quarkus,native"
 

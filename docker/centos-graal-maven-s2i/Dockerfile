@@ -50,6 +50,8 @@ ENV PATH=$PATH:"/usr/local/s2i"
 
 RUN mkdir /quarkus.io/
 
+EXPOSE 8080
+
 # Use the run script as default since we are working as an hybrid image which can be
 # used directly to. (If we were a plain s2i image we would print the usage info here.)
 CMD [ "/usr/local/s2i/run" ]

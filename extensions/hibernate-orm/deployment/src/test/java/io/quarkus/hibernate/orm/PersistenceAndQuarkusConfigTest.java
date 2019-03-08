@@ -35,13 +35,13 @@ public class PersistenceAndQuarkusConfigTest {
             .setExpectedException(ConfigurationError.class)
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsManifestResource("META-INF/some-persistence.xml", "persistence.xml")
-                    .addAsManifestResource("META-INF/microprofile-config.properties"));
+                    .addAsResource("application.properties"));
 
     @Test
     public void testPersistenceAndConfigTest() {
         // should not be called, deployment exception should happen first:
         // it's illegal to have Hibernate configuration properties in both the
-        // microprofile-config.properties an in the persistence.xml
+        // application.properties and in the persistence.xml
         Assertions.fail();
     }
 

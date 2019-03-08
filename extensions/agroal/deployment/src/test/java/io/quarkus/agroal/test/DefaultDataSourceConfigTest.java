@@ -25,8 +25,8 @@ public class DefaultDataSourceConfigTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsManifestResource("microprofile-config-default-datasource.properties",
-                            "microprofile-config.properties"));
+                    .addAsResource("application-default-datasource.properties",
+                            "application.properties"));
 
     @Test
     public void testDefaultDataSourceInjection() throws SQLException {

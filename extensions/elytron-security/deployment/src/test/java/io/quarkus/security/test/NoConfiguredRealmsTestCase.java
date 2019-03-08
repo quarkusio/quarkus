@@ -20,8 +20,8 @@ public class NoConfiguredRealmsTestCase {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClasses)
-                    .addAsManifestResource(new StringAsset("quarkus.security.file.enabled=false"),
-                            "microprofile-config.properties"));
+                    .addAsResource(new StringAsset("quarkus.security.file.enabled=false"),
+                            "application.properties"));
 
     /**
      * Should fail with 403 rather than 401 as there is no authentication enabled, but the servlet requires roles

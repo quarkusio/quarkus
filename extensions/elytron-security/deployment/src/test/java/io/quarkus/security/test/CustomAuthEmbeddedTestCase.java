@@ -25,8 +25,8 @@ public class CustomAuthEmbeddedTestCase {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClasses)
                     .addClasses(CustomAuth.class, CustomAuthExtension.class, CustomAuthFactory.class)
-                    .addAsManifestResource("microprofile-config-custom-auth-embedded.properties",
-                            "microprofile-config.properties")
+                    .addAsResource("application-custom-auth-embedded.properties",
+                            "application.properties")
                     .addAsManifestResource(new StringAsset(CustomAuthExtension.class.getName()),
                             "services/" + ServletExtension.class.getName()));
 

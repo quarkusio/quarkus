@@ -36,8 +36,8 @@ public class MultipleDataSourcesConfigTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsManifestResource("microprofile-config-multiple-datasources.properties",
-                            "microprofile-config.properties"));
+                    .addAsResource("application-multiple-datasources.properties",
+                            "application.properties"));
 
     @Test
     public void testDataSourceInjection() throws SQLException {

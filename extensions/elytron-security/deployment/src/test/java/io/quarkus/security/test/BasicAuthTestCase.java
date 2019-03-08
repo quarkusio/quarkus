@@ -22,7 +22,7 @@ public class BasicAuthTestCase {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClasses)
-                    .addAsManifestResource("microprofile-config.properties")
+                    .addAsResource("application.properties")
                     .addAsResource("test-users.properties")
                     .addAsResource("test-roles.properties"));
 

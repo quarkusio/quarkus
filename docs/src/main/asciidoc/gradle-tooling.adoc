@@ -36,12 +36,8 @@ Here is a complete sample file for a simple rest project:
 [source,groovy,subs=attributes+]
 ----
 apply plugin: 'java'
-apply plugin: 'maven'
 apply plugin: 'io.quarkus.gradle.plugin' <1>
 
-
-group = 'org.acme'
-version = '1.0-SNAPSHOT'
 
 buildscript { <2>
 

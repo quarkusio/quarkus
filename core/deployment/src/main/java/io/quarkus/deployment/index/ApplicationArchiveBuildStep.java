@@ -35,9 +35,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 
 import org.jboss.jandex.Index;
@@ -189,18 +189,17 @@ public class ApplicationArchiveBuildStep {
         }
 
         Indexer indexer = new Indexer();
-        Files.walk(path).forEach(new Consumer<Path>() {
-            @Override
-            public void accept(Path path) {
-                if (path.toString().endsWith(".class")) {
-                    try (FileInputStream in = new FileInputStream(path.toFile())) {
+        try (Stream<Path> stream = Files.walk(path)) {
+            stream.forEach(path1 -> {
+                if (path1.toString().endsWith(".class")) {
+                    try (FileInputStream in = new FileInputStream(path1.toFile())) {
                         indexer.index(in);
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
                 }
-            }
-        });
+            });
+        }
         return indexer.complete();
     }
 

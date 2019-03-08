@@ -9,7 +9,7 @@ ENV GRAAL_VERSION=${GRAAL_VERSION:-1.0.0-rc12}
 ARG MAVEN_VERSION=3.6.0
 
 ENV GRAAL_CE_URL=https://github.com/oracle/graal/releases/download/vm-${GRAAL_VERSION}/graalvm-ce-${GRAAL_VERSION}-linux-amd64.tar.gz
-ENV MAVEN_URL=http://apache.osuosl.org/maven/maven-3/$MAVEN_VERSION/binaries/apache-maven-$MAVEN_VERSION-bin.tar.gz
+ENV MAVEN_URL=https://archive.apache.org/dist/maven/maven-3/$MAVEN_VERSION/binaries/apache-maven-$MAVEN_VERSION-bin.tar.gz
 
 ENV JAVA_HOME=/opt/graalvm
 ENV PATH=$PATH:$JAVA_HOME/bin
@@ -38,7 +38,7 @@ LABEL io.openshift.s2i.scripts-url="image:///usr/local/s2i" \
       io.openshift.s2i.destination="/tmp" \
 
       io.k8s.description="Platform for building and running Quarkus.io Native Java applications" \
-      io.k8s.display-name="Quarkus.io NATIVE Java Applications" \
+      io.k8s.display-name="Quarkus.io Native Java Applications" \
       io.openshift.tags="builder,java,quarkus,native"
 
 # S2I scripts + README

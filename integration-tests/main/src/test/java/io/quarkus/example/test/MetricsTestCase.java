@@ -89,7 +89,6 @@ public class MetricsTestCase {
         RestAssured.when().get("/metrics/base").then().statusCode(200);
         RestAssured.when().get("/metrics/vendor").then().statusCode(200);
         RestAssured.when().get("/metrics/application").then().statusCode(200);
-        RestAssured.when().get("/metrics/vendor/memory.heap.usage").then().statusCode(200);
     }
 
     @Test
@@ -110,6 +109,33 @@ public class MetricsTestCase {
                 .body(containsString("Bad scope requested"));
         RestAssured.when().get("/metrics/vendor/foo").then().statusCode(404)
                 .body(containsString("Metric vendor/foo not found"));
+    }
+
+    @Test
+    public void testBaseMetrics() {
+        RestAssured.when().get("/metrics/base").then().statusCode(200)
+                // the spaces at the end are there on purpose to make sure the metrics are named exactly this way
+                .body(containsString("base:classloader_total_loaded_class_count "))
+                .body(containsString("base:cpu_system_load_average "))
+                .body(containsString("base:thread_count "))
+                .body(containsString("base:classloader_current_loaded_class_count "))
+                .body(containsString("base:jvm_uptime_seconds "))
+                .body(containsString("base:thread_max_count "))
+                .body(containsString("base:memory_committed_heap_bytes "))
+                .body(containsString("base:cpu_available_processors "))
+                .body(containsString("base:thread_daemon_count "))
+                .body(containsString("base:classloader_total_unloaded_class_count "))
+                .body(containsString("base:memory_max_heap_bytes "))
+                .body(containsString("base:memory_used_heap_bytes "));
+    }
+
+    @Test
+    public void testVendorMetrics() {
+        RestAssured.when().get("/metrics/vendor").then().statusCode(200)
+                // the spaces at the end are there on purpose to make sure the metrics are named exactly this way
+                .body(containsString("vendor:memory_committed_non_heap_bytes "))
+                .body(containsString("vendor:memory_used_non_heap_bytes "))
+                .body(containsString("vendor:memory_max_non_heap_bytes "));
     }
 
     private void assertMetricExactValue(String name, String val) {

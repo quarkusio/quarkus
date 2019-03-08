@@ -23,10 +23,10 @@ import com.oracle.svm.core.annotate.TargetClass;
 import io.quarkus.runtime.Quarkus;
 
 /**
- * class that avoids the use of reflection in Quarkus when actually running
+ * Class that avoids the use of reflection in Quarkus when actually running
  * on Graal.
  * <p>
- * Graal does not seem to like registering the program entry point as availble for reflection
+ * Graal does not seem to like registering the program entry point as available for reflection
  */
 @TargetClass(Quarkus.class)
 final class QuarkusReplacement {

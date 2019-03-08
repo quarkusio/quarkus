@@ -45,7 +45,7 @@ Be sure to test your pull request in:
 1. Java mode
 2. Native mode
 
-## Setup   
+## Setup
 
 If you have not done so on this machine, you need to:
  
@@ -92,7 +92,7 @@ Select _Use the Eclipse Code Formatter_, then change the _Eclipse Java Formatter
 `eclipse-formatter.xml` file in the `ide-config` directory. Make sure the _Optimize Imports_ box is ticked, and
 select the `eclipse.importorder` file as the import order config file.
 
-        
+
 ## Build
 
 * Clone the repository: `git clone https://github.com/jbossas/quarkus.git`

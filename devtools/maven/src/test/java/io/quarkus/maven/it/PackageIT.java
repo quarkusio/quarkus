@@ -30,7 +30,8 @@ public class PackageIT extends MojoTestBase {
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
 
         final File targetDir = getTargetDir();
-        assertThat(getNumberOfFilesEndingWith(targetDir, ".jar")).isEqualTo(2);
+        assertThat(getNumberOfFilesEndingWith(targetDir, ".jar")).isEqualTo(1);
+        assertThat(getNumberOfFilesEndingWith(targetDir, ".original")).isEqualTo(1);
     }
 
     @Test

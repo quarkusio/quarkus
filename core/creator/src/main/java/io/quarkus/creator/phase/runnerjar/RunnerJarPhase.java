@@ -205,16 +205,14 @@ public class RunnerJarPhase implements AppCreationPhase<RunnerJarPhase>, RunnerJ
             log.warn("Unable to set proper permissions on " + runnerJar);
         }
 
-        // when using uberJar, we rename the standard jar to include the .original suffix
+        // we rename the standard jar to include the .original suffix
         // this greatly aids tools (such as s2i) that look for a single jar in the output directory to work OOTB
-        if (uberJar) {
-            try {
-                Path originalFile = outputDir.resolve(finalName + ".jar.original");
-                Files.deleteIfExists(originalFile);
-                Files.move(outputDir.resolve(finalName + ".jar"), originalFile);
-            } catch (IOException e) {
-                throw new AppCreatorException("Unable to build uberjar", e);
-            }
+        try {
+            Path originalFile = outputDir.resolve(finalName + ".jar.original");
+            Files.deleteIfExists(originalFile);
+            Files.move(outputDir.resolve(finalName + ".jar"), originalFile);
+        } catch (IOException e) {
+            throw new AppCreatorException("Unable to build uberjar", e);
         }
 
         ctx.pushOutcome(RunnerJarOutcome.class, this);

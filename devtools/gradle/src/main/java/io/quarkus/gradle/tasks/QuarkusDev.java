@@ -282,11 +282,20 @@ public class QuarkusDev extends QuarkusTask {
                     p.destroy();
                 }
             }, "Development Mode Shutdown Hook"));
+
+            int exitCode;
             try {
-                p.waitFor();
+                exitCode = p.waitFor();
             } catch (Exception e) {
                 p.destroy();
                 throw e;
+            }
+
+            if (exitCode != 0) {
+                String message = exitCode == 99 ? //TODO fix: this is pretty lame
+                        "quarkus-dev cannot be used with command line applications"
+                        : "The application did not terminate properly";
+                throw new RuntimeException(message);
             }
 
         } catch (Exception e) {

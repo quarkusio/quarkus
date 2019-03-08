@@ -35,6 +35,7 @@ import io.quarkus.deployment.ClassOutput;
 import io.quarkus.deployment.QuarkusAugmentor;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
+import io.quarkus.deployment.builditem.ShutdownBuildItem;
 import io.quarkus.runtime.Application;
 import io.quarkus.runtime.LaunchMode;
 
@@ -106,6 +107,17 @@ public class RuntimeRunner implements Runnable, Closeable {
                 }
 
                 transformerTarget.setTransformers(functions);
+            }
+
+            try {
+                // dev mode does not make sense when we a ShutdownBuildItem exists
+                // because such applications dont stay up
+                final ShutdownBuildItem shutdownBuildItem = result.consume(ShutdownBuildItem.class);
+                if ((shutdownBuildItem != null) && (launchMode == LaunchMode.DEVELOPMENT)) {
+                    System.exit(99);
+                }
+            } catch (IllegalArgumentException e) {
+                // there were no ShutdownBuildItem so we can proceed
             }
 
             final Application application;

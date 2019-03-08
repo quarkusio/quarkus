@@ -34,7 +34,7 @@ You can define your transaction boundaries the easy way, or the less easy way :)
 The easiest way to define your transaction boundaries is to use the `@Transactional` annotation on your entry method (`javax.transaction.Transactional`).
 
 [source,java]
-====
+--
 @ApplicationScoped
 public class SantaClausService {
 
@@ -53,10 +53,10 @@ public class SantaClausService {
         }
     }
 }
-====
+--
+
 <1> This annotation defines your transaction boundaries and will wrap this call within a transaction.
 <2> A `RuntimeException` crossing the transaction boundaries will rollback the transaction.
-
 
 `@Transactional` can be used to control transaction boundaries on any CDI bean at the method level or at the class level to ensure every method is transactional.
 That includes REST endpoints.
@@ -82,7 +82,7 @@ You can also programmatically ask for a transaction to be marked for rollback.
 Inject a `TransactionManager` for this.
 
 [source,java]
-====
+--
 @ApplicationScoped
 public class SantaClausService {
 
@@ -102,7 +102,7 @@ public class SantaClausService {
         }
     }
 }
-====
+--
 
 <1> Inject the `TransactionManager` to be able to activate `setRollbackOnly` semantic.
 <2> Programmatically decide to set the transaction for rollback.
@@ -112,7 +112,7 @@ public class SantaClausService {
 The less easy way is to inject a `UserTransaction` and use the various transaction demarcation methods.
 
 [source,java]
-====
+--
 @ApplicationScoped
 public class SantaClausService {
 
@@ -134,7 +134,7 @@ public class SantaClausService {
         }
     }
 }
-====
+--
 
 [NOTE]
 ====

@@ -15,7 +15,7 @@ public class CustomAuthTestCase {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TestSecureServlet.class, CustomAuth.class, CustomAuthExtension.class, CustomAuthFactory.class)
-                    .addAsManifestResource("microprofile-config-custom-auth.properties", "microprofile-config.properties")
+                    .addAsResource("application-custom-auth.properties", "application.properties")
                     .addAsManifestResource(new StringAsset(CustomAuthExtension.class.getName()),
                             "services/" + ServletExtension.class.getName())
                     //.addAsManifestResource("logging.properties")

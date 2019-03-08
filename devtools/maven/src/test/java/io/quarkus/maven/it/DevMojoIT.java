@@ -162,7 +162,7 @@ public class DevMojoIT extends MojoTestBase {
         String greeting = getHttpResponse("/app/hello/greeting");
         assertThat(greeting).containsIgnoringCase("bonjour");
 
-        File source = new File(testDir, "src/main/resources/META-INF/microprofile-config.properties");
+        File source = new File(testDir, "src/main/resources/application.properties");
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
                 .pollInterval(1, TimeUnit.SECONDS)

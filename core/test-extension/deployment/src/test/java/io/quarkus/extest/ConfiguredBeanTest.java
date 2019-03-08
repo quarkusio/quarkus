@@ -24,7 +24,7 @@ public class ConfiguredBeanTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(ConfiguredBean.class)
-                    .addAsManifestResource("microprofile-config.properties"));
+                    .addAsResource("application.properties"));
 
     @Inject
     ConfiguredBean configuredBean;

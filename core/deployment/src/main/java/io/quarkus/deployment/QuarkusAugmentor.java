@@ -93,6 +93,7 @@ public class QuarkusAugmentor {
                     .build();
             BuildResult buildResult = chain.createExecutionBuilder("main")
                     .produce(new SubstrateResourceBuildItem("META-INF/microprofile-config.properties"))
+                    .produce(new SubstrateResourceBuildItem("application.properties"))
                     .produce(QuarkusConfig.INSTANCE)
                     .produce(new ArchiveRootBuildItem(root))
                     .produce(new ClassOutputBuildItem(output))

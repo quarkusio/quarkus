@@ -39,8 +39,8 @@ public class SimpleScheduledMethodTest {
     static final QuarkusUnitTest test = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(SimpleJobs.class)
-                    .addAsManifestResource(new StringAsset("simpleJobs.cron=0/1 * * * * ?\nsimpleJobs.every=1s"),
-                            "microprofile-config.properties"));
+                    .addAsResource(new StringAsset("simpleJobs.cron=0/1 * * * * ?\nsimpleJobs.every=1s"),
+                            "application.properties"));
 
     @Inject
     Scheduler scheduler;

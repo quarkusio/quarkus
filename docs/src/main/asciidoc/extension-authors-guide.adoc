@@ -125,7 +125,7 @@ method invocation, once the method is complete they are no longer valid.
 The following items are valid for injection:
 
 - `SimpleBuildItem` instances (at some point we may support `Optional<SimpleBuildItem>`, but it is not implemented yet)
-- `List<? extension MultiBuildItem>` instances
+- `List<? extends MultiBuildItem>` instances
 - `BuildProducer<? extends BuildItem>` instances
 
 If a method returns a `BuildItem`, or injects a `BuildProducer` it is considered to be a producer of that item type,
@@ -520,7 +520,7 @@ public class PersistenceAndQuarkusConfigTest {
 == Native Image Support
 
 There Quarkus provides a lot of build items that control aspects of the native image build. This allows for extensions
-to programmatically perform tests such as registering classes for reflection or adding static resources to the native
+to programmatically perform tasks such as registering classes for reflection or adding static resources to the native
 image. Some of these build items are listed below:
 
 `io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem`::

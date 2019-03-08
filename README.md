@@ -1,6 +1,6 @@
 # Quarkus
 
-[![Build Status](https://dev.azure.com/protean-ci/Quarkus/_apis/build/status/quarkusio.quarkus)](https://dev.azure.com/protean-ci/Quarkus/_build/latest?definitionId=7)
+[![Build Status](https://dev.azure.com/quarkus-ci/quarkus/_apis/build/status/quarkusio.quarkus)](https://dev.azure.com/quarkus-ci/quarkus/_build/latest?definitionId=1)
 
 > Quarkus - Supersonic Subatomic Java
 

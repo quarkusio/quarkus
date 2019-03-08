@@ -19,6 +19,7 @@ package io.quarkus.elytron.security.runtime;
 import java.net.URL;
 import java.security.Permission;
 import java.security.Provider;
+import java.security.Security;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -262,7 +263,6 @@ public class SecurityTemplate {
      *
      * @param domain - the SecurityDomain to use for auth decisions
      * @param identityManager - the IdentityManager for auth decisions
-     * @param authConfigs - the authentication methods to register with the deployment {@linkplain LoginConfig}
      * @return - the ServletExtension instance to register
      */
     public ServletExtension configureUndertowIdentityManager(RuntimeValue<SecurityDomain> domain,
@@ -298,5 +298,17 @@ public class SecurityTemplate {
                 }
             }
         };
+    }
+
+    public RuntimeValue<Provider> registerProvider(String name) throws Exception {
+        Class<Provider> providerClass = (Class<Provider>) Class.forName(name);
+        Provider provider = providerClass.newInstance();
+        if (Security.addProvider(provider) > 0) {
+            log.infof("Registered the SunRsaSign provider");
+            for (Provider.Service service : provider.getServices()) {
+                service.getProvider();
+            }
+        }
+        return new RuntimeValue<>(provider);
     }
 }

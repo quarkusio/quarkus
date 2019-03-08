@@ -23,6 +23,7 @@ import org.wildfly.security.auth.server.SecurityRealm;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
+import io.quarkus.deployment.QuarkusConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -30,6 +31,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.elytron.security.deployment.AuthConfigBuildItem;
 import io.quarkus.elytron.security.deployment.IdentityManagerBuildItem;
 import io.quarkus.elytron.security.deployment.SecurityDomainBuildItem;
@@ -87,6 +89,19 @@ class SmallRyeJwtProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FeatureBuildItem.SMALLRYE_JWT);
+    }
+
+    @BuildStep
+    SubstrateResourceBuildItem registerSubstrateResources() {
+        // If the
+        String publicKeyLocation = QuarkusConfig.getString("mp.jwt.verify.publickey.location", null, true);
+        if (publicKeyLocation != null) {
+            if (publicKeyLocation.indexOf(':') < 0 || publicKeyLocation.startsWith("classpath:")) {
+                log.infof("Adding %s to native image", publicKeyLocation);
+                return new SubstrateResourceBuildItem(publicKeyLocation);
+            }
+        }
+        return null;
     }
 
     /**

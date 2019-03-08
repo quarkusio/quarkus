@@ -84,8 +84,20 @@ class SecurityDeploymentProcessor {
      */
     @BuildStep
     void services(BuildProducer<ReflectiveClassBuildItem> classes) {
-        classes.produce(
-                new ReflectiveClassBuildItem(false, false, "org.wildfly.security.password.impl.PasswordFactorySpiImpl"));
+        String[] allClasses = {
+                "org.wildfly.security.password.impl.PasswordFactorySpiImpl",
+                "sun.security.rsa.SunRsaSign",
+                "sun.security.rsa.RSASignature$MD5withRS",
+                "sun.security.rsa.RSASignature$SHA224withRSA",
+                "sun.security.rsa.RSASignature$SHA512withRSA",
+                "sun.security.rsa.RSASignature$SHA256withRSA",
+                "sun.security.rsa.RSASignature$MD2withRSA",
+                "sun.security.rsa.RSAKeyFactory",
+                "sun.security.rsa.RSAKeyPairGenerator",
+                "sun.security.rsa.RSASignature$SHA1withRSA",
+                "sun.security.rsa.RSASignature$SHA384withRSA"
+        };
+        classes.produce(new ReflectiveClassBuildItem(false, false, allClasses));
     }
 
     /**
@@ -298,6 +310,13 @@ class SecurityDeploymentProcessor {
                     template.loadRealm(realm.getRealm(), security.embedded);
                 }
             }
+        }
+        // Trying to get the SunRsaSign working without substrate substitutions
+        try {
+            template.registerProvider("sun.security.rsa.SunRsaSign");
+            log.infof("Registered the SunRsaSign provider");
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

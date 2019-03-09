@@ -27,11 +27,11 @@ Version {graalvm-version} is required.
 ====
 Once you have downloaded GraalVM, expand the archive and set the `GRAALVM_HOME` variable to this location:
 
-`export GRAALVM_HOME=~clement/Development/graalvm/`
+`export GRAALVM_HOME=$HOME/Development/graalvm/`
 
 On MacOS, point the variable to the `Home` sub-directory:
 
-`export GRAALVM_HOME=~clement/Development/graalvm/Contents/Home/`
+`export GRAALVM_HOME=$HOME/Development/graalvm/Contents/Home/`
 ====
 
 

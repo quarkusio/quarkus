@@ -32,6 +32,7 @@ include::quarkus-intro.adoc[tag=intro]
 * link:infinispan-client-guide.html[Using Infinispan Client]
 * link:spring-di-guide.html[Using our Spring Dependency Injection compatibility layer]
 * link:kotlin.html[Using Kotlin]
+* link:fault-tolerance-guide.html[Using Fault Tolerance]
 * link:extension-authors-guide.html[Write Your Own Extension] _(advanced)_
 * link:performance-measure.html[Measuring Performance] _(advanced)_
 * link:cdi-reference.html[Contexts and Dependency Injection] _(advanced)_

@@ -29,7 +29,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.inject.Singleton;
-import javax.net.ssl.TrustManager;
 import javax.servlet.DispatcherType;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.Consumes;
@@ -41,23 +40,15 @@ import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.SecurityContext;
-import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Provider;
 import javax.ws.rs.ext.Providers;
 
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.jboss.jandex.*;
 import org.jboss.jandex.AnnotationTarget.Kind;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.IndexView;
-import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.MethodParameterInfo;
-import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.api.validation.ResteasyConstraintViolation;
 import org.jboss.resteasy.api.validation.ViolationReport;
@@ -99,7 +90,6 @@ import io.quarkus.undertow.deployment.ServletInitParamBuildItem;
  * @author Stuart Douglas
  */
 public class ResteasyScanningProcessor {
-
     private static final String JAVAX_WS_RS_APPLICATION = Application.class.getName();
     private static final String JAX_RS_FILTER_NAME = JAVAX_WS_RS_APPLICATION;
     private static final String JAX_RS_SERVLET_NAME = JAVAX_WS_RS_APPLICATION;
@@ -119,6 +109,7 @@ public class ResteasyScanningProcessor {
     private static final DotName PATCH = DotName.createSimple(javax.ws.rs.PATCH.class.getName());
     private static final DotName POST = DotName.createSimple(javax.ws.rs.POST.class.getName());
     private static final DotName PUT = DotName.createSimple(javax.ws.rs.PUT.class.getName());
+    private static final DotName API_RESPONSE = DotName.createSimple(APIResponse.class.getName());
 
     private static final DotName CONSUMES = DotName.createSimple(Consumes.class.getName());
     private static final DotName PRODUCES = DotName.createSimple(Produces.class.getName());
@@ -175,6 +166,14 @@ public class ResteasyScanningProcessor {
             new ProviderDiscoverer(PUT, true, false)
     };
     private static final DotName SINGLETON_SCOPE = DotName.createSimple(Singleton.class.getName());
+
+    private static final String CONTENT = "content";
+    private static final String SCHEMA = "schema";
+    private static final String SCHEMA_IMPLEMENTATION_CLASS = "implementation";
+    private static final String NOT_SCHEMA_CLASS = "not";
+    private static final String SCHEMA_ONE_OF_CLASS = "oneOf";
+    private static final String SCHEMA_ANY_OF_CLASS = "anyOf";
+    private static final String SCHEMA_ALL_OF_CLASS = "allOf";
 
     /**
      * JAX-RS configuration.
@@ -525,6 +524,53 @@ public class ResteasyScanningProcessor {
                     Type parameterType = method.parameters().get(i);
                     if (isReflectionDeclarationRequiredFor(parameterType) && !hasAnnotation(method, i, CONTEXT)) {
                         reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(parameterType));
+                    }
+                }
+            }
+        }
+        // Generate reflection declaration from microprofile OpenAPI schema definition
+        // They might be needed for serialization
+        Collection<AnnotationInstance> instances = index.getAnnotations(API_RESPONSE);
+        for (AnnotationInstance instance : instances) {
+            AnnotationInstance[] contents = instance.value(CONTENT).asNestedArray();
+            if (contents == null) {
+                continue;
+            }
+
+            for (AnnotationInstance content : contents) {
+                AnnotationInstance schema = content.value(SCHEMA).asNested();
+                if (schema == null) {
+                    continue;
+                }
+
+                AnnotationValue schemaImplementationClass = schema.value(SCHEMA_IMPLEMENTATION_CLASS);
+                if (schemaImplementationClass != null) {
+                    reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, schemaImplementationClass.asString()));
+                }
+
+                AnnotationValue schemaNotClass = schema.value(NOT_SCHEMA_CLASS);
+                if (schemaNotClass != null) {
+                    reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, schemaNotClass.asString()));
+                }
+
+                AnnotationValue schemaOneOfClasses = schema.value(SCHEMA_ONE_OF_CLASS);
+                if (schemaOneOfClasses != null) {
+                    for (String schemaOneOfClass : schemaOneOfClasses.asStringArray()) {
+                        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, schemaOneOfClass));
+                    }
+                }
+
+                AnnotationValue schemaAnyOfClasses = schema.value(SCHEMA_ANY_OF_CLASS);
+                if (schemaAnyOfClasses != null) {
+                    for (String schemaAnyOfClass : schemaAnyOfClasses.asStringArray()) {
+                        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, schemaAnyOfClass));
+                    }
+                }
+
+                AnnotationValue schemaAllOfClasses = schema.value(SCHEMA_ALL_OF_CLASS);
+                if (schemaAllOfClasses != null) {
+                    for (String schemaAllOfClass : schemaAllOfClasses.asStringArray()) {
+                        reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, schemaAllOfClass));
                     }
                 }
             }

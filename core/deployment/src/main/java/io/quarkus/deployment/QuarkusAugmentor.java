@@ -38,7 +38,6 @@ import io.quarkus.deployment.builditem.ExtensionClassLoaderBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.MainArgsBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.runtime.LaunchMode;
@@ -82,7 +81,6 @@ public class QuarkusAugmentor {
                     .addInitial(SubstrateResourceBuildItem.class)
                     .addInitial(ArchiveRootBuildItem.class)
                     .addInitial(ShutdownContextBuildItem.class)
-                    .addInitial(MainArgsBuildItem.class)
                     .addInitial(ClassOutputBuildItem.class)
                     .addInitial(LaunchModeBuildItem.class)
                     .addInitial(AdditionalApplicationArchiveBuildItem.class)
@@ -106,7 +104,6 @@ public class QuarkusAugmentor {
                     .produce(new ArchiveRootBuildItem(root))
                     .produce(new ClassOutputBuildItem(output))
                     .produce(new ShutdownContextBuildItem())
-                    .produce(new MainArgsBuildItem())
                     .produce(new LaunchModeBuildItem(launchMode))
                     .produce(new ExtensionClassLoaderBuildItem(classLoader));
             for (Path i : additionalApplicationArchives) {

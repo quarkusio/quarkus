@@ -36,7 +36,7 @@ import io.quarkus.deployment.builditem.BytecodeRecorderObjectLoaderBuildItem;
 import io.quarkus.deployment.builditem.ClassOutputBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.JavaLibraryPathAdditionalPathBuildItem;
-import io.quarkus.deployment.builditem.MainAfterStartupBytecodeRecorderBuildItem;
+import io.quarkus.deployment.builditem.MainAfterStartupBuildItem;
 import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.ObjectSubstitutionBuildItem;
@@ -72,13 +72,13 @@ class MainClassBuildStep {
     MainClassBuildItem build(List<StaticBytecodeRecorderBuildItem> staticInitTasks,
             List<ObjectSubstitutionBuildItem> substitutions,
             List<MainBytecodeRecorderBuildItem> mainMethod,
-            List<MainAfterStartupBytecodeRecorderBuildItem> mainMethodAfterStartup,
             List<SystemPropertyBuildItem> properties,
             List<JavaLibraryPathAdditionalPathBuildItem> javaLibraryPathAdditionalPaths,
             Optional<SslTrustStoreSystemPropertyBuildItem> sslTrustStoreSystemProperty,
             List<FeatureBuildItem> features,
             BuildProducer<ApplicationClassNameBuildItem> appClassNameProducer,
             List<BytecodeRecorderObjectLoaderBuildItem> loaders,
+            Optional<MainAfterStartupBuildItem> mainAfterStartupBuildItem,
             Optional<ShutdownBuildItem> shutdownBuildItem,
             ClassOutputBuildItem classOutput) {
 
@@ -192,9 +192,6 @@ class MainClassBuildStep {
         mv.invokeStaticMethod(ofMethod(Timing.class, "mainStarted", void.class));
         startupContext = mv.readStaticField(scField.getFieldDescriptor());
 
-        mv.invokeVirtualMethod(ofMethod(StartupContext.class, "setMainArgs", void.class, String[].class),
-                startupContext, mainMethodArgs);
-
         tryBlock = mv.tryBlock();
         for (MainBytecodeRecorderBuildItem holder : mainMethod) {
             final BytecodeRecorderImpl recorder = holder.getBytecodeRecorder();
@@ -224,17 +221,9 @@ class MainClassBuildStep {
         cb.throwException(RuntimeException.class, "Failed to start quarkus", cb.getCaughtException());
 
         // Application.class: start method after startup
-        for (MainAfterStartupBytecodeRecorderBuildItem holder : mainMethodAfterStartup) {
-            final BytecodeRecorderImpl recorder = holder.getBytecodeRecorder();
-            if (!recorder.isEmpty()) {
-                for (BytecodeRecorderObjectLoaderBuildItem item : loaders) {
-                    recorder.registerObjectLoader(item.getObjectLoader());
-                }
-                recorder.writeBytecode(classOutput.getClassOutput());
-                ResultHandle dup = mv.newInstance(ofConstructor(recorder.getClassName()));
-                mv.invokeInterfaceMethod(ofMethod(StartupTask.class, "deploy", void.class, StartupContext.class), dup,
-                        startupContext);
-            }
+        if (mainAfterStartupBuildItem.isPresent()) {
+            mainAfterStartupBuildItem.get().getBytecodeCreator().accept(
+                    new MainAfterStartupBuildItem.Input(mv, mainMethodArgs));
         }
 
         mv.returnValue(null);

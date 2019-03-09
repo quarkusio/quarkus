@@ -95,12 +95,12 @@ select the `eclipse.importorder` file as the import order config file.
 
 ## Build
 
-* Clone the repository: `git clone https://github.com/jbossas/quarkus.git`
+* Clone the repository: `git clone https://github.com/quarkusio/quarkus.git`
 * Navigate to the directory: `cd quarkus`
 * Invoke `mvn clean install` from the root directory
 
 ```bash
-git clone https://github.com/jbossas/quarkus.git
+git clone https://github.com/quarkusio/quarkus.git
 cd quarkus
 mvn clean install
 # Wait... success!

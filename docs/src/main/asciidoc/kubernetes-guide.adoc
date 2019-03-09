@@ -20,8 +20,6 @@ For this guide you need:
 * having access to a Kubernetes and/or OpenShift cluster. Minikube and Minishift are valid options.
 * being able to package the docker image from the link:building-native-image-guide.html[native application guide]
 
-
-
 == Solution
 
 We recommend to follow the instructions in the next sections and build the application step by step.
@@ -42,7 +40,7 @@ For `minikube`, execute:
 # For minishift use "eval $(minishift docker-env)" instead
 eval $(minikube docker-env)
 
-docker build -t quarkus-quickstart/quickstart .
+docker build -f src/main/docker/Dockerfile -t quarkus-quickstart/quickstart .
 ----
 
 Once the image has been pushed to the Kubernetes image registry, instantiate the application as follows:
@@ -63,7 +61,14 @@ curl $(minikube service quarkus-quickstart --url)/hello/greeting/quarkus
 == Deploying the application in OpenShift
 
 In this section, we are going to leverage the build mechanism of OpenShift.
-As we have a `Dockerfile` available, we are going to create an OpenShift `build` executing it:
+
+For OpenShift, you need to copy the `Dockerfile` into the project directory:
+[source,shell]
+----
+cp src/main/docker/Dockerfile .
+----
+
+Then, you can delegate the build of the container to OpenShift:
 
 [source,shell]
 ----

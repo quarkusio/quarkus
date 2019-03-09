@@ -1,5 +1,5 @@
 include::./attributes.adoc[]
-= {project-name} - Building a Native Image
+= {project-name} - Building a Native Executable
 
 This guide covers:
 
@@ -85,7 +85,7 @@ If you have generated the application from the previous tutorial, you can find i
 </profiles>
 ----
 
-We use a profile because, you will see very soon, packaging the native image takes a _few_ seconds.
+We use a profile because, you will see very soon, packaging the native executable takes a _few_ seconds.
 
 Create a native executable using: `mvn package -Pnative`.
 
@@ -140,7 +140,7 @@ public class GreetingResourceIT extends GreetingResourceTest { // <2>
 The executable is retrieved using the `native.image.path` system property configured in the _Failsafe Maven Plugin_.
 <2> We extend our previous tests, but you can also implement your tests
 
-To see the `GreetingResourceIT` run against the native image, add a verify goal:
+To see the `GreetingResourceIT` run against the native executable, add a verify goal:
 [source,shell]
 ----
 mvn package verify -Pnative
@@ -179,7 +179,7 @@ IMPORTANT: Before going further, be sure to have a working Docker environment.
 You can run the application in a Docker container using the JAR produced by the Quarkus Maven Plugin.
 However, in this guide we focus on creating a Docker image using the produced native executable.
 
-By default, the native image is tailored for your operating system (Linux, macOS, Windows etc).
+By default, the native executable is tailored for your operating system (Linux, macOS, Windows etc).
 Because the Docker container may not use the same _executable_ format as the one produced by your operating system,
 we will instruct the Maven build to produce an executable from inside a Docker container:
 

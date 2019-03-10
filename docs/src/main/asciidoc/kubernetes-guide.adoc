@@ -10,7 +10,7 @@ This guide takes as input the application developed in the link:building-native-
 So, you should have been able to package your application as a binary executable, copied it in a Docker image and run this image.
 
 Depending on whether you are a _bare_ Kubernetes user or an OpenShift user, pick the section you need.
-The OpenShift section leverages OpenShift build and route features which are not available in _bare_ Kubernetes.
+The OpenShift section leverages OpenShift _builds_ and _routes_ features which are not available in _bare_ Kubernetes.
 
 == Prerequisites
 
@@ -27,7 +27,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `getting-started-kubernetes` directory.
+The solution is located in the `getting-started` directory.
 
 == Deploying the application in Kubernetes
 
@@ -60,20 +60,13 @@ curl $(minikube service quarkus-quickstart --url)/hello/greeting/quarkus
 
 == Deploying the application in OpenShift
 
-In this section, we are going to leverage the build mechanism of OpenShift.
-
-For OpenShift, you need to copy the `Dockerfile` into the project directory:
-[source,shell]
-----
-cp src/main/docker/Dockerfile .
-----
-
-Then, you can delegate the build of the container to OpenShift:
+In this section, we are going to leverage the build mechanism of OpenShift. Run:
 
 [source,shell]
 ----
 # To build the image on OpenShift
 oc new-build --binary --name=quarkus-quickstart -l app=quarkus-quickstart
+oc patch bc/quarkus-quickstart -p '{"spec":{"strategy":{"dockerStrategy":{"dockerfilePath":"src/main/docker/Dockerfile"}}}}'
 oc start-build quarkus-quickstart --from-dir=. --follow
 
 # To instantiate the image

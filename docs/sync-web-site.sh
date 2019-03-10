@@ -14,6 +14,7 @@ if [[ "$QUARKUS_WEB_SITE_PUSH"  = "true" ]]
 then
     echo "Updating the web site"
     cd target/web-site
+    git commit -am "sync web site with quarkus documentation"
     git push origin develop
     echo "Web Site updated - wait for CI build"
 else

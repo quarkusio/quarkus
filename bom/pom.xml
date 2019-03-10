@@ -112,6 +112,7 @@
         <h2.version>1.4.197</h2.version>
         <postgresql-jdbc.version>42.2.5</postgresql-jdbc.version>
         <mariadb-jdbc.version>2.3.0</mariadb-jdbc.version>
+        <mssql-jdbc.version>7.2.1.jre8</mssql-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <rest-assured.version>3.3.0</rest-assured.version>
         <junit4.version>4.12</junit4.version>
@@ -258,6 +259,12 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-jdbc-mariadb</artifactId>
+                <version>${project.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jdbc-mssql</artifactId>
                 <version>${project.version}</version>
                 <scope>provided</scope>
             </dependency>
@@ -1339,7 +1346,11 @@
                 <artifactId>mariadb-java-client</artifactId>
                 <version>${mariadb-jdbc.version}</version>
             </dependency>
-
+            <dependency>
+                <groupId>com.microsoft.sqlserver</groupId>
+                <artifactId>mssql-jdbc</artifactId>
+                <version>${mssql-jdbc.version}</version>
+            </dependency>
             <dependency>
                 <groupId>io.vertx</groupId>
                 <artifactId>vertx-core</artifactId>

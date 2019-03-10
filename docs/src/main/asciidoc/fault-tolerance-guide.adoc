@@ -352,10 +352,7 @@ Check the server output to see that fallback is really happening:
 2019-03-06 13:21:55,161 INFO  [org.acm.fau.CoffeeResource] (HystrixTimer-1) Falling back to RecommendationResource#fallbackRecommendations()
 ```
 
-[NOTE]
-----
-The fallback method is required to have the same parameters as the original method.
-----
+NOTE: The fallback method is required to have the same parameters as the original method.
 
 == Adding Resiliency: Circuit Breaker
 

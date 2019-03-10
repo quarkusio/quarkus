@@ -386,6 +386,8 @@ You can run the application using: `java -jar target/getting-started-1.0-SNAPSHO
 NOTE: The `Class-Path` entry of the `MANIFEST.MF` from the _runner jar_ explicitly lists the jars from the `lib` directory.
 So if you want to deploy your application somewhere, you need to copy the _runner_ jar as well as the _lib_ directory.
 
+NOTE: Before running the application, don't forget to stop the hot reload mode (hit `CTRL+C`), or you will have a port conflict.
+
 == Async
 
 The resource can also use `CompletionStage` as return type to handle asynchronous actions:

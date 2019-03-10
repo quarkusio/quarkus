@@ -4,8 +4,8 @@ include::./attributes.adoc[]
 {project-name} comes with a toolchain enabling developers from live reload all the way down to deploying a Kubernetes application.
 In this guide, we will explore:
 
-* how to use Maven as a build tool
-* how to use Gradle as a build tool
+* how to use link:maven-tooling.html[Maven] as a build tool
+* how to use link:gradle-tooling.html[Gradle] as a build tool
 * how to use the native CLI for your toolchain (coming soon)
 * how to create and scaffold a new project
 * how to deal with extensions

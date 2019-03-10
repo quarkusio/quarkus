@@ -1,7 +1,6 @@
 include::./attributes.adoc[]
-= Internal glossary
+= Glossary
 
-This is not a document to be published outside.
 This is a collection of preferred term in the documentation and website.
 Please stay within these terms for consistency.
 

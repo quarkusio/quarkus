@@ -51,7 +51,7 @@ Let's now produce a native executable for our application.
 It improves the startup time of the application, and produces a minimal disk footprint.
 The executable would have everything to run the application including the "JVM" (shrunk to be just enough to run the application), and the application.
 
-image:native-image-process.png[Creating a native executable]
+image:native-executable-process.png[Creating a native executable]
 
 Before going further, be sure that the `GRAALVM_HOME` environment variable is configured appropriately.
 
@@ -178,6 +178,8 @@ IMPORTANT: Before going further, be sure to have a working Docker environment.
 
 You can run the application in a Docker container using the JAR produced by the Quarkus Maven Plugin.
 However, in this guide we focus on creating a Docker image using the produced native executable.
+
+image:containerization-process.png[Containerization Process]
 
 By default, the native executable is tailored for your operating system (Linux, macOS, Windows etc).
 Because the Docker container may not use the same _executable_ format as the one produced by your operating system,

@@ -152,9 +152,9 @@ In a separated terminal or the embedded terminal, go to the project root and run
 
 Open the project directory in VS Code. If you have installed the Java Extension Pack (grouping a set of Java extensions), the project is loaded as a Gradle project.
 
-== Building a native image
+== Building a native executable
 
-Native images make {project-name} applications ideal for containers and serverless workloads.
+Native executables make {project-name} applications ideal for containers and serverless workloads.
 
 Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {graalvm-version}.
 

@@ -36,7 +36,7 @@ NOTE: {project-name} extension may declare additional discovery rules. For examp
 
 {project-name} is designed with Substrate VM in mind.
 One of the limitations is the usage of https://github.com/oracle/graal/blob/master/substratevm/LIMITATIONS.md#user-content-reflection[Reflection, window="_blank"].
-Substrate VM does support reflective calls but for a price of a bigger native image.
+Substrate VM does support reflective calls but for a price of a bigger native executable.
 {project-name} must use reflection fallback to access private members.
 That's why {project-name} users are encouraged __not to use private members__ in their beans.
 This involves injection fields, constructors and initializers, observer methods, producer methods and fields, disposers and interceptor methods.

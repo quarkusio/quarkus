@@ -32,7 +32,7 @@ To complete this guide, you need:
 == Architecture
 
 In this guide, we expand on the initial test that was created as part of the Getting Started Guide.
-We cover injection into tests and also how to test native images.
+We cover injection into tests and also how to test native executables.
 
 == Solution
 
@@ -247,10 +247,10 @@ public class GreetingServiceTest {
 <1> The `GreetingService` bean will be injected into the test
 
 
-== Native Image Testing
+== Native Executable Testing
 
-It is also possible to test native images using `@SubstrateTest`. This supports all the features mentioned in this
-guide except injecting into tests (and the native image runs in a separate non-JVM process this is not really possible).
+It is also possible to test native executables using `@SubstrateTest`. This supports all the features mentioned in this
+guide except injecting into tests (and the native executable runs in a separate non-JVM process this is not really possible).
 
 
-This is covered in the link:building-native-image-guide.html[Native Image Guide].
+This is covered in the link:building-native-image-guide.html[Native Executable Guide].

@@ -146,9 +146,9 @@ In a separated terminal or the embedded terminal, go to the project root and run
 
 Open the project directory in VS Code. If you have installed the Java Extension Pack (grouping a set of Java extensions), the project is loaded as a Maven project.
 
-== Building a native image
+== Building a native executable
 
-Native images make {project-name} applications ideal for containers and serverless workloads.
+Native executables make {project-name} applications ideal for containers and serverless workloads.
 
 Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {graalvm-version}.
 Verify that your `pom.xml` has the proper `native` profile (see <<build-tool-maven>>).
@@ -202,7 +202,7 @@ mvn package -Pnative -Dnative-image.docker-build=true
 The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.
 However, it's not an issue as we are going to copy it to a Docker container.
 
-You can follow the link:building-native-image-guide.html[Build a native image guide] as well as link:kubernetes-guide.html[Deploying Application to Kubernetes and OpenShift] for more information.
+You can follow the link:building-native-image-guide.html[Build a native executable guide] as well as link:kubernetes-guide.html[Deploying Application to Kubernetes and OpenShift] for more information.
 
 [[build-tool-maven]]
 == Maven configuration
@@ -287,4 +287,4 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 <1> Optionally use a BOM file to omit the version of the different {project-name} dependencies.
 <2> Use the {project-name} Maven plugin that will hook into the build process
 <3> Use a native profile and plugin to activate GraalVM compilation
-<4> If you want to test your native image with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@SubstrateTest` will be run against the native image. See the link:building-native-image-guide.html[Native image guide] for more info.
+<4> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@SubstrateTest` will be run against the native executable. See the link:building-native-image-guide.html[Native executable guide] for more info.

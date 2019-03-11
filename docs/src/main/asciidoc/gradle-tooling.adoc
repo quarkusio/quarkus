@@ -85,7 +85,7 @@ Functionality to automatically add extensions to your Gradle project is not impl
 == Development mode
 
 {project-name} comes with a built-in development mode.
-Run you application with:
+Run your application with:
 
 [source,shell]
 gradle quarkus-dev

@@ -17,7 +17,7 @@ import org.apache.camel.support.DefaultExchange;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
 @RegisterForReflection
-public class CamelRoute extends RouteBuilder {
+public class CamelCoreRoute extends RouteBuilder {
 
     @Override
     public void configure() {
@@ -29,7 +29,7 @@ public class CamelRoute extends RouteBuilder {
         from("file:{{folder}}")
                 .id("file")
                 .setHeader(MyOrderService.class.getName(), MyOrderService::new)
-                .split(body().tokenize("@"), CamelRoute.this::aggregate)
+                .split(body().tokenize("@"), CamelCoreRoute.this::aggregate)
                 // each splitted message is then send to this bean where we can process it
                 .process(stateless(MyOrderService.class.getName(), "handleOrder"))
                 // this is important to end the splitter route as we do not want to do more routing
@@ -41,9 +41,6 @@ public class CamelRoute extends RouteBuilder {
                 .process(stateless(MyOrderService.class.getName(), "buildCombinedResponse"))
                 // log out
                 .to("log:out");
-
-        from("netty4-http:http://0.0.0.0:8999/foo")
-                .transform().constant("Netty Hello World");
     }
 
     public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {

@@ -3,26 +3,42 @@ include::./attributes.adoc[]
 
 // tag::repositories[]
 {project-name} Gradle plugin is not yet published to the https://plugins.gradle.org/[Gradle Plugin Portal],
-so you need to add the following to your '~/.gradle/init.gradle' file:
+so you need to add the following at the top of your './settings.gradle' file:
 [source, groovy, subs=attributes+]
 ----
-allprojects {
-  buildscript { <1>
+pluginManagement {
     repositories {
-      mavenCentral()
+        mavenCentral()
+        gradlePluginPortal()
     }
-    dependencies {
-      classpath 'io.quarkus:quarkus-gradle-plugin:{quarkus-version}'
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.id == 'io.quarkus.gradle.plugin') {
+                useModule("io.quarkus:quarkus-gradle-plugin:${requested.version}")
+            }
+        }
     }
-  }
-  repositories {
-    mavenCentral()
-  }
 }
 ----
 
-<1> The buildscript block is needed for the {project-name} Gradle plugin.
+Or, if you use the Gradle Kotlin DSL, you need to add the following at the top of your './settings.gradle.kts' file:
+[source, kotlin, subs=attributes+]
+----
+pluginManagement {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.id == "io.quarkus.gradle.plugin") {
+                useModule("io.quarkus:quarkus-gradle-plugin:${requested.version}")
+            }
+        }
+    }
+}
+----
 
-Alternatively you add the buildscript and repositories blocks in your `build.gradle` file.
+This won't be necessary anymore once the Quarkus Gradle plugin is published in the Gradle plugin portal.
 
 // end::repositories[]

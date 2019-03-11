@@ -75,7 +75,7 @@
                         <id>gradle-integration-test</id>
                         <phase>prepare-package</phase>
                         <configuration>
-                            <executable>../../../gradlew</executable>
+                            <executable>../gradle/gradlew</executable>
                             <arguments>
                                 <argument>build</argument>
                                 <argument>quarkus-build</argument>

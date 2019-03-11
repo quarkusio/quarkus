@@ -41,7 +41,7 @@
         <module>common</module>
         <module>maven</module>
         <module>gradle</module>
-	<module>gradle-it</module>
+        <module>gradle-it</module>
         <module>aesh</module>
     </modules>
 </project>

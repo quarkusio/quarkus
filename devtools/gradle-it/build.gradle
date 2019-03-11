@@ -6,11 +6,6 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        // classpath project(':quarkus-gradle-plugin') // Project with path ':quarkus-gradle-plugin' could not be found in project ':src:it:quickstart'.
-        // classpath project(':quarkus-gradle-plugin') // Project with path 'quarkus-gradle-plugin' could not be found in project ':src:it:quickstart'.
-        // classpath project('../../..') // Project with path '../../..' could not be found in project ':src:it:quickstart'.
-        // classpath 'io.quarkus:quarkus-gradle-plugin:999-SNAPSHOT'
-        // TODO use one of the above instead of this hack:
         classpath fileTree(dir: '../gradle/build/libs', include: 'quarkus-gradle-plugin-999-SNAPSHOT.jar')
         classpath fileTree(dir: '../gradle/target/dependencies/compile', include: '*.jar')
     }

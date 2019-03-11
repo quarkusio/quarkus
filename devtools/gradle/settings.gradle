@@ -1,1 +1,3 @@
-rootProject.name = projectName
+rootProject.name = 'quarkus-gradle-plugin'
+
+include 'src:it:quickstart'

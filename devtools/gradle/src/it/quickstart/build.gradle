@@ -1,0 +1,31 @@
+apply plugin: 'java'
+apply plugin: 'io.quarkus.gradle.plugin'
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        // classpath project(':quarkus-gradle-plugin') // Project with path ':quarkus-gradle-plugin' could not be found in project ':src:it:quickstart'.
+        // classpath project(':quarkus-gradle-plugin') // Project with path 'quarkus-gradle-plugin' could not be found in project ':src:it:quickstart'.
+        // classpath project('../../..') // Project with path '../../..' could not be found in project ':src:it:quickstart'.
+        // classpath 'io.quarkus:quarkus-gradle-plugin:999-SNAPSHOT'
+        // TODO use one of the above instead of this hack:
+        classpath fileTree(dir: '../../../build/libs', include: 'quarkus-gradle-plugin.jar')
+        classpath fileTree(dir: '../../../target/dependencies/compile', include: '*.jar')
+    }
+}
+
+repositories {
+     mavenCentral()
+     maven { url 'http://repository.jboss.org/nexus/content/groups/public' }
+}
+
+dependencies {
+    fileTree(dir: '../../../target/dependencies/compile', include: '*.jar')
+
+    compileOnly group: 'io.quarkus', name: 'quarkus-resteasy', version:'999-SNAPSHOT'
+
+    testCompile group: 'io.quarkus', name: 'quarkus-junit5', version:'999-SNAPSHOT'
+    testCompile group: 'io.rest-assured', name: 'rest-assured', version: '3.3.0'
+}

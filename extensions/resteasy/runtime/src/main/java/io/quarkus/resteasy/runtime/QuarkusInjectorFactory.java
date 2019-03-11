@@ -46,7 +46,7 @@ public class QuarkusInjectorFactory extends InjectorFactoryImpl {
     @Override
     public ConstructorInjector createConstructor(Constructor constructor, ResteasyProviderFactory providerFactory) {
         log.debugf("Create constructor: %s", constructor);
-        return super.createConstructor(constructor, providerFactory);
+        return new QuarkusConstructorInjector(constructor, super.createConstructor(constructor, providerFactory));
     }
 
     @Override

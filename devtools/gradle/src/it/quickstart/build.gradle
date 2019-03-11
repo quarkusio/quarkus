@@ -11,7 +11,7 @@ buildscript {
         // classpath project('../../..') // Project with path '../../..' could not be found in project ':src:it:quickstart'.
         // classpath 'io.quarkus:quarkus-gradle-plugin:999-SNAPSHOT'
         // TODO use one of the above instead of this hack:
-        classpath fileTree(dir: '../../../build/libs', include: 'quarkus-gradle-plugin.jar')
+        classpath fileTree(dir: '../../../build/libs', include: 'quarkus-gradle-plugin-999-SNAPSHOT.jar')
         classpath fileTree(dir: '../../../target/dependencies/compile', include: '*.jar')
     }
 }
@@ -22,10 +22,7 @@ repositories {
 }
 
 dependencies {
-    fileTree(dir: '../../../target/dependencies/compile', include: '*.jar')
-
-    compileOnly group: 'io.quarkus', name: 'quarkus-resteasy', version:'999-SNAPSHOT'
-
-    testCompile group: 'io.quarkus', name: 'quarkus-junit5', version:'999-SNAPSHOT'
-    testCompile group: 'io.rest-assured', name: 'rest-assured', version: '3.3.0'
+    // quarkus-resteasy, quarkus-junit5, rest are copied in pom.xml
+    compileOnly fileTree(dir: 'target/dependencies/compile', include: '*.jar')
+    testCompile fileTree(dir: 'target/dependencies/test',    include: '*.jar')
 }

@@ -16,7 +16,7 @@
 
     <properties>
         <gradle.executable>./gradlew</gradle.executable>
-        <gradle.tasks>build quarkus-build</gradle.tasks>
+        <gradle.task>build</gradle.task>
         <skip.gradle.build>false</skip.gradle.build>
     </properties>
     <dependencies>
@@ -40,13 +40,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-creator</artifactId>
             <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <!-- Used in src/it/quickstart/build.gradle -->
-            <artifactId>quarkus-resteasy</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -104,7 +97,7 @@
                             <executable>${gradle.executable}</executable>
                             <arguments>
                                 <argument>clean</argument>
-                                <argument>${gradle.tasks}</argument>
+                                <argument>${gradle.task}</argument>
                                 <argument>-Pversion=${project.version}</argument>
                                 <argument>-Pdescription=${project.description}</argument>
                                 <argument>-S</argument>
@@ -198,7 +191,7 @@
                 </property>
             </activation>
             <properties>
-                <gradle.tasks>assemble</gradle.tasks>
+                <gradle.task>assemble</gradle.task>
             </properties>
         </profile>
         <profile>

@@ -41,6 +41,7 @@
         <module>common</module>
         <module>maven</module>
         <module>gradle</module>
+	<module>gradle/src/it/quickstart</module>
         <module>aesh</module>
     </modules>
 </project>

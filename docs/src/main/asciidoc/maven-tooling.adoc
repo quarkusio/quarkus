@@ -160,7 +160,7 @@ To run Integration Tests on the native executable, make sure to have the proper 
 
 [source,shell]
 ----
-mvn package verify -Pnative
+mvn verify -Pnative
 ...
 [quarkus-quickstart-runner:50955]     universe:     391.96 ms
 [quarkus-quickstart-runner:50955]      (parse):     904.37 ms

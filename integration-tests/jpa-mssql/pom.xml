@@ -121,6 +121,12 @@
                                     <goal>native-image</goal>
                                 </goals>
                                 <configuration>
+                                    <!--
+                                     Enabling addAllCharsets is highly recommended when connecting to MSSQL as it doesn't support UTF-8.
+                                     FIXME Should we introduce a feature to auto-enable or at least check for the expected Charsets
+                                     to be included?
+                                     -->
+                                    <addAllCharsets>true</addAllCharsets>
                                     <reportErrorsAtRuntime>false</reportErrorsAtRuntime>
                                     <cleanupServer>true</cleanupServer>
                                     <enableHttpUrlHandler>true</enableHttpUrlHandler>

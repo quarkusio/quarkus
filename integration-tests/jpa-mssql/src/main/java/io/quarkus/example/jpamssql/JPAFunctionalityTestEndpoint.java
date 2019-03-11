@@ -2,6 +2,7 @@ package io.quarkus.example.jpamssql;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,11 +32,17 @@ public class JPAFunctionalityTestEndpoint extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
+            checkCharacterSets();
             doStuffWithHibernate(entityManagerFactory);
         } catch (Exception e) {
             reportException("An error occurred while performing Hibernate operations", e, resp);
         }
         resp.getWriter().write("OK");
+    }
+
+    private void checkCharacterSets() {
+        if (!Charset.isSupported("Cp1252"))
+            throw new IllegalStateException("You will very likely need support for Codepage Cp1252 to connect to SQL Server");
     }
 
     /**

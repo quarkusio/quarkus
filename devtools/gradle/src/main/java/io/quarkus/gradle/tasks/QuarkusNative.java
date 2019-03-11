@@ -81,6 +81,8 @@ public class QuarkusNative extends QuarkusTask {
 
     private List<String> additionalBuildArgs;
 
+    private boolean addAllCharsets = false;
+
     public QuarkusNative() {
         super("Building a native image");
     }
@@ -96,6 +98,16 @@ public class QuarkusNative extends QuarkusTask {
     @Optional
     public void setWiringClassesDirectory(String wiringClassesDirectory) {
         this.wiringClassesDirectory = wiringClassesDirectory;
+    }
+
+    public boolean isAddAllCharsets() {
+        return addAllCharsets;
+    }
+
+    @Option(description = "Should all Charsets supported by the host environment be included in the native image", option = "add-all-charsets")
+    @Optional
+    public void setAddAllCharsets(final boolean addAllCharsets) {
+        this.addAllCharsets = addAllCharsets;
     }
 
     public boolean isReportErrorsAtRuntime() {
@@ -317,6 +329,7 @@ public class QuarkusNative extends QuarkusTask {
         try (AppCreator appCreator = AppCreator.builder()
                 // configure the build phase we want the app to go through
                 .addPhase(new NativeImagePhase()
+                        .setAddAllCharsets(addAllCharsets)
                         .setAdditionalBuildArgs(getAdditionalBuildArgs())
                         .setAutoServiceLoaderRegistration(isAutoServiceLoaderRegistration())
                         .setOutputDir(extension().buildDir().toPath())

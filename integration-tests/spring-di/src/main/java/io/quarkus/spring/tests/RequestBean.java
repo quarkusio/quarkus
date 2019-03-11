@@ -16,15 +16,21 @@
 
 package io.quarkus.spring.tests;
 
-import org.springframework.beans.factory.annotation.Value;
+import java.util.concurrent.atomic.AtomicInteger;
 
-@PrototypeService
-public class MessageProducer {
+import javax.annotation.PostConstruct;
 
-    @Value("${greeting.message}")
-    String message;
+@RequestService
+public class RequestBean {
+    static final AtomicInteger N = new AtomicInteger();
+    int n;
 
-    public String getPrefix() {
-        return message;
+    @PostConstruct
+    public void postConstruct() {
+        this.n = N.getAndIncrement();
+    }
+
+    public int getValue() {
+        return n;
     }
 }

@@ -47,6 +47,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
+
 import io.quarkus.arc.ActivateRequestContextInterceptor;
 import io.quarkus.arc.processor.BuildExtension.BuildContext;
 import io.quarkus.arc.processor.BuildExtension.Key;
@@ -73,6 +74,7 @@ public class BeanProcessor {
     private final IndexView index;
 
     private final Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations;
+    private final Map<DotName, Collection<AnnotationInstance>> additionalStereotypes;
 
     private final ResourceOutput output;
 
@@ -98,12 +100,12 @@ public class BeanProcessor {
             boolean sharedAnnotationLiterals, ReflectionRegistration reflectionRegistration, List<AnnotationsTransformer> annotationTransformers,
             Collection<DotName> resourceAnnotations, List<BeanRegistrar> beanRegistrars, List<ContextRegistrar> contextRegistrars, List<DeploymentEnhancer> deploymentEnhancers,
             List<BeanDeploymentValidator> beanDeploymentValidators, Predicate<DotName> applicationClassPredicate, boolean unusedBeansRemovalEnabled,
-            List<Predicate<BeanInfo>> unusedExclusions) {
-
+            List<Predicate<BeanInfo>> unusedExclusions, Map<DotName, Collection<AnnotationInstance>> additionalStereotypes) {
         this.reflectionRegistration = reflectionRegistration;
         this.applicationClassPredicate = applicationClassPredicate;
         this.name = name;
         this.additionalBeanDefiningAnnotations = additionalBeanDefiningAnnotations;
+        this.additionalStereotypes = additionalStereotypes;
         this.output = Objects.requireNonNull(output);
         this.sharedAnnotationLiterals = sharedAnnotationLiterals;
         this.resourceAnnotations = resourceAnnotations;
@@ -153,14 +155,15 @@ public class BeanProcessor {
         this.contextRegistrars = initAndSort(contextRegistrars, buildContext);
         this.beanDeploymentValidators = initAndSort(beanDeploymentValidators, buildContext);
     }
-    
+
     public BeanDeployment process() throws IOException {
 
-        BeanDeployment beanDeployment = new BeanDeployment(new IndexWrapper(index), additionalBeanDefiningAnnotations, annotationTransformers,
-                resourceAnnotations, beanRegistrars, contextRegistrars, buildContext, removeUnusedBeans, unusedExclusions);
+        BeanDeployment beanDeployment = new BeanDeployment(index, additionalBeanDefiningAnnotations, annotationTransformers,
+                resourceAnnotations, beanRegistrars, contextRegistrars, buildContext, removeUnusedBeans, unusedExclusions,
+                additionalStereotypes);
         beanDeployment.init();
         beanDeployment.validate(buildContext, beanDeploymentValidators);
-        
+
         PrivateMembersCollector privateMembers = new PrivateMembersCollector();
         AnnotationLiteralProcessor annotationLiterals = new AnnotationLiteralProcessor(sharedAnnotationLiterals, applicationClassPredicate);
         BeanGenerator beanGenerator = new BeanGenerator(annotationLiterals, applicationClassPredicate, privateMembers);
@@ -230,7 +233,7 @@ public class BeanProcessor {
         return beanDeployment;
     }
 
-    private static IndexView addBuiltinClasses(IndexView index) {
+    public static IndexView addBuiltinClasses(IndexView index) {
         Indexer indexer = new Indexer();
         // Add builtin interceptors and bindings
         index(indexer, ActivateRequestContext.class.getName());
@@ -241,7 +244,7 @@ public class BeanProcessor {
             index(indexer, Any.class.getName());
             index(indexer, Named.class.getName());
         }
-        return CompositeIndex.create(index, indexer.complete());
+        return new IndexWrapper(CompositeIndex.create(index, indexer.complete()));
     }
 
     private static void index(Indexer indexer, String className) {
@@ -259,6 +262,7 @@ public class BeanProcessor {
         private IndexView index;
 
         private Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations = Collections.emptySet();
+        private Map<DotName, Collection<AnnotationInstance>> additionalStereotypes = Collections.emptyMap();
 
         private ResourceOutput output;
 
@@ -297,6 +301,12 @@ public class BeanProcessor {
         public Builder setAdditionalBeanDefiningAnnotations(Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations) {
             Objects.requireNonNull(additionalBeanDefiningAnnotations);
             this.additionalBeanDefiningAnnotations = additionalBeanDefiningAnnotations;
+            return this;
+        }
+
+        public Builder setAdditionalStereotypes(Map<DotName, Collection<AnnotationInstance>> additionalStereotypes) {
+            Objects.requireNonNull(additionalStereotypes);
+            this.additionalStereotypes = additionalStereotypes;
             return this;
         }
 
@@ -384,9 +394,10 @@ public class BeanProcessor {
         }
 
         public BeanProcessor build() {
-            return new BeanProcessor(name, addBuiltinClasses(index), additionalBeanDefiningAnnotations, output, sharedAnnotationLiterals,
-                    reflectionRegistration, annotationTransformers, resourceAnnotations, beanRegistrars, contextRegistrars, deploymentEnhancers, beanDeploymentValidators,
-                    applicationClassPredicate, removeUnusedBeans, removalExclusions);
+            return new BeanProcessor(name, index, additionalBeanDefiningAnnotations, output, sharedAnnotationLiterals,
+                    reflectionRegistration, annotationTransformers, resourceAnnotations, beanRegistrars, contextRegistrars,
+                    deploymentEnhancers, beanDeploymentValidators, applicationClassPredicate, removeUnusedBeans,
+                    removalExclusions, additionalStereotypes);
         }
 
     }
@@ -573,12 +584,12 @@ public class BeanProcessor {
         }
 
     }
-    
+
     static class PrivateMembersCollector {
-        
+
         private final List<String> appDescriptions;
         private final List<String> fwkDescriptions;
-        
+
         public PrivateMembersCollector() {
             this.appDescriptions = new ArrayList<>();
             this.fwkDescriptions = LOGGER.isDebugEnabled() ? new ArrayList<>() : null;
@@ -587,11 +598,11 @@ public class BeanProcessor {
         void add(boolean isApplicationClass, String description) {
             if (isApplicationClass) {
                 appDescriptions.add(description);
-            } else if(fwkDescriptions != null) {
+            } else if (fwkDescriptions != null) {
                 fwkDescriptions.add(description);
             }
         }
-        
+
         private void log() {
             // Log application problems
             if (!appDescriptions.isEmpty()) {
@@ -608,7 +619,7 @@ public class BeanProcessor {
                         fwkDescriptions.stream().map(d -> "\t- " + d).collect(Collectors.joining(",\n")));
             }
         }
- 
+
     }
 
 }

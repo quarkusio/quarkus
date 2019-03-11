@@ -269,7 +269,7 @@ public class ArcTestContainer implements TestRule {
 
             BeanProcessor.Builder beanProcessorBuilder = BeanProcessor.builder()
                     .setName(testClass.getSimpleName())
-                    .setIndex(index);
+                    .setIndex(BeanProcessor.addBuiltinClasses(index));
             if (!resourceAnnotations.isEmpty()) {
                 beanProcessorBuilder.addResourceAnnotations(resourceAnnotations.stream()
                         .map(c -> DotName.createSimple(c.getName()))

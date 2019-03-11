@@ -38,6 +38,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
+
 import io.quarkus.arc.processor.InjectionPointInfo.TypeAndQualifiers;
 
 final class Beans {
@@ -103,7 +104,7 @@ final class Beans {
                 isAlternative ? alternativePriority : null, stereotypes, name);
         return bean;
     }
- 
+
     /**
      *
      * @param producerMethod
@@ -239,17 +240,11 @@ final class Beans {
         if (stereotypes.isEmpty()) {
             return null;
         }
-        ScopeInfo stereotypeScope = null;
+        final Set<ScopeInfo> stereotypeScopes = new HashSet<>();
         for (StereotypeInfo stereotype : stereotypes) {
-            if (stereotype.getDefaultScope() != stereotypeScope) {
-                if (stereotypeScope == null) {
-                    stereotypeScope = stereotype.getDefaultScope();
-                } else {
-                    throw new IllegalStateException("All stereotypes must specify the same scope or the bean must declare a scope: " + target);
-                }
-            }
+            stereotypeScopes.add(stereotype.getDefaultScope());
         }
-        return stereotypeScope;
+        return BeanDeployment.getValidScope(stereotypeScopes, target);
     }
 
     private static boolean initStereotypeAlternative(List<StereotypeInfo> stereotypes) {
@@ -263,7 +258,7 @@ final class Beans {
         }
         return false;
     }
-    
+
     private static String initStereotypeName(List<StereotypeInfo> stereotypes, AnnotationTarget target) {
         if (stereotypes.isEmpty()) {
             return null;
@@ -347,7 +342,7 @@ final class Beans {
             injectionPoint.resolve(selected);
         }
     }
-    
+
     static BeanInfo resolveAmbiguity(List<BeanInfo> resolved) {
         BeanInfo selected = null;
         List<BeanInfo> resolvedAmbiguity = new ArrayList<>(resolved);
@@ -464,8 +459,8 @@ final class Beans {
             }
         }
     }
-    
-    
+
+
     private static String getPropertyName(String methodName) {
         final String get = "get";
         final String is = "is";
@@ -479,7 +474,7 @@ final class Beans {
         }
 
     }
-    
+
     private static String decapitalize(String name) {
         if (name == null || name.length() == 0) {
             return name;
@@ -492,8 +487,8 @@ final class Beans {
         decapitalized.setCharAt(0, Character.toLowerCase(decapitalized.charAt(0)));
         return decapitalized.toString();
     }
-    
-    
+
+
     private static String getDefaultName(ClassInfo beanClass) {
         StringBuilder defaultName = new StringBuilder();
         defaultName.append(DotNames.simpleName(beanClass));
@@ -511,6 +506,6 @@ final class Beans {
             return producerMethod.name();
         }
     }
-    
+
 
 }

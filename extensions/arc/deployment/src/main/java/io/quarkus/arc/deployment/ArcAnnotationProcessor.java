@@ -20,8 +20,11 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -30,10 +33,12 @@ import javax.enterprise.context.Dependent;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
+import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
@@ -94,9 +99,6 @@ public class ArcAnnotationProcessor {
     List<BeanRegistrarBuildItem> beanRegistrars;
 
     @Inject
-    List<ContextRegistrarBuildItem> contextRegistrars;
-
-    @Inject
     List<BeanDeploymentValidatorBuildItem> beanDeploymentValidators;
 
     @Inject
@@ -113,18 +115,8 @@ public class ArcAnnotationProcessor {
      */
     ArcConfig arc;
 
-    @BuildStep(providesCapabilities = Capabilities.CDI_ARC, applicationArchiveMarkers = { "META-INF/beans.xml",
-            "META-INF/services/javax.enterprise.inject.spi.Extension" })
-    @Record(STATIC_INIT)
-    public BeanContainerBuildItem build(ArcDeploymentTemplate arcTemplate,
-            List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems,
-            ApplicationArchivesBuildItem applicationArchivesBuildItem, List<GeneratedBeanBuildItem> generatedBeans,
-            List<AnnotationsTransformerBuildItem> annotationTransformers, ShutdownContextBuildItem shutdown,
-            BuildProducer<FeatureBuildItem> feature)
-            throws Exception {
-
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.CDI));
-
+    @BuildStep
+    public FullArchiveIndexBuildItem buildArchive(List<GeneratedBeanBuildItem> generatedBeans) {
         List<String> additionalBeans = new ArrayList<>();
         for (AdditionalBeanBuildItem i : this.additionalBeans) {
             additionalBeans.addAll(i.getBeanClasses());
@@ -148,7 +140,28 @@ public class ArcAnnotationProcessor {
             generatedClass.produce(new GeneratedClassBuildItem(true, beanClass.getName(), beanClass.getData()));
         }
 
-        CompositeIndex index = CompositeIndex.create(indexer.complete(), beanArchiveIndex.getIndex());
+        final IndexView index = BeanProcessor.addBuiltinClasses(
+                CompositeIndex.create(indexer.complete(), beanArchiveIndex.getIndex()));
+        return new FullArchiveIndexBuildItem(index, generatedClassNames, additionalBeans);
+    }
+
+    @BuildStep(providesCapabilities = Capabilities.CDI_ARC, applicationArchiveMarkers = { "META-INF/beans.xml",
+            "META-INF/services/javax.enterprise.inject.spi.Extension" })
+    @Record(STATIC_INIT)
+    public BeanContainerBuildItem build(ArcDeploymentTemplate arcTemplate,
+            List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem, FullArchiveIndexBuildItem fullArchiveIndexBuildItem,
+            List<AnnotationsTransformerBuildItem> annotationTransformers, ShutdownContextBuildItem shutdown,
+            List<AdditionalStereotypeBuildItem> additionalStereotypeBuildItems,
+            BuildProducer<FeatureBuildItem> feature,
+            List<ContextRegistrarBuildItem> contextRegistrars)
+            throws Exception {
+
+        feature.produce(new FeatureBuildItem(FeatureBuildItem.CDI));
+
+        List<String> additionalBeans = fullArchiveIndexBuildItem.getAdditionalBeans();
+        Set<DotName> generatedClassNames = fullArchiveIndexBuildItem.getGeneratedClassNames();
+        IndexView index = fullArchiveIndexBuildItem.getIndex();
         Builder builder = BeanProcessor.builder();
         builder.setApplicationClassPredicate(new Predicate<DotName>() {
             @Override
@@ -181,6 +194,11 @@ public class ArcAnnotationProcessor {
         builder.setAdditionalBeanDefiningAnnotations(additionalBeanDefiningAnnotations.stream()
                 .map((s) -> new BeanDefiningAnnotation(s.getName(), s.getDefaultScope()))
                 .collect(Collectors.toList()));
+        final Map<DotName, Collection<AnnotationInstance>> additionalStereotypes = new HashMap<>();
+        for (final AdditionalStereotypeBuildItem item : additionalStereotypeBuildItems) {
+            additionalStereotypes.putAll(item.getStereotypes());
+        }
+        builder.setAdditionalStereotypes(additionalStereotypes);
         builder.setSharedAnnotationLiterals(true);
         builder.addResourceAnnotations(resourceAnnotations.stream()
                 .map(ResourceAnnotationBuildItem::getName)

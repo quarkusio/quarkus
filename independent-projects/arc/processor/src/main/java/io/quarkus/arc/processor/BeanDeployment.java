@@ -85,22 +85,22 @@ public class BeanDeployment {
     private final AnnotationStore annotationStore;
 
     private final Set<DotName> resourceAnnotations;
-    
+
     private final List<InjectionPointInfo> injectionPoints;
-    
+
     private final boolean removeUnusedBeans;
     private final List<Predicate<BeanInfo>> unusedExclusions;
     private final Set<BeanInfo> removedBeans;
-    
+
     private final Map<ScopeInfo, Function<MethodCreator, ResultHandle>> customContexts;
-    
+
     BeanDeployment(IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations, List<AnnotationsTransformer> annotationTransformers) {
-        this(index, additionalBeanDefiningAnnotations, annotationTransformers, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null, false, null);
+        this(index, additionalBeanDefiningAnnotations, annotationTransformers, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null, false, null, Collections.emptyMap());
     }
 
     BeanDeployment(IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations, List<AnnotationsTransformer> annotationTransformers,
             Collection<DotName> resourceAnnotations, List<BeanRegistrar> beanRegistrars, List<ContextRegistrar> contextRegistrars,
-            BuildContextImpl buildContext, boolean removeUnusedBeans, List<Predicate<BeanInfo>> unusedExclusions) {
+            BuildContextImpl buildContext, boolean removeUnusedBeans, List<Predicate<BeanInfo>> unusedExclusions, Map<DotName, Collection<AnnotationInstance>> additionalStereotypes) {
         long start = System.currentTimeMillis();
         Collection<BeanDefiningAnnotation> beanDefiningAnnotations = new HashSet<>();
         if (additionalBeanDefiningAnnotations != null) {
@@ -121,17 +121,17 @@ public class BeanDeployment {
         // ComponentsProviderGenerator must be aware of the custom contexts
         customContexts = new HashMap<>();
         registerCustomContexts(contextRegistrars, beanDefiningAnnotations, buildContext);
-        
+
         this.qualifiers = findQualifiers(index);
         // TODO interceptor bindings are transitive!!!
         this.interceptorBindings = findInterceptorBindings(index);
-        this.stereotypes = findStereotypes(index, interceptorBindings, beanDefiningAnnotations, customContexts);
+        this.stereotypes = findStereotypes(index, interceptorBindings, beanDefiningAnnotations, customContexts, additionalStereotypes);
         this.injectionPoints = new ArrayList<>();
         this.interceptors = findInterceptors(injectionPoints);
         this.beanResolver = new BeanResolver(this);
         List<ObserverInfo> observers = new ArrayList<>();
         this.beans = findBeans(initBeanDefiningAnnotations(beanDefiningAnnotations, stereotypes.keySet()), observers, injectionPoints);
-        
+
         if (buildContext != null) {
             buildContext.putInternal(Key.INJECTION_POINTS.asString(), Collections.unmodifiableList(injectionPoints));
             buildContext.putInternal(Key.OBSERVERS.asString(), Collections.unmodifiableList(observers));
@@ -145,11 +145,11 @@ public class BeanDeployment {
 
         LOGGER.debugf("Bean deployment created in %s ms", System.currentTimeMillis() - start);
     }
-    
+
     public Collection<BeanInfo> getBeans() {
         return Collections.unmodifiableList(beans);
     }
-    
+
     public Collection<BeanInfo> getRemovedBeans() {
         return Collections.unmodifiableSet(removedBeans);
     }
@@ -201,15 +201,15 @@ public class BeanDeployment {
     AnnotationInstance getAnnotation(AnnotationTarget target, DotName name) {
         return annotationStore.getAnnotation(target, name);
     }
-    
+
     Map<ScopeInfo, Function<MethodCreator,ResultHandle>> getCustomContexts() {
         return customContexts;
     }
-    
+
     ScopeInfo getScope(DotName scopeAnnotationName) {
         return getScope(scopeAnnotationName, customContexts);
     }
-    
+
     static ScopeInfo getScope(DotName scopeAnnotationName, Map<ScopeInfo, Function<MethodCreator, ResultHandle>> customContexts) {
         BuiltinScope builtin = BuiltinScope.from(scopeAnnotationName);
         if (builtin != null) {
@@ -220,13 +220,26 @@ public class BeanDeployment {
                 return customScope;
             }
         }
-        return null; 
+        return null;
+    }
+
+    static ScopeInfo getValidScope(Collection<ScopeInfo> stereotypeScopes, AnnotationTarget target) {
+        switch (stereotypeScopes.size()) {
+            case 0:
+                return null;
+            case 1:
+                return stereotypeScopes.iterator().next();
+            default:
+                throw new DefinitionException("All stereotypes must specify the same scope or the bean must declare a scope: "
+                        + target + " declares scopes " + stereotypeScopes.stream().map(ScopeInfo::getDotName)
+                        .map(DotName::toString).collect(Collectors.joining(", ")));
+        }
     }
 
     boolean hasAnnotation(AnnotationTarget target, DotName name) {
         return annotationStore.hasAnnotation(target, name);
     }
-    
+
     void validate(BuildContextImpl buildContext, List<BeanDeploymentValidator> validators) {
         long start = System.currentTimeMillis();
         // Validate the bean deployment
@@ -240,7 +253,7 @@ public class BeanDeployment {
         processErrors(errors);
         LOGGER.debugf("Bean deployment validated in %s ms", System.currentTimeMillis() - start);
     }
-    
+
     void init() {
         long start = System.currentTimeMillis();
 
@@ -332,18 +345,25 @@ public class BeanDeployment {
         return bindings;
     }
 
-    static Map<DotName, StereotypeInfo> findStereotypes(IndexView index, Map<DotName, ClassInfo> interceptorBindings, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations, Map<ScopeInfo, Function<MethodCreator, ResultHandle>> customContexts) {
+    Map<DotName, StereotypeInfo> findStereotypes(IndexView index, Map<DotName, ClassInfo> interceptorBindings,
+            Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations, Map<ScopeInfo, Function<MethodCreator, ResultHandle>> customContexts,
+            Map<DotName, Collection<AnnotationInstance>> additionalStereotypes) {
         Map<DotName, StereotypeInfo> stereotypes = new HashMap<>();
-        for (AnnotationInstance stereotype : index.getAnnotations(DotNames.STEREOTYPE)) {
-            ClassInfo stereotypeClass = index.getClassByName(stereotype.target().asClass().name());
+        final List<AnnotationInstance> stereotypeAnnotations = new ArrayList<>(index.getAnnotations(DotNames.STEREOTYPE));
+        for (final Collection<AnnotationInstance> annotations : additionalStereotypes.values()) {
+            stereotypeAnnotations.addAll(annotations);
+        }
+        for (AnnotationInstance stereotype : stereotypeAnnotations) {
+            final DotName stereotypeName = stereotype.target().asClass().name();
+            ClassInfo stereotypeClass = index.getClassByName(stereotypeName);
             if (stereotypeClass != null) {
 
                 boolean isAlternative = false;
-                ScopeInfo scope = null;
+                List<ScopeInfo> scopes = new ArrayList<>();
                 List<AnnotationInstance> bindings = new ArrayList<>();
                 boolean isNamed = false;
 
-                for (AnnotationInstance annotation : stereotypeClass.classAnnotations()) {
+                for (AnnotationInstance annotation : getAnnotations(stereotypeClass)) {
                     if (DotNames.ALTERNATIVE.equals(annotation.name())) {
                         isAlternative = true;
                     } else if (interceptorBindings.containsKey(annotation.name())) {
@@ -355,28 +375,31 @@ public class BeanDeployment {
                             throw new DefinitionException("Stereotype must not declare @Named with a non-empty value: " + stereotypeClass);
                         }
                         isNamed = true;
-                    } else if (scope == null) {
-                        scope = getScope(annotation.name(), customContexts);
+                    } else {
+                        final ScopeInfo scope = getScope(annotation.name(), customContexts);
+                        if (scope != null) {
+                            scopes.add(scope);
+                        }
                     }
                 }
-                stereotypes.put(stereotype.target().asClass().name(), new StereotypeInfo(scope, bindings, isAlternative, isNamed, stereotypeClass));
+                final ScopeInfo scope = getValidScope(scopes, stereotypeClass);
+                stereotypes.put(stereotypeName, new StereotypeInfo(scope, bindings, isAlternative, isNamed, stereotypeClass));
             }
         }
         //if an additional bean defining annotation has a default scope we register it as a stereotype
-        if(additionalBeanDefiningAnnotations != null) {
+        if (additionalBeanDefiningAnnotations != null) {
             for (BeanDefiningAnnotation i : additionalBeanDefiningAnnotations) {
                 if (i.getDefaultScope() != null) {
-                    stereotypes.put(i.getAnnotation(), new StereotypeInfo(getScope(i.getDefaultScope(), customContexts),
-                            Collections.emptyList(), false, false, index.getClassByName(i.getAnnotation())));
+                    ScopeInfo scope = getScope(i.getDefaultScope(), customContexts);
+                    stereotypes.put(i.getAnnotation(), new StereotypeInfo(scope, Collections.emptyList(), false, false, index.getClassByName(i.getAnnotation())));
                 }
             }
         }
 
-
         return stereotypes;
     }
-    
-    
+
+
     private void registerSyntheticBeans(List<BeanRegistrar> beanRegistrars, BuildContext buildContext) {
         if (!beanRegistrars.isEmpty()) {
             RegistrationContext registrationContext = new RegistrationContext() {
@@ -402,7 +425,7 @@ public class BeanDeployment {
             }
         }
     }
-    
+
     private void registerCustomContexts(List<ContextRegistrar> contextRegistrars,
             Collection<BeanDefiningAnnotation> beanDefiningAnnotations, BuildContext buildContext) {
         if (!contextRegistrars.isEmpty()) {
@@ -432,10 +455,10 @@ public class BeanDeployment {
             }
         }
     }
-    
+
     private void validateBeans(List<Throwable> errors) {
         Map<String, List<BeanInfo>> namedBeans = new HashMap<>();
-        
+
         for (BeanInfo bean : beans) {
             if (bean.getName() != null) {
                 List<BeanInfo> named = namedBeans.get(bean.getName());
@@ -447,7 +470,7 @@ public class BeanDeployment {
             }
             bean.validate(errors);
         }
-        
+
         if (!namedBeans.isEmpty()) {
             for (Entry<String, List<BeanInfo>> entry : namedBeans.entrySet()) {
                 if (entry.getValue()
@@ -680,12 +703,12 @@ public class BeanDeployment {
                 LOGGER.logf(Level.TRACE, "Created %s", interceptor);
             }
         }
-        for(InterceptorInfo i : interceptors) {
+        for (InterceptorInfo i : interceptors) {
             injectionPoints.addAll(i.getAllInjectionPoints());
         }
         return interceptors;
     }
-    
+
     private void processErrors(List<Throwable> errors) {
         if (!errors.isEmpty()) {
             if (errors.size() == 1) {
@@ -724,13 +747,13 @@ public class BeanDeployment {
         beanDefiningAnnotations.add(DotNames.create(Model.class));
         return beanDefiningAnnotations;
     }
-    
+
     static class ValidationContextImpl implements ValidationContext {
 
         private final BuildContext buildContext;
-        
+
         private final List<Throwable> errors;
-        
+
         public ValidationContextImpl(BuildContext buildContext) {
             this.buildContext = buildContext;
             this.errors = new ArrayList<Throwable>();
@@ -754,7 +777,7 @@ public class BeanDeployment {
         List<Throwable> getErrors() {
             return errors;
         }
-        
+
     }
 
 }

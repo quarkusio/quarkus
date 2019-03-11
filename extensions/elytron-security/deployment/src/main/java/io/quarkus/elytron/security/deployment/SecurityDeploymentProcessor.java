@@ -97,7 +97,7 @@ class SecurityDeploymentProcessor {
                 "sun.security.rsa.RSASignature$SHA1withRSA",
                 "sun.security.rsa.RSASignature$SHA384withRSA"
         };
-        classes.produce(new ReflectiveClassBuildItem(false, false, allClasses));
+        classes.produce(new ReflectiveClassBuildItem(true, false, allClasses));
     }
 
     /**
@@ -312,12 +312,14 @@ class SecurityDeploymentProcessor {
             }
         }
         // Trying to get the SunRsaSign working without substrate substitutions
-        try {
-            template.registerProvider("sun.security.rsa.SunRsaSign");
-            log.infof("Registered the SunRsaSign provider");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        /*
+         * try {
+         * template.registerProvider("sun.security.rsa.SunRsaSign");
+         * log.infof("Registered the SunRsaSign provider");
+         * } catch (Exception e) {
+         * e.printStackTrace();
+         * }
+         */
     }
 
 }

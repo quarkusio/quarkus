@@ -12,10 +12,10 @@ import sun.security.rsa.SunRsaSign;
  * Override the {@linkplain Signature#getInstance(String)} to deal with creating the Signature by creating the
  * {@linkplain SunRsaSign} directly for "RSA" algorithm
  */
-@TargetClass(Signature.class)
+//@TargetClass(Signature.class)
 public final class Target_java_security_Signature {
 
-    @Substitute
+    //@Substitute
     public static Signature getInstance(String algorithm) throws NoSuchAlgorithmException {
         if (algorithm.endsWith("RSA")) {
             SunRsaSign provider = new SunRsaSign();

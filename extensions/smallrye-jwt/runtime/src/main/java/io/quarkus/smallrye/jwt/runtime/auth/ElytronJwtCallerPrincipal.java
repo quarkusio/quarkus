@@ -83,8 +83,9 @@ public class ElytronJwtCallerPrincipal extends JWTCallerPrincipal {
                 List<String> audList = claimsSet.getStringListClaimValue("aud");
                 audSet = new HashSet<>(audList);
             }
-        } catch (MalformedClaimException e) {
+        } catch (Exception e) {
             try {
+                logger.warnf(e, "Failed to access aud as List");
                 // Not sent as an array, try a single value
                 String aud = claimsSet.getStringClaimValue("aud");
                 audSet = new HashSet<>();

@@ -14,7 +14,7 @@ import sun.security.rsa.SunRsaSign;
 /**
  * Override the {@linkplain KeyFactory#getInstance(String)} to deal with creating the KeyFactory directly for "RSA" algorithm
  */
-@TargetClass(KeyFactory.class)
+//@TargetClass(KeyFactory.class)
 public final class Target_java_security_KeyFactory {
     static class QuarkusKeyFactory extends KeyFactory {
         QuarkusKeyFactory(KeyFactorySpi keyFacSpi, Provider provider, String algorithm) {
@@ -22,7 +22,7 @@ public final class Target_java_security_KeyFactory {
         }
     }
 
-    @Substitute
+    //@Substitute
     public static KeyFactory getInstance(String algorithm) throws NoSuchAlgorithmException {
         if (algorithm.equals("RSA")) {
             SunRsaSign rsaProvider = new SunRsaSign();

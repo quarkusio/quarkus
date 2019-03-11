@@ -5,6 +5,9 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import java.util.Collection;
 import java.util.List;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.extest.runtime.DummyFeature;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -62,6 +65,12 @@ public final class TestProcessor {
     @BuildStep
     BeanDefiningAnnotationBuildItem registerX() {
         return new BeanDefiningAnnotationBuildItem(TEST_ANNOTATION);
+    }
+
+    @BuildStep
+    void registerAutoFeature(BuildProducer<AdditionalBeanBuildItem> additionalBeans, BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+        additionalBeans.produce(new AdditionalBeanBuildItem(DummyFeature.class));
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, DummyFeature.class.getName()));
     }
 
     /**

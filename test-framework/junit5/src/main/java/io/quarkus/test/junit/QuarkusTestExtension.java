@@ -268,9 +268,7 @@ public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallba
         @Override
         public void run() {
             try {
-                if (Files.exists(path)) {
-                    Files.delete(path);
-                }
+                Files.deleteIfExists(path);
             } catch (IOException e) {
                 e.printStackTrace();
             }

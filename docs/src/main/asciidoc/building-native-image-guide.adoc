@@ -1,5 +1,5 @@
 include::./attributes.adoc[]
-= {project-name} - Building a Native Image
+= {project-name} - Building a Native Executable
 
 This guide covers:
 
@@ -27,11 +27,11 @@ Version {graalvm-version} is required.
 ====
 Once you have downloaded GraalVM, expand the archive and set the `GRAALVM_HOME` variable to this location:
 
-`export GRAALVM_HOME=~clement/Development/graalvm/`
+`export GRAALVM_HOME=$HOME/Development/graalvm/`
 
 On MacOS, point the variable to the `Home` sub-directory:
 
-`export GRAALVM_HOME=~clement/Development/graalvm/Contents/Home/`
+`export GRAALVM_HOME=$HOME/Development/graalvm/Contents/Home/`
 ====
 
 
@@ -43,7 +43,7 @@ However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
 
-The solution is located in the `getting-started-native` directory.
+The solution is located in the `getting-started` directory.
 
 == Producing a native executable
 
@@ -51,7 +51,7 @@ Let's now produce a native executable for our application.
 It improves the startup time of the application, and produces a minimal disk footprint.
 The executable would have everything to run the application including the "JVM" (shrunk to be just enough to run the application), and the application.
 
-image:native-image-process.png[Creating a native executable]
+image:native-executable-process.png[Creating a native executable]
 
 Before going further, be sure that the `GRAALVM_HOME` environment variable is configured appropriately.
 
@@ -85,7 +85,7 @@ If you have generated the application from the previous tutorial, you can find i
 </profiles>
 ----
 
-We use a profile because, you will see very soon, packaging the native image takes a _few_ seconds.
+We use a profile because, you will see very soon, packaging the native executable takes a _few_ seconds.
 
 Create a native executable using: `mvn package -Pnative`.
 
@@ -96,7 +96,7 @@ You can run it using: `./target/quarkus-quickstart-runner`.
 
 Producing a native executable can lead to a few issues, and so it's also a good idea to run some tests against the application running in the native file.
 
-In the `pom.xml` file, extend the `native` profile with:
+In the `pom.xml` file, the `native` profile contains:
 
 [source, xml]
 ----
@@ -120,7 +120,9 @@ In the `pom.xml` file, extend the `native` profile with:
 </plugin>
 ----
 
-Then, create the `src/test/java/org/acme/quickstart/GreetingResourceIT.java` with the following content:
+This instructs the failsafe-maven-plugin to run integration-test and indicates the location of the produced native executable.
+
+Then, open the `src/test/java/org/acme/quickstart/NativeGreetingResourceIT.java`. It contains:
 
 [source,java]
 ----
@@ -130,7 +132,7 @@ package org.acme.quickstart;
 import io.quarkus.test.junit.SubstrateTest;
 
 @SubstrateTest // <1>
-public class GreetingResourceIT extends GreetingResourceTest { // <2>
+public class NativeGreetingResourceIT extends GreetingResourceTest { // <2>
 
     // Run the same tests
 
@@ -140,10 +142,10 @@ public class GreetingResourceIT extends GreetingResourceTest { // <2>
 The executable is retrieved using the `native.image.path` system property configured in the _Failsafe Maven Plugin_.
 <2> We extend our previous tests, but you can also implement your tests
 
-To see the `GreetingResourceIT` run against the native image, add a verify goal:
+To see the `NativeGreetingResourceIT` run against the native executable, runs `mvn verify -Pnative`:
 [source,shell]
 ----
-mvn package verify -Pnative
+mvn verify -Pnative
 ...
 [quarkus-quickstart-runner:50955]     universe:     391.96 ms
 [quarkus-quickstart-runner:50955]      (parse):     904.37 ms
@@ -160,7 +162,7 @@ mvn package verify -Pnative
 [INFO]  T E S T S
 [INFO] -------------------------------------------------------
 [INFO] Running org.acme.quickstart.GreetingResourceIT
-Executing [/Users/starksm/Dev/JBoss/Quarkus/starksm64-quarkus-quickstarts/getting-started-native/target/quarkus-quickstart-runner, -Dquarkus.http.port=8081, -Dtest.url=http://localhost:8081, -Dquarkus.log.file.path=target/quarkus.log]
+Executing [.../getting-started/target/quarkus-quickstart-runner, -Dquarkus.http.port=8081, -Dtest.url=http://localhost:8081, -Dquarkus.log.file.path=target/quarkus.log]
 2019-02-28 16:52:42,020 INFO  [io.quarkus] (main) Quarkus started in 0.007s. Listening on: http://localhost:8080
 2019-02-28 16:52:42,021 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy]
 [INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.081 s - in org.acme.quickstart.GreetingResourceIT
@@ -179,7 +181,9 @@ IMPORTANT: Before going further, be sure to have a working Docker environment.
 You can run the application in a Docker container using the JAR produced by the Quarkus Maven Plugin.
 However, in this guide we focus on creating a Docker image using the produced native executable.
 
-By default, the native image is tailored for your operating system (Linux, macOS, Windows etc).
+image:containerization-process.png[Containerization Process]
+
+By default, the native executable is tailored for your operating system (Linux, macOS, Windows etc).
 Because the Docker container may not use the same _executable_ format as the one produced by your operating system,
 we will instruct the Maven build to produce an executable from inside a Docker container:
 

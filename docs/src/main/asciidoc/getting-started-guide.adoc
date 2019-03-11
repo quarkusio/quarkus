@@ -386,6 +386,8 @@ You can run the application using: `java -jar target/getting-started-1.0-SNAPSHO
 NOTE: The `Class-Path` entry of the `MANIFEST.MF` from the _runner jar_ explicitly lists the jars from the `lib` directory.
 So if you want to deploy your application somewhere, you need to copy the _runner_ jar as well as the _lib_ directory.
 
+NOTE: Before running the application, don't forget to stop the hot reload mode (hit `CTRL+C`), or you will have a port conflict.
+
 == Async
 
 The resource can also use `CompletionStage` as return type to handle asynchronous actions:
@@ -407,7 +409,7 @@ The async version of the code is available in the {quickstarts-base-url}[GitHub]
 
 This guide covered the creation of an application using Quarkus.
 However, there is much more.
-We recommend continuing the journey with the link:building-native-image-guide.html[building a native image guide], where you learn about the native executable creation and the packaging in a container.
+We recommend continuing the journey with the link:building-native-image-guide.html[building a native executable guide], where you learn about the native executable creation and the packaging in a container.
 
 In addition, the link:tooling.html[tooling guide] document explains how to:
 

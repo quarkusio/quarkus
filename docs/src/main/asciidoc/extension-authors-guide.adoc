@@ -22,7 +22,7 @@ Augmentation::
 
 Static Init::
     If bytecode is recorded with `@Record(STATIC_INIT)` then it will be executed from a static init method on the main
-    class. For a native executable build, this code is executed in a normal JVM as part of the image build
+    class. For a native executable build, this code is executed in a normal JVM as part of the native build
     process, and any retained objects that are produced in this stage will be directly serialized into the native executable via an image mapped file.
     This means that if a framework can boot in this phase then it will have its booted state directly written to the
     image, and so the boot code does not need to be executed when the image is started.
@@ -521,7 +521,7 @@ public class PersistenceAndQuarkusConfigTest {
 
 There Quarkus provides a lot of build items that control aspects of the native executable build. This allows for extensions
 to programmatically perform tasks such as registering classes for reflection or adding static resources to the native
-image. Some of these build items are listed below:
+executable. Some of these build items are listed below:
 
 `io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem`::
  Includes static resources into the native executable.
@@ -530,16 +530,16 @@ image. Some of these build items are listed below:
 A class that will be reinitialized at runtime by Substrate. This will result in the static initializer running twice.
 
 `io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem`::
-A system property that will be set at executable image build time.
+A system property that will be set at native executable build time.
 
 `io.quarkus.deployment.builditem.substrate.SubstrateResourceBundleBuildItem`::
-Includes a resource bundle in the executable image.
+Includes a resource bundle in the native executable.
 
 `io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem`::
 Registers a class for reflection in Substrate. Constructors are always registered, while methods and fields are optional.
 
 `io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem`::
-A class that will be initialized at runtime rather than build time. This will cause the build to fail if the class is initialized as part of the executable image build process, so care must be taken.
+A class that will be initialized at runtime rather than build time. This will cause the build to fail if the class is initialized as part of the native executable build process, so care must be taken.
 
 `io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem`::
 A convenience feature that allows you to control most of the above features from a single build item.

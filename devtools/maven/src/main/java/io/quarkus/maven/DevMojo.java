@@ -303,10 +303,11 @@ public class DevMojo extends AbstractMojo {
     }
 
     private void ensureMavenVersion() throws MojoExecutionException {
+        String supported = MojoUtils.get("supported-maven-versions");
         String mavenVersion = session.getSystemProperties().getProperty("maven.version");
         getLog().debug("Detected Maven Version: " + mavenVersion);
         DefaultArtifactVersion detectedVersion = new DefaultArtifactVersion(mavenVersion);
-        mavenVersionEnforcer.enforce(getLog(), "3.5.3", detectedVersion);
+        mavenVersionEnforcer.enforce(getLog(), supported, detectedVersion);
     }
 
     private void addToClassPaths(StringBuilder classPathManifest, StringBuilder classPath, File file)

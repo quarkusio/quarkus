@@ -15,7 +15,7 @@ import org.apache.camel.Route;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.quarkus.camel.runtime.CamelRuntime;
+import io.quarkus.camel.core.runtime.CamelRuntime;
 
 @Path("/")
 @ApplicationScoped

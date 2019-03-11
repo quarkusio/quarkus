@@ -11,7 +11,7 @@ import javax.ws.rs.core.MediaType;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
 
-import io.quarkus.camel.runtime.CamelRuntime;
+import io.quarkus.camel.core.runtime.CamelRuntime;
 
 @Path("/")
 @ApplicationScoped

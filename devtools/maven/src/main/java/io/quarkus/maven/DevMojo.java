@@ -184,6 +184,8 @@ public class DevMojo extends AbstractMojo {
                     args.add("-D" + i.getKey() + "=" + i.getValue());
                 }
             }
+            //Add env to enable quarkus dev mode logging
+            args.add("-Dquarkus.devMode");
 
             for (Resource r : project.getBuild().getResources()) {
                 File f = new File(r.getDirectory());

@@ -26,7 +26,7 @@ public final class InitialConfigurator implements EmbeddedConfigurator {
 
     public Handler[] getHandlersOf(final String loggerName) {
         if (loggerName.isEmpty()) {
-            if (ImageInfo.inImageBuildtimeCode()) {
+            if (ImageInfo.inImageBuildtimeCode() || System.getProperty("quarkus.devMode") != null) {
                 final ConsoleHandler handler = new ConsoleHandler(new PatternFormatter(
                         "%d{HH:mm:ss,SSS} %-5p [%c{3.}] %s%e%n"));
                 handler.setLevel(Level.INFO);

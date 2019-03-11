@@ -127,7 +127,7 @@ public class BeanInfo {
         }
         this.implClazz = implClazz;
         this.beanDeployment = beanDeployment;
-        this.scope = scope != null ? scope : ScopeInfo.DEPENDENT;
+        this.scope = scope != null ? scope : BuiltinScope.DEPENDENT.getInfo();
         this.types = types;
         for (Type type : types) {
             Beans.analyzeType(type, beanDeployment);

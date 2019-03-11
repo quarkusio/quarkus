@@ -23,10 +23,13 @@ public final class Components {
     private final Collection<InjectableBean<?>> beans;
 
     private final Collection<InjectableObserverMethod<?>> observers;
+    
+    private final Collection<InjectableContext> contexts;
 
-    public Components(Collection<InjectableBean<?>> beans, Collection<InjectableObserverMethod<?>> observers) {
+    public Components(Collection<InjectableBean<?>> beans, Collection<InjectableObserverMethod<?>> observers, Collection<InjectableContext> contexts) {
         this.beans = beans;
         this.observers = observers;
+        this.contexts = contexts;
     }
 
     public Collection<InjectableBean<?>> getBeans() {
@@ -37,4 +40,8 @@ public final class Components {
         return observers;
     }
 
+    public Collection<InjectableContext> getContexts() {
+        return contexts;
+    }
+    
 }

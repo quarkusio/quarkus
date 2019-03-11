@@ -46,6 +46,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrarBuildItem;
 import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.processor.BeanRegistrar;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.ScopeInfo;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -191,7 +192,7 @@ class SmallRyeRestClientProcessor {
                     // The spec is not clear whether we should add superinterfaces too - let's keep aligned with SmallRye for now
                     configurator.addType(entry.getKey());
                     // We use @Singleton here as we do not need another proxy
-                    configurator.scope(ScopeInfo.SINGLETON);
+                    configurator.scope(BuiltinScope.SINGLETON.getInfo());
                     configurator.addQualifier(REST_CLIENT);
                     configurator.creator(m -> {
                         // return new RestClientBase(proxyType).create();

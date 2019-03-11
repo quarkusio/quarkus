@@ -77,7 +77,7 @@ class InstanceHandleImpl<T> implements InstanceHandle<T> {
             if (bean.getScope().equals(Dependent.class)) {
                 destroyInternal();
             } else {
-                Arc.container().getContext(bean.getScope()).destroy(bean);
+                Arc.container().getActiveContext(bean.getScope()).destroy(bean);
             }
         }
     }

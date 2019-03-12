@@ -20,7 +20,8 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.eclipse.microprofile.metrics.annotation.Counted;
 import org.eclipse.microprofile.metrics.annotation.Gauge;
@@ -57,13 +58,11 @@ import io.smallrye.metrics.interceptors.TimedInterceptor;
 
 public class SmallRyeMetricsProcessor {
 
-    SmallRyeMetricsConfig metrics;
-
-    private static final Collection<DotName> metricsAnnotations = Arrays.asList(
+    private static final Set<DotName> metricsAnnotations = new HashSet<>(Arrays.asList(
             DotName.createSimple(Gauge.class.getName()),
             DotName.createSimple(Counted.class.getName()),
             DotName.createSimple(Timed.class.getName()),
-            DotName.createSimple(Metered.class.getName()));
+            DotName.createSimple(Metered.class.getName())));
 
     @ConfigRoot(name = "smallrye-metrics")
     static final class SmallRyeMetricsConfig {
@@ -74,6 +73,8 @@ public class SmallRyeMetricsProcessor {
         @ConfigItem(defaultValue = "/metrics")
         String path;
     }
+
+    SmallRyeMetricsConfig metrics;
 
     @BuildStep
     ServletBuildItem createServlet() {

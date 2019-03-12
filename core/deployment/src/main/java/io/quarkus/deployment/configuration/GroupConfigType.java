@@ -61,8 +61,12 @@ public class GroupConfigType extends CompoundConfigType {
                 }
                 field.setAccessible(true);
                 final FieldDescriptor descr = FieldDescriptor.of(field);
-                fieldInfos.put(field.getName(),
-                        new FieldInfo(field, accessorFinder.getSetterFor(descr), accessorFinder.getGetterFor(descr)));
+                FieldInfo fieldInfo = new FieldInfo(field, accessorFinder.getSetterFor(descr), accessorFinder.getGetterFor(descr));
+                fieldInfos.put(field.getName(), fieldInfo);
+                if (Map.class.isAssignableFrom(field.getType())) {
+                    MethodDescriptor putMethod = accessorFinder.getMapPutFor(descr);
+                    fieldInfo.setPutMap(putMethod);
+                }
             }
         }
     }
@@ -100,6 +104,9 @@ public class GroupConfigType extends CompoundConfigType {
 
     public ConfigType getField(String name) {
         return fields.get(name);
+    }
+    public FieldInfo getFieldInfo(String name) {
+        return fieldInfos.get(name);
     }
 
     public void addField(ConfigType node) {
@@ -264,6 +271,7 @@ public class GroupConfigType extends CompoundConfigType {
         private final Field field;
         private final MethodDescriptor setter;
         private final MethodDescriptor getter;
+        private MethodDescriptor putMap;
 
         public FieldInfo(final Field field, final MethodDescriptor setter, final MethodDescriptor getter) {
             this.field = field;
@@ -281,6 +289,14 @@ public class GroupConfigType extends CompoundConfigType {
 
         public MethodDescriptor getGetter() {
             return getter;
+        }
+
+        public MethodDescriptor getPutMap() {
+            return putMap;
+        }
+
+        public void setPutMap(MethodDescriptor putMap) {
+            this.putMap = putMap;
         }
     }
 }

@@ -1,11 +1,16 @@
 package io.quarkus.extest.runtime;
 
+import java.util.Map;
+
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
 @ConfigRoot(name = "rt", phase = ConfigPhase.RUN_TIME)
 public class TestRunTimeConfig {
+    /** A map of properties */
+    @ConfigItem
+    public Map<String, String> stringMap;
     /** A run time object */
     @ConfigItem
     public String rtStringOpt;
@@ -22,6 +27,7 @@ public class TestRunTimeConfig {
                 "rtStringOpt='" + rtStringOpt + '\'' +
                 ", rtStringOptWithDefault='" + rtStringOptWithDefault + '\'' +
                 ", allValues=" + allValues +
+                ", stringMap=" + stringMap +
                 '}';
     }
 }

@@ -52,6 +52,24 @@ public final class AccessorFinder {
         return methodDescriptor;
     }
 
+    /**
+     *
+     * @param fieldDescriptor
+     * @return
+     */
+    public synchronized MethodDescriptor getMapPutFor(FieldDescriptor fieldDescriptor) {
+        MethodDescriptor methodDescriptor;
+        final String declaringClass = fieldDescriptor.getDeclaringClass();
+        final String accessorName = declaringClass + "$$accessor";
+        final String rawFieldType = fieldDescriptor.getType();
+        final boolean primitive = isPrimitive(rawFieldType);
+        final String fieldType = primitive ? rawFieldType : DescriptorUtils.getTypeStringFromDescriptorFormat(rawFieldType);
+        final String publicType = primitive ? fieldType : JLO;
+        methodDescriptor = MethodDescriptor.ofMethod(accessorName, "put_" + fieldDescriptor.getName(), void.class,
+                                                     publicType, String.class, String.class);
+        return methodDescriptor;
+    }
+
     public synchronized MethodDescriptor getConstructorFor(MethodDescriptor ctor) {
         MethodDescriptor methodDescriptor = ctors.get(ctor);
         if (methodDescriptor != null)

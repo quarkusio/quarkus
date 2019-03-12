@@ -44,6 +44,9 @@ public class AllValuesConfig {
     /** A map of config group objects */
     @ConfigItem
     public Map<String, NestedConfig> nestedConfigMap;
+    /** A map of properties */
+    @ConfigItem
+    public Map<String, String> stringMap;
     /** A List of string values */
     @ConfigItem
     public List<String> stringList;
@@ -55,13 +58,19 @@ public class AllValuesConfig {
     public String toString() {
         return "AllValuesConfig{" +
                 "longPrimitive=" + longPrimitive +
+                ", doublePrimitive=" + doublePrimitive +
                 ", longValue=" + longValue +
                 ", optLongValue=" + optLongValue +
+                ", optDoubleValue=" + optDoubleValue +
                 ", optionalLongValue=" + optionalLongValue +
                 ", oov=" + oov +
                 ", oovWithDefault=" + oovWithDefault +
                 ", ovo=" + ovo +
                 ", ovoWithDefault=" + ovoWithDefault +
+                ", nestedConfigMap=" + nestedConfigMap +
+                ", stringMap=" + stringMap +
+                ", stringList=" + stringList +
+                ", longList=" + longList +
                 '}';
     }
 }

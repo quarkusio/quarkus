@@ -1,5 +1,7 @@
 package io.quarkus.extest.runtime;
 
+import java.util.List;
+
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
@@ -11,5 +13,11 @@ public class NestedConfig {
     /** A nested ObjectOfValue value */
     @ConfigItem
     public ObjectOfValue oov;
+    /** A nested long primitive */
+    @ConfigItem
+    public long longPrimitive;
+    /** A nested long list */
+    @ConfigItem
+    public List<Long> longList;
 
 }

@@ -61,6 +61,7 @@ import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
@@ -70,6 +71,7 @@ import org.jboss.jdeparser.JAssignableExpr;
 import org.jboss.jdeparser.JCall;
 import org.jboss.jdeparser.JClassDef;
 import org.jboss.jdeparser.JDeparser;
+import org.jboss.jdeparser.JExpr;
 import org.jboss.jdeparser.JExprs;
 import org.jboss.jdeparser.JFiler;
 import org.jboss.jdeparser.JMethodDef;
@@ -526,6 +528,20 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
             final JAssignableExpr fieldExpr = JExprs.name(fieldName);
             setter.body().assign(instanceName.cast(clazzType).field(fieldName),
                     (publicType.equals(realType) ? fieldExpr : fieldExpr.cast(realType)));
+            // A Map<String, String> value type
+            if (fieldType.toString().equals("java.util.Map<java.lang.String,java.lang.String>")) {
+                final JAssignableExpr mapName = JExprs.name(fieldName);
+                // Generate a put(String key, String Value) method
+                final JMethodDef mapValueSetter = classDef.method(JMod.PUBLIC | JMod.STATIC, JType.VOID, "put_" + fieldName);
+                mapValueSetter.annotate(SuppressWarnings.class).value("unchecked");
+                mapValueSetter.param(publicType, fieldName);
+                mapValueSetter.param("java.lang.String", "key");
+                mapValueSetter.param("java.lang.String", "value");
+                final JAssignableExpr putExpr = JExprs.name(fieldName);
+                mapValueSetter.body().call(mapName.cast("java.util.Map"), "put")
+                        .arg(JExprs.name("key"))
+                        .arg(JExprs.name("value"));
+            }
         }
         // iterate constructors
         for (ExecutableElement ctor : constructorsIn(clazz.getEnclosedElements())) {

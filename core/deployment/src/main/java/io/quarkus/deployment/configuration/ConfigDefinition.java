@@ -273,17 +273,18 @@ public class ConfigDefinition extends CompoundConfigType {
         } else if (valueClass.isAnnotationPresent(ConfigGroup.class)) {
             processConfigGroup(NO_CONTAINING_NAME, mct, true, subKey, valueClass, accessorFinder);
         } else if (valueClass == List.class) {
+            if (!(mapValueType instanceof ParameterizedType))
+                throw reportError(containingElement, "List must be parameterized");
             final ObjectListConfigType leaf = new ObjectListConfigType(NO_CONTAINING_NAME, mct, consumeSegment, "",
-                    rawTypeOfParameter(typeOfParameter(mapValueType, 1), 0));
+                    rawTypeOfParameter(mapValueType, 0));
             container.getConfigDefinition().getLeafPatterns().addPattern(subKey, leaf);
         } else if (valueClass == Optional.class || valueClass == OptionalInt.class || valueClass == OptionalDouble.class
                 || valueClass == OptionalLong.class) {
             throw reportError(containingElement, "Optionals are not allowed as a map value type");
         } else {
-            // treat as a plain object, hope for the best
-            // TODO, REVISIT THIS
+            // treat as a plain object
             final ObjectConfigType leaf = new ObjectConfigType(NO_CONTAINING_NAME, mct, true, "", valueClass);
-            //container.getConfigDefinition().getLeafPatterns().addPattern(subKey, leaf);
+            container.getConfigDefinition().getLeafPatterns().addPattern(subKey, leaf);
         }
         return mct;
     }

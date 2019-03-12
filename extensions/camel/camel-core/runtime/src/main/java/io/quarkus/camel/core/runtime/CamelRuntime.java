@@ -28,6 +28,7 @@ import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.component.properties.PropertiesComponent;
 import org.apache.camel.impl.AbstractCamelContext;
 import org.apache.camel.impl.DefaultCamelContext;
+import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.model.ModelHelper;
 import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.support.ResourceHelper;
@@ -37,20 +38,18 @@ import org.apache.camel.util.ObjectHelper;
 public class CamelRuntime extends ServiceSupport {
 
     public static final String PFX_CAMEL = "camel.";
-    public static final String PFX_CAMEL_PROPERTIES = PFX_CAMEL + "properties.";
+    public static final String PFX_CAMEL_PROPERTIES = PFX_CAMEL + "component.properties.";
     public static final String PFX_CAMEL_CONTEXT = PFX_CAMEL + "context.";
 
     public static final String PROP_CAMEL_RUNTIME = PFX_CAMEL + "runtime";
-    public static final String PROP_CAMEL_CONF = PFX_CAMEL + "conf";
-    public static final String PROP_CAMEL_CONFD = PFX_CAMEL + "confd";
-    public static final String PROP_CAMEL_DUMP = PFX_CAMEL + "dump";
-    public static final String PROP_CAMEL_DEFER = PFX_CAMEL + "defer";
+    public static final String PROP_CAMEL_ROUTES = PFX_CAMEL + "routes.";
+    public static final String PROP_CAMEL_ROUTES_DUMP = PROP_CAMEL_ROUTES + "dump";
+    public static final String PROP_CAMEL_ROUTES_LOCATIONS = PROP_CAMEL_ROUTES + "locations";
 
     protected RuntimeRegistry registry;
     protected Properties properties;
     protected AbstractCamelContext context;
     protected List<RoutesBuilder> builders;
-    protected PropertiesComponent propertiesComponent;
 
     public void bind(String name, Object object) {
         registry.bind(name, object);
@@ -62,10 +61,8 @@ public class CamelRuntime extends ServiceSupport {
 
     public void doInit() {
         try {
-            AbstractCamelContext context = createContext();
-            context.setRegistry(registry);
-            context.setAutoStartup(false);
-            this.context = context;
+            this.context = createContext();
+            this.context.setRegistry(registry);
 
             // Configure the camel context using properties in the form:
             //
@@ -73,16 +70,8 @@ public class CamelRuntime extends ServiceSupport {
             //
             RuntimeSupport.bindProperties(properties, context, PFX_CAMEL_CONTEXT);
 
+            context.setLoadTypeConverters(false);
             context.getModelJAXBContextFactory().newJAXBContext();
-
-            propertiesComponent = new PropertiesComponent();
-            propertiesComponent.setInitialProperties(properties);
-            RuntimeSupport.bindProperties(properties, propertiesComponent, PFX_CAMEL_PROPERTIES);
-            context.addComponent("properties", propertiesComponent);
-
-            loadRoutesFromBuilders(true);
-
-            context.start();
         } catch (Exception e) {
             throw RuntimeCamelException.wrapRuntimeCamelException(e);
         }
@@ -91,21 +80,17 @@ public class CamelRuntime extends ServiceSupport {
     public void doStart() throws Exception {
         log.info("Apache Camel {} (CamelContext: {}) is starting", context.getVersion(), context.getName());
 
-        String conf = getProperty(PROP_CAMEL_CONF);
-        String confd = getProperty(PROP_CAMEL_CONFD);
-        log.info("confPath: {}", conf);
-        log.info("confDPath: {}", confd);
-        RuntimeSupport.loadConfigSources(properties, conf, confd);
+        PropertiesComponent pc = createPropertiesComponent(properties);
+        RuntimeSupport.bindProperties(pc.getInitialProperties(), pc, PFX_CAMEL_PROPERTIES);
+        context.addComponent("properties", pc);
 
-        loadRoutesFromBuilders(false);
-        loadRoutes();
+        configureContext(context);
+        loadRoutes(context);
 
-        if (Boolean.parseBoolean(getProperty(PROP_CAMEL_DUMP))) {
+        context.start();
+
+        if (Boolean.parseBoolean(getProperty(PROP_CAMEL_ROUTES_DUMP))) {
             dumpRoutes();
-        }
-
-        for (Route route : getContext().getRoutes()) {
-            getContext().getRouteController().startRoute(route.getId());
         }
     }
 
@@ -114,32 +99,28 @@ public class CamelRuntime extends ServiceSupport {
         context.shutdown();
     }
 
-    protected void loadRoutesFromBuilders(boolean initPhase) throws Exception {
-        if (builders != null && !builders.isEmpty()) {
-            boolean defer = Boolean.parseBoolean(getProperty(PROP_CAMEL_DEFER));
-            if (defer ^ initPhase) {
-                for (RoutesBuilder b : builders) {
-                    if (b instanceof RouteBuilderExt) {
-                        ((RouteBuilderExt) b).setRegistry(registry);
-                    }
-                    context.addRoutes(b);
-                }
+    protected void loadRoutes(CamelContext context) throws Exception {
+        for (RoutesBuilder b : builders) {
+            if (b instanceof RouteBuilderExt) {
+                ((RouteBuilderExt) b).setRegistry(registry);
             }
+            context.addRoutes(b);
         }
-    }
 
-    protected void loadRoutes() throws Exception {
-        String routesUri = getProperty("camel.routesUri");
-        log.info("routesUri: {}", routesUri);
+        String routesUri = getProperty(PROP_CAMEL_ROUTES_LOCATIONS);
         if (ObjectHelper.isNotEmpty(routesUri)) {
+            log.info("routesUri: {}", routesUri);
+
+            ModelCamelContext mcc = context.adapt(ModelCamelContext.class);
+
             try (InputStream is = ResourceHelper.resolveMandatoryResourceAsInputStream(getContext(), routesUri)) {
-                context.addRouteDefinitions(context.loadRoutesDefinition(is).getRoutes());
+                mcc.addRouteDefinitions(mcc.loadRoutesDefinition(is).getRoutes());
             }
         }
     }
 
     protected String getProperty(String name) throws Exception {
-        return propertiesComponent.parseUri(propertiesComponent.getPrefixToken() + name + propertiesComponent.getSuffixToken());
+        return context.resolvePropertyPlaceholders(context.getPropertyPrefixToken() + name + context.getPropertySuffixToken());
     }
 
     protected DefaultCamelContext createContext() {
@@ -160,6 +141,18 @@ public class CamelRuntime extends ServiceSupport {
 
     public CamelContext getContext() {
         return context;
+    }
+
+    protected PropertiesComponent createPropertiesComponent(Properties initialPoperties) {
+        PropertiesComponent pc = new PropertiesComponent();
+        pc.setInitialProperties(initialPoperties);
+
+        RuntimeSupport.bindProperties(properties, pc, PFX_CAMEL_PROPERTIES);
+
+        return pc;
+    }
+
+    protected void configureContext(CamelContext context) {
     }
 
     protected void dumpRoutes() {

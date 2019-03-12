@@ -12,16 +12,12 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import org.apache.camel.Route;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.quarkus.camel.core.runtime.CamelRuntime;
 
 @Path("/")
 @ApplicationScoped
 public class CamelServlet {
-    private static final Logger LOGGER = LoggerFactory.getLogger(CamelServlet.class);
-
     @Inject
     CamelRuntime runtime;
 

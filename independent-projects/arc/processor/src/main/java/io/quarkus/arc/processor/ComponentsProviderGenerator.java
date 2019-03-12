@@ -27,7 +27,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import org.objectweb.asm.Type;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.Components;
@@ -40,7 +43,6 @@ import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import org.objectweb.asm.Type;
 
 /**
  *
@@ -170,8 +172,15 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
             getComponents.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, observersHandle, observerInstance);
         }
 
-        ResultHandle componentsHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(Components.class, Collection.class, Collection.class),
-                beansHandle, observersHandle);
+        // Custom contexts
+        ResultHandle contextsHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
+        for (Entry<ScopeInfo, Function<MethodCreator, ResultHandle>> entry : beanDeployment.getCustomContexts().entrySet()) {
+            ResultHandle contextHandle = entry.getValue().apply(getComponents);
+            getComponents.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, contextsHandle, contextHandle);
+        }
+        
+        ResultHandle componentsHandle = getComponents.newInstance(MethodDescriptor.ofConstructor(Components.class, Collection.class, Collection.class, Collection.class),
+                beansHandle, observersHandle, contextsHandle);
         getComponents.returnValue(componentsHandle);
 
         // Finally write the bytecode

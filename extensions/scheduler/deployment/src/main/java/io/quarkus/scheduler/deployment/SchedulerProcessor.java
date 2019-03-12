@@ -55,8 +55,8 @@ import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanDeploymentValidator;
 import io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.arc.processor.ScopeInfo;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -282,7 +282,7 @@ public class SchedulerProcessor {
                     beanInstanceHandle, invoke.getMethodParam(0));
         }
         // handle.destroy() - destroy dependent instance afterwards
-        if (bean.getScope() == ScopeInfo.DEPENDENT) {
+        if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
             invoke.invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "destroy", void.class),
                     instanceHandle);
         }

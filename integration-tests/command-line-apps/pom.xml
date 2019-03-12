@@ -30,6 +30,20 @@
     <name>Quarkus - Integration Tests - Command Line Apps</name>
 
     <dependencies>
+        <!--
+            These dependencies are only needed in order to ensure that the generated tests projects will find
+            the dependencies in the local maven repo.
+        -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-command-line-runner</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-command-line-aesh</artifactId>
+            <scope>provided</scope>
+        </dependency>
 
         <!-- test -->
         <dependency>

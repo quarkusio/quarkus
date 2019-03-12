@@ -57,8 +57,13 @@ class CamelInitProcessor {
     CamelRuntimeBuildItem createInitTask(RecorderContext recorderContext, CamelTemplate template) {
         Properties properties = new Properties();
         Config config = ConfigProvider.getConfig();
-        for (String i : config.getPropertyNames()) {
-            properties.put(i, config.getValue(i, String.class));
+        for (String property : config.getPropertyNames()) {
+            if (property.startsWith("camel.")) {
+                properties.put(property, config.getValue(property, String.class));
+            }
+            if (property.startsWith("integration.")) {
+                properties.put(property.substring("integration.".length()), config.getValue(property, String.class));
+            }
         }
 
         String clazz = properties.getProperty(CamelRuntime.PROP_CAMEL_RUNTIME, CamelRuntime.class.getName());

@@ -7,10 +7,10 @@
 package io.quarkus.templates;
 
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 
 import io.quarkus.QuarkusTemplate;
-import io.quarkus.templates.rest.BasicRest;
 
 /**
  * @author <a href="claprun@redhat.com">Christophe Laprun</a>
@@ -18,6 +18,15 @@ import io.quarkus.templates.rest.BasicRest;
 public class TemplateRegistry {
 
     private static final Map<String, QuarkusTemplate> templates = new ConcurrentHashMap<>(7);
+    private static final TemplateRegistry INSTANCE = new TemplateRegistry();
+
+    private TemplateRegistry() {
+        loadTemplates();
+    }
+
+    public static TemplateRegistry getInstance() {
+        return INSTANCE;
+    }
 
     public static QuarkusTemplate createTemplateWith(String name) throws IllegalArgumentException {
         final QuarkusTemplate template = templates.get(name);
@@ -28,16 +37,14 @@ public class TemplateRegistry {
         return template;
     }
 
-    static {
-        // todo: switch to ServiceLoader
-        registerTemplate(new BasicRest());
+    private static void register(QuarkusTemplate template) {
+        if (template != null) {
+            templates.put(template.getName(), template);
+        }
     }
 
-    public static boolean registerTemplate(QuarkusTemplate template) {
-        if (template == null) {
-            return false;
-        }
-
-        return templates.put(template.getName(), template) == null;
+    private static void loadTemplates() {
+        ServiceLoader<QuarkusTemplate> serviceLoader = ServiceLoader.load(QuarkusTemplate.class);
+        serviceLoader.iterator().forEachRemaining(TemplateRegistry::register);
     }
 }

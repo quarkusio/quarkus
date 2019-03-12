@@ -41,6 +41,7 @@ import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.util.Nonbinding;
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Provider;
 import javax.inject.Qualifier;
 import javax.interceptor.AroundConstruct;
 import javax.interceptor.AroundInvoke;
@@ -66,6 +67,7 @@ public final class DotNames {
     public static final DotName POST_CONSTRUCT = create(PostConstruct.class);
     public static final DotName PRE_DESTROY = create(PreDestroy.class);
     public static final DotName INSTANCE = create(Instance.class);
+    public static final DotName PROVIDER = create(Provider.class);
     public static final DotName INJECTION_POINT = create(InjectionPoint.class);
     public static final DotName INTERCEPTOR = create(Interceptor.class);
     public static final DotName INTERCEPTOR_BINDING = create(InterceptorBinding.class);

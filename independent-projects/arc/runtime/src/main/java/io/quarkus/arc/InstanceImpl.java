@@ -29,6 +29,7 @@ import javax.enterprise.inject.AmbiguousResolutionException;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.UnsatisfiedResolutionException;
 import javax.enterprise.util.TypeLiteral;
+import javax.inject.Provider;
 
 /**
  *
@@ -49,7 +50,7 @@ class InstanceImpl<T> implements Instance<T> {
     InstanceImpl(Type type, Set<Annotation> qualifiers, CreationalContextImpl<?> creationalContext) {
         if (type instanceof ParameterizedType) {
             ParameterizedType parameterizedType = (ParameterizedType) type;
-            if (parameterizedType.getRawType().equals(Instance.class)) {
+            if (Provider.class.isAssignableFrom(Types.getRawType(parameterizedType.getRawType()))) {
                 this.type = parameterizedType.getActualTypeArguments()[0];
             } else {
                 this.type = type;

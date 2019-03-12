@@ -15,8 +15,8 @@ pr:
       - master
   paths:
     exclude:
-      - docs/src/main/*
-      - docs/src/main/topic/*
+      - docs/src/main/asciidoc/*
+      - docs/src/main/asciidoc/images/*
       - README.md
       - CONTRIBUTING.md
       - LICENSE.txt

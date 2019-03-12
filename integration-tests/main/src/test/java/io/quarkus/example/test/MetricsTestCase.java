@@ -28,10 +28,60 @@ import io.restassured.RestAssured;
 public class MetricsTestCase {
 
     @Test
-    public void testMetrics() {
-        testCounted("0.0");
-        invokeResource();
-        testCounted("1.0");
+    public void testCounter() {
+        invokeCounter();
+        assertMetricExactValue("application:io_quarkus_example_metrics_metrics_resource_a_counted_resource", "1.0");
+    }
+
+    @Test
+    public void testGauge() {
+        invokeGauge();
+        assertMetricExactValue("application:io_quarkus_example_metrics_metrics_resource_gauge", "42.0");
+    }
+
+    @Test
+    public void testMeter() {
+        invokeMeter();
+        assertMetricExactValue("application:io_quarkus_example_metrics_metrics_resource_meter_total", "1.0");
+        assertMetricExists("application:io_quarkus_example_metrics_metrics_resource_meter_rate_per_second");
+        assertMetricExists("application:io_quarkus_example_metrics_metrics_resource_meter_one_min_rate_per_second");
+        assertMetricExists("application:io_quarkus_example_metrics_metrics_resource_meter_five_min_rate_per_second");
+        assertMetricExists("application:io_quarkus_example_metrics_metrics_resource_meter_fifteen_min_rate_per_second");
+    }
+
+    @Test
+    public void testTimer() {
+        invokeTimer();
+        assertMetricExactValue("application:io_quarkus_example_metrics_metrics_resource_timer_metric_seconds_count", "1.0");
+        assertMetricExists("application:io_quarkus_example_metrics_metrics_resource_timer_metric_seconds{quantile=\"0.5\"}");
+        assertMetricExists("application:io_quarkus_example_metrics_metrics_resource_timer_metric_seconds{quantile=\"0.75\"}");
+        assertMetricExists("application:io_quarkus_example_metrics_metrics_resource_timer_metric_seconds{quantile=\"0.95\"}");
+        assertMetricExists("application:io_quarkus_example_metrics_metrics_resource_timer_metric_seconds{quantile=\"0.98\"}");
+        assertMetricExists("application:io_quarkus_example_metrics_metrics_resource_timer_metric_seconds{quantile=\"0.99\"}");
+        assertMetricExists("application:io_quarkus_example_metrics_metrics_resource_timer_metric_seconds{quantile=\"0.999\"}");
+        assertMetricExists("application:io_quarkus_example_metrics_metrics_resource_timer_metric_one_min_rate_per_second");
+        assertMetricExists("application:io_quarkus_example_metrics_metrics_resource_timer_metric_five_min_rate_per_second");
+        assertMetricExists("application:io_quarkus_example_metrics_metrics_resource_timer_metric_fifteen_min_rate_per_second");
+        assertMetricExists("application:io_quarkus_example_metrics_metrics_resource_timer_metric_min_seconds");
+        assertMetricExists("application:io_quarkus_example_metrics_metrics_resource_timer_metric_max_seconds");
+        assertMetricExists("application:io_quarkus_example_metrics_metrics_resource_timer_metric_mean_seconds");
+        assertMetricExists("application:io_quarkus_example_metrics_metrics_resource_timer_metric_stddev_seconds");
+    }
+
+    @Test
+    public void testHistogram() {
+        invokeHistogram();
+        assertMetricExactValue("application:io_quarkus_example_metrics_metrics_resource_histogram_count", "1.0");
+        assertMetricExactValue("application:io_quarkus_example_metrics_metrics_resource_histogram_min", "42.0");
+        assertMetricExactValue("application:io_quarkus_example_metrics_metrics_resource_histogram_max", "42.0");
+        assertMetricExactValue("application:io_quarkus_example_metrics_metrics_resource_histogram_mean", "42.0");
+        assertMetricExactValue("application:io_quarkus_example_metrics_metrics_resource_histogram_stddev", "0.0");
+        assertMetricExactValue("application:io_quarkus_example_metrics_metrics_resource_histogram{quantile=\"0.5\"}", "42.0");
+        assertMetricExactValue("application:io_quarkus_example_metrics_metrics_resource_histogram{quantile=\"0.75\"}", "42.0");
+        assertMetricExactValue("application:io_quarkus_example_metrics_metrics_resource_histogram{quantile=\"0.95\"}", "42.0");
+        assertMetricExactValue("application:io_quarkus_example_metrics_metrics_resource_histogram{quantile=\"0.98\"}", "42.0");
+        assertMetricExactValue("application:io_quarkus_example_metrics_metrics_resource_histogram{quantile=\"0.99\"}", "42.0");
+        assertMetricExactValue("application:io_quarkus_example_metrics_metrics_resource_histogram{quantile=\"0.999\"}", "42.0");
     }
 
     @Test
@@ -43,6 +93,18 @@ public class MetricsTestCase {
     }
 
     @Test
+    public void testMetricWithAbsoluteName() {
+        invokeCounterWithAbsoluteName();
+        assertMetricExactValue("application:counter_absolute", "1.0");
+    }
+
+    @Test
+    public void testMetricWithCustomTags() {
+        invokeCounterWithTags();
+        assertMetricExactValue("application:io_quarkus_example_metrics_metrics_resource_counter_with_tags{foo=\"bar\"}", "1.0");
+    }
+
+    @Test
     public void testInvalidScopes() {
         RestAssured.when().get("/metrics/foo").then().statusCode(404)
                 .body(containsString("Bad scope requested"));
@@ -50,13 +112,48 @@ public class MetricsTestCase {
                 .body(containsString("Metric vendor/foo not found"));
     }
 
-    private void testCounted(String val) {
+    private void assertMetricExactValue(String name, String val) {
         RestAssured.when().get("/metrics").then()
-                .body(containsString("application:io_quarkus_example_metrics_metrics_resource_a_counted_resource " + val));
+                .body(containsString(name + " " + val));
     }
 
-    public void invokeResource() {
-        RestAssured.when().get("/metricsresource").then()
+    private void assertMetricExists(String name) {
+        RestAssured.when().get("/metrics").then()
+                .body(containsString(name));
+    }
+
+    public void invokeCounter() {
+        RestAssured.when().get("/metricsresource/counter").then()
+                .body(is("TEST"));
+    }
+
+    public void invokeGauge() {
+        RestAssured.when().get("/metricsresource/gauge").then()
+                .body(is("42"));
+    }
+
+    public void invokeMeter() {
+        RestAssured.when().get("/metricsresource/meter").then()
+                .body(is("OK"));
+    }
+
+    public void invokeTimer() {
+        RestAssured.when().get("/metricsresource/timer").then()
+                .body(is("OK"));
+    }
+
+    public void invokeHistogram() {
+        RestAssured.when().get("/metricsresource/histogram").then()
+                .body(is("OK"));
+    }
+
+    public void invokeCounterWithAbsoluteName() {
+        RestAssured.when().get("/metricsresource/counter-absolute").then()
+                .body(is("TEST"));
+    }
+
+    public void invokeCounterWithTags() {
+        RestAssured.when().get("/metricsresource/counter-with-tags").then()
                 .body(is("TEST"));
     }
 

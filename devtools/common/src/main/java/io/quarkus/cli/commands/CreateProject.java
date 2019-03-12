@@ -33,9 +33,9 @@ import org.apache.maven.model.PluginExecution;
 import org.apache.maven.model.PluginManagement;
 import org.apache.maven.model.Profile;
 
-import io.quarkus.QuarkusTemplate;
 import io.quarkus.SourceType;
 import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.templates.TemplateRegistry;
 import io.quarkus.templates.rest.BasicRest;
 
 /**
@@ -101,7 +101,7 @@ public class CreateProject {
         context.put(QUARKUS_VERSION, getPluginVersion());
         context.put(SOURCE_TYPE, sourceType);
 
-        QuarkusTemplate.createTemplateWith(BasicRest.TEMPLATE_NAME).generate(root, context);
+        TemplateRegistry.createTemplateWith(BasicRest.TEMPLATE_NAME).generate(root, context);
 
         final File pom = new File(root + "/pom.xml");
         model = MojoUtils.readPom(pom);

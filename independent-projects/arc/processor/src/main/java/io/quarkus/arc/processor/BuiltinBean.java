@@ -23,6 +23,7 @@ import java.util.function.Predicate;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+
 import io.quarkus.arc.BeanManagerProvider;
 import io.quarkus.arc.BeanMetadataProvider;
 import io.quarkus.arc.EventProvider;
@@ -30,7 +31,7 @@ import io.quarkus.arc.InjectableReferenceProvider;
 import io.quarkus.arc.InjectionPointProvider;
 import io.quarkus.arc.InstanceProvider;
 import io.quarkus.arc.ResourceProvider;
-import io.quarkus.arc.processor.InjectionPointInfo.InjtetionPointKind;
+import io.quarkus.arc.processor.InjectionPointInfo.InjectionPointKind;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -73,7 +74,8 @@ enum BuiltinBean {
                     constructor.getThis(), instanceProvider);
 
         }
-    }), INJECTION_POINT(DotNames.INJECTION_POINT, new Generator() {
+    }, ip -> ip.getKind() == InjectionPointKind.CDI && (DotNames.INSTANCE.equals(ip.getRequiredType().name()) || DotNames.PROVIDER.equals(ip.getRequiredType().name()))), 
+            INJECTION_POINT(DotNames.INJECTION_POINT, new Generator() {
         @Override
         void generate(ClassOutput classOutput, BeanDeployment beanDeployment, InjectionPointInfo injectionPoint, ClassCreator clazzCreator,
                 MethodCreator constructor, String providerName, AnnotationLiteralProcessor annotationLiterals) {
@@ -145,7 +147,7 @@ enum BuiltinBean {
             constructor.writeInstanceField(FieldDescriptor.of(clazzCreator.getClassName(), providerName, InjectableReferenceProvider.class.getName()),
                     constructor.getThis(), resourceProvider);
         }
-    }, ip -> ip.getKind() == InjtetionPointKind.RESOURCE);
+    }, ip -> ip.getKind() == InjectionPointKind.RESOURCE);
 
     private final DotName rawTypeDotName;
 
@@ -154,7 +156,7 @@ enum BuiltinBean {
     private final Predicate<InjectionPointInfo> matcher;
 
     BuiltinBean(DotName rawTypeDotName, Generator generator) {
-        this(rawTypeDotName, generator, ip -> ip.getKind() == InjtetionPointKind.CDI && rawTypeDotName.equals(ip.getRequiredType().name()));
+        this(rawTypeDotName, generator, ip -> ip.getKind() == InjectionPointKind.CDI && rawTypeDotName.equals(ip.getRequiredType().name()));
     }
 
     BuiltinBean(DotName rawTypeDotName, Generator generator, Predicate<InjectionPointInfo> matcher) {

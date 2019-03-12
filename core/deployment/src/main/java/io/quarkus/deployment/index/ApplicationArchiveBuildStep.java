@@ -173,7 +173,7 @@ public class ApplicationArchiveBuildStep {
                 Path path = Paths.get(new URI(url.getProtocol(), url.getHost(), pathString, null));
                 return path;
             }
-            throw new RuntimeException("Unkown URL type " + url.getProtocol());
+            throw new RuntimeException("Unknown URL type " + url.getProtocol());
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }

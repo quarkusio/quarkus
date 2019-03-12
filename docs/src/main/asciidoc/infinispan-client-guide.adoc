@@ -70,7 +70,7 @@ public class Author {
       this.name = Objects.requireNonNull(name);
       this.surname = Objects.requireNonNull(surname);
    }
-   // Getter/Setter/equals/hashCode/toString ommitted
+   // Getter/Setter/equals/hashCode/toString omitted
 }
 ----
 
@@ -89,7 +89,7 @@ public class Book {
       this.publicationYear = publicationYear;
       this.authors = Objects.requireNonNull(authors);
    }
-   // Getter/Setter/equals/hashCode/toString ommitted
+   // Getter/Setter/equals/hashCode/toString omitted
 }
 ----
 

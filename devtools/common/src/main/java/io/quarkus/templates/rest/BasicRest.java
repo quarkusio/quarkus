@@ -69,11 +69,7 @@ public class BasicRest extends QuarkusTemplate {
         if (className != null) {
             String packageName = (String) context.get(PACKAGE_NAME);
 
-            if (className.endsWith(MojoUtils.JAVA_EXTENSION)) {
-                className = className.substring(0, className.length() - MojoUtils.JAVA_EXTENSION.length());
-            } else if (className.endsWith(MojoUtils.KOTLIN_EXTENSION)) {
-                className = className.substring(0, className.length() - MojoUtils.KOTLIN_EXTENSION.length());
-            }
+            className = type.stripExtensionFrom(className);
 
             if (className.contains(".")) {
                 int idx = className.lastIndexOf('.');

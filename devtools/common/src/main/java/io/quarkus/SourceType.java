@@ -67,6 +67,14 @@ public enum SourceType {
         return extension;
     }
 
+    public String stripExtensionFrom(String className) {
+        if (className.contains(extension)) {
+            return className.substring(0, className.length() - extension.length());
+        } else {
+            return className;
+        }
+    }
+
     private String computeTemplateFile(String genericTemplate, String templateName) {
         return String.format(genericTemplate, templateName);
     }

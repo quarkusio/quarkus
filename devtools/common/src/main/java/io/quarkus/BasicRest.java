@@ -45,6 +45,7 @@ public class BasicRest extends QuarkusTemplate {
         }
         createIndexPage();
         createDockerFile();
+        createDockerIgnore();
         createApplicationConfig();
     }
 
@@ -164,6 +165,12 @@ public class BasicRest extends QuarkusTemplate {
         File dockerRoot = new File(projectRoot, "src/main/docker");
         File docker = new File(mkdirs(dockerRoot), "Dockerfile");
         generate("templates/dockerfile.ftl", context, docker, "docker file");
+    }
+
+    private void createDockerIgnore() throws IOException {
+        File dockerRoot = new File(projectRoot, "");
+        File docker = new File(mkdirs(dockerRoot), ".dockerignore");
+        generate("templates/dockerignore.ftl", context, docker, "docker ignore");
     }
 
     private void createApplicationConfig() throws IOException {

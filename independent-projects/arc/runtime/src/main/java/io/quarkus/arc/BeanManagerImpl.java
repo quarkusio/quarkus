@@ -60,7 +60,9 @@ public class BeanManagerImpl implements BeanManager {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public Object getReference(Bean<?> bean, Type beanType, CreationalContext<?> ctx) {
-        Objects.requireNonNull(bean, () -> "Managed Bean [" + beanType + "] is null");
+        if (bean == null) {
+            throw new NullPointerException("Managed Bean [" + beanType + "] is null");
+        }
         Objects.requireNonNull(ctx, "CreationalContext is null");
         if (bean instanceof InjectableBean && ctx instanceof CreationalContextImpl) {
             return ArcContainerImpl.instance().beanInstanceHandle((InjectableBean) bean, (CreationalContextImpl) ctx).get();

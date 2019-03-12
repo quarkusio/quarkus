@@ -1,28 +1,5 @@
 package io.quarkus.cli.commands;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-
-import io.quarkus.QuarkusTemplate;
-import io.quarkus.SourceType;
-import io.quarkus.maven.utilities.MojoUtils;
-import io.quarkus.templates.rest.BasicRest;
-import org.apache.maven.model.Activation;
-import org.apache.maven.model.ActivationProperty;
-import org.apache.maven.model.Build;
-import org.apache.maven.model.BuildBase;
-import org.apache.maven.model.Dependency;
-import org.apache.maven.model.DependencyManagement;
-import org.apache.maven.model.Model;
-import org.apache.maven.model.Plugin;
-import org.apache.maven.model.PluginExecution;
-import org.apache.maven.model.PluginManagement;
-import org.apache.maven.model.Profile;
-
 import static io.quarkus.QuarkusTemplate.PROJECT_ARTIFACT_ID;
 import static io.quarkus.QuarkusTemplate.PROJECT_GROUP_ID;
 import static io.quarkus.QuarkusTemplate.PROJECT_VERSION;
@@ -36,6 +13,30 @@ import static io.quarkus.maven.utilities.MojoUtils.getPluginArtifactId;
 import static io.quarkus.maven.utilities.MojoUtils.getPluginGroupId;
 import static io.quarkus.maven.utilities.MojoUtils.getPluginVersion;
 import static io.quarkus.maven.utilities.MojoUtils.plugin;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
+import org.apache.maven.model.Activation;
+import org.apache.maven.model.ActivationProperty;
+import org.apache.maven.model.Build;
+import org.apache.maven.model.BuildBase;
+import org.apache.maven.model.Dependency;
+import org.apache.maven.model.DependencyManagement;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.Plugin;
+import org.apache.maven.model.PluginExecution;
+import org.apache.maven.model.PluginManagement;
+import org.apache.maven.model.Profile;
+
+import io.quarkus.QuarkusTemplate;
+import io.quarkus.SourceType;
+import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.templates.rest.BasicRest;
 
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
@@ -99,7 +100,6 @@ public class CreateProject {
         context.put(PROJECT_VERSION, version);
         context.put(QUARKUS_VERSION, getPluginVersion());
         context.put(SOURCE_TYPE, sourceType);
-
 
         QuarkusTemplate.createTemplateWith(BasicRest.TEMPLATE_NAME).generate(root, context);
 

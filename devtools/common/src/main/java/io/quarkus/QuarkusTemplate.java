@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import io.quarkus.templates.rest.BasicRest;
+
 public abstract class QuarkusTemplate {
     public static final String PROJECT_GROUP_ID = "project_groupId";
     public static final String PROJECT_ARTIFACT_ID = "project_artifactId";
@@ -16,6 +18,10 @@ public abstract class QuarkusTemplate {
     public static final String RESOURCE_PATH = "path";
 
     private static final Map<String, QuarkusTemplate> templates = new ConcurrentHashMap<>(7);
+    static {
+        // todo: figure out a better way to register templates
+        BasicRest.register();
+    }
 
     public static QuarkusTemplate createTemplateWith(String name) throws IllegalArgumentException {
         final QuarkusTemplate template = templates.get(name);

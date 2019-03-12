@@ -210,7 +210,7 @@ AnnotationsTransformerBuildItem transform() {
 
 === Bean Deployment Validation
 
-Once the bean deployment is ready an extenion can perform additional validations and inspect the found beans, observers and injection points.
+Once the bean deployment is ready an extension can perform additional validations and inspect the found beans, observers and injection points.
 Register a `BeanDeploymentValidatorBuildItem`:
 
 [source,java]

@@ -19,7 +19,11 @@ package io.quarkus.maven;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.*;
+import java.net.InetAddress;
+import java.net.MalformedURLException;
+import java.net.Socket;
+import java.net.URI;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,8 +34,8 @@ import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import io.quarkus.maven.components.MavenVersionEnforcer;
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.PluginExecution;
@@ -39,12 +43,17 @@ import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.*;
+import org.apache.maven.plugins.annotations.Component;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.toolchain.Toolchain;
+import org.apache.maven.toolchain.ToolchainManager;
 
 import io.quarkus.dev.ClassLoaderCompiler;
 import io.quarkus.dev.DevModeMain;
-import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.utilities.MojoUtils;
 
 /**
@@ -116,6 +125,22 @@ public class DevMojo extends AbstractMojo {
     @Parameter(defaultValue = "${preventnoverify}")
     private boolean preventnoverify = false;
 
+    @Component
+    private ToolchainManager toolchainManager;
+
+    public ToolchainManager getToolchainManager() {
+        return toolchainManager;
+    }
+
+    public MavenSession getSession() {
+        return session;
+    }
+
+    @SuppressWarnings("UnusedDeclaration")
+    public void setSession(MavenSession session) {
+        this.session = session;
+    }
+
     @Override
     public void execute() throws MojoFailureException, MojoExecutionException {
         mavenVersionEnforcer.ensureMavenVersion(getLog(), session);
@@ -148,7 +173,9 @@ public class DevMojo extends AbstractMojo {
 
         try {
             List<String> args = new ArrayList<>();
-            args.add("java");
+            String javaTool = findJavaTool();
+            getLog().info("Using javaTool: " + javaTool);
+            args.add(javaTool);
             if (debug == null) {
                 // debug mode not specified
                 // make sure 5005 is not used, we don't want to just fail if something else is using it
@@ -300,6 +327,30 @@ public class DevMojo extends AbstractMojo {
         } catch (Exception e) {
             throw new MojoFailureException("Failed to run", e);
         }
+    }
+
+    protected String findJavaTool() {
+        String java = null;
+
+        if (getToolchainManager() != null) {
+            Toolchain toolchain = getToolchainManager().getToolchainFromBuildContext("jdk", getSession());
+            if (toolchain != null) {
+                java = toolchain.findTool("java");
+            }
+            getLog().debug("JVM from toolchain: " + java);
+        }
+        if (java == null) {
+            // use the same JVM as the one used to run Maven (the "java.home" one)
+            java = System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
+            File javaCheck = new File(java);
+            getLog().debug("Checking: " + javaCheck.getAbsolutePath());
+            if (!javaCheck.canExecute()) {
+                getLog().debug(javaCheck.getAbsolutePath() + " is not executable");
+                java = "java";
+            }
+        }
+        getLog().debug("findJavaTool, selected JVM: " + java);
+        return java;
     }
 
     private void addToClassPaths(StringBuilder classPathManifest, StringBuilder classPath, File file)

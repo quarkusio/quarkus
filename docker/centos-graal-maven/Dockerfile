@@ -1,4 +1,4 @@
-FROM swd847/centos-graal-rc12
+FROM swd847/centos-graal-rc13
 
 ARG MAVEN_VERSION=3.3.9
 ARG USER_HOME_DIR="/root"

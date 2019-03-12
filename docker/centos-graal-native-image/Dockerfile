@@ -1,4 +1,4 @@
-FROM swd847/centos-graal-rc12
+FROM swd847/centos-graal-rc13
 
 VOLUME /project
 WORKDIR /project

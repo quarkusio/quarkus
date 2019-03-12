@@ -3,64 +3,50 @@ package io.quarkus;
 import io.quarkus.maven.utilities.MojoUtils;
 
 public enum SourceType {
-    JAVA(MojoUtils.JAVA_EXTENSION,
-            "src/main/java",
-            "src/test/java",
-            "templates/%s/pom-template.ftl",
-            "templates/%s/resource-template.ftl",
-            "templates/%s/test-resource-template.ftl",
-            "templates/%s/native-test-resource-template.ftl"),
+    JAVA(MojoUtils.JAVA_EXTENSION),
 
-    KOTLIN(MojoUtils.KOTLIN_EXTENSION,
-            "src/main/kotlin",
-            "src/test/kotlin",
-            "templates/%s/pom-template-kotlin.ftl",
-            "templates/%s/resource-template-kotlin.ftl",
-            "templates/%s/test-resource-template-kotlin.ftl",
-            "templates/%s/native-test-resource-template-kotlin.ftl");
+    KOTLIN(MojoUtils.KOTLIN_EXTENSION);
+
+    private static final String srcDirPrefix = "src/main/";
+    private static final String testSrcDirPrefix = "src/test/";
+
+    private static final String POM_RESOURCE_TEMPLATE = "templates/%s/%s/pom-template.ftl";
+    private static final String RESOURCE_TEMPLATE = "templates/%s/%s/resource-template.ftl";
+    private static final String TEST_RESOURCE_TEMPLATE = "templates/%s/%s/test-resource-template.ftl";
+    private static final String NATIVE_TEST_RESOURCE_TEMPLATE = "templates/%s/%s/native-test-resource-template.ftl";
 
     private final String extension;
-    private final String srcDir;
-    private final String testSrcDir;
-    private final String pomResourceTemplate;
-    private final String srcResourceTemplate;
-    private final String testResourceTemplate;
-    private final String nativeTestResourceTemplate;
 
-    SourceType(String extension, String srcDir, String testSrcDir, String pomResourceTemplate, String srcResourceTemplate,
-            String testResourceTemplate,
-            String nativeTestResourceTemplate) {
+    SourceType(String extension) {
         this.extension = extension;
-        this.srcDir = srcDir;
-        this.testSrcDir = testSrcDir;
-        this.pomResourceTemplate = pomResourceTemplate;
-        this.srcResourceTemplate = srcResourceTemplate;
-        this.testResourceTemplate = testResourceTemplate;
-        this.nativeTestResourceTemplate = nativeTestResourceTemplate;
     }
 
     public String getSrcDir() {
-        return srcDir;
+        return srcDirPrefix + getPathDiscriminator();
+    }
+
+    private String getPathDiscriminator() {
+        return name().toLowerCase();
     }
 
     public String getTestSrcDir() {
-        return testSrcDir;
+        return testSrcDirPrefix + getPathDiscriminator();
     }
 
     public String getPomResourceTemplate(String templateName) {
-        return computeTemplateFile(pomResourceTemplate, templateName);
+        return computeTemplateFile(POM_RESOURCE_TEMPLATE, templateName);
     }
 
     public String getSrcResourceTemplate(String templateName) {
-        return computeTemplateFile(srcResourceTemplate, templateName);
+        return computeTemplateFile(RESOURCE_TEMPLATE, templateName);
     }
 
     public String getTestResourceTemplate(String templateName) {
-        return computeTemplateFile(testResourceTemplate, templateName);
+        return computeTemplateFile(TEST_RESOURCE_TEMPLATE, templateName);
     }
 
     public String getNativeTestResourceTemplate(String templateName) {
-        return computeTemplateFile(nativeTestResourceTemplate, templateName);
+        return computeTemplateFile(NATIVE_TEST_RESOURCE_TEMPLATE, templateName);
     }
 
     public String getExtension() {
@@ -76,6 +62,6 @@ public enum SourceType {
     }
 
     private String computeTemplateFile(String genericTemplate, String templateName) {
-        return String.format(genericTemplate, templateName);
+        return String.format(genericTemplate, templateName, getPathDiscriminator());
     }
 }

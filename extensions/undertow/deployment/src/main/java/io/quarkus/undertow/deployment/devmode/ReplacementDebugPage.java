@@ -141,7 +141,16 @@ public class ReplacementDebugPage {
     }
 
     private static String generateHeaderMessage(final Throwable exception) {
-        return escapeHtml(String.format("%s: %s", exception.getClass().getName(), exception.getMessage()));
+        return escapeHtml(String.format("%s: %s", exception.getClass().getName(), extractFirstLine(exception.getMessage())));
+    }
+
+    private static String extractFirstLine(final String message) {
+        if (null == message) {
+            return "";
+        }
+
+        String[] lines = message.split("\\r?\\n");
+        return lines[0].trim();
     }
 
     private static String escapeHtml(final String bodyText) {

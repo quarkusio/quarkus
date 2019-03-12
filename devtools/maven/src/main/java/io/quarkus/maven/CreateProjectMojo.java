@@ -133,7 +133,8 @@ public class CreateProjectMojo extends AbstractMojo {
 
         boolean success;
         try {
-            sanitizeOptions();
+            final SourceType sourceType = determineSourceType(extensions);
+            sanitizeOptions(sourceType);
 
             final Map<String, Object> context = new HashMap<>();
             context.put("className", className);
@@ -143,7 +144,7 @@ public class CreateProjectMojo extends AbstractMojo {
                     .groupId(projectGroupId)
                     .artifactId(projectArtifactId)
                     .version(projectVersion)
-                    .sourceType(determineSourceType(extensions))
+                    .sourceType(sourceType)
                     .doCreateProject(context);
 
             if (success) {
@@ -255,14 +256,10 @@ public class CreateProjectMojo extends AbstractMojo {
         return "true".equalsIgnoreCase(content) || "yes".equalsIgnoreCase(content) || "y".equalsIgnoreCase(content);
     }
 
-    private void sanitizeOptions() {
+    private void sanitizeOptions(SourceType sourceType) {
         // If className is null, we won't create the REST resource,
         if (className != null) {
-            if (className.endsWith(MojoUtils.JAVA_EXTENSION)) {
-                className = className.substring(0, className.length() - MojoUtils.JAVA_EXTENSION.length());
-            } else if (className.endsWith(MojoUtils.KOTLIN_EXTENSION)) {
-                className = className.substring(0, className.length() - MojoUtils.KOTLIN_EXTENSION.length());
-            }
+            className = sourceType.stripExtensionFrom(className);
 
             if (!className.contains(".")) {
                 // No package name, inject one

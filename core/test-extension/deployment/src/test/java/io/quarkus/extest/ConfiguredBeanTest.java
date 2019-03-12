@@ -150,7 +150,6 @@ public class ConfiguredBeanTest {
      * Break out the validation of the RUN_TIME config nested map as that currently is not working.
      */
     @Test
-    @Disabled("https://github.com/jbossas/quarkus/issues/956")
     public void validateRuntimeConfigMap() {
         TestRunTimeConfig runTimeConfig = configuredBean.getRunTimeConfig();
         Assertions.assertEquals(2, runTimeConfig.allValues.nestedConfigMap.size());

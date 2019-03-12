@@ -30,7 +30,7 @@ import java.util.List;
  * To get around this the legacy integration is broken up into a launcher and the runner, with this launcher
  * just setting up class loading.
  * <p>
- * This has the advatange than anything added to he lib dir will automatically be added to the class path.
+ * This has the advantage than anything added to he lib dir will automatically be added to the class path.
  */
 public class Main {
 

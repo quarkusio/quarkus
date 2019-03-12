@@ -262,7 +262,7 @@ public class SecurityTemplate {
      *
      * @param domain - the SecurityDomain to use for auth decisions
      * @param identityManager - the IdentityManager for auth decisions
-     * @param authConfigs - the authenticaiton methods to register with the deployment {@linkplain LoginConfig}
+     * @param authConfigs - the authentication methods to register with the deployment {@linkplain LoginConfig}
      * @return - the ServletExtension instance to register
      */
     public ServletExtension configureUndertowIdentityManager(RuntimeValue<SecurityDomain> domain,

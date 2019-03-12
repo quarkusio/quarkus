@@ -1,7 +1,9 @@
 package io.quarkus.deployment.configuration;
 
 import java.lang.reflect.Field;
+import java.util.Map;
 
+import org.wildfly.common.Assert;
 import org.wildfly.common.annotation.NotNull;
 
 import io.quarkus.gizmo.BytecodeCreator;
@@ -43,4 +45,14 @@ public abstract class LeafConfigType extends ConfigType {
 
     abstract void generateAcceptConfigurationValueIntoGroup(BytecodeCreator body, ResultHandle enclosing,
             final MethodDescriptor setter, ResultHandle name, ResultHandle config);
+
+    void acceptConfigurationValueIntoMap(Map<String, Object> enclosing, NameIterator name, SmallRyeConfig config) {
+        // only non-primitives are supported
+        throw Assert.unsupported();
+    }
+
+    void generateAcceptConfigurationValueIntoMap(BytecodeCreator body, ResultHandle enclosing,
+            ResultHandle name, ResultHandle config) {
+        throw Assert.unsupported();
+    }
 }

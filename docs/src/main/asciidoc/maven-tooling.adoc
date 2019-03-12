@@ -160,7 +160,7 @@ To run Integration Tests on the native executable, make sure to have the proper 
 
 [source,shell]
 ----
-mvn package verify -Pnative
+mvn verify -Pnative
 ...
 [quarkus-quickstart-runner:50955]     universe:     391.96 ms
 [quarkus-quickstart-runner:50955]      (parse):     904.37 ms
@@ -201,6 +201,7 @@ mvn package -Pnative -Dnative-image.docker-build=true
 
 The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.
 However, it's not an issue as we are going to copy it to a Docker container.
+Note that in this case the build itself runs in a Docker container too, so you don't need to have GraalVM installed locally.
 
 You can follow the link:building-native-image-guide.html[Build a native executable guide] as well as link:kubernetes-guide.html[Deploying Application to Kubernetes and OpenShift] for more information.
 

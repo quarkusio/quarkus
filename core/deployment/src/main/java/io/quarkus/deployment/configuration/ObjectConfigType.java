@@ -1,6 +1,7 @@
 package io.quarkus.deployment.configuration;
 
 import java.lang.reflect.Field;
+import java.util.Map;
 
 import io.quarkus.deployment.AccessorFinder;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -79,6 +80,25 @@ public class ObjectConfigType extends LeafConfigType {
 
     void generateAcceptConfigurationValueIntoGroup(final BytecodeCreator body, final ResultHandle enclosing,
             final MethodDescriptor setter, final ResultHandle name, final ResultHandle config) {
+        body.invokeStaticMethod(setter, enclosing, generateGetValue(body, name, config));
+    }
+
+    void acceptConfigurationValueIntoMap(final Map<String, Object> enclosing, final NameIterator name,
+            final SmallRyeConfig config) {
+        enclosing.put(name.getNextSegment(), getValue(name, config, expectedType));
+    }
+
+    void generateAcceptConfigurationValueIntoMap(final BytecodeCreator body, final ResultHandle enclosing,
+            final ResultHandle name, final ResultHandle config) {
+        body.invokeInterfaceMethod(MAP_PUT_METHOD, enclosing, body.invokeVirtualMethod(NI_GET_NEXT_SEGMENT, name),
+                generateGetValue(body, name, config));
+    }
+
+    private <T> T getValue(final NameIterator name, final SmallRyeConfig config, Class<T> expectedType) {
+        return config.getOptionalValue(name.toString(), expectedType).orElse(config.convert(defaultValue, expectedType));
+    }
+
+    private ResultHandle generateGetValue(final BytecodeCreator body, final ResultHandle name, final ResultHandle config) {
         final ResultHandle optionalValue = body.invokeVirtualMethod(
                 SRC_GET_OPT_METHOD,
                 config,
@@ -88,11 +108,6 @@ public class ObjectConfigType extends LeafConfigType {
                 body.loadClass(expectedType));
         final ResultHandle defaultValue = body.invokeVirtualMethod(SRC_CONVERT_METHOD, config, body.load(this.defaultValue),
                 body.loadClass(expectedType));
-        final ResultHandle value = body.invokeVirtualMethod(OPT_OR_ELSE_METHOD, optionalValue, defaultValue);
-        body.invokeStaticMethod(setter, enclosing, value);
-    }
-
-    private <T> T getValue(final NameIterator name, final SmallRyeConfig config, Class<T> expectedType) {
-        return config.getOptionalValue(name.toString(), expectedType).orElse(config.convert(defaultValue, expectedType));
+        return body.invokeVirtualMethod(OPT_OR_ELSE_METHOD, optionalValue, defaultValue);
     }
 }

@@ -282,6 +282,7 @@
                                     <goal>native-image</goal>
                                 </goals>
                                 <configuration>
+                                    <addAllCharsets>true</addAllCharsets>
                                     <cleanupServer>true</cleanupServer>
                                     <enableHttpUrlHandler>true</enableHttpUrlHandler>
                                     <!-- Requires Quarkus Graal fork to work, will fail otherwise

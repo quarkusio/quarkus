@@ -60,7 +60,7 @@ If the packaging type is "jar" work should proceed as described above.  If the p
 
 1. Add the bom to the dependencesManagement section as described above.
 2. Add the plugin to the pluginManagement section creating any missing nesting sections as necessary.
-3. It is unecessary to add any dependencies on this level as that will be handled by updating the appropriate modules to use the quarkus plugin directly.
+3. It is unnecessary to add any dependencies on this level as that will be handled by updating the appropriate modules to use the quarkus plugin directly.
 
 ### Adding Extensions
 Adding extensions should presume the existence of a bom and the plugin.  The added extensions should not explicitly declare a version.  If not bom is present in the dependencyManagement section, one should be added.

@@ -32,7 +32,7 @@ import java.util.regex.Pattern;
  * Class path based runner that can resolve artifacts from the current class path.
  * <p>
  * This assumes that all artifacts to be resolved have a META-INF/MANIFEST.MF file,
- * and are layed out in the maven repository structure on the file system.
+ * and are laid out in the maven repository structure on the file system.
  */
 public class ClassPathArtifactResolver implements ArtifactResolver {
 

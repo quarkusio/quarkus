@@ -243,7 +243,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
                 if (!hasHttpMethod && isHttpMethod) {
                     hasHttpMethod = true;
                 } else if (hasHttpMethod && isHttpMethod) {
-                    throw new RestClientDefinitionException("Ambiguous @Httpmethod defintion on type " + typeDef);
+                    throw new RestClientDefinitionException("Ambiguous @Httpmethod definition on type " + typeDef);
                 }
             }
         }

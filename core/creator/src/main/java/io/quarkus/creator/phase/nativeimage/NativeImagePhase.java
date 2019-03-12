@@ -108,6 +108,13 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
     private List<String> additionalBuildArgs;
 
+    private boolean addAllCharsets;
+
+    public NativeImagePhase setAddAllCharsets(boolean addAllCharsets) {
+        this.addAllCharsets = addAllCharsets;
+        return this;
+    }
+
     public NativeImagePhase setOutputDir(Path outputDir) {
         this.outputDir = outputDir;
         return this;
@@ -377,6 +384,11 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
             }
             if (enableHttpsUrlHandler) {
                 protocols.add("https");
+            }
+            if (addAllCharsets) {
+                command.add("-H:+AddAllCharsets");
+            } else {
+                command.add("-H:-AddAllCharsets");
             }
             if (!protocols.isEmpty()) {
                 command.add("-H:EnableURLProtocols=" + String.join(",", protocols));

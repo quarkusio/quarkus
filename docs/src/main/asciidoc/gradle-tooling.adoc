@@ -54,7 +54,7 @@ dependencies { <2>
 ----
 
 <1> The {project-name} plugin needs to be applied.
-<2> These dependencies are needed for a rest application similar to the getting started example.
+<2> This dependency is needed for a REST application similar to the getting started example.
 
 Here's the same build script, using the Gradle Kotlin DSL:
 
@@ -134,7 +134,7 @@ In the wizard, select: `Gradle -> Existing Gradle Project`.
 On the next screen, select the root location of the project.
 The next screen list the found modules; select the generated project and click on `Finish`. Done!
 
-In a separated terminal, run `gradle quarkus-dev`, and enjoy a highly productive environment.
+In a separated terminal, run `./gradlew quarkus-dev`, and enjoy a highly productive environment.
 
 **IntelliJ**
 
@@ -146,7 +146,7 @@ In IntelliJ:
 4. Next a few times (review the different options if needed)
 5. On the last screen click on Finish
 
-In a separated terminal or in the embedded terminal, run `gradle quarkus-dev`. Enjoy!
+In a separated terminal or in the embedded terminal, run `./gradlew quarkus-dev`. Enjoy!
 
 **Apache Netbeans**
 
@@ -156,7 +156,7 @@ In Netbeans:
 2. Select the project root
 3. Click on `Open Project`
 
-In a separated terminal or the embedded terminal, go to the project root and run `gradle quarkus-dev`. Enjoy!
+In a separated terminal or the embedded terminal, go to the project root and run `./gradlew quarkus-dev`. Enjoy!
 
 **Visual Studio Code**
 
@@ -168,7 +168,7 @@ Native executables make {project-name} applications ideal for containers and ser
 
 Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {graalvm-version}.
 
-Create a native executable using: `gradle quarkus-native`.
+Create a native executable using: `./gradlew quarkus-native`.
 A native executable will be present in `build/`.
 
 === Build a container friendly executable

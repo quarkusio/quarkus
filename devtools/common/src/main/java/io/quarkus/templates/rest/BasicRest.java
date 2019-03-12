@@ -1,6 +1,4 @@
-package io.quarkus;
-
-import static java.lang.String.format;
+package io.quarkus.templates.rest;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -15,11 +13,17 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+import io.quarkus.QuarkusTemplate;
+import io.quarkus.SourceType;
+import io.quarkus.maven.utilities.MojoUtils;
 import org.apache.maven.model.Model;
 
-import io.quarkus.maven.utilities.MojoUtils;
+import static java.lang.String.format;
 
 public class BasicRest extends QuarkusTemplate {
+
+    public static final String TEMPLATE_NAME = "basic-rest";
+
     private Map<String, Object> context;
     private String className;
     private String path = "/hello";
@@ -27,9 +31,16 @@ public class BasicRest extends QuarkusTemplate {
     private File srcMain;
     private File testMain;
 
+    static {
+        QuarkusTemplate.registerTemplate(new BasicRest());
+    }
+
+    private BasicRest() {
+    }
+
     @Override
     public String getName() {
-        return "basic-rest";
+        return TEMPLATE_NAME;
     }
 
     @Override

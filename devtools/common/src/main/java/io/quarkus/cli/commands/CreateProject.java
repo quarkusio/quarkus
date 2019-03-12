@@ -1,10 +1,5 @@
 package io.quarkus.cli.commands;
 
-import static io.quarkus.QuarkusTemplate.*;
-import static io.quarkus.maven.utilities.MojoUtils.*;
-import static io.quarkus.maven.utilities.MojoUtils.configuration;
-import static io.quarkus.maven.utilities.MojoUtils.plugin;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -12,6 +7,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import io.quarkus.QuarkusTemplate;
+import io.quarkus.SourceType;
+import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.templates.rest.BasicRest;
 import org.apache.maven.model.Activation;
 import org.apache.maven.model.ActivationProperty;
 import org.apache.maven.model.Build;
@@ -24,9 +23,19 @@ import org.apache.maven.model.PluginExecution;
 import org.apache.maven.model.PluginManagement;
 import org.apache.maven.model.Profile;
 
-import io.quarkus.BasicRest;
-import io.quarkus.SourceType;
-import io.quarkus.maven.utilities.MojoUtils;
+import static io.quarkus.QuarkusTemplate.PROJECT_ARTIFACT_ID;
+import static io.quarkus.QuarkusTemplate.PROJECT_GROUP_ID;
+import static io.quarkus.QuarkusTemplate.PROJECT_VERSION;
+import static io.quarkus.QuarkusTemplate.QUARKUS_VERSION;
+import static io.quarkus.QuarkusTemplate.SOURCE_TYPE;
+import static io.quarkus.maven.utilities.MojoUtils.Element;
+import static io.quarkus.maven.utilities.MojoUtils.QUARKUS_VERSION_PROPERTY;
+import static io.quarkus.maven.utilities.MojoUtils.configuration;
+import static io.quarkus.maven.utilities.MojoUtils.getBomArtifactId;
+import static io.quarkus.maven.utilities.MojoUtils.getPluginArtifactId;
+import static io.quarkus.maven.utilities.MojoUtils.getPluginGroupId;
+import static io.quarkus.maven.utilities.MojoUtils.getPluginVersion;
+import static io.quarkus.maven.utilities.MojoUtils.plugin;
 
 /**
  * @author <a href="mailto:stalep@gmail.com">Ståle Pedersen</a>
@@ -91,8 +100,8 @@ public class CreateProject {
         context.put(QUARKUS_VERSION, getPluginVersion());
         context.put(SOURCE_TYPE, sourceType);
 
-        new BasicRest()
-                .generate(root, context);
+
+        QuarkusTemplate.createTemplateWith(BasicRest.TEMPLATE_NAME).generate(root, context);
 
         final File pom = new File(root + "/pom.xml");
         model = MojoUtils.readPom(pom);

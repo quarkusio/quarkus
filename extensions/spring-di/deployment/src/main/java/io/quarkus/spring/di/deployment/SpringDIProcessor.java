@@ -35,6 +35,7 @@ import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.ScopeInfo;
 import io.quarkus.arc.processor.Transformation;
@@ -69,9 +70,9 @@ public class SpringDIProcessor {
 
     private static final DotName VALUE_ANNOTATION = DotName.createSimple("org.springframework.beans.factory.annotation.Value");
 
-    private static final DotName CDI_SINGLETON_ANNOTATION = ScopeInfo.SINGLETON.getDotName();
-    private static final DotName CDI_DEPENDENT_ANNOTATION = ScopeInfo.DEPENDENT.getDotName();
-    private static final DotName CDI_APP_SCOPED_ANNOTATION = ScopeInfo.APPLICATION.getDotName();
+    private static final DotName CDI_SINGLETON_ANNOTATION = BuiltinScope.SINGLETON.getInfo().getDotName();
+    private static final DotName CDI_DEPENDENT_ANNOTATION = BuiltinScope.DEPENDENT.getInfo().getDotName();
+    private static final DotName CDI_APP_SCOPED_ANNOTATION = BuiltinScope.APPLICATION.getInfo().getDotName();
     private static final DotName CDI_NAMED_ANNOTATION = DotNames.NAMED;
     private static final DotName CDI_INJECT_ANNOTATION = DotNames.INJECT;
     private static final DotName CDI_PRODUCES_ANNOTATION = DotNames.PRODUCES;

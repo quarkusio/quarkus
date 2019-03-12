@@ -37,7 +37,7 @@ public interface ManagedContext extends InjectableContext {
      *
      * @param initialState The initial state, may be {@code null}
      */
-    void activate(Collection<InstanceHandle<?>> initialState);
+    void activate(Collection<ContextInstanceHandle<?>> initialState);
 
     /**
      * Deactivate the context - do not destoy existing contextual instances.

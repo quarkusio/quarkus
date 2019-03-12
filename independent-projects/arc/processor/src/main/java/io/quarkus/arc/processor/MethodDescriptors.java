@@ -132,7 +132,7 @@ final class MethodDescriptors {
 
     static final MethodDescriptor ARC_CONTAINER = MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class);
 
-    static final MethodDescriptor ARC_CONTAINER_GET_CONTEXT = MethodDescriptor.ofMethod(ArcContainer.class, "getContext", InjectableContext.class, Class.class);
+    static final MethodDescriptor ARC_CONTAINER_GET_ACTIVE_CONTEXT = MethodDescriptor.ofMethod(ArcContainer.class, "getActiveContext", InjectableContext.class, Class.class);
 
     static final MethodDescriptor CONTEXT_GET = MethodDescriptor.ofMethod(Context.class, "get", Object.class, Contextual.class, CreationalContext.class);
 

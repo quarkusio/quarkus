@@ -16,15 +16,16 @@
 
 package io.quarkus.arc.processor;
 
-import org.jboss.jandex.DotName;
-import io.quarkus.arc.InjectableBean;
+import java.lang.annotation.Annotation;
+
+import io.quarkus.arc.InjectableContext;
 
 /**
- * Allows a build-time extension to register synthetic {@link InjectableBean} implementations.
+ * Use this extension point to register a custom {@link InjectableContext} implementation.
  *
  * @author Martin Kouba
  */
-public interface BeanRegistrar extends BuildExtension {
+public interface ContextRegistrar extends BuildExtension {
 
     /**
      *
@@ -36,19 +37,10 @@ public interface BeanRegistrar extends BuildExtension {
 
         /**
          *
-         * @param beanClass
-         * @return a new synthetic bean configurator
+         * @param scopeAnnotation
+         * @return a new custom context configurator
          */
-        <T> BeanConfigurator<T> configure(DotName beanClassName);
-
-        /**
-         * 
-         * @param beanClass
-         * @return a new synthetic bean configurator
-         */
-        default <T> BeanConfigurator<T> configure(Class<?> beanClass) {
-            return configure(DotName.createSimple(beanClass.getName()));
-        }
+        ContextConfigurator configure(Class<? extends Annotation> scopeAnnotation);
 
     }
 

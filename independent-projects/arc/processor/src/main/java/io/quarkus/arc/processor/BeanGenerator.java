@@ -210,7 +210,7 @@ public class BeanGenerator extends AbstractGenerator {
         implementGet(bean, beanCreator, providerTypeName);
 
         implementGetTypes(beanCreator, beanTypes.getFieldDescriptor());
-        if (!bean.getScope().isDefault()) {
+        if (!BuiltinScope.isDefault(bean.getScope())) {
             implementGetScope(bean, beanCreator);
         }
         if (qualifiers != null) {
@@ -280,7 +280,7 @@ public class BeanGenerator extends AbstractGenerator {
         implementGet(bean, beanCreator, providerTypeName);
 
         implementGetTypes(beanCreator, beanTypes.getFieldDescriptor());
-        if (!bean.getScope().isDefault()) {
+        if (!BuiltinScope.isDefault(bean.getScope())) {
             implementGetScope(bean, beanCreator);
         }
         if (qualifiers != null) {
@@ -361,7 +361,7 @@ public class BeanGenerator extends AbstractGenerator {
         implementGet(bean, beanCreator, providerTypeName);
 
         implementGetTypes(beanCreator, beanTypes.getFieldDescriptor());
-        if (!bean.getScope().isDefault()) {
+        if (!BuiltinScope.isDefault(bean.getScope())) {
             implementGetScope(bean, beanCreator);
         }
         if (qualifiers != null) {
@@ -428,7 +428,7 @@ public class BeanGenerator extends AbstractGenerator {
         implementGet(bean, beanCreator, providerTypeName);
 
         implementGetTypes(beanCreator, beanTypes.getFieldDescriptor());
-        if (!bean.getScope().isDefault()) {
+        if (!BuiltinScope.isDefault(bean.getScope())) {
             implementGetScope(bean, beanCreator);
         }
         if (qualifiers != null) {
@@ -702,7 +702,7 @@ public class BeanGenerator extends AbstractGenerator {
             destroy.invokeInterfaceMethod(MethodDescriptors.CREATIONAL_CTX_RELEASE, ctxHandle);
 
             // If the declaring bean is @Dependent we must destroy the instance afterwards
-            if (ScopeInfo.DEPENDENT.equals(bean.getDisposer().getDeclaringBean().getScope())) {
+            if (BuiltinScope.DEPENDENT.is(bean.getDisposer().getDeclaringBean().getScope())) {
                 destroy.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_BEAN_DESTROY, declaringProviderHandle, declaringProviderInstanceHandle, ctxHandle);
             }
             // ctx.release()
@@ -1002,7 +1002,7 @@ public class BeanGenerator extends AbstractGenerator {
             }
 
             // If the declaring bean is @Dependent we must destroy the instance afterwards
-            if (ScopeInfo.DEPENDENT.equals(bean.getDeclaringBean().getScope())) {
+            if (BuiltinScope.DEPENDENT.is(bean.getDeclaringBean().getScope())) {
                 create.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_BEAN_DESTROY, declaringProviderHandle, declaringProviderInstanceHandle, ctxHandle);
             }
             create.returnValue(instanceHandle);
@@ -1035,7 +1035,7 @@ public class BeanGenerator extends AbstractGenerator {
             }
 
             // If the declaring bean is @Dependent we must destroy the instance afterwards
-            if (ScopeInfo.DEPENDENT.equals(bean.getDeclaringBean().getScope())) {
+            if (BuiltinScope.DEPENDENT.is(bean.getDeclaringBean().getScope())) {
                 create.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_BEAN_DESTROY, declaringProviderHandle, declaringProviderInstanceHandle, ctxHandle);
             }
             create.returnValue(instanceHandle);
@@ -1163,7 +1163,7 @@ public class BeanGenerator extends AbstractGenerator {
 
         MethodCreator get = beanCreator.getMethodCreator("get", providerTypeName, CreationalContext.class).setModifiers(ACC_PUBLIC);
 
-        if (ScopeInfo.DEPENDENT.equals(bean.getScope())) {
+        if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
             // Foo instance = create(ctx)
             ResultHandle instance = get.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(beanCreator.getClassName(), "create", providerTypeName, CreationalContext.class), get.getThis(),
@@ -1172,17 +1172,22 @@ public class BeanGenerator extends AbstractGenerator {
             get.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_ADD_DEP_TO_PARENT, get.getThis(), instance, get.getMethodParam(0));
             // return instance
             get.returnValue(instance);
-        } else if (ScopeInfo.SINGLETON.equals(bean.getScope())) {
+        } else if (BuiltinScope.SINGLETON.is(bean.getScope())) {
             // return Arc.container().getContext(getScope()).get(this, new CreationalContextImpl<>())
             ResultHandle container = get.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
             ResultHandle creationalContext = get.newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class));
-            ResultHandle scope = get.loadClass(bean.getScope().getClazz());
-            ResultHandle context = get.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_GET_CONTEXT, container, scope);
+            ResultHandle scope = get.loadClass(bean.getScope().getDotName().toString());
+            ResultHandle context = get.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_GET_ACTIVE_CONTEXT, container, scope);
             get.returnValue(get.invokeInterfaceMethod(MethodDescriptors.CONTEXT_GET, context, get.getThis(), creationalContext));
         } else if (bean.getScope().isNormal()) {
             // return proxy.get()
             ResultHandle proxy = get.readInstanceField(FieldDescriptor.of(beanCreator.getClassName(), FIELD_NAME_PROXY, LazyValue.class.getName()), get.getThis());
             get.returnValue(get.invokeVirtualMethod(MethodDescriptors.LAZY_VALUE_GET, proxy));
+        } else {
+            ResultHandle instance = get.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod(beanCreator.getClassName(), "create", providerTypeName, CreationalContext.class), get.getThis(),
+                    get.getMethodParam(0));
+            get.returnValue(instance);
         }
 
         // Bridge method needed
@@ -1208,7 +1213,7 @@ public class BeanGenerator extends AbstractGenerator {
      */
     protected void implementGetScope(BeanInfo bean, ClassCreator beanCreator) {
         MethodCreator getScope = beanCreator.getMethodCreator("getScope", Class.class).setModifiers(ACC_PUBLIC);
-        getScope.returnValue(getScope.loadClass(bean.getScope().getClazz()));
+        getScope.returnValue(getScope.loadClass(bean.getScope().getDotName().toString()));
     }
 
     /**

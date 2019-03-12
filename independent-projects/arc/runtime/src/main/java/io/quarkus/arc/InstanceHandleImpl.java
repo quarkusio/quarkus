@@ -77,24 +77,16 @@ class InstanceHandleImpl<T> implements InstanceHandle<T> {
             if (bean.getScope().equals(Dependent.class)) {
                 destroyInternal();
             } else {
-                Arc.container().getContext(bean.getScope()).destroy(bean);
+                Arc.container().getActiveContext(bean.getScope()).destroy(bean);
             }
         }
     }
 
-    void destroyInternal() {
+    protected void destroyInternal() {
         if (parentCreationalContext != null) {
             parentCreationalContext.release();
         } else {
             bean.destroy(instance, creationalContext);
-        }
-    }
-
-    static <T> InstanceHandleImpl<T> unwrap(InstanceHandle<T> handle) {
-        if (handle instanceof InstanceHandleImpl) {
-            return (InstanceHandleImpl<T>) handle;
-        } else {
-            throw new IllegalArgumentException("Failed to unwrap InstanceHandleImpl: " + handle);
         }
     }
 

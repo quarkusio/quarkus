@@ -82,7 +82,7 @@ public final class BeanConfigurator<T> {
         this.beanConsumer = beanConsumer;
         this.types = new HashSet<>();
         this.qualifiers = new HashSet<>();
-        this.scope = ScopeInfo.DEPENDENT;
+        this.scope = BuiltinScope.DEPENDENT.getInfo();
         this.params = new HashMap<>();
         this.name = null;
     }
@@ -198,8 +198,6 @@ public final class BeanConfigurator<T> {
         this.destroyerConsumer = methodCreatorConsumer;
         return cast(this);
     }
-
-    // TODO stereotypes?
 
     /**
      * Perform sanity checks and register the bean.

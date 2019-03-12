@@ -25,6 +25,7 @@ import java.util.Set;
 
 import javax.el.ELResolver;
 import javax.el.ExpressionFactory;
+import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.spi.Context;
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
@@ -187,7 +188,11 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public Context getContext(Class<? extends Annotation> scopeType) {
-        return Arc.container().getContext(scopeType);
+        Context context = Arc.container().getActiveContext(scopeType);
+        if (context == null) {
+            throw new ContextNotActiveException("No active context found for: " + scopeType);
+        }
+        return context;
     }
 
     @Override

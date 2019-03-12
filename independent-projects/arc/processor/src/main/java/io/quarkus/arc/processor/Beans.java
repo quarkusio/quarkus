@@ -80,7 +80,7 @@ final class Beans {
                         .asInt();
             } else {
                 if (scope == null) {
-                    scope = ScopeInfo.from(annotation.name());
+                    scope = beanDeployment.getScope(annotation.name());
                 }
                 StereotypeInfo stereotype = beanDeployment.getStereotype(annotation.name());
                 if (stereotype != null) {
@@ -139,7 +139,7 @@ final class Beans {
                 isAlternative = true;
             } else {
                 if (scope == null) {
-                    scope = ScopeInfo.from(annotation.name());
+                    scope = beanDeployment.getScope(annotation.name());
                 }
                 StereotypeInfo stereotype = beanDeployment.getStereotype(annotation.name());
                 if (stereotype != null) {
@@ -202,7 +202,7 @@ final class Beans {
                 }
             } else {
                 if (scope == null) {
-                    scope = ScopeInfo.from(annotation.name());
+                    scope = beanDeployment.getScope(annotation.name());
                 }
                 StereotypeInfo stereotype = beanDeployment.getStereotype(annotation.name());
                 if (stereotype != null) {

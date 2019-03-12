@@ -229,7 +229,7 @@ public class ObserverGenerator extends AbstractGenerator {
         }
 
         // If the declaring bean is @Dependent we must destroy the instance afterwards
-        if (ScopeInfo.DEPENDENT.equals(observer.getDeclaringBean().getScope())) {
+        if (BuiltinScope.DEPENDENT.is(observer.getDeclaringBean().getScope())) {
             notify.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_BEAN_DESTROY, declaringProviderHandle, declaringProviderInstanceHandle, ctxHandle);
         }
 

@@ -28,18 +28,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import javax.enterprise.context.ContextNotActiveException;
+
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ArcContainer;
+
 import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.CreationalContextImpl;
 import io.quarkus.arc.InjectableBean;
-import io.quarkus.arc.InjectableContext;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BytecodeCreator;
@@ -170,16 +170,17 @@ public class ClientProxyGenerator extends AbstractGenerator {
     }
 
     void implementDelegate(ClassCreator clientProxy, String providerTypeName, FieldDescriptor beanField) {
-        // Arc.container().getContext(bean.getScope()).get(bean, new CreationalContextImpl<>());
         MethodCreator creator = clientProxy.getMethodCreator("delegate", providerTypeName).setModifiers(Modifier.PRIVATE);
         // Arc.container()
-        ResultHandle container = creator.invokeStaticMethod(MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
+        ResultHandle container = creator.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
         // bean.getScope()
         ResultHandle bean = creator.readInstanceField(beanField, creator.getThis());
         ResultHandle scope = creator.invokeInterfaceMethod(MethodDescriptor.ofMethod(InjectableBean.class, "getScope", Class.class), bean);
         // getContext()
-        ResultHandle context = creator.invokeInterfaceMethod(MethodDescriptor.ofMethod(ArcContainer.class, "getContext", InjectableContext.class, Class.class),
+        ResultHandle context = creator.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_GET_ACTIVE_CONTEXT,
                 container, scope);
+        BytecodeCreator inactiveBranch = creator.ifNull(context).trueBranch();
+        inactiveBranch.throwException(ContextNotActiveException.class, "");
         AssignableResultHandle ret = creator.createVariable(Object.class);
         creator.assign(ret, creator.invokeInterfaceMethod(MethodDescriptors.CONTEXT_GET_IF_PRESENT, context, bean));
         BytecodeCreator isNullBranch = creator.ifNull(ret).trueBranch();

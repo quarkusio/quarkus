@@ -39,6 +39,7 @@ import org.fusesource.jansi.Ansi;
 import io.quarkus.SourceType;
 import io.quarkus.cli.commands.AddExtensions;
 import io.quarkus.cli.commands.CreateProject;
+import io.quarkus.maven.components.MavenVersionEnforcer;
 import io.quarkus.maven.components.Prompter;
 import io.quarkus.maven.utilities.MojoUtils;
 
@@ -79,8 +80,15 @@ public class CreateProjectMojo extends AbstractMojo {
     @Component
     private Prompter prompter;
 
+    @Component
+    private MavenVersionEnforcer mavenVersionEnforcer;
+
     @Override
     public void execute() throws MojoExecutionException {
+        // We detect the Maven version during the project generation to indicate the user immediately that the installed
+        // version may not be supported.
+        mavenVersionEnforcer.ensureMavenVersion(getLog(), session);
+
         File projectRoot = new File(".");
         File pom = new File(projectRoot, "pom.xml");
 

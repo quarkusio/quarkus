@@ -118,7 +118,7 @@ public class DevMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoFailureException, MojoExecutionException {
-        ensureMavenVersion();
+        mavenVersionEnforcer.ensureMavenVersion(getLog(), session);
         boolean found = false;
         for (Plugin i : project.getBuildPlugins()) {
             if (i.getGroupId().equals(MojoUtils.getPluginGroupId())
@@ -300,14 +300,6 @@ public class DevMojo extends AbstractMojo {
         } catch (Exception e) {
             throw new MojoFailureException("Failed to run", e);
         }
-    }
-
-    private void ensureMavenVersion() throws MojoExecutionException {
-        String supported = MojoUtils.get("supported-maven-versions");
-        String mavenVersion = session.getSystemProperties().getProperty("maven.version");
-        getLog().debug("Detected Maven Version: " + mavenVersion);
-        DefaultArtifactVersion detectedVersion = new DefaultArtifactVersion(mavenVersion);
-        mavenVersionEnforcer.enforce(getLog(), supported, detectedVersion);
     }
 
     private void addToClassPaths(StringBuilder classPathManifest, StringBuilder classPath, File file)

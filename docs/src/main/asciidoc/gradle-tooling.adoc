@@ -30,7 +30,7 @@ plugins {
 == Creating a new project
 
 For now we have to manually create a Gradle project file for {project-name}.
-Here is a complete sample file for a simple rest project:
+Here is a complete sample file for a simple REST project:
 
 [source,groovy,subs=attributes+]
 ----
@@ -50,7 +50,6 @@ repositories {
 
 dependencies { <2>
     compileOnly 'io.quarkus:quarkus-resteasy:{quarkus-version}'
-    compileOnly 'io.quarkus:quarkus-arc:{quarkus-version}'
 }
 ----
 
@@ -75,7 +74,6 @@ repositories {
 
 dependencies {
     compileOnly("io.quarkus:quarkus-resteasy:{quarkus-version}")
-    compileOnly("io.quarkus:quarkus-arc:{quarkus-version}")
 }
 ----
 

@@ -1,10 +1,10 @@
 <settings>
   <mirrors>
     <mirror>
-      <id>jboss-public-repository-group</id>
-      <mirrorOf>*,!quarkus-nexus-release,!quarkus-nexus-snapshot</mirrorOf>
-      <name>jboss</name>
-      <url>http://repository.jboss.org/nexus/content/groups/developer/</url>
+      <id>google-maven-central</id>
+      <name>Google Maven Central</name>
+      <url>https://maven-central.storage.googleapis.com/repos/central/data/</url>
+      <mirrorOf>central</mirrorOf>
     </mirror>
   </mirrors>
   <profiles>

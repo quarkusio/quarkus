@@ -17,6 +17,7 @@
 package io.quarkus.arc;
 
 import javax.enterprise.context.Dependent;
+import javax.enterprise.context.spi.AlterableContext;
 
 /**
  * Represents an instance handle.
@@ -42,7 +43,11 @@ public interface InstanceHandle<T> extends AutoCloseable {
     }
 
     /**
-     * Destroy/release the instance. If this is a CDI contextual instance it's also removed from the underlying context.
+     * Destroy the instance as defined by
+     * {@link javax.enterprise.context.spi.Contextual#destroy(Object, javax.enterprise.context.spi.CreationalContext)}. If this
+     * is a CDI contextual instance it is also removed from the underlying context.
+     * 
+     * @see AlterableContext#destroy(javax.enterprise.context.spi.Contextual)
      */
     default void destroy() {
         // No-op

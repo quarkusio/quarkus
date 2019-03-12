@@ -228,14 +228,5 @@
                 </plugins>
             </build>
         </profile>
-        <profile>
-            <id>java8</id>
-            <activation>
-                <jdk>[8,)</jdk>
-            </activation>
-            <properties>
-                <skip.gradle.build>true</skip.gradle.build>
-            </properties>
-        </profile>
     </profiles>
 </project>

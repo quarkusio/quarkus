@@ -147,7 +147,9 @@ public class MojoTestBase {
         AtomicReference<String> resp = new AtomicReference<>();
         await()
                 .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(1, TimeUnit.MINUTES).until(() -> {
+                //Allow for a long maximum time as the first hit to a build might require to download dependencies from Maven repositories;
+                //some, such as org.jetbrains.kotlin:kotlin-compiler, are huge and will take more than a minute.
+                .atMost(20, TimeUnit.MINUTES).until(() -> {
                     try {
                         String content = get();
                         resp.set(content);

@@ -89,6 +89,7 @@
         <module>kotlin</module>
 
         <module>command-line-runner</module>
+        <module>command-line-aesh</module>
     </modules>
 
 </project>

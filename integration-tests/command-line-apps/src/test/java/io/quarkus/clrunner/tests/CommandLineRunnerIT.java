@@ -59,6 +59,61 @@ public class CommandLineRunnerIT extends MojoTestBase {
                 .hasContent("A" + lineSep + "B" + lineSep + "C" + lineSep);
     }
 
+    @Test
+    public void testAeshCommandIsBuiltProperlyAndExecutesAsExpected()
+            throws MavenInvocationException, IOException, InterruptedException {
+        // copy the template
+        testDir = initProject("projects/aesh", "projects/project-classic-aesh");
+
+        // invoke the build
+        running = new RunningInvoker(testDir, false);
+        final MavenProcessInvocationResult result = running.execute(Collections.singletonList("package"),
+                Collections.emptyMap());
+
+        // ensure the build completed successfully
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+
+        // ensure the runner jar was created
+        final File targetDir = getTargetDir();
+        final List<File> runnerJarFiles = getFilesEndingWith(targetDir, "-runner.jar");
+        assertThat(runnerJarFiles).hasSize(1);
+
+        final File runnerJarFile = runnerJarFiles.get(0);
+        final String expectedOutputFile = runnerJarFile.getParentFile().getAbsolutePath() + "/p1.txt";
+
+        // launch a second run to use the capitalize command
+        final Process process = new ProcessBuilder()
+                .directory(runnerJarFile.getParentFile())
+                .command("java", "-jar", runnerJarFile.getAbsolutePath(), "capitalize", "--file", expectedOutputFile, "a", "b",
+                        "c")
+                .start();
+
+        // ensure the application completed successfully
+        assertThat(process.waitFor()).isEqualTo(0);
+
+        // ensure it created the expected output
+        final String lineSep = System.lineSeparator();
+        assertThat(new File(expectedOutputFile))
+                .exists()
+                .hasContent("A" + lineSep + "B" + lineSep + "C" + lineSep);
+
+        // launch a second run to use the lowecase command
+        final String secondRunOutputFile = runnerJarFile.getParentFile().getAbsolutePath() + "/p2.txt";
+        final Process secondProcess = new ProcessBuilder()
+                .directory(runnerJarFile.getParentFile())
+                .command("java", "-jar", runnerJarFile.getAbsolutePath(), "lowercase", "--file", secondRunOutputFile, "A", "B",
+                        "C")
+                .start();
+
+        // ensure the application completed successfully
+        assertThat(secondProcess.waitFor()).isEqualTo(0);
+
+        // ensure it created the expected output
+        assertThat(new File(secondRunOutputFile))
+                .exists()
+                .hasContent("a" + lineSep + "b" + lineSep + "c" + lineSep);
+    }
+
     private File getTargetDir() {
         return new File(testDir.getAbsoluteFile() + "/target");
     }

@@ -55,7 +55,6 @@
         <module>elytron-security</module>
         <module>camel-core</module>
         <module>camel-salesforce</module>
-        -->
         <module>command-line-apps</module>
     </modules>
 </project>

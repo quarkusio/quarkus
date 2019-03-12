@@ -1,2 +1,4 @@
 *
-!target/${project_artifactId}
+!target/*-runner
+!target/*-runner.jar
+!target/lib/*

@@ -94,6 +94,7 @@ public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallba
                 .setLaunchMode(LaunchMode.TEST)
                 .setClassLoader(getClass().getClassLoader())
                 .setTarget(appClassLocation)
+                .addAdditionalArchive(testClassLocation)
                 .setClassOutput(new ClassOutput() {
                     @Override
                     public void writeClass(boolean applicationClass, String className, byte[] data) throws IOException {

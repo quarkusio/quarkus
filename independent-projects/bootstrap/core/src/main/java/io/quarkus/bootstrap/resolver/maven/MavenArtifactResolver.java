@@ -49,7 +49,7 @@ public class MavenArtifactResolver {
         private RepositorySystem repoSystem;
         private RepositorySystemSession repoSession;
         private List<RemoteRepository> remoteRepos = null;
-        private boolean offline;
+        private Boolean offline;
         private LocalWorkspace workspace;
 
         private Builder() {
@@ -100,9 +100,11 @@ public class MavenArtifactResolver {
     protected final MavenLocalRepositoryManager localRepoManager;
 
     private MavenArtifactResolver(Builder builder) throws AppModelResolverException {
-        this.repoSystem = builder.repoSystem == null ? MavenRepoInitializer.getRepositorySystem(builder.workspace) : builder.repoSystem;
+        this.repoSystem = builder.repoSystem == null ? MavenRepoInitializer.getRepositorySystem(builder.offline, builder.workspace) : builder.repoSystem;
         final DefaultRepositorySystemSession newSession = builder.repoSession == null ? MavenRepoInitializer.newSession(repoSystem) : new DefaultRepositorySystemSession(builder.repoSession);
-        newSession.setOffline(builder.offline);
+        if(builder.offline != null) {
+            newSession.setOffline(builder.offline);
+        }
 
         if(builder.repoHome != null) {
             final MavenLocalRepositoryManager appCreatorLocalRepoManager = new MavenLocalRepositoryManager(

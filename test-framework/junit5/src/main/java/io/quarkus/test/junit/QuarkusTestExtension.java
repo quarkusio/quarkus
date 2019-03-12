@@ -106,9 +106,10 @@ public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallba
             appCl = BootstrapClassLoaderFactory.newInstance()
                     .setAppClasses(appClassLocation)
                     .setFrameworkClasses(testClassLocation)
-                    .setLocalProjectsDiscovery(true)
-                    .setOffline(true)
                     .setParent(getClass().getClassLoader())
+                    .setOffline(true)
+                    .setLocalProjectsDiscovery(true)
+                    .setClassLoaderCache(true)
                     .newDeploymentClassLoader();
         } catch (BootstrapException e) {
             throw new IllegalStateException("Failed to create the boostrap class loader", e);

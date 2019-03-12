@@ -29,6 +29,7 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.WorkspaceReader;
 import org.eclipse.aether.repository.WorkspaceRepository;
 
+import io.quarkus.bootstrap.model.AppArtifactCoords;
 import io.quarkus.bootstrap.model.AppArtifactKey;
 
 /**
@@ -42,9 +43,13 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
     private final WorkspaceRepository wsRepo = new WorkspaceRepository();
     private AppArtifactKey lastFindVersionsKey;
     private List<String> lastFindVersions;
+    private long lastModified;
 
-    protected void addProject(String groupId, String artifactId, LocalProject project) {
-        projects.put(new AppArtifactKey(groupId,  artifactId), project);
+    protected void addProject(LocalProject project, long lastModified) {
+        projects.put(project.getKey(), project);
+        if(lastModified > this.lastModified) {
+            this.lastModified = lastModified;
+        }
     }
 
     public LocalProject getProject(String groupId, String artifactId) {
@@ -53,6 +58,10 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
 
     public LocalProject getProject(AppArtifactKey key) {
         return projects.get(key);
+    }
+
+    public long getLastModified() {
+        return lastModified;
     }
 
     @Override
@@ -83,12 +92,12 @@ public class LocalWorkspace implements WorkspaceModelResolver, WorkspaceReader {
             return null;
         }
         final String type = artifact.getExtension();
-        if (type.equals("jar")) {
-            final File file = lp.getDir().resolve("target").resolve("classes").toFile();
+        if (type.equals(AppArtifactCoords.TYPE_JAR)) {
+            final File file = lp.getClassesDir().toFile();
             if (file.exists()) {
                 return file;
             }
-        } else if (type.equals("pom")) {
+        } else if (type.equals(AppArtifactCoords.TYPE_POM)) {
             final File file = lp.getDir().resolve("pom.xml").toFile();
             if (file.exists()) {
                 return file;

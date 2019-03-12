@@ -31,7 +31,6 @@ import org.apache.maven.settings.Settings;
 import org.apache.maven.settings.building.DefaultSettingsBuilderFactory;
 import org.apache.maven.settings.building.DefaultSettingsBuildingRequest;
 import org.apache.maven.settings.building.SettingsBuildingException;
-import org.apache.maven.settings.building.SettingsBuildingRequest;
 import org.apache.maven.settings.building.SettingsBuildingResult;
 import org.apache.maven.settings.building.SettingsProblem;
 import org.eclipse.aether.DefaultRepositorySystemSession;
@@ -77,17 +76,18 @@ public class MavenRepoInitializer {
     private static final Logger log = Logger.getLogger(MavenRepoInitializer.class);
 
     public static RepositorySystem getRepositorySystem() {
-        return getRepositorySystem(null);
+        return getRepositorySystem(false, null);
     }
 
-    public static RepositorySystem getRepositorySystem(WorkspaceModelResolver wsModelResolver) {
+    public static RepositorySystem getRepositorySystem(boolean offline, WorkspaceModelResolver wsModelResolver) {
 
         final DefaultServiceLocator locator = MavenRepositorySystemUtils.newServiceLocator();
-        locator.addService(RepositoryConnectorFactory.class, BasicRepositoryConnectorFactory.class);
-        locator.addService(TransporterFactory.class, FileTransporterFactory.class);
-        locator.addService(TransporterFactory.class, HttpTransporterFactory.class);
+        if(!offline) {
+            locator.addService(RepositoryConnectorFactory.class, BasicRepositoryConnectorFactory.class);
+            locator.addService(TransporterFactory.class, FileTransporterFactory.class);
+            locator.addService(TransporterFactory.class, HttpTransporterFactory.class);
+        }
         locator.setServices(ModelBuilder.class, new MavenModelBuilder(wsModelResolver));
-
         locator.setErrorHandler(new DefaultServiceLocator.ErrorHandler() {
             @Override
             public void serviceCreationFailed(Class<?> type, Class<?> impl, Throwable exception) {
@@ -142,7 +142,6 @@ public class MavenRepoInitializer {
         final List<RemoteRepository> remotes = new ArrayList<>();
 
         for (String profileName : settings.getActiveProfiles()) {
-            System.out.println("Active profile " + profileName);
             final Profile profile = profilesMap.get(profileName);
             final List<Repository> repositories = profile.getRepositories();
             for (Repository repo : repositories) {
@@ -167,14 +166,13 @@ public class MavenRepoInitializer {
         if(settings != null) {
             return settings;
         }
-        final SettingsBuildingRequest settingsBuildingRequest = new DefaultSettingsBuildingRequest();
-        settingsBuildingRequest.setSystemProperties(System.getProperties());
-        settingsBuildingRequest.setUserSettingsFile(DEFAULT_USER_SETTINGS_FILE);
-        settingsBuildingRequest.setGlobalSettingsFile(DEFAULT_GLOBAL_SETTINGS_FILE);
-
         final Settings effectiveSettings;
         try {
-            final SettingsBuildingResult result = new DefaultSettingsBuilderFactory().newInstance().build(settingsBuildingRequest);
+            final SettingsBuildingResult result = new DefaultSettingsBuilderFactory().newInstance().build(
+                    new DefaultSettingsBuildingRequest()
+                    .setSystemProperties(System.getProperties())
+                    .setUserSettingsFile(DEFAULT_USER_SETTINGS_FILE)
+                    .setGlobalSettingsFile(DEFAULT_GLOBAL_SETTINGS_FILE));
             final List<SettingsProblem> problems = result.getProblems();
             if(!problems.isEmpty()) {
                 for(SettingsProblem problem : problems) {
@@ -192,8 +190,7 @@ public class MavenRepoInitializer {
             throw new AppModelResolverException("Failed to initialize Maven repository settings", e);
         }
 
-        settings = effectiveSettings;
-        return effectiveSettings;
+        return settings = effectiveSettings;
     }
 
     public static String getLocalRepo(Settings settings) {

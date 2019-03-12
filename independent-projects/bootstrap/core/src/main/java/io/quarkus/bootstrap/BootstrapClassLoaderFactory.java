@@ -16,11 +16,16 @@
 
 package io.quarkus.bootstrap;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
 import io.quarkus.bootstrap.model.AppDependency;
@@ -35,6 +40,10 @@ import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
  * @author Alexey Loubyansky
  */
 public class BootstrapClassLoaderFactory {
+
+    private static final String DOT_QUARKUS = ".quarkus";
+    private static final String BOOTSTRAP = "bootstrap";
+    private static final String DEPLOYMENT_CP = "cp.deployment";
 
     public static BootstrapClassLoaderFactory newInstance() {
         return new BootstrapClassLoaderFactory();
@@ -60,11 +69,22 @@ public class BootstrapClassLoaderFactory {
         return new URLClassLoader(urls, parent);
     }
 
+    private static Path resolveCachedCpPath(LocalProject project) {
+        return Paths.get(System.getProperty("user.home"))
+                .resolve(DOT_QUARKUS)
+                .resolve(BOOTSTRAP)
+                .resolve(project.getGroupId())
+                .resolve(project.getArtifactId())
+                .resolve(project.getVersion())
+                .resolve(DEPLOYMENT_CP);
+    }
+
     private ClassLoader parent;
     private Path appClasses;
     private Path frameworkClasses;
     private boolean localProjectsDiscovery;
     private boolean offline = true;
+    private boolean enableClassLoaderCache;
 
     private BootstrapClassLoaderFactory() {
     }
@@ -91,6 +111,11 @@ public class BootstrapClassLoaderFactory {
 
     public BootstrapClassLoaderFactory setOffline(boolean offline) {
         this.offline = offline;
+        return this;
+    }
+
+    public BootstrapClassLoaderFactory setClassLoaderCache(boolean enable) {
+        this.enableClassLoaderCache = enable;
         return this;
     }
 
@@ -131,18 +156,63 @@ public class BootstrapClassLoaderFactory {
         if (appClasses == null) {
             throw new IllegalArgumentException("Application classes path has not been set");
         }
+        final URLClassLoader ucl;
+        Path cachedCpPath = null;
+        long lastUpdated = 0;
         try {
-            final MavenArtifactResolver.Builder mvn = MavenArtifactResolver.builder().setOffline(offline);
             final LocalProject localProject;
             if (localProjectsDiscovery) {
                 localProject = LocalProject.resolveLocalProjectWithWorkspace(LocalProject.locateCurrentProjectDir(appClasses));
-                mvn.setWorkspace(localProject.getWorkspace());
+                if(enableClassLoaderCache) {
+                    lastUpdated = localProject.getWorkspace().getLastModified();
+                    cachedCpPath = resolveCachedCpPath(localProject);
+                    if (Files.exists(cachedCpPath)) {
+                        try (BufferedReader reader = Files.newBufferedReader(cachedCpPath)) {
+                            String line = reader.readLine();
+                            if (Long.valueOf(line) == lastUpdated) {
+                                line = reader.readLine();
+                                final List<URL> urls = new ArrayList<>();
+                                while (line != null) {
+                                    urls.add(new URL(line));
+                                    line = reader.readLine();
+                                }
+                                System.out.println("re-created from cache");
+                                return new URLClassLoader(urls.toArray(new URL[urls.size()]), parent);
+                            } else {
+                                System.out.println("cache expired");
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
             } else {
                 localProject = LocalProject.resolveLocalProject(LocalProject.locateCurrentProjectDir(appClasses));
             }
-            return newClassLoader(parent, new BootstrapAppModelResolver(mvn.build()).resolveModel(localProject.getAppArtifact()).getDeploymentDependencies());
+            final MavenArtifactResolver.Builder mvn = MavenArtifactResolver.builder()
+                    .setOffline(offline)
+                    .setWorkspace(localProject.getWorkspace());
+
+            ucl = newClassLoader(parent, new BootstrapAppModelResolver(mvn.build()).resolveModel(localProject.getAppArtifact()).getDeploymentDependencies());
         } catch (AppModelResolverException e) {
             throw new BootstrapException("Failed to init application classloader", e);
         }
+        if(cachedCpPath != null) {
+            try {
+                Files.createDirectories(cachedCpPath.getParent());
+                try(BufferedWriter writer = Files.newBufferedWriter(cachedCpPath)) {
+                    writer.write(Long.toString(lastUpdated));
+                    writer.newLine();
+                    for(URL url : ucl.getURLs()) {
+                        writer.write(url.toExternalForm());
+                        writer.newLine();
+                    }
+                }
+                System.out.println("cached");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return ucl;
     }
 }

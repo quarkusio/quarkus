@@ -23,7 +23,8 @@ package io.quarkus.bootstrap.model;
  */
 public class AppArtifactCoords {
 
-    protected static final String TYPE_JAR = "jar";
+    public static final String TYPE_JAR = "jar";
+    public static final String TYPE_POM = "pom";
 
     public static AppArtifactCoords fromString(String str) {
         return new AppArtifactCoords(split(str, new String[5]));

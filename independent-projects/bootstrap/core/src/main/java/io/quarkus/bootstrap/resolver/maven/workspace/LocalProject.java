@@ -25,6 +25,7 @@ import org.apache.maven.model.Parent;
 import org.jboss.logging.Logger;
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.model.AppArtifact;
+import io.quarkus.bootstrap.model.AppArtifactKey;
 
 /**
  *
@@ -140,7 +141,7 @@ public class LocalProject {
             this.version = version;
         }
         if(workspace != null) {
-            workspace.addProject(this.groupId, this.artifactId, this);
+            workspace.addProject(this, pomXml.toFile().lastModified());
         }
     }
 
@@ -160,6 +161,10 @@ public class LocalProject {
         return dir;
     }
 
+    public Path getClassesDir() {
+        return dir.resolve("target").resolve("classes");
+    }
+
     public Model getRawModel() {
         return rawModel;
     }
@@ -168,9 +173,13 @@ public class LocalProject {
         return workspace;
     }
 
+    public AppArtifactKey getKey() {
+        return new AppArtifactKey(groupId, artifactId);
+    }
+
     public AppArtifact getAppArtifact() {
         final AppArtifact appArtifact = new AppArtifact(groupId, artifactId, "", rawModel.getPackaging(), version);
-        appArtifact.setPath(dir.resolve("target").resolve("classes"));
+        appArtifact.setPath(getClassesDir());
         return appArtifact;
     }
 }

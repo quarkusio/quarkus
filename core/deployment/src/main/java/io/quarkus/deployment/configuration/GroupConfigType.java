@@ -61,7 +61,8 @@ public class GroupConfigType extends CompoundConfigType {
                 }
                 field.setAccessible(true);
                 final FieldDescriptor descr = FieldDescriptor.of(field);
-                FieldInfo fieldInfo = new FieldInfo(field, accessorFinder.getSetterFor(descr), accessorFinder.getGetterFor(descr));
+                FieldInfo fieldInfo = new FieldInfo(field, accessorFinder.getSetterFor(descr),
+                        accessorFinder.getGetterFor(descr));
                 fieldInfos.put(field.getName(), fieldInfo);
                 if (Map.class.isAssignableFrom(field.getType())) {
                     MethodDescriptor putMethod = accessorFinder.getMapPutFor(descr);
@@ -105,6 +106,7 @@ public class GroupConfigType extends CompoundConfigType {
     public ConfigType getField(String name) {
         return fields.get(name);
     }
+
     public FieldInfo getFieldInfo(String name) {
         return fieldInfos.get(name);
     }

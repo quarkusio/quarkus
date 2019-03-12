@@ -66,7 +66,7 @@ public final class AccessorFinder {
         final String fieldType = primitive ? rawFieldType : DescriptorUtils.getTypeStringFromDescriptorFormat(rawFieldType);
         final String publicType = primitive ? fieldType : JLO;
         methodDescriptor = MethodDescriptor.ofMethod(accessorName, "put_" + fieldDescriptor.getName(), void.class,
-                                                     publicType, String.class, String.class);
+                publicType, String.class, String.class);
         return methodDescriptor;
     }
 

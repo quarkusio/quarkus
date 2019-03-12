@@ -95,14 +95,39 @@ public class MapConfigType extends CompoundConfigType {
     }
 
     void acceptConfigurationValueIntoLeaf(final LeafConfigType leafType, final NameIterator name, final SmallRyeConfig config) {
-        // leaf types directly into map values
-        throw Assert.unsupported();
+        if (leafType instanceof MapValueConfigType) {
+            String value = config.getValue(name.toString(), String.class);
+            String key = name.getNextSegment();
+            leafType.acceptConfigurationValue(name, config);
+        } else {
+            // leaf types directly into map values
+            throw Assert.unsupported();
+        }
     }
 
     void generateAcceptConfigurationValueIntoLeaf(final BytecodeCreator body, final LeafConfigType leafType,
             final ResultHandle name, final ResultHandle config) {
-        // leaf types directly into map values
-        throw Assert.unsupported();
+        if (leafType instanceof MapValueConfigType) {
+            MapValueConfigType mvct = (MapValueConfigType) leafType;
+            GroupConfigType container = getContainer(GroupConfigType.class);
+            GroupConfigType.FieldInfo fieldInfo = container.getFieldInfo(mvct.getContainingName());
+            MethodDescriptor putMethod = fieldInfo.getPutMap();
+            ;
+            // config.getValue(name.toString(), String.class)
+            final ResultHandle value = body.checkCast(body.invokeVirtualMethod(
+                    SRC_GET_VALUE,
+                    config,
+                    body.invokeVirtualMethod(
+                            OBJ_TO_STRING_METHOD,
+                            name),
+                    body.loadClass(String.class)), String.class);
+            final ResultHandle key = body.invokeVirtualMethod(NI_GET_NEXT_SEGMENT, name);
+            ResultHandle map = generateGetOrCreate(body, name, config);
+            body.invokeStaticMethod(putMethod, map, key, value);
+        } else {
+            // leaf types directly into map values
+            throw Assert.unsupported();
+        }
     }
 
     public ResultHandle writeInitialization(final BytecodeCreator body, final AccessorFinder accessorFinder,

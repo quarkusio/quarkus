@@ -17,7 +17,7 @@ public class MapValueConfigType extends LeafConfigType {
     final Class<?> expectedType;
 
     public MapValueConfigType(final String containingName, final CompoundConfigType container, final boolean consumeSegment,
-                            final Class<?> expectedType) {
+            final Class<?> expectedType) {
         super(containingName, container, consumeSegment);
         this.expectedType = expectedType;
     }
@@ -64,7 +64,8 @@ public class MapValueConfigType extends LeafConfigType {
     }
 
     @Override
-    void generateAcceptConfigurationValueIntoGroup(BytecodeCreator body, ResultHandle enclosing, MethodDescriptor setter, ResultHandle name, ResultHandle config) {
+    void generateAcceptConfigurationValueIntoGroup(BytecodeCreator body, ResultHandle enclosing, MethodDescriptor setter,
+            ResultHandle name, ResultHandle config) {
         // Expect to be in a MapConfigType contained in a GroupConfigType
         final MapConfigType mapContainer = getContainer(MapConfigType.class);
         final GroupConfigType container = mapContainer.getContainer(GroupConfigType.class);
@@ -86,7 +87,8 @@ public class MapValueConfigType extends LeafConfigType {
     }
 
     @Override
-    void generateGetDefaultValueIntoEnclosingGroup(BytecodeCreator body, ResultHandle enclosing, MethodDescriptor setter, ResultHandle config) {
+    void generateGetDefaultValueIntoEnclosingGroup(BytecodeCreator body, ResultHandle enclosing, MethodDescriptor setter,
+            ResultHandle config) {
         // noop
     }
 

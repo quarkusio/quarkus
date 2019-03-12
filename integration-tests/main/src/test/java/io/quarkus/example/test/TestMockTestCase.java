@@ -24,7 +24,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
 @QuarkusTest
-public class TestMockTestCase {
+class TestMockTestCase {
 
     @Test
     public void testMockService() {

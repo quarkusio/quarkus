@@ -23,23 +23,27 @@ public class ArcTestResourceProvider implements TestResourceProvider {
         while (c != Object.class) {
             for (Field f : c.getDeclaredFields()) {
                 if (f.isAnnotationPresent(Inject.class)) {
-                    BeanManager beanManager = Arc.container().beanManager();
-                    List<Annotation> qualifiers = new ArrayList<>();
-                    for (Annotation a : f.getAnnotations()) {
-                        if (a.annotationType().isAnnotationPresent(Qualifier.class)) {
-                            qualifiers.add(a);
-                        }
-                    }
-                    Set<Bean<?>> beans = beanManager.getBeans(f.getType(),
-                            qualifiers.toArray(new Annotation[qualifiers.size()]));
-                    Bean<?> bean = beanManager.resolve(beans);
-                    CreationalContext<?> ctx = beanManager.createCreationalContext(bean);
-                    Object instance = beanManager.getReference(bean, f.getType(), ctx);
-                    f.setAccessible(true);
                     try {
-                        f.set(test, instance);
-                    } catch (IllegalAccessException e) {
-                        throw new RuntimeException(e);
+                        BeanManager beanManager = Arc.container().beanManager();
+                        List<Annotation> qualifiers = new ArrayList<>();
+                        for (Annotation a : f.getAnnotations()) {
+                            if (a.annotationType().isAnnotationPresent(Qualifier.class)) {
+                                qualifiers.add(a);
+                            }
+                        }
+                        Set<Bean<?>> beans = beanManager.getBeans(f.getType(),
+                                qualifiers.toArray(new Annotation[qualifiers.size()]));
+                        Bean<?> bean = beanManager.resolve(beans);
+                        CreationalContext<?> ctx = beanManager.createCreationalContext(bean);
+                        Object instance = beanManager.getReference(bean, f.getType(), ctx);
+                        f.setAccessible(true);
+                        try {
+                            f.set(test, instance);
+                        } catch (IllegalAccessException e) {
+                            throw new RuntimeException(e);
+                        }
+                    } catch (Throwable t) {
+                        throw new RuntimeException("Failed to inject field " + f, t);
                     }
                 }
             }

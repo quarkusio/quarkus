@@ -17,9 +17,9 @@ import java.util.stream.Collectors;
 
 import org.apache.maven.model.Model;
 
-import io.quarkus.QuarkusTemplate;
-import io.quarkus.SourceType;
 import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.templates.QuarkusTemplate;
+import io.quarkus.templates.SourceType;
 
 public class BasicRest implements QuarkusTemplate {
 

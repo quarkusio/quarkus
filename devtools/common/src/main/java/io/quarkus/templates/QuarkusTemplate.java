@@ -1,4 +1,4 @@
-package io.quarkus;
+package io.quarkus.templates;
 
 import java.io.File;
 import java.io.IOException;

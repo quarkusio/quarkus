@@ -10,8 +10,6 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 
-import io.quarkus.QuarkusTemplate;
-
 /**
  * @author <a href="claprun@redhat.com">Christophe Laprun</a>
  */

@@ -68,9 +68,11 @@ public class CommandLineRunnerProcessor {
     }
 
     @BuildStep
-    void shutdown(BuildProducer<ShutdownBuildItem> producer) {
+    void shutdown(Optional<CommandLineRunnerBuildItem> runner, BuildProducer<ShutdownBuildItem> producer) {
         // TODO: this has to be conditional only set when various things are not present
-        producer.produce(new ShutdownBuildItem());
+        if (runner.isPresent()) {
+            producer.produce(new ShutdownBuildItem());
+        }
     }
 
     @BuildStep

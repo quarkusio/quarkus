@@ -303,8 +303,8 @@ public class DevMojo extends AbstractMojo {
     private void addToClassPaths(StringBuilder classPathManifest, StringBuilder classPath, File file)
             throws MalformedURLException {
         URI uri = file.toPath().toAbsolutePath().toUri();
-        classPathManifest.append(uri.getPath());
-        classPath.append(uri.toURL().toString());
+        classPathManifest.append(uri.getRawPath());
+        classPath.append(uri.toString());
         if (file.isDirectory()) {
             classPathManifest.append("/");
             classPath.append("/");

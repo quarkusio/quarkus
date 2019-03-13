@@ -8,6 +8,8 @@ import static io.quarkus.maven.utilities.MojoUtils.getPluginArtifactId;
 import static io.quarkus.maven.utilities.MojoUtils.getPluginGroupId;
 import static io.quarkus.maven.utilities.MojoUtils.getPluginVersion;
 import static io.quarkus.maven.utilities.MojoUtils.plugin;
+import static io.quarkus.templates.QuarkusTemplate.CLASS_NAME;
+import static io.quarkus.templates.QuarkusTemplate.PACKAGE_NAME;
 import static io.quarkus.templates.QuarkusTemplate.PROJECT_ARTIFACT_ID;
 import static io.quarkus.templates.QuarkusTemplate.PROJECT_GROUP_ID;
 import static io.quarkus.templates.QuarkusTemplate.PROJECT_VERSION;
@@ -48,6 +50,7 @@ public class CreateProject {
     private String artifactId;
     private String version = getPluginVersion();
     private SourceType sourceType = SourceType.JAVA;
+    private String className;
 
     private Model model;
 
@@ -72,6 +75,11 @@ public class CreateProject {
 
     public CreateProject sourceType(SourceType sourceType) {
         this.sourceType = sourceType;
+        return this;
+    }
+
+    public CreateProject className(String className) {
+        this.className = className;
         return this;
     }
 
@@ -100,6 +108,17 @@ public class CreateProject {
         context.put(PROJECT_VERSION, version);
         context.put(QUARKUS_VERSION, getPluginVersion());
         context.put(SOURCE_TYPE, sourceType);
+
+        if (className != null) {
+            className = sourceType.stripExtensionFrom(className);
+            int idx = className.lastIndexOf('.');
+            if (idx >= 0) {
+                final String packageName = className.substring(0, idx);
+                className = className.substring(idx + 1);
+                context.put(PACKAGE_NAME, packageName);
+            }
+            context.put(CLASS_NAME, className);
+        }
 
         TemplateRegistry.createTemplateWith(BasicRest.TEMPLATE_NAME).generate(root, context);
 

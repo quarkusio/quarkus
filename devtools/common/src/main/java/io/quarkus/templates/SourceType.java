@@ -54,7 +54,7 @@ public enum SourceType {
     }
 
     public String stripExtensionFrom(String className) {
-        if (className.endsWith(extension)) {
+        if (className != null && className.endsWith(extension)) {
             return className.substring(0, className.length() - extension.length());
         } else {
             return className;

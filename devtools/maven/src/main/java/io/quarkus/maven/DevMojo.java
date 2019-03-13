@@ -174,7 +174,7 @@ public class DevMojo extends AbstractMojo {
         try {
             List<String> args = new ArrayList<>();
             String javaTool = findJavaTool();
-            getLog().info("Using javaTool: " + javaTool);
+            getLog().debug("Using javaTool: " + javaTool);
             args.add(javaTool);
             if (debug == null) {
                 // debug mode not specified
@@ -332,12 +332,13 @@ public class DevMojo extends AbstractMojo {
     protected String findJavaTool() {
         String java = null;
 
+        // See if a toolchain is configured
         if (getToolchainManager() != null) {
             Toolchain toolchain = getToolchainManager().getToolchainFromBuildContext("jdk", getSession());
             if (toolchain != null) {
                 java = toolchain.findTool("java");
             }
-            getLog().debug("JVM from toolchain: " + java);
+            getLog().info("JVM from toolchain: " + java);
         }
         if (java == null) {
             // use the same JVM as the one used to run Maven (the "java.home" one)
@@ -346,7 +347,30 @@ public class DevMojo extends AbstractMojo {
             getLog().debug("Checking: " + javaCheck.getAbsolutePath());
             if (!javaCheck.canExecute()) {
                 getLog().debug(javaCheck.getAbsolutePath() + " is not executable");
-                java = "java";
+
+                java = null;
+                // Try executable extensions if windows
+                if (OS.determineOS() == OS.WINDOWS && System.getenv().containsKey("PATHEXT")) {
+                    String extpath = System.getenv("PATHEXT");
+                    String[] exts = extpath.split(";");
+                    for (String ext : exts) {
+                        File winExe = new File(javaCheck.getAbsolutePath() + ext);
+                        getLog().debug("Checking: " + winExe.getAbsolutePath());
+                        if (winExe.canExecute()) {
+                            java = winExe.getAbsolutePath();
+                            getLog().debug("Executable: " + winExe.getAbsolutePath());
+                            break;
+                        }
+                    }
+                }
+                // Fallback to java on the path
+                if (java == null) {
+                    if (OS.determineOS() == OS.WINDOWS) {
+                        java = "java.exe";
+                    } else {
+                        java = "java";
+                    }
+                }
             }
         }
         getLog().debug("findJavaTool, selected JVM: " + java);
@@ -364,6 +388,46 @@ public class DevMojo extends AbstractMojo {
         }
         classPathManifest.append(" ");
         classPath.append(" ");
+    }
+
+    /**
+     * Enum to classify the os.name system property
+     */
+    static enum OS {
+        WINDOWS, LINUX, MAC, OTHER;
+
+        private String version;
+
+        public String getVersion() {
+            return version;
+        }
+
+        public void setVersion(String version) {
+            this.version = version;
+        }
+
+        static OS determineOS() {
+            OS os = OS.OTHER;
+            String osName = System.getProperty("os.name");
+            osName = osName.toLowerCase();
+            if (osName.contains("windows")) {
+                os = OS.WINDOWS;
+            } else if (osName.contains("linux")
+                    || osName.contains("freebsd")
+                    || osName.contains("unix")
+                    || osName.contains("sunos")
+                    || osName.contains("solaris")
+                    || osName.contains("aix")) {
+                os = OS.LINUX;
+            } else if (osName.contains("mac os")) {
+                os = OS.MAC;
+            } else {
+                os = OS.OTHER;
+            }
+
+            os.setVersion(System.getProperty("os.version"));
+            return os;
+        }
     }
 
 }

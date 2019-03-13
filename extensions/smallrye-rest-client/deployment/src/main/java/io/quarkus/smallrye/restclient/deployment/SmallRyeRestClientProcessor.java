@@ -29,6 +29,7 @@ import javax.ws.rs.ext.Providers;
 
 import org.apache.commons.logging.impl.Jdk14Logger;
 import org.apache.commons.logging.impl.LogFactoryImpl;
+import org.eclipse.microprofile.rest.client.ext.DefaultClientHeadersFactoryImpl;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -176,10 +177,14 @@ class SmallRyeRestClientProcessor {
 
         for (Map.Entry<DotName, ClassInfo> entry : interfaces.entrySet()) {
             String iName = entry.getKey().toString();
+            // the SubstrateProxyDefinitions have to be separate because
+            // SmallRye creates a JDK proxy that delegates to a resteasy JDK proxy
             proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem(iName, ResteasyClientProxy.class.getName()));
             proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem(iName, RestClientProxy.class.getName()));
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, iName));
         }
+        // required for the non-arg constructor of DCHFImpl to be included in the native image
+        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, DefaultClientHeadersFactoryImpl.class.getName()));
 
         // Register Interface return types for reflection
         for (Type returnType : returnTypes) {

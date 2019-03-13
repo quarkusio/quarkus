@@ -18,6 +18,7 @@ package io.quarkus.example.rest;
 
 import java.net.URL;
 import java.util.List;
+import java.util.Map;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -45,7 +46,7 @@ public class ClientResource {
 
     @GET
     @Path("/cdi")
-    public String cdi() throws Exception {
+    public String cdi() {
         return restInterface.get();
     }
 
@@ -83,6 +84,23 @@ public class ClientResource {
     @Produces("application/json")
     public List<ComponentType> complexCdi() {
         return restInterface.complex();
+    }
+
+    @GET
+    @Path("/manual/headers")
+    @Produces("application/json")
+    public Map<String, String> getAllHeaders(String headerValue) throws Exception {
+        ProgrammaticRestInterface client = RestClientBuilder.newBuilder()
+                .baseUrl(new URL(System.getProperty("test.url")))
+                .build(ProgrammaticRestInterface.class);
+        return client.getAllHeaders();
+    }
+
+    @GET
+    @Path("/cdi/headers")
+    @Produces("application/json")
+    public Map<String, String> getAllHeadersCdi(String headerValue) {
+        return restInterface.getAllHeaders();
     }
 
 }

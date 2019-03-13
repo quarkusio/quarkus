@@ -17,7 +17,9 @@
 package io.quarkus.example.rest;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -39,6 +41,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.xml.bind.annotation.XmlRootElement;
 
@@ -145,6 +148,16 @@ public class TestResource {
         subComponent.getData().add("sub component list value");
         ret.setSubComponent(subComponent);
         return Collections.singletonList(ret);
+    }
+
+    @GET
+    @Path("/headers")
+    @Produces("application/json")
+    public Map<String, String> getAllHeaders(@Context HttpHeaders headers) {
+        Map<String, String> resultMap = new HashMap<>();
+        headers.getRequestHeaders().forEach(
+                (key, values) -> resultMap.put(key, String.join(",", values)));
+        return resultMap;
     }
 
     @GET

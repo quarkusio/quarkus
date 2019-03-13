@@ -77,7 +77,7 @@ recommended that you always run a full maven build before submitting a pull requ
 #### Eclipse Setup
 
 Open the *Preferences* window, and then navigate to _Java_ -> _Code Style_ -> _Formatter_. Click _Import_ and then
-select the `eclipse-formatter.xml` file in the `ide-config` directory.
+select the `eclipse-format.xml` file in the `ide-config` directory.
 
 Next navigate to _Java_ -> _Code Style_ -> _Organize Imports_. Click _Import_ and select the `eclipse.importorder` file.
 

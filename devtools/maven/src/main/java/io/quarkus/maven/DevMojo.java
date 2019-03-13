@@ -152,8 +152,8 @@ public class DevMojo extends AbstractMojo {
         }
         if (!found) {
             getLog().warn("The quarkus-maven-plugin build goal was not configured for this project, " +
-                                  "skipping quarkus:dev as this is assumed to be a support library. If you want to run quarkus dev" +
-                                  " on this project make sure the quarkus-maven-plugin is configured with a build goal.");
+                    "skipping quarkus:dev as this is assumed to be a support library. If you want to run quarkus dev" +
+                    " on this project make sure the quarkus-maven-plugin is configured with a build goal.");
             return;
         }
 
@@ -173,7 +173,7 @@ public class DevMojo extends AbstractMojo {
             if (debug == null) {
                 // debug mode not specified
                 // make sure 5005 is not used, we don't want to just fail if something else is using it
-                try (Socket socket = new Socket(InetAddress.getByAddress(new byte[]{127, 0, 0, 1}), 5005)) {
+                try (Socket socket = new Socket(InetAddress.getByAddress(new byte[] { 127, 0, 0, 1 }), 5005)) {
                     getLog().error("Port 5005 in use, not starting in debug mode");
                 } catch (IOException e) {
                     args.add("-Xdebug");
@@ -253,7 +253,7 @@ public class DevMojo extends AbstractMojo {
                 path = new File(jarPath);
             } else if (classFile.getProtocol().equals("file")) {
                 String filePath = classFile.getPath().substring(0,
-                                                                classFile.getPath().lastIndexOf(DevModeMain.class.getName().replace('.', '/')));
+                        classFile.getPath().lastIndexOf(DevModeMain.class.getName().replace('.', '/')));
                 path = new File(filePath);
             } else {
                 throw new MojoFailureException("Unsupported DevModeMain artifact URL:" + classFile);

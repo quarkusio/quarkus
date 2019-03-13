@@ -2,6 +2,7 @@ package io.quarkus.dev;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -17,8 +18,9 @@ import javax.tools.ToolProvider;
 public class JavaCompilationProvider implements CompilationProvider {
 
     // -g is used to make the java compiler generate all debugging info
+    // -parameters is used to generate metadata for reflection on method parameters
     // this is useful when people using debuggers against their hot-reloaded app
-    private static final List<String> COMPILER_OPTIONS = Collections.singletonList("-g");
+    private static final List<String> COMPILER_OPTIONS = Arrays.asList("-g", "-parameters");
 
     @Override
     public String handledExtension() {

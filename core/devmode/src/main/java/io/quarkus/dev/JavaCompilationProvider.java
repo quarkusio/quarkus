@@ -3,6 +3,7 @@ package io.quarkus.dev;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import javax.tools.Diagnostic;
@@ -14,6 +15,10 @@ import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 
 public class JavaCompilationProvider implements CompilationProvider {
+
+    // -g is used to make the java compiler generate all debugging info
+    // this is useful when people using debuggers against their hot-reloaded app
+    private static final List<String> COMPILER_OPTIONS = Collections.singletonList("-g");
 
     @Override
     public String handledExtension() {
@@ -33,7 +38,8 @@ public class JavaCompilationProvider implements CompilationProvider {
             fileManager.setLocation(StandardLocation.CLASS_OUTPUT, Collections.singleton(context.getOutputDirectory()));
 
             Iterable<? extends JavaFileObject> sources = fileManager.getJavaFileObjectsFromFiles(filesToCompile);
-            JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics, null, null, sources);
+            JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics,
+                    COMPILER_OPTIONS, null, sources);
 
             if (!task.call()) {
                 throw new RuntimeException("Compilation failed" + diagnostics.getDiagnostics());

@@ -117,29 +117,24 @@ public class ListExtensionsTest {
         } finally {
             System.setOut(out);
         }
-        boolean resteasy = false;
-        boolean arc = false;
         boolean agroal = false;
-        boolean bean = false;
+        boolean resteasy = false;
+        boolean hibernateValidator = false;
         final String output = baos.toString();
         for (String line : output.split("\r?\n")) {
             if (line.contains(" Agroal ")) {
                 assertTrue(line.startsWith("current"), "Agroal should list as current: " + line);
                 agroal = true;
-            } else if (line.contains(" Arc  ")) {
-                assertTrue(line.startsWith("update"), "Arc should list as having an update: " + line);
-                assertTrue(line.endsWith(getPluginVersion()), "Arc should list as having an update: " + line);
-                arc = true;
             } else if (line.contains(" RESTEasy  ")) {
                 assertTrue(line.startsWith("update"), "RESTEasy should list as having an update: " + line);
                 assertTrue(line.endsWith(getPluginVersion()), "RESTEasy should list as having an update: " + line);
                 resteasy = true;
             } else if (line.contains(" Hibernate Validator  ")) {
                 assertTrue(line.startsWith("   "), "Hibernate Validator should not list as anything: " + line);
-                bean = true;
+                hibernateValidator = true;
             }
         }
 
-        assertTrue(agroal && arc && resteasy && bean);
+        assertTrue(agroal && resteasy && hibernateValidator);
     }
 }

@@ -414,7 +414,7 @@ public final class HibernateOrmProcessor {
                             String resourceAsString = root.getPath().relativize(loadScriptPath.get()).toString();
                             resourceProducer.produce(new SubstrateResourceBuildItem(resourceAsString));
                             hotDeploymentProducer.produce(new HotDeploymentConfigFileBuildItem(resourceAsString));
-                            desc.getProperties().setProperty(AvailableSettings.HBM2DDL_LOAD_SCRIPT_SOURCE, file);
+                            desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, file);
                         });
 
                 //raise exception if explicit file is not present (i.e. not the default)

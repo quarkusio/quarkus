@@ -33,6 +33,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import javax.enterprise.context.BeforeDestroyed;
+import javax.enterprise.context.Destroyed;
+import javax.enterprise.context.Initialized;
 import javax.enterprise.context.control.ActivateRequestContext;
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Default;
@@ -240,6 +243,9 @@ public class BeanProcessor {
             index(indexer, Default.class.getName());
             index(indexer, Any.class.getName());
             index(indexer, Named.class.getName());
+            index(indexer, Initialized.class.getName());
+            index(indexer, BeforeDestroyed.class.getName());
+            index(indexer, Destroyed.class.getName());
         }
         return CompositeIndex.create(index, indexer.complete());
     }

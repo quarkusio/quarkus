@@ -27,7 +27,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.enterprise.context.Dependent;
-import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
 import org.jboss.jandex.AnnotationTarget;
@@ -130,8 +129,6 @@ public class ArcAnnotationProcessor {
             additionalBeans.addAll(i.getBeanClasses());
         }
         additionalBeans.add(LifecycleEventRunner.class.getName());
-
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, Observes.class.getName())); // graal bug
 
         // Index bean classes registered by quarkus
         Indexer indexer = new Indexer();

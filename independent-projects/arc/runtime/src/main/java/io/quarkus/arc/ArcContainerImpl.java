@@ -33,7 +33,9 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.context.Dependent;
+import javax.enterprise.context.Destroyed;
 import javax.enterprise.context.Initialized;
 import javax.enterprise.inject.AmbiguousResolutionException;
 import javax.enterprise.inject.Any;
@@ -247,8 +249,18 @@ class ArcContainerImpl implements ArcContainer {
                 ArcCDI arcCdi = (ArcCDI) cdi;
                 arcCdi.destroy();
             }
+            // Fire an event with qualifier @BeforeDestroyed(ApplicationScoped.class)
+            Set<Annotation> beforeDestroyQualifiers = new HashSet<>(4);
+            beforeDestroyQualifiers.add(BeforeDestroyed.Literal.APPLICATION);
+            beforeDestroyQualifiers.add(Any.Literal.INSTANCE);
+            EventImpl.createNotifier(Object.class, Object.class, beforeDestroyQualifiers, this).notify(toString());
             // Destroy contexts
             applicationContext.destroy();
+            // Fire an event with qualifier @Destroyed(ApplicationScoped.class)
+            Set<Annotation> destroyQualifiers = new HashSet<>(4);
+            destroyQualifiers.add(Destroyed.Literal.APPLICATION);
+            destroyQualifiers.add(Any.Literal.INSTANCE);
+            EventImpl.createNotifier(Object.class, Object.class, destroyQualifiers, this).notify(toString());
             singletonContext.destroy();
             requestContext.terminate();
             // Clear caches

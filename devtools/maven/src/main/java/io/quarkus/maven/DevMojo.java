@@ -34,10 +34,6 @@ import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import io.quarkus.dev.ClassLoaderCompiler;
-import io.quarkus.dev.DevModeMain;
-import io.quarkus.maven.components.MavenVersionEnforcer;
-import io.quarkus.maven.utilities.MojoUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Plugin;
@@ -54,6 +50,11 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.toolchain.Toolchain;
 import org.apache.maven.toolchain.ToolchainManager;
+
+import io.quarkus.dev.ClassLoaderCompiler;
+import io.quarkus.dev.DevModeMain;
+import io.quarkus.maven.components.MavenVersionEnforcer;
+import io.quarkus.maven.utilities.MojoUtils;
 
 /**
  * The dev mojo, that runs a quarkus app in a forked process

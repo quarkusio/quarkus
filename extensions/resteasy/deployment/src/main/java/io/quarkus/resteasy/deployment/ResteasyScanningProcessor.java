@@ -347,27 +347,35 @@ public class ResteasyScanningProcessor {
                 reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, HttpServlet30Dispatcher.class.getName()));
             }
 
-            StringBuilder sb = new StringBuilder();
-            boolean first = true;
+            Set<String> resources = new HashSet<>();
+            Set<DotName> pathInterfaces = new HashSet<>();
             for (AnnotationInstance annotation : paths) {
                 if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
                     ClassInfo clazz = annotation.target().asClass();
                     if (!Modifier.isInterface(clazz.flags())) {
-                        if (first) {
-                            first = false;
-                        } else {
-                            sb.append(",");
-                        }
                         String className = clazz.name().toString();
-                        sb.append(className);
+                        resources.add(className);
                         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
+                    } else {
+                        pathInterfaces.add(clazz.name());
                     }
                 }
             }
 
-            if (sb.length() > 0) {
+            // look for all implementations of interfaces annotated @Path
+            for (final DotName iface : pathInterfaces) {
+                final Collection<ClassInfo> implementors = index.getAllKnownImplementors(iface);
+                for (final ClassInfo implementor : implementors) {
+                    String className = implementor.name().toString();
+                    reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
+                    resources.add(className);
+                }
+            }
+
+            if (!resources.isEmpty()) {
                 servletContextParams.produce(
-                        new ServletInitParamBuildItem(ResteasyContextParameters.RESTEASY_SCANNED_RESOURCES, sb.toString()));
+                        new ServletInitParamBuildItem(ResteasyContextParameters.RESTEASY_SCANNED_RESOURCES,
+                                String.join(",", resources)));
             }
             servletContextParams.produce(new ServletInitParamBuildItem("resteasy.servlet.mapping.prefix", path));
             if (appClass != null) {

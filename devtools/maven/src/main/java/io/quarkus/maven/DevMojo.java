@@ -34,7 +34,10 @@ import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import io.quarkus.dev.ClassLoaderCompiler;
+import io.quarkus.dev.DevModeMain;
 import io.quarkus.maven.components.MavenVersionEnforcer;
+import io.quarkus.maven.utilities.MojoUtils;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Plugin;
@@ -51,10 +54,6 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.toolchain.Toolchain;
 import org.apache.maven.toolchain.ToolchainManager;
-
-import io.quarkus.dev.ClassLoaderCompiler;
-import io.quarkus.dev.DevModeMain;
-import io.quarkus.maven.utilities.MojoUtils;
 
 /**
  * The dev mojo, that runs a quarkus app in a forked process
@@ -136,11 +135,6 @@ public class DevMojo extends AbstractMojo {
         return session;
     }
 
-    @SuppressWarnings("UnusedDeclaration")
-    public void setSession(MavenSession session) {
-        this.session = session;
-    }
-
     @Override
     public void execute() throws MojoFailureException, MojoExecutionException {
         mavenVersionEnforcer.ensureMavenVersion(getLog(), session);
@@ -174,7 +168,7 @@ public class DevMojo extends AbstractMojo {
         try {
             List<String> args = new ArrayList<>();
             String javaTool = findJavaTool();
-            getLog().debug("Using javaTool: " + javaTool);
+            getLog().info("Using javaTool: " + javaTool);
             args.add(javaTool);
             if (debug == null) {
                 // debug mode not specified
@@ -329,6 +323,13 @@ public class DevMojo extends AbstractMojo {
         }
     }
 
+    /**
+     * Search for the java command in the order:
+     * 1. maven-toolchains plugin configuration
+     * 2. java.home location
+     * 3. java[.exe] on the system path
+     * @return the java command to use
+     */
     protected String findJavaTool() {
         String java = null;
 
@@ -337,8 +338,8 @@ public class DevMojo extends AbstractMojo {
             Toolchain toolchain = getToolchainManager().getToolchainFromBuildContext("jdk", getSession());
             if (toolchain != null) {
                 java = toolchain.findTool("java");
+                getLog().info("JVM from toolchain: " + java);
             }
-            getLog().info("JVM from toolchain: " + java);
         }
         if (java == null) {
             // use the same JVM as the one used to run Maven (the "java.home" one)

@@ -65,7 +65,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
     private final Path frameworkClassesPath;
     private final Path transformerCache;
 
-    private static final String DEBUG_CLASSES_DIR = System.getProperty("io.quarkus.DEBUG_GENERATED_CLASSES_DIR");
+    private static final String DEBUG_CLASSES_DIR = System.getProperty("quarkus.debug.generated-classes-dir");
 
     private final ConcurrentHashMap<String, Future<Class<?>>> loadingClasses = new ConcurrentHashMap<>();
 

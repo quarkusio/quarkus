@@ -33,7 +33,6 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveMethodBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBundleBuildItem;
 import io.quarkus.jaxb.deployment.JaxbFileRootBuildItem;
@@ -70,13 +69,6 @@ class CamelProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FeatureBuildItem.CAMEL_CORE);
-    }
-
-    @BuildStep
-    SubstrateConfigBuildItem processSystemProperties() {
-        return SubstrateConfigBuildItem.builder()
-                .addNativeImageSystemProperty("CamelSimpleLRUCacheFactory", "true")
-                .build();
     }
 
     @BuildStep(applicationArchiveMarkers = CamelSupport.CAMEL_SERVICE_BASE_PATH)

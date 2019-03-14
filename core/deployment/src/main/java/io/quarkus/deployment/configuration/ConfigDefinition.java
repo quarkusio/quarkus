@@ -62,6 +62,7 @@ public class ConfigDefinition extends CompoundConfigType {
     private final IdentityHashMap<Object, ValueInfo> realizedInstances = new IdentityHashMap<>();
     private final TreeMap<String, RootInfo> rootTypesByContainingName = new TreeMap<>();
     private final FieldDescriptor rootField;
+    private final TreeMap<String, String> loadedProperties = new TreeMap<>();
 
     public ConfigDefinition(final FieldDescriptor rootField) {
         super(null, null, false);
@@ -355,6 +356,8 @@ public class ConfigDefinition extends CompoundConfigType {
                     if (leafType != null) {
                         name.goToEnd();
                         leafType.acceptConfigurationValue(name, config);
+                        final String nameString = name.toString();
+                        definition.loadedProperties.put(nameString, config.getValue(nameString, String.class));
                         continue outer;
                     }
                 }
@@ -369,6 +372,10 @@ public class ConfigDefinition extends CompoundConfigType {
 
     public ConfigDefinition getConfigDefinition() {
         return this;
+    }
+
+    public TreeMap<String, String> getLoadedProperties() {
+        return loadedProperties;
     }
 
     private void loadFrom(ConfigPatternMap<LeafConfigType> map) {

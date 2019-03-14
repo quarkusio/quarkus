@@ -157,7 +157,8 @@ The `getByName` method gives our code the ability to query a country by name fro
 
 The purpose of the annotations in the code above is the following:
 
-* `@RegisterRestClient` allows {project-name} to know that this interface is meant to be used as a REST Client
+* `@RegisterRestClient` allows {project-name} to know that this interface is meant to be available for
+CDI injection as a REST Client
 * `@Path`, `@GET` and `@PathParam` are the standard JAX-RS annotations used to define how to access the service
 * `@Produces` defines the expected content-type
 
@@ -268,3 +269,7 @@ You should see a JSON object containing some basic information about Greece.
 
 As usual, the application can be packaged using `mvn clean package` and executed using the `-runner.jar` file.
 You can also generate the native executable with `mvn clean package -Pnative`.
+
+== Further reading
+
+ * link:https://download.eclipse.org/microprofile/microprofile-rest-client-1.2.1/microprofile-rest-client-1.2.1.html[MicroProfile Rest Client specification]

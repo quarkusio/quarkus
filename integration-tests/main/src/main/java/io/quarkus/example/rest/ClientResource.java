@@ -37,9 +37,9 @@ public class ClientResource {
     @GET
     @Path("/manual")
     public String manual() throws Exception {
-        RestInterface iface = RestClientBuilder.newBuilder()
+        ProgrammaticRestInterface iface = RestClientBuilder.newBuilder()
                 .baseUrl(new URL(System.getProperty("test.url")))
-                .build(RestInterface.class);
+                .build(ProgrammaticRestInterface.class);
         return iface.get();
     }
 
@@ -53,9 +53,9 @@ public class ClientResource {
     @Path("manual/jackson")
     @Produces("application/json")
     public TestResource.MyData getDataManual() throws Exception {
-        RestInterface iface = RestClientBuilder.newBuilder()
+        ProgrammaticRestInterface iface = RestClientBuilder.newBuilder()
                 .baseUrl(new URL(System.getProperty("test.url")))
-                .build(RestInterface.class);
+                .build(ProgrammaticRestInterface.class);
         System.out.println(iface.getData());
         return iface.getData();
     }
@@ -71,9 +71,9 @@ public class ClientResource {
     @Path("/manual/complex")
     @Produces("application/json")
     public List<ComponentType> complexManual() throws Exception {
-        RestInterface iface = RestClientBuilder.newBuilder()
+        ProgrammaticRestInterface iface = RestClientBuilder.newBuilder()
                 .baseUrl(new URL(System.getProperty("test.url")))
-                .build(RestInterface.class);
+                .build(ProgrammaticRestInterface.class);
         System.out.println(iface.complex());
         return iface.complex();
     }

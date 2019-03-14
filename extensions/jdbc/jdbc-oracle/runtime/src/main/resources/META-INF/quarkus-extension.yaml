@@ -1,0 +1,10 @@
+---
+name: "JDBC Driver - Oracle"
+metadata:
+  keywords:
+  - "jdbc-oracle"
+  - "jdbc"
+  - "oracle"
+  categories:
+  - "data"
+  status: "preview"

@@ -86,8 +86,7 @@ public class RolesAllowedUnitTest {
 
         Assertions.assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.getStatusCode());
         String replyString = response.body().asString();
-        // TODO add proper assertion
-        //System.out.println(replyString);
+        Assertions.assertEquals("Not authorized", replyString);
     }
 
     /**
@@ -124,8 +123,7 @@ public class RolesAllowedUnitTest {
 
         Assertions.assertEquals(HttpURLConnection.HTTP_FORBIDDEN, response.getStatusCode());
         String replyString = response.body().asString();
-        // TODO add proper assertion
-        //System.out.println(replyString);
+        Assertions.assertEquals("Access forbidden: role not allowed", replyString);
     }
 
     /**
@@ -135,6 +133,7 @@ public class RolesAllowedUnitTest {
      */
     @Test()
     public void checkIsUserInRole() throws Exception {
+
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token)
                 .when()
@@ -142,8 +141,7 @@ public class RolesAllowedUnitTest {
 
         Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
         String replyString = response.body().asString();
-        // TODO add proper assertion
-        //System.out.println(replyString);
+        Assertions.assertEquals("jdoe@example.com", replyString);
     }
 
     /**
@@ -161,8 +159,8 @@ public class RolesAllowedUnitTest {
 
         Assertions.assertEquals(HttpURLConnection.HTTP_FORBIDDEN, response.getStatusCode());
         String replyString = response.body().asString();
-        // TODO add proper assertion
-        //System.out.println(replyString);
+
+        Assertions.assertEquals("", replyString);
     }
 
     /**
@@ -172,17 +170,17 @@ public class RolesAllowedUnitTest {
      */
     @Test()
     public void echoNeedsToken2Role() throws Exception {
+        String input = "hello";
         String token2 = TokenUtils.generateTokenString("/Token2.json");
         io.restassured.response.Response response = RestAssured.given().auth()
                 .oauth2(token2)
                 .when()
-                .queryParam("input", "hello")
+                .queryParam("input", input)
                 .get("/endp/echoNeedsToken2Role").andReturn();
 
         Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
         String replyString = response.body().asString();
-        // TODO add proper assertion
-        //System.out.println(replyString);
+        Assertions.assertEquals(input + ", user=jdoe2@example.com", replyString);
     }
 
     /**
@@ -201,8 +199,7 @@ public class RolesAllowedUnitTest {
 
         Assertions.assertEquals(HttpURLConnection.HTTP_FORBIDDEN, response.getStatusCode());
         String replyString = response.body().asString();
-        // TODO add proper assertion
-        //System.out.println(replyString);
+        Assertions.assertEquals("Access forbidden: role not allowed", replyString);
     }
 
     /**
@@ -238,8 +235,7 @@ public class RolesAllowedUnitTest {
 
         Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
         String replyString = response.body().asString();
-        // TODO add proper assertion
-        //System.out.println(replyString);
+        Assertions.assertEquals("jdoe@example.com", replyString);
     }
 
     /**

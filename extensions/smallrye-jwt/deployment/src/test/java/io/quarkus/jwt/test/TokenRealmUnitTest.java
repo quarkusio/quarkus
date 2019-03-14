@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.wildfly.security.auth.principal.NamePrincipal;
 import org.wildfly.security.auth.realm.token.TokenSecurityRealm;
@@ -60,9 +61,8 @@ public class TokenRealmUnitTest {
         RealmIdentity identity = tokenRealm.getRealmIdentity(tokenEvidence);
         assertNotNull(identity);
         assertTrue(identity.exists());
-        AuthorizationIdentity authz = identity.getAuthorizationIdentity();
-        // TODO add proper assertion
-        //System.out.println(authz.getAttributes().keySet());
+        AuthorizationIdentity authorizationIdentity = identity.getAuthorizationIdentity();
+        Assertions.assertNotNull(authorizationIdentity);
     }
 
     @Test
@@ -117,8 +117,7 @@ public class TokenRealmUnitTest {
         String jwt = TokenUtils.generateTokenString("/Token1.json", pk1Priv, "testTokenRealm");
         BearerTokenEvidence tokenEvidence = new BearerTokenEvidence(jwt);
         SecurityIdentity securityIdentity = securityDomain.authenticate(tokenEvidence);
-        // TODO add proper assertion
-        //System.out.println(securityIdentity.getAttributes().keySet());
+        Assertions.assertNotNull(securityIdentity);
     }
 
     private Principal mpJwtLogic(Attributes claims) {

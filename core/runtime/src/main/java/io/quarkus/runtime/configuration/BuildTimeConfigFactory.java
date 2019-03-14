@@ -31,10 +31,11 @@ public final class BuildTimeConfigFactory {
             if (resources.hasMoreElements()) {
                 final URL url = resources.nextElement();
                 try (InputStream is = url.openStream()) {
-                    if (is != null)
+                    if (is != null) {
                         try (InputStreamReader isr = new InputStreamReader(is, StandardCharsets.UTF_8)) {
                             properties.load(isr);
                         }
+                    }
                 }
             }
             return new PropertiesConfigSource(properties, "Build time configuration");

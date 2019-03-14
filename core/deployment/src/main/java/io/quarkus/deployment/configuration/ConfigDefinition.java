@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.jboss.logging.Logger;
@@ -343,25 +344,31 @@ public class ConfigDefinition extends CompoundConfigType {
         }
     }
 
-    public static void loadConfiguration(SmallRyeConfig config, ConfigDefinition... definitions) {
+    public static void loadConfiguration(SmallRyeConfig config, final Set<String> unmatched,
+            ConfigDefinition... definitions) {
         for (ConfigDefinition definition : definitions) {
             definition.initialize(config);
         }
         outer: for (String propertyName : config.getPropertyNames()) {
             final NameIterator name = new NameIterator(propertyName);
-            if (name.hasNext() && name.nextSegmentEquals("quarkus")) {
-                name.next();
-                for (ConfigDefinition definition : definitions) {
-                    final LeafConfigType leafType = definition.leafPatterns.match(name);
-                    if (leafType != null) {
-                        name.goToEnd();
-                        leafType.acceptConfigurationValue(name, config);
-                        final String nameString = name.toString();
-                        definition.loadedProperties.put(nameString, config.getValue(nameString, String.class));
-                        continue outer;
+            if (name.hasNext()) {
+                if (name.nextSegmentEquals("quarkus")) {
+                    name.next();
+                    for (ConfigDefinition definition : definitions) {
+                        final LeafConfigType leafType = definition.leafPatterns.match(name);
+                        if (leafType != null) {
+                            name.goToEnd();
+                            leafType.acceptConfigurationValue(name, config);
+                            final String nameString = name.toString();
+                            definition.loadedProperties.put(nameString, config.getValue(nameString, String.class));
+                            continue outer;
+                        }
                     }
+                    log.warnf("Unrecognized configuration key \"%s\" provided", propertyName);
+                } else {
+                    // non-Quarkus value; capture it in the unmatched map for storage as a default value
+                    unmatched.add(propertyName);
                 }
-                log.warnf("Unrecognized configuration key \"%s\" provided", propertyName);
             }
         }
     }

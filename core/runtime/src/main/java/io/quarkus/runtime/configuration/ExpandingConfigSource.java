@@ -16,6 +16,8 @@ public class ExpandingConfigSource extends AbstractDelegatingConfigSource {
     // this is a cache of compiled expressions, NOT a cache of expanded values
     private final ConcurrentHashMap<String, Expression> exprCache = new ConcurrentHashMap<>();
 
+    private static final ThreadLocal<Boolean> NO_EXPAND = new ThreadLocal<>();
+
     /**
      * A wrapper suitable for passing in to {@link SmallRyeConfigBuilder#withWrapper(UnaryOperator)}.
      */
@@ -35,7 +37,8 @@ public class ExpandingConfigSource extends AbstractDelegatingConfigSource {
     }
 
     public String getValue(final String propertyName) {
-        return expand(delegate.getValue(propertyName));
+        final String delegateValue = delegate.getValue(propertyName);
+        return isExpanding() ? expand(delegateValue) : delegateValue;
     }
 
     String expand(final String value) {
@@ -48,5 +51,21 @@ public class ExpandingConfigSource extends AbstractDelegatingConfigSource {
 
     public void flush() {
         exprCache.clear();
+    }
+
+    private static boolean isExpanding() {
+        return NO_EXPAND.get() != Boolean.TRUE;
+    }
+
+    public static boolean setExpanding(boolean newValue) {
+        try {
+            return NO_EXPAND.get() != Boolean.TRUE;
+        } finally {
+            if (newValue) {
+                NO_EXPAND.remove();
+            } else {
+                NO_EXPAND.set(Boolean.TRUE);
+            }
+        }
     }
 }

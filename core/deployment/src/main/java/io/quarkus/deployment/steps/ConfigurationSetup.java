@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
 import java.util.Properties;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
@@ -189,6 +190,7 @@ public class ConfigurationSetup {
             Consumer<BuildTimeConfigurationBuildItem> buildTimeConfigConsumer,
             Consumer<BuildTimeRunTimeFixedConfigurationBuildItem> buildTimeRunTimeConfigConsumer,
             Consumer<GeneratedResourceBuildItem> resourceConsumer,
+            Consumer<RunTimeConfigurationDefaultBuildItem> runTimeDefaultConsumer,
             ExtensionClassLoaderBuildItem extensionClassLoaderBuildItem,
             ArchiveRootBuildItem archiveRootBuildItem) throws IOException, ClassNotFoundException {
         // set up the configuration definitions
@@ -226,11 +228,11 @@ public class ConfigurationSetup {
         }
         final SmallRyeConfig src = (SmallRyeConfig) builder.build();
         SmallRyeConfigProviderResolver.instance().registerConfig(src, Thread.currentThread().getContextClassLoader());
-        ConfigDefinition.loadConfiguration(src,
+        final Set<String> unmatched = new HashSet<>();
+        ConfigDefinition.loadConfiguration(src, unmatched,
                 buildTimeConfig,
-                buildTimeRunTimeConfig,
-                runTimeConfig // this one is only for generating a default-values config source
-        );
+                buildTimeRunTimeConfig, // this one is only for generating a default-values config source
+                runTimeConfig);
 
         // store the expanded values from the build
         final byte[] bytes;
@@ -245,6 +247,18 @@ public class ConfigurationSetup {
         }
         resourceConsumer.accept(
                 new GeneratedResourceBuildItem(BuildTimeConfigFactory.BUILD_TIME_CONFIG_NAME, bytes));
+
+        // produce defaults for user-provided config
+        unmatched.addAll(runTimeConfig.getLoadedProperties().keySet());
+        final boolean old = ExpandingConfigSource.setExpanding(false);
+        try {
+            for (String propName : unmatched) {
+                runTimeDefaultConsumer
+                        .accept(new RunTimeConfigurationDefaultBuildItem(propName, src.getValue(propName, String.class)));
+            }
+        } finally {
+            ExpandingConfigSource.setExpanding(old);
+        }
 
         // produce the config objects
         runTimeConfigConsumer.accept(new RunTimeConfigurationBuildItem(runTimeConfig));

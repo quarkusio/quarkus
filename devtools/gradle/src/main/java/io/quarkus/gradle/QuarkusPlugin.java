@@ -41,13 +41,13 @@ public class QuarkusPlugin implements Plugin<Project> {
     }
 
     private void registerListExtensions(Project project) {
-        project.getTasks().create("list-extensions", QuarkusListExtensions.class);
-        project.getTasks().create("add-extension", QuarkusAddExtension.class);
-        project.getTasks().create("quarkus-dev", QuarkusDev.class).dependsOn("build");
-        project.getTasks().create("quarkus-build", QuarkusBuild.class).dependsOn("build");
+        project.getTasks().create("listExtensions", QuarkusListExtensions.class);
+        project.getTasks().create("addExtension", QuarkusAddExtension.class);
+        project.getTasks().create("quarkusDev", QuarkusDev.class).dependsOn("build");
+        project.getTasks().create("quarkusBuild", QuarkusBuild.class).dependsOn("build");
         project.getTasks()
-                .create("quarkus-native", QuarkusNative.class)
-                .dependsOn("quarkus-build");
+                .create("quarkusNative", QuarkusNative.class)
+                .dependsOn("quarkusBuild");
     }
 
     private void verifyGradleVersion() {

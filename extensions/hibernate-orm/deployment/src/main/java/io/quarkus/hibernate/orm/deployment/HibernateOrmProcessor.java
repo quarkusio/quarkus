@@ -424,7 +424,7 @@ public final class HibernateOrmProcessor {
                                 c -> {
                                     throw new ConfigurationError(
                                             "Unable to find file referenced in '" + HIBERNATE_ORM_CONFIG_PREFIX
-                                                    + ".sql-load-script-source="
+                                                    + "sql-load-script-source="
                                                     + c + "'. Remove property or add file to your path.");
                                 });
 

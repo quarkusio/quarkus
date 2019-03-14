@@ -128,4 +128,11 @@ public class JaxRSTestCase {
                 .body("name", is("my entity name"),
                         "value", is("my entity value"));
     }
+
+    @Test
+    public void testFromJson() {
+        RestAssured.when().get("/test/from-json").then()
+                .body("name", is("my entity name"),
+                        "value", is("my entity value"));
+    }
 }

@@ -15,14 +15,23 @@
  */
 package io.quarkus.resteasy.jsonb.deployment;
 
+import org.eclipse.yasson.JsonBindingProvider;
+import org.glassfish.json.JsonProviderImpl;
+
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 
 public class ResteasyJsonbProcessor {
 
     @BuildStep
-    void build(BuildProducer<FeatureBuildItem> feature) {
+    void build(BuildProducer<FeatureBuildItem> feature,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.RESTEASY_JSONB));
+
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
+                JsonBindingProvider.class.getName(),
+                JsonProviderImpl.class.getName()));
     }
 }

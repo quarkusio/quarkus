@@ -506,9 +506,6 @@ public class ResteasyScanningProcessor {
             CombinedIndexBuildItem combinedIndexBuildItem) {
         IndexView index = combinedIndexBuildItem.getIndex();
 
-        // required by JSON-P support
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "org.glassfish.json.JsonProviderImpl"));
-
         // required by Jackson
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false,
                 "com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector",

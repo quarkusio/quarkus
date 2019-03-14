@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
 import java.security.Permission;
 import java.security.Principal;
 import java.security.PrivateKey;
@@ -40,7 +41,7 @@ public class TokenRealmUnitTest {
 
     @Test
     public void testTokenRealm() throws Exception {
-        KeyPair keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
+        KeyPair keyPair = generateKeyPair();
         PublicKey pk1 = keyPair.getPublic();
         PrivateKey pk1Priv = keyPair.getPrivate();
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
@@ -66,7 +67,7 @@ public class TokenRealmUnitTest {
 
     @Test
     public void testSecurityDomain() throws Exception {
-        KeyPair keyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
+        KeyPair keyPair = generateKeyPair();
         PublicKey pk1 = keyPair.getPublic();
         PrivateKey pk1Priv = keyPair.getPrivate();
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo();
@@ -129,5 +130,11 @@ public class TokenRealmUnitTest {
             pn = claims.getFirst("sub");
         }
         return new NamePrincipal(pn);
+    }
+
+    private KeyPair generateKeyPair() throws NoSuchAlgorithmException {
+        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+        generator.initialize(2048); // because that's the minimal accepted size
+        return generator.generateKeyPair();
     }
 }

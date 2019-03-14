@@ -15,14 +15,6 @@ public enum ConfigPhase {
     RUN_TIME(false, true, true),
     ;
 
-    /**
-     * This is now an alias for {@link #BUILD_AND_RUN_TIME_FIXED}.
-     *
-     * @deprecated We are removing static init time configuration processing.
-     */
-    @Deprecated
-    public static final ConfigPhase RUN_TIME_STATIC = BUILD_AND_RUN_TIME_FIXED;
-
     private final boolean availableAtBuild;
     private final boolean availableAtRun;
     private final boolean readAtMain;

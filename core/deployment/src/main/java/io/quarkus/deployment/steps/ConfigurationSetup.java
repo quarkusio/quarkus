@@ -50,6 +50,7 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationSourceBuildItem;
 import io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.configuration.ConfigDefinition;
 import io.quarkus.deployment.configuration.ConfigPatternMap;
 import io.quarkus.deployment.configuration.LeafConfigType;
@@ -190,6 +191,7 @@ public class ConfigurationSetup {
             Consumer<BuildTimeConfigurationBuildItem> buildTimeConfigConsumer,
             Consumer<BuildTimeRunTimeFixedConfigurationBuildItem> buildTimeRunTimeConfigConsumer,
             Consumer<GeneratedResourceBuildItem> resourceConsumer,
+            Consumer<SubstrateResourceBuildItem> niResourceConsumer,
             Consumer<RunTimeConfigurationDefaultBuildItem> runTimeDefaultConsumer,
             ExtensionClassLoaderBuildItem extensionClassLoaderBuildItem,
             ArchiveRootBuildItem archiveRootBuildItem) throws IOException, ClassNotFoundException {
@@ -247,6 +249,8 @@ public class ConfigurationSetup {
         }
         resourceConsumer.accept(
                 new GeneratedResourceBuildItem(BuildTimeConfigFactory.BUILD_TIME_CONFIG_NAME, bytes));
+        niResourceConsumer.accept(
+                new SubstrateResourceBuildItem(BuildTimeConfigFactory.BUILD_TIME_CONFIG_NAME));
 
         // produce defaults for user-provided config
         unmatched.addAll(runTimeConfig.getLoadedProperties().keySet());
@@ -295,7 +299,8 @@ public class ConfigurationSetup {
     @BuildStep
     RunTimeConfigurationSourceBuildItem writeDefaults(
             List<RunTimeConfigurationDefaultBuildItem> defaults,
-            Consumer<GeneratedResourceBuildItem> resourceConsumer) throws IOException {
+            Consumer<GeneratedResourceBuildItem> resourceConsumer,
+            Consumer<SubstrateResourceBuildItem> niResourceConsumer) throws IOException {
         final Properties properties = new Properties();
         for (RunTimeConfigurationDefaultBuildItem item : defaults) {
             final String key = item.getKey();
@@ -317,6 +322,8 @@ public class ConfigurationSetup {
                 osw.flush();
                 resourceConsumer.accept(
                         new GeneratedResourceBuildItem(DefaultConfigSource.DEFAULT_CONFIG_PROPERTIES_NAME, os.toByteArray()));
+                niResourceConsumer.accept(
+                        new SubstrateResourceBuildItem(DefaultConfigSource.DEFAULT_CONFIG_PROPERTIES_NAME));
             }
         }
         return new RunTimeConfigurationSourceBuildItem(DefaultConfigSource.class.getName(), OptionalInt.empty());

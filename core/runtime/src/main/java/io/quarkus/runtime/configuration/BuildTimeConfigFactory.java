@@ -4,7 +4,9 @@ import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Enumeration;
 import java.util.Properties;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
@@ -23,11 +25,18 @@ public final class BuildTimeConfigFactory {
 
     public static ConfigSource getBuildTimeConfigSource() {
         Properties properties = new Properties();
-        try (InputStream is = BuildTimeConfigFactory.class.getClassLoader().getResourceAsStream(BUILD_TIME_CONFIG_NAME)) {
-            if (is != null)
-                try (InputStreamReader isr = new InputStreamReader(is, StandardCharsets.UTF_8)) {
-                    properties.load(isr);
+        final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        try {
+            final Enumeration<URL> resources = classLoader.getResources(BUILD_TIME_CONFIG_NAME);
+            if (resources.hasMoreElements()) {
+                final URL url = resources.nextElement();
+                try (InputStream is = url.openStream()) {
+                    if (is != null)
+                        try (InputStreamReader isr = new InputStreamReader(is, StandardCharsets.UTF_8)) {
+                            properties.load(isr);
+                        }
                 }
+            }
             return new PropertiesConfigSource(properties, "Build time configuration");
         } catch (IOException e) {
             throw new IOError(e);

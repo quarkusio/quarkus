@@ -49,6 +49,7 @@ import org.hibernate.dialect.DB297Dialect;
 import org.hibernate.dialect.DerbyTenSevenDialect;
 import org.hibernate.dialect.MariaDB103Dialect;
 import org.hibernate.dialect.MySQL8Dialect;
+import org.hibernate.dialect.Oracle12cDialect;
 import org.hibernate.dialect.SQLServer2012Dialect;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.internal.util.collections.ArrayHelper;
@@ -956,6 +957,9 @@ public final class HibernateOrmProcessor {
         }
         if (DatabaseKind.isMySQL(resolvedDbKind)) {
             return Optional.of(MySQL8Dialect.class.getName());
+        }
+        if (DatabaseKind.isOracle(resolvedDbKind)) {
+            return Optional.of(Oracle12cDialect.class.getName());
         }
         if (DatabaseKind.isDerby(resolvedDbKind)) {
             return Optional.of(DerbyTenSevenDialect.class.getName());

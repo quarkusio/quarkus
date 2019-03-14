@@ -25,6 +25,7 @@ test {
     testLogging {
         events "passed", "skipped", "failed"
     }
+    useJUnitPlatform()
 }
 
 task sourcesJar(type: Jar) {

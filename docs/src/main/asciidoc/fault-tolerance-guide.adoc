@@ -207,7 +207,10 @@ in the `CoffeeResource#coffees()` endpoint method in about 50 % of requests.
 
 Why not check that our application works? Run the Quarkus development server with:
 
-`mvn compile quarkus:dev`
+[source,shell]
+----
+mvn compile quarkus:dev
+----
 
 and open `http://localhost:8080/coffee` in your browser. Make couple of requests (remember, some of them we expect
 to fail). At least some of the requests should show us the list of our coffee samples in JSON, the rest will fail
@@ -246,14 +249,14 @@ the call!
 To see that that the failures still happen, check the output of the development server. The log messages should be
 similar to these:
 
-```
+[source]
+----
 2019-03-06 12:17:41,725 INFO  [org.acm.fau.CoffeeResource] (XNIO-1 task-1) CoffeeResource#coffees() invocation #5 returning successfully
 2019-03-06 12:17:44,187 INFO  [org.acm.fau.CoffeeResource] (XNIO-1 task-1) CoffeeResource#coffees() invocation #6 returning successfully
 2019-03-06 12:17:45,166 ERROR [org.acm.fau.CoffeeResource] (XNIO-1 task-1) CoffeeResource#coffees() invocation #7 failed
 2019-03-06 12:17:45,172 ERROR [org.acm.fau.CoffeeResource] (XNIO-1 task-1) CoffeeResource#coffees() invocation #8 failed
 2019-03-06 12:17:45,176 INFO  [org.acm.fau.CoffeeResource] (XNIO-1 task-1) CoffeeResource#coffees() invocation #9 returning successfully
-
-```
+----
 
 You can see that every time an invocation fails, it's immediately followed by another invocation, until one succeeds.
 Since we allowed 4 retries, it would require 5 invocations to fail in a row, in order for the user to be actually exposed
@@ -346,11 +349,12 @@ two recommendations returned by the original method.
 
 Check the server output to see that fallback is really happening:
 
-```
+[source]
+----
 2019-03-06 13:21:54,170 INFO  [org.acm.fau.CoffeeResource] (pool-15-thread-3) CoffeeResource#recommendations() invocation #2 returning successfully
 2019-03-06 13:21:55,159 ERROR [org.acm.fau.CoffeeResource] (pool-15-thread-4) CoffeeResource#recommendations() invocation #3 timed out after 248 ms
 2019-03-06 13:21:55,161 INFO  [org.acm.fau.CoffeeResource] (HystrixTimer-1) Falling back to RecommendationResource#fallbackRecommendations()
-```
+----
 
 NOTE: The fallback method is required to have the same parameters as the original method.
 
@@ -454,15 +458,17 @@ of our business logic.
 All that is needed to enable the fault tolerance features in Quarkus is:
 
 * adding the `smallrye-fault-tolerance` Quarkus extension to your project using the `quarkus-maven-plugin`:
-
-  `mvn quarkus:add-extension -Dextensions="smallrye-fault-tolerance"`
-
++
+[source,shell]
+----
+mvn quarkus:add-extension -Dextensions="smallrye-fault-tolerance"
+----
 * or simply adding the following Maven dependency:
-
-  [source,xml]
-  ----
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-smallrye-fault-tolerance</artifactId>
-    </dependency>
-  ----
++
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-smallrye-fault-tolerance</artifactId>
+</dependency>
+----

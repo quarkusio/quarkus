@@ -33,7 +33,7 @@
             <artifactId>quarkus-resteasy</artifactId>
         </dependency>
 
-        <!-- Test extensions -->
+        <!-- Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
@@ -48,6 +48,7 @@
 
     <build>
         <plugins>
+            <!-- Quarkus build plugin - also provides the quarkus:dev hot-reload feature -->
             <plugin>
                 <groupId>${plugin_groupId}</groupId>
                 <artifactId>${plugin_artifactId}</artifactId>
@@ -60,6 +61,7 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- Run the tests in JVM mode -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -74,6 +76,7 @@
     </build>
 
     <profiles>
+        <!-- Use this profile to build a native executable using GraalVM -->
         <profile>
             <id>native</id>
             <activation>
@@ -98,6 +101,7 @@
                             </execution>
                         </executions>
                     </plugin>
+                    <!-- Run the tests with the native executable -->
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-failsafe-plugin</artifactId>

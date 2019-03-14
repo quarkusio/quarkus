@@ -51,7 +51,6 @@ If you have not done so on this machine, you need to:
  
 * Install Git and configure your GitHub access
 * Install Java SDK (OpenJDK recommended)
-* Download and Apache Maven (3.5+) 
 * Install [GraalVM](http://www.graalvm.org/downloads/) (community edition is enough)
 * Install platform C developer tools:
     * Linux
@@ -71,7 +70,7 @@ On Linux, check [the post-installation guide](https://docs.docker.com/install/li
 ### IDE Config and Code Style
 
 Quarkus has a strictly enforced code style. Code formatting is done by the Eclipse code formatter, using the config files
-found in the `ide-config` directory. By default when you run `mvn install` the code will be formatted automatically.
+found in the `ide-config` directory. By default when you run `./mvnw install` the code will be formatted automatically.
 When submitting a pull request the CI build will fail if running the formatter results in any code changes, so it is
 recommended that you always run a full maven build before submitting a pull request.
 
@@ -97,21 +96,21 @@ select the `eclipse.importorder` file as the import order config file.
 
 * Clone the repository: `git clone https://github.com/quarkusio/quarkus.git`
 * Navigate to the directory: `cd quarkus`
-* Invoke `mvn clean install` from the root directory
+* Invoke `./mvnw clean install` from the root directory
 
 ```bash
 git clone https://github.com/quarkusio/quarkus.git
 cd quarkus
-mvn clean install
+./mvnw clean install
 # Wait... success!
 ```
 
 The default build will create two different native images, which is quite time consuming. You can skip this
-by disabling the `native-image` profile: `mvn install -Dno-native`.
+by disabling the `native-image` profile: `./mvnw install -Dno-native`.
 
 By default the build will use the native image server. This speeds up the build, but can cause problems due to the cache
 not being invalidated correctly in some cases. To run a build with a new instance of the server you can use
-`mvn install -Dnative-image.new-server=true`.
+`./mvnw install -Dnative-image.new-server=true`.
 
 ## The small print
 

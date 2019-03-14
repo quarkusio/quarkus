@@ -16,15 +16,18 @@
 
 package io.quarkus.spring.tests;
 
-import org.springframework.beans.factory.annotation.Value;
+import java.util.concurrent.atomic.AtomicInteger;
 
-@PrototypeService
-public class MessageProducer {
+@SessionService
+public class SessionBean {
 
-    @Value("${greeting.message}")
-    String message;
+    final AtomicInteger value;
 
-    public String getPrefix() {
-        return message;
+    public SessionBean() {
+        this.value = new AtomicInteger();
+    }
+
+    public int getValue() {
+        return value.getAndIncrement();
     }
 }

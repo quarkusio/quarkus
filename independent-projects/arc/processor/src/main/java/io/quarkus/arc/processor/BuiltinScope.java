@@ -10,12 +10,12 @@ import javax.inject.Singleton;
 import org.jboss.jandex.DotName;
 
 public enum BuiltinScope {
-    
+
     DEPENDENT(Dependent.class, false),
     SINGLETON(Singleton.class, false),
     APPLICATION(ApplicationScoped.class, true),
     REQUEST(RequestScoped.class, true);
-    
+
     private ScopeInfo info;
 
     private BuiltinScope(Class<? extends Annotation> clazz, boolean isNormal) {
@@ -25,7 +25,7 @@ public enum BuiltinScope {
     public ScopeInfo getInfo() {
         return info;
     }
-    
+
     public static BuiltinScope from(DotName name) {
         for (BuiltinScope scope : BuiltinScope.values()) {
             if (scope.getInfo().getDotName().equals(name)) {
@@ -34,11 +34,11 @@ public enum BuiltinScope {
         }
         return null;
     }
-    
+
     public static boolean isDefault(ScopeInfo scope) {
         return DEPENDENT.is(scope);
     }
-    
+
     public boolean is(ScopeInfo scope) {
         return getInfo().equals(scope);
     }

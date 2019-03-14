@@ -135,7 +135,7 @@ the test is run.
 
 === Controlling the test port
 
-While Quarkus will listen on port `8080` by default when running tests it defaults to `8081`. This allows you to run
+While Quarkus will listen on port `8080` by default, when running tests it defaults to `8081`. This allows you to run
 tests while having the application running in parallel. This can be configured via the `quarkus.http.test-port`
 config property in `application.properties`.
 

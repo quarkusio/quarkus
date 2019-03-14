@@ -19,26 +19,22 @@ package io.quarkus.arc.deployment;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import javax.enterprise.context.Dependent;
 import javax.inject.Inject;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.CompositeIndex;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
-import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 
@@ -52,6 +48,7 @@ import io.quarkus.arc.processor.BeanProcessor;
 import io.quarkus.arc.processor.BeanProcessor.Builder;
 import io.quarkus.arc.processor.ReflectionRegistration;
 import io.quarkus.arc.processor.ResourceOutput;
+import io.quarkus.arc.runtime.AdditionalBean;
 import io.quarkus.arc.runtime.ArcDeploymentTemplate;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.arc.runtime.LifecycleEventRunner;
@@ -67,11 +64,12 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveMethodBuildItem;
-import io.quarkus.deployment.index.IndexingUtil;
 
 public class ArcAnnotationProcessor {
 
     private static final Logger log = Logger.getLogger("io.quarkus.arc.deployment.processor");
+
+    static final DotName ADDITIONAL_BEAN = DotName.createSimple(AdditionalBean.class.getName());
 
     @Inject
     BeanArchiveIndexBuildItem beanArchiveIndex;
@@ -98,6 +96,9 @@ public class ArcAnnotationProcessor {
     List<BeanRegistrarBuildItem> beanRegistrars;
 
     @Inject
+    List<ContextRegistrarBuildItem> contextRegistrars;
+
+    @Inject
     List<BeanDeploymentValidatorBuildItem> beanDeploymentValidators;
 
     @Inject
@@ -114,51 +115,22 @@ public class ArcAnnotationProcessor {
      */
     ArcConfig arc;
 
-    @BuildStep
-    public FullArchiveIndexBuildItem buildArchive(List<GeneratedBeanBuildItem> generatedBeans) {
-        List<String> additionalBeans = new ArrayList<>();
-        for (AdditionalBeanBuildItem i : this.additionalBeans) {
-            additionalBeans.addAll(i.getBeanClasses());
-        }
-        additionalBeans.add(LifecycleEventRunner.class.getName());
-
-        // Index bean classes registered by quarkus
-        Indexer indexer = new Indexer();
-        Set<DotName> additionalIndex = new HashSet<>();
-        for (String beanClass : additionalBeans) {
-            IndexingUtil.indexClass(beanClass, indexer, beanArchiveIndex.getIndex(), additionalIndex,
-                    ArcAnnotationProcessor.class.getClassLoader());
-        }
-        Set<DotName> generatedClassNames = new HashSet<>();
-        for (GeneratedBeanBuildItem beanClass : generatedBeans) {
-            IndexingUtil.indexClass(beanClass.getName(), indexer, beanArchiveIndex.getIndex(), additionalIndex,
-                    ArcAnnotationProcessor.class.getClassLoader(), beanClass.getData());
-            generatedClassNames.add(DotName.createSimple(beanClass.getName().replace('/', '.')));
-            generatedClass.produce(new GeneratedClassBuildItem(true, beanClass.getName(), beanClass.getData()));
-        }
-
-        final IndexView index = BeanProcessor.addBuiltinClasses(
-                CompositeIndex.create(indexer.complete(), beanArchiveIndex.getIndex()));
-        return new FullArchiveIndexBuildItem(index, generatedClassNames, additionalBeans);
-    }
-
     @BuildStep(providesCapabilities = Capabilities.CDI_ARC, applicationArchiveMarkers = { "META-INF/beans.xml",
             "META-INF/services/javax.enterprise.inject.spi.Extension" })
     @Record(STATIC_INIT)
     public BeanContainerBuildItem build(ArcDeploymentTemplate arcTemplate,
             List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems,
-            ApplicationArchivesBuildItem applicationArchivesBuildItem, FullArchiveIndexBuildItem fullArchiveIndexBuildItem,
-            List<AnnotationsTransformerBuildItem> annotationTransformers, ShutdownContextBuildItem shutdown,
-            List<AdditionalStereotypeBuildItem> additionalStereotypeBuildItems,
-            BuildProducer<FeatureBuildItem> feature,
-            List<ContextRegistrarBuildItem> contextRegistrars)
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            List<AnnotationsTransformerBuildItem> annotationTransformers,
+            ShutdownContextBuildItem shutdown, List<AdditionalStereotypeBuildItem> additionalStereotypeBuildItems,
+            BuildProducer<FeatureBuildItem> feature)
             throws Exception {
 
         feature.produce(new FeatureBuildItem(FeatureBuildItem.CDI));
 
-        List<String> additionalBeans = fullArchiveIndexBuildItem.getAdditionalBeans();
-        Set<DotName> generatedClassNames = fullArchiveIndexBuildItem.getGeneratedClassNames();
-        IndexView index = fullArchiveIndexBuildItem.getIndex();
+        List<String> additionalBeans = beanArchiveIndex.getAdditionalBeans();
+        Set<DotName> generatedClassNames = beanArchiveIndex.getGeneratedClassNames();
+        IndexView index = beanArchiveIndex.getIndex();
         Builder builder = BeanProcessor.builder();
         builder.setApplicationClassPredicate(new Predicate<DotName>() {
             @Override
@@ -181,25 +153,26 @@ public class ArcAnnotationProcessor {
 
             @Override
             public void transform(TransformationContext transformationContext) {
-                if (additionalBeans.contains(transformationContext.getTarget().asClass().name().toString())) {
-                    transformationContext.transform().add(Dependent.class).done();
+                ClassInfo target = transformationContext.getTarget().asClass();
+                if (additionalBeans.contains(target.name().toString()) && !target.annotations().containsKey(ADDITIONAL_BEAN)) {
+                    // Add special stereotype so that @Dependent is automatically used even if no scope is declared
+                    transformationContext.transform().add(ADDITIONAL_BEAN).done();
                 }
             }
         });
         builder.setIndex(index);
-
-        builder.setAdditionalBeanDefiningAnnotations(additionalBeanDefiningAnnotations.stream()
-                .map((s) -> new BeanDefiningAnnotation(s.getName(), s.getDefaultScope()))
-                .collect(Collectors.toList()));
+        List<BeanDefiningAnnotation> beanDefiningAnnotations = additionalBeanDefiningAnnotations.stream()
+                .map((s) -> new BeanDefiningAnnotation(s.getName(), s.getDefaultScope())).collect(Collectors.toList());
+        beanDefiningAnnotations.add(new BeanDefiningAnnotation(ADDITIONAL_BEAN, null));
+        builder.setAdditionalBeanDefiningAnnotations(beanDefiningAnnotations);
         final Map<DotName, Collection<AnnotationInstance>> additionalStereotypes = new HashMap<>();
         for (final AdditionalStereotypeBuildItem item : additionalStereotypeBuildItems) {
             additionalStereotypes.putAll(item.getStereotypes());
         }
         builder.setAdditionalStereotypes(additionalStereotypes);
         builder.setSharedAnnotationLiterals(true);
-        builder.addResourceAnnotations(resourceAnnotations.stream()
-                .map(ResourceAnnotationBuildItem::getName)
-                .collect(Collectors.toList()));
+        builder.addResourceAnnotations(
+                resourceAnnotations.stream().map(ResourceAnnotationBuildItem::getName).collect(Collectors.toList()));
         builder.setReflectionRegistration(new ReflectionRegistration() {
             @Override
             public void registerMethod(MethodInfo methodInfo) {
@@ -264,17 +237,10 @@ public class ArcAnnotationProcessor {
         BeanDeployment beanDeployment = beanProcessor.process();
 
         ArcContainer container = arcTemplate.getContainer(shutdown);
-        BeanContainer beanContainer = arcTemplate.initBeanContainer(
-                container,
-                beanContainerListenerBuildItems
-                        .stream()
-                        .map(BeanContainerListenerBuildItem::getBeanContainerListener)
+        BeanContainer beanContainer = arcTemplate.initBeanContainer(container,
+                beanContainerListenerBuildItems.stream().map(BeanContainerListenerBuildItem::getBeanContainerListener)
                         .collect(Collectors.toList()),
-                beanDeployment
-                        .getRemovedBeans()
-                        .stream()
-                        .flatMap(b -> b.getTypes().stream())
-                        .map(t -> t.name().toString())
+                beanDeployment.getRemovedBeans().stream().flatMap(b -> b.getTypes().stream()).map(t -> t.name().toString())
                         .collect(Collectors.toSet()));
 
         return new BeanContainerBuildItem(beanContainer);

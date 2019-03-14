@@ -238,7 +238,7 @@ public class ConfigurationSetup {
                 runTimeConfig);
         // exclude any default config property names that aren't part of application.properties
         final Set<String> inJarPropertyNames = inJar.getPropertyNames();
-        unmatched.removeIf(s -> ! inJarPropertyNames.contains(s) && ! s.startsWith("quarkus."));
+        unmatched.removeIf(s -> !inJarPropertyNames.contains(s) && !s.startsWith("quarkus."));
 
         // store the expanded values from the build
         final byte[] bytes;

@@ -1,5 +1,7 @@
 package io.quarkus.runtime.configuration;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.wildfly.common.Assert;
 
@@ -64,6 +66,22 @@ final class Substitutions {
             if (!newValue)
                 throw Assert.unsupported();
             return true;
+        }
+    }
+
+    @TargetClass(ConfigProvider.class)
+    static final class Target_ConfigProvider {
+        @Delete
+        private static ConfigProviderResolver INSTANCE;
+
+        @Substitute
+        public static Config getConfig() {
+            return ConfigProviderResolver.instance().getConfig();
+        }
+
+        @Substitute
+        public static Config getConfig(ClassLoader cl) {
+            return getConfig();
         }
     }
 }

@@ -18,12 +18,16 @@ After obtaining the download install it and set `JAVA_HOME`
 
 [source,shell]
 ----
-wget -O jvmci.tgz http://download.oracle.com/otn/utilities_drivers/oracle-labs/labsjdk-8u172-jvmci-0.46-darwin-amd64.tar.gz?AuthParam=[GENERATED AUTH TOKEN HERE]
+wget -O jvmci.tgz http://download.oracle.com/otn/utilities_drivers/oracle-labs/labsjdk-8u202-jvmci-0.56-darwin-amd64.tar.gz?AuthParam=[GENERATED AUTH TOKEN HERE]
 tar -xzvf jvmci.tgz -C /opt
-# On Mac do labsjdk1.8.0_172-jvmci-0.46/Contents/Home
-export JAVA_HOME=/opt/labsjdk1.8.0_172-jvmci-0.46/
+# On Mac do labsjdk1.8.0_202-jvmci-0.56/Contents/Home
+export JAVA_HOME=/opt/labsjdk1.8.0_202-jvmci-0.46/
 export PATH=$JAVA_HOME/bin:$PATH
 ----
+
+.NOTE
+Get the latest version available as graal tends to keep updating
+the minimum requirements.
 
 === Install MX
 
@@ -31,7 +35,7 @@ Now you need to install Graal’s special build tool, `mx`.
 
 [source,shell]
 ----
-git clone git@github.com:graalvm/mx.git
+git clone https://github.com/graalvm/mx.git
 export PATH=`pwd`/mx:$PATH
 ----
 
@@ -41,7 +45,7 @@ You can now check-out and build Substrate:
 
 [source,shell]
 ----
-git clone git clone git@github.com:oracle/graal.git 
+git clone https://github.com/oracle/graal.git
 cd graal/substratevm
 mx build
 ----

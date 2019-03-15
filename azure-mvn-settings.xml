@@ -12,6 +12,12 @@
       <url>http://40.113.102.249:8081/repository/jboss-mirror/</url>
       <mirrorOf>jboss-public-repository-group</mirrorOf>
     </mirror>
+    <mirror>
+      <id>quarkus-jboss2</id>
+      <name>Quarkus JBoss2</name>
+      <url>http://40.113.102.249:8081/repository/jboss-mirror/</url>
+      <mirrorOf>jboss-public-repository</mirrorOf>
+    </mirror>
   </mirrors>
   <profiles>
     <profile>

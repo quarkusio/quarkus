@@ -30,19 +30,22 @@ import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.Indexer;
 
+import io.quarkus.arc.ActivateRequestContextInterceptor;
+import io.quarkus.arc.processor.BeanArchives;
 import io.quarkus.arc.processor.BeanDefiningAnnotation;
 import io.quarkus.arc.processor.BeanDeployment;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.runtime.LifecycleEventRunner;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.index.IndexingUtil;
 
 public class BeanArchiveProcessor {
-
-    @Inject
-    BuildProducer<BeanArchiveIndexBuildItem> beanArchiveIndexBuildProducer;
 
     @Inject
     ApplicationArchivesBuildItem applicationArchivesBuildItem;
@@ -50,8 +53,50 @@ public class BeanArchiveProcessor {
     @Inject
     List<BeanDefiningAnnotationBuildItem> additionalBeanDefiningAnnotations;
 
+    @Inject
+    List<AdditionalBeanBuildItem> additionalBeans;
+
+    @Inject
+    List<GeneratedBeanBuildItem> generatedBeans;
+
+    @Inject
+    BuildProducer<GeneratedClassBuildItem> generatedClass;
+
     @BuildStep
-    public void build() throws Exception {
+    public BeanArchiveIndexBuildItem build() throws Exception {
+
+        // First build an index from application archives
+        IndexView applicationIndex = buildApplicationIndex();
+
+        // Then build additional index for beans added by extensions
+        Indexer additionalBeanIndexer = new Indexer();
+        List<String> additionalBeans = new ArrayList<>();
+        for (AdditionalBeanBuildItem i : this.additionalBeans) {
+            additionalBeans.addAll(i.getBeanClasses());
+        }
+        additionalBeans.add(LifecycleEventRunner.class.getName());
+        additionalBeans.add(ActivateRequestContextInterceptor.class.getName());
+        Set<DotName> additionalIndex = new HashSet<>();
+        for (String beanClass : additionalBeans) {
+            IndexingUtil.indexClass(beanClass, additionalBeanIndexer, applicationIndex, additionalIndex,
+                    ArcAnnotationProcessor.class.getClassLoader());
+        }
+        Set<DotName> generatedClassNames = new HashSet<>();
+        for (GeneratedBeanBuildItem beanClass : generatedBeans) {
+            IndexingUtil.indexClass(beanClass.getName(), additionalBeanIndexer, applicationIndex, additionalIndex,
+                    ArcAnnotationProcessor.class.getClassLoader(),
+                    beanClass.getData());
+            generatedClassNames.add(DotName.createSimple(beanClass.getName().replace('/', '.')));
+            generatedClass.produce(new GeneratedClassBuildItem(true, beanClass.getName(), beanClass.getData()));
+        }
+
+        // Finally, index ArC/CDI API built-in classes
+        return new BeanArchiveIndexBuildItem(
+                BeanArchives.buildBeanArchiveIndex(applicationIndex, additionalBeanIndexer.complete()), generatedClassNames,
+                additionalBeans);
+    }
+
+    private IndexView buildApplicationIndex() {
 
         Set<ApplicationArchive> archives = applicationArchivesBuildItem.getAllApplicationArchives();
 
@@ -88,7 +133,7 @@ public class BeanArchiveProcessor {
             }
         }
         indexes.add(applicationArchivesBuildItem.getRootArchive().getIndex());
-        beanArchiveIndexBuildProducer.produce(new BeanArchiveIndexBuildItem(CompositeIndex.create(indexes)));
+        return CompositeIndex.create(indexes);
     }
 
     boolean containsBeanDefiningAnnotation(IndexView index, Collection<DotName> beanDefiningAnnotations) {

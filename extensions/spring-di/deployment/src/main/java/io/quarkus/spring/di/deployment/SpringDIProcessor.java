@@ -43,7 +43,7 @@ import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.deployment.AdditionalStereotypeBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
-import io.quarkus.arc.deployment.FullArchiveIndexBuildItem;
+import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.Transformation;
@@ -105,9 +105,9 @@ public class SpringDIProcessor {
 
     @BuildStep
     AnnotationsTransformerBuildItem beanTransformer(
-            final FullArchiveIndexBuildItem fullArchiveIndexBuildItem,
+            final BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             final BuildProducer<AdditionalStereotypeBuildItem> additionalStereotypeBuildItemBuildProducer) {
-        final IndexView index = fullArchiveIndexBuildItem.getIndex();
+        final IndexView index = beanArchiveIndexBuildItem.getIndex();
         final Map<DotName, Set<DotName>> scopes = getStereotypeScopes(index);
         final Map<DotName, Collection<AnnotationInstance>> instances = new HashMap<>();
         for (final DotName name : scopes.keySet()) {

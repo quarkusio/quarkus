@@ -22,18 +22,19 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import javax.ws.rs.Path;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.ClientResponseFilter;
 import javax.ws.rs.ext.Providers;
 
 import org.apache.commons.logging.impl.Jdk14Logger;
 import org.apache.commons.logging.impl.LogFactoryImpl;
-import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
@@ -47,7 +48,6 @@ import io.quarkus.arc.deployment.BeanRegistrarBuildItem;
 import io.quarkus.arc.processor.BeanConfigurator;
 import io.quarkus.arc.processor.BeanRegistrar;
 import io.quarkus.arc.processor.BuiltinScope;
-import io.quarkus.arc.processor.ScopeInfo;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -73,7 +73,7 @@ class SmallRyeRestClientProcessor {
 
     private static final DotName REST_CLIENT = DotName.createSimple(RestClient.class.getName());
 
-    private static final DotName REGISTER_REST_CLIENT = DotName.createSimple(RegisterRestClient.class.getName());
+    private static final DotName PATH = DotName.createSimple(Path.class.getName());
 
     private static final String PROVIDERS_SERVICE_FILE = "META-INF/services/" + Providers.class.getName();
 
@@ -141,7 +141,8 @@ class SmallRyeRestClientProcessor {
         Map<DotName, ClassInfo> interfaces = new HashMap<>();
         Set<Type> returnTypes = new HashSet<>();
 
-        for (AnnotationInstance annotation : combinedIndexBuildItem.getIndex().getAnnotations(REGISTER_REST_CLIENT)) {
+        IndexView index = combinedIndexBuildItem.getIndex();
+        for (AnnotationInstance annotation : index.getAnnotations(PATH)) {
             AnnotationTarget target = annotation.target();
             ClassInfo theInfo;
             if (target.kind() == AnnotationTarget.Kind.CLASS) {
@@ -151,9 +152,11 @@ class SmallRyeRestClientProcessor {
             } else {
                 continue;
             }
-            if (!Modifier.isInterface(theInfo.flags())) {
+
+            if (!isRestClientInterface(index, theInfo)) {
                 continue;
             }
+
             interfaces.put(theInfo.name(), theInfo);
 
             // Find Return types
@@ -211,5 +214,10 @@ class SmallRyeRestClientProcessor {
         // Indicates that this extension would like the SSL support to be enabled
         extensionSslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(FeatureBuildItem.SMALLRYE_REST_CLIENT));
         RestClientBuilderImpl.SSL_ENABLED = sslNativeConfig.isEnabled();
+    }
+
+    private boolean isRestClientInterface(IndexView index, ClassInfo classInfo) {
+        return Modifier.isInterface(classInfo.flags())
+                && index.getAllKnownImplementors(classInfo.name()).isEmpty();
     }
 }

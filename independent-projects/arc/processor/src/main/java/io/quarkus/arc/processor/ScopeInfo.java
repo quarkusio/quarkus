@@ -18,7 +18,6 @@ package io.quarkus.arc.processor;
 
 import java.lang.annotation.Annotation;
 import java.util.Objects;
-
 import org.jboss.jandex.DotName;
 
 public class ScopeInfo {

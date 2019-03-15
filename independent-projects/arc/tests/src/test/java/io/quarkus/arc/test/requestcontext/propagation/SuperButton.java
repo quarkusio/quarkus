@@ -17,7 +17,6 @@
 package io.quarkus.arc.test.requestcontext.propagation;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.Dependent;
 

@@ -18,10 +18,9 @@ package io.quarkus.arc.test.build.extension.deployment;
 
 import static org.junit.Assert.assertTrue;
 
-import javax.enterprise.context.Dependent;
-
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
+import javax.enterprise.context.Dependent;
 import org.junit.Rule;
 import org.junit.Test;
 

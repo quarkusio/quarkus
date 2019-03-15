@@ -16,12 +16,11 @@
 
 package io.quarkus.arc.test.metadata;
 
-import javax.enterprise.util.AnnotationLiteral;
-import javax.inject.Qualifier;
-
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.test.ArcTestContainer;
+import javax.enterprise.util.AnnotationLiteral;
+import javax.inject.Qualifier;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;

@@ -18,7 +18,6 @@ package io.quarkus.arc.test.requestcontext.propagation;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.RequestScoped;

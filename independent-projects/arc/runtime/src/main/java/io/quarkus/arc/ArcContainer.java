@@ -19,7 +19,6 @@ package io.quarkus.arc;
 import java.lang.annotation.Annotation;
 import java.util.Set;
 import java.util.function.Supplier;
-
 import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.util.TypeLiteral;

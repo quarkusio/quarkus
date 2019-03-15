@@ -16,13 +16,12 @@
 
 package io.quarkus.arc.processor;
 
+import io.quarkus.arc.processor.ResourceOutput.Resource;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import io.quarkus.arc.processor.ResourceOutput.Resource;
 
 /**
  *

@@ -27,12 +27,14 @@ import java.lang.reflect.WildcardType;
  *
  * Utility class that captures standard covariant Java assignability rules.
  *
- * This class operates on all the possible Type subtypes: Class, ParameterizedType, TypeVariable, WildcardType, GenericArrayType.
+ * This class operates on all the possible Type subtypes: Class, ParameterizedType, TypeVariable, WildcardType,
+ * GenericArrayType.
  * To make this class easier to understand and maintain, there is a separate isAssignableFrom method for each combination
  * of possible types. Each of these methods compares two type instances and determines whether the first one is assignable from
  * the other.
  *
- * TypeVariables are considered a specific unknown type restricted by the upper bound. No inference of type variables is performed.
+ * TypeVariables are considered a specific unknown type restricted by the upper bound. No inference of type variables is
+ * performed.
  *
  * @author Jozef Hartinger
  *

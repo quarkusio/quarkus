@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ArrayType;
 import org.jboss.jandex.ClassInfo;
@@ -72,7 +71,8 @@ final class Methods {
                         params[i] = resolveType(key.method.parameters().get(i), resolvedTypeParameters);
                     }
                     List<TypeVariable> typeVariables = key.method.typeParameters();
-                    return MethodInfo.create(classInfo, key.method.name(), params, returnType, key.method.flags(), typeVariables.toArray(new TypeVariable[] {}),
+                    return MethodInfo.create(classInfo, key.method.name(), params, returnType, key.method.flags(),
+                            typeVariables.toArray(new TypeVariable[] {}),
                             key.method.exceptions().toArray(Type.EMPTY_ARRAY));
                 });
             }
@@ -82,7 +82,8 @@ final class Methods {
                 if (interfaceClassInfo != null) {
                     Map<TypeVariable, Type> resolved = Collections.emptyMap();
                     if (org.jboss.jandex.Type.Kind.PARAMETERIZED_TYPE.equals(interfaceType.kind())) {
-                        resolved = Types.buildResolvedMap(interfaceType.asParameterizedType().arguments(), interfaceClassInfo.typeParameters(),
+                        resolved = Types.buildResolvedMap(interfaceType.asParameterizedType().arguments(),
+                                interfaceClassInfo.typeParameters(),
                                 resolvedTypeParameters);
                     }
                     addDelegatingMethods(index, interfaceClassInfo, resolved, methods);
@@ -93,7 +94,8 @@ final class Methods {
                 if (superClassInfo != null) {
                     Map<TypeVariable, Type> resolved = Collections.emptyMap();
                     if (org.jboss.jandex.Type.Kind.PARAMETERIZED_TYPE.equals(classInfo.superClassType().kind())) {
-                        resolved = Types.buildResolvedMap(classInfo.superClassType().asParameterizedType().arguments(), superClassInfo.typeParameters(),
+                        resolved = Types.buildResolvedMap(classInfo.superClassType().asParameterizedType().arguments(),
+                                superClassInfo.typeParameters(),
                                 resolvedTypeParameters);
                     }
                     addDelegatingMethods(index, superClassInfo, resolved, methods);
@@ -115,7 +117,8 @@ final class Methods {
         return false;
     }
 
-    static void addInterceptedMethodCandidates(BeanDeployment beanDeployment, ClassInfo classInfo, Map<MethodKey, Set<AnnotationInstance>> candidates,
+    static void addInterceptedMethodCandidates(BeanDeployment beanDeployment, ClassInfo classInfo,
+            Map<MethodKey, Set<AnnotationInstance>> candidates,
             List<AnnotationInstance> classLevelBindings) {
         for (MethodInfo method : classInfo.methods()) {
             if (skipForSubclass(method)) {
@@ -176,7 +179,8 @@ final class Methods {
             case WILDCARD_TYPE:
                 WildcardType wildcardType = type.asWildcardType();
                 return WildcardType.create(
-                        resolveType(wildcardType.superBound() != null ? wildcardType.superBound() : wildcardType.extendsBound(), resolvedTypeParameters),
+                        resolveType(wildcardType.superBound() != null ? wildcardType.superBound() : wildcardType.extendsBound(),
+                                resolvedTypeParameters),
                         wildcardType.superBound() == null);
             case ARRAY:
                 ArrayType arrayType = type.asArrayType();
@@ -196,7 +200,7 @@ final class Methods {
             this.method = method;
             this.name = method.name();
             this.params = new ArrayList<>();
-            for(Type i : method.parameters()) {
+            for (Type i : method.parameters()) {
                 params.add(i.name());
             }
         }

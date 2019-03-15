@@ -17,7 +17,6 @@
 package io.quarkus.arc;
 
 import java.util.Collection;
-
 import javax.enterprise.context.spi.AlterableContext;
 
 /**

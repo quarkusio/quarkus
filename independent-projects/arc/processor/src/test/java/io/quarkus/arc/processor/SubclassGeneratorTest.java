@@ -16,16 +16,18 @@
 
 package io.quarkus.arc.processor;
 
+import static io.quarkus.arc.processor.Basics.index;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
-import static io.quarkus.arc.processor.Basics.index;
 
+import io.quarkus.arc.processor.BeanProcessor.PrivateMembersCollector;
+import io.quarkus.arc.processor.ResourceOutput.Resource;
+import io.quarkus.arc.processor.types.Baz;
 import java.io.IOException;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-
 import javax.annotation.Priority;
 import javax.enterprise.context.Dependent;
 import javax.inject.Inject;
@@ -33,12 +35,8 @@ import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InterceptorBinding;
 import javax.interceptor.InvocationContext;
-
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
-import io.quarkus.arc.processor.BeanProcessor.PrivateMembersCollector;
-import io.quarkus.arc.processor.ResourceOutput.Resource;
-import io.quarkus.arc.processor.types.Baz;
 import org.junit.Test;
 
 public class SubclassGeneratorTest {
@@ -51,10 +49,12 @@ public class SubclassGeneratorTest {
         deployment.init();
 
         AnnotationLiteralProcessor annotationLiteralProcessor = new AnnotationLiteralProcessor(true, TruePredicate.INSTANCE);
-        BeanGenerator beanGenerator = new BeanGenerator(annotationLiteralProcessor, TruePredicate.INSTANCE, new PrivateMembersCollector());
+        BeanGenerator beanGenerator = new BeanGenerator(annotationLiteralProcessor, TruePredicate.INSTANCE,
+                new PrivateMembersCollector());
         SubclassGenerator generator = new SubclassGenerator(annotationLiteralProcessor, TruePredicate.INSTANCE);
         BeanInfo simpleBean = deployment.getBeans().stream()
-                .filter(b -> b.getTarget().get().asClass().name().equals(DotName.createSimple(SimpleBean.class.getName()))).findAny().get();
+                .filter(b -> b.getTarget().get().asClass().name().equals(DotName.createSimple(SimpleBean.class.getName())))
+                .findAny().get();
         for (Resource resource : beanGenerator.generate(simpleBean, ReflectionRegistration.NOOP)) {
             generator.generate(simpleBean, resource.getFullyQualifiedName(), ReflectionRegistration.NOOP);
         }

@@ -16,19 +16,18 @@
 
 package io.quarkus.arc.processor;
 
+import io.quarkus.arc.processor.AnnotationStore.TransformationContextImpl;
+import io.quarkus.arc.processor.AnnotationsTransformer.TransformationContext;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Predicate;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodParameterInfo;
-import io.quarkus.arc.processor.AnnotationStore.TransformationContextImpl;
-import io.quarkus.arc.processor.AnnotationsTransformer.TransformationContext;
 
 /**
  * Convenient helper class.
@@ -75,7 +74,8 @@ public final class Transformation {
     }
 
     /**
-     * NOTE: The annotation target is derived from the {@link TransformationContext}. If you need to add an annotation instance to a method parameter use
+     * NOTE: The annotation target is derived from the {@link TransformationContext}. If you need to add an annotation instance
+     * to a method parameter use
      * methods consuming {@link AnnotationInstance} directly and supply the correct {@link MethodParameterInfo}.
      * 
      * @param annotationType
@@ -88,7 +88,8 @@ public final class Transformation {
     }
 
     /**
-     * NOTE: The annotation target is derived from the {@link TransformationContext}. If you need to add an annotation instance to a method parameter use
+     * NOTE: The annotation target is derived from the {@link TransformationContext}. If you need to add an annotation instance
+     * to a method parameter use
      * methods consuming {@link AnnotationInstance} directly and supply the correct {@link MethodParameterInfo}.
      * 
      * @param name

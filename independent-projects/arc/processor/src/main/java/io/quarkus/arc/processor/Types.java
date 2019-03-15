@@ -16,6 +16,13 @@
 
 package io.quarkus.arc.processor;
 
+import io.quarkus.arc.GenericArrayTypeImpl;
+import io.quarkus.arc.ParameterizedTypeImpl;
+import io.quarkus.arc.TypeVariableImpl;
+import io.quarkus.arc.WildcardTypeImpl;
+import io.quarkus.gizmo.BytecodeCreator;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -23,7 +30,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -34,13 +40,6 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.jandex.WildcardType;
-import io.quarkus.arc.GenericArrayTypeImpl;
-import io.quarkus.arc.ParameterizedTypeImpl;
-import io.quarkus.arc.TypeVariableImpl;
-import io.quarkus.arc.WildcardTypeImpl;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
 
 /**
  *
@@ -69,7 +68,8 @@ final class Types {
                     creator.writeArrayValue(boundsHandle, i, getTypeHandle(creator, bounds.get(i)));
                 }
             }
-            return creator.newInstance(MethodDescriptor.ofConstructor(TypeVariableImpl.class, String.class, java.lang.reflect.Type[].class),
+            return creator.newInstance(
+                    MethodDescriptor.ofConstructor(TypeVariableImpl.class, String.class, java.lang.reflect.Type[].class),
                     creator.load(typeVariable.identifier()), boundsHandle);
 
         } else if (Kind.PARAMETERIZED_TYPE.equals(type.kind())) {
@@ -82,7 +82,8 @@ final class Types {
                 creator.writeArrayValue(typeArgsHandle, i, getTypeHandle(creator, arguments.get(i)));
             }
             return creator.newInstance(
-                    MethodDescriptor.ofConstructor(ParameterizedTypeImpl.class, java.lang.reflect.Type.class, java.lang.reflect.Type[].class),
+                    MethodDescriptor.ofConstructor(ParameterizedTypeImpl.class, java.lang.reflect.Type.class,
+                            java.lang.reflect.Type[].class),
                     creator.loadClass(parameterizedType.name().toString()), typeArgsHandle);
 
         } else if (Kind.ARRAY.equals(type.kind())) {
@@ -97,11 +98,13 @@ final class Types {
 
             if (wildcardType.superBound() == null) {
                 return creator.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(WildcardTypeImpl.class, "withUpperBound", java.lang.reflect.WildcardType.class, java.lang.reflect.Type.class),
+                        MethodDescriptor.ofMethod(WildcardTypeImpl.class, "withUpperBound",
+                                java.lang.reflect.WildcardType.class, java.lang.reflect.Type.class),
                         getTypeHandle(creator, wildcardType.extendsBound()));
             } else {
                 return creator.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(WildcardTypeImpl.class, "withLowerBound", java.lang.reflect.WildcardType.class, java.lang.reflect.Type.class),
+                        MethodDescriptor.ofMethod(WildcardTypeImpl.class, "withLowerBound",
+                                java.lang.reflect.WildcardType.class, java.lang.reflect.Type.class),
                         getTypeHandle(creator, wildcardType.superBound()));
             }
         } else if (Kind.PRIMITIVE.equals(type.kind())) {
@@ -150,13 +153,15 @@ final class Types {
         }
         ClassInfo returnTypeClassInfo = beanDeployment.getIndex().getClassByName(returnType.name());
         if (returnTypeClassInfo == null) {
-            throw new IllegalArgumentException("Producer method return type not found in index: " + producerMethod.returnType().name());
+            throw new IllegalArgumentException(
+                    "Producer method return type not found in index: " + producerMethod.returnType().name());
         }
         if (Kind.CLASS.equals(returnType.kind())) {
             return getTypeClosure(returnTypeClassInfo, Collections.emptyMap(), beanDeployment);
         } else if (Kind.PARAMETERIZED_TYPE.equals(returnType.kind())) {
             return getTypeClosure(returnTypeClassInfo,
-                    buildResolvedMap(returnType.asParameterizedType().arguments(), returnTypeClassInfo.typeParameters(), Collections.emptyMap()),
+                    buildResolvedMap(returnType.asParameterizedType().arguments(), returnTypeClassInfo.typeParameters(),
+                            Collections.emptyMap()),
                     beanDeployment);
         } else {
             throw new IllegalArgumentException("Unsupported return type");
@@ -179,13 +184,16 @@ final class Types {
             return getTypeClosure(fieldClassInfo, Collections.emptyMap(), beanDeployment);
         } else if (Kind.PARAMETERIZED_TYPE.equals(fieldType.kind())) {
             return getTypeClosure(fieldClassInfo,
-                    buildResolvedMap(fieldType.asParameterizedType().arguments(), fieldClassInfo.typeParameters(), Collections.emptyMap()), beanDeployment);
+                    buildResolvedMap(fieldType.asParameterizedType().arguments(), fieldClassInfo.typeParameters(),
+                            Collections.emptyMap()),
+                    beanDeployment);
         } else {
             throw new IllegalArgumentException("Unsupported return type");
         }
     }
 
-    static Set<Type> getTypeClosure(ClassInfo classInfo, Map<TypeVariable, Type> resolvedTypeParameters, BeanDeployment beanDeployment) {
+    static Set<Type> getTypeClosure(ClassInfo classInfo, Map<TypeVariable, Type> resolvedTypeParameters,
+            BeanDeployment beanDeployment) {
         Set<Type> types = new HashSet<>();
         List<TypeVariable> typeParameters = classInfo.typeParameters();
         if (!typeParameters.isEmpty()) {
@@ -209,7 +217,8 @@ final class Types {
             if (interfaceClassInfo != null) {
                 Map<TypeVariable, Type> resolved = Collections.emptyMap();
                 if (Kind.PARAMETERIZED_TYPE.equals(interfaceType.kind())) {
-                    resolved = buildResolvedMap(interfaceType.asParameterizedType().arguments(), interfaceClassInfo.typeParameters(), resolvedTypeParameters);
+                    resolved = buildResolvedMap(interfaceType.asParameterizedType().arguments(),
+                            interfaceClassInfo.typeParameters(), resolvedTypeParameters);
                 }
                 types.addAll(getTypeClosure(interfaceClassInfo, resolved, beanDeployment));
             }
@@ -220,7 +229,8 @@ final class Types {
             if (superClassInfo != null) {
                 Map<TypeVariable, Type> resolved = Collections.emptyMap();
                 if (Kind.PARAMETERIZED_TYPE.equals(classInfo.superClassType().kind())) {
-                    resolved = buildResolvedMap(classInfo.superClassType().asParameterizedType().arguments(), superClassInfo.typeParameters(),
+                    resolved = buildResolvedMap(classInfo.superClassType().asParameterizedType().arguments(),
+                            superClassInfo.typeParameters(),
                             resolvedTypeParameters);
                 }
                 types.addAll(getTypeClosure(superClassInfo, resolved, beanDeployment));
@@ -228,7 +238,8 @@ final class Types {
         }
 
         // Bean types restriction
-        AnnotationInstance typed = classInfo.classAnnotations().stream().filter(a -> a.name().equals(DotNames.TYPED)).findFirst().orElse(null);
+        AnnotationInstance typed = classInfo.classAnnotations().stream().filter(a -> a.name().equals(DotNames.TYPED))
+                .findFirst().orElse(null);
         if (typed != null) {
             Set<DotName> typedClasses = new HashSet<>();
             for (Type type : typed.value().asClassArray()) {

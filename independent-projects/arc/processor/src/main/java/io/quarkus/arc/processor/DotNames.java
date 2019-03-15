@@ -16,8 +16,8 @@
 
 package io.quarkus.arc.processor;
 
+import io.quarkus.arc.ComputingCache;
 import java.util.Optional;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Priority;
@@ -47,10 +47,8 @@ import javax.interceptor.AroundConstruct;
 import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InterceptorBinding;
-
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import io.quarkus.arc.ComputingCache;
 
 public final class DotNames {
 
@@ -134,7 +132,7 @@ public final class DotNames {
                 throw new IllegalStateException("Unsupported nesting type: " + clazz);
         }
     }
-    
+
     /**
      * @param dotName
      * @see #simpleName(String)
@@ -144,7 +142,8 @@ public final class DotNames {
     }
 
     /**
-     * Note that "$" is a valid character for class names so we cannot detect a nested class here. Therefore, this method would return "Foo$Bar" for the
+     * Note that "$" is a valid character for class names so we cannot detect a nested class here. Therefore, this method would
+     * return "Foo$Bar" for the
      * parameter "com.foo.Foo$Bar". Use {@link #simpleName(ClassInfo)} when you need to distinguish the nested classes.
      * 
      * @param name

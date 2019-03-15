@@ -18,16 +18,15 @@ package io.quarkus.arc.test.interceptors.privatemethod;
 
 import static org.junit.Assert.assertEquals;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.test.ArcTestContainer;
+import io.quarkus.arc.test.interceptors.Simple;
 import javax.annotation.Priority;
 import javax.inject.Singleton;
 import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
-
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.ArcContainer;
-import io.quarkus.arc.test.ArcTestContainer;
-import io.quarkus.arc.test.interceptors.Simple;
 import org.junit.Rule;
 import org.junit.Test;
 

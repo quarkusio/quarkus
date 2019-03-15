@@ -3,18 +3,18 @@ package io.quarkus.arc.test.validation;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import io.quarkus.arc.test.ArcTestContainer;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.spi.DefinitionException;
 import javax.enterprise.inject.spi.DeploymentException;
-
-import io.quarkus.arc.test.ArcTestContainer;
 import org.junit.Rule;
 import org.junit.Test;
 
 public class BoundInterceptorPrivateNoArgsConstructorTest {
 
     @Rule
-    public ArcTestContainer container = ArcTestContainer.builder().beanClasses(Unproxyable.class, Simple.class, SimpleInterceptor.class).shouldFail().build();
+    public ArcTestContainer container = ArcTestContainer.builder()
+            .beanClasses(Unproxyable.class, Simple.class, SimpleInterceptor.class).shouldFail().build();
 
     @Test
     public void testFailure() {
@@ -31,7 +31,7 @@ public class BoundInterceptorPrivateNoArgsConstructorTest {
 
         private Unproxyable() {
         }
-        
+
         void ping() {
         }
 

@@ -6,6 +6,12 @@
       <url>http://40.113.102.249:8081/repository/maven-central/</url>
       <mirrorOf>central</mirrorOf>
     </mirror>
+    <mirror>
+      <id>quarkus-jboss</id>
+      <name>Quarkus JBoss</name>
+      <url>http://40.113.102.249:8081/repository/jboss-mirror/</url>
+      <mirrorOf>jboss-public-repository-group</mirrorOf>
+    </mirror>
   </mirrors>
   <profiles>
     <profile>

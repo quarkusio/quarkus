@@ -82,10 +82,13 @@
         <!-- Caching -->
         <module>caffeine</module>
 
+        <!-- Integrations -->
         <module>amazon-lambda</module>
+
         <!-- Camel -->
         <module>camel</module>
 
+        <!-- Additional languages -->
         <module>kotlin</module>
     </modules>
 

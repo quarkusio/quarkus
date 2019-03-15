@@ -15,6 +15,10 @@
     <name>Quarkus - Gradle Plugin IT</name>
     <description>Quarkus - Gradle Plugin Integration Test Dependencies</description>
 
+    <properties>
+        <gradle.executable>${project.basedir}/../gradle/gradlew</gradle.executable>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -75,7 +79,7 @@
                         <id>gradle-integration-test</id>
                         <phase>prepare-package</phase>
                         <configuration>
-                            <executable>../gradle/gradlew</executable>
+                            <executable>${gradle.executable}</executable>
                             <arguments>
                                 <argument>quarkusBuild</argument>
                                 <argument>-S</argument>
@@ -90,4 +94,18 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>windows</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <properties>
+                <gradle.executable>${project.basedir}/../gradle/gradlew.bat</gradle.executable>
+            </properties>
+        </profile>
+    </profiles>
 </project>

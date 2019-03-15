@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-
 import javax.el.ELResolver;
 import javax.el.ExpressionFactory;
 import javax.enterprise.context.ContextNotActiveException;
@@ -69,7 +68,8 @@ public class BeanManagerImpl implements BeanManager {
             return ArcContainerImpl.instance().beanInstanceHandle((InjectableBean) bean, (CreationalContextImpl) ctx).get();
         }
         throw new IllegalArgumentException(
-                "Arguments must be instances of " + InjectableBean.class + " and " + CreationalContextImpl.class + ": \nbean: " + bean + "\nctx: " + ctx);
+                "Arguments must be instances of " + InjectableBean.class + " and " + CreationalContextImpl.class + ": \nbean: "
+                        + bean + "\nctx: " + ctx);
     }
 
     @Override
@@ -242,7 +242,8 @@ public class BeanManagerImpl implements BeanManager {
     }
 
     @Override
-    public <T> Bean<T> createBean(BeanAttributes<T> attributes, Class<T> beanClass, InjectionTargetFactory<T> injectionTargetFactory) {
+    public <T> Bean<T> createBean(BeanAttributes<T> attributes, Class<T> beanClass,
+            InjectionTargetFactory<T> injectionTargetFactory) {
         throw new UnsupportedOperationException();
     }
 

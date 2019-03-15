@@ -19,16 +19,14 @@ package io.quarkus.arc.test.cdiprovider;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import io.quarkus.arc.test.ArcTestContainer;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.spi.CDI;
-
-import io.quarkus.arc.test.ArcTestContainer;
 import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.Test;

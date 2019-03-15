@@ -21,19 +21,17 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import java.util.AbstractList;
-
-import javax.enterprise.context.Dependent;
-import javax.enterprise.inject.Vetoed;
-import javax.inject.Inject;
-
-import org.jboss.jandex.AnnotationTarget.Kind;
-import org.jboss.jandex.DotName;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.test.ArcTestContainer;
+import java.util.AbstractList;
+import javax.enterprise.context.Dependent;
+import javax.enterprise.inject.Vetoed;
+import javax.inject.Inject;
+import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.DotName;
 import org.junit.Rule;
 import org.junit.Test;
 

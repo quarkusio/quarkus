@@ -1,12 +1,12 @@
 package io.quarkus.arc.processor;
 
+import static org.junit.Assert.assertTrue;
+
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
 import org.junit.Test;
-
-import static org.junit.Assert.assertTrue;
 
 public class BeanResolverTest {
 

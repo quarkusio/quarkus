@@ -16,6 +16,11 @@
 
 package io.quarkus.arc.processor;
 
+import io.quarkus.arc.processor.BuildExtension.BuildContext;
+import io.quarkus.arc.processor.BuildExtension.Key;
+import io.quarkus.arc.processor.DeploymentEnhancer.DeploymentContext;
+import io.quarkus.arc.processor.ResourceOutput.Resource;
+import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,19 +33,12 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.logging.Logger;
-
-import io.quarkus.arc.processor.BuildExtension.BuildContext;
-import io.quarkus.arc.processor.BuildExtension.Key;
-import io.quarkus.arc.processor.DeploymentEnhancer.DeploymentContext;
-import io.quarkus.arc.processor.ResourceOutput.Resource;
-import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 
 /**
  *
@@ -83,10 +81,14 @@ public class BeanProcessor {
     private final boolean removeUnusedBeans;
     private final List<Predicate<BeanInfo>> unusedExclusions;
 
-    private BeanProcessor(String name, IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations, ResourceOutput output,
-            boolean sharedAnnotationLiterals, ReflectionRegistration reflectionRegistration, List<AnnotationsTransformer> annotationTransformers,
-            Collection<DotName> resourceAnnotations, List<BeanRegistrar> beanRegistrars, List<ContextRegistrar> contextRegistrars, List<DeploymentEnhancer> deploymentEnhancers,
-            List<BeanDeploymentValidator> beanDeploymentValidators, Predicate<DotName> applicationClassPredicate, boolean unusedBeansRemovalEnabled,
+    private BeanProcessor(String name, IndexView index, Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations,
+            ResourceOutput output,
+            boolean sharedAnnotationLiterals, ReflectionRegistration reflectionRegistration,
+            List<AnnotationsTransformer> annotationTransformers,
+            Collection<DotName> resourceAnnotations, List<BeanRegistrar> beanRegistrars,
+            List<ContextRegistrar> contextRegistrars, List<DeploymentEnhancer> deploymentEnhancers,
+            List<BeanDeploymentValidator> beanDeploymentValidators, Predicate<DotName> applicationClassPredicate,
+            boolean unusedBeansRemovalEnabled,
             List<Predicate<BeanInfo>> unusedExclusions, Map<DotName, Collection<AnnotationInstance>> additionalStereotypes) {
         this.reflectionRegistration = reflectionRegistration;
         this.applicationClassPredicate = applicationClassPredicate;
@@ -152,12 +154,15 @@ public class BeanProcessor {
         beanDeployment.validate(buildContext, beanDeploymentValidators);
 
         PrivateMembersCollector privateMembers = new PrivateMembersCollector();
-        AnnotationLiteralProcessor annotationLiterals = new AnnotationLiteralProcessor(sharedAnnotationLiterals, applicationClassPredicate);
+        AnnotationLiteralProcessor annotationLiterals = new AnnotationLiteralProcessor(sharedAnnotationLiterals,
+                applicationClassPredicate);
         BeanGenerator beanGenerator = new BeanGenerator(annotationLiterals, applicationClassPredicate, privateMembers);
         ClientProxyGenerator clientProxyGenerator = new ClientProxyGenerator(applicationClassPredicate);
-        InterceptorGenerator interceptorGenerator = new InterceptorGenerator(annotationLiterals, applicationClassPredicate, privateMembers);
+        InterceptorGenerator interceptorGenerator = new InterceptorGenerator(annotationLiterals, applicationClassPredicate,
+                privateMembers);
         SubclassGenerator subclassGenerator = new SubclassGenerator(annotationLiterals, applicationClassPredicate);
-        ObserverGenerator observerGenerator = new ObserverGenerator(annotationLiterals, applicationClassPredicate, privateMembers);
+        ObserverGenerator observerGenerator = new ObserverGenerator(annotationLiterals, applicationClassPredicate,
+                privateMembers);
         AnnotationLiteralGenerator annotationLiteralsGenerator = new AnnotationLiteralGenerator();
 
         Map<BeanInfo, String> beanToGeneratedName = new HashMap<>();
@@ -183,11 +188,13 @@ public class BeanProcessor {
                 if (SpecialType.BEAN.equals(resource.getSpecialType())) {
                     if (bean.getScope().isNormal()) {
                         // Generate client proxy
-                        resources.addAll(clientProxyGenerator.generate(bean, resource.getFullyQualifiedName(), reflectionRegistration));
+                        resources.addAll(
+                                clientProxyGenerator.generate(bean, resource.getFullyQualifiedName(), reflectionRegistration));
                     }
                     beanToGeneratedName.put(bean, resource.getName());
                     if (bean.isSubclassRequired()) {
-                        resources.addAll(subclassGenerator.generate(bean, resource.getFullyQualifiedName(), reflectionRegistration));
+                        resources.addAll(
+                                subclassGenerator.generate(bean, resource.getFullyQualifiedName(), reflectionRegistration));
                     }
                 }
             }
@@ -206,7 +213,8 @@ public class BeanProcessor {
         privateMembers.log();
 
         // Generate _ComponentsProvider
-        resources.addAll(new ComponentsProviderGenerator().generate(name, beanDeployment, beanToGeneratedName, observerToGeneratedName));
+        resources.addAll(
+                new ComponentsProviderGenerator().generate(name, beanDeployment, beanToGeneratedName, observerToGeneratedName));
 
         // Generate AnnotationLiterals
         if (annotationLiterals.hasLiteralsToGenerate()) {
@@ -263,7 +271,8 @@ public class BeanProcessor {
             return this;
         }
 
-        public Builder setAdditionalBeanDefiningAnnotations(Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations) {
+        public Builder setAdditionalBeanDefiningAnnotations(
+                Collection<BeanDefiningAnnotation> additionalBeanDefiningAnnotations) {
             Objects.requireNonNull(additionalBeanDefiningAnnotations);
             this.additionalBeanDefiningAnnotations = additionalBeanDefiningAnnotations;
             return this;
@@ -304,7 +313,7 @@ public class BeanProcessor {
             this.beanRegistrars.add(registrar);
             return this;
         }
-        
+
         public Builder addContextRegistrar(ContextRegistrar registrar) {
             this.contextRegistrars.add(registrar);
             return this;
@@ -427,13 +436,17 @@ public class BeanProcessor {
                 int limit = LOGGER.isDebugEnabled() ? Integer.MAX_VALUE : 3;
                 String info = appDescriptions.stream().limit(limit).map(d -> "\t- " + d).collect(Collectors.joining(",\n"));
                 if (appDescriptions.size() > limit) {
-                    info += "\n\t- and " + (appDescriptions.size() - limit) + " more - please enable debug logging to see the full list";
+                    info += "\n\t- and " + (appDescriptions.size() - limit)
+                            + " more - please enable debug logging to see the full list";
                 }
-                LOGGER.infof("Found unrecommended usage of private members (use package-private instead) in application beans:%n%s", info);
+                LOGGER.infof(
+                        "Found unrecommended usage of private members (use package-private instead) in application beans:%n%s",
+                        info);
             }
             // Log fwk problems
             if (fwkDescriptions != null && !fwkDescriptions.isEmpty()) {
-                LOGGER.debugf("Found unrecommended usage of private members (use package-private instead) in framework beans:%n%s",
+                LOGGER.debugf(
+                        "Found unrecommended usage of private members (use package-private instead) in framework beans:%n%s",
                         fwkDescriptions.stream().map(d -> "\t- " + d).collect(Collectors.joining(",\n")));
             }
         }

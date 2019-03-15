@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-
 import javax.enterprise.inject.AmbiguousResolutionException;
 import javax.enterprise.inject.Instance;
 import javax.enterprise.inject.UnsatisfiedResolutionException;
@@ -125,7 +124,7 @@ class InstanceImpl<T> implements Instance<T> {
         // Try to destroy a dependent instance
         creationalContext.destroyDependentInstance(instance);
     }
-    
+
     void destroy() {
         creationalContext.release();
     }

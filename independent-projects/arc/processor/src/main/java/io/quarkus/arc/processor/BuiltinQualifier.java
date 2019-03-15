@@ -16,20 +16,19 @@
 
 package io.quarkus.arc.processor;
 
-import java.util.Collections;
-
-import javax.enterprise.inject.Any;
-import javax.enterprise.inject.Default;
-
-import org.jboss.jandex.AnnotationInstance;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import java.util.Collections;
+import javax.enterprise.inject.Any;
+import javax.enterprise.inject.Default;
+import org.jboss.jandex.AnnotationInstance;
 
 enum BuiltinQualifier {
 
     DEFAULT(AnnotationInstance.create(DotNames.DEFAULT, null, Collections.emptyList()),
-            Default.Literal.class.getName()), ANY(AnnotationInstance.create(DotNames.ANY, null, Collections.emptyList()), Any.Literal.class.getName()),;
+            Default.Literal.class.getName()), ANY(AnnotationInstance.create(DotNames.ANY, null, Collections.emptyList()),
+                    Any.Literal.class.getName()),;
 
     private final AnnotationInstance instance;
 

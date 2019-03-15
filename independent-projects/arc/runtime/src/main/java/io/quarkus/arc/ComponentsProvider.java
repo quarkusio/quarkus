@@ -23,5 +23,5 @@ package io.quarkus.arc;
 public interface ComponentsProvider {
 
     Components getComponents();
-    
+
 }

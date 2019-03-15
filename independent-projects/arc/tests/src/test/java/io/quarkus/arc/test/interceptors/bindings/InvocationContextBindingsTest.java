@@ -18,24 +18,24 @@ package io.quarkus.arc.test.interceptors.bindings;
 
 import static org.junit.Assert.assertTrue;
 
-import javax.annotation.Priority;
-import javax.inject.Singleton;
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
-
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InvocationContextImpl;
 import io.quarkus.arc.test.ArcTestContainer;
 import io.quarkus.arc.test.interceptors.Simple;
+import javax.annotation.Priority;
+import javax.inject.Singleton;
+import javax.interceptor.AroundInvoke;
+import javax.interceptor.Interceptor;
+import javax.interceptor.InvocationContext;
 import org.junit.Rule;
 import org.junit.Test;
 
 public class InvocationContextBindingsTest {
 
     @Rule
-    public ArcTestContainer container = new ArcTestContainer(Simple.class, MyTransactional.class, SimpleBean.class, SimpleInterceptor.class);
+    public ArcTestContainer container = new ArcTestContainer(Simple.class, MyTransactional.class, SimpleBean.class,
+            SimpleInterceptor.class);
 
     @Test
     public void testInterception() {

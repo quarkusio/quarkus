@@ -17,7 +17,6 @@
 package io.quarkus.arc;
 
 import java.lang.annotation.Annotation;
-
 import javax.inject.Singleton;
 
 class SingletonContext extends AbstractSharedContext {

@@ -18,15 +18,14 @@ package io.quarkus.arc.test.contexts.application;
 
 import static org.junit.Assert.assertTrue;
 
+import io.quarkus.arc.test.ArcTestContainer;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.BeforeDestroyed;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.context.Destroyed;
 import javax.enterprise.context.Initialized;
 import javax.enterprise.event.Observes;
-
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,8 +33,6 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
-
-import io.quarkus.arc.test.ArcTestContainer;
 
 public class ApplicationInitializedTest {
 

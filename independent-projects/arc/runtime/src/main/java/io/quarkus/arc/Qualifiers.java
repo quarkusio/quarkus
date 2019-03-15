@@ -21,7 +21,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.enterprise.inject.Any;
 import javax.enterprise.inject.Default;
 import javax.enterprise.util.Nonbinding;
@@ -52,7 +51,8 @@ public final class Qualifiers {
             if (qualifierClass.equals(requiredQualifier.annotationType())) {
                 boolean matches = true;
                 for (Method value : members) {
-                    if (!value.isAnnotationPresent(Nonbinding.class) && !invoke(value, requiredQualifier).equals(invoke(value, qualifier))) {
+                    if (!value.isAnnotationPresent(Nonbinding.class)
+                            && !invoke(value, requiredQualifier).equals(invoke(value, qualifier))) {
                         matches = false;
                         break;
                     }
@@ -64,7 +64,7 @@ public final class Qualifiers {
         }
         return false;
     }
-    
+
     static boolean hasQualifier(Set<Annotation> qualifiers, Annotation requiredQualifier) {
 
         Class<? extends Annotation> requiredQualifierClass = requiredQualifier.annotationType();
@@ -75,7 +75,8 @@ public final class Qualifiers {
             if (qualifierClass.equals(requiredQualifier.annotationType())) {
                 boolean matches = true;
                 for (Method value : members) {
-                    if (!value.isAnnotationPresent(Nonbinding.class) && !invoke(value, requiredQualifier).equals(invoke(value, qualifier))) {
+                    if (!value.isAnnotationPresent(Nonbinding.class)
+                            && !invoke(value, requiredQualifier).equals(invoke(value, qualifier))) {
                         matches = false;
                         break;
                     }
@@ -87,7 +88,7 @@ public final class Qualifiers {
         }
         return false;
     }
-    
+
     static boolean isSubset(Set<Annotation> observedQualifiers, Set<Annotation> eventQualifiers) {
         for (Annotation required : observedQualifiers) {
             if (!hasQualifier(eventQualifiers, required)) {
@@ -111,7 +112,8 @@ public final class Qualifiers {
             }
             return method.invoke(instance);
         } catch (IllegalArgumentException | IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException("Error checking value of member method " + method.getName() + " on " + method.getDeclaringClass(), e);
+            throw new RuntimeException(
+                    "Error checking value of member method " + method.getName() + " on " + method.getDeclaringClass(), e);
         }
     }
 

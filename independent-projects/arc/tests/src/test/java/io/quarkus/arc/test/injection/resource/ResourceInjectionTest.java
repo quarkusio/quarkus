@@ -21,6 +21,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.ResourceReferenceProvider;
+import io.quarkus.arc.test.ArcTestContainer;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -31,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.Produces;
 import javax.inject.Inject;
@@ -51,11 +54,6 @@ import javax.persistence.criteria.CriteriaDelete;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.CriteriaUpdate;
 import javax.persistence.metamodel.Metamodel;
-
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.ResourceReferenceProvider;
-import io.quarkus.arc.test.ArcTestContainer;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -63,7 +61,8 @@ public class ResourceInjectionTest {
 
     @Rule
     public ArcTestContainer container = ArcTestContainer.builder().beanClasses(EEResourceField.class, JpaClient.class)
-            .resourceReferenceProviders(EntityManagerProvider.class, DummyProvider.class).resourceAnnotations(PersistenceContext.class, Dummy.class).build();
+            .resourceReferenceProviders(EntityManagerProvider.class, DummyProvider.class)
+            .resourceAnnotations(PersistenceContext.class, Dummy.class).build();
 
     @Test
     public void testInjection() {
@@ -261,7 +260,8 @@ public class ResourceInjectionTest {
                     }
 
                     @Override
-                    public <T> T find(Class<T> entityClass, Object primaryKey, LockModeType lockMode, Map<String, Object> properties) {
+                    public <T> T find(Class<T> entityClass, Object primaryKey, LockModeType lockMode,
+                            Map<String, Object> properties) {
                         return null;
                     }
 

@@ -129,7 +129,8 @@ final class Types {
     /**
      * Returns a canonical type for a given class.
      *
-     * If the class is a raw type of a parameterized class, the matching {@link ParameterizedType} (with unresolved type variables) is resolved.
+     * If the class is a raw type of a parameterized class, the matching {@link ParameterizedType} (with unresolved type
+     * variables) is resolved.
      *
      * If the class is an array then the component type of the array is canonicalized
      *

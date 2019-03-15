@@ -17,7 +17,6 @@
 package io.quarkus.arc.processor;
 
 import java.util.List;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 
@@ -28,12 +27,13 @@ public class StereotypeInfo {
     private final List<AnnotationInstance> interceptorBindings;
 
     private final boolean isAlternative;
-    
+
     private final boolean isNamed;
 
     private final ClassInfo target;
 
-    public StereotypeInfo(ScopeInfo defaultScope, List<AnnotationInstance> interceptorBindings, boolean isAlternative, boolean isNamed, ClassInfo target) {
+    public StereotypeInfo(ScopeInfo defaultScope, List<AnnotationInstance> interceptorBindings, boolean isAlternative,
+            boolean isNamed, ClassInfo target) {
         this.defaultScope = defaultScope;
         this.interceptorBindings = interceptorBindings;
         this.isAlternative = isAlternative;
@@ -52,7 +52,7 @@ public class StereotypeInfo {
     public boolean isAlternative() {
         return isAlternative;
     }
-    
+
     public boolean isNamed() {
         return isNamed;
     }

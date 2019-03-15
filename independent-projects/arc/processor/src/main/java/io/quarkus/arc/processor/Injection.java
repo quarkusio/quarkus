@@ -20,7 +20,6 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -63,12 +62,14 @@ public class Injection {
                 return Collections.emptyList();
             }
             // All parameters are injection points
-            return Collections.singletonList(new Injection(beanTarget.asMethod(), InjectionPointInfo.fromMethod(beanTarget.asMethod(), beanDeployment)));
+            return Collections.singletonList(
+                    new Injection(beanTarget.asMethod(), InjectionPointInfo.fromMethod(beanTarget.asMethod(), beanDeployment)));
         }
         throw new IllegalArgumentException("Unsupported annotation target");
     }
 
-    private static void forClassBean(ClassInfo beanTarget, BeanDeployment beanDeployment, List<Injection> injections, boolean isFirstLevel) {
+    private static void forClassBean(ClassInfo beanTarget, BeanDeployment beanDeployment, List<Injection> injections,
+            boolean isFirstLevel) {
 
         List<AnnotationInstance> injectAnnotations = getAllInjectionPoints(beanDeployment, beanTarget, DotNames.INJECT);
 
@@ -77,10 +78,12 @@ public class Injection {
             switch (injectAnnotation.target().kind()) {
                 case FIELD:
                     injections
-                            .add(new Injection(injectTarget, Collections.singletonList(InjectionPointInfo.fromField(injectTarget.asField(), beanDeployment))));
+                            .add(new Injection(injectTarget, Collections
+                                    .singletonList(InjectionPointInfo.fromField(injectTarget.asField(), beanDeployment))));
                     break;
                 case METHOD:
-                    injections.add(new Injection(injectTarget, InjectionPointInfo.fromMethod(injectTarget.asMethod(), beanDeployment)));
+                    injections.add(new Injection(injectTarget,
+                            InjectionPointInfo.fromMethod(injectTarget.asMethod(), beanDeployment)));
                     break;
                 default:
                     LOGGER.warn("Unsupported @Inject target ignored: " + injectAnnotation.target());
@@ -108,22 +111,26 @@ public class Injection {
                         nonNoargConstrs.add(constr);
                     }
                 }
-                if(nonNoargConstrs.size() == 1) {
+                if (nonNoargConstrs.size() == 1) {
                     final MethodInfo injectTarget = nonNoargConstrs.get(0);
-                    injections.add(new Injection(injectTarget, InjectionPointInfo.fromMethod(injectTarget.asMethod(), beanDeployment)));
+                    injections.add(new Injection(injectTarget,
+                            InjectionPointInfo.fromMethod(injectTarget.asMethod(), beanDeployment)));
                 }
             }
         }
 
         for (DotName resourceAnnotation : beanDeployment.getResourceAnnotations()) {
-            List<AnnotationInstance> resourceAnnotations = getAllInjectionPoints(beanDeployment, beanTarget, resourceAnnotation);
+            List<AnnotationInstance> resourceAnnotations = getAllInjectionPoints(beanDeployment, beanTarget,
+                    resourceAnnotation);
             if (resourceAnnotations != null) {
                 for (AnnotationInstance resourceAnnotationInstance : resourceAnnotations) {
                     if (Kind.FIELD == resourceAnnotationInstance.target().kind()
-                            && resourceAnnotationInstance.target().asField().annotations().stream().noneMatch(a -> DotNames.INJECT.equals(a.name()))) {
+                            && resourceAnnotationInstance.target().asField().annotations().stream()
+                                    .noneMatch(a -> DotNames.INJECT.equals(a.name()))) {
                         // Add special injection for a resource field
                         injections.add(new Injection(resourceAnnotationInstance.target(), Collections
-                                .singletonList(InjectionPointInfo.fromResourceField(resourceAnnotationInstance.target().asField(), beanDeployment))));
+                                .singletonList(InjectionPointInfo
+                                        .fromResourceField(resourceAnnotationInstance.target().asField(), beanDeployment))));
                     }
                     // TODO setter injection
                 }
@@ -146,7 +153,8 @@ public class Injection {
 
     static Injection forObserver(MethodInfo observerMethod, BeanDeployment beanDeployment) {
         return new Injection(observerMethod, InjectionPointInfo.fromMethod(observerMethod, beanDeployment,
-                annotations -> annotations.stream().anyMatch(a -> a.name().equals(DotNames.OBSERVES) || a.name().equals(DotNames.OBSERVES_ASYNC))));
+                annotations -> annotations.stream()
+                        .anyMatch(a -> a.name().equals(DotNames.OBSERVES) || a.name().equals(DotNames.OBSERVES_ASYNC))));
     }
 
     final AnnotationTarget target;
@@ -170,7 +178,8 @@ public class Injection {
         return Kind.FIELD == target.kind();
     }
 
-    private static List<AnnotationInstance> getAllInjectionPoints(BeanDeployment beanDeployment, ClassInfo beanClass, DotName name) {
+    private static List<AnnotationInstance> getAllInjectionPoints(BeanDeployment beanDeployment, ClassInfo beanClass,
+            DotName name) {
         List<AnnotationInstance> injectAnnotations = new ArrayList<>();
         for (FieldInfo field : beanClass.fields()) {
             AnnotationInstance inject = beanDeployment.getAnnotation(field, name);

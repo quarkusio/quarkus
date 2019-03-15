@@ -19,28 +19,6 @@ package io.quarkus.arc.processor;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.inject.spi.InterceptionType;
-import javax.interceptor.InvocationContext;
-
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.Type;
 import io.quarkus.arc.InjectableInterceptor;
 import io.quarkus.arc.InvocationContextImpl.InterceptorInvocation;
 import io.quarkus.arc.Subclass;
@@ -58,6 +36,26 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import javax.enterprise.context.spi.CreationalContext;
+import javax.enterprise.inject.spi.InterceptionType;
+import javax.interceptor.InvocationContext;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
 
 /**
  *
@@ -72,6 +70,7 @@ public class SubclassGenerator extends AbstractGenerator {
     static final String SUBCLASS_SUFFIX = "_Subclass";
 
     private final Predicate<DotName> applicationClassPredicate;
+
     static String generatedName(DotName providerTypeName, String baseName) {
         return DotNames.packageName(providerTypeName).replace('.', '/') + "/" + baseName + SUBCLASS_SUFFIX;
     }
@@ -105,17 +104,20 @@ public class SubclassGenerator extends AbstractGenerator {
         String generatedName = generatedName(providerType.name(), baseName);
 
         // Foo_Subclass extends Foo implements Subclass
-        ClassCreator subclass = ClassCreator.builder().classOutput(classOutput).className(generatedName).superClass(providerTypeName).interfaces(Subclass.class)
+        ClassCreator subclass = ClassCreator.builder().classOutput(classOutput).className(generatedName)
+                .superClass(providerTypeName).interfaces(Subclass.class)
                 .build();
 
-        FieldDescriptor preDestroyField = createConstructor(classOutput, bean, subclass, providerTypeName, reflectionRegistration);
+        FieldDescriptor preDestroyField = createConstructor(classOutput, bean, subclass, providerTypeName,
+                reflectionRegistration);
         createDestroy(classOutput, bean, subclass, preDestroyField);
 
         subclass.close();
         return classOutput.getResources();
     }
 
-    protected FieldDescriptor createConstructor(ClassOutput classOutput, BeanInfo bean, ClassCreator subclass, String providerTypeName,
+    protected FieldDescriptor createConstructor(ClassOutput classOutput, BeanInfo bean, ClassCreator subclass,
+            String providerTypeName,
             ReflectionRegistration reflectionRegistration) {
 
         List<String> parameterTypes = new ArrayList<>();
@@ -146,7 +148,9 @@ public class SubclassGenerator extends AbstractGenerator {
             superParams[j] = constructor.getMethodParam(j);
         }
         // super(fooProvider)
-        constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(providerTypeName, parameterTypes.subList(0, superParamsSize).toArray(new String[0])),
+        constructor.invokeSpecialMethod(
+                MethodDescriptor.ofConstructor(providerTypeName,
+                        parameterTypes.subList(0, superParamsSize).toArray(new String[0])),
                 constructor.getThis(), superParams);
 
         Map<InterceptorInfo, ResultHandle> interceptorToResultHandle = new HashMap<>();
@@ -166,26 +170,34 @@ public class SubclassGenerator extends AbstractGenerator {
                     constructor.newInstance(MethodDescriptor.ofConstructor(ArrayList.class)));
             for (InterceptorInfo interceptor : preDestroys.interceptors) {
                 // preDestroys.add(InvocationContextImpl.InterceptorInvocation.preDestroy(provider1,provider1.get(CreationalContextImpl.child(ctx))))
-                ResultHandle creationalContext = constructor.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD, creationalContextHandle);
-                ResultHandle interceptorInstance = constructor.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
+                ResultHandle creationalContext = constructor.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD,
+                        creationalContextHandle);
+                ResultHandle interceptorInstance = constructor.invokeInterfaceMethod(
+                        MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
                         interceptorToResultHandle.get(interceptor), creationalContext);
-                ResultHandle interceptionInvocation = constructor.invokeStaticMethod(MethodDescriptor.ofMethod(InterceptorInvocation.class, "preDestroy",
-                        InterceptorInvocation.class, InjectableInterceptor.class, Object.class), interceptorToResultHandle.get(interceptor),
+                ResultHandle interceptionInvocation = constructor.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(InterceptorInvocation.class, "preDestroy",
+                                InterceptorInvocation.class, InjectableInterceptor.class, Object.class),
+                        interceptorToResultHandle.get(interceptor),
                         interceptorInstance);
                 constructor.invokeInterfaceMethod(MethodDescriptors.LIST_ADD,
-                        constructor.readInstanceField(preDestroysField.getFieldDescriptor(), constructor.getThis()), interceptionInvocation);
+                        constructor.readInstanceField(preDestroysField.getFieldDescriptor(), constructor.getThis()),
+                        interceptionInvocation);
             }
         }
 
         // Init intercepted methods and interceptor chains
         // private final Map<String, List<InvocationContextImpl.InterceptorInvocation>> interceptorChains
-        FieldCreator interceptorChainsField = subclass.getFieldCreator("interceptorChains", Map.class.getName()).setModifiers(ACC_PRIVATE | ACC_FINAL);
+        FieldCreator interceptorChainsField = subclass.getFieldCreator("interceptorChains", Map.class.getName())
+                .setModifiers(ACC_PRIVATE | ACC_FINAL);
         // interceptorChains = new HashMap<>()
         constructor.writeInstanceField(interceptorChainsField.getFieldDescriptor(), constructor.getThis(),
                 constructor.newInstance(MethodDescriptor.ofConstructor(HashMap.class)));
-        ResultHandle interceptorChainsHandle = constructor.readInstanceField(interceptorChainsField.getFieldDescriptor(), constructor.getThis());
+        ResultHandle interceptorChainsHandle = constructor.readInstanceField(interceptorChainsField.getFieldDescriptor(),
+                constructor.getThis());
         // private final Map<String, Method> methods
-        FieldCreator methodsField = subclass.getFieldCreator("methods", DescriptorUtils.extToInt(Map.class.getName())).setModifiers(ACC_PRIVATE | ACC_FINAL);
+        FieldCreator methodsField = subclass.getFieldCreator("methods", DescriptorUtils.extToInt(Map.class.getName()))
+                .setModifiers(ACC_PRIVATE | ACC_FINAL);
         constructor.writeInstanceField(methodsField.getFieldDescriptor(), constructor.getThis(),
                 constructor.newInstance(MethodDescriptor.ofConstructor(HashMap.class)));
         ResultHandle methodsHandle = constructor.readInstanceField(methodsField.getFieldDescriptor(), constructor.getThis());
@@ -202,10 +214,13 @@ public class SubclassGenerator extends AbstractGenerator {
             InterceptionInfo interceptedMethod = entry.getValue();
             for (InterceptorInfo interceptor : interceptedMethod.interceptors) {
                 // m1Chain.add(InvocationContextImpl.InterceptorInvocation.aroundInvoke(p3,p3.get(CreationalContextImpl.child(ctx))))
-                ResultHandle creationalContext = constructor.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD, creationalContextHandle);
-                ResultHandle interceptorInstance = constructor.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
+                ResultHandle creationalContext = constructor.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD,
+                        creationalContextHandle);
+                ResultHandle interceptorInstance = constructor.invokeInterfaceMethod(
+                        MethodDescriptors.INJECTABLE_REF_PROVIDER_GET,
                         interceptorToResultHandle.get(interceptor), creationalContext);
-                ResultHandle interceptionInvocation = constructor.invokeStaticMethod(MethodDescriptors.INTERCEPTOR_INVOCATION_AROUND_INVOKE,
+                ResultHandle interceptionInvocation = constructor.invokeStaticMethod(
+                        MethodDescriptors.INTERCEPTOR_INVOCATION_AROUND_INVOKE,
                         interceptorToResultHandle.get(interceptor), interceptorInstance);
                 constructor.invokeInterfaceMethod(MethodDescriptors.LIST_ADD, chainHandle, interceptionInvocation);
             }
@@ -218,20 +233,23 @@ public class SubclassGenerator extends AbstractGenerator {
             if (!method.parameters().isEmpty()) {
                 ResultHandle paramsArray = constructor.newArray(Class.class, constructor.load(method.parameters().size()));
                 for (ListIterator<Type> iterator = method.parameters().listIterator(); iterator.hasNext();) {
-                    constructor.writeArrayValue(paramsArray, iterator.nextIndex(), constructor.loadClass(iterator.next().name().toString()));
+                    constructor.writeArrayValue(paramsArray, iterator.nextIndex(),
+                            constructor.loadClass(iterator.next().name().toString()));
                 }
                 paramsHandles[2] = paramsArray;
             } else {
                 paramsHandles[2] = constructor.newArray(Class.class, constructor.load(0));
             }
-            ResultHandle methodHandle = constructor.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_METHOD, paramsHandles);
+            ResultHandle methodHandle = constructor.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_METHOD,
+                    paramsHandles);
             constructor.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, methodsHandle, methodIdHandle, methodHandle);
 
             // Needed when running on substrate VM
             reflectionRegistration.registerMethod(method);
 
             // Finally create the forwarding method
-            createForwardingMethod(classOutput, bean, method, methodId, subclass, providerTypeName, interceptorChainsField.getFieldDescriptor(),
+            createForwardingMethod(classOutput, bean, method, methodId, subclass, providerTypeName,
+                    interceptorChainsField.getFieldDescriptor(),
                     methodsField.getFieldDescriptor(), interceptedMethod);
         }
 
@@ -239,8 +257,10 @@ public class SubclassGenerator extends AbstractGenerator {
         return preDestroysField != null ? preDestroysField.getFieldDescriptor() : null;
     }
 
-    private void createForwardingMethod(ClassOutput classOutput, BeanInfo bean, MethodInfo method, String methodId, ClassCreator subclass,
-            String providerTypeName, FieldDescriptor interceptorChainsField, FieldDescriptor methodsField, InterceptionInfo interceptedMethod) {
+    private void createForwardingMethod(ClassOutput classOutput, BeanInfo bean, MethodInfo method, String methodId,
+            ClassCreator subclass,
+            String providerTypeName, FieldDescriptor interceptorChainsField, FieldDescriptor methodsField,
+            InterceptionInfo interceptedMethod) {
 
         MethodCreator forwardMethod = subclass.getMethodCreator(MethodDescriptor.of(method));
 
@@ -257,7 +277,8 @@ public class SubclassGenerator extends AbstractGenerator {
         BytecodeCreator funcBytecode = func.getBytecode();
         ResultHandle ctxHandle = funcBytecode.getMethodParam(0);
         ResultHandle[] superParamHandles = new ResultHandle[method.parameters().size()];
-        ResultHandle ctxParamsHandle = funcBytecode.invokeInterfaceMethod(MethodDescriptor.ofMethod(InvocationContext.class, "getParameters", Object[].class),
+        ResultHandle ctxParamsHandle = funcBytecode.invokeInterfaceMethod(
+                MethodDescriptor.ofMethod(InvocationContext.class, "getParameters", Object[].class),
                 ctxHandle);
         // TODO autoboxing?
         for (int i = 0; i < superParamHandles.length; i++) {
@@ -265,7 +286,8 @@ public class SubclassGenerator extends AbstractGenerator {
         }
         ResultHandle superResult = funcBytecode.invokeSpecialMethod(
                 MethodDescriptor.ofMethod(providerTypeName, method.name(), method.returnType().name().toString(),
-                        method.parameters().stream().map(p -> p.name().toString()).collect(Collectors.toList()).toArray(new String[0])),
+                        method.parameters().stream().map(p -> p.name().toString()).collect(Collectors.toList())
+                                .toArray(new String[0])),
                 forwardMethod.getThis(), superParamHandles);
         funcBytecode.returnValue(superResult != null ? superResult : funcBytecode.loadNull());
         for (Type declaredException : method.exceptions()) {
@@ -300,7 +322,8 @@ public class SubclassGenerator extends AbstractGenerator {
         if (addCatchException) {
             CatchBlockCreator catchOtherExceptions = tryCatch.addCatch(Exception.class);
             // and wrap them in a new RuntimeException(e)
-            catchOtherExceptions.throwException(RuntimeException.class, "Error invoking subclass method", catchOtherExceptions.getCaughtException());
+            catchOtherExceptions.throwException(RuntimeException.class, "Error invoking subclass method",
+                    catchOtherExceptions.getCaughtException());
         }
         // InvocationContextImpl.aroundInvoke(this, methods.get("m1"), params, interceptorChains.get("m1"), forward)
         ResultHandle methodIdHandle = tryCatch.load(methodId);
@@ -314,10 +337,12 @@ public class SubclassGenerator extends AbstractGenerator {
             // Create annotation literals first
             ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(binding.name());
             tryCatch.invokeInterfaceMethod(MethodDescriptors.SET_ADD, bindingsHandle,
-                    annotationLiterals.process(tryCatch, classOutput, bindingClass, binding, Types.getPackageName(subclass.getClassName())));
+                    annotationLiterals.process(tryCatch, classOutput, bindingClass, binding,
+                            Types.getPackageName(subclass.getClassName())));
         }
 
-        ResultHandle invocationContext = tryCatch.invokeStaticMethod(MethodDescriptors.INVOCATION_CONTEXT_AROUND_INVOKE, tryCatch.getThis(),
+        ResultHandle invocationContext = tryCatch.invokeStaticMethod(MethodDescriptors.INVOCATION_CONTEXT_AROUND_INVOKE,
+                tryCatch.getThis(),
                 interceptedMethodHandle, paramsHandle, interceptedChainHandle, func.getInstance(), bindingsHandle);
         // InvocationContext.proceed()
         ResultHandle ret = tryCatch.invokeInterfaceMethod(MethodDescriptors.INVOCATION_CONTEXT_PROCEED, invocationContext);
@@ -332,7 +357,8 @@ public class SubclassGenerator extends AbstractGenerator {
      * @param preDestroysField
      * @see Subclass#destroy()
      */
-    protected void createDestroy(ClassOutput classOutput, BeanInfo bean, ClassCreator subclass, FieldDescriptor preDestroysField) {
+    protected void createDestroy(ClassOutput classOutput, BeanInfo bean, ClassCreator subclass,
+            FieldDescriptor preDestroysField) {
         if (preDestroysField != null) {
             MethodCreator destroy = subclass.getMethodCreator(MethodDescriptor.ofMethod(Subclass.class, "destroy", void.class));
             ResultHandle predestroysHandle = destroy.readInstanceField(preDestroysField, destroy.getThis());
@@ -343,7 +369,8 @@ public class SubclassGenerator extends AbstractGenerator {
                 // Create annotation literals first
                 ClassInfo bindingClass = bean.getDeployment().getInterceptorBinding(binding.name());
                 destroy.invokeInterfaceMethod(MethodDescriptors.SET_ADD, bindingsHandle,
-                        annotationLiterals.process(destroy, classOutput, bindingClass, binding, Types.getPackageName(subclass.getClassName())));
+                        annotationLiterals.process(destroy, classOutput, bindingClass, binding,
+                                Types.getPackageName(subclass.getClassName())));
             }
 
             // try
@@ -354,7 +381,8 @@ public class SubclassGenerator extends AbstractGenerator {
             exception.throwException(RuntimeException.class, "Error destroying subclass", exception.getCaughtException());
 
             // InvocationContextImpl.preDestroy(this,predestroys)
-            ResultHandle invocationContext = tryCatch.invokeStaticMethod(MethodDescriptors.INVOCATION_CONTEXT_PRE_DESTROY, tryCatch.getThis(), predestroysHandle,
+            ResultHandle invocationContext = tryCatch.invokeStaticMethod(MethodDescriptors.INVOCATION_CONTEXT_PRE_DESTROY,
+                    tryCatch.getThis(), predestroysHandle,
                     bindingsHandle);
 
             // InvocationContext.proceed()

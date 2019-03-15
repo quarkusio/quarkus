@@ -71,10 +71,12 @@ final class BeanTypeAssignabilityRules {
     }
 
     /**
-     * A parameterized bean type is considered assignable to a raw required type if the raw types are identical and all type parameters of the bean type are
+     * A parameterized bean type is considered assignable to a raw required type if the raw types are identical and all type
+     * parameters of the bean type are
      * either unbounded type variables or java.lang.Object.
      * <p>
-     * A raw bean type is considered assignable to a parameterized required type if the raw types are identical and all type parameters of the required type are
+     * A raw bean type is considered assignable to a parameterized required type if the raw types are identical and all type
+     * parameters of the required type are
      * either unbounded type variables or java.lang.Object.
      *
      */
@@ -86,7 +88,8 @@ final class BeanTypeAssignabilityRules {
     }
 
     /**
-     * A parameterized bean type is considered assignable to a parameterized required type if they have identical raw type and for each parameter:
+     * A parameterized bean type is considered assignable to a parameterized required type if they have identical raw type and
+     * for each parameter:
      */
     private static boolean matches(ParameterizedType requiredType, ParameterizedType beanType) {
         if (!requiredType.getRawType().equals(beanType.getRawType())) {
@@ -110,35 +113,41 @@ final class BeanTypeAssignabilityRules {
     private static boolean parametersMatch(Type requiredParameter, Type beanParameter) {
         if (Types.isActualType(requiredParameter) && Types.isActualType(beanParameter)) {
             /*
-             * the required type parameter and the bean type parameter are actual types with identical raw type, and, if the type is parameterized, the bean
+             * the required type parameter and the bean type parameter are actual types with identical raw type, and, if the
+             * type is parameterized, the bean
              * type parameter is assignable to the required type parameter according to these rules, or
              */
             return matches(requiredParameter, beanParameter);
         }
         if (requiredParameter instanceof WildcardType && Types.isActualType(beanParameter)) {
             /*
-             * the required type parameter is a wildcard, the bean type parameter is an actual type and the actual type is assignable to the upper bound, if
+             * the required type parameter is a wildcard, the bean type parameter is an actual type and the actual type is
+             * assignable to the upper bound, if
              * any, of the wildcard and assignable from the lower bound, if any, of the wildcard, or
              */
             return parametersMatch((WildcardType) requiredParameter, beanParameter);
         }
         if (requiredParameter instanceof WildcardType && beanParameter instanceof TypeVariable<?>) {
             /*
-             * the required type parameter is a wildcard, the bean type parameter is a type variable and the upper bound of the type variable is assignable to
-             * or assignable from the upper bound, if any, of the wildcard and assignable from the lower bound, if any, of the wildcard, or
+             * the required type parameter is a wildcard, the bean type parameter is a type variable and the upper bound of the
+             * type variable is assignable to
+             * or assignable from the upper bound, if any, of the wildcard and assignable from the lower bound, if any, of the
+             * wildcard, or
              */
             return parametersMatch((WildcardType) requiredParameter, (TypeVariable<?>) beanParameter);
         }
         if (Types.isActualType(requiredParameter) && beanParameter instanceof TypeVariable<?>) {
             /*
-             * the required type parameter is an actual type, the bean type parameter is a type variable and the actual type is assignable to the upper bound,
+             * the required type parameter is an actual type, the bean type parameter is a type variable and the actual type is
+             * assignable to the upper bound,
              * if any, of the type variable, or
              */
             return parametersMatch(requiredParameter, (TypeVariable<?>) beanParameter);
         }
         if (requiredParameter instanceof TypeVariable<?> && beanParameter instanceof TypeVariable<?>) {
             /*
-             * the required type parameter and the bean type parameter are both type variables and the upper bound of the required type parameter is assignable
+             * the required type parameter and the bean type parameter are both type variables and the upper bound of the
+             * required type parameter is assignable
              * to the upper bound, if any, of the bean type parameter
              */
             return parametersMatch((TypeVariable<?>) requiredParameter, (TypeVariable<?>) beanParameter);
@@ -147,7 +156,8 @@ final class BeanTypeAssignabilityRules {
     }
 
     private static boolean parametersMatch(WildcardType requiredParameter, Type beanParameter) {
-        return (lowerBoundsOfWildcardMatch(beanParameter, requiredParameter) && upperBoundsOfWildcardMatch(requiredParameter, beanParameter));
+        return (lowerBoundsOfWildcardMatch(beanParameter, requiredParameter)
+                && upperBoundsOfWildcardMatch(requiredParameter, beanParameter));
     }
 
     private static boolean parametersMatch(WildcardType requiredParameter, TypeVariable<?> beanParameter) {

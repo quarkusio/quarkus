@@ -29,7 +29,8 @@ import org.junit.Test;
 public class SimpleInterceptorTest {
 
     @Rule
-    public ArcTestContainer container = new ArcTestContainer(Counter.class, SimpleBean.class, Simple.class, SimpleInterceptor.class, Logging.class,
+    public ArcTestContainer container = new ArcTestContainer(Counter.class, SimpleBean.class, Simple.class,
+            SimpleInterceptor.class, Logging.class,
             LoggingInterceptor.class, Lifecycle.class, LifecycleInterceptor.class);
 
     @Test

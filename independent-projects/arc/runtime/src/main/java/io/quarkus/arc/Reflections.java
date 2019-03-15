@@ -31,7 +31,7 @@ public final class Reflections {
 
     private Reflections() {
     }
-    
+
     public static Field findField(Class<?> clazz, String fieldName) {
         try {
             return clazz.getDeclaredField(fieldName);
@@ -74,7 +74,8 @@ public final class Reflections {
                 throw new RuntimeException("Cannot invoke constructor: " + clazz.getName(), e);
             }
         }
-        throw new RuntimeException("No " + clazz.getName() + "constructor found for params: " + Arrays.toString(parameterTypes));
+        throw new RuntimeException(
+                "No " + clazz.getName() + "constructor found for params: " + Arrays.toString(parameterTypes));
     }
 
     public static Object readField(Class<?> clazz, String name, Object instance) {
@@ -108,7 +109,8 @@ public final class Reflections {
                 method.setAccessible(true);
             }
             return method.invoke(instance, args);
-        } catch (NoSuchMethodException | SecurityException | IllegalArgumentException | IllegalAccessException | InvocationTargetException e) {
+        } catch (NoSuchMethodException | SecurityException | IllegalArgumentException | IllegalAccessException
+                | InvocationTargetException e) {
             throw new RuntimeException("Cannot invoke method: " + clazz.getName() + "#" + name + " on " + instance, e);
         }
     }

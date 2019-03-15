@@ -22,12 +22,11 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import javax.enterprise.context.ContextNotActiveException;
-
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.test.ArcTestContainer;
+import javax.enterprise.context.ContextNotActiveException;
 import org.junit.Rule;
 import org.junit.Test;
 

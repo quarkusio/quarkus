@@ -1,10 +1,10 @@
 <settings>
   <mirrors>
     <mirror>
-      <id>jboss-public-repository-group</id>
-      <mirrorOf>*,!quarkus-nexus-release,!quarkus-nexus-snapshot</mirrorOf>
-      <name>jboss</name>
-      <url>http://repository.jboss.org/nexus/content/groups/developer/</url>
+      <id>quarkus-maven-central</id>
+      <name>Quarkus Maven Central</name>
+      <url>http://40.113.102.249:8081/repository/maven-central/</url>
+      <mirrorOf>central</mirrorOf>
     </mirror>
   </mirrors>
   <profiles>

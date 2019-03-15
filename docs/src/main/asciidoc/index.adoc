@@ -56,7 +56,7 @@ _Recommended:_
 
 You can contact the project team using:
 
-* email using the http://post-office.corp.redhat.com/mailman/listinfo/quarkus-dev[quarkus-dev@redhat.com] mailing list
+* the https://groups.google.com/forum/#!forum/quarkus-dev[quarkus-dev Google Groups]
 * chat using https://quarkus.zulipchat.com[Zulip]
 
 Your help is more than welcome! Don't hesitate to join the crowd.

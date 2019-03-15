@@ -51,8 +51,8 @@
             <artifactId>quarkus-undertow-runtime</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.glassfish</groupId>
-            <artifactId>javax.json</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jsonp-runtime</artifactId>
         </dependency>
         <dependency>
             <groupId>org.jboss.spec.javax.servlet</groupId>

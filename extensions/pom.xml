@@ -33,7 +33,11 @@
         <!-- Plumbing -->
         <module>arc</module>
         <module>scheduler</module>
+
+        <!-- Formats -->
         <module>jaxb</module>
+        <module>jsonp</module>
+        <module>jsonb</module>
 
         <!-- HTTP -->
         <module>undertow</module>

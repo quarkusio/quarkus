@@ -13,16 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.quarkus.resteasy.jsonb.deployment;
+package io.quarkus.jsonb.deployment;
+
+import org.eclipse.yasson.JsonBindingProvider;
 
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateResourceBundleBuildItem;
 
-public class ResteasyJsonbProcessor {
+public class JsonbProcessor {
 
     @BuildStep
-    void build(BuildProducer<FeatureBuildItem> feature) {
-        feature.produce(new FeatureBuildItem(FeatureBuildItem.RESTEASY_JSONB));
+    void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<SubstrateResourceBundleBuildItem> resourceBundle) {
+        reflectiveClass.produce(new ReflectiveClassBuildItem(false, false,
+                JsonBindingProvider.class.getName()));
+
+        resourceBundle.produce(new SubstrateResourceBundleBuildItem("yasson-messages"));
     }
 }

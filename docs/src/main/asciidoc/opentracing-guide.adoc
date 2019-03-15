@@ -86,7 +86,7 @@ Now we are ready to run our application. Use:
 
 [source, text]
 ----
-mvn compile quarkus:dev -Djvm.args="-DJAEGER_SERVICE_NAME=myservice -DJAEGER_SAMPLER_TYPE=const -DJAEGER_SAMPLER_PARAM=1 -DJAEGER_ENDPOINT=http://localhost:14268/api/traces"
+./mvnw compile quarkus:dev -Djvm.args="-DJAEGER_SERVICE_NAME=myservice -DJAEGER_SAMPLER_TYPE=const -DJAEGER_SAMPLER_PARAM=1 -DJAEGER_ENDPOINT=http://localhost:14268/api/traces"
 ----
 
 The supplied `jvm.args` are used to configure the default OpenTracing tracer (Jaeger). If the `JAEGER_SERVICE_NAME` property is not provided then a "no-op" tracer will be configured, resulting in no tracing data being reported to the backend. The other properties are explained in the https://www.jaegertracing.io/docs/latest/client-features/[Tracer configuration via environment variables] section of the Jaeger documentation.

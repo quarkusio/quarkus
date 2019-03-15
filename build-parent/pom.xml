@@ -49,6 +49,10 @@
         Supported Maven versions, interpreted as a version range
          -->
         <supported-maven-versions>[3.5.3,)</supported-maven-versions>
+
+        <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
+        <proposed-maven-vesion>3.6.0</proposed-maven-vesion>
+        <maven-wrapper.version>0.7.4</maven-wrapper.version>
     </properties>
 
     <dependencyManagement>

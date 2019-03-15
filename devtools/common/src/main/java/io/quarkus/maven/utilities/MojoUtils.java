@@ -84,6 +84,14 @@ public class MojoUtils {
         return get("bom-artifactId");
     }
 
+    public static String getProposedMavenVersion() {
+        return get("proposed-maven-version");
+    }
+
+    public static String getMavenWrapperVersion() {
+        return get("maven-wrapper-version");
+    }
+
     private static void loadProperties() {
         URL url = MojoUtils.class.getClassLoader().getResource("quarkus.properties");
         Objects.requireNonNull(url);

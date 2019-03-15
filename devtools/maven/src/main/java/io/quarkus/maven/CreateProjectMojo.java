@@ -18,6 +18,16 @@
 package io.quarkus.maven;
 
 import static org.fusesource.jansi.Ansi.ansi;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.artifactId;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.configuration;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.element;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.executeMojo;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.executionEnvironment;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.goal;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.groupId;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.name;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.plugin;
+import static org.twdata.maven.mojoexecutor.MojoExecutor.version;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,6 +39,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.BuildPluginManager;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -83,6 +94,9 @@ public class CreateProjectMojo extends AbstractMojo {
     @Component
     private MavenVersionEnforcer mavenVersionEnforcer;
 
+    @Component
+    private BuildPluginManager pluginManager;
+
     @Override
     public void execute() throws MojoExecutionException {
         // We detect the Maven version during the project generation to indicate the user immediately that the installed
@@ -136,11 +150,33 @@ public class CreateProjectMojo extends AbstractMojo {
                 new AddExtensions(new File(projectRoot, "pom.xml"))
                         .addExtensions(extensions);
             }
+
+            createMavenWrapper();
         } catch (IOException e) {
             throw new MojoExecutionException(e.getMessage(), e);
         }
         if (success) {
             printUserInstructions(projectRoot);
+        }
+    }
+
+    private void createMavenWrapper() {
+        try {
+            executeMojo(
+                    plugin(
+                            groupId("io.takari"),
+                            artifactId("maven"),
+                            version(MojoUtils.getMavenWrapperVersion())),
+                    goal("wrapper"),
+                    configuration(
+                            element(name("maven"), MojoUtils.getProposedMavenVersion())),
+                    executionEnvironment(
+                            project,
+                            session,
+                            pluginManager));
+        } catch (Exception e) {
+            // no reason to fail if the wrapper could not be created
+            getLog().error("Unable to install the Maven wrapper (./mvnw) in the project");
         }
     }
 

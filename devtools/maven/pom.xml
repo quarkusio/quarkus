@@ -114,6 +114,13 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
+        <!-- allows us to execute a mojo inside a mojo -->
+        <dependency>
+            <groupId>org.twdata.maven</groupId>
+            <artifactId>mojo-executor</artifactId>
+            <version>2.3.0</version>
+        </dependency>
+
         <!-- test -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>

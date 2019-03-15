@@ -209,7 +209,7 @@ Why not check that our application works? Run the Quarkus development server wit
 
 [source,shell]
 ----
-mvn compile quarkus:dev
+./mvnw compile quarkus:dev
 ----
 
 and open `http://localhost:8080/coffee` in your browser. Make couple of requests (remember, some of them we expect
@@ -461,7 +461,7 @@ All that is needed to enable the fault tolerance features in Quarkus is:
 +
 [source,shell]
 ----
-mvn quarkus:add-extension -Dextensions="smallrye-fault-tolerance"
+./mvnw quarkus:add-extension -Dextensions="smallrye-fault-tolerance"
 ----
 * or simply adding the following Maven dependency:
 +

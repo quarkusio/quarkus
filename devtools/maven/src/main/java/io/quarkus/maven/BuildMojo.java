@@ -122,7 +122,7 @@ public class BuildMojo extends AbstractMojo {
     @Parameter(defaultValue = "true")
     private boolean useStaticInit;
 
-    @Parameter(defaultValue = "false")
+    @Parameter(property = "quarkus.uberJar", defaultValue = "false")
     private boolean uberJar;
 
     public BuildMojo() {

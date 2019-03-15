@@ -81,7 +81,7 @@
                         <configuration>
                             <executable>${gradle.executable}</executable>
                             <arguments>
-                                <argument>quarkusBuild</argument>
+                                <argument>build</argument>
                                 <argument>-S</argument>
                             </arguments>
                             <skip>${skip.gradle.build}</skip>

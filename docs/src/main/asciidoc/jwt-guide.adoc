@@ -688,7 +688,6 @@ $ mvn exec:java -Dexec.mainClass=org.acme.jwt.GenerateToken -Dexec.classpathScop
 [INFO] ----------------------< org.acme:using-jwt-rbac >-----------------------
 [INFO] Building using-jwt-rbac 1.0-SNAPSHOT
 [INFO] --------------------------------[ jar ]---------------------------------
-Downloading from jboss: https://repository.jboss.org/nexus/content/groups/public/net/minidev/json-smart/maven-metadata.xml
 [INFO]
 [INFO] --- exec-maven-plugin:1.6.0:java (default-cli) @ using-jwt-rbac ---
 Setting exp: 1551659976 / Sun Mar 03 16:39:36 PST 2019
@@ -731,7 +730,6 @@ $ mvn exec:java -Dexec.mainClass=org.acme.jwt.GenerateToken -Dexec.classpathScop
 [INFO] ----------------------< org.acme:using-jwt-rbac >-----------------------
 [INFO] Building using-jwt-rbac 1.0-SNAPSHOT
 [INFO] --------------------------------[ jar ]---------------------------------
-Downloading from jboss: https://repository.jboss.org/nexus/content/groups/public/net/minidev/json-smart/maven-metadata.xml
 [INFO]
 [INFO] --- exec-maven-plugin:1.6.0:java (default-cli) @ using-jwt-rbac ---
 Setting exp: 1551663155 / Sun Mar 03 17:32:35 PST 2019

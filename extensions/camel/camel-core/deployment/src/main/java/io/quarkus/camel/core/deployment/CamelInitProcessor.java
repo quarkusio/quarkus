@@ -69,7 +69,7 @@ class CamelInitProcessor {
     }
 
     @Record(ExecutionTime.STATIC_INIT)
-    @BuildStep(applicationArchiveMarkers = { CamelSupport.CAMEL_SERVICE_BASE_PATH, "org/apache/camel" })
+    @BuildStep(applicationArchiveMarkers = { CamelSupport.CAMEL_SERVICE_BASE_PATH, CamelSupport.CAMEL_ROOT_PACKAGE_DIRECTORY })
     CamelRuntimeBuildItem createInitTask(RecorderContext recorderContext, CamelTemplate template) {
         Properties properties = new Properties();
         Config configProvider = ConfigProvider.getConfig();
@@ -94,7 +94,7 @@ class CamelInitProcessor {
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
-    @BuildStep(applicationArchiveMarkers = { CamelSupport.CAMEL_SERVICE_BASE_PATH, "org/apache/camel" })
+    @BuildStep(applicationArchiveMarkers = { CamelSupport.CAMEL_SERVICE_BASE_PATH, CamelSupport.CAMEL_ROOT_PACKAGE_DIRECTORY })
     void createRuntimeInitTask(CamelTemplate template, CamelRuntimeBuildItem runtime, ShutdownContextBuildItem shutdown)
             throws Exception {
         template.start(shutdown, runtime.getRuntime());

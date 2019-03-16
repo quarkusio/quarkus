@@ -33,7 +33,7 @@ which configures our REST client to connect to an SSL REST service.
 
 Now let's build the application as a native executable and run the tests:
 ```
-mvn clean install -Pnative
+./mvnw clean install -Pnative
 ```
 
 And we obtain the following result:
@@ -86,7 +86,7 @@ quarkus.ssl.native=false
 
 And let's try to build again:
 ```
-mvn clean install -Pnative
+./mvnw clean install -Pnative
 ```
 
 The native executable tests will fail with the following error:
@@ -103,7 +103,7 @@ org.acme.restclient.CountriesService/mp-rest/url=http://restcountries.eu/rest
 
 And build again:
 ```
-mvn clean install -Pnative
+./mvnw clean install -Pnative
 ```
 
 If you check carefully the native executable build options, you can see that the SSL related options are gone:
@@ -138,7 +138,7 @@ git checkout -- src/main/resources/application.properties
 
 And let's build the native executable again:
 ```
-mvn clean install -Pnative
+./mvnw clean install -Pnative
 ```
 
 == The SunEC library and friends

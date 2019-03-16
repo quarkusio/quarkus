@@ -87,7 +87,7 @@ If you have generated the application from the previous tutorial, you can find i
 
 We use a profile because, you will see very soon, packaging the native executable takes a _few_ seconds.
 
-Create a native executable using: `mvn package -Pnative`.
+Create a native executable using: `./mvnw package -Pnative`.
 
 In addition to the regular files, the build also produces `target/quarkus-quickstart-runner`.
 You can run it using: `./target/quarkus-quickstart-runner`.
@@ -142,10 +142,10 @@ public class NativeGreetingResourceIT extends GreetingResourceTest { // <2>
 The executable is retrieved using the `native.image.path` system property configured in the _Failsafe Maven Plugin_.
 <2> We extend our previous tests, but you can also implement your tests
 
-To see the `NativeGreetingResourceIT` run against the native executable, runs `mvn verify -Pnative`:
+To see the `NativeGreetingResourceIT` run against the native executable, runs `./mvnw verify -Pnative`:
 [source,shell]
 ----
-mvn verify -Pnative
+./mvnw verify -Pnative
 ...
 [quarkus-quickstart-runner:50955]     universe:     391.96 ms
 [quarkus-quickstart-runner:50955]      (parse):     904.37 ms
@@ -189,7 +189,7 @@ we will instruct the Maven build to produce an executable from inside a Docker c
 
 [source,shell]
 ----
-mvn package -Pnative -Dnative-image.docker-build=true
+./mvnw package -Pnative -Dnative-image.docker-build=true
 ----
 
 The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.

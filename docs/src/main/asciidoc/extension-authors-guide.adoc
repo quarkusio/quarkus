@@ -565,5 +565,5 @@ memory in a runtime class loader. To have these classes written out to disk for 
 
 [source,shell]
 ----
-mvn clean install -Dquarkus.debug.generated-classes-dir=./target/app-generated-classes
+./mvnw clean install -Dquarkus.debug.generated-classes-dir=./target/app-generated-classes
 ----

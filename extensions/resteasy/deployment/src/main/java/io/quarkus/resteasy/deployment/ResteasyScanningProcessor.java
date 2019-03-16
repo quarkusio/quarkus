@@ -49,7 +49,6 @@ import javax.ws.rs.ext.Providers;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
-import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -137,14 +136,6 @@ public class ResteasyScanningProcessor {
 
     private static final DotName JSONB_ANNOTATION = DotName.createSimple("javax.json.bind.annotation.JsonbAnnotation");
 
-    private static final DotName OPENAPI_SCHEMA = DotName
-            .createSimple("org.eclipse.microprofile.openapi.annotations.media.Schema");
-    private static final DotName OPENAPI_RESPONSE = DotName
-            .createSimple("org.eclipse.microprofile.openapi.annotations.responses.APIResponse");
-
-    private static final DotName OPENAPI_RESPONSES = DotName
-            .createSimple("org.eclipse.microprofile.openapi.annotations.responses.APIResponses");
-
     private static final Set<DotName> TYPES_IGNORED_FOR_REFLECTION = new HashSet<>(Arrays.asList(
             // javax.json
             DotName.createSimple("javax.json.JsonObject"),
@@ -182,14 +173,6 @@ public class ResteasyScanningProcessor {
             new ProviderDiscoverer(PUT, true, false)
     };
     private static final DotName SINGLETON_SCOPE = DotName.createSimple(Singleton.class.getName());
-
-    private static final String OPENAPI_RESPONSE_CONTENT = "content";
-    private static final String OPENAPI_RESPONSE_SCHEMA = "schema";
-    private static final String OPENAPI_SCHEMA_NOT = "not";
-    private static final String OPENAPI_SCHEMA_ONE_OF = "oneOf";
-    private static final String OPENAPI_SCHEMA_ANY_OF = "anyOf";
-    private static final String OPENAPI_SCHEMA_ALL_OF = "allOf";
-    private static final String OPENAPI_SCHEMA_IMPLEMENTATION = "implementation";
 
     /**
      * JAX-RS configuration.
@@ -553,87 +536,9 @@ public class ResteasyScanningProcessor {
             }
         }
 
-        // Generate reflection declaration from MP OpenAPI Schema definition
-        // They are needed for serialization.
-        Collection<AnnotationInstance> schemaAnnotationInstances = index.getAnnotations(OPENAPI_SCHEMA);
-        for (AnnotationInstance schemaAnnotationInstance : schemaAnnotationInstances) {
-            AnnotationTarget typeTarget = schemaAnnotationInstance.target();
-            if (typeTarget.kind() != Kind.CLASS) {
-                continue;
-            }
-            reflectiveHierarchy
-                    .produce(new ReflectiveHierarchyBuildItem(Type.create(typeTarget.asClass().name(), Type.Kind.CLASS)));
-        }
-
-        // Generate reflection declaration from MP OpenAPI APIResponse schema definition
-        // They are needed for serialization
-        Collection<AnnotationInstance> apiResponseAnnotationInstances = index.getAnnotations(OPENAPI_RESPONSE);
-        registerReflectionForApiResponseSchemaSerialization(reflectiveClass, reflectiveHierarchy,
-                apiResponseAnnotationInstances);
-
-        // Generate reflection declaration from MP OpenAPI APIResponses schema definition
-        // They are needed for serialization
-        Collection<AnnotationInstance> apiResponsesAnnotationInstances = index.getAnnotations(OPENAPI_RESPONSES);
-        for (AnnotationInstance apiResponsesAnnotationInstance : apiResponsesAnnotationInstances) {
-            AnnotationValue apiResponsesAnnotationValue = apiResponsesAnnotationInstance.value();
-            if (apiResponsesAnnotationValue == null) {
-                continue;
-            }
-            registerReflectionForApiResponseSchemaSerialization(reflectiveClass, reflectiveHierarchy,
-                    Arrays.asList(apiResponsesAnnotationValue.asNestedArray()));
-        }
-
         // In the case of a constraint violation, these elements might be returned as entities and will be serialized
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ViolationReport.class.getName()));
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, ResteasyConstraintViolation.class.getName()));
-    }
-
-    private void registerReflectionForApiResponseSchemaSerialization(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
-            Collection<AnnotationInstance> apiResponseAnnotationInstances) {
-        for (AnnotationInstance apiResponseAnnotationInstance : apiResponseAnnotationInstances) {
-            AnnotationInstance[] contents = apiResponseAnnotationInstance.value(OPENAPI_RESPONSE_CONTENT).asNestedArray();
-            if (contents == null) {
-                continue;
-            }
-            for (AnnotationInstance content : contents) {
-                AnnotationInstance schema = content.value(OPENAPI_RESPONSE_SCHEMA).asNested();
-                if (schema == null) {
-                    continue;
-                }
-
-                AnnotationValue schemaImplementationClass = schema.value(OPENAPI_SCHEMA_IMPLEMENTATION);
-                if (schemaImplementationClass != null) {
-                    reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(schemaImplementationClass.asClass()));
-                }
-
-                AnnotationValue schemaNotClass = schema.value(OPENAPI_SCHEMA_NOT);
-                if (schemaNotClass != null) {
-                    reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, schemaNotClass.asString()));
-                }
-
-                AnnotationValue schemaOneOfClasses = schema.value(OPENAPI_SCHEMA_ONE_OF);
-                if (schemaOneOfClasses != null) {
-                    for (Type schemaOneOfClass : schemaOneOfClasses.asClassArray()) {
-                        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(schemaOneOfClass));
-                    }
-                }
-
-                AnnotationValue schemaAnyOfClasses = schema.value(OPENAPI_SCHEMA_ANY_OF);
-                if (schemaAnyOfClasses != null) {
-                    for (Type schemaAnyOfClass : schemaAnyOfClasses.asClassArray()) {
-                        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(schemaAnyOfClass));
-                    }
-                }
-
-                AnnotationValue schemaAllOfClasses = schema.value(OPENAPI_SCHEMA_ALL_OF);
-                if (schemaAllOfClasses != null) {
-                    for (Type schemaAllOfClass : schemaAllOfClasses.asClassArray()) {
-                        reflectiveHierarchy.produce(new ReflectiveHierarchyBuildItem(schemaAllOfClass));
-                    }
-                }
-            }
-        }
     }
 
     private static void categorizeProviders(Set<String> availableProviders, MediaTypeMap<String> categorizedReaders,

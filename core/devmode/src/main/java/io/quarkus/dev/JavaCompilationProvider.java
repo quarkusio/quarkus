@@ -49,7 +49,7 @@ public class JavaCompilationProvider implements CompilationProvider {
 
             for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics.getDiagnostics()) {
                 System.out.format("%s, line %d in %s", diagnostic.getMessage(null), diagnostic.getLineNumber(),
-                        diagnostic.getSource().getName());
+                        diagnostic.getSource() == null ? "[unknown source]" : diagnostic.getSource().getName());
             }
         } catch (IOException e) {
             throw new RuntimeException("Cannot close file manager", e);

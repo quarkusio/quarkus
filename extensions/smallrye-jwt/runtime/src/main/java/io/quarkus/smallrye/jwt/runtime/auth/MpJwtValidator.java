@@ -1,18 +1,19 @@
 package io.quarkus.smallrye.jwt.runtime.auth;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Dependent;
 import javax.inject.Inject;
-import javax.json.JsonArray;
-import javax.json.JsonObject;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
 import org.jose4j.jwa.AlgorithmConstraints;
+import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwk.JsonWebKey;
 import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jwt.JwtClaims;
@@ -22,6 +23,7 @@ import org.jose4j.jwt.consumer.JwtConsumer;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
 import org.jose4j.jwt.consumer.JwtContext;
 import org.jose4j.keys.resolvers.JwksVerificationKeyResolver;
+import org.jose4j.lang.JoseException;
 import org.wildfly.security.auth.realm.token.TokenValidator;
 import org.wildfly.security.auth.server.RealmUnavailableException;
 import org.wildfly.security.authz.Attributes;
@@ -39,6 +41,7 @@ public class MpJwtValidator implements TokenValidator {
     private static Logger log = Logger.getLogger(MpJwtValidator.class);
     @Inject
     JWTAuthContextInfo authContextInfo;
+    private HttpsJwks httpsJwks;
 
     public MpJwtValidator() {
     }
@@ -50,7 +53,14 @@ public class MpJwtValidator implements TokenValidator {
     @Override
     public Attributes validate(BearerTokenEvidence evidence) throws RealmUnavailableException {
         String token = evidence.getToken();
-        JwtClaims claimsSet = null;
+        JwtClaims claimsSet = validateClaimsSet(token);
+        return new ClaimAttributes(claimsSet);
+    }
+
+    //TODO: Synchronize all the code below with smallrye/smallrye-jwt and eventually remove from this class
+    // Specifically, nearly the indentical code is already present in DefaultJWTCallerPrincipalFactory
+
+    private JwtClaims validateClaimsSet(String token) throws RealmUnavailableException {
         try {
             JwtConsumerBuilder builder = new JwtConsumerBuilder()
                     .setRequireExpirationTime()
@@ -70,7 +80,7 @@ public class MpJwtValidator implements TokenValidator {
             } else if (authContextInfo.isFollowMpJwt11Rules()) {
                 builder.setVerificationKeyResolver(new KeyLocationResolver(authContextInfo.getJwksUri()));
             } else {
-                final List<JsonWebKey> jsonWebKeys = authContextInfo.loadJsonWebKeys();
+                final List<JsonWebKey> jsonWebKeys = loadJsonWebKeys();
                 builder.setVerificationKeyResolver(new JwksVerificationKeyResolver(jsonWebKeys));
             }
 
@@ -82,10 +92,10 @@ public class MpJwtValidator implements TokenValidator {
 
             JwtConsumer jwtConsumer = builder.build();
             JwtContext jwtContext = jwtConsumer.process(token);
-            String type = jwtContext.getJoseObjects().get(0).getHeader("typ");
             //  Validate the JWT and process it to the Claims
             jwtConsumer.processContext(jwtContext);
-            claimsSet = jwtContext.getJwtClaims();
+            JwtClaims claimsSet = jwtContext.getJwtClaims();
+            claimsSet.setClaim(Claims.raw_token.name(), token);
 
             // Process the rolesMapping claim
             if (claimsSet.hasClaim(ROLE_MAPPINGS)) {
@@ -107,13 +117,30 @@ public class MpJwtValidator implements TokenValidator {
                     log.warnf(e, "Failed to access rolesMapping claim");
                 }
             }
-            claimsSet.setClaim(Claims.raw_token.name(), token);
 
+            return claimsSet;
         } catch (InvalidJwtException e) {
             throw new RealmUnavailableException("Failed to verify token", e);
         }
+    }
 
-        ClaimAttributes claimAttributes = new ClaimAttributes(claimsSet);
-        return claimAttributes;
+    protected List<JsonWebKey> loadJsonWebKeys() {
+        if (authContextInfo.getJwksUri() == null) {
+            return Collections.emptyList();
+        }
+        synchronized (this) {
+            httpsJwks = new HttpsJwks(authContextInfo.getJwksUri());
+            httpsJwks.setDefaultCacheDuration(authContextInfo.getJwksRefreshInterval().longValue() * 60L);
+        }
+
+        try {
+            return httpsJwks.getJsonWebKeys().stream()
+                    .filter(jsonWebKey -> "sig".equals(jsonWebKey.getUse())) // only signing keys are relevant
+                    .filter(jsonWebKey -> "RS256".equals(jsonWebKey.getAlgorithm())) // MP-JWT dictates RS256 only
+                    .collect(Collectors.toList());
+        } catch (IOException | JoseException e) {
+            throw new IllegalStateException(String.format("Unable to fetch JWKS from %s.",
+                    authContextInfo.getJwksUri()), e);
+        }
     }
 }

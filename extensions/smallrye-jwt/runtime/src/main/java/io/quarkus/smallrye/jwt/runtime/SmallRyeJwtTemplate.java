@@ -1,11 +1,8 @@
 package io.quarkus.smallrye.jwt.runtime;
 
-import java.security.Principal;
-
 import org.wildfly.security.auth.realm.token.TokenSecurityRealm;
 import org.wildfly.security.auth.server.SecurityDomain;
 import org.wildfly.security.auth.server.SecurityRealm;
-import org.wildfly.security.authz.Attributes;
 
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.RuntimeValue;
@@ -54,28 +51,9 @@ public class SmallRyeJwtTemplate {
     public RuntimeValue<SecurityRealm> createTokenRealm(BeanContainer container) {
         MpJwtValidator jwtValidator = container.instance(MpJwtValidator.class);
         TokenSecurityRealm tokenRealm = TokenSecurityRealm.builder()
-                .claimToPrincipal(this::mpJwtLogic)
+                .claimToPrincipal(claims -> new ElytronJwtCallerPrincipal(claims))
                 .validator(jwtValidator)
                 .build();
         return new RuntimeValue<>(tokenRealm);
-    }
-
-    /**
-     * MP-JWT logic for determining the name to use for the principal
-     * 
-     * @param claims - token claims
-     * @return JWTCallerPrincipal implementation
-     */
-    private Principal mpJwtLogic(Attributes claims) {
-        String pn = claims.getFirst("upn");
-        if (pn == null) {
-            pn = claims.getFirst("preferred_name");
-        }
-        if (pn == null) {
-            pn = claims.getFirst("sub");
-        }
-
-        ElytronJwtCallerPrincipal jwtCallerPrincipal = new ElytronJwtCallerPrincipal(pn, claims);
-        return jwtCallerPrincipal;
     }
 }

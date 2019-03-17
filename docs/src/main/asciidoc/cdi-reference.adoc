@@ -275,3 +275,17 @@ An unused bean:
 * is not directly eligible for injection into any `javax.enterprise.inject.Instance` or `javax.inject.Provider` injection point
  
 The extensions can eliminate possible false positives by producing `UnremovableBeanBuildItem`.
+
+Another possibility is to have `quarkus.arc.remove-unused-beans=true` but also set `quarkus.arc.keep-application-beans=true`. In this case beans defined by the application
+will not be removed even if they meet all the criteria set out in the list above.
+This could be useful in cases where bean discovery is needed, like when using
+
+[source,java]
+----
+@Inject
+BeanManager beanManager;
+
+...
+
+beanManager.getBeans(SomeService.class)
+----

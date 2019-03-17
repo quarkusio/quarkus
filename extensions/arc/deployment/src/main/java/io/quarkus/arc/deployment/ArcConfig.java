@@ -27,4 +27,11 @@ public class ArcConfig {
     @ConfigItem(defaultValue = "true")
     public boolean removeUnusedBeans;
 
+    /**
+     * If removeUnusedBeans is set to true and this property is also set to true, then beans defined by the application
+     * will not be removed even if they meet all the removal criteria mentioned above
+     */
+    @ConfigItem(defaultValue = "false")
+    public boolean keepApplicationBeans;
+
 }

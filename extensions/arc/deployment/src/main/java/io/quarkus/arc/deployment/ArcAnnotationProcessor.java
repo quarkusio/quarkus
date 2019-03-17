@@ -44,6 +44,7 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassNameExclusion
 import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanDefiningAnnotation;
 import io.quarkus.arc.processor.BeanDeployment;
+import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BeanProcessor;
 import io.quarkus.arc.processor.BeanProcessor.Builder;
 import io.quarkus.arc.processor.ReflectionRegistration;
@@ -132,16 +133,12 @@ public class ArcAnnotationProcessor {
         Set<DotName> generatedClassNames = beanArchiveIndex.getGeneratedClassNames();
         IndexView index = beanArchiveIndex.getIndex();
         Builder builder = BeanProcessor.builder();
-        builder.setApplicationClassPredicate(new Predicate<DotName>() {
+        IndexView applicationClassesIndex = applicationArchivesBuildItem.getRootArchive().getIndex();
+        builder.setApplicationClassPredicate(new AbstractApplicationClassesPredicate<DotName>(
+                applicationClassesIndex, generatedClassNames) {
             @Override
-            public boolean test(DotName dotName) {
-                if (applicationArchivesBuildItem.getRootArchive().getIndex().getClassByName(dotName) != null) {
-                    return true;
-                }
-                if (generatedClassNames.contains(dotName)) {
-                    return true;
-                }
-                return false;
+            protected DotName getDotName(DotName dotName) {
+                return dotName;
             }
         });
         builder.addAnnotationTransformer(new AnnotationsTransformer() {
@@ -216,6 +213,15 @@ public class ArcAnnotationProcessor {
             builder.addBeanDeploymentValidator(item.getBeanDeploymentValidator());
         }
         builder.setRemoveUnusedBeans(arc.removeUnusedBeans);
+        if (arc.keepApplicationBeans) {
+            builder.addRemovalExclusion(new AbstractApplicationClassesPredicate<BeanInfo>(
+                    applicationClassesIndex, generatedClassNames) {
+                @Override
+                protected DotName getDotName(BeanInfo bean) {
+                    return bean.getBeanClass();
+                }
+            });
+        }
         builder.addRemovalExclusion(new BeanClassNameExclusion(LifecycleEventRunner.class.getName()));
         for (AdditionalBeanBuildItem additionalBean : this.additionalBeans) {
             if (!additionalBean.isRemovable()) {
@@ -244,5 +250,27 @@ public class ArcAnnotationProcessor {
                         .collect(Collectors.toSet()));
 
         return new BeanContainerBuildItem(beanContainer);
+    }
+
+    private abstract static class AbstractApplicationClassesPredicate<T> implements Predicate<T> {
+
+        private final IndexView applicationClassesIndex;
+        private final Set<DotName> generatedClasses;
+
+        protected abstract DotName getDotName(T t);
+
+        protected AbstractApplicationClassesPredicate(IndexView applicationClassesIndex, Set<DotName> generatedClasses) {
+            this.applicationClassesIndex = applicationClassesIndex;
+            this.generatedClasses = generatedClasses;
+        }
+
+        @Override
+        public boolean test(T t) {
+            final DotName dotName = getDotName(t);
+            if (applicationClassesIndex.getClassByName(dotName) != null) {
+                return true;
+            }
+            return generatedClasses.contains(dotName);
+        }
     }
 }

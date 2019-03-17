@@ -106,14 +106,14 @@ Now we are ready to run our application. If using `application.properties` to co
 
 [source, text]
 ----
-mvn compile quarkus:dev
+./mvnw compile quarkus:dev
 ----
 
 or if configuring the tracer via environment variables:
 
 [source, text]
 ----
-mvn compile quarkus:dev -Djvm.args="-DJAEGER_SERVICE_NAME=myservice -DJAEGER_SAMPLER_TYPE=const -DJAEGER_SAMPLER_PARAM=1 -DJAEGER_ENDPOINT=http://localhost:14268/api/traces"
+./mvnw compile quarkus:dev -Djvm.args="-DJAEGER_SERVICE_NAME=myservice -DJAEGER_SAMPLER_TYPE=const -DJAEGER_SAMPLER_PARAM=1 -DJAEGER_ENDPOINT=http://localhost:14268/api/traces"
 ----
 
 Once both the application and tracing system are started, you can make a request to the provided endpoint:

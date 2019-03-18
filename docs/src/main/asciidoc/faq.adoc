@@ -14,7 +14,7 @@ include::./attributes.adoc[]
 
 == Native compilation
 
-Native image fails on macOS with `error: unknown type name 'uint8_t'`::
+Native executable fails on macOS with `error: unknown type name 'uint8_t'`::
 Your macOS has the wrong `*.h` files compared to the OS and no gcc compilation will work.
 This can happen when you migrate from versions of the OS.
 See https://stackoverflow.com/questions/48029309/cannot-compile-any-c-programs-error-unknown-type-name-uint8-t
@@ -26,4 +26,4 @@ The solution is to
 * (optional?) `brew install llvm`
 * generally reinstall your brew dependencies with native compilation
 
-Native image should work now.
+The executable should work now.

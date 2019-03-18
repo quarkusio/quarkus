@@ -8,41 +8,56 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class VertxProducerTest {
 
-    @Test
-    public void shouldNotFailWithoutConfig() {
-        VertxProducer producer = new VertxProducer();
-        producer.configure(null);
+    private VertxProducer producer;
 
-        assertThat(producer.vertx(), is(notNullValue()));
-        assertFalse(producer.vertx().isClustered());
-        assertThat(producer.eventbus(), is(notNullValue()));
+    @Before
+    public void setUp() throws Exception {
+        producer = new VertxProducer();
+    }
 
+    @After
+    public void tearDown() throws Exception {
         producer.destroy();
     }
 
     @Test
+    public void shouldNotFailWithoutConfig() {
+        producer.configure(null);
+        verifyProducer();
+    }
+
+    private void verifyProducer() {
+        assertThat(producer.vertx(), is(notNullValue()));
+        assertFalse(producer.vertx().isClustered());
+        assertThat(producer.eventbus(), is(notNullValue()));
+
+        assertThat(producer.axle(), is(notNullValue()));
+        assertFalse(producer.axle().isClustered());
+        assertThat(producer.axleEventbus(), is(notNullValue()));
+
+        assertThat(producer.rx(), is(notNullValue()));
+        assertFalse(producer.rx().isClustered());
+        assertThat(producer.rxRventbus(), is(notNullValue()));
+    }
+
+    @Test
     public void shouldNotFailWithDefaultConfig() {
-        VertxProducer producer = new VertxProducer();
         VertxConfiguration configuration = createDefaultConfiguration();
         configuration.workerPoolSize = 10;
         configuration.warningExceptionTime = Duration.ofSeconds(1);
         configuration.internalBlockingPoolSize = 5;
         producer.configure(configuration);
-
-        assertThat(producer.vertx(), is(notNullValue()));
-        assertFalse(producer.vertx().isClustered());
-        assertThat(producer.eventbus(), is(notNullValue()));
-
-        producer.destroy();
+        verifyProducer();
     }
 
     @Test
     public void shouldEnableClustering() {
-        VertxProducer producer = new VertxProducer();
         VertxConfiguration configuration = createDefaultConfiguration();
         ClusterConfiguration cc = configuration.cluster;
         cc.clustered = true;
@@ -63,8 +78,6 @@ public class VertxProducerTest {
         } catch (IllegalStateException e) {
             assertTrue(e.getMessage().contains("No ClusterManagerFactory"));
         }
-
-        producer.destroy();
     }
 
     private VertxConfiguration createDefaultConfiguration() {

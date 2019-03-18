@@ -36,7 +36,7 @@ NOTE: {project-name} extension may declare additional discovery rules. For examp
 
 {project-name} is designed with Substrate VM in mind.
 One of the limitations is the usage of https://github.com/oracle/graal/blob/master/substratevm/LIMITATIONS.md#user-content-reflection[Reflection, window="_blank"].
-Substrate VM does support reflective calls but for a price of a bigger native image.
+Substrate VM does support reflective calls but for a price of a bigger native executable.
 {project-name} must use reflection fallback to access private members.
 That's why {project-name} users are encouraged __not to use private members__ in their beans.
 This involves injection fields, constructors and initializers, observer methods, producer methods and fields, disposers and interceptor methods.
@@ -97,7 +97,8 @@ public class CounterBean {
 ** Client proxies
 ** Injection point metadata footnote:[`InjectionPoint.getMember()` is currently not supported.]
 * Scopes and contexts
-** `@Dependent`, `@ApplicationScoped`, `@Singleton` and `@RequestScoped`
+** `@Dependent`, `@ApplicationScoped`, `@Singleton`, `@RequestScoped` and `@SessionScoped`
+** Custom scopes and contexts
 * Interceptors
 ** Business method interceptors: `@AroundInvoke`
 ** Interceptors for lifecycle event callbacks: `@PostConstruct`, `@PreDestroy`, `@AroundConstruct`
@@ -106,8 +107,7 @@ public class CounterBean {
 [[limitations]]
 == Limitations
 
-* `@SessionScoped` and `@ConversationScoped` are not supported
-* Custom scopes and contexts are not supported
+* `@ConversationScoped` is not supported
 * Decorators are not supported
 * Portable Extensions are not supported
 * `BeanManager` - only the following methods are implemented: `getBeans()`, `createCreationalContext()`, `getReference()`, `resolve()`, `getContext()`, `getEvent()` and `createInstance()`
@@ -175,11 +175,24 @@ NOTE: A bean registration that is a result of an `AdditionalBeanBuildItem` is re
 
 === Synthetic Beans
 
-Sometimes it's useful to register a synthetic bean, i.e. a bean that doesn't need to have a corresponding java class.
+Sometimes it is very useful to register a synthetic bean, i.e. a bean that doesn't need to have a corresponding java class.
 In CDI this could be achieved using `AfterBeanDiscovery.addBean()` methods.
 In {project-name} we produce a `BeanRegistrarBuildItem` and leverage the `io.quarkus.arc.processor.BeanConfigurator` API to build a synthetic bean definition.
 
-// TODO add example
+[source,java]
+----
+@BuildStep
+BeanRegistrarBuildItem syntheticBean() {
+     return new BeanRegistrarBuildItem(new BeanRegistrar() {
+
+            @Override
+            public void register(RegistrationContext registrationContext) {
+                 registrationContext.configure(String.class).types(String.class).qualifiers(new MyQualifierLiteral()).creator(mc -> mc.returnValue(mc.load("foo"))).done();
+            }
+        }));
+}
+----
+
 
 NOTE: The output of a `BeanConfigurator` is recorded as bytecode. Therefore there are some limitations in how a synthetic bean instance is created. See also `BeanConfigurator.creator()` methods.
 
@@ -210,7 +223,7 @@ AnnotationsTransformerBuildItem transform() {
 
 === Bean Deployment Validation
 
-Once the bean deployment is ready an extenion can perform additional validations and inspect the found beans, observers and injection points.
+Once the bean deployment is ready an extension can perform additional validations and inspect the found beans, observers and injection points.
 Register a `BeanDeploymentValidatorBuildItem`:
 
 [source,java]
@@ -229,6 +242,22 @@ BeanDeploymentValidatorBuildItem beanDeploymentValidator() {
 
 NOTE: See also `io.quarkus.arc.processor.BuildExtension.Key` to discover the available metadata.
 
+=== Custom Contexts
+
+An extension can register a custom `InjectableContext` implementation by means of a `ContextRegistrarBuildItem`:
+
+[source,java]
+----
+@BuildStep
+ContextRegistrarBuildItem customContext() {
+    return new ContextRegistrarBuildItem(new ContextRegistrar() {
+         public void register(RegistrationContext registrationContext) {
+            registrationContext.configure(CustomScoped.class).normal().contextClass(MyCustomContext.class).done();
+         }
+    });
+}
+----
+
 [[remove_unused_beans]]
 == Removing Unused Beans
 
@@ -243,6 +272,6 @@ An unused bean:
 * does not have a name,
 * does not declare an observer,
 * does not declare any producer which is eligible for injection to any injection point,
-* is not directly eligible for injection into any `javax.enterprise.inject.Instance` injection point
+* is not directly eligible for injection into any `javax.enterprise.inject.Instance` or `javax.inject.Provider` injection point
  
 The extensions can eliminate possible false positives by producing `UnremovableBeanBuildItem`.

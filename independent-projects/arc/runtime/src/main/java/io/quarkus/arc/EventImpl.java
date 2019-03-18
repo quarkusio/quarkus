@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Supplier;
-
+import javax.enterprise.context.RequestScoped;
 import javax.enterprise.event.Event;
 import javax.enterprise.event.NotificationOptions;
 import javax.enterprise.event.ObserverException;
@@ -113,7 +113,21 @@ class EventImpl<T> implements Event<T> {
             return event;
         };
 
-        CompletableFuture<U> completableFuture = CompletableFuture.supplyAsync(Arc.container().withinRequest(notifyLogic), executor);
+        Supplier<U> withinRequest = () -> {
+            ArcContainer container = Arc.container();
+            if (container.getActiveContext(RequestScoped.class) != null) {
+                return notifyLogic.get();
+            } else {
+                ManagedContext requestContext = container.requestContext();
+                try {
+                    requestContext.activate();
+                    return notifyLogic.get();
+                } finally {
+                    requestContext.terminate();
+                }
+            }
+        };
+        CompletableFuture<U> completableFuture = CompletableFuture.supplyAsync(withinRequest, executor);
         return new AsyncEventDeliveryStage<>(completableFuture, executor);
     }
 
@@ -151,7 +165,8 @@ class EventImpl<T> implements Event<T> {
         return createNotifier(runtimeType, eventType, qualifiers, ArcContainerImpl.unwrap(Arc.container()));
     }
 
-    static <T> Notifier<T> createNotifier(Class<?> runtimeType, Type eventType, Set<Annotation> qualifiers, ArcContainerImpl container) {
+    static <T> Notifier<T> createNotifier(Class<?> runtimeType, Type eventType, Set<Annotation> qualifiers,
+            ArcContainerImpl container) {
         EventMetadata metadata = new EventMetadataImpl(qualifiers, eventType);
         List<ObserverMethod<? super T>> notifierObserverMethods = new ArrayList<>();
         for (ObserverMethod<? super T> observerMethod : container.resolveObservers(eventType, qualifiers)) {
@@ -164,18 +179,21 @@ class EventImpl<T> implements Event<T> {
         Type resolvedType = runtimeType;
         if (Types.containsTypeVariable(resolvedType)) {
             /*
-             * If the container is unable to resolve the parameterized type of the event object, it uses the specified type to infer the parameterized type of
+             * If the container is unable to resolve the parameterized type of the event object, it uses the specified type to
+             * infer the parameterized type of
              * the event types.
              */
             resolvedType = injectionPointTypeHierarchy.resolveType(resolvedType);
         }
         if (Types.containsTypeVariable(resolvedType)) {
             /*
-             * Examining the hierarchy of the specified type did not help. This may still be one of the cases when combining the event type and the specified
+             * Examining the hierarchy of the specified type did not help. This may still be one of the cases when combining the
+             * event type and the specified
              * type reveals the actual values for type variables. Let's try that.
              */
             Type canonicalEventType = Types.getCanonicalType(runtimeType);
-            TypeResolver objectTypeResolver = new EventObjectTypeResolverBuilder(injectionPointTypeHierarchy.getResolver().getResolvedTypeVariables(),
+            TypeResolver objectTypeResolver = new EventObjectTypeResolverBuilder(
+                    injectionPointTypeHierarchy.getResolver().getResolvedTypeVariables(),
                     new HierarchyDiscovery(canonicalEventType).getResolver().getResolvedTypeVariables()).build();
             resolvedType = objectTypeResolver.resolveType(canonicalEventType);
         }
@@ -291,9 +309,12 @@ class EventImpl<T> implements Event<T> {
     }
 
     /**
-     * There are two different strategies of exception handling for observer methods. When an exception is raised by a synchronous or transactional observer for
-     * a synchronous event, this exception stops the notification chain and the exception is propagated immediately. On the other hand, an exception thrown
-     * during asynchronous event delivery never is never propagated directly. Instead, all the exceptions for a given asynchronous event are collected and then
+     * There are two different strategies of exception handling for observer methods. When an exception is raised by a
+     * synchronous or transactional observer for
+     * a synchronous event, this exception stops the notification chain and the exception is propagated immediately. On the
+     * other hand, an exception thrown
+     * during asynchronous event delivery never is never propagated directly. Instead, all the exceptions for a given
+     * asynchronous event are collected and then
      * made available together using CompletionException.
      *
      * @author Jozef Hartinger

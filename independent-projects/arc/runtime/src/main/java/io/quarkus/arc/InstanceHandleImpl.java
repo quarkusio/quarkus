@@ -17,7 +17,6 @@
 package io.quarkus.arc;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import javax.enterprise.context.Dependent;
 import javax.enterprise.context.spi.CreationalContext;
 
@@ -43,14 +42,15 @@ class InstanceHandleImpl<T> implements InstanceHandle<T> {
     private final CreationalContext<T> creationalContext;
 
     private final CreationalContext<?> parentCreationalContext;
-    
+
     private final AtomicBoolean destroyed;
 
     InstanceHandleImpl(InjectableBean<T> bean, T instance, CreationalContext<T> creationalContext) {
         this(bean, instance, creationalContext, null);
     }
 
-    InstanceHandleImpl(InjectableBean<T> bean, T instance, CreationalContext<T> creationalContext, CreationalContext<?> parentCreationalContext) {
+    InstanceHandleImpl(InjectableBean<T> bean, T instance, CreationalContext<T> creationalContext,
+            CreationalContext<?> parentCreationalContext) {
         this.bean = bean;
         this.instance = instance;
         this.creationalContext = creationalContext;
@@ -77,24 +77,16 @@ class InstanceHandleImpl<T> implements InstanceHandle<T> {
             if (bean.getScope().equals(Dependent.class)) {
                 destroyInternal();
             } else {
-                Arc.container().getContext(bean.getScope()).destroy(bean);
+                Arc.container().getActiveContext(bean.getScope()).destroy(bean);
             }
         }
     }
 
-    void destroyInternal() {
+    protected void destroyInternal() {
         if (parentCreationalContext != null) {
             parentCreationalContext.release();
         } else {
             bean.destroy(instance, creationalContext);
-        }
-    }
-
-    static <T> InstanceHandleImpl<T> unwrap(InstanceHandle<T> handle) {
-        if (handle instanceof InstanceHandleImpl) {
-            return (InstanceHandleImpl<T>) handle;
-        } else {
-            throw new IllegalArgumentException("Failed to unwrap InstanceHandleImpl: " + handle);
         }
     }
 
@@ -103,5 +95,5 @@ class InstanceHandleImpl<T> implements InstanceHandle<T> {
         return "InstanceHandleImpl [bean=" + bean + ", instance=" + instance + ", creationalContext=" + creationalContext
                 + ", parentCreationalContext=" + parentCreationalContext + ", destroyed=" + destroyed + "]";
     }
-    
+
 }

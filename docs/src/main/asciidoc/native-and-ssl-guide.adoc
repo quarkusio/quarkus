@@ -1,12 +1,12 @@
 include::./attributes.adoc[]
-= Quarkus - Using SSL With Native Images
+= Quarkus - Using SSL With Native Executables
 
 We are quickly moving to an SSL-everywhere world so being able to use SSL is crucial.
 
-In this guide, we will discuss how you can get your native images to support SSL,
-as native images don't support it out of the box.
+In this guide, we will discuss how you can get your native executables to support SSL,
+as native executables don't support it out of the box.
 
-NOTE: If you don't plan on using native images, you can pass your way as in JDK mode, SSL is supported without further manipulations.
+NOTE: If you don't plan on using native executables, you can pass your way as in JDK mode, SSL is supported without further manipulations.
 
 == Prerequisites
 
@@ -31,9 +31,9 @@ org.acme.restclient.CountriesService/mp-rest/url=https://restcountries.eu/rest
 ```
 which configures our REST client to connect to an SSL REST service.
 
-Now let's build the application as a native image and run the tests:
+Now let's build the application as a native executable and run the tests:
 ```
-mvn clean install -Pnative
+./mvnw clean install -Pnative
 ```
 
 And we obtain the following result:
@@ -45,7 +45,7 @@ And we obtain the following result:
 
 So, yes, it appears it works out of the box and this guide is pretty useless.
 
-It's not. The magic happens when building the native image:
+It's not. The magic happens when building the native executable:
 ```
 [INFO] [io.quarkus.creator.phase.nativeimage.NativeImagePhase] /opt/graalvm/bin/native-image -J-Djava.util.logging.manager=org.jboss.logmanager.LogManager -J-Dcom.sun.xml.internal.bind.v2.bytecode.ClassTailor.noOptimize=true -H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime -jar rest-client-1.0-SNAPSHOT-runner.jar -J-Djava.util.concurrent.ForkJoinPool.common.parallelism=1 -H:+PrintAnalysisCallTree -H:EnableURLProtocols=http,https --enable-all-security-services -H:-SpawnIsolates -H:+JNI --no-server -H:-UseServiceLoaderFeature -H:+StackTrace
 ```
@@ -55,7 +55,7 @@ The important elements are these 3 options:
 -H:EnableURLProtocols=http,https --enable-all-security-services -H:+JNI
 ```
 
-They enable the native SSL support for your native image.
+They enable the native SSL support for your native executable.
 
 As SSL is ipso facto the standard nowadays, we decided to enable its support automatically for some of our extensions:
 
@@ -65,7 +65,7 @@ As SSL is ipso facto the standard nowadays, we decided to enable its support aut
 
 As long as you have one of those extensions in your project, the SSL support will be enabled by default.
 
-Now, let's just check the size of our native image as it will be useful later:
+Now, let's just check the size of our native executable as it will be useful later:
 ```
 $ ls -lh target/rest-client-1.0-SNAPSHOT-runner
 -rwxrwxr-x. 1 gsmet gsmet 34M Feb 22 15:27 target/rest-client-1.0-SNAPSHOT-runner
@@ -86,15 +86,15 @@ quarkus.ssl.native=false
 
 And let's try to build again:
 ```
-mvn clean install -Pnative
+./mvnw clean install -Pnative
 ```
 
-The native image tests will fail with the following error:
+The native executable tests will fail with the following error:
 ```
 Exception handling request to /country/name/greece: com.oracle.svm.core.jdk.UnsupportedFeatureError: Accessing an URL protocol that was not enabled. The URL protocol https is supported but not enabled by default. It must be enabled by adding the --enable-url-protocols=https option to the native-image command.
 ```
 
-This error is the one you obtain when trying to use SSL while it was not explicitly enabled in your native image.
+This error is the one you obtain when trying to use SSL while it was not explicitly enabled in your native executable.
 
 Now, let's change the REST service URL to **not** use SSL in `src/main/resources/application.properties`:
 ```
@@ -103,10 +103,10 @@ org.acme.restclient.CountriesService/mp-rest/url=http://restcountries.eu/rest
 
 And build again:
 ```
-mvn clean install -Pnative
+./mvnw clean install -Pnative
 ```
 
-If you check carefully the native image build options, you can see that the SSL related options are gone:
+If you check carefully the native executable build options, you can see that the SSL related options are gone:
 ```
 [INFO] [io.quarkus.creator.phase.nativeimage.NativeImagePhase] /opt/graalvm/bin/native-image -J-Djava.util.logging.manager=org.jboss.logmanager.LogManager -J-Dcom.sun.xml.internal.bind.v2.bytecode.ClassTailor.noOptimize=true -H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime -jar rest-client-1.0-SNAPSHOT-runner.jar -J-Djava.util.concurrent.ForkJoinPool.common.parallelism=1 -H:+PrintAnalysisCallTree -H:EnableURLProtocols=http -H:-SpawnIsolates -H:-JNI --no-server -H:-UseServiceLoaderFeature -H:+StackTrace
 ```
@@ -118,14 +118,14 @@ And we end up with:
 [INFO] ------------------------------------------------------------------------
 ```
 
-You remember we checked the size of the native image with SSL enabled?
+You remember we checked the size of the native executable with SSL enabled?
 Let's check again with SSL support entirely disabled:
 ```
 $ ls -lh target/rest-client-1.0-SNAPSHOT-runner
 -rwxrwxr-x. 1 gsmet gsmet 25M Feb 22 15:19 target/rest-client-1.0-SNAPSHOT-runner
 ```
 
-Yes, it is now **25 MB** whereas it used to be **34 MB**. SSL comes with a 9 MB overhead in native image size.
+Yes, it is now **25 MB** whereas it used to be **34 MB**. SSL comes with a 9 MB overhead in native executable size.
 
 And there's more to it.
 
@@ -136,9 +136,9 @@ Let's revert the changes we made to the configuration file and go back to SSL wi
 git checkout -- src/main/resources/application.properties
 ```
 
-And let's build the native image again:
+And let's build the native executable again:
 ```
-mvn clean install -Pnative
+./mvnw clean install -Pnative
 ```
 
 == The SunEC library and friends
@@ -154,7 +154,7 @@ This is useful when running tests but, obviously, it is not portable as these pa
 You can check that pretty easily:
 
  * move your GraalVM directory to another place (let's call it `<new-graalvm-home>`)
- * run the native image `./target/rest-client-1.0-SNAPSHOT-runner`
+ * run the native executable `./target/rest-client-1.0-SNAPSHOT-runner`
  * in a browser, go to `http://localhost:8080/country/name/greece`
  * you will have an Internal Server Error
  * in your terminal, you should have a warning `WARNING: The sunec native library, required by the SunEC provider, could not be loaded.`
@@ -187,10 +187,10 @@ Don't forget to move your GraalVM directory back to where it was.
 
 == Conclusion
 
-We make building native images easy and, even if the SSL support in GraalVM is still requiring some serious thinking,
+We make building native executable easy and, even if the SSL support in GraalVM is still requiring some serious thinking,
 it should be mostly transparent when using Quarkus.
 
 Hopefully, the situation will improve in the future:
-the native image size overhead will be reduced and the SunCE library might not be needed anymore.
+the native executables size overhead will be reduced and the SunCE library might not be needed anymore.
 
 We track GraalVM progress on a regular basis so we will promptly integrate in Quarkus any improvement with respect to SSL support.

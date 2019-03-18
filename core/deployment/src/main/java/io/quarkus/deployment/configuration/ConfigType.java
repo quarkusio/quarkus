@@ -2,6 +2,7 @@ package io.quarkus.deployment.configuration;
 
 import java.lang.reflect.Field;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.IntFunction;
 
@@ -37,6 +38,9 @@ public abstract class ConfigType {
     static final MethodDescriptor OPT_OF_NULLABLE_METHOD = MethodDescriptor.ofMethod(Optional.class, "ofNullable",
             Optional.class, Object.class);
     static final MethodDescriptor OPT_EMPTY_METHOD = MethodDescriptor.ofMethod(Optional.class, "empty", Optional.class);
+
+    static final MethodDescriptor MAP_PUT_METHOD = MethodDescriptor.ofMethod(Map.class, "put", Object.class, Object.class,
+            Object.class);
 
     /**
      * Containing name. This is a field name or a map key, <em>not</em> a configuration key segment; as such, it is

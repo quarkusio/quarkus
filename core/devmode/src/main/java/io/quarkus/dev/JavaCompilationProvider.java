@@ -2,7 +2,9 @@ package io.quarkus.dev;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import javax.tools.Diagnostic;
@@ -14,6 +16,11 @@ import javax.tools.StandardLocation;
 import javax.tools.ToolProvider;
 
 public class JavaCompilationProvider implements CompilationProvider {
+
+    // -g is used to make the java compiler generate all debugging info
+    // -parameters is used to generate metadata for reflection on method parameters
+    // this is useful when people using debuggers against their hot-reloaded app
+    private static final List<String> COMPILER_OPTIONS = Arrays.asList("-g", "-parameters");
 
     @Override
     public String handledExtension() {
@@ -33,7 +40,8 @@ public class JavaCompilationProvider implements CompilationProvider {
             fileManager.setLocation(StandardLocation.CLASS_OUTPUT, Collections.singleton(context.getOutputDirectory()));
 
             Iterable<? extends JavaFileObject> sources = fileManager.getJavaFileObjectsFromFiles(filesToCompile);
-            JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics, null, null, sources);
+            JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics,
+                    COMPILER_OPTIONS, null, sources);
 
             if (!task.call()) {
                 throw new RuntimeException("Compilation failed" + diagnostics.getDiagnostics());
@@ -41,7 +49,7 @@ public class JavaCompilationProvider implements CompilationProvider {
 
             for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics.getDiagnostics()) {
                 System.out.format("%s, line %d in %s", diagnostic.getMessage(null), diagnostic.getLineNumber(),
-                        diagnostic.getSource().getName());
+                        diagnostic.getSource() == null ? "[unknown source]" : diagnostic.getSource().getName());
             }
         } catch (IOException e) {
             throw new RuntimeException("Cannot close file manager", e);

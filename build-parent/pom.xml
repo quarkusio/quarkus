@@ -39,11 +39,20 @@
         <!-- These properties are needed in order for them to be resolvable by the documentation -->
         <!-- The Graal version we suggest using in documentation - as that's
            what we work with by self downloading it: -->
-        <graal-sdk.version-for-documentation>1.0.0-rc12</graal-sdk.version-for-documentation>
+        <graal-sdk.version-for-documentation>1.0.0-rc13</graal-sdk.version-for-documentation>
         <rest-assured.version>3.3.0</rest-assured.version>
 
         <!-- Enable APT by default for Eclipse -->
         <m2e.apt.activation>jdt_apt</m2e.apt.activation>
+
+        <!--
+        Supported Maven versions, interpreted as a version range
+         -->
+        <supported-maven-versions>[3.5.3,)</supported-maven-versions>
+
+        <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
+        <proposed-maven-vesion>3.6.0</proposed-maven-vesion>
+        <maven-wrapper.version>0.7.4</maven-wrapper.version>
     </properties>
 
     <dependencyManagement>
@@ -232,6 +241,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-jdbc-mariadb-runtime</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jdbc-mssql</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jdbc-mssql-runtime</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -621,7 +640,7 @@
                                 <rules>
                                     <dependencyConvergence/>
                                     <requireMavenVersion>
-                                        <version>3.5.3</version>
+                                        <version>${supported-maven-versions}</version>
                                     </requireMavenVersion>
                                     <bannedDependencies>
                                         <excludes>

@@ -16,8 +16,8 @@
 
 package io.quarkus.arc.processor;
 
+import io.quarkus.arc.ComputingCache;
 import java.util.Optional;
-
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Priority;
@@ -41,15 +41,14 @@ import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.util.Nonbinding;
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Provider;
 import javax.inject.Qualifier;
 import javax.interceptor.AroundConstruct;
 import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InterceptorBinding;
-
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
-import io.quarkus.arc.ComputingCache;
 
 public final class DotNames {
 
@@ -66,6 +65,7 @@ public final class DotNames {
     public static final DotName POST_CONSTRUCT = create(PostConstruct.class);
     public static final DotName PRE_DESTROY = create(PreDestroy.class);
     public static final DotName INSTANCE = create(Instance.class);
+    public static final DotName PROVIDER = create(Provider.class);
     public static final DotName INJECTION_POINT = create(InjectionPoint.class);
     public static final DotName INTERCEPTOR = create(Interceptor.class);
     public static final DotName INTERCEPTOR_BINDING = create(InterceptorBinding.class);
@@ -132,7 +132,7 @@ public final class DotNames {
                 throw new IllegalStateException("Unsupported nesting type: " + clazz);
         }
     }
-    
+
     /**
      * @param dotName
      * @see #simpleName(String)
@@ -142,7 +142,8 @@ public final class DotNames {
     }
 
     /**
-     * Note that "$" is a valid character for class names so we cannot detect a nested class here. Therefore, this method would return "Foo$Bar" for the
+     * Note that "$" is a valid character for class names so we cannot detect a nested class here. Therefore, this method would
+     * return "Foo$Bar" for the
      * parameter "com.foo.Foo$Bar". Use {@link #simpleName(ClassInfo)} when you need to distinguish the nested classes.
      * 
      * @param name

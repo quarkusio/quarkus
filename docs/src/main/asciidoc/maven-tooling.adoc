@@ -66,22 +66,22 @@ Instructions to build the image and run the container are written in the `Docker
 From inside a {project-name} project, you can obtain a list of the available extensions with:
 
 [source,shell]
-mvn quarkus:list-extensions
+./mvnw quarkus:list-extensions
 
 You can enable an extension using:
 
 [source,shell]
-mvn quarkus:add-extension -Dextensions="hibernate-validator"
+./mvnw quarkus:add-extension -Dextensions="hibernate-validator"
 
 Extensions are passed using a comma-separated list.
 
 == Development mode
 
 {project-name} comes with a built-in development mode.
-Run you application with:
+Run your application with:
 
 [source,shell]
-mvn compile quarkus:dev
+./mvnw compile quarkus:dev
 
 You can then update the application sources, resources and configurations.
 The changes are automatically reflected in your running application.
@@ -102,7 +102,7 @@ Hit `CTRL+C` to stop the application.
 You can run a {project-name} application in debug mode using:
 
 [source,shell]
-mvn compile quarkus:dev -Ddebug=true
+./mvnw compile quarkus:dev -Ddebug=true
 
 Then, attach your debugger to `localhost:5005`.
 
@@ -118,7 +118,7 @@ In the wizard, select: `Maven -> Existing Maven Project`.
 On the next screen, select the root location of the project.
 The next screen list the found modules; select the generated project and click on `Finish`. Done!
 
-In a separated terminal, run `mvn compile quarkus:dev`, and enjoy a highly productive environment.
+In a separated terminal, run `./mvnw compile quarkus:dev`, and enjoy a highly productive environment.
 
 **IntelliJ**
 
@@ -130,7 +130,7 @@ In IntelliJ:
 4. Next a few times (review the different options if needed)
 5. On the last screen click on Finish
 
-In a separated terminal or in the embedded terminal, run `mvn compile quarkus:dev`. Enjoy!
+In a separated terminal or in the embedded terminal, run `./mvnw compile quarkus:dev`. Enjoy!
 
 **Apache Netbeans**
 
@@ -140,27 +140,27 @@ In Netbeans:
 2. Select the project root
 3. Click on `Open Project`
 
-In a separated terminal or the embedded terminal, go to the project root and run `mvn compile quarkus:dev`. Enjoy!
+In a separated terminal or the embedded terminal, go to the project root and run `./mvnw compile quarkus:dev`. Enjoy!
 
 **Visual Studio Code**
 
 Open the project directory in VS Code. If you have installed the Java Extension Pack (grouping a set of Java extensions), the project is loaded as a Maven project.
 
-== Building a native image
+== Building a native executable
 
-Native images make {project-name} applications ideal for containers and serverless workloads.
+Native executables make {project-name} applications ideal for containers and serverless workloads.
 
 Make sure to have `GRAALVM_HOME` configured and pointing to GraalVM version {graalvm-version}.
 Verify that your `pom.xml` has the proper `native` profile (see <<build-tool-maven>>).
 
-Create a native executable using: `mvn package -Pnative`.
+Create a native executable using: `./mvnw package -Pnative`.
 A native executable will be present in `target/`.
 
 To run Integration Tests on the native executable, make sure to have the proper Maven plugin configured (see <<build-tool-maven>>) and launch the `verify` goal.
 
 [source,shell]
 ----
-mvn package verify -Pnative
+./mvnw verify -Pnative
 ...
 [quarkus-quickstart-runner:50955]     universe:     391.96 ms
 [quarkus-quickstart-runner:50955]      (parse):     904.37 ms
@@ -196,13 +196,14 @@ To create an executable that will run in a container, use the following:
 
 [source,shell]
 ----
-mvn package -Pnative -Dnative-image.docker-build=true
+./mvnw package -Pnative -Dnative-image.docker-build=true
 ----
 
 The produced executable will be a 64 bit Linux executable, so depending on your operating system it may no longer be runnable.
 However, it's not an issue as we are going to copy it to a Docker container.
+Note that in this case the build itself runs in a Docker container too, so you don't need to have GraalVM installed locally.
 
-You can follow the link:building-native-image-guide.html[Build a native image guide] as well as link:kubernetes-guide.html[Deploying Application to Kubernetes and OpenShift] for more information.
+You can follow the link:building-native-image-guide.html[Build a native executable guide] as well as link:kubernetes-guide.html[Deploying Application to Kubernetes and OpenShift] for more information.
 
 [[build-tool-maven]]
 == Maven configuration
@@ -287,4 +288,4 @@ If you have not used <<project-creation,project scaffolding>>, add the following
 <1> Optionally use a BOM file to omit the version of the different {project-name} dependencies.
 <2> Use the {project-name} Maven plugin that will hook into the build process
 <3> Use a native profile and plugin to activate GraalVM compilation
-<4> If you want to test your native image with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@SubstrateTest` will be run against the native image. See the link:building-native-image-guide.html[Native image guide] for more info.
+<4> If you want to test your native executable with Integration Tests, add the following plugin configuration. Test names `*IT` and annotated `@SubstrateTest` will be run against the native executable. See the link:building-native-image-guide.html[Native executable guide] for more info.

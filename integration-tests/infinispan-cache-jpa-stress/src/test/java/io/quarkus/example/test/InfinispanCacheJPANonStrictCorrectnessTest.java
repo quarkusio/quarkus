@@ -59,8 +59,8 @@ public class InfinispanCacheJPANonStrictCorrectnessTest {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsManifestResource("META-INF/nonstrict-persistence.xml", "persistence.xml")
-                    .addAsManifestResource("META-INF/nonstrict-microprofile-config.properties",
-                            "microprofile-config.properties"));
+                    .addAsResource("application-nonstrict.properties",
+                            "application.properties"));
 
     @Test
     public void test() throws Exception {

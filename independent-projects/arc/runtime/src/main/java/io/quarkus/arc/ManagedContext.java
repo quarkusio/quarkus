@@ -32,12 +32,13 @@ public interface ManagedContext extends InjectableContext {
     }
 
     /**
-     * Activate the context. All instance handles from the initial state must have the same scope as the context, otherwise an {@link IllegalArgumentException}
+     * Activate the context. All instance handles from the initial state must have the same scope as the context, otherwise an
+     * {@link IllegalArgumentException}
      * is thrown.
      *
      * @param initialState The initial state, may be {@code null}
      */
-    void activate(Collection<InstanceHandle<?>> initialState);
+    void activate(Collection<ContextInstanceHandle<?>> initialState);
 
     /**
      * Deactivate the context - do not destoy existing contextual instances.

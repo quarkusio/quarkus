@@ -3,7 +3,6 @@ plugins {
 }
 
 repositories {
-        mavenLocal()
     mavenCentral()
 }
 
@@ -25,6 +24,7 @@ test {
     testLogging {
         events "passed", "skipped", "failed"
     }
+    useJUnitPlatform()
 }
 
 task sourcesJar(type: Jar) {

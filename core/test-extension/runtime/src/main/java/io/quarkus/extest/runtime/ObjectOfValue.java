@@ -1,5 +1,7 @@
 package io.quarkus.extest.runtime;
 
+import java.util.Objects;
+
 /**
  * A configuration type that has a static {@linkplain ObjectOfValue#of(String)} conversion method
  */
@@ -34,7 +36,7 @@ public class ObjectOfValue {
 
     public boolean equals(Object obj) {
         ObjectOfValue oov = (ObjectOfValue) obj;
-        return part1.equals(oov.part1) && part2.equals(oov.part2);
+        return oov == this || oov != null && Objects.equals(part1, oov.part1) && Objects.equals(part2, oov.part2);
     }
 
     @Override

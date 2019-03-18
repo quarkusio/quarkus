@@ -20,26 +20,6 @@ import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
 import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import javax.enterprise.util.AnnotationLiteral;
-
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget.Kind;
-import org.jboss.jandex.AnnotationValue;
-import org.jboss.jandex.ArrayType;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.PrimitiveType;
-import org.jboss.jandex.Type;
-import org.jboss.logging.Logger;
 import io.quarkus.arc.ComputingCache;
 import io.quarkus.arc.processor.AnnotationLiteralProcessor.Key;
 import io.quarkus.arc.processor.AnnotationLiteralProcessor.Literal;
@@ -51,6 +31,24 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import javax.enterprise.util.AnnotationLiteral;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ArrayType;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.PrimitiveType;
+import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
 
 /**
  *
@@ -70,7 +68,8 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
      * @param annotationLiterals
      * @return a collection of resources
      */
-    Collection<Resource> generate(String name, BeanDeployment beanDeployment, ComputingCache<Key, Literal> annotationLiteralsCache) {
+    Collection<Resource> generate(String name, BeanDeployment beanDeployment,
+            ComputingCache<Key, Literal> annotationLiteralsCache) {
         List<Resource> resources = new ArrayList<>();
         annotationLiteralsCache.forEachEntry((key, literal) -> {
             ResourceClassOutput classOutput = new ResourceClassOutput(literal.isApplicationClass);
@@ -79,13 +78,15 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
         });
         return resources;
     }
-    
+
     static void createSharedAnnotationLiteral(ClassOutput classOutput, Key key, Literal literal) {
         // Ljavax/enterprise/util/AnnotationLiteral<Lcom/foo/MyQualifier;>;Lcom/foo/MyQualifier;
-        String signature = String.format("Ljavax/enterprise/util/AnnotationLiteral<L%1$s;>;L%1$s;", key.annotationName.toString().replace('.', '/'));
+        String signature = String.format("Ljavax/enterprise/util/AnnotationLiteral<L%1$s;>;L%1$s;",
+                key.annotationName.toString().replace('.', '/'));
         String generatedName = literal.className.replace('.', '/');
 
-        ClassCreator annotationLiteral = ClassCreator.builder().classOutput(classOutput).className(generatedName).superClass(AnnotationLiteral.class)
+        ClassCreator annotationLiteral = ClassCreator.builder().classOutput(classOutput).className(generatedName)
+                .superClass(AnnotationLiteral.class)
                 .interfaces(key.annotationName.toString()).signature(signature).build();
 
         MethodCreator constructor = annotationLiteral.getMethodCreator(Methods.INIT, "V",
@@ -98,35 +99,42 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
             // field
             annotationLiteral.getFieldCreator(param.name(), returnType).setModifiers(ACC_PRIVATE | ACC_FINAL);
             // constructor param
-            constructor.writeInstanceField(FieldDescriptor.of(annotationLiteral.getClassName(), param.name(), returnType), constructor.getThis(),
+            constructor.writeInstanceField(FieldDescriptor.of(annotationLiteral.getClassName(), param.name(), returnType),
+                    constructor.getThis(),
                     constructor.getMethodParam(iterator.previousIndex()));
             // value method
             MethodCreator value = annotationLiteral.getMethodCreator(param.name(), returnType).setModifiers(ACC_PUBLIC);
-            value.returnValue(value.readInstanceField(FieldDescriptor.of(annotationLiteral.getClassName(), param.name(), returnType), value.getThis()));
+            value.returnValue(value.readInstanceField(
+                    FieldDescriptor.of(annotationLiteral.getClassName(), param.name(), returnType), value.getThis()));
         }
         constructor.returnValue(null);
-        
+
         annotationLiteral.close();
         LOGGER.debugf("Shared annotation literal generated: %s", literal.className);
     }
 
-    static void createAnnotationLiteral(ClassOutput classOutput, ClassInfo annotationClass, AnnotationInstance annotationInstance, String literalName) {
+    static void createAnnotationLiteral(ClassOutput classOutput, ClassInfo annotationClass,
+            AnnotationInstance annotationInstance, String literalName) {
         createAnnotationLiteral(classOutput, annotationClass, annotationInstance.values(), literalName);
     }
 
-    static void createAnnotationLiteral(ClassOutput classOutput, ClassInfo annotationClass, List<AnnotationValue> values, String literalName) {
+    static void createAnnotationLiteral(ClassOutput classOutput, ClassInfo annotationClass, List<AnnotationValue> values,
+            String literalName) {
 
-        Map<String, AnnotationValue> annotationValues = values.stream().collect(Collectors.toMap(AnnotationValue::name, Function.identity()));
+        Map<String, AnnotationValue> annotationValues = values.stream()
+                .collect(Collectors.toMap(AnnotationValue::name, Function.identity()));
 
         // Ljavax/enterprise/util/AnnotationLiteral<Lcom/foo/MyQualifier;>;Lcom/foo/MyQualifier;
-        String signature = String.format("Ljavax/enterprise/util/AnnotationLiteral<L%1$s;>;L%1$s;", annotationClass.name().toString().replace('.', '/'));
+        String signature = String.format("Ljavax/enterprise/util/AnnotationLiteral<L%1$s;>;L%1$s;",
+                annotationClass.name().toString().replace('.', '/'));
         String generatedName = literalName.replace('.', '/');
 
-        ClassCreator annotationLiteral = ClassCreator.builder().classOutput(classOutput).className(generatedName).superClass(AnnotationLiteral.class)
+        ClassCreator annotationLiteral = ClassCreator.builder().classOutput(classOutput).className(generatedName)
+                .superClass(AnnotationLiteral.class)
                 .interfaces(annotationClass.name().toString()).signature(signature).build();
 
         for (MethodInfo method : annotationClass.methods()) {
-            if(method.name().equals(Methods.CLINIT) || method.name().equals(Methods.INIT)) {
+            if (method.name().equals(Methods.CLINIT) || method.name().equals(Methods.INIT)) {
                 continue;
             }
             MethodCreator valueMethod = annotationLiteral.getMethodCreator(MethodDescriptor.of(method));
@@ -177,8 +185,9 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
         annotationLiteral.close();
         LOGGER.debugf("Annotation literal generated: %s", literalName);
     }
-    
-    static ResultHandle loadValue(BytecodeCreator valueMethod, AnnotationValue value, ClassInfo annotationClass, MethodInfo method) {
+
+    static ResultHandle loadValue(BytecodeCreator valueMethod, AnnotationValue value, ClassInfo annotationClass,
+            MethodInfo method) {
         ResultHandle retValue;
         switch (value.kind()) {
             case BOOLEAN:
@@ -216,7 +225,8 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
                 break;
             case ENUM:
                 retValue = valueMethod
-                        .readStaticField(FieldDescriptor.of(value.asEnumType().toString(), value.asEnum(), value.asEnumType().toString()));
+                        .readStaticField(FieldDescriptor.of(value.asEnumType().toString(), value.asEnum(),
+                                value.asEnumType().toString()));
                 break;
             case NESTED:
             default:
@@ -225,7 +235,8 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
         return retValue;
     }
 
-    static ResultHandle arrayValue(AnnotationValue value, BytecodeCreator valueMethod, MethodInfo method, ClassInfo annotationClass) {
+    static ResultHandle arrayValue(AnnotationValue value, BytecodeCreator valueMethod, MethodInfo method,
+            ClassInfo annotationClass) {
         ResultHandle retValue;
         switch (value.componentKind()) {
             case CLASS:
@@ -280,7 +291,8 @@ public class AnnotationLiteralGenerator extends AbstractGenerator {
                     AnnotationInstance nonbinding = method.annotation(DotNames.NONBINDING);
                     if (nonbinding == null || nonbinding.target()
                             .kind() != Kind.METHOD) {
-                        LOGGER.warnf("Unsupported array component type %s on %s - literal returns an empty array", method, annotationClass);
+                        LOGGER.warnf("Unsupported array component type %s on %s - literal returns an empty array", method,
+                                annotationClass);
                     }
                 }
                 retValue = valueMethod.newArray(componentType(method), valueMethod.load(0));

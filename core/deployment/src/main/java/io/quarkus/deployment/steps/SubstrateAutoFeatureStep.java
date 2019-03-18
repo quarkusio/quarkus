@@ -192,7 +192,8 @@ public class SubstrateAutoFeatureStep {
 
         final Map<String, ReflectionInfo> reflectiveClasses = new LinkedHashMap<>();
         for (ReflectiveClassBuildItem i : reflectiveClassBuildItems) {
-            addReflectiveClass(reflectiveClasses, i.isMethods(), i.isFields(), i.getClassNames().toArray(new String[0]));
+            addReflectiveClass(reflectiveClasses, i.isConstructors(), i.isMethods(), i.isFields(),
+                    i.getClassNames().toArray(new String[0]));
         }
         for (ReflectiveFieldBuildItem i : reflectiveFields) {
             addReflectiveField(reflectiveClasses, i);
@@ -202,7 +203,7 @@ public class SubstrateAutoFeatureStep {
         }
 
         for (ServiceProviderBuildItem i : serviceProviderBuildItems) {
-            addReflectiveClass(reflectiveClasses, false, false, i.providers().toArray(new String[] {}));
+            addReflectiveClass(reflectiveClasses, true, false, false, i.providers().toArray(new String[] {}));
         }
 
         for (Map.Entry<String, ReflectionInfo> entry : reflectiveClasses.entrySet()) {
@@ -309,14 +310,17 @@ public class SubstrateAutoFeatureStep {
         }
     }
 
-    public void addReflectiveClass(Map<String, ReflectionInfo> reflectiveClasses, boolean method, boolean fields,
+    public void addReflectiveClass(Map<String, ReflectionInfo> reflectiveClasses, boolean constructors, boolean method,
+            boolean fields,
             String... className) {
         for (String cl : className) {
             ReflectionInfo existing = reflectiveClasses.get(cl);
             if (existing == null) {
-                reflectiveClasses.put(cl, new ReflectionInfo(true, method, fields));
+                reflectiveClasses.put(cl, new ReflectionInfo(constructors, method, fields));
             } else {
-                existing.constructors = true;
+                if (constructors) {
+                    existing.constructors = true;
+                }
                 if (method) {
                     existing.methods = true;
                 }

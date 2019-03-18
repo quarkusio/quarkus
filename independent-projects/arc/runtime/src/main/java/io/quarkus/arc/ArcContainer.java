@@ -17,27 +17,39 @@
 package io.quarkus.arc;
 
 import java.lang.annotation.Annotation;
+import java.util.Set;
 import java.util.function.Supplier;
-
+import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.util.TypeLiteral;
 
 /**
- * TODO: consolidate {@link ArcContainer} and {@link InstanceHandle} API 
+ * Represents a container instance.
  * 
  * @author Martin Kouba
  */
 public interface ArcContainer {
 
     /**
-     *
+     * Unlike {@link BeanManager#getContext(Class)} this method does not throw
+     * {@link javax.enterprise.context.ContextNotActiveException} if there is no active context for the given
+     * scope.
+     * 
      * @param scopeType
-     * @return the context for the given scope, does not throw {@link javax.enterprise.context.ContextNotActiveException}
+     * @return the active context or null
+     * @throws IllegalArgumentException if there is more than one active context for the given scope
      */
-    InjectableContext getContext(Class<? extends Annotation> scopeType);
+    InjectableContext getActiveContext(Class<? extends Annotation> scopeType);
 
     /**
-     * Never returns null. However, the handle is empty if no bean matches/multiple beans match the specified type and qualifiers.
+     * 
+     * @return the set of all supported scopes
+     */
+    Set<Class<? extends Annotation>> getScopes();
+
+    /**
+     * Never returns null. However, the handle is empty if no bean matches/multiple beans match the specified type and
+     * qualifiers.
      *
      * @param type
      * @param qualifiers
@@ -46,7 +58,8 @@ public interface ArcContainer {
     <T> InstanceHandle<T> instance(Class<T> type, Annotation... qualifiers);
 
     /**
-     * Never returns null. However, the handle is empty if no bean matches/multiple beans match the specified type and qualifiers.
+     * Never returns null. However, the handle is empty if no bean matches/multiple beans match the specified type and
+     * qualifiers.
      *
      * @param type
      * @param qualifiers
@@ -55,14 +68,14 @@ public interface ArcContainer {
     <T> InstanceHandle<T> instance(TypeLiteral<T> type, Annotation... qualifiers);
 
     /**
-    * Never returns null. However, the handle is empty if no bean matches/multiple beans match the specified name.
-    * 
-    * @param name
-    * @return a new instance handle
-    * @see InjectableBean#getName()
-    */
-   <T> InstanceHandle<T> instance(String name);
-    
+     * Never returns null. However, the handle is empty if no bean matches/multiple beans match the specified name.
+     * 
+     * @param name
+     * @return a new instance handle
+     * @see InjectableBean#getName()
+     */
+    <T> InstanceHandle<T> instance(String name);
+
     /**
      * Returns a supplier that can be used to create new instances, or null if no matching bean can be found.
      *
@@ -81,36 +94,19 @@ public interface ArcContainer {
     <T> InstanceHandle<T> instance(InjectableBean<T> bean);
 
     /**
-    *
-    * @param beanIdentifier
-    * @return an injectable bean or null
-    * @see InjectableBean#getIdentifier()
-    */
-    <T> InjectableBean<T> bean(String beanIdentifier);
-    
-    /**
      *
-     * @return the context for {@link javax.enterprise.context.RequestScoped}
+     * @param beanIdentifier
+     * @return an injectable bean or null
+     * @see InjectableBean#getIdentifier()
+     */
+    <T> InjectableBean<T> bean(String beanIdentifier);
+
+    /**
+     * This method never throws {@link ContextNotActiveException}.
+     * 
+     * @return the built-in context for {@link javax.enterprise.context.RequestScoped}
      */
     ManagedContext requestContext();
-
-    /**
-     * Ensures the provided action will be performed with the request context active.
-     *
-     * Does not manage the context if it's already active.
-     *
-     * @param action
-     */
-    Runnable withinRequest(Runnable action);
-
-    /**
-     * Ensures the providedaction will be performed with the request context active.
-     *
-     * Does not manage the context if it's already active.
-     *
-     * @param action
-     */
-    <T> Supplier<T> withinRequest(Supplier<T> action);
 
     /**
      * NOTE: Not all methods are supported!

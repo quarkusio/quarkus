@@ -1,6 +1,5 @@
 package io.quarkus.camel.it.core;
 
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
@@ -8,10 +7,12 @@ import java.net.URI;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
 @QuarkusTest
+@QuarkusTestResource(InfinispanServerTestResource.class)
 public class CamelTest {
     @Test
     public void testRoutes() {

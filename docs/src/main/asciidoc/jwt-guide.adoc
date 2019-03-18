@@ -139,7 +139,7 @@ Now we are ready to run our application. Use:
 
 [source,shell]
 ----
-mvn compile quarkus:dev
+./mvnw compile quarkus:dev
 ----
 
 and you should see output similar to:
@@ -147,7 +147,7 @@ and you should see output similar to:
 .quarkus:dev Output
 [source,shell]
 ----
-$ mvn compile quarkus:dev
+$ ./mvnw compile quarkus:dev
 [INFO] Scanning for projects...
 [INFO]
 [INFO] ----------------------< org.acme:using-jwt-rbac >-----------------------
@@ -238,7 +238,7 @@ public class TokenSecuredResource {
 <2> @RolesAllowed is a JSR 250 common security annotation that indicates that the given endpoint is accessible by a caller if
 they have either a "Echoer" or "Subscriber" role assigned.
 
-After you make this addition to your `TokenSecuredResource`, rerun the `mvn compile quarkus:dev` command, and then try `curl -v http://127.0.0.1:8080/secured/roles-allowed; echo` to attempt to access the new endpoint. Your output should be:
+After you make this addition to your `TokenSecuredResource`, rerun the `./mvnw compile quarkus:dev` command, and then try `curl -v http://127.0.0.1:8080/secured/roles-allowed; echo` to attempt to access the new endpoint. Your output should be:
 
 .curl command for /secured/roles-allowed
 [source,shell]
@@ -676,7 +676,7 @@ Now we can generate a JWT to use with `TokenSecuredResource` endpoint. To do thi
 mvn exec:java -Dexec.mainClass=org.acme.jwt.GenerateToken -Dexec.classpathScope=test
 ----
 
-TIP: You may need to run `mvn test-compile` before this if you are working strictly from the command line and not an IDE that
+TIP: You may need to run `./mvnw test-compile` before this if you are working strictly from the command line and not an IDE that
 automatically compiles code as you write it.
 
 .Sample JWT Generation Output
@@ -688,7 +688,6 @@ $ mvn exec:java -Dexec.mainClass=org.acme.jwt.GenerateToken -Dexec.classpathScop
 [INFO] ----------------------< org.acme:using-jwt-rbac >-----------------------
 [INFO] Building using-jwt-rbac 1.0-SNAPSHOT
 [INFO] --------------------------------[ jar ]---------------------------------
-Downloading from jboss: https://repository.jboss.org/nexus/content/groups/public/net/minidev/json-smart/maven-metadata.xml
 [INFO]
 [INFO] --- exec-maven-plugin:1.6.0:java (default-cli) @ using-jwt-rbac ---
 Setting exp: 1551659976 / Sun Mar 03 16:39:36 PST 2019
@@ -731,7 +730,6 @@ $ mvn exec:java -Dexec.mainClass=org.acme.jwt.GenerateToken -Dexec.classpathScop
 [INFO] ----------------------< org.acme:using-jwt-rbac >-----------------------
 [INFO] Building using-jwt-rbac 1.0-SNAPSHOT
 [INFO] --------------------------------[ jar ]---------------------------------
-Downloading from jboss: https://repository.jboss.org/nexus/content/groups/public/net/minidev/json-smart/maven-metadata.xml
 [INFO]
 [INFO] --- exec-maven-plugin:1.6.0:java (default-cli) @ using-jwt-rbac ---
 Setting exp: 1551663155 / Sun Mar 03 17:32:35 PST 2019
@@ -758,7 +756,7 @@ eyJraWQiOiJcL3ByaXZhdGVLZXkucGVtIiwidHlwIjoiSldUIiwiYWxnIjoiUlMyNTYifQ.eyJzdWIiO
 
 
 == Finally, Secured Access to /secured/roles-allowed
-Now let's use this to make a secured request to the /secured/roles-allowed endpoint. Make sure you have the {project-name} server running using the `mvn compile quarkus:dev` command, and then run the following command, making sure to use your version of the generated JWT from the previous step:
+Now let's use this to make a secured request to the /secured/roles-allowed endpoint. Make sure you have the {project-name} server running using the `./mvnw compile quarkus:dev` command, and then run the following command, making sure to use your version of the generated JWT from the previous step:
 
 [source,shell]
 ----

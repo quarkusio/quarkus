@@ -162,7 +162,7 @@ of the resource is created and not one per request. You can configure this using
 == Running the application
 
 Now we are ready to run our application.
-Use: `mvn compile quarkus:dev`:
+Use: `./mvnw compile quarkus:dev`:
 
 [source,shell]
 ----
@@ -250,7 +250,7 @@ public class GreetingResource {
 }
 ----
 
-If you stopped the application, restart the application with `mvn compile quarkus:dev`.
+If you stopped the application, restart the application with `./mvnw compile quarkus:dev`.
 Then check that http://localhost:8080/hello/greeting/quarkus returns `hello quarkus`.
 
 == Development Mode
@@ -352,7 +352,7 @@ public class GreetingResourceTest {
 
 These tests use http://rest-assured.io/[RestAssured], but feel free to use your favorite library.
 
-You can run the test from your IDE directly (be sure you stopped the application first), or from Maven using: `mvn test`.
+You can run the test from your IDE directly (be sure you stopped the application first), or from Maven using: `./mvnw test`.
 
 By default tests will run on port `8081` so as not to conflict with the running application. We automatically
 configure RestAssured to use this port. If you want to use a different client you should use the `@TestHTTPResource`
@@ -373,7 +373,7 @@ property called `test.url` that is set to the base test URL for situations where
 
 == Packaging and run the application
 
-The application is packaged using `mvn package`.
+The application is packaged using `./mvnw package`.
 It produces 2 jar files:
 
 * `getting-started-1.0-SNAPSHOT.jar` - containing just the classes and resources of the projects, it's the regular
@@ -385,6 +385,8 @@ You can run the application using: `java -jar target/getting-started-1.0-SNAPSHO
 
 NOTE: The `Class-Path` entry of the `MANIFEST.MF` from the _runner jar_ explicitly lists the jars from the `lib` directory.
 So if you want to deploy your application somewhere, you need to copy the _runner_ jar as well as the _lib_ directory.
+
+NOTE: Before running the application, don't forget to stop the hot reload mode (hit `CTRL+C`), or you will have a port conflict.
 
 == Async
 
@@ -407,12 +409,12 @@ The async version of the code is available in the {quickstarts-base-url}[GitHub]
 
 This guide covered the creation of an application using Quarkus.
 However, there is much more.
-We recommend continuing the journey with the link:building-native-image-guide.html[building a native image guide], where you learn about the native executable creation and the packaging in a container.
+We recommend continuing the journey with the link:building-native-image-guide.html[building a native executable guide], where you learn about the native executable creation and the packaging in a container.
 
 In addition, the link:tooling.html[tooling guide] document explains how to:
 
 * scaffold a project in a single command line,
-* enable the _development model_ (hot reload)
+* enable the _development mode_ (hot reload)
 * import the project in your favorite IDE
 * and more
 

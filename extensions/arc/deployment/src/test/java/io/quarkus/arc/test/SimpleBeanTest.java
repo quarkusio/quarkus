@@ -36,7 +36,7 @@ public class SimpleBeanTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(SimpleBean.class)
-                    .addAsManifestResource(new StringAsset("simpleBean.baz=1"), "microprofile-config.properties"));
+                    .addAsResource(new StringAsset("simpleBean.baz=1"), "application.properties"));
 
     @Inject
     SimpleBean simpleBean;

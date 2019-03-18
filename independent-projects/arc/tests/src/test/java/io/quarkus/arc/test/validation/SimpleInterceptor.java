@@ -16,13 +16,12 @@
 
 package io.quarkus.arc.test.validation;
 
+import io.quarkus.arc.InvocationContextImpl;
 import javax.annotation.Priority;
 import javax.inject.Inject;
 import javax.interceptor.AroundInvoke;
 import javax.interceptor.Interceptor;
 import javax.interceptor.InvocationContext;
-
-import io.quarkus.arc.InvocationContextImpl;
 
 @Simple
 @Priority(1)

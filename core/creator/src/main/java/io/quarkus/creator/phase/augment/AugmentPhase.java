@@ -201,7 +201,7 @@ public class AugmentPhase implements AppCreationPhase<AugmentPhase>, AugmentOutc
     private void doProcess(CurateOutcome appState) throws AppCreatorException {
         //first lets look for some config, as it is not on the current class path
         //and we need to load it to run the build process
-        Path config = appClassesDir.resolve("META-INF").resolve("microprofile-config.properties");
+        Path config = appClassesDir.resolve("application.properties");
         if (Files.exists(config)) {
             try {
                 Config built = SmallRyeConfigProviderResolver.instance().getBuilder()

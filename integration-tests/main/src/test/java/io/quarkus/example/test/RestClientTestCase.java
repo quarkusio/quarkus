@@ -16,8 +16,7 @@
 
 package io.quarkus.example.test;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.util.List;
 import java.util.Map;
@@ -26,13 +25,14 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.example.rest.ComponentType;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.path.json.JsonPath;
 
 @QuarkusTest
 public class RestClientTestCase {
+
+    public static final String HEADER_NAME = "header-name";
 
     @Test
     public void testMicroprofileClient() {
@@ -76,6 +76,26 @@ public class RestClientTestCase {
         Assertions.assertEquals(components.size(), 1);
         Map<String, String> map = components.get(0);
         Assertions.assertEquals(map.get("value"), "component value");
+    }
+
+    @Test
+    void testMicroprofileCdiClientHeaderPassing() {
+        String headerValue = "some-not-at-all-random-header-value";
+        RestAssured
+                .given().header(HEADER_NAME, headerValue)
+                .when().get("/client/manual/headers")
+                .then().header("Content-Type", "application/json")
+                .body(HEADER_NAME, equalTo(headerValue));
+    }
+
+    @Test
+    void testMicroprofileClientHeaderPassing() {
+        String headerValue = "some-not-at-all-random-header-value";
+        RestAssured
+                .given().header(HEADER_NAME, headerValue)
+                .when().get("/client/cdi/headers")
+                .then().header("Content-Type", "application/json")
+                .body(HEADER_NAME, equalTo(headerValue));
     }
 
     /**

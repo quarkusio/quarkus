@@ -20,9 +20,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import javax.enterprise.inject.spi.InterceptionType;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.MethodInfo;
@@ -54,8 +52,10 @@ class InterceptorInfo extends BeanInfo implements Comparable<InterceptorInfo> {
      * @param bindings
      * @param injections
      */
-    InterceptorInfo(AnnotationTarget target, BeanDeployment beanDeployment, Set<AnnotationInstance> bindings, List<Injection> injections, int priority) {
-        super(target, beanDeployment, ScopeInfo.DEPENDENT, Collections.singleton(Type.create(target.asClass().name(), Kind.CLASS)), new HashSet<>(), injections,
+    InterceptorInfo(AnnotationTarget target, BeanDeployment beanDeployment, Set<AnnotationInstance> bindings,
+            List<Injection> injections, int priority) {
+        super(target, beanDeployment, BuiltinScope.DEPENDENT.getInfo(),
+                Collections.singleton(Type.create(target.asClass().name(), Kind.CLASS)), new HashSet<>(), injections,
                 null, null, null, Collections.emptyList(), null);
         this.bindings = bindings;
         this.priority = priority;

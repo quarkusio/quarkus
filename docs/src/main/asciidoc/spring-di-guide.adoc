@@ -253,7 +253,7 @@ public class GreetingResourceTest {
 
 == Package and run the application
 
-Run the application with: `mvn compile quarkus:dev`.
+Run the application with: `./mvnw compile quarkus:dev`.
 Open your browser to http://localhost:8080/greeting.
 
 The result should be: `HELLO WORLD!`.

@@ -7,7 +7,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 /**
  *
  */
-@ConfigRoot(phase = ConfigPhase.RUN_TIME)
+@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public final class SecurityConfig {
     /**
      * The configuration for the {@linkplain org.wildfly.security.auth.realm.LegacyPropertiesSecurityRealm}

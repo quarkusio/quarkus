@@ -37,7 +37,7 @@ public class RolesAllowedUnitTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClasses)
-                    .addAsManifestResource("microprofile-config.properties"));
+                    .addAsResource("application.properties"));
 
     @BeforeEach
     public void generateToken() throws Exception {
@@ -73,7 +73,7 @@ public class RolesAllowedUnitTest {
 
     /**
      * Verify that the injected authenticated principal is as expected
-     * 
+     *
      * @throws Exception
      */
     @Test()
@@ -92,7 +92,7 @@ public class RolesAllowedUnitTest {
 
     /**
      * Validate a request with MP-JWT succeeds with HTTP_OK, and replies with hello, user={token upn claim}
-     * 
+     *
      * @throws Exception
      */
     @Test()
@@ -111,7 +111,7 @@ public class RolesAllowedUnitTest {
 
     /**
      * Validate a request with MP-JWT but no associated role fails with HTTP_FORBIDDEN
-     * 
+     *
      * @throws Exception
      */
     @Test()
@@ -130,7 +130,7 @@ public class RolesAllowedUnitTest {
 
     /**
      * Validate a request with MP-JWT is able to access checkIsUserInRole with HTTP_OK
-     * 
+     *
      * @throws Exception
      */
     @Test()
@@ -148,7 +148,7 @@ public class RolesAllowedUnitTest {
 
     /**
      * Validate a request with MP-JWT Token2 fails to access checkIsUserInRole with HTTP_FORBIDDEN
-     * 
+     *
      * @throws Exception
      */
     @Test()
@@ -167,7 +167,7 @@ public class RolesAllowedUnitTest {
 
     /**
      * Validate a request with MP-JWT Token2 fails to access checkIsUserInRole with HTTP_FORBIDDEN
-     * 
+     *
      * @throws Exception
      */
     @Test()
@@ -187,7 +187,7 @@ public class RolesAllowedUnitTest {
 
     /**
      * Validate a request with MP-JWT Token2 calling echo fails with HTTP_FORBIDDEN
-     * 
+     *
      * @throws Exception
      */
     @Test()
@@ -207,7 +207,7 @@ public class RolesAllowedUnitTest {
 
     /**
      * Validate a request with MP-JWT SecurityContext.getUserPrincipal() is a JsonWebToken
-     * 
+     *
      * @throws Exception
      */
     @Test()
@@ -226,7 +226,7 @@ public class RolesAllowedUnitTest {
     /**
      * This test requires that the server provide a mapping from the group1 grant in the token to a Group1MappedRole
      * application declared role.
-     * 
+     *
      * @throws Exception
      */
     @Test()
@@ -244,7 +244,7 @@ public class RolesAllowedUnitTest {
 
     /**
      * Validate that accessing secured method has HTTP_OK and injected JsonWebToken principal
-     * 
+     *
      * @throws Exception
      */
     @Test()

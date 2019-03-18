@@ -24,7 +24,6 @@ import java.util.ListIterator;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -50,7 +49,7 @@ public class InjectionPointInfo {
     }
 
     static InjectionPointInfo fromResourceField(FieldInfo field, BeanDeployment beanDeployment) {
-        return new InjectionPointInfo(field.type(), new HashSet<>(field.annotations()), InjtetionPointKind.RESOURCE, field, -1);
+        return new InjectionPointInfo(field.type(), new HashSet<>(field.annotations()), InjectionPointKind.RESOURCE, field, -1);
     }
 
     static List<InjectionPointInfo> fromMethod(MethodInfo method, BeanDeployment beanDeployment) {
@@ -89,26 +88,28 @@ public class InjectionPointInfo {
         }
         return annotations;
     }
-    
+
     private final TypeAndQualifiers typeAndQualifiers;
 
     private final AtomicReference<BeanInfo> resolvedBean;
 
-    private final InjtetionPointKind kind;
-    
+    private final InjectionPointKind kind;
+
     private final boolean hasDefaultedQualifier;
-    
+
     private final AnnotationTarget target;
-    
+
     private final int position;
 
     InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, AnnotationTarget target, int position) {
-        this(requiredType, requiredQualifiers, InjtetionPointKind.CDI, target, position);
+        this(requiredType, requiredQualifiers, InjectionPointKind.CDI, target, position);
     }
 
-    InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, InjtetionPointKind kind, AnnotationTarget target, int position) {
+    InjectionPointInfo(Type requiredType, Set<AnnotationInstance> requiredQualifiers, InjectionPointKind kind,
+            AnnotationTarget target, int position) {
         this.typeAndQualifiers = new TypeAndQualifiers(requiredType,
-                requiredQualifiers.isEmpty() ? Collections.singleton(AnnotationInstance.create(DotNames.DEFAULT, null, Collections.emptyList()))
+                requiredQualifiers.isEmpty()
+                        ? Collections.singleton(AnnotationInstance.create(DotNames.DEFAULT, null, Collections.emptyList()))
                         : requiredQualifiers);
         this.resolvedBean = new AtomicReference<BeanInfo>(null);
         this.kind = kind;
@@ -125,7 +126,7 @@ public class InjectionPointInfo {
         return resolvedBean.get();
     }
 
-    InjtetionPointKind getKind() {
+    InjectionPointKind getKind() {
         return kind;
     }
 
@@ -140,11 +141,11 @@ public class InjectionPointInfo {
     public boolean hasDefaultedQualifier() {
         return hasDefaultedQualifier;
     }
-    
+
     TypeAndQualifiers getTypeAndQualifiers() {
         return typeAndQualifiers;
     }
-    
+
     /**
      * For injected params, this method returns the corresponding method and not the param itself.
      * 
@@ -153,7 +154,7 @@ public class InjectionPointInfo {
     public AnnotationTarget getTarget() {
         return target;
     }
-    
+
     /**
      * @return the parameter position or {@code -1} for a field injection point
      */
@@ -164,9 +165,9 @@ public class InjectionPointInfo {
     public String getTargetInfo() {
         switch (target.kind()) {
             case FIELD:
-                return target.asField().declaringClass().name() + "#" + target.asField().name(); 
+                return target.asField().declaringClass().name() + "#" + target.asField().name();
             case METHOD:
-                return target.asMethod().declaringClass().name() + "#" + target.asMethod().name() + "()"; 
+                return target.asMethod().declaringClass().name() + "#" + target.asMethod().name() + "()";
             default:
                 return target.toString();
         }
@@ -174,10 +175,11 @@ public class InjectionPointInfo {
 
     @Override
     public String toString() {
-        return "InjectionPointInfo [requiredType=" + typeAndQualifiers.type + ", requiredQualifiers=" + typeAndQualifiers.qualifiers + "]";
+        return "InjectionPointInfo [requiredType=" + typeAndQualifiers.type + ", requiredQualifiers="
+                + typeAndQualifiers.qualifiers + "]";
     }
 
-    enum InjtetionPointKind {
+    enum InjectionPointKind {
         CDI, RESOURCE
     }
 

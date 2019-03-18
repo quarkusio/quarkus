@@ -10,5 +10,4 @@ public class RootResource {
     public String root() {
         return "Root Resource";
     }
-
 }

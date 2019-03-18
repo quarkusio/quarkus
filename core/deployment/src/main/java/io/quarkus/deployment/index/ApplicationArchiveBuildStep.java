@@ -35,9 +35,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 
 import org.jboss.jandex.Index;
@@ -49,6 +49,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.ApplicationArchiveImpl;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.builditem.AdditionalApplicationArchiveBuildItem;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
@@ -77,7 +78,8 @@ public class ApplicationArchiveBuildStep {
 
     @BuildStep
     ApplicationArchivesBuildItem build(ArchiveRootBuildItem root, ApplicationIndexBuildItem appindex,
-            List<AdditionalApplicationArchiveMarkerBuildItem> appMarkers) throws IOException {
+            List<AdditionalApplicationArchiveMarkerBuildItem> appMarkers,
+            List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchiveBuildItem) throws IOException {
 
         Set<String> markerFiles = new HashSet<>();
         for (AdditionalApplicationArchiveMarkerBuildItem i : appMarkers) {
@@ -85,13 +87,13 @@ public class ApplicationArchiveBuildStep {
         }
 
         List<ApplicationArchive> applicationArchives = scanForOtherIndexes(Thread.currentThread().getContextClassLoader(),
-                markerFiles, root.getPath(), Collections.emptyList());
+                markerFiles, root.getPath(), additionalApplicationArchiveBuildItem);
         return new ApplicationArchivesBuildItem(new ApplicationArchiveImpl(appindex.getIndex(), root.getPath(), null),
                 applicationArchives);
     }
 
     private List<ApplicationArchive> scanForOtherIndexes(ClassLoader classLoader, Set<String> applicationArchiveFiles,
-            Path appRoot, List<Path> additionalApplicationArchives) throws IOException {
+            Path appRoot, List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchives) throws IOException {
         Set<Path> dependenciesToIndex = new HashSet<>();
         //get paths that are included via index-dependencies
         dependenciesToIndex.addAll(getIndexDependencyPaths(classLoader));
@@ -103,7 +105,9 @@ public class ApplicationArchiveBuildStep {
         //we don't index the application root, this is handled elsewhere
         dependenciesToIndex.remove(appRoot);
 
-        dependenciesToIndex.addAll(additionalApplicationArchives);
+        for (AdditionalApplicationArchiveBuildItem i : additionalApplicationArchives) {
+            dependenciesToIndex.add(i.getPath());
+        }
 
         return indexPaths(dependenciesToIndex, classLoader);
     }
@@ -173,7 +177,7 @@ public class ApplicationArchiveBuildStep {
                 Path path = Paths.get(new URI(url.getProtocol(), url.getHost(), pathString, null));
                 return path;
             }
-            throw new RuntimeException("Unkown URL type " + url.getProtocol());
+            throw new RuntimeException("Unknown URL type " + url.getProtocol());
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
@@ -189,18 +193,17 @@ public class ApplicationArchiveBuildStep {
         }
 
         Indexer indexer = new Indexer();
-        Files.walk(path).forEach(new Consumer<Path>() {
-            @Override
-            public void accept(Path path) {
-                if (path.toString().endsWith(".class")) {
-                    try (FileInputStream in = new FileInputStream(path.toFile())) {
+        try (Stream<Path> stream = Files.walk(path)) {
+            stream.forEach(path1 -> {
+                if (path1.toString().endsWith(".class")) {
+                    try (FileInputStream in = new FileInputStream(path1.toFile())) {
                         indexer.index(in);
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
                 }
-            }
-        });
+            });
+        }
         return indexer.complete();
     }
 

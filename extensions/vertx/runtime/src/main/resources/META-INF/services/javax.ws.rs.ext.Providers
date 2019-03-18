@@ -1,0 +1,2 @@
+io.quarkus.vertx.runtime.JsonObjectWriter
+io.quarkus.vertx.runtime.JsonArrayWriter

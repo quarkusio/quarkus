@@ -12,7 +12,10 @@ import org.jboss.jandex.ClassInfo;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 
 public final class CamelSupport {
+
     public static final String CAMEL_SERVICE_BASE_PATH = "META-INF/services/org/apache/camel";
+
+    public static final String CAMEL_ROOT_PACKAGE_DIRECTORY = "org/apache/camel";
 
     private CamelSupport() {
     }

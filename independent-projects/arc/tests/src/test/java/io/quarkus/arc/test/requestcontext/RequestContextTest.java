@@ -22,11 +22,11 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import javax.enterprise.context.ContextNotActiveException;
-
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.test.ArcTestContainer;
+import javax.enterprise.context.ContextNotActiveException;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -39,6 +39,7 @@ public class RequestContextTest {
     public void testRequestContext() {
 
         ArcContainer arc = Arc.container();
+        ManagedContext requestContext = arc.requestContext();
 
         try {
             arc.instance(Controller.class).get().getId();
@@ -46,13 +47,13 @@ public class RequestContextTest {
         } catch (ContextNotActiveException expected) {
         }
 
-        arc.requestContext().activate();
+        requestContext.activate();
         assertFalse(Controller.DESTROYED.get());
         Controller controller1 = arc.instance(Controller.class).get();
         Controller controller2 = arc.instance(Controller.class).get();
         String controller2Id = controller2.getId();
         assertEquals(controller1.getId(), controller2Id);
-        arc.requestContext().terminate();
+        requestContext.terminate();
         assertTrue(Controller.DESTROYED.get());
 
         try {
@@ -63,11 +64,15 @@ public class RequestContextTest {
 
         // Id must be different in a different request
         Controller.DESTROYED.set(false);
-        arc.withinRequest(() -> assertNotEquals(controller2Id, arc.instance(Controller.class).get().getId())).run();
+        requestContext.activate();
+        assertNotEquals(controller2Id, arc.instance(Controller.class).get().getId());
+        requestContext.terminate();
         assertTrue(Controller.DESTROYED.get());
 
         Controller.DESTROYED.set(false);
-        assertNotEquals(controller2Id, arc.withinRequest(() -> arc.instance(Controller.class).get().getId()).get());
+        requestContext.activate();
+        assertNotEquals(controller2Id, arc.instance(Controller.class).get().getId());
+        requestContext.terminate();
         assertTrue(Controller.DESTROYED.get());
 
         // @ActivateRequestContext

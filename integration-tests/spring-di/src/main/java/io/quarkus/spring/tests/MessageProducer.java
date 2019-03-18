@@ -17,9 +17,8 @@
 package io.quarkus.spring.tests;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
 
-@Service
+@PrototypeService
 public class MessageProducer {
 
     @Value("${greeting.message}")

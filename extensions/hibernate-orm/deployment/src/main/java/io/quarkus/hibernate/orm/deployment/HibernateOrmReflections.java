@@ -40,6 +40,8 @@ public final class HibernateOrmReflections {
         allConstructors(reflectiveClass, org.hibernate.persister.collection.OneToManyPersister.class);
         allConstructors(reflectiveClass, org.hibernate.persister.collection.BasicCollectionPersister.class);
         simpleConstructor(reflectiveClass, org.hibernate.persister.entity.SingleTableEntityPersister.class);
+        allConstructors(reflectiveClass, org.hibernate.persister.entity.JoinedSubclassEntityPersister.class);
+        allConstructors(reflectiveClass, org.hibernate.persister.entity.UnionSubclassEntityPersister.class);
         simpleConstructor(reflectiveClass,
                 org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorBuilderImpl.class);
         simpleConstructor(reflectiveClass, org.hibernate.id.enhanced.SequenceStyleGenerator.class);

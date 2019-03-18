@@ -108,6 +108,13 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
 
     private List<String> additionalBuildArgs;
 
+    private boolean addAllCharsets;
+
+    public NativeImagePhase setAddAllCharsets(boolean addAllCharsets) {
+        this.addAllCharsets = addAllCharsets;
+        return this;
+    }
+
     public NativeImagePhase setOutputDir(Path outputDir) {
         this.outputDir = outputDir;
         return this;
@@ -271,7 +278,7 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
             //TODO: use an 'official' image
             String image;
             if (dockerBuild.toLowerCase().equals("true")) {
-                image = "swd847/centos-graal-native-image-rc12";
+                image = "swd847/centos-graal-native-image-rc13";
             } else {
                 //allow the use of a custom image
                 image = dockerBuild;
@@ -378,6 +385,11 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
             if (enableHttpsUrlHandler) {
                 protocols.add("https");
             }
+            if (addAllCharsets) {
+                command.add("-H:+AddAllCharsets");
+            } else {
+                command.add("-H:-AddAllCharsets");
+            }
             if (!protocols.isEmpty()) {
                 command.add("-H:EnableURLProtocols=" + String.join(",", protocols));
             }
@@ -454,8 +466,8 @@ public class NativeImagePhase implements AppCreationPhase<NativeImagePhase>, Nat
     private boolean isThisGraalVMRCObsolete() {
         final String vmName = System.getProperty("java.vm.name");
         log.info("Running Quarkus native-image plugin on " + vmName);
-        if (vmName.contains("-rc9") || vmName.contains("-rc10") || vmName.contains("-rc11")) {
-            log.error("Out of date RC build of GraalVM detected! Please upgrade to RC12");
+        if (vmName.contains("-rc9") || vmName.contains("-rc10") || vmName.contains("-rc11") || vmName.contains("-rc12")) {
+            log.error("Out of date RC build of GraalVM detected! Please upgrade to RC13");
             return true;
         }
         return false;

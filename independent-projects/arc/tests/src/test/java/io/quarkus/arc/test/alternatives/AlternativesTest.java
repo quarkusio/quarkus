@@ -18,16 +18,14 @@ package io.quarkus.arc.test.alternatives;
 
 import static org.junit.Assert.assertEquals;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.test.ArcTestContainer;
 import java.util.function.Supplier;
-
 import javax.annotation.Priority;
 import javax.enterprise.inject.Alternative;
 import javax.enterprise.util.TypeLiteral;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.test.ArcTestContainer;
 import org.junit.Rule;
 import org.junit.Test;
 

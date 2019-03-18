@@ -163,8 +163,8 @@ The `Fruit` objects will be automatically serialized/deserialized by http://json
 [NOTE]
 ====
 While RESTEasy supports auto-negotiation, when using Quarkus, it is very important to define the `@Produces` and `@Consumes` annotations.
-They are analyzed at build time and Quarkus restricts the number of JAX-RS providers included in the native image to the minimum required by the application.
-It allows to reduce the size of the native image.
+They are analyzed at build time and Quarkus restricts the number of JAX-RS providers included in the native executable to the minimum required by the application.
+It allows to reduce the size of the native executable.
 ====
 
 == Creating a frontend
@@ -175,13 +175,13 @@ In the `src/main/resources/META-INF/resources` directory, add a `fruits.html` fi
 
 You can now interact with your REST service:
 
- * start Quarkus with `mvn compile quarkus:dev`
+ * start Quarkus with `./mvnw compile quarkus:dev`
  * open a browser to `http://localhost:8080/fruits.html`
  * add new fruits to the list via the form
 
-== Building a native image
+== Building a native executable
 
-You can build a native image with the usual command `mvn package -Pnative`.
+You can build a native executable with the usual command `./mvnw package -Pnative`.
 
 Running it is as simple as executing `./target/rest-json-1.0-SNAPSHOT-runner`.
 
@@ -192,7 +192,7 @@ You can then point your browser to `http://localhost:8080/fruits.html` and use y
 The library we use to serialize Java objects to JSON documents is http://json-b.net/[JSON-B].
 It uses Java reflection to get the properties of an object and serialize them.
 
-Using native images with GraalVM, all classes that will be used with reflection need to be registered.
+Using native executables with GraalVM, all classes that will be used with reflection need to be registered.
 The good news is that Quarkus does that work for you most of the time.
 So far, we haven't registered any class, not even `Fruit`, for reflection usage and everything is working fine.
 
@@ -334,9 +334,9 @@ In the `src/main/resources/META-INF/resources` directory, add a `legumes.html` f
 
 Open a browser to http://localhost:8080/legumes.html and you will see our list of legumes.
 
-The interesting part starts when running the application as a native image:
+The interesting part starts when running the application as a native executable:
 
- * create the native image with `mvn package -Pnative`.
+ * create the native executable with `./mvnw package -Pnative`.
  * execute it with `./target/rest-json-1.0-SNAPSHOT-runner`
  * open a browser and go to http://localhost:8080/legumes.html
 
@@ -365,7 +365,7 @@ public class Legume {
 Let's do that and follow the same steps as before:
 
  * hit `Ctrl+C` to stop the application
- * create the native image with `mvn package -Pnative`.
+ * create the native executable with `./mvnw package -Pnative`.
  * execute it with `./target/rest-json-1.0-SNAPSHOT-runner`
  * open a browser and go to http://localhost:8080/legumes.html
 
@@ -375,6 +375,6 @@ This time, you can see our list of legumes.
 
 Creating JSON REST services with Quarkus is easy as it relies on proven and well known technologies.
 
-As usual, Quarkus further simplifies things under the hood when running your application as a native image.
+As usual, Quarkus further simplifies things under the hood when running your application as a native executable.
 
 There is only one thing to remember: if you use `Response` and Quarkus can't determine the beans that are serialized, you need to annotate them with `@RegisterForReflection`.

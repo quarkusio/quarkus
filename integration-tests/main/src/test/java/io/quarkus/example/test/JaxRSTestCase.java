@@ -38,6 +38,12 @@ public class JaxRSTestCase {
     }
 
     @Test
+    public void testAnnotatedInterface() {
+        RestAssured.when().get("/interface").then().body(is("interface endpoint"));
+
+    }
+
+    @Test
     public void testNonCdiBeansAreApplicationScoped() {
         RestAssured.when().get("/test/count").then().body(is("1"));
         RestAssured.when().get("/test/count").then().body(is("2"));
@@ -122,4 +128,36 @@ public class JaxRSTestCase {
                 .body("name", is("my entity name"),
                         "value", is("my entity value"));
     }
+
+    @Test
+    public void testFromJson() {
+        RestAssured.when().get("/test/from-json").then()
+                .body("name", is("my entity name"),
+                        "value", is("my entity value"));
+    }
+
+    @Test
+    public void testOpenApiSchemaResponse() {
+        RestAssured.when().get("/test/openapi/responses").then()
+                .body("name", is("my openapi entity name"));
+    }
+
+    @Test
+    public void testOpenApiSchemaResponsesV1() {
+        RestAssured.when().get("/test/openapi/responses/v1").then()
+                .body("name", is("my openapi entity version one name"));
+    }
+
+    @Test
+    public void testOpenApiSchemaResponseV2() {
+        RestAssured.when().get("/test/openapi/responses/v2").then()
+                .body("name", is("my openapi entity version two name"));
+    }
+
+    @Test
+    public void testOpenApiSchema() {
+        RestAssured.when().get("/test/openapi/schema").then()
+                .body("name", is("my openapi schema"));
+    }
+
 }

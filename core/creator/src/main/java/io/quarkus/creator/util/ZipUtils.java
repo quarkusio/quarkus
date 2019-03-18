@@ -44,8 +44,10 @@ public class ZipUtils {
     private static final Map<String, String> CREATE_ENV = Collections.singletonMap("create", "true");
 
     public static void unzip(Path zipFile, Path targetDir) throws IOException {
-        if (!Files.exists(targetDir)) {
+        try {
             Files.createDirectories(targetDir);
+        } catch (FileAlreadyExistsException fae) {
+            throw new IOException("Could not create directory '" + targetDir + "' as a file already exists with the same name");
         }
         try (FileSystem zipfs = newFileSystem(zipFile)) {
             for (Path zipRoot : zipfs.getRootDirectories()) {

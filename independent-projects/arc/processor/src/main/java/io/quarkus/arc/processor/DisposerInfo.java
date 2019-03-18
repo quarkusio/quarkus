@@ -18,9 +18,7 @@ package io.quarkus.arc.processor;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.enterprise.inject.spi.DefinitionException;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.MethodInfo;

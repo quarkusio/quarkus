@@ -414,7 +414,7 @@ public final class HibernateOrmProcessor {
                             String resourceAsString = root.getPath().relativize(loadScriptPath.get()).toString();
                             resourceProducer.produce(new SubstrateResourceBuildItem(resourceAsString));
                             hotDeploymentProducer.produce(new HotDeploymentConfigFileBuildItem(resourceAsString));
-                            desc.getProperties().setProperty(AvailableSettings.HBM2DDL_LOAD_SCRIPT_SOURCE, file);
+                            desc.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, file);
                         });
 
                 //raise exception if explicit file is not present (i.e. not the default)
@@ -424,7 +424,7 @@ public final class HibernateOrmProcessor {
                                 c -> {
                                     throw new ConfigurationError(
                                             "Unable to find file referenced in '" + HIBERNATE_ORM_CONFIG_PREFIX
-                                                    + ".sql-load-script-source="
+                                                    + "sql-load-script="
                                                     + c + "'. Remove property or add file to your path.");
                                 });
 

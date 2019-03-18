@@ -22,12 +22,12 @@ Augmentation::
 
 Static Init::
     If bytecode is recorded with `@Record(STATIC_INIT)` then it will be executed from a static init method on the main
-    class. For a native image build, this code is executed in a normal JVM as part of the image build
-    process, and any retained objects that are produced in this stage will be directly serialized into the native image via an image mapped file.
+    class. For a native executable build, this code is executed in a normal JVM as part of the native build
+    process, and any retained objects that are produced in this stage will be directly serialized into the native executable via an image mapped file.
     This means that if a framework can boot in this phase then it will have its booted state directly written to the
     image, and so the boot code does not need to be executed when the image is started.
 +
-There are some restrictions on what can be done in this stage as the Substrate VM disallows some objects in the native image. For example you should not attempt to listen on a port or start threads in this phase.
+There are some restrictions on what can be done in this stage as the Substrate VM disallows some objects in the native executable. For example you should not attempt to listen on a port or start threads in this phase.
 +
 In non-native pure JVM mode, there is no real difference between Static and Runtime Init, except that Static Init is always executed first. This mode benefits from the same build phase augmentation as native mode as the descriptor parsing and annotation scanning are done
 at build time and any associated class/framework dependencies can be removed from the build output jar. In servers like
@@ -39,14 +39,14 @@ application. Any XML parsing of configuration should be done in the Augmentation
 
 Runtime Init::
     If bytecode is recorded with `@Record(RUNTIME_INIT)` then it is executed from the application's main method. This code
-    will be run on native image boot. In general as little code as possible should be executed in this phase, and should
+    will be run on native executable boot. In general as little code as possible should be executed in this phase, and should
     be restricted to code that needs to open ports etc.
 
 Pushing as much as possible into the `@Record(STATIC_INIT)` phase allows for two different optimizations:
 
-1. In both native image and pure JVM mode this allows the app to start as fast as possible since processing was done during build time. This also minimizes the classes/native code needed in the application to pure runtime related behaviors.
+1. In both native executable and pure JVM mode this allows the app to start as fast as possible since processing was done during build time. This also minimizes the classes/native code needed in the application to pure runtime related behaviors.
 
-2. Another benefit with native image mode is that Substrate can more easily eliminate features that are not used. If features are directly initialized via bytecode, Substrate can detect that a method is never called and eliminate
+2. Another benefit with native executable mode is that Substrate can more easily eliminate features that are not used. If features are directly initialized via bytecode, Substrate can detect that a method is never called and eliminate
 that method. If config is read at runtime, Substrate cannot reason about the contents of the config and so needs to keep all features in case they are required.
 
 
@@ -56,7 +56,7 @@ Your extension project should be setup as a multi-module project with two submod
 
 1. A deployment time submodule that handles the build time processing and bytecode recording.
 
-2. A runtime submodule that contains the runtime behavior that will provide the extension behavior in the native image or runtime JVM.
+2. A runtime submodule that contains the runtime behavior that will provide the extension behavior in the native executable or runtime JVM.
 
 Your runtime artifact should depend on quarkus-core-runtime, and possibly the runtime artifacts of other Quarkus
 modules if you want to use functionality provided by them. You will also need to include the `maven-dependency-plugin`
@@ -245,7 +245,7 @@ A configuration root dictates when its contained keys are read from configuratio
 | Read & avail. at build time
 | Avail. at run time
 | Read during static init
-| Re-read during startup (native image)
+| Re-read during startup (native executable)
 | Notes
 
 | BUILD_TIME
@@ -267,7 +267,7 @@ A configuration root dictates when its contained keys are read from configuratio
 | ✓
 | ✓
 | ✗
-| Not available at build, read on start in JVM mode, fixed in native image mode.
+| Not available at build, read on start in JVM mode, fixed in native executable mode.
 
 | RUN_TIME
 | ✗
@@ -517,29 +517,29 @@ public class PersistenceAndQuarkusConfigTest {
 <1> This tells JUnit that the {project-name} deployment should fail with a specific exception
 
 
-== Native Image Support
+== Native Executable Support
 
-There Quarkus provides a lot of build items that control aspects of the native image build. This allows for extensions
+There Quarkus provides a lot of build items that control aspects of the native executable build. This allows for extensions
 to programmatically perform tasks such as registering classes for reflection or adding static resources to the native
-image. Some of these build items are listed below:
+executable. Some of these build items are listed below:
 
 `io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem`::
- Includes static resources into the native image.
+ Includes static resources into the native executable.
 
 `io.quarkus.deployment.builditem.substrate.RuntimeReinitializedClassBuildItem`::
 A class that will be reinitialized at runtime by Substrate. This will result in the static initializer running twice.
 
 `io.quarkus.deployment.builditem.substrate.SubstrateSystemPropertyBuildItem`::
-A system property that will be set at native image build time.
+A system property that will be set at native executable build time.
 
 `io.quarkus.deployment.builditem.substrate.SubstrateResourceBundleBuildItem`::
-Includes a resource bundle in the native image.
+Includes a resource bundle in the native executable.
 
 `io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem`::
 Registers a class for reflection in Substrate. Constructors are always registered, while methods and fields are optional.
 
 `io.quarkus.deployment.builditem.substrate.RuntimeInitializedClassBuildItem`::
-A class that will be initialized at runtime rather than build time. This will cause the build to fail if the class is initialized as part of the native image build process, so care must be taken.
+A class that will be initialized at runtime rather than build time. This will cause the build to fail if the class is initialized as part of the native executable build process, so care must be taken.
 
 `io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem`::
 A convenience feature that allows you to control most of the above features from a single build item.
@@ -561,9 +561,9 @@ The only particular aspect of writing {project-name} extensions in Eclipse is th
 The class augmentation step of {project-name} generates classes for various purposes. Sometimes you need to view these
 classes/bytecode to debug or understand an issue. Classes that are related to application augmentation are currently held in
 memory in a runtime class loader. To have these classes written out to disk for inspection, specify the
-`io.quarkus.DEBUG_GENERATED_CLASSES_DIR` system property, for example:
+`quarkus.debug.generated-classes-dir` system property, for example:
 
 [source,shell]
 ----
-mvn clean install -Dio.quarkus.DEBUG_GENERATED_CLASSES_DIR=./target/app-generated-classes
+./mvnw clean install -Dquarkus.debug.generated-classes-dir=./target/app-generated-classes
 ----

@@ -18,6 +18,7 @@ package io.quarkus.example.rest;
 
 import java.net.URL;
 import java.util.List;
+import java.util.Map;
 
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -37,15 +38,15 @@ public class ClientResource {
     @GET
     @Path("/manual")
     public String manual() throws Exception {
-        RestInterface iface = RestClientBuilder.newBuilder()
+        ProgrammaticRestInterface iface = RestClientBuilder.newBuilder()
                 .baseUrl(new URL(System.getProperty("test.url")))
-                .build(RestInterface.class);
+                .build(ProgrammaticRestInterface.class);
         return iface.get();
     }
 
     @GET
     @Path("/cdi")
-    public String cdi() throws Exception {
+    public String cdi() {
         return restInterface.get();
     }
 
@@ -53,9 +54,9 @@ public class ClientResource {
     @Path("manual/jackson")
     @Produces("application/json")
     public TestResource.MyData getDataManual() throws Exception {
-        RestInterface iface = RestClientBuilder.newBuilder()
+        ProgrammaticRestInterface iface = RestClientBuilder.newBuilder()
                 .baseUrl(new URL(System.getProperty("test.url")))
-                .build(RestInterface.class);
+                .build(ProgrammaticRestInterface.class);
         System.out.println(iface.getData());
         return iface.getData();
     }
@@ -71,9 +72,9 @@ public class ClientResource {
     @Path("/manual/complex")
     @Produces("application/json")
     public List<ComponentType> complexManual() throws Exception {
-        RestInterface iface = RestClientBuilder.newBuilder()
+        ProgrammaticRestInterface iface = RestClientBuilder.newBuilder()
                 .baseUrl(new URL(System.getProperty("test.url")))
-                .build(RestInterface.class);
+                .build(ProgrammaticRestInterface.class);
         System.out.println(iface.complex());
         return iface.complex();
     }
@@ -83,6 +84,23 @@ public class ClientResource {
     @Produces("application/json")
     public List<ComponentType> complexCdi() {
         return restInterface.complex();
+    }
+
+    @GET
+    @Path("/manual/headers")
+    @Produces("application/json")
+    public Map<String, String> getAllHeaders(String headerValue) throws Exception {
+        ProgrammaticRestInterface client = RestClientBuilder.newBuilder()
+                .baseUrl(new URL(System.getProperty("test.url")))
+                .build(ProgrammaticRestInterface.class);
+        return client.getAllHeaders();
+    }
+
+    @GET
+    @Path("/cdi/headers")
+    @Produces("application/json")
+    public Map<String, String> getAllHeadersCdi(String headerValue) {
+        return restInterface.getAllHeaders();
     }
 
 }

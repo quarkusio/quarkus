@@ -18,6 +18,10 @@ package io.quarkus.gradle;
 import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.Task;
+import org.gradle.api.plugins.BasePlugin;
+import org.gradle.api.plugins.JavaPlugin;
+import org.gradle.api.tasks.TaskContainer;
 import org.gradle.util.GradleVersion;
 
 import io.quarkus.gradle.tasks.QuarkusAddExtension;
@@ -34,20 +38,32 @@ public class QuarkusPlugin implements Plugin<Project> {
     @Override
     public void apply(Project project) {
         verifyGradleVersion();
-        //register extension
+        // register extension
         project.getExtensions().create("quarkus", QuarkusPluginExtension.class, project);
 
-        registerListExtensions(project);
+        registerTasks(project);
     }
 
-    private void registerListExtensions(Project project) {
-        project.getTasks().create("list-extensions", QuarkusListExtensions.class);
-        project.getTasks().create("add-extension", QuarkusAddExtension.class);
-        project.getTasks().create("quarkus-dev", QuarkusDev.class).dependsOn("build");
-        project.getTasks().create("quarkus-build", QuarkusBuild.class).dependsOn("build");
-        project.getTasks()
-                .create("quarkus-native", QuarkusNative.class)
-                .dependsOn("quarkus-build");
+    private void registerTasks(Project project) {
+        TaskContainer tasks = project.getTasks();
+        tasks.create("listExtensions", QuarkusListExtensions.class);
+        tasks.create("addExtension", QuarkusAddExtension.class);
+
+        Task quarkusBuild = tasks.create("quarkusBuild", QuarkusBuild.class);
+        Task quarkusDev = tasks.create("quarkusDev", QuarkusDev.class);
+
+        project.getPlugins().withType(
+                BasePlugin.class,
+                basePlugin -> tasks.getByName(BasePlugin.ASSEMBLE_TASK_NAME).dependsOn(quarkusBuild));
+        project.getPlugins().withType(
+                JavaPlugin.class,
+                javaPlugin -> {
+                    Task classesTask = tasks.getByName(JavaPlugin.CLASSES_TASK_NAME);
+                    quarkusDev.dependsOn(classesTask);
+                    quarkusBuild.dependsOn(classesTask);
+                });
+
+        tasks.create("quarkusNative", QuarkusNative.class).dependsOn(quarkusBuild);
     }
 
     private void verifyGradleVersion() {

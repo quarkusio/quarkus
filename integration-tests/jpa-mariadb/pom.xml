@@ -29,6 +29,11 @@
     <artifactId>quarkus-integration-test-jpa-mariadb</artifactId>
     <name>Quarkus - Integration Tests - JPA - MariaDB</name>
     <description>Module that contains JPA related tests running with the MariaDB database</description>
+
+    <properties>
+        <mariadb.url>jdbc:mariadb://localhost:3306/hibernate_orm_test</mariadb.url>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>

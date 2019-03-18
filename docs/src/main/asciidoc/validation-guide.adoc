@@ -260,7 +260,7 @@ In the `src/main/resources/META-INF/resources` directory, replace the `index.htm
 Now, let's see our application in action. Run it with:
 
 ```
-mvn compile quarkus:dev
+./mvnw compile quarkus:dev
 ```
 
 Then, open your browser to http://localhost:8080/:
@@ -270,5 +270,5 @@ Then, open your browser to http://localhost:8080/:
 
 image:validation-guide-screenshot.png[alt=Application]
 
-As usual, the application can be packaged using `mvn clean package` and executed using the `-runner.jar` file.
-You can also build the native executable using `mvn package -Pnative`.
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
+You can also build the native executable using `./mvnw package -Pnative`.

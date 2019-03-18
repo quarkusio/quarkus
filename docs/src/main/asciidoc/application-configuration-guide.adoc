@@ -148,14 +148,14 @@ public class GreetingResourceTest {
 
 == Package and run the application
 
-Run the application with: `mvn compile quarkus:dev`.
+Run the application with: `./mvnw compile quarkus:dev`.
 Open your browser to http://localhost:8080/greeting.
 
 Changing the configuration file is immediately reflected.
 You can add the `greeting.suffix`, remove the other properties, change the values, etc.
 
-As usual, the application can be packaged using `mvn clean package` and executed using the `-runner.jar` file.
-You can also generate the native executable with `mvn clean package -Pnative`.
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
+You can also generate the native executable with `./mvnw clean package -Pnative`.
 
 == Overriding properties at runtime
 
@@ -165,7 +165,7 @@ To change them, make sure to repackage your application.
 
 [source,shell]
 --
-mvn clean package
+./mvnw clean package
 --
 
 Extensions do define _some_ properties as overridable at runtime.
@@ -176,10 +176,10 @@ You can override these runtime properties with the following mechanisms (in decr
 
 1. using system properties:
   * for a runner jar: `java -Dquarkus.datasource.password=youshallnotpass -jar target/myapp-runner.jar`
-  * for a native image: `./target/myapp-runner -Dquarkus.datasource.password=youshallnotpass`
+  * for a native executable: `./target/myapp-runner -Dquarkus.datasource.password=youshallnotpass`
 2. using environment variables:
   * for a runner jar: `export QUARKUS_DATASOURCE_PASSWORD=youshallnotpass ; java -jar target/myapp-runner.jar`
-  * for a native image: `export QUARKUS_DATASOURCE_PASSWORD=youshallnotpass ; ./target/myapp-runner`
+  * for a native executable: `export QUARKUS_DATASOURCE_PASSWORD=youshallnotpass ; ./target/myapp-runner`
 
 NOTE: Environment variables names are following the conversion rules of link:https://github.com/eclipse/microprofile-config/blob/master/spec/src/main/asciidoc/configsources.asciidoc#default-configsources[Eclipse MicroProfile]
 

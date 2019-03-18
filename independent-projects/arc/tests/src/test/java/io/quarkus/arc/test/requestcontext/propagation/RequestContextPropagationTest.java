@@ -22,15 +22,14 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.util.Collection;
-
-import javax.enterprise.context.ContextNotActiveException;
-
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.ContextInstanceHandle;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.test.ArcTestContainer;
+import java.util.Collection;
+import javax.enterprise.context.ContextNotActiveException;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -61,7 +60,7 @@ public class RequestContextPropagationTest {
         assertTrue(controller2.getButton() == controller1.getButton());
 
         // Store existing instances
-        Collection<InstanceHandle<?>> instances = requestContext.getAll();
+        Collection<ContextInstanceHandle<?>> instances = requestContext.getAll();
         // Deactivate but don't destroy
         requestContext.deactivate();
 

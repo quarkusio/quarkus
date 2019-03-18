@@ -36,7 +36,7 @@ public class PrincipalInjectionUnitTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClasses)
-                    .addAsManifestResource("microprofile-config.properties"));
+                    .addAsResource("application.properties"));
 
     @BeforeEach
     public void generateToken() throws Exception {
@@ -49,7 +49,7 @@ public class PrincipalInjectionUnitTest {
 
     /**
      * Verify that the injected authenticated principal is as expected
-     * 
+     *
      * @throws Exception
      */
     @Test()

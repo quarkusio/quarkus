@@ -121,7 +121,7 @@ Future versions of {project-name} will configure the Kotlin compiler plugin in a
 {project-name} provides support for live reloading changes made to source code. This support is also available to Kotlin, meaning that developers can update their Kotlin source
 code and immediately see their changes reflected.
 
-To see this feature in action, first execute: `mvn compile quarkus:dev`
+To see this feature in action, first execute: `./mvnw compile quarkus:dev`
 
 When executing an HTTP GET request against `http://localhost:8080/greeting`, you should get `hello` as a response.
 
@@ -138,4 +138,4 @@ One thing to note is that the live reload feature is not available when making c
 
 == Packaging the application
 
-As usual, the application can be packaged using `mvn clean package` and executed using the `-runner.jar` file. You can also build the native executable using `mvn package -Pnative`.
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file. You can also build the native executable using `./mvnw package -Pnative`.

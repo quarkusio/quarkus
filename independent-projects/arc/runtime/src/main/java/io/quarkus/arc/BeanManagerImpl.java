@@ -22,9 +22,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-
 import javax.el.ELResolver;
 import javax.el.ExpressionFactory;
+import javax.enterprise.context.ContextNotActiveException;
 import javax.enterprise.context.spi.Context;
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
@@ -51,7 +51,6 @@ import javax.enterprise.inject.spi.ProducerFactory;
 import javax.interceptor.InterceptorBinding;
 
 /**
- *
  * @author Martin Kouba
  */
 public class BeanManagerImpl implements BeanManager {
@@ -61,13 +60,16 @@ public class BeanManagerImpl implements BeanManager {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public Object getReference(Bean<?> bean, Type beanType, CreationalContext<?> ctx) {
-        Objects.requireNonNull(bean);
-        Objects.requireNonNull(ctx);
+        if (bean == null) {
+            throw new NullPointerException("Managed Bean [" + beanType + "] is null");
+        }
+        Objects.requireNonNull(ctx, "CreationalContext is null");
         if (bean instanceof InjectableBean && ctx instanceof CreationalContextImpl) {
             return ArcContainerImpl.instance().beanInstanceHandle((InjectableBean) bean, (CreationalContextImpl) ctx).get();
         }
         throw new IllegalArgumentException(
-                "Arguments must be instances of " + InjectableBean.class + " and " + CreationalContextImpl.class + ": \nbean: " + bean + "\nctx: " + ctx);
+                "Arguments must be instances of " + InjectableBean.class + " and " + CreationalContextImpl.class + ": \nbean: "
+                        + bean + "\nctx: " + ctx);
     }
 
     @Override
@@ -187,7 +189,11 @@ public class BeanManagerImpl implements BeanManager {
 
     @Override
     public Context getContext(Class<? extends Annotation> scopeType) {
-        return Arc.container().getContext(scopeType);
+        Context context = Arc.container().getActiveContext(scopeType);
+        if (context == null) {
+            throw new ContextNotActiveException("No active context found for: " + scopeType);
+        }
+        return context;
     }
 
     @Override
@@ -236,7 +242,8 @@ public class BeanManagerImpl implements BeanManager {
     }
 
     @Override
-    public <T> Bean<T> createBean(BeanAttributes<T> attributes, Class<T> beanClass, InjectionTargetFactory<T> injectionTargetFactory) {
+    public <T> Bean<T> createBean(BeanAttributes<T> attributes, Class<T> beanClass,
+            InjectionTargetFactory<T> injectionTargetFactory) {
         throw new UnsupportedOperationException();
     }
 

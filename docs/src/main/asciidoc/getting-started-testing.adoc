@@ -32,7 +32,7 @@ To complete this guide, you need:
 == Architecture
 
 In this guide, we expand on the initial test that was created as part of the Getting Started Guide.
-We cover injection into tests and also how to test native images.
+We cover injection into tests and also how to test native executables.
 
 == Solution
 
@@ -135,7 +135,7 @@ the test is run.
 
 === Controlling the test port
 
-While Quarkus will listen on port `8080` by default when running tests it defaults to `8081`. This allows you to run
+While Quarkus will listen on port `8080` by default, when running tests it defaults to `8081`. This allows you to run
 tests while having the application running in parallel. This can be configured via the `quarkus.http.test-port`
 config property in `application.properties`.
 
@@ -246,11 +246,51 @@ public class GreetingServiceTest {
 ----
 <1> The `GreetingService` bean will be injected into the test
 
+== Mock Support
 
-== Native Image Testing
+Quarkus supports the use of mock objects using the CDI `@Alternative` mechanism. To use this simply override the bean
+you wish to mock with a class in the `src/test/java` directory, and put the `@Alternative` and `@Priority(1)` annotations
+on the bean. For example if I have the following service:
 
-It is also possible to test native images using `@SubstrateTest`. This supports all the features mentioned in this
-guide except injecting into tests (and the native image runs in a separate non-JVM process this is not really possible).
+[source,java]
+----
+@ApplicationScoped
+public class ExternalService {
+
+    public String service() {
+        return "external";
+    }
+
+}
+----
+
+I could mock it with the following class in `src/test/java`:
 
 
-This is covered in the link:building-native-image-guide.html[Native Image Guide].
+[source,java]
+----
+@Alternative()
+@Priority(1)
+@ApplicationScoped
+public class MockExternalService extends ExternalService {
+
+    @Override
+    public String service() {
+        return "mock";
+    }
+}
+----
+
+It is important that the alternative be present in the `src/test/java` directory rather than `src/main/java`, as otherwise
+it will take effect all the time, not just when testing.
+
+Note that at present this approach does not work with native image testing, as this would required the test alternatives
+to be baked into the native image.
+
+== Native Executable Testing
+
+It is also possible to test native executables using `@SubstrateTest`. This supports all the features mentioned in this
+guide except injecting into tests (and the native executable runs in a separate non-JVM process this is not really possible).
+
+
+This is covered in the link:building-native-image-guide.html[Native Executable Guide].

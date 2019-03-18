@@ -25,10 +25,13 @@ import java.util.function.Consumer;
 
 import org.jboss.builder.BuildChain;
 import org.jboss.builder.BuildChainBuilder;
+import org.jboss.builder.BuildExecutionBuilder;
 import org.jboss.builder.BuildResult;
 import org.jboss.builder.item.BuildItem;
 import org.jboss.logging.Logger;
 
+import io.quarkus.deployment.builditem.AdditionalApplicationArchiveBuildItem;
+import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
 import io.quarkus.deployment.builditem.ClassOutputBuildItem;
 import io.quarkus.deployment.builditem.ExtensionClassLoaderBuildItem;
@@ -49,6 +52,7 @@ public class QuarkusAugmentor {
     private final Set<Class<? extends BuildItem>> finalResults;
     private final List<Consumer<BuildChainBuilder>> buildChainCustomizers;
     private final LaunchMode launchMode;
+    private final List<Path> additionalApplicationArchives;
 
     QuarkusAugmentor(Builder builder) {
         this.output = builder.output;
@@ -57,6 +61,7 @@ public class QuarkusAugmentor {
         this.finalResults = new HashSet<>(builder.finalResults);
         this.buildChainCustomizers = new ArrayList<>(builder.buildChainCustomizers);
         this.launchMode = builder.launchMode;
+        this.additionalApplicationArchives = new ArrayList<>(builder.additionalApplicationArchives);
     }
 
     public BuildResult run() throws Exception {
@@ -73,11 +78,11 @@ public class QuarkusAugmentor {
 
             chainBuilder
                     .addInitial(QuarkusConfig.class)
-                    .addInitial(SubstrateResourceBuildItem.class)
                     .addInitial(ArchiveRootBuildItem.class)
                     .addInitial(ShutdownContextBuildItem.class)
                     .addInitial(ClassOutputBuildItem.class)
                     .addInitial(LaunchModeBuildItem.class)
+                    .addInitial(AdditionalApplicationArchiveBuildItem.class)
                     .addInitial(ExtensionClassLoaderBuildItem.class);
             for (Class<? extends BuildItem> i : finalResults) {
                 chainBuilder.addFinal(i);
@@ -91,14 +96,17 @@ public class QuarkusAugmentor {
 
             BuildChain chain = chainBuilder
                     .build();
-            BuildResult buildResult = chain.createExecutionBuilder("main")
-                    .produce(new SubstrateResourceBuildItem("META-INF/microprofile-config.properties"))
+            BuildExecutionBuilder execBuilder = chain.createExecutionBuilder("main")
                     .produce(QuarkusConfig.INSTANCE)
                     .produce(new ArchiveRootBuildItem(root))
                     .produce(new ClassOutputBuildItem(output))
                     .produce(new ShutdownContextBuildItem())
                     .produce(new LaunchModeBuildItem(launchMode))
-                    .produce(new ExtensionClassLoaderBuildItem(classLoader))
+                    .produce(new ExtensionClassLoaderBuildItem(classLoader));
+            for (Path i : additionalApplicationArchives) {
+                execBuilder.produce(new AdditionalApplicationArchiveBuildItem(i));
+            }
+            BuildResult buildResult = execBuilder
                     .execute();
 
             //TODO: this seems wrong

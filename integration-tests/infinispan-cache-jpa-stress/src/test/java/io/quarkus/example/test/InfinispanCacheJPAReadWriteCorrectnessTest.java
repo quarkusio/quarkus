@@ -54,8 +54,8 @@ public class InfinispanCacheJPAReadWriteCorrectnessTest {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsManifestResource("META-INF/readwrite-persistence.xml", "persistence.xml")
-                    .addAsManifestResource("META-INF/readwrite-microprofile-config.properties",
-                            "microprofile-config.properties"));
+                    .addAsResource("application-readwrite.properties",
+                            "application.properties"));
 
     @Test
     public void test() throws Exception {

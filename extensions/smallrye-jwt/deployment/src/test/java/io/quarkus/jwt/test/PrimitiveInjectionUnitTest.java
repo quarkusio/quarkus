@@ -43,7 +43,7 @@ public class PrimitiveInjectionUnitTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(testClasses)
-                    .addAsManifestResource("microprofile-config.properties"));
+                    .addAsResource("application.properties"));
 
     @BeforeEach
     public void generateToken() throws Exception {

@@ -20,6 +20,7 @@ import org.apache.camel.TypeConverter;
 import org.apache.camel.component.file.GenericFile;
 import org.apache.camel.component.file.GenericFileProcessStrategy;
 import org.apache.camel.component.file.strategy.GenericFileProcessStrategyFactory;
+import org.apache.camel.converter.jaxp.XmlConverter;
 import org.apache.camel.spi.ExchangeFormatter;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
@@ -72,14 +73,7 @@ class CamelProcessor {
         return new FeatureBuildItem(FeatureBuildItem.CAMEL_CORE);
     }
 
-    @BuildStep
-    SubstrateConfigBuildItem processSystemProperties() {
-        return SubstrateConfigBuildItem.builder()
-                .addNativeImageSystemProperty("CamelSimpleLRUCacheFactory", "true")
-                .build();
-    }
-
-    @BuildStep(applicationArchiveMarkers = CamelSupport.CAMEL_SERVICE_BASE_PATH)
+    @BuildStep(applicationArchiveMarkers = { CamelSupport.CAMEL_SERVICE_BASE_PATH, "org/apache/camel" })
     void process() {
         IndexView view = combinedIndexBuildItem.getIndex();
 
@@ -107,6 +101,7 @@ class CamelProcessor {
 
         addReflectiveClass(false, GenericFile.class.getName());
         addReflectiveClass(true, GenericFileProcessStrategyFactory.class.getName());
+        addReflectiveClass(true, XmlConverter.class.getName());
 
         addCamelServices();
     }

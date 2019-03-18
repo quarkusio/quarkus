@@ -1,5 +1,6 @@
 package io.quarkus.camel.it.core;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -12,11 +13,12 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.bean.BeanProcessor;
+import org.apache.camel.component.infinispan.InfinispanConstants;
+import org.apache.camel.component.infinispan.InfinispanOperation;
 import org.apache.camel.support.DefaultExchange;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
-@RegisterForReflection
 public class CamelRoute extends RouteBuilder {
 
     @Override
@@ -44,6 +46,21 @@ public class CamelRoute extends RouteBuilder {
 
         from("netty4-http:http://0.0.0.0:8999/foo")
                 .transform().constant("Netty Hello World");
+        from("netty4-http:http://0.0.0.0:8999/put")
+                .convertBodyTo(byte[].class)
+                .to("log:cache?showAll=true")
+                .setHeader(InfinispanConstants.OPERATION).constant(InfinispanOperation.PUT)
+                .setHeader(InfinispanConstants.KEY).constant("the-key".getBytes(StandardCharsets.UTF_8))
+                .setHeader(InfinispanConstants.VALUE).body()
+                .to("infinispan:default?hosts=localhost:11232");
+
+        from("netty4-http:http://0.0.0.0:8999/get")
+                .setHeader(InfinispanConstants.OPERATION)
+                .constant(InfinispanOperation.GET)
+                .setHeader(InfinispanConstants.KEY)
+                .constant("the-key".getBytes(StandardCharsets.UTF_8))
+                .to("infinispan:default?hosts=localhost:11232")
+                .to("log:cache?showAll=true");
     }
 
     public Exchange aggregate(Exchange oldExchange, Exchange newExchange) {

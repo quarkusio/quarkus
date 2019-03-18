@@ -23,6 +23,8 @@ import java.io.Closeable;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -94,6 +96,7 @@ public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallba
                 .setLaunchMode(LaunchMode.TEST)
                 .setClassLoader(getClass().getClassLoader())
                 .setTarget(appClassLocation)
+                .addAdditionalArchive(testClassLocation)
                 .setClassOutput(new ClassOutput() {
                     @Override
                     public void writeClass(boolean applicationClass, String className, byte[] data) throws IOException {
@@ -226,11 +229,13 @@ public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallba
     public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext)
             throws TestInstantiationException {
         try {
-            Object instance = factoryContext.getTestClass().newInstance();
+            Constructor<?> ctor = factoryContext.getTestClass().getDeclaredConstructor();
+            ctor.setAccessible(true);
+            Object instance = ctor.newInstance();
             TestHTTPResourceManager.inject(instance);
             TestInjectionManager.inject(instance);
             return instance;
-        } catch (InstantiationException | IllegalAccessException e) {
+        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
             throw new TestInstantiationException("Failed to create test instance", e);
         }
     }
@@ -268,9 +273,7 @@ public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallba
         @Override
         public void run() {
             try {
-                if (Files.exists(path)) {
-                    Files.delete(path);
-                }
+                Files.deleteIfExists(path);
             } catch (IOException e) {
                 e.printStackTrace();
             }

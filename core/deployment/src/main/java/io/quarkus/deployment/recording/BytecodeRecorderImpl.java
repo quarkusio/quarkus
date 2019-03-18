@@ -317,7 +317,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
                 method.invokeVirtualMethod(ofMethod(StartupContext.class, "putValue", void.class, String.class, Object.class),
                         method.getMethodParam(0), method.load(ni.proxyId), rv);
             } else {
-                throw new RuntimeException("unkown type " + set);
+                throw new RuntimeException("unknown type " + set);
             }
         }
 
@@ -643,7 +643,7 @@ public class BytecodeRecorderImpl implements RecorderContext {
             return true;
         }
         for (ObjectLoader loader : loaders) {
-            ResultHandle handle = loader.load(body, param);
+            ResultHandle handle = loader.load(body, param, staticInit);
             if (handle != null) {
                 loadedObjects.put(param, handle);
                 return true;

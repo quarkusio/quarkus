@@ -157,7 +157,8 @@ The `getByName` method gives our code the ability to query a country by name fro
 
 The purpose of the annotations in the code above is the following:
 
-* `@RegisterRestClient` allows {project-name} to know that this interface is meant to be used as a REST Client
+* `@RegisterRestClient` allows {project-name} to know that this interface is meant to be available for
+CDI injection as a REST Client
 * `@Path`, `@GET` and `@PathParam` are the standard JAX-RS annotations used to define how to access the service
 * `@Produces` defines the expected content-type
 
@@ -166,7 +167,7 @@ The purpose of the annotations in the code above is the following:
 While `@Consumes` and `@Produces` are optional as auto-negotiation is supported,
 it is heavily recommended to annotate your endpoints with them to define precisely the expected content-types.
 
-It will allow to narrow down the number of JAX-RS providers (which can be seen as converters) included in the native image.
+It will allow to narrow down the number of JAX-RS providers (which can be seen as converters) included in the native executable.
 ====
 
 == Create the configuration
@@ -261,10 +262,14 @@ The code above uses link:http://rest-assured.io/[REST Assured]'s link:https://gi
 
 == Package and run the application
 
-Run the application with: `mvn compile quarkus:dev`.
+Run the application with: `./mvnw compile quarkus:dev`.
 Open your browser to http://localhost:8080/country/name/greece.
 
 You should see a JSON object containing some basic information about Greece.
 
-As usual, the application can be packaged using `mvn clean package` and executed using the `-runner.jar` file.
-You can also generate the native executable with `mvn clean package -Pnative`.
+As usual, the application can be packaged using `./mvnw clean package` and executed using the `-runner.jar` file.
+You can also generate the native executable with `./mvnw clean package -Pnative`.
+
+== Further reading
+
+ * link:https://download.eclipse.org/microprofile/microprofile-rest-client-1.2.1/microprofile-rest-client-1.2.1.html[MicroProfile Rest Client specification]

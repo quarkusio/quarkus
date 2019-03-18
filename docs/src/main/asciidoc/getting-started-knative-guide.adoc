@@ -97,7 +97,7 @@ you need to run the following maven command to make them passed to the Knative r
 
 The following is the example command to generate the need knative resource files
 
-[source,shell, subs="attributes"]
+[source, shell, subs="attributes"]
 ----
 mvn -Dgithub.deploy.key=$(cat ~/.ssh/quarkus-quickstarts | base64 -w 0) \
     -Dgithub.keyscan=$(ssh-keyscan github.com | base64 -w 0) \
@@ -105,11 +105,10 @@ mvn -Dgithub.deploy.key=$(cat ~/.ssh/quarkus-quickstarts | base64 -w 0) \
     -Dcontainer.registry.user='demo' \
     -Dcontainer.registry.password='password' \
     -Dgit.source.revision='master' \
-    -Dgit.source.repo.url='{quickstarts-clone-url}' \ #<1>
+    -Dgit.source.repo.url='{quickstarts-clone-url}' \ # <1>
     -Dapp.container.image='docker.io/demo/getting-started-knative' \
     clean process-resources
 ----
-
 <1> If your are using a private repo then you might need to use git ssh url
 
 The above command will apply the property values to the Knative resources found in `${project.basedir}/src/main/knative`

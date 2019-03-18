@@ -18,25 +18,23 @@ package io.quarkus.arc.test.build.extension.validator;
 
 import static org.junit.Assert.assertTrue;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Initialized;
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.event.Observes;
-import javax.inject.Inject;
-
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.ParameterizedType;
-import org.jboss.jandex.Type;
-import org.jboss.jandex.Type.Kind;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.BeanCreator;
 import io.quarkus.arc.processor.BeanDeploymentValidator;
 import io.quarkus.arc.processor.BeanRegistrar;
 import io.quarkus.arc.test.ArcTestContainer;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.Initialized;
+import javax.enterprise.context.spi.CreationalContext;
+import javax.enterprise.event.Observes;
+import javax.inject.Inject;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.ParameterizedType;
+import org.jboss.jandex.Type;
+import org.jboss.jandex.Type.Kind;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -55,7 +53,8 @@ public class BeanDeploymentValidatorTest {
 
         @Override
         public void register(RegistrationContext registrationContext) {
-            registrationContext.configure(List.class).types(EmptyStringListCreator.listStringType()).creator(EmptyStringListCreator.class).done();
+            registrationContext.configure(List.class).types(EmptyStringListCreator.listStringType())
+                    .creator(EmptyStringListCreator.class).done();
         }
 
     }

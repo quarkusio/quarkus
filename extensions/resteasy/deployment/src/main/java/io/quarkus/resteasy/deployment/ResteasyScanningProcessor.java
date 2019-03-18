@@ -29,7 +29,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import javax.inject.Singleton;
-import javax.net.ssl.TrustManager;
 import javax.servlet.DispatcherType;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.Consumes;
@@ -41,8 +40,6 @@ import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.SecurityContext;
-import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.ContextResolver;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
@@ -70,6 +67,8 @@ import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanClassAnnotationExclusion;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -99,7 +98,6 @@ import io.quarkus.undertow.deployment.ServletInitParamBuildItem;
  * @author Stuart Douglas
  */
 public class ResteasyScanningProcessor {
-
     private static final String JAVAX_WS_RS_APPLICATION = Application.class.getName();
     private static final String JAX_RS_FILTER_NAME = JAVAX_WS_RS_APPLICATION;
     private static final String JAX_RS_SERVLET_NAME = JAVAX_WS_RS_APPLICATION;
@@ -231,12 +229,15 @@ public class ResteasyScanningProcessor {
     }
 
     @BuildStep
-    void scanForProviders(BuildProducer<ResteasyJaxrsProviderBuildItem> providers, CombinedIndexBuildItem indexBuildItem) {
+    void scanForProviders(BuildProducer<ResteasyJaxrsProviderBuildItem> providers, CombinedIndexBuildItem indexBuildItem,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
         for (AnnotationInstance i : indexBuildItem.getIndex().getAnnotations(PROVIDER)) {
             if (i.target().kind() == AnnotationTarget.Kind.CLASS) {
                 providers.produce(new ResteasyJaxrsProviderBuildItem(i.target().asClass().name().toString()));
             }
         }
+        // Providers should never be removed
+        unremovableBeans.produce(new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(PROVIDER)));
     }
 
     @BuildStep
@@ -345,27 +346,35 @@ public class ResteasyScanningProcessor {
                 reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, HttpServlet30Dispatcher.class.getName()));
             }
 
-            StringBuilder sb = new StringBuilder();
-            boolean first = true;
+            Set<String> resources = new HashSet<>();
+            Set<DotName> pathInterfaces = new HashSet<>();
             for (AnnotationInstance annotation : paths) {
                 if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
                     ClassInfo clazz = annotation.target().asClass();
                     if (!Modifier.isInterface(clazz.flags())) {
-                        if (first) {
-                            first = false;
-                        } else {
-                            sb.append(",");
-                        }
                         String className = clazz.name().toString();
-                        sb.append(className);
+                        resources.add(className);
                         reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
+                    } else {
+                        pathInterfaces.add(clazz.name());
                     }
                 }
             }
 
-            if (sb.length() > 0) {
+            // look for all implementations of interfaces annotated @Path
+            for (final DotName iface : pathInterfaces) {
+                final Collection<ClassInfo> implementors = index.getAllKnownImplementors(iface);
+                for (final ClassInfo implementor : implementors) {
+                    String className = implementor.name().toString();
+                    reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, className));
+                    resources.add(className);
+                }
+            }
+
+            if (!resources.isEmpty()) {
                 servletContextParams.produce(
-                        new ServletInitParamBuildItem(ResteasyContextParameters.RESTEASY_SCANNED_RESOURCES, sb.toString()));
+                        new ServletInitParamBuildItem(ResteasyContextParameters.RESTEASY_SCANNED_RESOURCES,
+                                String.join(",", resources)));
             }
             servletContextParams.produce(new ServletInitParamBuildItem("resteasy.servlet.mapping.prefix", path));
             if (appClass != null) {
@@ -495,9 +504,6 @@ public class ResteasyScanningProcessor {
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             CombinedIndexBuildItem combinedIndexBuildItem) {
         IndexView index = combinedIndexBuildItem.getIndex();
-
-        // required by JSON-P support
-        reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, "org.glassfish.json.JsonProviderImpl"));
 
         // required by Jackson
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false,

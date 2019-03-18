@@ -18,42 +18,43 @@ package io.quarkus.arc.test.build.extension.annotations;
 
 import static org.junit.Assert.assertTrue;
 
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.arc.test.ArcTestContainer;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import javax.enterprise.event.Observes;
 import javax.inject.Singleton;
-
-import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.processor.AnnotationsTransformer;
-import io.quarkus.arc.test.ArcTestContainer;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.MethodParameterInfo;
 import org.junit.Rule;
 import org.junit.Test;
 
 public class AddObservesTest {
 
     @Rule
-    public ArcTestContainer container = ArcTestContainer.builder().beanClasses(IWantToObserve.class).annotationsTransformers(new AnnotationsTransformer() {
+    public ArcTestContainer container = ArcTestContainer.builder().beanClasses(IWantToObserve.class)
+            .annotationsTransformers(new AnnotationsTransformer() {
 
-        @Override
-        public boolean appliesTo(Kind kind) {
-            return Kind.METHOD == kind;
-        }
+                @Override
+                public boolean appliesTo(Kind kind) {
+                    return Kind.METHOD == kind;
+                }
 
-        @Override
-        public void transform(TransformationContext transformationContext) {
-            MethodInfo method = transformationContext.getTarget().asMethod();
-            if (method.name().equals("observe")) {
-                transformationContext.transform().add(AnnotationInstance.create(DotName.createSimple(Observes.class.getName()),
-                        MethodParameterInfo.create(method, (short) 0), new AnnotationValue[] {})).done();
-            }
-        }
-    }).build();
+                @Override
+                public void transform(TransformationContext transformationContext) {
+                    MethodInfo method = transformationContext.getTarget().asMethod();
+                    if (method.name().equals("observe")) {
+                        transformationContext.transform()
+                                .add(AnnotationInstance.create(DotName.createSimple(Observes.class.getName()),
+                                        MethodParameterInfo.create(method, (short) 0), new AnnotationValue[] {}))
+                                .done();
+                    }
+                }
+            }).build();
 
     @Test
     public void testObserved() {

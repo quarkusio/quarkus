@@ -17,35 +17,17 @@
 package io.quarkus.arc.processor;
 
 import java.lang.annotation.Annotation;
-
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.context.Dependent;
-import javax.enterprise.context.RequestScoped;
-import javax.inject.Singleton;
-
+import java.util.Objects;
 import org.jboss.jandex.DotName;
 
-public enum ScopeInfo {
-
-    DEPENDENT(Dependent.class),
-    SINGLETON(Singleton.class),
-    APPLICATION(ApplicationScoped.class, true),
-    REQUEST(RequestScoped.class, true),
-    ;
+public class ScopeInfo {
 
     private final DotName dotName;
 
-    private final Class<? extends Annotation> clazz;
-
     private final boolean isNormal;
 
-    private ScopeInfo(Class<? extends Annotation> clazz) {
-        this(clazz, false);
-    }
-
-    private ScopeInfo(Class<? extends Annotation> clazz, boolean isNormal) {
-        this.dotName = DotNames.create(clazz);
-        this.clazz = clazz;
+    ScopeInfo(Class<? extends Annotation> clazz, boolean isNormal) {
+        this.dotName = DotName.createSimple(clazz.getName());
         this.isNormal = isNormal;
     }
 
@@ -53,25 +35,28 @@ public enum ScopeInfo {
         return dotName;
     }
 
-    public Class<? extends Annotation> getClazz() {
-        return clazz;
-    }
-
     public boolean isNormal() {
         return isNormal;
     }
 
-    public boolean isDefault() {
-        return DEPENDENT == this;
+    @Override
+    public int hashCode() {
+        return Objects.hash(dotName);
     }
 
-    public static ScopeInfo from(DotName name) {
-        for (ScopeInfo scope : ScopeInfo.values()) {
-            if (scope.getDotName().equals(name)) {
-                return scope;
-            }
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
         }
-        return null;
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        ScopeInfo other = (ScopeInfo) obj;
+        return Objects.equals(dotName, other.dotName);
     }
 
 }

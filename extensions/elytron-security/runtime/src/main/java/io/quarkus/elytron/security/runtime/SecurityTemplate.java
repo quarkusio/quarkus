@@ -262,18 +262,33 @@ public class SecurityTemplate {
      *
      * @param domain - the SecurityDomain to use for auth decisions
      * @param identityManager - the IdentityManager for auth decisions
-     * @param authConfigs - the authenticaiton methods to register with the deployment {@linkplain LoginConfig}
+     * @param authConfigs - the authentication methods to register with the deployment {@linkplain LoginConfig}
      * @return - the ServletExtension instance to register
      */
     public ServletExtension configureUndertowIdentityManager(RuntimeValue<SecurityDomain> domain,
-            IdentityManager identityManager,
-            List<AuthConfig> authConfigs) {
+            IdentityManager identityManager) {
+        return new ServletExtension() {
+            @Override
+            public void handleDeployment(DeploymentInfo deploymentInfo, ServletContext servletContext) {
+                deploymentInfo.setIdentityManager(identityManager);
+            }
+        };
+    }
+
+    /**
+     * Called to create a {@linkplain ServletExtension} to associate the {@linkplain LoginConfig} with the
+     * deployment.
+     *
+     * @param authConfigs - the authenticaiton methods to register with the deployment {@linkplain LoginConfig}
+     * @return - the ServletExtension instance to register
+     */
+    public ServletExtension configureLoginConfig(List<AuthConfig> authConfigs) {
         return new ServletExtension() {
             @Override
             public void handleDeployment(DeploymentInfo deploymentInfo, ServletContext servletContext) {
                 if (authConfigs.size() > 0) {
                     AuthConfig first = authConfigs.get(0);
-                    log.debugf("configureUndertowIdentityManager, %s", authConfigs);
+                    log.debugf("configureLoginConfig, %s", authConfigs);
                     LoginConfig loginConfig = new LoginConfig(first.authMechanism, first.realmName);
                     for (int n = 1; n < authConfigs.size(); n++) {
                         AuthConfig ac = authConfigs.get(n);
@@ -281,9 +296,7 @@ public class SecurityTemplate {
                     }
                     deploymentInfo.setLoginConfig(loginConfig);
                 }
-                deploymentInfo.setIdentityManager(identityManager);
             }
         };
     }
-
 }

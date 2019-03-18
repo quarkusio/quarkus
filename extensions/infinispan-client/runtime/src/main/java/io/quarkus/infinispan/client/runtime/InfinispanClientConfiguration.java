@@ -9,7 +9,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 /**
  * @author William Burns
  */
-@ConfigRoot(phase = ConfigPhase.RUN_TIME_STATIC)
+@ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public class InfinispanClientConfiguration {
 
     /**

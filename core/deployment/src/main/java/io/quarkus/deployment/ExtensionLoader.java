@@ -23,6 +23,7 @@ import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executor;
@@ -49,14 +50,17 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
+import io.quarkus.deployment.builditem.BuildTimeConfigurationBuildItem;
+import io.quarkus.deployment.builditem.BuildTimeRunTimeFixedConfigurationBuildItem;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
-import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.ReflectUtil;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.annotations.Template;
 
@@ -107,7 +111,7 @@ public final class ExtensionLoader {
             throw reportError(clazz, "Build step classes must have exactly one constructor");
         }
 
-        boolean consumingConfig = false;
+        EnumSet<ConfigPhase> consumingConfigPhases = EnumSet.noneOf(ConfigPhase.class);
 
         final Constructor<?> constructor = constructors[0];
         if (!(Modifier.isPublic(constructor.getModifiers())))
@@ -160,9 +164,22 @@ public final class ExtensionLoader {
                 } else if (rawTypeOf(parameterType) == Executor.class) {
                     ctorParamFns.add(BuildContext::getExecutor);
                 } else if (parameterClass.isAnnotationPresent(ConfigRoot.class)) {
-                    consumingConfig = true;
-                    ctorParamFns.add(bc -> bc.consume(ConfigurationBuildItem.class).getConfigDefinition()
-                            .getRealizedInstance(parameterClass));
+                    final ConfigRoot annotation = parameterClass.getAnnotation(ConfigRoot.class);
+                    final ConfigPhase phase = annotation.phase();
+                    consumingConfigPhases.add(phase);
+
+                    if (phase == ConfigPhase.BUILD_TIME) {
+                        ctorParamFns.add(bc -> bc.consume(BuildTimeConfigurationBuildItem.class).getConfigDefinition()
+                                .getRealizedInstance(parameterClass));
+                    } else if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
+                        ctorParamFns.add(bc -> bc.consume(BuildTimeRunTimeFixedConfigurationBuildItem.class)
+                                .getConfigDefinition().getRealizedInstance(parameterClass));
+                    } else if (phase == ConfigPhase.RUN_TIME) {
+                        ctorParamFns.add(bc -> bc.consume(RunTimeConfigurationBuildItem.class).getConfigDefinition()
+                                .getRealizedInstance(parameterClass));
+                    } else {
+                        throw reportError(parameterClass, "Unknown value for ConfigPhase");
+                    }
                 } else if (isTemplate(parameterClass)) {
                     throw reportError(parameter, "Bytecode recording templates disallowed on constructor parameters");
                 } else {
@@ -231,12 +248,34 @@ public final class ExtensionLoader {
             } else if (fieldClass == Executor.class) {
                 stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, bc.getExecutor()));
             } else if (fieldClass.isAnnotationPresent(ConfigRoot.class)) {
-                consumingConfig = true;
-                stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> {
-                    final ConfigurationBuildItem configurationBuildItem = bc.consume(ConfigurationBuildItem.class);
-                    ReflectUtil.setFieldVal(field, o,
-                            configurationBuildItem.getConfigDefinition().getRealizedInstance(fieldClass));
-                });
+                final ConfigRoot annotation = fieldClass.getAnnotation(ConfigRoot.class);
+                final ConfigPhase phase = annotation.phase();
+                consumingConfigPhases.add(phase);
+
+                if (phase == ConfigPhase.BUILD_TIME) {
+                    stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> {
+                        final BuildTimeConfigurationBuildItem configurationBuildItem = bc
+                                .consume(BuildTimeConfigurationBuildItem.class);
+                        ReflectUtil.setFieldVal(field, o,
+                                configurationBuildItem.getConfigDefinition().getRealizedInstance(fieldClass));
+                    });
+                } else if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
+                    stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> {
+                        final BuildTimeRunTimeFixedConfigurationBuildItem configurationBuildItem = bc
+                                .consume(BuildTimeRunTimeFixedConfigurationBuildItem.class);
+                        ReflectUtil.setFieldVal(field, o,
+                                configurationBuildItem.getConfigDefinition().getRealizedInstance(fieldClass));
+                    });
+                } else if (phase == ConfigPhase.RUN_TIME) {
+                    stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> {
+                        final RunTimeConfigurationBuildItem configurationBuildItem = bc
+                                .consume(RunTimeConfigurationBuildItem.class);
+                        ReflectUtil.setFieldVal(field, o,
+                                configurationBuildItem.getConfigDefinition().getRealizedInstance(fieldClass));
+                    });
+                } else {
+                    throw reportError(fieldClass, "Unknown value for ConfigPhase");
+                }
             } else if (isTemplate(fieldClass)) {
                 throw reportError(field, "Bytecode recording templates disallowed on fields");
             } else {
@@ -288,7 +327,7 @@ public final class ExtensionLoader {
                                 : MainBytecodeRecorderBuildItem.class,
                         optional ? ProduceFlags.of(ProduceFlag.WEAK) : ProduceFlags.NONE));
             }
-            boolean methodConsumingConfig = consumingConfig;
+            EnumSet<ConfigPhase> methodConsumingConfigPhases = consumingConfigPhases.clone();
             if (methodParameters.length == 0) {
                 methodParamFns = Collections.emptyList();
             } else {
@@ -337,11 +376,31 @@ public final class ExtensionLoader {
                     } else if (rawTypeOf(parameterType) == Executor.class) {
                         methodParamFns.add((bc, bri) -> bc.getExecutor());
                     } else if (parameterClass.isAnnotationPresent(ConfigRoot.class)) {
-                        methodConsumingConfig = true;
-                        methodParamFns.add((bc, bri) -> {
-                            final ConfigurationBuildItem configurationBuildItem = bc.consume(ConfigurationBuildItem.class);
-                            return configurationBuildItem.getConfigDefinition().getRealizedInstance(parameterClass);
-                        });
+                        final ConfigRoot annotation = parameterClass.getAnnotation(ConfigRoot.class);
+                        final ConfigPhase phase = annotation.phase();
+                        methodConsumingConfigPhases.add(phase);
+
+                        if (phase == ConfigPhase.BUILD_TIME) {
+                            methodParamFns.add((bc, bri) -> {
+                                final BuildTimeConfigurationBuildItem configurationBuildItem = bc
+                                        .consume(BuildTimeConfigurationBuildItem.class);
+                                return configurationBuildItem.getConfigDefinition().getRealizedInstance(parameterClass);
+                            });
+                        } else if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
+                            methodParamFns.add((bc, bri) -> {
+                                final BuildTimeRunTimeFixedConfigurationBuildItem configurationBuildItem = bc
+                                        .consume(BuildTimeRunTimeFixedConfigurationBuildItem.class);
+                                return configurationBuildItem.getConfigDefinition().getRealizedInstance(parameterClass);
+                            });
+                        } else if (phase == ConfigPhase.RUN_TIME) {
+                            methodParamFns.add((bc, bri) -> {
+                                final RunTimeConfigurationBuildItem configurationBuildItem = bc
+                                        .consume(RunTimeConfigurationBuildItem.class);
+                                return configurationBuildItem.getConfigDefinition().getRealizedInstance(parameterClass);
+                            });
+                        } else {
+                            throw reportError(parameterClass, "Unknown value for ConfigPhase");
+                        }
                     } else if (isTemplate(parameter.getType())) {
                         if (!isRecorder) {
                             throw reportError(parameter,
@@ -390,9 +449,21 @@ public final class ExtensionLoader {
                 throw reportError(method, "Unsupported method return type " + returnType);
             }
 
-            if (methodConsumingConfig) {
+            if (methodConsumingConfigPhases.contains(ConfigPhase.RUN_TIME)) {
+                if (isRecorder && recordAnnotation.value() == ExecutionTime.STATIC_INIT) {
+                    throw reportError(method,
+                            "Bytecode recorder is static but an injected config object is declared as run time");
+                }
                 methodStepConfig = methodStepConfig
-                        .andThen(bsb -> bsb.consumes(ConfigurationBuildItem.class));
+                        .andThen(bsb -> bsb.consumes(RunTimeConfigurationBuildItem.class));
+            }
+            if (methodConsumingConfigPhases.contains(ConfigPhase.BUILD_AND_RUN_TIME_FIXED)) {
+                methodStepConfig = methodStepConfig
+                        .andThen(bsb -> bsb.consumes(BuildTimeRunTimeFixedConfigurationBuildItem.class));
+            }
+            if (methodConsumingConfigPhases.contains(ConfigPhase.BUILD_TIME)) {
+                methodStepConfig = methodStepConfig
+                        .andThen(bsb -> bsb.consumes(BuildTimeConfigurationBuildItem.class));
             }
 
             final Consumer<BuildStepBuilder> finalStepConfig = stepConfig.andThen(methodStepConfig)

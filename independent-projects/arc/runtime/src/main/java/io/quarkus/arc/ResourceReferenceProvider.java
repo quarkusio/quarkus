@@ -26,7 +26,8 @@ import java.util.Set;
 public interface ResourceReferenceProvider {
 
     /**
-     * A resource reference handle is a dependent object of the object it is injected into. {@link InstanceHandle#destroy()} is called when the target object is
+     * A resource reference handle is a dependent object of the object it is injected into. {@link InstanceHandle#destroy()} is
+     * called when the target object is
      * destroyed.
      *
      * <pre>

@@ -41,6 +41,8 @@
         <module>common</module>
         <module>maven</module>
         <module>gradle</module>
+        <module>gradle-it</module>
         <module>aesh</module>
+        <module>reflection-agent</module>
     </modules>
 </project>

@@ -51,7 +51,8 @@ final class EventTypeAssignabilityRules {
     static boolean matchesNoBoxing(Type observedType, Type eventType) {
         if (observedType instanceof TypeVariable<?>) {
             /*
-             * An event type is considered assignable to a type variable if the event type is assignable to the upper bound, if any.
+             * An event type is considered assignable to a type variable if the event type is assignable to the upper bound, if
+             * any.
              */
             return matches((TypeVariable<?>) observedType, eventType);
         }
@@ -63,7 +64,8 @@ final class EventTypeAssignabilityRules {
         }
         if (observedType instanceof ParameterizedType && eventType instanceof ParameterizedType) {
             /*
-             * A parameterized event type is considered assignable to a parameterized observed event type if they have identical raw type and for each
+             * A parameterized event type is considered assignable to a parameterized observed event type if they have identical
+             * raw type and for each
              * parameter:
              */
             return matches((ParameterizedType) observedType, (ParameterizedType) eventType);
@@ -102,33 +104,38 @@ final class EventTypeAssignabilityRules {
     }
 
     /**
-     * A parameterized event type is considered assignable to a parameterized observed event type if they have identical raw type and for each parameter:
+     * A parameterized event type is considered assignable to a parameterized observed event type if they have identical raw
+     * type and for each parameter:
      */
     private static boolean parametersMatch(Type observedParameter, Type eventParameter) {
         if (Types.isActualType(observedParameter) && Types.isActualType(eventParameter)) {
             /*
-             * the observed event type parameter is an actual type with identical raw type to the event type parameter, and, if the type is parameterized, the
+             * the observed event type parameter is an actual type with identical raw type to the event type parameter, and, if
+             * the type is parameterized, the
              * event type parameter is assignable to the observed event type parameter according to these rules, or
              */
             return matches(observedParameter, eventParameter);
         }
         if (observedParameter instanceof WildcardType && eventParameter instanceof WildcardType) {
             /*
-             * both the observed event type parameter and the event type parameter are wildcards, and the event type parameter is assignable to the observed
+             * both the observed event type parameter and the event type parameter are wildcards, and the event type parameter
+             * is assignable to the observed
              * event type
              */
             return CovariantTypes.isAssignableFrom(observedParameter, eventParameter);
         }
         if (observedParameter instanceof WildcardType) {
             /*
-             * the observed event type parameter is a wildcard and the event type parameter is assignable to the upper bound, if any, of the wildcard and
+             * the observed event type parameter is a wildcard and the event type parameter is assignable to the upper bound, if
+             * any, of the wildcard and
              * assignable from the lower bound, if any, of the wildcard, or
              */
             return parametersMatch((WildcardType) observedParameter, eventParameter);
         }
         if (observedParameter instanceof TypeVariable<?>) {
             /*
-             * the observed event type parameter is a type variable and the event type parameter is assignable to the upper bound, if any, of the type variable.
+             * the observed event type parameter is a type variable and the event type parameter is assignable to the upper
+             * bound, if any, of the type variable.
              */
             return parametersMatch((TypeVariable<?>) observedParameter, eventParameter);
         }

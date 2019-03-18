@@ -15,6 +15,10 @@ repositories {
      mavenCentral()
 }
 
+test {
+    useJUnitPlatform()
+}
+
 dependencies {
     // quarkus-resteasy, quarkus-junit5, rest are copied in pom.xml
     compileOnly fileTree(dir: 'target/dependencies/compile', include: '*.jar')

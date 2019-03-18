@@ -25,10 +25,15 @@ RUN  yum update -y && \
 
     mkdir -p /usr/share/maven && \
     curl -fsSL ${MAVEN_URL} | tar -xzC /usr/share/maven --strip-components=1 && \
-    ln -s /usr/share/maven/bin/mvn /usr/bin/mvn
+    ln -s /usr/share/maven/bin/mvn /usr/bin/mvn && \
+
+    adduser -u 1001 -g 0 quarkus --home-dir /quarkus.io/ && \
+    chown -R 1001:0 /quarkus.io && \
+    chown -R 1001:0 $HOME && \
+    chmod -R ug+rwX /quarkus.io
 
 ENV MAVEN_HOME /usr/share/maven
-ENV MAVEN_CONFIG "$USER_HOME_DIR/.m2"
+ENV MAVEN_CONFIG "/quarkus.io/.m2"
 ENV MAVEN_OPTS="-XX:+TieredCompilation -XX:TieredStopAtLevel=1"
 
 # This part is firmly inspired by fabric8io-images/s2i
@@ -47,10 +52,6 @@ ADD README.md /usr/local/s2i/usage.txt
 
 ENV PATH=$PATH:"/usr/local/s2i"
 
-RUN adduser -u 1001 -g 0 quarkus --home-dir /quarkus.io/ && \
-    chown -R 1001:0 /quarkus.io && \
-    chown -R 1001:0 $HOME && \
-    chmod -R ug+rwX /quarkus.io
 USER 1001
 
 EXPOSE 8080

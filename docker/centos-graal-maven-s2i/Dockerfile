@@ -48,7 +48,11 @@ ADD README.md /usr/local/s2i/usage.txt
 
 ENV PATH=$PATH:"/usr/local/s2i"
 
-RUN mkdir /quarkus.io/
+RUN adduser -u 1001 -g 0 quarkus --home-dir /quarkus.io/ && \
+    chown -R 1001:0 /quarkus.io && \
+    chown -R 1001:0 $HOME && \
+    chmod -R ug+rwX /quarkus.io
+USER 1001
 
 EXPOSE 8080
 

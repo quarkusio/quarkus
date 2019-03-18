@@ -24,6 +24,9 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.ssl.ServerSslConfig;
 
+/**
+ * Configuration which applies to the HTTP server.
+ */
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public class HttpConfig {
 

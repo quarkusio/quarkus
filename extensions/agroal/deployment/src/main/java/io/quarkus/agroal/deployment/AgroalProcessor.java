@@ -76,11 +76,6 @@ class AgroalProcessor {
      */
     AgroalBuildTimeConfig agroalBuildTimeConfig;
 
-    /**
-     * The Agroal runtime configuration.
-     */
-    AgroalRuntimeConfig agroalRuntimeConfig;
-
     @SuppressWarnings("unchecked")
     @Record(STATIC_INIT)
     @BuildStep
@@ -93,8 +88,7 @@ class AgroalProcessor {
             BuildProducer<DataSourceDriverBuildItem> dataSourceDriver,
             SslNativeConfigBuildItem sslNativeConfig, BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             BuildProducer<GeneratedBeanBuildItem> generatedBean) throws Exception {
-        // TODO @dmlloyd
-        // Funilly enough, here the config in the map seems to be properly injected...
+
         feature.produce(new FeatureBuildItem(FeatureBuildItem.AGROAL));
 
         if (!agroalBuildTimeConfig.defaultDataSource.driver.isPresent() && agroalBuildTimeConfig.namedDataSources.isEmpty()) {
@@ -152,17 +146,13 @@ class AgroalProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     void configureRuntimeProperties(AgroalTemplate template,
-            BuildProducer<DataSourceInitializedBuildItem> dataSourceInitialized) {
+            BuildProducer<DataSourceInitializedBuildItem> dataSourceInitialized,
+            AgroalRuntimeConfig agroalRuntimeConfig) {
         if (!agroalBuildTimeConfig.defaultDataSource.driver.isPresent() && agroalBuildTimeConfig.namedDataSources.isEmpty()) {
             // No datasource has been configured so bail out
             return;
         }
 
-        // TODO @dmlloyd
-        // Here we have the first issue:
-        // - things are working well for the default database
-        // - we have the datasource1 and datasource2 elements in the map but the values are not injected
-        // - as mentioned above, it doesn't seem to be an issue for the build time config I use in the above method...
         template.configureRuntimeProperties(agroalRuntimeConfig);
 
         dataSourceInitialized.produce(new DataSourceInitializedBuildItem());

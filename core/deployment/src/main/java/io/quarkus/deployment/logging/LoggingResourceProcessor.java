@@ -94,8 +94,8 @@ public final class LoggingResourceProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void setupLoggingStaticInit(LoggingSetupTemplate setupTemplate, LogConfig log) {
-        setupTemplate.initializeLogging(log);
+    void setupLoggingStaticInit(LoggingSetupTemplate setupTemplate) {
+        setupTemplate.initializeLoggingForImageBuild();
     }
 
     @BuildStep

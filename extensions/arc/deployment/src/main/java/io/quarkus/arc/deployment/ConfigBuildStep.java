@@ -1,16 +1,21 @@
 package io.quarkus.arc.deployment;
 
+import javax.inject.Inject;
+
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 
+import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BeanDeploymentValidator;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.smallrye.config.inject.ConfigProducer;
 
@@ -18,6 +23,8 @@ import io.smallrye.config.inject.ConfigProducer;
  * 
  */
 public class ConfigBuildStep {
+
+    private static final DotName CONFIG_ANNOTATION = DotName.createSimple(ConfigProperty.class.getName());
 
     @BuildStep
     AdditionalBeanBuildItem bean() {
@@ -27,6 +34,31 @@ public class ConfigBuildStep {
     @BuildStep
     BeanDeploymentValidatorBuildItem beanDeploymentValidator() {
         return new BeanDeploymentValidatorBuildItem(new ConfigBeanDeploymentValidator());
+    }
+
+    /**
+     * Uses {@link AnnotationsTransformer} to automatically add {@code @Inject} to all fields that have
+     * {@code @ConfigProperty} on them, but are missing {@code @Inject}.
+     *
+     * @author Matej Novotny
+     */
+    @BuildStep
+    public void build(BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) throws Exception {
+        annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+            @Override
+            public boolean appliesTo(AnnotationTarget.Kind kind) {
+                return kind == AnnotationTarget.Kind.FIELD;
+            }
+
+            @Override
+            public void transform(TransformationContext transformationContext) {
+                if (transformationContext.getTarget().asField().hasAnnotation(CONFIG_ANNOTATION)
+                        && !transformationContext.getTarget().asField().hasAnnotation(DotNames.INJECT)) {
+                    transformationContext.transform().add(Inject.class).done();
+
+                }
+            }
+        }));
     }
 
     static class ConfigBeanDeploymentValidator implements BeanDeploymentValidator {

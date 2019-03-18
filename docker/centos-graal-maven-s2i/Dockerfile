@@ -4,16 +4,15 @@
 # This part is heavily inspired by ../centos-graal/Dockerfile
 FROM centos:latest
 
-ARG GRAAL_VERSION
-ENV GRAAL_VERSION=${GRAAL_VERSION:-1.0.0-rc13}
+ARG GRAAL_VERSION=1.0.0-rc13
 ARG MAVEN_VERSION=3.6.0
 
-ENV GRAAL_CE_URL=https://github.com/oracle/graal/releases/download/vm-${GRAAL_VERSION}/graalvm-ce-${GRAAL_VERSION}-linux-amd64.tar.gz
-ENV MAVEN_URL=https://archive.apache.org/dist/maven/maven-3/$MAVEN_VERSION/binaries/apache-maven-$MAVEN_VERSION-bin.tar.gz
+ARG GRAAL_CE_URL=https://github.com/oracle/graal/releases/download/vm-${GRAAL_VERSION}/graalvm-ce-${GRAAL_VERSION}-linux-amd64.tar.gz
+ARG MAVEN_URL=https://archive.apache.org/dist/maven/maven-3/$MAVEN_VERSION/binaries/apache-maven-$MAVEN_VERSION-bin.tar.gz
 
-ENV JAVA_HOME=/opt/graalvm
-ENV PATH=$PATH:$JAVA_HOME/bin
-ENV GRAALVM_HOME=/opt/graalvm
+ARG JAVA_HOME=/opt/graalvm
+ARG PATH=$PATH:$JAVA_HOME/bin
+ARG GRAALVM_HOME=/opt/graalvm
 
 RUN  yum update -y && \
 	 yum install -y --setopt=skip_missing_names_on_install=False \

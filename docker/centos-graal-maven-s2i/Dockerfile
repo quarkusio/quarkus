@@ -10,11 +10,10 @@ ARG MAVEN_VERSION=3.6.0
 ARG GRAAL_CE_URL=https://github.com/oracle/graal/releases/download/vm-${GRAAL_VERSION}/graalvm-ce-${GRAAL_VERSION}-linux-amd64.tar.gz
 ARG MAVEN_URL=https://archive.apache.org/dist/maven/maven-3/$MAVEN_VERSION/binaries/apache-maven-$MAVEN_VERSION-bin.tar.gz
 
-ARG JAVA_HOME=/opt/graalvm
-ARG PATH=$PATH:$JAVA_HOME/bin
-ARG GRAALVM_HOME=/opt/graalvm
-# NB: Also hard-coded in s2i/assemble & s2i/run
-ARG QUARKUS_HOME=/home/quarkus/
+ENV JAVA_HOME=/opt/graalvm
+ENV PATH=$PATH:$JAVA_HOME/bin
+ENV GRAALVM_HOME=/opt/graalvm
+ENV QUARKUS_HOME=/home/quarkus
 
 RUN  yum update -y && \
 	 yum install -y --setopt=skip_missing_names_on_install=False \

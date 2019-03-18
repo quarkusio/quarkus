@@ -10,5 +10,5 @@ cd /tmp/src/
 mvn package -Pnative -e -B \
     -DskipTests -Dmaven.javadoc.skip=true -Dmaven.site.skip=true -Dmaven.source.skip=true \
     -Djacoco.skip=true -Dcheckstyle.skip=true -Dfindbugs.skip=true -Dpmd.skip=true -Dfabric8.skip=true
-cp -v target/*-runner /home/quarkus/
+cp -v target/*-runner ${QUARKUS_HOME}
 

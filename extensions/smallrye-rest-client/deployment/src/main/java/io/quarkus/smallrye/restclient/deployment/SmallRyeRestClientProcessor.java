@@ -59,11 +59,13 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveHierarchyBuildItem;
+import io.quarkus.deployment.builditem.substrate.ServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.smallrye.restclient.runtime.IncomingHeadersProvider;
 import io.quarkus.smallrye.restclient.runtime.RestClientBase;
 import io.quarkus.smallrye.restclient.runtime.RestClientBuilderImpl;
 import io.quarkus.smallrye.restclient.runtime.SmallRyeRestClientTemplate;
@@ -136,7 +138,8 @@ class SmallRyeRestClientProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             BuildProducer<BeanRegistrarBuildItem> beanRegistrars,
-            BuildProducer<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport) {
+            BuildProducer<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport,
+            BuildProducer<ServiceProviderBuildItem> serviceProvider) {
 
         // According to the spec only rest client interfaces annotated with RegisterRestClient are registered as beans
         Map<DotName, ClassInfo> interfaces = new HashMap<>();
@@ -183,8 +186,13 @@ class SmallRyeRestClientProcessor {
             proxyDefinition.produce(new SubstrateProxyDefinitionBuildItem(iName, RestClientProxy.class.getName()));
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, iName));
         }
+
+        // Incoming headers
         // required for the non-arg constructor of DCHFImpl to be included in the native image
         reflectiveClass.produce(new ReflectiveClassBuildItem(true, false, DefaultClientHeadersFactoryImpl.class.getName()));
+        serviceProvider
+                .produce(new ServiceProviderBuildItem(io.smallrye.restclient.header.IncomingHeadersProvider.class.getName(),
+                        IncomingHeadersProvider.class.getName()));
 
         // Register Interface return types for reflection
         for (Type returnType : returnTypes) {

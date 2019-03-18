@@ -1,16 +1,14 @@
-package io.quarkus.camel.core.runtime;
+package io.quarkus.camel.core.runtime.support;
 
 import java.util.Properties;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.CamelContextAware;
 import org.apache.camel.Component;
-import org.apache.camel.component.headersmap.FastHeadersMapFactory;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.spi.ComponentResolver;
 import org.apache.camel.spi.DataFormat;
 import org.apache.camel.spi.DataFormatResolver;
-import org.apache.camel.spi.HeadersMapFactory;
 import org.apache.camel.spi.Language;
 import org.apache.camel.spi.LanguageResolver;
 import org.apache.camel.spi.ManagementNameStrategy;
@@ -18,6 +16,8 @@ import org.apache.camel.spi.PropertiesComponent;
 import org.apache.camel.spi.Registry;
 import org.apache.camel.spi.ShutdownStrategy;
 import org.apache.camel.spi.UuidGenerator;
+
+import io.quarkus.camel.core.runtime.CamelRuntime;
 
 public class FastCamelContext extends DefaultCamelContext {
 
@@ -44,11 +44,6 @@ public class FastCamelContext extends DefaultCamelContext {
     @Override
     protected UuidGenerator createUuidGenerator() {
         return new FastUuidGenerator();
-    }
-
-    @Override
-    protected HeadersMapFactory createHeadersMapFactory() {
-        return new FastHeadersMapFactory();
     }
 
     @Override
@@ -82,7 +77,7 @@ public class FastCamelContext extends DefaultCamelContext {
             ((CamelContextAware) result).setCamelContext(context);
         }
         PropertiesComponent comp = getPropertiesComponent();
-        if (comp != null && comp instanceof org.apache.camel.component.properties.PropertiesComponent) {
+        if (comp instanceof org.apache.camel.component.properties.PropertiesComponent) {
             Properties props = ((org.apache.camel.component.properties.PropertiesComponent) comp).getInitialProperties();
             if (props != null) {
                 String pfx = CamelRuntime.PFX_CAMEL + type + "." + name;

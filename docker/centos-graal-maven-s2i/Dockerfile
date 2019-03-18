@@ -13,6 +13,8 @@ ARG MAVEN_URL=https://archive.apache.org/dist/maven/maven-3/$MAVEN_VERSION/binar
 ARG JAVA_HOME=/opt/graalvm
 ARG PATH=$PATH:$JAVA_HOME/bin
 ARG GRAALVM_HOME=/opt/graalvm
+# NB: Also hard-coded in s2i/assemble & s2i/run
+ARG QUARKUS_HOME=/home/quarkus/
 
 RUN  yum update -y && \
 	 yum install -y --setopt=skip_missing_names_on_install=False \
@@ -27,13 +29,12 @@ RUN  yum update -y && \
     curl -fsSL ${MAVEN_URL} | tar -xzC /usr/share/maven --strip-components=1 && \
     ln -s /usr/share/maven/bin/mvn /usr/bin/mvn && \
 
-    adduser -u 1001 -g 0 quarkus --home-dir /quarkus.io/ && \
-    chown -R 1001:0 /quarkus.io && \
-    chown -R 1001:0 $HOME && \
-    chmod -R ug+rwX /quarkus.io
+    adduser -u 1001 -g 0 quarkus --home-dir ${QUARKUS_HOME} && \
+    chown -R 1001:0 ${QUARKUS_HOME} && \
+    chmod -R ug+rwX ${QUARKUS_HOME}
 
 ENV MAVEN_HOME /usr/share/maven
-ENV MAVEN_CONFIG "/quarkus.io/.m2"
+ENV MAVEN_CONFIG ${QUARKUS_HOME}/.m2
 ENV MAVEN_OPTS="-XX:+TieredCompilation -XX:TieredStopAtLevel=1"
 
 # This part is firmly inspired by fabric8io-images/s2i

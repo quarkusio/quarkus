@@ -37,8 +37,8 @@ public class VertxProducer {
 
     private volatile VertxConfiguration conf;
     private volatile Vertx vertx;
-    private io.vertx.axle.core.Vertx axle;
-    private io.vertx.reactivex.core.Vertx rx;
+    private volatile io.vertx.axle.core.Vertx axle;
+    private volatile io.vertx.reactivex.core.Vertx rx;
 
     private void createCompanions(Vertx instance) {
         this.vertx = instance == null ? Vertx.vertx() : instance;
@@ -244,6 +244,24 @@ public class VertxProducer {
             initialize();
         }
         return this.vertx.eventBus();
+    }
+
+    @Singleton
+    @Produces
+    public synchronized io.vertx.axle.core.eventbus.EventBus axleEventbus() {
+        if (vertx == null) {
+            initialize();
+        }
+        return this.axle.eventBus();
+    }
+
+    @Singleton
+    @Produces
+    public synchronized io.vertx.reactivex.core.eventbus.EventBus rxRventbus() {
+        if (vertx == null) {
+            initialize();
+        }
+        return this.rx.eventBus();
     }
 
     void configure(VertxConfiguration config) {

@@ -34,6 +34,7 @@ import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.support.ResourceHelper;
 import org.apache.camel.support.service.ServiceSupport;
 import org.apache.camel.util.ObjectHelper;
+import org.graalvm.nativeimage.ImageInfo;
 
 public class CamelRuntime extends ServiceSupport {
 
@@ -71,7 +72,13 @@ public class CamelRuntime extends ServiceSupport {
             RuntimeSupport.bindProperties(properties, context, PFX_CAMEL_CONTEXT);
 
             context.setLoadTypeConverters(false);
-            context.getModelJAXBContextFactory().newJAXBContext();
+
+            // The creation of the JAXB context is very time consuming, so always prepare it
+            // when running in native mode, but lazy create it in java mode so that we don't
+            // waste time if using java routes
+            if (ImageInfo.inImageBuildtimeCode()) {
+                context.getModelJAXBContextFactory().newJAXBContext();
+            }
         } catch (Exception e) {
             throw RuntimeCamelException.wrapRuntimeCamelException(e);
         }

@@ -12,6 +12,7 @@ import java.util.Properties;
 
 import javax.inject.Inject;
 
+import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import org.apache.camel.Consumer;
 import org.apache.camel.Converter;
 import org.apache.camel.Endpoint;
@@ -27,14 +28,15 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 
+import io.quarkus.camel.core.runtime.CamelBuildTimeConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.HotDeploymentConfigFileBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveMethodBuildItem;
-import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBundleBuildItem;
 import io.quarkus.jaxb.deployment.JaxbFileRootBuildItem;
@@ -62,6 +64,8 @@ class CamelProcessor {
     ApplicationArchivesBuildItem applicationArchivesBuildItem;
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
+    @Inject
+    CamelBuildTimeConfig buildTimeConfig;
 
     @BuildStep
     JaxbFileRootBuildItem fileRoot() {
@@ -71,6 +75,24 @@ class CamelProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FeatureBuildItem.CAMEL_CORE);
+    }
+
+    @BuildStep
+    SubstrateConfigBuildItem processSystemProperties() {
+        return SubstrateConfigBuildItem.builder()
+                .addNativeImageSystemProperty("CamelSimpleLRUCacheFactory", "true")
+                .build();
+    }
+
+    @BuildStep
+    HotDeploymentConfigFileBuildItem configFile() {
+        if (buildTimeConfig != null && buildTimeConfig.routesUri.isPresent()) {
+            String routesUri = buildTimeConfig.routesUri.get();
+            if (routesUri.startsWith("file:")) {
+                return new HotDeploymentConfigFileBuildItem(routesUri.substring("file:".length()));
+            }
+        }
+        return null;
     }
 
     @BuildStep(applicationArchiveMarkers = { CamelSupport.CAMEL_SERVICE_BASE_PATH, "org/apache/camel" })

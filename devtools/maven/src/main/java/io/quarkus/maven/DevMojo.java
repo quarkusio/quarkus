@@ -209,7 +209,7 @@ public class DevMojo extends AbstractMojo {
                 }
             }
             //Add env to enable quarkus dev mode logging
-            args.add("-Dquarkus.devMode");
+            args.add("-Dquarkus-internal.devMode");
 
             for (Resource r : project.getBuild().getResources()) {
                 File f = new File(r.getDirectory());
@@ -288,10 +288,10 @@ public class DevMojo extends AbstractMojo {
 
             outputDirectory.mkdirs();
 
-            args.add("-Dquarkus.runner.classes=" + outputDirectory.getAbsolutePath());
-            args.add("-Dquarkus.runner.sources=" + sourceDir.getAbsolutePath());
+            args.add("-Dquarkus-internal.runner.classes=" + outputDirectory.getAbsolutePath());
+            args.add("-Dquarkus-internal.runner.sources=" + sourceDir.getAbsolutePath());
             if (resources != null) {
-                args.add("-Dquarkus.runner.resources=" + new File(resources).getAbsolutePath());
+                args.add("-Dquarkus-internal.runner.resources=" + new File(resources).getAbsolutePath());
             }
             args.add("-jar");
             args.add(tempFile.getAbsolutePath());

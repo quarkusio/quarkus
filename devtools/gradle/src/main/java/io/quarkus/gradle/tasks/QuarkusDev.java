@@ -177,7 +177,7 @@ public class QuarkusDev extends QuarkusTask {
                 args.addAll(Arrays.asList(getJvmArgs().split(" ")));
             }
             //Add env to enable quarkus dev mode logging
-            args.add("-Dquarkus.devMode");
+            args.add("-Dquarkus-internal.devMode");
 
             for (File f : extension.resourcesDir()) {
                 File servletRes = new File(f, "META-INF/resources");
@@ -255,10 +255,10 @@ public class QuarkusDev extends QuarkusTask {
 
             extension.outputDirectory().mkdirs();
 
-            args.add("-Dquarkus.runner.classes=" + extension.outputDirectory().getAbsolutePath());
-            args.add("-Dquarkus.runner.sources=" + getSourceDir().getAbsolutePath());
+            args.add("-Dquarkus-internal.runner.classes=" + extension.outputDirectory().getAbsolutePath());
+            args.add("-Dquarkus-internal.runner.sources=" + getSourceDir().getAbsolutePath());
             if (resources != null) {
-                args.add("-Dquarkus.runner.resources=" + resources.toString());
+                args.add("-Dquarkus-internal.runner.resources=" + resources.toString());
             }
             args.add("-jar");
             args.add(tempFile.getAbsolutePath());

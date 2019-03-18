@@ -51,6 +51,7 @@ public class CamelRuntime extends ServiceSupport {
     protected Properties properties;
     protected AbstractCamelContext context;
     protected List<RoutesBuilder> builders;
+    protected String routesUri;
 
     public void bind(String name, Object object) {
         registry.bind(name, object);
@@ -79,6 +80,21 @@ public class CamelRuntime extends ServiceSupport {
             if (ImageInfo.inImageBuildtimeCode()) {
                 context.getModelJAXBContextFactory().newJAXBContext();
             }
+
+            //            propertiesComponent = new PropertiesComponent();
+            //            propertiesComponent.setInitialProperties(properties);
+            //            RuntimeSupport.bindProperties(properties, propertiesComponent, PFX_CAMEL_PROPERTIES);
+            //            context.addComponent("properties", propertiesComponent);
+            //
+            //            loadRoutesFromBuilders(true);
+
+            log.info("Camel routes uri: " + routesUri);
+            if (ObjectHelper.isNotEmpty(routesUri)) {
+                try (InputStream is = ResourceHelper.resolveMandatoryResourceAsInputStream(getContext(), routesUri)) {
+                    context.addRouteDefinitions(context.loadRoutesDefinition(is).getRoutes());
+                }
+            }
+
         } catch (Exception e) {
             throw RuntimeCamelException.wrapRuntimeCamelException(e);
         }
@@ -144,6 +160,10 @@ public class CamelRuntime extends ServiceSupport {
 
     public void setBuilders(List<RoutesBuilder> builders) {
         this.builders = builders;
+    }
+
+    public void setRoutesUri(String routesUri) {
+        this.routesUri = routesUri;
     }
 
     public CamelContext getContext() {

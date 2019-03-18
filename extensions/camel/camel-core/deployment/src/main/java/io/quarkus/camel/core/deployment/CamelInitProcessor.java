@@ -6,7 +6,6 @@ import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -25,6 +24,7 @@ import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
+import io.quarkus.camel.core.runtime.CamelBuildTimeConfig;
 import io.quarkus.camel.core.runtime.CamelRuntime;
 import io.quarkus.camel.core.runtime.CamelRuntimeProducer;
 import io.quarkus.camel.core.runtime.CamelTemplate;
@@ -38,27 +38,14 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.ConfigItem;
-import io.quarkus.runtime.annotations.ConfigPhase;
-import io.quarkus.runtime.annotations.ConfigRoot;
 
 class CamelInitProcessor {
     @Inject
     ApplicationArchivesBuildItem applicationArchivesBuildItem;
     @Inject
     CombinedIndexBuildItem combinedIndexBuildItem;
-
-    @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
-    static class CamelConfig {
-
-        /**
-         * The class of the CamelRuntime implementation
-         */
-        @ConfigItem
-        Optional<String> runtime;
-    }
-
-    CamelConfig config;
+    @Inject
+    CamelBuildTimeConfig buildTimeConfig;
 
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
@@ -82,15 +69,16 @@ class CamelInitProcessor {
             }
         }
 
-        String clazz = config.runtime.orElse(CamelRuntime.class.getName());
+        String clazz = buildTimeConfig.runtime.orElse(CamelRuntime.class.getName());
         RuntimeValue<?> runtime = recorderContext.newInstance(clazz);
         RuntimeRegistry registry = new RuntimeRegistry();
         List<RuntimeValue<?>> builders = getInitRouteBuilderClasses().map(recorderContext::newInstance)
                 .collect(Collectors.toList());
 
         visitServices((name, type) -> registry.bind(name, type, recorderContext.newInstance(type.getName())));
+        String routesUri = buildTimeConfig.routesUri.orElse(null);
 
-        return new CamelRuntimeBuildItem(template.init(runtime, registry, properties, builders));
+        return new CamelRuntimeBuildItem(template.init(runtime, registry, properties, builders, routesUri));
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

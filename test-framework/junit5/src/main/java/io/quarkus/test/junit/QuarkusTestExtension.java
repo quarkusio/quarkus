@@ -20,6 +20,7 @@ import static io.quarkus.test.common.PathTestHelper.getAppClassLocation;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,6 +53,7 @@ import io.quarkus.runner.RuntimeRunner;
 import io.quarkus.runner.TransformerTarget;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.NativeImageLauncher;
+import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.TestInjectionManager;
 import io.quarkus.test.common.TestResourceManager;
@@ -64,7 +66,7 @@ public class QuarkusTestExtension implements BeforeAllCallback, BeforeEachCallba
         ExtensionContext root = context.getRoot();
         ExtensionContext.Store store = root.getStore(ExtensionContext.Namespace.GLOBAL);
         ExtensionState state = (ExtensionState) store.get(ExtensionState.class.getName());
-        System.setProperty("quarkus.log.file.path", "target/quarkus.log");
+        PropertyTestUtil.setLogFileProperty();
         boolean substrateTest = context.getRequiredTestClass().isAnnotationPresent(SubstrateTest.class);
         if (state == null) {
             TestResourceManager testResourceManager = new TestResourceManager(context.getRequiredTestClass());

@@ -36,6 +36,10 @@ Testing indicates that the "hello, world" getting-started demo application build
           cpu: '4'
           memory: 4Gi
 
+The following `oc patch` command does this:
+
+    oc patch bc/getting-started-native -p '{"spec":{"resources":{"limits":{"cpu":"4", "memory":"4Gi"}}}}'
+
 ## Locally (only for testing)
 
 ### Local Build

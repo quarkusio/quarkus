@@ -14,7 +14,6 @@ import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import javax.json.JsonStructure;
 import javax.json.JsonValue;
-import javax.security.auth.Subject;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
@@ -33,27 +32,48 @@ public class ElytronJwtCallerPrincipal extends JWTCallerPrincipal {
 
     private Attributes claims;
     private JwtClaims claimsSet;
+    private String customPrincipalName;
 
-    public ElytronJwtCallerPrincipal(final String name, final Attributes claims) {
-        super(name);
+    public ElytronJwtCallerPrincipal(final String customPrincipalName, final Attributes claims) {
+        super(getRawToken(getClaimsSet(claims)), "JWT");
         this.claims = claims;
-        if (!(claims instanceof ClaimAttributes)) {
-            throw new IllegalStateException(
-                    "ElytronJwtCallerPrincipal requires Attributes to be a: " + ClaimAttributes.class.getName());
-        }
-        this.claimsSet = ((ClaimAttributes) claims).getClaimsSet();
+        this.customPrincipalName = customPrincipalName;
+        this.claimsSet = getClaimsSet(claims);
         fixJoseTypes();
     }
 
-    public ElytronJwtCallerPrincipal(final String name, final JwtClaims claimsSet) {
-        super(name);
-        this.claimsSet = claimsSet;
-        fixJoseTypes();
+    public ElytronJwtCallerPrincipal(final String customPrincipalName, final JwtClaims claimsSet) {
+        this(customPrincipalName, new ClaimAttributes(claimsSet));
+    }
+
+    public ElytronJwtCallerPrincipal(Attributes claims) {
+        this(null, claims);
+    }
+
+    private static String getRawToken(JwtClaims claimsSet) {
+        Object rawToken = claimsSet.getClaimValue(Claims.raw_token.name());
+        return rawToken != null ? rawToken.toString() : null;
     }
 
     public Attributes getClaims() {
         return claims;
     }
+
+    private static JwtClaims getClaimsSet(Attributes claims) {
+        if (!(claims instanceof ClaimAttributes)) {
+            throw new IllegalStateException(
+                    "ElytronJwtCallerPrincipal requires Attributes to be a: " + ClaimAttributes.class.getName());
+        }
+        return ((ClaimAttributes) claims).getClaimsSet();
+    }
+
+    @Override
+    public String getName() {
+        return customPrincipalName != null ? customPrincipalName : super.getName();
+    }
+
+    //TODO: Synchronize all the code below with smallrye/smallrye-jwt and eventually remove from this class.
+    // Specifically, nearly the indentical code is already present in DefaultJWTCallerPrincipal and JWTCallerPrincipal
 
     @Override
     public Set<String> getAudience() {
@@ -90,12 +110,12 @@ public class ElytronJwtCallerPrincipal extends JWTCallerPrincipal {
     }
 
     @Override
-    public Set<String> getClaimNames() {
-        return new HashSet<>(claimsSet.getClaimNames());
+    protected Collection<String> doGetClaimNames() {
+        return claimsSet.getClaimNames();
     }
 
     @Override
-    public <T> T getClaim(String claimName) {
+    protected Object getClaimValue(String claimName) {
         Claims claimType = Claims.UNKNOWN;
         Object claim = null;
         try {
@@ -127,63 +147,13 @@ public class ElytronJwtCallerPrincipal extends JWTCallerPrincipal {
                 // This has to be a Json type
                 claim = claimsSet.getClaimValue(claimName);
                 if (!(claim instanceof JsonStructure)) {
-                    claim = wrapValue(claim);
+                    claim = wrapClaimValue(claim);
                 }
                 break;
             default:
                 claim = claimsSet.getClaimValue(claimType.name());
         }
-        return (T) claim;
-    }
-
-    @Override
-    public boolean implies(Subject subject) {
-        return false;
-    }
-
-    public String toString() {
-        return toString(false);
-    }
-
-    /**
-     * TODO: showAll is ignored and currently assumed true
-     *
-     * @param showAll - should all claims associated with the JWT be displayed or should only those defined in the
-     *        JsonWebToken interface be displayed.
-     * @return JWTCallerPrincipal string view
-     */
-    @Override
-    public String toString(boolean showAll) {
-        String toString = "DefaultJWTCallerPrincipal{" +
-                "id='" + getTokenID() + '\'' +
-                ", name='" + getName() + '\'' +
-                ", expiration=" + getExpirationTime() +
-                ", notBefore=" + getClaim(Claims.nbf.name()) +
-                ", issuedAt=" + getIssuedAtTime() +
-                ", issuer='" + getIssuer() + '\'' +
-                ", audience=" + getAudience() +
-                ", subject='" + getSubject() + '\'' +
-                ", issuedFor='" + getClaim("azp") + '\'' +
-                ", authTime=" + getClaim("auth_time") +
-                ", givenName='" + getClaim("given_name") + '\'' +
-                ", familyName='" + getClaim("family_name") + '\'' +
-                ", middleName='" + getClaim("middle_name") + '\'' +
-                ", nickName='" + getClaim("nickname") + '\'' +
-                ", preferredUsername='" + getClaim("preferred_username") + '\'' +
-                ", email='" + getClaim("email") + '\'' +
-                ", emailVerified=" + getClaim(Claims.email_verified.name()) +
-                ", allowedOrigins=" + getClaim("allowedOrigins") +
-                ", updatedAt=" + getClaim("updated_at") +
-                ", acr='" + getClaim("acr") + '\'';
-        StringBuilder tmp = new StringBuilder(toString);
-        tmp.append(", groups=[");
-        for (String group : getGroups()) {
-            tmp.append(group);
-            tmp.append(',');
-        }
-        tmp.setLength(tmp.length() - 1);
-        tmp.append("]}");
-        return tmp.toString();
+        return claim;
     }
 
     /**
@@ -236,22 +206,22 @@ public class ElytronJwtCallerPrincipal extends JWTCallerPrincipal {
     private void replaceMap(String name) {
         try {
             Map<String, Object> map = claimsSet.getClaimValue(name, Map.class);
-            JsonObject jsonObject = replaceMap(map);
+            JsonObject jsonObject = replaceMapClaims(map);
             claimsSet.setClaim(name, jsonObject);
         } catch (MalformedClaimException e) {
             logger.warn("replaceMap failure for: " + name, e);
         }
     }
 
-    private JsonObject replaceMap(Map<String, Object> map) {
+    private JsonObject replaceMapClaims(Map<String, Object> map) {
         JsonObjectBuilder builder = Json.createObjectBuilder();
         for (Map.Entry<String, Object> entry : map.entrySet()) {
             Object entryValue = entry.getValue();
             if (entryValue instanceof Map) {
-                JsonObject entryJsonObject = replaceMap((Map<String, Object>) entryValue);
+                JsonObject entryJsonObject = replaceMapClaims((Map<String, Object>) entryValue);
                 builder.add(entry.getKey(), entryJsonObject);
             } else if (entryValue instanceof List) {
-                JsonArray array = (JsonArray) wrapValue(entryValue);
+                JsonArray array = (JsonArray) wrapClaimValue(entryValue);
                 builder.add(entry.getKey(), array);
             } else if (entryValue instanceof Long || entryValue instanceof Integer) {
                 long lvalue = ((Number) entryValue).longValue();
@@ -269,7 +239,7 @@ public class ElytronJwtCallerPrincipal extends JWTCallerPrincipal {
         return builder.build();
     }
 
-    JsonValue wrapValue(Object value) {
+    JsonValue wrapClaimValue(Object value) {
         JsonValue jsonValue = null;
         if (value instanceof JsonValue) {
             // This may already be a JsonValue
@@ -302,13 +272,13 @@ public class ElytronJwtCallerPrincipal extends JWTCallerPrincipal {
                 if (element instanceof String) {
                     arrayBuilder.add(element.toString());
                 } else {
-                    JsonValue jvalue = wrapValue(element);
+                    JsonValue jvalue = wrapClaimValue(element);
                     arrayBuilder.add(jvalue);
                 }
             }
             jsonValue = arrayBuilder.build();
         } else if (value instanceof Map) {
-            jsonValue = replaceMap((Map) value);
+            jsonValue = replaceMapClaims((Map) value);
         }
         return jsonValue;
     }
@@ -321,7 +291,7 @@ public class ElytronJwtCallerPrincipal extends JWTCallerPrincipal {
     private void replaceList(String name) {
         try {
             List list = claimsSet.getClaimValue(name, List.class);
-            JsonArray array = (JsonArray) wrapValue(list);
+            JsonArray array = (JsonArray) wrapClaimValue(list);
             claimsSet.setClaim(name, array);
         } catch (MalformedClaimException e) {
             logger.warn("replaceList failure for: " + name, e);
@@ -331,7 +301,7 @@ public class ElytronJwtCallerPrincipal extends JWTCallerPrincipal {
     private void replaceNumber(String name) {
         try {
             Number number = claimsSet.getClaimValue(name, Number.class);
-            JsonNumber jsonNumber = (JsonNumber) wrapValue(number);
+            JsonNumber jsonNumber = (JsonNumber) wrapClaimValue(number);
             claimsSet.setClaim(name, jsonNumber);
         } catch (MalformedClaimException e) {
             logger.warn("replaceNumber failure for: " + name, e);

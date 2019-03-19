@@ -7,7 +7,7 @@
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-build-parent</artifactId>
         <version>999-SNAPSHOT</version>
-    	<relativePath>../../build-parent/pom.xml</relativePath>
+        <relativePath>../../build-parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>quarkus-gradle-plugin-integration-test</artifactId>
@@ -17,6 +17,7 @@
 
     <properties>
         <gradle.executable>${project.basedir}/../gradle/gradlew</gradle.executable>
+        <maven.deploy.skip>true</maven.deploy.skip>
     </properties>
 
     <dependencies>
@@ -91,6 +92,14 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>${nexus-staging-maven-plugin.version}</version>
+                <configuration>
+                    <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
+                </configuration>
             </plugin>
         </plugins>
     </build>

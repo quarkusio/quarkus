@@ -142,6 +142,26 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jsonb</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jsonb-runtime</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jsonp</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-jsonp-runtime</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-netty</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -670,6 +690,10 @@
                                             <exclude>org.jboss.spec.javax.servlet:jboss-servlet-api_3.1_spec</exclude>
                                             <!-- The API is packaged by the implementation-->
                                             <exclude>javax.json:javax.json-api</exclude>
+                                            <!-- Do not use Jakarta APIs for JSON -->
+                                            <exclude>org.glassfish:jakarta.json</exclude>
+                                            <exclude>jakarta.json.bind:jakarta.json.bind-api</exclude>
+                                            <exclude>jakarta.json:jakarta.json-api</exclude>
                                         </excludes>
                                     </bannedDependencies>
                                 </rules>

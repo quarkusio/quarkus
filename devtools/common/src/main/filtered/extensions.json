@@ -127,6 +127,26 @@
     "artifactId": "quarkus-jdbc-postgresql"
   },
   {
+    "name": "JSON-B",
+    "labels": [
+      "jsonb",
+      "json-b",
+      "json"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jsonb"
+  },
+  {
+    "name": "JSON-P",
+    "labels": [
+      "jsonp",
+      "json-p",
+      "json"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-jsonp"
+  },
+  {
     "name": "Kotlin",
     "labels": [
       "kotlin"

@@ -33,7 +33,11 @@
         <!-- Plumbing -->
         <module>arc</module>
         <module>scheduler</module>
+
+        <!-- Formats -->
         <module>jaxb</module>
+        <module>jsonp</module>
+        <module>jsonb</module>
 
         <!-- HTTP -->
         <module>undertow</module>
@@ -82,10 +86,13 @@
         <!-- Caching -->
         <module>caffeine</module>
 
+        <!-- Integrations -->
         <module>amazon-lambda</module>
+
         <!-- Camel -->
         <module>camel</module>
 
+        <!-- Additional languages -->
         <module>kotlin</module>
     </modules>
 

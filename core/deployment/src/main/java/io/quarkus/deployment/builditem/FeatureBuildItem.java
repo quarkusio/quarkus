@@ -43,6 +43,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String SMALLRYE_REACTIVE_TYPE_CONVERTERS = "smallrye-reactive-type-converters";
     public static final String SMALLRYE_REST_CLIENT = "smallrye-rest-client";
     public static final String SPRING_DI = "spring-di";
+    public static final String SWAGGER_UI = "swagger-ui";
     public static final String UNDERTOW_WEBSOCKETS = "undertow-websockets";
     public static final String VERTX = "vertx";
     public static final String VERTX_WEB = "vertx-web";

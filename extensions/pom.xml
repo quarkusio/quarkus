@@ -57,6 +57,9 @@
         <module>smallrye-rest-client</module>
         <module>smallrye-openapi</module>
 
+        <!-- Swagger UI-->
+        <module>swagger-ui</module>
+
         <!-- Reactive -->
         <module>vertx</module>
         <module>vertx-web</module>

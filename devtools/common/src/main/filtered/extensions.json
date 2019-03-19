@@ -354,6 +354,14 @@
     "artifactId": "quarkus-spring-di"
   },
   {
+    "name": "Swagger UI",
+    "labels": [
+      "swagger-ui"
+    ],
+    "groupId": "io.quarkus",
+    "artifactId": "quarkus-swagger-ui"
+  },
+  {
     "name": "Undertow",
     "labels": [
       "undertow",

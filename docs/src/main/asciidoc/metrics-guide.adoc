@@ -165,7 +165,7 @@ You will receive a response such as:
 }
 ```
 
-Description what each metric means:
+Let's explain the meaning of each metric:
 
 * `performedChecks`: A counter which is increased by one each time the user asks about a number.
 * `highestPrimeNumberSoFar`: This is a gauge that stores the highest number that was asked about by the user and which was determined to be prime.

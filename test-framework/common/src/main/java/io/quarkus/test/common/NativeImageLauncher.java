@@ -81,9 +81,18 @@ public class NativeImageLauncher implements Closeable {
             URL[] urls = ((URLClassLoader) cl).getURLs();
             for (URL url : urls) {
                 if (url.getProtocol().equals("file") && url.getPath().endsWith("test-classes/")) {
-                    //we have the test classes dir
+                    //we have the maven test classes dir
                     File testClasses = new File(url.getPath());
                     for (File file : testClasses.getParentFile().listFiles()) {
+                        if (file.getName().endsWith("-runner")) {
+                            logGuessedPath(file.getAbsolutePath());
+                            return file.getAbsolutePath();
+                        }
+                    }
+                } else if (url.getProtocol().equals("file") && url.getPath().endsWith("test/")) {
+                    //we have the gradle test classes dir, build/classes/java/test
+                    File testClasses = new File(url.getPath());
+                    for (File file : testClasses.getParentFile().getParentFile().getParentFile().listFiles()) {
                         if (file.getName().endsWith("-runner")) {
                             logGuessedPath(file.getAbsolutePath());
                             return file.getAbsolutePath();

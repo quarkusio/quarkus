@@ -3,7 +3,7 @@ package io.quarkus.arc.deployment;
 import org.jboss.builder.item.MultiBuildItem;
 
 /**
- * TODO
+ * Represents a mandatory config property that needs to be validated at runtime.
  */
 public final class ConfigPropertyBuildItem extends MultiBuildItem {
 

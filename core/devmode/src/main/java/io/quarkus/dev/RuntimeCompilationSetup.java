@@ -31,9 +31,9 @@ public class RuntimeCompilationSetup {
     private static Logger log = Logger.getLogger(RuntimeCompilationSetup.class.getName());
 
     public static RuntimeUpdatesProcessor setup() throws Exception {
-        String classesDir = System.getProperty("quarkus.runner.classes");
-        String sourcesDir = System.getProperty("quarkus.runner.sources");
-        String resourcesDir = System.getProperty("quarkus.runner.resources");
+        String classesDir = System.getProperty("quarkus-internal.runner.classes");
+        String sourcesDir = System.getProperty("quarkus-internal.runner.sources");
+        String resourcesDir = System.getProperty("quarkus-internal.runner.resources");
         if (classesDir != null) {
             ServiceLoader<CompilationProvider> serviceLoader = ServiceLoader.load(CompilationProvider.class);
             List<CompilationProvider> compilationProviders = new ArrayList<>();

@@ -72,7 +72,7 @@ class CamelInitProcessor {
         String clazz = buildTimeConfig.runtime.orElse(CamelRuntime.class.getName());
         RuntimeValue<?> runtime = recorderContext.newInstance(clazz);
         RuntimeRegistry registry = new RuntimeRegistry();
-        List<RuntimeValue<?>> builders = getInitRouteBuilderClasses().map(recorderContext::newInstance)
+        List<RuntimeValue<?>> builders = getBuildTimeRouteBuilderClasses().map(recorderContext::newInstance)
                 .collect(Collectors.toList());
 
         visitServices((name, type) -> registry.bind(name, type, recorderContext.newInstance(type.getName())));
@@ -88,7 +88,7 @@ class CamelInitProcessor {
         template.start(shutdown, runtime.getRuntime());
     }
 
-    protected Stream<String> getInitRouteBuilderClasses() {
+    protected Stream<String> getBuildTimeRouteBuilderClasses() {
         Set<ClassInfo> allKnownImplementors = new HashSet<>();
         allKnownImplementors.addAll(
                 combinedIndexBuildItem.getIndex().getAllKnownImplementors(DotName.createSimple(RoutesBuilder.class.getName())));

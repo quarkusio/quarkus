@@ -63,18 +63,17 @@ Edit the `org.acme.config.GreetingResource`, and introduce the 3 following confi
 
 [source,java]
 ----
-@Inject
 @ConfigProperty(name = "greeting.message")
 private String message;
 
-@Inject
 @ConfigProperty(name = "greeting.suffix", defaultValue="!")
 private String suffix;
 
-@Inject
 @ConfigProperty(name = "greeting.name")
 private Optional<String> name;
 ----
+
+NOTE: The `@Inject` annotation is not strictly necessary from members annotated with `@ConfigProperty`, a behavior which differs from https://microprofile.io/project/eclipse/microprofile-config[MicroProfile Config]
 
 If you do not provide a value for the first property, it will have a `null` value.
 The second property injects the given default value if the configuration file does not provide a value.

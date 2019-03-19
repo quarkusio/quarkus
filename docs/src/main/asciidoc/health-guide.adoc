@@ -170,7 +170,6 @@ import javax.inject.Inject;
 @ApplicationScoped
 public class DatabaseConnectionHealthCheck implements HealthCheck {
     
-    @Inject
     @ConfigProperty(name = "database.up", defaultValue = "false")
     private boolean databaseUp;
     

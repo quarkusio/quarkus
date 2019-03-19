@@ -39,7 +39,7 @@ First, we need a new project. Create a new project with the following command:
 
 [source, subs=attributes+]
 ----
-mvn io.quarkus:quarkus-maven-plugin:0.11.0:create \
+mvn io.quarkus:quarkus-maven-plugin:{quarkus-version}:create \
     -DprojectGroupId=org.acme \
     -DprojectArtifactId=microprofile-health \
     -Dextensions="smallrye-health"

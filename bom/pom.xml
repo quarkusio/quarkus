@@ -63,6 +63,7 @@
         <jboss-classfilewriter.version>1.2.4.Final</jboss-classfilewriter.version>
         <jboss-invocation.version>1.5.2.Final</jboss-invocation.version>
         <javax.json.version>1.1.4</javax.json.version>
+        <javax.json.bind-api.version>1.0</javax.json.bind-api.version>
         <javax.xml.bind.version>2.3.1</javax.xml.bind.version>
         <jboss-jaxrs-api_2.1_spec.version>1.0.2.Final</jboss-jaxrs-api_2.1_spec.version>
         <javax.ws.rs-api.version>2.1.1</javax.ws.rs-api.version>
@@ -144,7 +145,6 @@
         <jboss-logmanager.version>1.0.2</jboss-logmanager.version>
         <jetty.version>9.4.15.v20190215</jetty.version>
         <yasson.version>1.0.3</yasson.version>
-        <jakarta.json.version>1.1.5</jakarta.json.version>
     </properties>
 
     <dependencyManagement>
@@ -1051,11 +1051,30 @@
                 <groupId>org.eclipse</groupId>
                 <artifactId>yasson</artifactId>
                 <version>${yasson.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.glassfish</groupId>
+                        <artifactId>jakarta.json</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>jakarta.json.bind</groupId>
+                        <artifactId>jakarta.json.bind-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>jakarta.json</groupId>
+                        <artifactId>jakarta.json-api</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.glassfish</groupId>
-                <artifactId>jakarta.json</artifactId>
-                <version>${jakarta.json.version}</version>
+                <artifactId>javax.json</artifactId>
+                <version>${javax.json.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>javax.json.bind</groupId>
+                <artifactId>javax.json.bind-api</artifactId>
+                <version>${javax.json.bind-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.glassfish.jaxb</groupId>
@@ -1211,25 +1230,6 @@
                     <exclusion>
                         <groupId>javax.json</groupId>
                         <artifactId>javax.json-api</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.glassfish</groupId>
-                        <artifactId>javax.json</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>javax.json.bind</groupId>
-                        <artifactId>javax.json.bind-api</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.jboss.resteasy</groupId>
-                <artifactId>resteasy-json-p-provider</artifactId>
-                <version>${resteasy.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.glassfish</groupId>
-                        <artifactId>javax.json</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>

@@ -19,6 +19,10 @@
             <artifactId>yasson</artifactId>
         </dependency>
         <dependency>
+            <groupId>javax.json.bind</groupId>
+            <artifactId>javax.json.bind-api</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core-runtime</artifactId>
         </dependency>

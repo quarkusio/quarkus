@@ -20,7 +20,7 @@
         </dependency>
         <dependency>
             <groupId>org.glassfish</groupId>
-            <artifactId>jakarta.json</artifactId>
+            <artifactId>javax.json</artifactId>
         </dependency>
     </dependencies>
 

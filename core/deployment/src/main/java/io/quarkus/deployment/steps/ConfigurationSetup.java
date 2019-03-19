@@ -116,8 +116,10 @@ public class ConfigurationSetup {
             "getImplicitConverter", Converter.class, Class.class);
     private static final MethodDescriptor CPR_SET_INSTANCE = MethodDescriptor.ofMethod(ConfigProviderResolver.class,
             "setInstance", void.class, ConfigProviderResolver.class);
-    private static final MethodDescriptor SCPR_CONSTRUCT = MethodDescriptor
-            .ofConstructor(SimpleConfigurationProviderResolver.class, Config.class);
+    private static final MethodDescriptor CPR_REGISTER_CONFIG = MethodDescriptor.ofMethod(ConfigProviderResolver.class,
+            "registerConfig", void.class, Config.class, ClassLoader.class);
+    private static final MethodDescriptor CPR_INSTANCE = MethodDescriptor.ofMethod(ConfigProviderResolver.class,
+            "instance", ConfigProviderResolver.class);
     private static final MethodDescriptor SRCB_BUILD = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class, "build",
             Config.class);
     private static final MethodDescriptor SRCB_WITH_CONVERTER = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class,
@@ -506,8 +508,13 @@ public class ConfigurationSetup {
                 // Build the config
 
                 final ResultHandle config = carc.checkCast(carc.invokeVirtualMethod(SRCB_BUILD, builder), SmallRyeConfig.class);
-                final ResultHandle providerResolver = carc.newInstance(SCPR_CONSTRUCT, config);
-                carc.invokeStaticMethod(CPR_SET_INSTANCE, providerResolver);
+
+                // ConfigProviderResolver.setInstance(new SimpleConfigurationProviderResolver())
+                carc.invokeStaticMethod(CPR_SET_INSTANCE,
+                        carc.newInstance(MethodDescriptor.ofConstructor(SimpleConfigurationProviderResolver.class)));
+                // Note that we need to to set the current Config because of ConfigProvider.INSTANCE
+                // ConfigProviderResolver.instance().registerConfig(config, null) 
+                carc.invokeVirtualMethod(CPR_REGISTER_CONFIG, carc.invokeStaticMethod(CPR_INSTANCE), config, carc.loadNull());
 
                 // create the config root
                 carc.writeStaticField(RUN_TIME_CONFIG_FIELD,

@@ -60,6 +60,7 @@ import org.junit.jupiter.api.extension.TestInstantiationException;
 import io.quarkus.runner.RuntimeRunner;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.PathTestHelper;
+import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
@@ -160,7 +161,7 @@ public class QuarkusUnitTest
             throw new RuntimeException("QuarkusUnitTest does not have archive producer set");
         }
 
-        System.setProperty("quarkus.log.file.path", "target/quarkus.log");
+        PropertyTestUtil.setLogFileProperty();
         ExtensionContext.Store store = extensionContext.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
         if (store.get(TestResourceManager.class.getName()) == null) {
             TestResourceManager manager = new TestResourceManager(extensionContext.getRequiredTestClass());

@@ -79,7 +79,7 @@
         <plexus-component-annotations.version>1.7.1</plexus-component-annotations.version>
         <!-- What we actually depend on for the annotations, as latest Graal
            is not available in Maven fast enough: -->
-        <graal-sdk.version>1.0.0-rc13</graal-sdk.version>
+        <graal-sdk.version>1.0.0-rc14</graal-sdk.version>
         <gizmo.version>1.0.0.Alpha2</gizmo.version>
         <jackson.version>2.9.8</jackson.version>
         <commons-beanutils-core.version>1.8.3</commons-beanutils-core.version>

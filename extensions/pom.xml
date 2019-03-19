@@ -87,6 +87,8 @@
         <module>camel</module>
 
         <module>kotlin</module>
+
+        <module>flyway</module>
     </modules>
 
 </project>

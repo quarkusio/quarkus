@@ -12,7 +12,6 @@ import java.util.Properties;
 
 import javax.inject.Inject;
 
-import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import org.apache.camel.Consumer;
 import org.apache.camel.Converter;
 import org.apache.camel.Endpoint;
@@ -37,6 +36,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentConfigFileBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveMethodBuildItem;
+import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateResourceBundleBuildItem;
 import io.quarkus.jaxb.deployment.JaxbFileRootBuildItem;
@@ -69,7 +69,7 @@ class CamelProcessor {
 
     @BuildStep
     JaxbFileRootBuildItem fileRoot() {
-        return new JaxbFileRootBuildItem("org/apache/camel");
+        return new JaxbFileRootBuildItem(CamelSupport.CAMEL_ROOT_PACKAGE_DIRECTORY);
     }
 
     @BuildStep
@@ -95,7 +95,7 @@ class CamelProcessor {
         return null;
     }
 
-    @BuildStep(applicationArchiveMarkers = { CamelSupport.CAMEL_SERVICE_BASE_PATH, "org/apache/camel" })
+    @BuildStep(applicationArchiveMarkers = { CamelSupport.CAMEL_SERVICE_BASE_PATH, CamelSupport.CAMEL_ROOT_PACKAGE_DIRECTORY })
     void process() {
         IndexView view = combinedIndexBuildItem.getIndex();
 

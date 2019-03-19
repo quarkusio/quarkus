@@ -1,7 +1,5 @@
 package io.quarkus.runtime.configuration;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigBuilder;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
@@ -13,10 +11,11 @@ import io.smallrye.config.SmallRyeConfigBuilder;
  */
 public class SimpleConfigurationProviderResolver extends ConfigProviderResolver {
 
-    private static final AtomicReference<Config> CONFIG = new AtomicReference<>();
+    // We use a shared config 
+    private static volatile Config config;
 
     public Config getConfig() {
-        return CONFIG.get();
+        return config;
     }
 
     public Config getConfig(final ClassLoader loader) {
@@ -28,10 +27,10 @@ public class SimpleConfigurationProviderResolver extends ConfigProviderResolver 
     }
 
     public void registerConfig(final Config config, final ClassLoader classLoader) {
-        CONFIG.set(config);
+        SimpleConfigurationProviderResolver.config = config;
     }
 
     public void releaseConfig(final Config config) {
-        CONFIG.set(null);
+        SimpleConfigurationProviderResolver.config = null;
     }
 }

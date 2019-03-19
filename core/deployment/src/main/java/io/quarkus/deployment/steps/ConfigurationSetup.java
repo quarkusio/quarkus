@@ -120,6 +120,8 @@ public class ConfigurationSetup {
             "registerConfig", void.class, Config.class, ClassLoader.class);
     private static final MethodDescriptor CPR_INSTANCE = MethodDescriptor.ofMethod(ConfigProviderResolver.class,
             "instance", ConfigProviderResolver.class);
+    private static final MethodDescriptor SCPR_CONSTRUCT = MethodDescriptor
+            .ofConstructor(SimpleConfigurationProviderResolver.class);
     private static final MethodDescriptor SRCB_BUILD = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class, "build",
             Config.class);
     private static final MethodDescriptor SRCB_WITH_CONVERTER = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class,
@@ -509,11 +511,10 @@ public class ConfigurationSetup {
 
                 final ResultHandle config = carc.checkCast(carc.invokeVirtualMethod(SRCB_BUILD, builder), SmallRyeConfig.class);
 
-                // ConfigProviderResolver.setInstance(new SimpleConfigurationProviderResolver())
-                carc.invokeStaticMethod(CPR_SET_INSTANCE,
-                        carc.newInstance(MethodDescriptor.ofConstructor(SimpleConfigurationProviderResolver.class)));
-                // Note that we need to to set the current Config because of ConfigProvider.INSTANCE
-                // ConfigProviderResolver.instance().registerConfig(config, null) 
+                // IMPL NOTE: we do invoke ConfigProviderResolver.setInstance() in RUNTIME_INIT when an app starts, but ConfigProvider only obtains the
+                // resolver once when initializing ConfigProvider.INSTANCE. That is why we store the current Config as a static field on the
+                // SimpleConfigurationProviderResolver
+                carc.invokeStaticMethod(CPR_SET_INSTANCE, carc.newInstance(SCPR_CONSTRUCT));
                 carc.invokeVirtualMethod(CPR_REGISTER_CONFIG, carc.invokeStaticMethod(CPR_INSTANCE), config, carc.loadNull());
 
                 // create the config root

@@ -61,10 +61,10 @@ public class ResolvedGradleArtifactDeps extends AppArtifactResolverBase {
         type = "jar";
         version = project.getVersion().toString();
 
-        deps = new ArrayList<>(extractDependencies(project));
+        deps = Collections.unmodifiableList(extractDependencies(project));
     }
 
-    private Set<AppDependency> extractDependencies(Project project) {
+    private List<AppDependency> extractDependencies(Project project) {
         Set<AppDependency> dependencies = new HashSet<>();
 
         Configuration configuration = project.getConfigurations().getByName("compileOnly");
@@ -83,7 +83,7 @@ public class ResolvedGradleArtifactDeps extends AppArtifactResolverBase {
                 artifactId + "-" + version + ".jar");
 
         traverseDependencies(root.getDependencies(), dependencies);
-        return dependencies;
+        return new ArrayList<>(dependencies);
     }
 
     private void traverseDependencies(Set<? extends DependencyResult> dependencies, Set<AppDependency> appDependencies) {

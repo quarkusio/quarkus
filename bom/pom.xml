@@ -413,6 +413,12 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-vertx-web</artifactId>
+                <version>${project.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-hibernate-orm-panache</artifactId>
                 <version>${project.version}</version>
                 <scope>provided</scope>
@@ -1421,6 +1427,11 @@
             <dependency>
                 <groupId>io.vertx</groupId>
                 <artifactId>vertx-core</artifactId>
+                <version>${vertx.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.vertx</groupId>
+                <artifactId>vertx-web</artifactId>
                 <version>${vertx.version}</version>
             </dependency>
             <dependency>

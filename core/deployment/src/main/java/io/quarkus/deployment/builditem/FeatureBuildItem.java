@@ -44,6 +44,7 @@ public final class FeatureBuildItem extends MultiBuildItem {
     public static final String SPRING_DI = "spring-di";
     public static final String UNDERTOW_WEBSOCKETS = "undertow-websockets";
     public static final String VERTX = "vertx";
+    public static final String VERTX_WEB = "vertx-web";
 
     private final String info;
 

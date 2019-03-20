@@ -21,8 +21,10 @@ public class LogCleanupFilter implements Filter {
 
     @Override
     public boolean isLoggable(LogRecord record) {
-        if (record.getLevel().intValue() != Level.INFO.intValue())
+        if (record.getLevel().intValue() != Level.INFO.intValue()
+                && record.getLevel().intValue() != Level.WARNING.intValue()) {
             return true;
+        }
         LogCleanupFilterElement filterElement = filterElements.get(record.getLoggerName());
         if (filterElement != null) {
             for (String messageStart : filterElement.getMessageStarts()) {

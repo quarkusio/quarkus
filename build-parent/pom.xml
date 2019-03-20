@@ -578,6 +578,16 @@
                 <artifactId>quarkus-kotlin</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-flyway</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-flyway-runtime</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- Miscellaneous -->
             <dependency>

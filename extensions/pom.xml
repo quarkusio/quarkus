@@ -95,6 +95,8 @@
 
         <!-- Additional languages -->
         <module>kotlin</module>
+
+        <module>flyway</module>
     </modules>
 
 </project>

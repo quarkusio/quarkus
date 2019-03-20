@@ -22,10 +22,4 @@ public class RouterProducer {
         return router;
     }
 
-    @ApplicationScoped
-    @Produces
-    io.vertx.reactivex.ext.web.Router produceRxRouter() {
-        return io.vertx.reactivex.ext.web.Router.newInstance(router);
-    }
-
 }

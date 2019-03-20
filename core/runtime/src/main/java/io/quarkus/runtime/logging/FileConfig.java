@@ -28,7 +28,7 @@ public class FileConfig {
     /**
      * If file logging should be enabled
      */
-    @ConfigItem(defaultValue = "true")
+    @ConfigItem(defaultValue = "false")
     boolean enable;
 
     /**

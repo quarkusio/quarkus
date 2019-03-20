@@ -20,6 +20,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -83,54 +84,46 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
 
     @Override
     public Enumeration<URL> getResources(String nm) throws IOException {
-        String name;
-        if (nm.startsWith("/")) {
-            name = nm.substring(1);
-        } else {
-            name = nm;
-        }
+        String name = sanitizeName(nm);
+
+        List<URL> resources = new ArrayList<>();
 
         // TODO: some superugly hack for bean provider
-        byte[] data = resources.get(name);
-        if (data != null) {
-            URL url = new URL(null, "quarkus:" + name + "/", new URLStreamHandler() {
-                @Override
-                protected URLConnection openConnection(final URL u) throws IOException {
-                    return new URLConnection(u) {
-                        @Override
-                        public void connect() throws IOException {
-                        }
-
-                        @Override
-                        public InputStream getInputStream() throws IOException {
-                            return new ByteArrayInputStream(resources.get(name));
-                        }
-                    };
-                }
-            });
-            return Collections.enumeration(Collections.singleton(url));
+        URL resource = getQuarkusResource(name);
+        if (resource != null) {
+            resources.add(resource);
         }
 
         URL appResource = findApplicationResource(name);
         if (appResource != null) {
-            List<URL> resources = new ArrayList<>();
             resources.add(appResource);
-            for (Enumeration<URL> e = super.getResources(name); e.hasMoreElements();) {
-                resources.add(e.nextElement());
-            }
-            return Collections.enumeration(resources);
         }
-        return super.getResources(name);
+
+        for (Enumeration<URL> e = super.getResources(name); e.hasMoreElements();) {
+            resources.add(e.nextElement());
+        }
+
+        return Collections.enumeration(resources);
+    }
+
+    private String sanitizeName(String name) {
+        if (name.startsWith("/")) {
+            return name.substring(1);
+        }
+
+        return name;
     }
 
     @Override
     public URL getResource(String nm) {
-        String name;
-        if (nm.startsWith("/")) {
-            name = nm.substring(1);
-        } else {
-            name = nm;
+        String name = sanitizeName(nm);
+
+        // TODO: some superugly hack for bean provider
+        URL resource = getQuarkusResource(name);
+        if (resource != null) {
+            return resource;
         }
+
         URL appResource = findApplicationResource(name);
         if (appResource != null) {
             return appResource;
@@ -140,15 +133,18 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
 
     @Override
     public InputStream getResourceAsStream(String nm) {
-        String name;
-        if (nm.startsWith("/")) {
-            name = nm.substring(1);
-        } else {
-            name = nm;
-        }
+        String name = sanitizeName(nm);
+
         byte[] data = resources.get(name);
-        if (data != null)
+        if (data != null) {
             return new ByteArrayInputStream(data);
+        }
+
+        data = findApplicationResourceContent(name);
+        if (data != null) {
+            return new ByteArrayInputStream(data);
+        }
+
         return super.getResourceAsStream(name);
     }
 
@@ -349,7 +345,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
         resources.put(name, data);
     }
 
-    public static byte[] readFileContent(final Path path) throws IOException {
+    public static byte[] readFileContent(final Path path) {
         final File file = path.toFile();
         final long fileLength = file.length();
         if (fileLength > Integer.MAX_VALUE) {
@@ -366,6 +362,8 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
                 out.write(buf, 0, r);
             }
             return out.toByteArray();
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Unable to read file " + path, e);
         }
     }
 
@@ -386,4 +384,46 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
         }
     }
 
+    private byte[] findApplicationResourceContent(String name) {
+        Path resourcePath = null;
+
+        for (Path i : applicationClasses) {
+            resourcePath = i.resolve(name);
+            if (Files.exists(resourcePath)) {
+                return readFileContent(resourcePath);
+            }
+        }
+
+        return null;
+    }
+
+    private URL getQuarkusResource(String name) {
+        byte[] data = resources.get(name);
+        if (data != null) {
+            String path = "quarkus:" + name + "/";
+
+            try {
+                URL url = new URL(null, path, new URLStreamHandler() {
+                    @Override
+                    protected URLConnection openConnection(final URL u) throws IOException {
+                        return new URLConnection(u) {
+                            @Override
+                            public void connect() throws IOException {
+                            }
+
+                            @Override
+                            public InputStream getInputStream() throws IOException {
+                                return new ByteArrayInputStream(resources.get(name));
+                            }
+                        };
+                    }
+                });
+
+                return url;
+            } catch (MalformedURLException e) {
+                throw new IllegalArgumentException("Invalid URL: " + path);
+            }
+        }
+        return null;
+    }
 }

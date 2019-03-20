@@ -19,6 +19,7 @@ package io.quarkus.deployment.logging;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 import org.jboss.logmanager.EmbeddedConfigurator;
 
@@ -67,11 +68,15 @@ public final class LoggingResourceProcessor {
     void setUpDefaultLogCleanupFilters(List<LogCleanupFilterBuildItem> logCleanupFilters,
             Consumer<RunTimeConfigurationDefaultBuildItem> configOutput) {
         for (LogCleanupFilterBuildItem logCleanupFilter : logCleanupFilters) {
+            String startsWithClause = logCleanupFilter.getFilterElement().getMessageStarts().stream()
+                    // SmallRye Config escaping is pretty naive so we only need to escape commas
+                    .map(s -> s.replace(",", "\\,"))
+                    .collect(Collectors.joining(","));
             configOutput.accept(
                     new RunTimeConfigurationDefaultBuildItem(
                             "quarkus.log.filter.\"" + logCleanupFilter.getFilterElement().getLoggerName()
                                     + "\".if-starts-with",
-                            logCleanupFilter.getFilterElement().getMessageStart()));
+                            startsWithClause));
         }
     }
 

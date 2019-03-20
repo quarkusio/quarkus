@@ -16,14 +16,16 @@
 
 package io.quarkus.runtime.logging;
 
+import java.util.List;
+
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 
 @ConfigGroup
 public class CleanupFilterConfig {
     /**
-     * The start message to match
+     * The message starts to match
      */
     @ConfigItem(defaultValue = "inherit")
-    String ifStartsWith;
+    List<String> ifStartsWith;
 }

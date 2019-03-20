@@ -43,6 +43,10 @@ public class DevMojoIT extends MojoTestBase {
     public void testThatClassAppCanRun() throws MavenInvocationException, FileNotFoundException {
         testDir = initProject("projects/classic", "projects/project-classic-run");
         runAndCheck();
+
+        //make sure that the Class.getPackage() works for app classes
+        String pkg = getHttpResponse("/app/hello/package");
+        assertThat(pkg).isEqualTo("org.acme");
     }
 
     @Test

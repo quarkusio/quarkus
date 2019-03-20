@@ -14,8 +14,6 @@ To complete this guide, you need:
 * JDK 1.8+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven 3.5.3+
 
-
-
 == Solution
 
 We recommend that you follow the instructions in the next sections and create the application step by step.
@@ -50,11 +48,10 @@ It generates:
 == Injecting configuration value
 
 Quarkus uses https://microprofile.io/project/eclipse/microprofile-config[MicroProfile Config] to inject the configuration in the application.
-The injection uses 2 annotations: `@Inject` and `@ConfigProperty`:
+The injection uses the `@ConfigProperty` annotation.
 
 [source,java]
 ----
-@Inject
 @ConfigProperty(name = "greeting.message")
 private String message;
 ----
@@ -73,7 +70,8 @@ private String suffix;
 private Optional<String> name;
 ----
 
-NOTE: The `@Inject` annotation is not strictly necessary from members annotated with `@ConfigProperty`, a behavior which differs from https://microprofile.io/project/eclipse/microprofile-config[MicroProfile Config]
+NOTE: When injecting a configured value, you can use `@Inject @ConfigProperty(...)` or just `@ConfigProperty(...)`.
+The `@Inject` annotation is not necessary for members annotated with `@ConfigProperty`, a behavior which differs from https://microprofile.io/project/eclipse/microprofile-config[MicroProfile Config]
 
 If you do not provide a value for the first property, it will have a `null` value.
 The second property injects the given default value if the configuration file does not provide a value.

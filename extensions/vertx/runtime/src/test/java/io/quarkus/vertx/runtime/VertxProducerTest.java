@@ -14,21 +14,24 @@ import org.junit.Test;
 
 public class VertxProducerTest {
 
+    private VertxTemplate template;
     private VertxProducer producer;
 
     @Before
     public void setUp() throws Exception {
         producer = new VertxProducer();
+        template = new VertxTemplate();
     }
 
     @After
     public void tearDown() throws Exception {
-        producer.destroy();
+        template.destroy();
     }
 
     @Test
     public void shouldNotFailWithoutConfig() {
-        producer.configure(null);
+        template.initialize(null);
+        producer.initialize(VertxTemplate.vertx);
         verifyProducer();
     }
 
@@ -52,7 +55,8 @@ public class VertxProducerTest {
         configuration.workerPoolSize = 10;
         configuration.warningExceptionTime = Duration.ofSeconds(1);
         configuration.internalBlockingPoolSize = 5;
-        producer.configure(configuration);
+        template.initialize(configuration);
+        producer.initialize(VertxTemplate.vertx);
         verifyProducer();
     }
 
@@ -71,9 +75,8 @@ public class VertxProducerTest {
         configuration.eventbus.acceptBacklog = OptionalInt.empty();
         configuration.cluster = cc;
 
-        producer.configure(configuration);
         try {
-            producer.vertx();
+            template.initialize(configuration);
             fail("It should not have a cluster manager on the classpath, and so fail the creation");
         } catch (IllegalStateException e) {
             assertTrue(e.getMessage().contains("No ClusterManagerFactory"));

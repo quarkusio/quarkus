@@ -39,6 +39,7 @@ import io.quarkus.deployment.builditem.AnnotationProxyBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.util.HashUtil;
 import io.quarkus.gizmo.ClassCreator;
@@ -46,9 +47,10 @@ import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.quarkus.vertx.web.Route;
 import io.quarkus.vertx.web.RoutingExchange;
-import io.quarkus.vertx.web.runtime.HttpServerInitializer;
+import io.quarkus.vertx.web.runtime.RouterProducer;
 import io.quarkus.vertx.web.runtime.RoutingExchangeImpl;
 import io.quarkus.vertx.web.runtime.VertxHttpConfiguration;
 import io.quarkus.vertx.web.runtime.VertxWebTemplate;
@@ -73,7 +75,7 @@ class VertxWebProcessor {
             BuildProducer<RouteHandlerBuildItem> routeHandlerBusinessMethods,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
 
-        additionalBean.produce(new AdditionalBeanBuildItem(false, HttpServerInitializer.class));
+        additionalBean.produce(new AdditionalBeanBuildItem(false, RouterProducer.class));
         feature.produce(new FeatureBuildItem(FeatureBuildItem.VERTX_WEB));
         unremovableBeans.produce(new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(ROUTE)));
         unremovableBeans.produce(new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(ROUTES)));
@@ -118,7 +120,9 @@ class VertxWebProcessor {
             List<RouteHandlerBuildItem> routeHandlerBusinessMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass, AnnotationProxyBuildItem annotationProxy,
             LaunchModeBuildItem launchMode,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            ShutdownContextBuildItem shutdown,
+            VertxBuildItem vertx) {
 
         ClassOutput classOutput = new ClassOutput() {
             @Override
@@ -135,7 +139,9 @@ class VertxWebProcessor {
             routeConfigs.put(handlerClass, routes);
             reflectiveClasses.produce(new ReflectiveClassBuildItem(false, false, handlerClass));
         }
-        template.configureRouter(beanContainer.getValue(), routeConfigs, vertxHttpConfiguration, launchMode.getLaunchMode());
+        template.configureRouter(vertx.getVertx(), beanContainer.getValue(), routeConfigs, vertxHttpConfiguration,
+                launchMode.getLaunchMode(),
+                shutdown);
     }
 
     @BuildStep

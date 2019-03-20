@@ -90,24 +90,9 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
         }
 
         // TODO: some superugly hack for bean provider
-        byte[] data = resources.get(name);
-        if (data != null) {
-            URL url = new URL(null, "quarkus:" + name + "/", new URLStreamHandler() {
-                @Override
-                protected URLConnection openConnection(final URL u) throws IOException {
-                    return new URLConnection(u) {
-                        @Override
-                        public void connect() throws IOException {
-                        }
-
-                        @Override
-                        public InputStream getInputStream() throws IOException {
-                            return new ByteArrayInputStream(resources.get(name));
-                        }
-                    };
-                }
-            });
-            return Collections.enumeration(Collections.singleton(url));
+        URL resource = getQuarkusResource(name);
+        if (resource != null) {
+            return Collections.enumeration(Collections.singleton(resource));
         }
 
         URL appResource = findApplicationResource(name);
@@ -130,6 +115,13 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
         } else {
             name = nm;
         }
+
+        // TODO: some superugly hack for bean provider
+        URL resource = getQuarkusResource(name);
+        if (resource != null) {
+            return resource;
+        }
+
         URL appResource = findApplicationResource(name);
         if (appResource != null) {
             return appResource;
@@ -352,4 +344,33 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
         }
     }
 
+    private URL getQuarkusResource(String name) {
+        byte[] data = resources.get(name);
+        if (data != null) {
+            String path = "quarkus:" + name + "/";
+
+            try {
+                URL url = new URL(null, path, new URLStreamHandler() {
+                    @Override
+                    protected URLConnection openConnection(final URL u) throws IOException {
+                        return new URLConnection(u) {
+                            @Override
+                            public void connect() throws IOException {
+                            }
+
+                            @Override
+                            public InputStream getInputStream() throws IOException {
+                                return new ByteArrayInputStream(resources.get(name));
+                            }
+                        };
+                    }
+                });
+
+                return url;
+            } catch (MalformedURLException e) {
+                throw new IllegalArgumentException("Invalid URL: " + path);
+            }
+        }
+        return null;
+    }
 }

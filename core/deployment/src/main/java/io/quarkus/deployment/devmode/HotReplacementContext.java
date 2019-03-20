@@ -12,5 +12,10 @@ public interface HotReplacementContext {
 
     Throwable getDeploymentProblem();
 
-    void doScan() throws Exception;
+    /**
+     * 
+     * @return {@code true} if a restart was performed, {@code false} otherwise
+     * @throws Exception
+     */
+    boolean doScan() throws Exception;
 }

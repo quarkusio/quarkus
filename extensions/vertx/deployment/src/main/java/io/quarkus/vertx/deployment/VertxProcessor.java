@@ -54,6 +54,8 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AnnotationProxyBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.substrate.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.substrate.SubstrateConfigBuildItem;
 import io.quarkus.deployment.util.HashUtil;
@@ -64,11 +66,13 @@ import io.quarkus.gizmo.FunctionCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.ConsumeEvent;
 import io.quarkus.vertx.runtime.EventConsumerInvoker;
 import io.quarkus.vertx.runtime.VertxConfiguration;
 import io.quarkus.vertx.runtime.VertxProducer;
 import io.quarkus.vertx.runtime.VertxTemplate;
+import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.Message;
 
 class VertxProcessor {
@@ -85,15 +89,8 @@ class VertxProcessor {
 
     @BuildStep
     SubstrateConfigBuildItem build() {
-        return SubstrateConfigBuildItem.builder()
-                .addNativeImageSystemProperty("vertx.disableDnsResolver", "true")
-                .build();
+        return SubstrateConfigBuildItem.builder().addNativeImageSystemProperty("vertx.disableDnsResolver", "true").build();
     }
-
-    /**
-     * The Vert.x configuration, if set.
-     */
-    VertxConfiguration vertx;
 
     @BuildStep
     AdditionalBeanBuildItem registerBean() {
@@ -102,10 +99,11 @@ class VertxProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void build(VertxTemplate template, BeanContainerBuildItem beanContainer, BuildProducer<FeatureBuildItem> feature,
+    VertxBuildItem build(VertxTemplate template, BeanContainerBuildItem beanContainer, BuildProducer<FeatureBuildItem> feature,
             List<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
-            AnnotationProxyBuildItem annotationProxy) {
+            AnnotationProxyBuildItem annotationProxy, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
+            VertxConfiguration config) {
         feature.produce(new FeatureBuildItem(FeatureBuildItem.VERTX));
         Map<String, ConsumeEvent> messageConsumerConfigurations = new HashMap<>();
         ClassOutput classOutput = new ClassOutput() {
@@ -121,7 +119,10 @@ class VertxProcessor {
                             .withDefaultValue("value", businessMethod.getBean().getBeanClass().toString()).build());
             reflectiveClass.produce(new ReflectiveClassBuildItem(false, false, invokerClass));
         }
-        template.configureVertx(beanContainer.getValue(), vertx, messageConsumerConfigurations);
+        RuntimeValue<Vertx> vertx = template.configureVertx(beanContainer.getValue(), config, messageConsumerConfigurations,
+                launchMode.getLaunchMode(),
+                shutdown);
+        return new VertxBuildItem(vertx);
     }
 
     @BuildStep

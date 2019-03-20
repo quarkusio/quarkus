@@ -3,7 +3,7 @@ package io.quarkus.vertx.web.deployment.devmode;
 import io.quarkus.deployment.devmode.HotReplacementContext;
 import io.quarkus.deployment.devmode.HotReplacementSetup;
 import io.quarkus.deployment.devmode.ReplacementDebugPage;
-import io.quarkus.vertx.web.runtime.HttpServerInitializer;
+import io.quarkus.vertx.web.runtime.VertxWebTemplate;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
 
@@ -17,7 +17,7 @@ public class VertxHotReplacementSetup implements HotReplacementSetup {
     @Override
     public void setupHotDeployment(HotReplacementContext context) {
         this.hotReplacementContext = context;
-        HttpServerInitializer.setHotReplacement(this::handleHotReplacementRequest);
+        VertxWebTemplate.setHotReplacement(this::handleHotReplacementRequest);
     }
 
     void handleHotReplacementRequest(RoutingContext routingContext) {
@@ -30,10 +30,11 @@ public class VertxHotReplacementSetup implements HotReplacementSetup {
             routingContext.next();
             return;
         }
+        boolean restart = false;
         synchronized (this) {
             if (nextUpdate < System.currentTimeMillis()) {
                 try {
-                    hotReplacementContext.doScan();
+                    restart = hotReplacementContext.doScan();
                 } catch (Exception e) {
                     throw new IllegalStateException("Unable to perform hot replacement scanning", e);
                 }
@@ -44,7 +45,11 @@ public class VertxHotReplacementSetup implements HotReplacementSetup {
             handleDeploymentProblem(routingContext, hotReplacementContext.getDeploymentProblem());
             return;
         }
-        routingContext.next();
+        if (restart) {
+            routingContext.reroute(routingContext.request().path());
+        } else {
+            routingContext.next();
+        }
     }
 
     public static void handleDeploymentProblem(RoutingContext routingContext, final Throwable exception) {

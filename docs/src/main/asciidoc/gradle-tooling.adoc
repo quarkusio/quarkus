@@ -49,12 +49,13 @@ repositories {
 }
 
 dependencies { <2>
-    compileOnly 'io.quarkus:quarkus-resteasy:{quarkus-version}'
+    implementation 'io.quarkus:quarkus-resteasy:{quarkus-version}'
 }
 ----
 
 <1> The {project-name} plugin needs to be applied.
 <2> This dependency is needed for a REST application similar to the getting started example.
+{project-name} also need this dependency for running tests, to provide this we use the `implementation` configuration.
 
 Here's the same build script, using the Gradle Kotlin DSL:
 
@@ -73,9 +74,34 @@ repositories {
 }
 
 dependencies {
-    compileOnly("io.quarkus:quarkus-resteasy:{quarkus-version}")
+    implementation("io.quarkus:quarkus-resteasy:{quarkus-version}")
 }
 ----
+
+== Enable Tests
+
+{project-name} uses Junit5 and to enable it in Gradle we need to add a section to our build file:
+
+[source,groovy,subs=attributes+]
+----
+test {
+  useJUnitPlatform()
+}
+----
+
+To follow up our Rest example from above, we would also need to add two test dependencies:
+
+[source,groovy,subs=attributes+]
+----
+testCompile group: 'io.quarkus', name: 'quarkus-junit5', version: '{quarkus-version}'
+testCompile group: 'io.rest-assured', name: 'rest-assured', version: '{restassured-version}'
+----
+
+Note: {project-name} do not allow both link:getting-started-testing.html[QuarkusTests] and link:getting-started-testing.html#native-executable-testing[SubstrateTests] to run in the same test run.
+SubstrateTests should be seen as integration tests and moved to a different folder
+as recommended here:
+https://docs.gradle.org/current/userguide/java_testing.html#sec:configuring_java_integration_tests[Configuring integration tests].
+{project-name} supports running Substrate tests with Gradle, but the `quarkusNative` task is required to be completed first.
 
 == Dealing with extensions
 

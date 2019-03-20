@@ -59,8 +59,7 @@ public class NativeImageLauncher implements Closeable {
         args.add(path);
         args.add("-Dquarkus.http.port=" + port);
         args.add("-Dtest.url=" + TestHTTPResourceManager.getUri());
-        //args.add("-Dquarkus.log.file.path=target/quarkus.log");
-        PropertyTestUtil.setLogFileProperty();
+        args.add("-Dquarkus.log.file.path=" + PropertyTestUtil.getLogFileLocation());
 
         System.out.println("Executing " + args);
 

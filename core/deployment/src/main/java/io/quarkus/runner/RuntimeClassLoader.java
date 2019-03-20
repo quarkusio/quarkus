@@ -339,6 +339,7 @@ public class RuntimeClassLoader extends ClassLoader implements ClassOutput, Tran
         }
     }
 
+    @Override
     public void setTransformers(Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> functions) {
         this.bytecodeTransformers = functions;
     }
